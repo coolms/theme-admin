@@ -1,0 +1,13 @@
+# Angular CLI build cache.
+.angular/
+
+# Tooling output only — the DEPLOYED admin is built to ../public (see the
+# `build` script's --output-path), never here. `dist/` holds `out-tsc` from a
+# type-check and `test-out/<uuid>/` from the karma builder, which writes a
+# fresh bundle directory per run (~23 MB) and does not remove the previous
+# one. Unignored, a few days of `npm test` reads as hundreds of MB of tracked
+# changes.
+dist/
+
+# Karma coverage reporter output (karma.conf.js -> coverageReporter.dir).
+coverage/

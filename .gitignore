@@ -1,0 +1,17 @@
+/vendor/
+/composer.lock
+
+# ⚠️ The DEPLOYED admin. `angular.json` sets outputPath to `../public`, so this
+# whole directory is what `npm run build` writes -- 42M of it -- and
+# `http://localhost:8080/admin/` serves it directly. Generated, not authored.
+/public/
+
+# 837M, and a symlink target for six sibling packages.
+/angular/node_modules/
+
+# 4.3G of tooling output: `out-tsc` from type-checks and a fresh `test-out/<uuid>`
+# per karma run, which is never cleaned up. `angular/.gitignore` says the same
+# thing for anyone reading from in there.
+/angular/dist/
+/angular/.angular/
+/angular/coverage/

@@ -1,0 +1,40 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./out-tsc/spec",
+        "types": ["jasmine"]
+    },
+    // The base config carries `exclude: ["src/**/*.spec.ts"]` so that `ng build`
+    // never type-checks specs. `exclude` IS inherited through `extends`, so
+    // clearing it here is load-bearing: without this line the spec glob below
+    // is filtered straight back out and karma reports "Executed 0 of 0" -- a
+    // green run that tested nothing, which is the exact failure mode this
+    // whole target exists to end.
+    "exclude": [],
+    "include": [
+        "src/**/*.spec.ts",
+        "src/**/*.d.ts",
+        // core moved to packages/core-angular; without this line its 33
+        // specs leave the suite SILENTLY -- a green run testing less,
+        // which is the exact failure the note above exists to prevent.
+        "../../core-angular/src/**/*.spec.ts",
+        // and the UI kit moved to packages/ui-angular, taking 23 spec files
+        // with it. Same trap, same fix: the suite total is the only thing that
+        // notices, so it is 656 before and after the move by construction.
+        "../../ui-angular/src/**/*.spec.ts",
+        // Same again for the editor and the spreadsheet editor. Each line here
+        // only makes TypeScript type-check them; what actually puts them in the
+        // RUN is the matching `src/<pkg>-specs.spec.ts` bridge, because karma
+        // discovers under the project root only.
+        "../../editor-angular/src/**/*.spec.ts",
+        "../../sheet-editor-angular/src/**/*.spec.ts"
+    ],
+    "angularCompilerOptions": {
+      "extendedDiagnostics": {
+        "checks": {
+          "nullishCoalescingNotNullable": "suppress",
+          "optionalChainNotNullable": "suppress"
+        }
+      }
+    }
+}

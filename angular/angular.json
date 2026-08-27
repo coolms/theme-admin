@@ -1,0 +1,164 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "coolms-admin": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "css",
+          "standalone": true
+        }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "coolms-admin",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "../public",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "polyfills": [
+              "zone.js"
+            ],
+            "tsConfig": "tsconfig.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "pdf.worker.min.mjs",
+                "input": "node_modules/pdfjs-dist/build",
+                "output": "/assets/pdfjs/"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/ngx-extended-pdf-viewer/assets/",
+                "output": "/assets/"
+              }
+            ],
+            "styles": [
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/@angular/cdk/overlay-prebuilt.css",
+              "node_modules/@xterm/xterm/css/xterm.css",
+              "node_modules/bootstrap-icons/font/bootstrap-icons.min.css",
+              "node_modules/katex/dist/katex.min.css",
+              "../../designer/src/styles/coolms-designer.css",
+              "node_modules/fullcalendar/skeleton.css",
+              "node_modules/fullcalendar/themes/classic/theme.css",
+              "src/styles.scss"
+            ],
+            "scripts": [],
+            "allowedCommonJsDependencies": [
+              "tui-image-editor",
+              "tui-color-picker",
+              "jszip",
+              "katex"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "7MB",
+                  "maximumError": "10MB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "//": [
+            "esbuild-based karma builder, NOT @angular-devkit/build-angular:karma.",
+            "That one is webpack, and webpack sets no `resolve.extensionAlias`, so it",
+            "cannot follow @coolms/document-engine's ESM-correct './x.js' specifiers",
+            "back to the .ts sources the `paths` mapping points at. Any spec whose",
+            "import graph reached the engine -- which is every DynamicFormComponent,",
+            "hence My Profile -- failed the WHOLE suite at build time and nothing ran.",
+            "This builder shares the `build` target's esbuild resolution, so `test`",
+            "and `build` now agree by construction instead of by coincidence.",
+            "",
+            "Spec discovery is PROJECT-ROOT ONLY, and the builder's `include` will not",
+            "climb above it -- an `../../core-angular/**` glob is accepted and silently",
+            "matches nothing. core's specs are therefore imported by",
+            "src/core-angular-specs.spec.ts; without it the suite drops 656 -> 623 and",
+            "still reports SUCCESS."
+          ],
+          "builder": "@angular/build:karma",
+          "options": {
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js",
+            "styles": [
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/@angular/cdk/overlay-prebuilt.css",
+              "node_modules/bootstrap-icons/font/bootstrap-icons.min.css",
+              "src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "servePath": "/admin/"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "coolms-admin:build:production"
+            },
+            "development": {
+              "buildTarget": "coolms-admin:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  },
+  "schematics": {
+    "@schematics/angular:component": {
+      "type": "component"
+    },
+    "@schematics/angular:directive": {
+      "type": "directive"
+    },
+    "@schematics/angular:service": {
+      "type": "service"
+    },
+    "@schematics/angular:guard": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:interceptor": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:module": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:pipe": {
+      "typeSeparator": "."
+    },
+    "@schematics/angular:resolver": {
+      "typeSeparator": "."
+    }
+  }
+}

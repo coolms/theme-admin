@@ -1,0 +1,271 @@
+<div class="link-picker">
+    <div class="cms-dialog-header">
+        <span><i class="bi bi-link-45deg me-1"></i> Insert link</span>
+        <button class="cms-dialog-close" type="button" (click)="cancel()" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="link-picker__tabs" role="tablist">
+        <button type="button"
+                class="link-picker__tab"
+                role="tab"
+                [attr.aria-selected]="activeTab() === 'internal'"
+                [class.link-picker__tab--active]="activeTab() === 'internal'"
+                (click)="setActiveTab('internal')">
+            <i class="bi bi-house-door"></i> Internal
+        </button>
+        <button type="button"
+                class="link-picker__tab"
+                role="tab"
+                [attr.aria-selected]="activeTab() === 'external'"
+                [class.link-picker__tab--active]="activeTab() === 'external'"
+                (click)="setActiveTab('external')">
+            <i class="bi bi-box-arrow-up-right"></i> External URL
+        </button>
+        <button type="button"
+                class="link-picker__tab"
+                role="tab"
+                [attr.aria-selected]="activeTab() === 'recent'"
+                [class.link-picker__tab--active]="activeTab() === 'recent'"
+                (click)="setActiveTab('recent')">
+            <i class="bi bi-clock-history"></i> Recent
+        </button>
+    </div>
+
+    <div class="link-picker__body">
+        @switch (activeTab()) {
+            @case ('internal') {
+                <div class="link-picker__sub-tabs" role="tablist">
+                    <button type="button"
+                            class="link-picker__sub-tab"
+                            [class.link-picker__sub-tab--active]="internalSub() === 'pages'"
+                            (click)="setInternalSub('pages')">Pages</button>
+                    <button type="button"
+                            class="link-picker__sub-tab"
+                            [class.link-picker__sub-tab--active]="internalSub() === 'sections'"
+                            (click)="setInternalSub('sections')">Sections</button>
+                    <button type="button"
+                            class="link-picker__sub-tab"
+                            [class.link-picker__sub-tab--active]="internalSub() === 'vfs'"
+                            (click)="setInternalSub('vfs')">Files</button>
+                </div>
+
+                @if (internalSub() !== 'vfs') {
+                    <div class="link-picker__search">
+                        <i class="bi bi-search"></i>
+                        <input type="search"
+                               class="form-control form-control-sm"
+                               placeholder="Search…"
+                               [ngModel]="searchQuery()"
+                               (ngModelChange)="searchQuery.set($event)">
+                    </div>
+                }
+
+                <div class="link-picker__list">
+                    @switch (internalSub()) {
+                        @case ('pages') {
+                            @if (!pageSearchMode()) {
+                                <div class="link-picker__vfs-bar">
+                                    <button type="button"
+                                            class="link-picker__vfs-up"
+                                            [disabled]="pageCrumbs().length === 0"
+                                            (click)="navigatePageUp()"
+                                            aria-label="Up">
+                                        <i class="bi bi-arrow-90deg-up"></i>
+                                    </button>
+                                    <span class="link-picker__vfs-path">{{ pageCrumbLabel() }}</span>
+                                </div>
+                            }
+                            @if (pageNodes() === null) {
+                                <div class="link-picker__empty">Loading…</div>
+                            } @else if (pageNodes()!.length === 0) {
+                                <div class="link-picker__empty">{{ pageSearchMode() ? 'No pages match.' : 'No pages here.' }}</div>
+                            } @else {
+                                @for (p of pageNodes(); track p.id) {
+                                    <button type="button"
+                                            class="link-picker__row"
+                                            [class.link-picker__row--selected]="p.nodeType !== 'directory' && isSelected('page', p.id)"
+                                            [class.link-picker__row--dim]="p.nodeType === 'directory'"
+                                            (click)="p.nodeType === 'directory' ? navigatePage(p) : selectPage(p)">
+                                        <i class="bi"
+                                           [class.bi-folder-fill]="p.nodeType === 'directory'"
+                                           [class.bi-file-earmark-text]="p.nodeType !== 'directory'"></i>
+                                        <span class="link-picker__row-primary">{{ p.slug }}</span>
+                                        <span class="link-picker__row-secondary">{{ p.vfsPath ?? '' }}</span>
+                                        @if (p.nodeType === 'directory') {
+                                            <span class="link-picker__row-badge link-picker__row-badge--muted">browse</span>
+                                        } @else if (p.sectionSlug) {
+                                            <span class="link-picker__row-badge">{{ p.sectionSlug }}</span>
+                                        }
+                                    </button>
+                                }
+                            }
+                        }
+                        @case ('sections') {
+                            @if (sectionList() === null) {
+                                <div class="link-picker__empty">Loading sections…</div>
+                            } @else if (filteredSections().length === 0) {
+                                <div class="link-picker__empty">No sections match.</div>
+                            } @else {
+                                @for (s of filteredSections(); track s.id) {
+                                    <button type="button"
+                                            class="link-picker__row"
+                                            [class.link-picker__row--selected]="s.id !== null && isSelected('section', s.id)"
+                                            [disabled]="!s.id || !s.isActive"
+                                            (click)="selectSection(s)">
+                                        <i class="bi bi-bookmark"></i>
+                                        <span class="link-picker__row-primary">{{ s.label }}</span>
+                                        <span class="link-picker__row-secondary">{{ s.slug }}</span>
+                                        @if (!s.isActive) {
+                                            <span class="link-picker__row-badge link-picker__row-badge--muted">inactive</span>
+                                        }
+                                    </button>
+                                }
+                            }
+                        }
+                        @case ('vfs') {
+                            <div class="link-picker__vfs-bar">
+                                <button type="button"
+                                        class="link-picker__vfs-up"
+                                        [disabled]="vfsPath() === '/'"
+                                        (click)="navigateVfsUp()"
+                                        aria-label="Up">
+                                    <i class="bi bi-arrow-90deg-up"></i>
+                                </button>
+                                <span class="link-picker__vfs-path">{{ vfsPath() }}</span>
+                            </div>
+                            @if (vfsNodes() === null) {
+                                <div class="link-picker__empty">Loading…</div>
+                            } @else if (vfsNodes()!.length === 0) {
+                                <div class="link-picker__empty">Empty directory.</div>
+                            } @else {
+                                @for (n of vfsNodes(); track n.id) {
+                                    <button type="button"
+                                            class="link-picker__row"
+                                            [class.link-picker__row--selected]="isSelected('vfs', n.id)"
+                                            [class.link-picker__row--dim]="n.type === 'directory'"
+                                            (click)="n.type === 'directory' ? navigateVfs(n) : selectVfsNode(n)">
+                                        <i class="bi"
+                                           [class.bi-folder-fill]="n.type === 'directory'"
+                                           [class.bi-file-earmark]="n.type !== 'directory'"></i>
+                                        <span class="link-picker__row-primary">{{ n.name }}</span>
+                                        <span class="link-picker__row-secondary">{{ n.humanSize }}</span>
+                                        @if (n.type === 'directory') {
+                                            <span class="link-picker__row-badge link-picker__row-badge--muted">browse</span>
+                                        }
+                                    </button>
+                                }
+                            }
+                        }
+                    }
+                </div>
+            }
+            @case ('external') {
+                <div class="link-picker__external">
+                    <label class="link-picker__field">
+                        <span>URL</span>
+                        <input type="text"
+                               class="form-control"
+                               placeholder="https://example.com"
+                               [ngModel]="externalUrl()"
+                               (ngModelChange)="externalUrl.set($event)"
+                               [class.link-picker__input--error]="!isExternalValid() && externalUrl() !== ''">
+                    </label>
+                    @if (externalUrl() !== '' && !isExternalValid()) {
+                        <div class="link-picker__error">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            {{ externalError() }}
+                        </div>
+                    }
+                    @if (isExternalValid() && externalUrl() !== '') {
+                        <div class="link-picker__hint">
+                            <i class="bi bi-check2-circle"></i>
+                            External link to <strong>{{ externalUrl() }}</strong>
+                        </div>
+                    }
+                    <p class="link-picker__help">
+                        Allowed: <code>http://</code>, <code>https://</code>,
+                        <code>mailto:</code>, <code>tel:</code>, anchor links
+                        (<code>#section-id</code>) and relative paths
+                        (<code>/path</code>).
+                    </p>
+                </div>
+            }
+            @case ('recent') {
+                <div class="link-picker__list">
+                    @if (recentList().length === 0) {
+                        <div class="link-picker__empty">No recent links yet.</div>
+                    } @else {
+                        @for (r of recentList(); track r.identifier) {
+                            <button type="button"
+                                    class="link-picker__row"
+                                    [class.link-picker__row--selected]="isSelected(r.type, r.identifier)"
+                                    (click)="selectRecent(r)">
+                                <i class="bi"
+                                   [class.bi-file-earmark-text]="r.type === 'page'"
+                                   [class.bi-bookmark]="r.type === 'section'"
+                                   [class.bi-file-earmark]="r.type === 'vfs'"
+                                   [class.bi-box-arrow-up-right]="r.type === 'url'"
+                                   [class.bi-link-45deg]="r.type === 'route'"></i>
+                                <span class="link-picker__row-primary">{{ r.label }}</span>
+                                <span class="link-picker__row-secondary">{{ r.identifier }}</span>
+                                <span class="link-picker__row-badge link-picker__row-badge--muted">{{ r.type }}</span>
+                            </button>
+                        }
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <div class="link-picker__config">
+        <label class="link-picker__field">
+            <span>Label</span>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   placeholder="Anchor text"
+                   [ngModel]="configLabel()"
+                   (ngModelChange)="onLabelInput($event)">
+        </label>
+        <div class="link-picker__field">
+            <span>Open in</span>
+            <div class="link-picker__seg">
+                <button type="button"
+                        class="link-picker__seg-btn"
+                        [class.link-picker__seg-btn--active]="configTarget() === '_self'"
+                        (click)="configTarget.set('_self')">Same window</button>
+                <button type="button"
+                        class="link-picker__seg-btn"
+                        [class.link-picker__seg-btn--active]="configTarget() === '_blank'"
+                        (click)="configTarget.set('_blank')">New window</button>
+            </div>
+        </div>
+        <label class="link-picker__field">
+            <span>Rel</span>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   placeholder="nofollow noopener"
+                   [ngModel]="configRel()"
+                   (ngModelChange)="configRel.set($event)">
+        </label>
+        <label class="link-picker__field">
+            <span>Class</span>
+            <input type="text"
+                   class="form-control form-control-sm"
+                   placeholder="btn btn-primary"
+                   [ngModel]="configClass()"
+                   (ngModelChange)="configClass.set($event)">
+        </label>
+    </div>
+
+    <div class="link-picker__footer">
+        <button type="button" class="cms-btn cms-btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="button"
+                class="cms-btn cms-btn-primary"
+                [disabled]="!canConfirm()"
+                (click)="confirm()">
+            Insert
+        </button>
+    </div>
+</div>

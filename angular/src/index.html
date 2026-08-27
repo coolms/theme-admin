@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CoolMS Admin</title>
+    <base href="/admin/">
+    <!--
+      The BOOT shell (#2088). This is what a full reload shows before any
+      JavaScript has run, so it cannot be the cms-loader component — Angular
+      does not exist yet. It is the same MARK drawn by hand: the exclamation
+      point from the Cool!MS logo, stem then dot, on the same 24x48 box and the
+      same rhythm as the component, so the handover when Angular replaces this
+      element is a swap nobody can see.
+
+      Deliberately inline and tiny. A boot screen that waits on a stylesheet or
+      a font is a boot screen that shows nothing for exactly as long as it
+      matters most, and this whole thing is what stands between a hard reload
+      and a blank page.
+
+      Theme-aware without JavaScript: `prefers-color-scheme` is the only signal
+      available this early. The stored `coolms_theme` preference lives in
+      localStorage and cannot be read from CSS, so a user whose OS is light but
+      who chose dark sees the light shell for a few hundred milliseconds. That
+      is a smaller wrong than a script that blocks the paint to look it up.
+    -->
+    <style>
+        .cms-boot {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            color: #111827;
+        }
+        .cms-boot__mark { width: 34px; height: auto; overflow: visible; }
+        .cms-boot__ghost { fill: currentColor; opacity: .16; }
+        .cms-boot__stem,
+        .cms-boot__dot { fill: #f5a623; }
+        .cms-boot__stem { transform-origin: 12px 32px; animation: cms-boot-stem 1.4s ease-in-out infinite; }
+        .cms-boot__dot { transform-origin: 12px 42px; animation: cms-boot-dot 1.4s ease-in-out infinite; }
+        @keyframes cms-boot-stem {
+            0%, 100% { transform: scaleY(.15); opacity: .5; }
+            45%      { transform: scaleY(1);   opacity: 1; }
+            80%      { transform: scaleY(1);   opacity: 1; }
+        }
+        @keyframes cms-boot-dot {
+            0%, 40% { transform: scale(0); opacity: 0; }
+            60%     { transform: scale(1); opacity: 1; }
+            100%    { transform: scale(1); opacity: 1; }
+        }
+        @media (prefers-color-scheme: dark) {
+            .cms-boot { background: #0f1420; color: #e8edf4; }
+        }
+        /* Motion is a preference; a still mark still says "wait". */
+        @media (prefers-reduced-motion: reduce) {
+            .cms-boot__stem, .cms-boot__dot { animation: none; }
+            .cms-boot__stem { transform: none; }
+            .cms-boot__dot { transform: none; opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <coolms-admin-root>
+        <div class="cms-boot">
+            <svg class="cms-boot__mark" viewBox="0 0 24 48" aria-label="Loading" role="img">
+                <rect class="cms-boot__ghost" x="8" y="2" width="8" height="30" rx="4" />
+                <circle class="cms-boot__ghost" cx="12" cy="42" r="4" />
+                <rect class="cms-boot__stem" x="8" y="2" width="8" height="30" rx="4" />
+                <circle class="cms-boot__dot" cx="12" cy="42" r="4" />
+            </svg>
+        </div>
+    </coolms-admin-root>
+</body>
+</html>

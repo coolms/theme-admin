@@ -1,0 +1,1868 @@
+// ─── CoolMS Brand tokens ─────────────────────────────────────────────────────
+:root {
+    // Brand accent
+    --cms-accent:               #F5A623;
+    --cms-accent-hover:         #E09200;
+    --cms-accent-light:         #FEF7E6;
+    --cms-accent-text:          #7C4D00;
+    // Foreground (near-black) for text/icons on a SOLID --cms-accent fill
+    // (primary buttons, checked checkbox). Distinct from --cms-accent-text,
+    // which is the brown used on the soft --cms-accent-light background.
+    --cms-accent-fg:            #1a1a1a;
+
+    // Sidebar
+    --cms-sidebar-bg:           #1a2332;
+    --cms-sidebar-hover:        #243044;
+    --cms-sidebar-active:       #2d3f57;
+    --cms-sidebar-text:         #c9d3e0;
+    --cms-sidebar-text-muted:   #6b7f96;
+    --cms-sidebar-accent:       var(--cms-accent);
+
+    // Content
+    --cms-bg:                   #f8f9fa;
+    --cms-surface:              #ffffff;
+    // Muted surface for inset/zebra/placeholder fills (hover rows, empty cells,
+    // progress troughs). Defined here because ~7 `var(--cms-surface-muted)` usages
+    // referenced it while UNDEFINED — and drifted between #f3f4f6 and #f8f9fa; one
+    // definition makes them consistent (#1043).
+    --cms-surface-muted:        #f3f4f6;
+    // `--cms-canvas` was REFERENCED 13 times and never DEFINED (#2022) — the
+    // same fault this file already records for --cms-primary and
+    // --cms-surface-muted (#1043), and it had already produced drift: 10 sites
+    // fell back to #f9fafb and 3 to #f3f4f6, EIGHT and THREE of them inside
+    // messages.page.ts alone, so one page rendered the same recessed surface as
+    // two different greys.
+    //
+    // Aliased rather than given a value of its own, because "canvas" and
+    // "muted surface" are one role — a pale recessed fill behind hover rows,
+    // list headers and composer bars — and a second near-identical token is the
+    // duplication this arc keeps removing. The majority fallback (#f9fafb) is
+    // ~6/255 lighter, so those sites darken very slightly; the three that
+    // already used #f3f4f6 simply become correct.
+    //
+    // NOT to be confused with --cms-canvas-bg below, which is the image
+    // editor's deep navy work surface and is genuinely a different thing.
+    --cms-canvas:               var(--cms-surface-muted);
+
+    // ── Aliases for names the app already uses (#2023) ────────────────────
+    //
+    // An audit of every `var(--cms-*)` reference found **44 tokens referenced
+    // and never defined** against 63 defined. That is not a tidiness problem:
+    //
+    //  - With NO fallback the declaration is invalid at computed-value time.
+    //    Measured in the browser: `background: var(--cms-surface-hover)` computes
+    //    **transparent** (10 hover states that never appear) and
+    //    `border-color: var(--cms-border-color)` computes **currentColor**, so 9
+    //    borders draw in the TEXT colour.
+    //  - With a fallback, each site carries its own, and they drift — the
+    //    #1043 / #2022 fault repeated across dozens of names.
+    //
+    // Most of them are SYNONYMS coined independently for roles that already have
+    // a token: six different names for "muted / hover surface" alone. Aliasing
+    // fixes every call site at once without touching them, and keeps one value
+    // per role — the alternative, defining each with its own colour, would make
+    // the sprawl permanent.
+    //
+    // Only unambiguous cases are aliased here. Names whose fallbacks disagree
+    // about what they even mean (`--cms-surface-2` is a translucent overlay in
+    // some places and a solid fill in others) are left undefined deliberately,
+    // so they stay visible to the audit rather than being frozen wrong.
+    --cms-surface-hover:        var(--cms-surface-muted);
+    --cms-hover:                var(--cms-surface-muted);
+    --cms-hover-bg:             var(--cms-surface-muted);
+    --cms-bg-hover:             var(--cms-surface-muted);
+    --cms-surface-alt:          var(--cms-surface-muted);
+    --cms-bg-muted:             var(--cms-surface-muted);
+    --cms-bg-surface:           var(--cms-surface);
+    --cms-border-color:         var(--cms-border);
+    --cms-border-strong:        var(--cms-btn-border);
+    // Selected/active ROW fill. Referenced twice with no fallback (#2023's
+    // guard), so the domain-explorer tree's active entity and type rows were
+    // rendering with NO background at all — only the blue text and bold weight
+    // distinguished them. Aliased to --cms-info-subtle because that is what
+    // `.selected` already uses elsewhere in the admin, so selection now looks
+    // the same wherever it appears, and it pairs with the `color:
+    // var(--cms-primary)` those rules already set.
+    --cms-active-bg:            var(--cms-info-subtle);
+
+    // Not a colour, same defect: 27 references, THREE different stacks.
+    --cms-font-mono:            ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --cms-border:               #e5e7eb;
+    --cms-border-light:         #f0f2f5;
+
+    // Image-editor surfaces. Distinct from --cms-surface / --cms-bg
+    // because the image canvas sits against a deliberately darker
+    // backdrop (so the image edges read clearly) and is overlaid by
+    // a fixed-darkness scrim during loading / saving / error states.
+    // Both flip with future light/dark theme switching by replacing
+    // these values, no component edits needed.
+    //
+    // --cms-canvas-bg: matches the sidebar's deep navy so the editor
+    //   reads as a "tool surface" and stays clearly distinct from the
+    //   typical dark image content (#000 ish photos no longer blend
+    //   into the backdrop the way they did against #2a2a2a).
+    --cms-canvas-bg:            var(--cms-sidebar-bg);
+    --cms-overlay-scrim:        rgba(0, 0, 0, .55);
+    // Checkered transparency pattern. Painted behind the canvas so
+    // any alpha pixels in PNG / WebP source images reveal it. Two
+    // tints of subtle white-on-canvas-bg keep the pattern legible
+    // without distracting from image content.
+    --cms-checker-light:        rgba(255, 255, 255, .07);
+    --cms-checker-dark:         rgba(255, 255, 255, .03);
+
+    // Text
+    --cms-text:                 #111827;
+    // The rung that had no name (#2028). `#374151` is used as a label/body
+    // weight in 18 places — `.chip--channel`, `.ffp-row__label`,
+    // `.crumb-badge--embeddable` as well as `.btn-secondary` — and the ONLY
+    // token holding it was `--cms-btn-text`. Pointing a chip label at a BUTTON
+    // token is the coupling error #2013 warned about, so the value gets its own
+    // name and the button token becomes an alias of it: one value, two names,
+    // each honest about what it means.
+    --cms-text-body:            #374151;
+    --cms-text-secondary:       #6b7280;
+    --cms-text-muted:           #9ca3af;
+    // Text ON a coloured fill — the single largest hard-coded value in the app
+    // (#2025): `color: #fff` appears 61 times, always on a solid success /
+    // danger / primary background. It had no token, which is why it stayed a
+    // literal through four drain passes: there was nothing to move it to.
+    // NOT --cms-surface (that is a surface, not a text colour) and NOT
+    // --cms-accent-fg (near-black, for the AMBER fill specifically).
+    --cms-text-inverse:         #ffffff;
+    // Foreground on the app CHROME — topbar and sidebar — as distinct from
+    // --cms-text-inverse, which is foreground on a filled swatch (#2031).
+    //
+    // The two looked like one token until dark mode proved otherwise. A swatch
+    // fill INVERTS with the theme, so text on it must invert too; the chrome is
+    // dark in EVERY theme, so text on it must not. Mapping `.text-white` at the
+    // inverse token turned the CoolMS wordmark and the breadcrumb into dark
+    // text on the dark topbar — 1.05:1, invisible, which is how this was found.
+    --cms-on-chrome:            #ffffff;
+
+    // Status colors. Each has: base (solid — dots, borders), -light (soft
+    // badge background), -text (dark on-light-bg text, mirrors --cms-accent-text).
+    --cms-success:              #16a34a;
+    --cms-success-light:        #f0fdf4;
+    --cms-success-text:         #166534;
+    --cms-danger:               #dc2626;
+    --cms-danger-light:         #fef2f2;
+    --cms-danger-text:          #991b1b;
+    // Soft red border for OUTLINE-danger buttons (resting state, before the
+    // hover swaps to the solid --cms-danger border). Shared by .cms-btn-danger
+    // and the page-toolbar danger button.
+    --cms-danger-border:        #fca5a5;
+    --cms-warning:              #d97706;
+    --cms-warning-light:        #fffbeb;
+    --cms-warning-text:         #92400e;
+    --cms-info:                 #2563eb;
+    --cms-info-light:           #eff6ff;
+    --cms-info-text:            #1e40af;
+
+    // ── Status, SUBTLE tier (#2018) ───────────────────────────────────────
+    //
+    // A SECOND tint scale, added because the admin had already grown one
+    // without saying so. `-light` above is the pale wash a full-width alert or
+    // panel wants; badges and chips had independently settled on something
+    // stronger — `#fee2e2` rather than `#fef2f2`, `#dcfce7` rather than
+    // `#f0fdf4` — in ~55 places across the app.
+    //
+    // The distinction is REAL, not accidental: a 4px-tall chip needs more tint
+    // than a full-width band to read as coloured at all. So the answer is to
+    // name the second scale rather than flatten the two, which would have made
+    // every badge in the admin paler to satisfy a token.
+    //
+    // Values are exactly what those components already used, so adopting them
+    // changes nothing on screen — the whole point is that they become themeable,
+    // not that they change.
+    --cms-danger-subtle:        #fee2e2;
+    --cms-danger-subtle-border: #fecaca;
+    --cms-success-subtle:       #dcfce7;
+    // Completes the -subtle-border rung, which danger and info already had and
+    // success did not — noticed because a routing-inspector banner needed one
+    // and the alternative was referencing a token nothing defines (#2043).
+    --cms-success-subtle-border: #86efac;
+    --cms-warning-subtle:       #fef3c7;
+    --cms-info-subtle:          #dbeafe;
+    // Added with the bridge completion (#2030): `.alert-info` needs a border to
+    // map, and only danger had one. Same one-step-darker relationship as
+    // #fee2e2 → #fecaca, in the same Tailwind rung the rest of this scale uses.
+    --cms-info-subtle-border:   #bfdbfe;
+
+    // ── Meta: KIND and OWNERSHIP, not status (#2021) ──────────────────────
+    //
+    // The admin had grown a purple family with no palette entry, and it is not
+    // a sixth status — it answers a different question. success/danger/warning/
+    // info say HOW something is doing; this says WHAT KIND of thing it is or
+    // WHOSE it is: `.chip--you`, `.chip--shared`, `.chip--group`,
+    // `.badge--type`, `.domain-badge--runtime` (derived rather than declared).
+    // Mixing it into the status scale would have made "shared" look like a
+    // warning, which is why it gets its own name rather than the nearest
+    // existing one.
+    //
+    // TWO text shades because the components genuinely use both: `--cms-meta`
+    // (mid purple) as text on subtle in some chips and as an icon colour, and
+    // the darker `-text` in others. Values are exactly what was already there,
+    // so nothing moves on screen; if the pair later proves to be one shade too
+    // many, collapsing them is a palette edit rather than a sweep.
+    // A code block is chrome, not a surface: dark in EVERY theme, like the
+    // topbar. Named so it can be re-pointed, and deliberately NOT overridden in
+    // the dark block — the same reasoning as --cms-on-chrome (#2032).
+    --cms-code-bg:              #1e1e1e;
+    --cms-code-text:            #d4d4d4;
+
+    // PAPER — the printed page inside the document editor, and the mirror image
+    // of the chrome tokens above: light in EVERY theme, because a sheet of A4
+    // does not turn navy when the operator prefers dark (#2036).
+    //
+    // The document editor had painted the sheet with --cms-surface and its own
+    // comment said why: "the sheet is --cms-surface (white)". True while there
+    // was one theme. In dark mode the paper went navy, the light-on-dark body
+    // text stayed light, and the page vanished into the workspace — the
+    // document was not readable at all.
+    //
+    // --cms-paper-text exists for the same reason: text on paper must stay dark
+    // when --cms-text has inverted.
+    --cms-paper:                #ffffff;
+    --cms-paper-text:           #111827;
+
+    // Tells the BROWSER which way this theme runs, which is the only way to
+    // reach the parts of the UI no stylesheet owns (#2038): scrollbars, the
+    // popup a native <select> opens, date pickers, and any control that sets
+    // no background of its own and so falls through to `background: field`.
+    // The email composer's recipient input was a white block in dark mode for
+    // exactly that reason — nothing was painting it, so the UA was.
+    color-scheme: light;
+
+    // The workspace the sheet sits ON. Kept at its exact previous value so the
+    // page edge reads as paper rather than as a rendering artefact, which is
+    // the distinction the editor's own comment was protecting.
+    --cms-desk:                 #e4e6ea;
+
+    // File-TYPE identity (see .vfs-icon--*). Legible on both grounds, so these
+    // are not re-pointed for dark either.
+    --cms-filetype-directory:   #f59e0b;
+    --cms-filetype-resource:    #6366f1;
+    --cms-filetype-package:     #10b981;
+
+    --cms-meta:                 #6d28d9;
+    --cms-meta-subtle:          #ede9fe;
+    --cms-meta-text:            #5b21b6;
+
+    // "Primary action" blue — the de-facto accent these surfaces use (progress
+    // bars, active tabs, selection highlights, drag targets, links). Defined here
+    // because ~32 `var(--cms-primary)` usages across the app referenced it while it
+    // was UNDEFINED: each fell back to a slightly different blue (#2563eb / #1d6fd0
+    // / #0d6efd / #3b82f6 …) — and a few had NO fallback, so they rendered the
+    // initial colour outright. One definition makes them all consistent. NOTE:
+    // intentionally distinct from the AMBER brand --cms-accent — kept blue to
+    // preserve the current look (#1043); switching to the accent would be a
+    // deliberate rebrand, not this fix.
+    --cms-primary:              #2563eb;
+    --cms-primary-hover:        #1d4ed8;
+
+    // Neutral button
+    // The input surface, named at last (#2031). Two components had already
+    // invented `var(--cms-input-bg, #fff)` and the kit itself wrote
+    // `background: white` three times, so the concept existed in three places
+    // and the token in none. Dark mode is what forced it: a field that cannot
+    // be tuned separately from the card it sits on has no affordance left.
+    --cms-input-bg:             #ffffff;
+    --cms-btn-bg:               #ffffff;
+    --cms-btn-border:           #d1d5db;
+    // Aliased to the general body weight (#2028) — same value it always held,
+    // now stated once. A button label IS body text; it was only spelled
+    // separately because this token happened to be defined first.
+    --cms-btn-text:             var(--cms-text-body);
+    --cms-btn-hover-bg:         #f3f4f6;
+    --cms-btn-hover-border:     #9ca3af;
+
+    // Spacing / radius / shadow
+    --cms-radius:               6px;
+    --cms-radius-sm:            4px;
+    --cms-radius-lg:            10px;
+    --cms-shadow-sm:            0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --cms-shadow-md:            0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+    --cms-shadow-lg:            0 8px 24px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+
+    // Layout spacing — single source of truth for content area insets
+    --cms-content-padding:      20px;   /* standard content area padding             */
+    --cms-panel-padding:        12px;   /* compact panel / sidebar padding           */
+
+    // Row heights — one standard across all list / grid / tree views
+    --cms-row-height:           36px;   /* DataGrid rows, VFS list rows              */
+    --cms-row-height-sm:        28px;   /* sidebar tree items                        */
+    --cms-row-height-lg:        48px;   /* media grid cards label area               */
+}
+
+// ═══ Dark mode (#2031) ═══════════════════════════════════════════════════════
+//
+// A pure TOKEN override — no new rules, no component touched. That it can be
+// written this way is the whole return on #2014–#2030: every colour the admin
+// paints has to arrive through one of these names, so re-pointing the names
+// re-themes the app. Anything that does NOT flip is, by definition, a colour
+// that escaped the palette, which makes this the sharpest probe for the
+// remaining hard-coded stock as well as a feature.
+//
+// Only BASE tokens appear here. The aliases (--cms-canvas, --cms-hover,
+// --cms-surface-alt, --cms-bg-muted, --cms-border-color …) are defined as
+// var() chains onto these, so they follow without being restated — the reason
+// #2022 named them as aliases instead of copying values.
+//
+// The selector carries one class of specificity more than the `:root` above, so
+// it wins wherever it applies. That is also the mechanism the user asked about
+// for per-user colours: theme default (`:root`) → system settings → user prefs
+// is nothing more than three rules of increasing specificity over the same
+// names. Setting `data-theme` is left to whatever chooses the theme; this block
+// only says what dark MEANS.
+:root[data-theme='dark'] {
+    // See the note on the light value: this is what makes scrollbars, native
+    // select popups and unstyled controls follow the theme too.
+    color-scheme: dark;
+
+    // Brand amber is deliberately unchanged — a brand that shifts with the mode
+    // is not a brand. Its SUPPORTING tones do change, because a pale wash and a
+    // dark-on-amber label both stop working on a dark ground.
+    --cms-accent-light:         #3a2f14;
+    --cms-accent-text:          #f5c173;
+
+    // The sidebar is already dark in light mode, so it needs to step DOWN to
+    // stay distinct from cards that have now risen to meet it.
+    --cms-sidebar-bg:           #131c28;
+    --cms-sidebar-hover:        #1f2b3d;
+    --cms-sidebar-active:       #2d3f57;
+
+    // Surfaces climb as they come forward: page < card < inset. In light mode
+    // that order runs the other way, which is why this is a re-ordering rather
+    // than an inversion of each value.
+    --cms-bg:                   #0f1722;
+    --cms-surface:              #1a2332;
+    --cms-surface-muted:        #243044;
+    --cms-border:               #2d3f57;
+    --cms-border-light:         #212d3f;
+
+    --cms-text:                 #e8edf4;
+    --cms-text-body:            #c9d3e0;
+    --cms-text-secondary:       #9aa8bd;
+    --cms-text-muted:           #6b7f96;
+    // "Inverse" means "reads against a filled swatch", not "white". On a dark
+    // theme the fills are light, so this inverts with them.
+    --cms-text-inverse:         #0f1722;
+
+    // A step BELOW the card, so a field reads as recessed. In light mode both
+    // are #ffffff and the border does that job; on dark, equal fills would make
+    // the input disappear into the card.
+    --cms-input-bg:             #131c28;
+    // The desk goes dark; the paper on it does NOT (see --cms-paper). A shade
+    // below --cms-bg so a white page edge still reads against it.
+    --cms-desk:                 #0b111a;
+    --cms-btn-bg:               #243044;
+    --cms-btn-border:           #3a4a63;
+    --cms-btn-hover-bg:         #2d3f57;
+    --cms-btn-hover-border:     #55688a;
+
+    // Status hues brighten (a mid-weight red disappears against navy) while the
+    // -light/-subtle tiers invert into dark tints and the -text tiers become
+    // the LIGHT member of each family rather than the dark one.
+    --cms-success:              #22c55e;
+    --cms-success-light:        #0f2a18;
+    --cms-success-text:         #86efac;
+    --cms-success-subtle:       #14331f;
+
+    --cms-danger:               #ef4444;
+    --cms-danger-light:         #2c1416;
+    --cms-danger-text:          #fca5a5;
+    --cms-danger-border:        #7f3a40;
+    --cms-danger-subtle:        #3a1a1d;
+    --cms-danger-subtle-border: #5c2a2f;
+
+    --cms-warning:              #f59e0b;
+    --cms-warning-light:        #2e2211;
+    --cms-warning-text:         #fcd34d;
+    --cms-warning-subtle:       #33270f;
+
+    --cms-info:                 #3b82f6;
+    --cms-info-light:           #122036;
+    --cms-info-text:            #93c5fd;
+    --cms-info-subtle:          #16263f;
+    --cms-info-subtle-border:   #24405f;
+
+    --cms-meta:                 #a78bfa;
+    --cms-meta-subtle:          #251d3a;
+    --cms-meta-text:            #c4b5fd;
+
+    --cms-primary:              #3b82f6;
+    --cms-primary-hover:        #60a5fa;
+
+    // Shadows carry no colour of their own, but a shadow tuned for white is
+    // invisible on navy; these are the same geometry at usable opacity.
+    --cms-shadow-sm:            0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.30);
+    --cms-shadow-md:            0 4px 12px rgba(0,0,0,.50), 0 2px 4px rgba(0,0,0,.35);
+    --cms-shadow-lg:            0 8px 24px rgba(0,0,0,.55), 0 4px 8px rgba(0,0,0,.40);
+    --cms-overlay-scrim:        rgba(0, 0, 0, .70);
+}
+
+// ─── Typography ──────────────────────────────────────────────────────────────
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--cms-text);
+    background: var(--cms-bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+.cms-h1 { font-size: 1.5rem;   font-weight: 600; color: var(--cms-text); }
+.cms-h2 { font-size: 1.25rem;  font-weight: 600; color: var(--cms-text); }
+.cms-h3 { font-size: 1.125rem; font-weight: 600; color: var(--cms-text); }
+.cms-h4 { font-size: 1rem;     font-weight: 600; color: var(--cms-text); }
+
+.cms-page-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--cms-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+.cms-sidebar {
+    background: var(--cms-sidebar-bg);
+    width: 220px;
+    min-width: 220px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width .2s ease;
+
+    &.minimized { width: 52px; min-width: 52px; }
+}
+
+.cms-sidebar-header {
+    padding: 16px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cms-sidebar-logo { width: 24px; height: 24px; flex-shrink: 0; }
+
+.cms-sidebar-brand {
+    font-size: .875rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -.01em;
+
+    span { color: var(--cms-accent); }
+}
+
+.cms-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    color: var(--cms-sidebar-text);
+    font-size: .8125rem;
+    font-weight: 450;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background .1s, color .1s;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+
+    &:hover {
+        background: var(--cms-sidebar-hover);
+        color: white;
+    }
+
+    &.active {
+        background: var(--cms-sidebar-active);
+        color: white;
+        box-shadow: inset 3px 0 0 var(--cms-accent);
+    }
+
+    .bi {
+        font-size: .9375rem;
+        flex-shrink: 0;
+        width: 16px;
+        text-align: center;
+    }
+}
+
+.cms-nav-separator {
+    padding: 14px 14px 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255,255,255,.08);
+    }
+}
+
+.cms-nav-separator-label {
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--cms-sidebar-text-muted);
+    white-space: nowrap;
+}
+
+// ─── Buttons ─────────────────────────────────────────────────────────────────
+.cms-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--cms-btn-border);
+    border-radius: var(--cms-radius);
+    background: var(--cms-btn-bg);
+    color: var(--cms-btn-text);
+    font-size: .8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+    cursor: pointer;
+    white-space: nowrap;
+    // An <a> styled as a button must not carry the link underline.
+    // Bootstrap's `.btn` resets this; `.cms-btn` did not, so every
+    // anchor-as-button rendered underlined (the designer's "Back to
+    // dashboard", plus the document + docx viewers' download links).
+    text-decoration: none;
+    transition: background .1s, border-color .1s, color .1s, box-shadow .1s;
+    user-select: none;
+
+    &:hover:not(:disabled) {
+        background: var(--cms-btn-hover-bg);
+        border-color: var(--cms-btn-hover-border);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--cms-accent);
+        outline-offset: 2px;
+    }
+
+    &:disabled { opacity: .45; cursor: not-allowed; }
+
+    .bi { font-size: .875rem; line-height: 1; }
+}
+
+// ── Native form controls: brand accent by DEFAULT ─────────────────────────
+//
+// The reported defect was "some checkboxes are orange, others are browser
+// blue". The cause was not inconsistent markup — it was that NOTHING styled
+// them: a bare `<input type="checkbox">` renders in the browser's blue, and
+// Bootstrap's `.form-check-input` renders in Bootstrap's. Every control that
+// looked right had re-implemented the colour locally, so "correct" was
+// whatever each component remembered to do.
+//
+// These two rules are the base-theme answer, and they fix the whole class at
+// once — 59 unstyled checkboxes and radios across the admin, plus every one
+// written from here on, with no component edits. A theme extending this one
+// changes `--cms-accent` and inherits the result.
+//
+// TWO rules because they cover different mechanisms and neither covers both:
+// `accent-color` tints the NATIVE control, while Bootstrap's `.form-check-input`
+// sets `appearance: none` and paints its own box — so it ignores `accent-color`
+// entirely and needs its checked background overridden by hand.
+// `accent-color` still covers the one control the kit does not repaint.
+input[type="range"] {
+    accent-color: var(--cms-accent);
+}
+
+// ── Checkbox + radio: the KIT's control, not the browser's ────────────────
+//
+// `accent-color` (the #1731 fix) made every checkbox the brand colour, which
+// closed the reported defect — but it only TINTS the browser's own control, so
+// the size and shape stayed whatever the OS drew, around 13px and visually thin
+// beside the rest of the admin. Repainting them is what makes them the kit's:
+// `appearance: none` hands us the box, and everything below is expressed in
+// TOKENS so a theme (or a dark mode) changes them by changing the palette.
+//
+// The checkmark is a `mask-image`, not a `background-image` SVG. A data-URI SVG
+// cannot read a CSS custom property, so its colour would have to be hard-coded
+// — the exact thing that stops a token switch from working. Masking paints the
+// glyph with `background-color`, which CAN be a token.
+$cms-control-size: 18px;
+
+// Mask SHAPES, deliberately SCSS variables rather than CSS custom properties:
+// only the colour needs to be themeable (it comes from `background-color`), and
+// putting an asset URL in the `--cms-*` namespace would list it as a design
+// token on the UI-kit page beside real palette entries. `stroke="black"` is not
+// a colour choice — a mask reads ALPHA only, so it just means fully opaque.
+$cms-tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.5 4.5 6.5 11.5 3 8' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+$cms-dash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8h9' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+
+input[type="checkbox"],
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: $cms-control-size;
+    height: $cms-control-size;
+    margin: 0;
+    flex-shrink: 0;
+    vertical-align: -3px;
+    border: 1.5px solid var(--cms-btn-border);
+    background: var(--cms-surface);
+    cursor: pointer;
+    transition: background .12s, border-color .12s, box-shadow .12s;
+
+    &:hover:not(:disabled) {
+        border-color: var(--cms-accent);
+    }
+
+    // One focus ring for both, in the brand rather than the browser's blue.
+    &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--cms-accent-light);
+        border-color: var(--cms-accent);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: .55;
+        background: var(--cms-surface-muted);
+    }
+}
+
+input[type="checkbox"] {
+    border-radius: 4px;
+
+    &:checked {
+        background-color: var(--cms-accent);
+        border-color: var(--cms-accent);
+        // The tick, painted in the on-accent foreground token.
+        mask-image: none;
+        background-image: none;
+    }
+
+    &:checked::after {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-color: var(--cms-accent-fg);
+        -webkit-mask: #{$cms-tick} center / 12px 12px no-repeat;
+        mask: #{$cms-tick} center / 12px 12px no-repeat;
+    }
+
+    // Tri-state: a dash rather than a tick, same masking mechanism.
+    &:indeterminate {
+        background-color: var(--cms-accent);
+        border-color: var(--cms-accent);
+    }
+
+    &:indeterminate::after {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-color: var(--cms-accent-fg);
+        -webkit-mask: #{$cms-dash} center / 10px 10px no-repeat;
+        mask: #{$cms-dash} center / 10px 10px no-repeat;
+    }
+}
+
+input[type="radio"] {
+    border-radius: 50%;
+
+    // Filled ring with a centre dot, both from tokens — a radial-gradient keeps
+    // it to one property and needs no pseudo-element.
+    &:checked {
+        border-color: var(--cms-accent);
+        background: radial-gradient(
+            circle at center,
+            var(--cms-accent-fg) 0 3.5px,
+            var(--cms-accent) 3.5px
+        );
+    }
+}
+
+// Bootstrap's `.form-check-input` already sets `appearance: none` and paints
+// its own box, so it ignores `accent-color` — it needs the brand applied by
+// hand. Kept in step with the controls above rather than merged into them:
+// Bootstrap owns this class's sizing and margins inside `.form-check` layouts,
+// and taking those over would move every checkbox in a Bootstrap form row.
+.form-check-input {
+    &:checked {
+        background-color: var(--cms-accent);
+        border-color: var(--cms-accent);
+    }
+
+    &:focus {
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 3px var(--cms-accent-light);
+    }
+}
+
+// ── Toggle / switch ───────────────────────────────────────────────────────
+//
+// PROMOTED FROM `datagrid.component.ts` (#2011). It was a genuine kit control
+// living in one component's SCOPED styles, so every other page that wanted a
+// switch had to re-implement or do without — and `cms-toggle` was the only
+// toggle in the admin because of it. Angular scopes component styles by
+// default; a shared control declared there is shared with nobody.
+//
+// Markup: `<label class="cms-toggle"><input type="checkbox"><span
+// class="cms-toggle__slider"></span></label>`.
+.cms-toggle {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+    vertical-align: middle;
+
+    // The input stays in the DOM (it carries state, focus and a11y) but is
+    // invisible; the slider is what the eye sees. `appearance` is reset here
+    // because the rules above would otherwise paint it as a checkbox.
+    input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        margin: 0;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    &__slider {
+        position: absolute;
+        inset: 0;
+        background: var(--cms-btn-border);
+        border-radius: 20px;
+        transition: background .15s;
+
+        &::before {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 2px;
+            top: 2px;
+            background: var(--cms-surface);
+            border-radius: 50%;
+            box-shadow: var(--cms-shadow-sm);
+            transition: transform .15s;
+        }
+    }
+
+    input:checked + &__slider {
+        background: var(--cms-accent);
+    }
+
+    input:checked + &__slider::before {
+        transform: translateX(16px);
+    }
+
+    input:focus-visible + &__slider {
+        box-shadow: 0 0 0 3px var(--cms-accent-light);
+    }
+
+    input:disabled + &__slider {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+}
+
+.cms-btn-primary {
+    background: var(--cms-accent);
+    border-color: var(--cms-accent);
+    color: var(--cms-accent-fg);
+
+    &:hover:not(:disabled) {
+        background: var(--cms-accent-hover);
+        border-color: var(--cms-accent-hover);
+        color: var(--cms-accent-fg);
+    }
+}
+
+.cms-btn-danger {
+    color: var(--cms-danger);
+    border-color: var(--cms-danger-border);
+
+    &:hover:not(:disabled) {
+        background: var(--cms-danger-light);
+        border-color: var(--cms-danger);
+    }
+}
+
+.cms-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--cms-text-secondary);
+
+    &:hover:not(:disabled) {
+        background: var(--cms-border-light);
+        border-color: transparent;
+        color: var(--cms-text);
+    }
+}
+
+// The missing variant that kept 15 call sites on Bootstrap's `btn-link` — and
+// therefore on Bootstrap's blue (#1732). Reads as a link, behaves as a button:
+// no border or fill, accent-coloured, underline on hover only.
+//
+// Distinct from `.cms-btn-ghost`, which is a BUTTON that recedes until hovered.
+// This one is a LINK that happens to be actionable, so it takes the accent
+// colour rather than muted body text.
+.cms-btn-link {
+    background: transparent;
+    border-color: transparent;
+    color: var(--cms-accent-text);
+    padding-left: 0;
+    padding-right: 0;
+
+    &:hover:not(:disabled) {
+        background: transparent;
+        border-color: transparent;
+        color: var(--cms-accent-hover);
+        text-decoration: underline;
+    }
+}
+
+.cms-btn-active {
+    background: var(--cms-accent-light);
+    border-color: var(--cms-accent);
+    color: var(--cms-accent-text);
+}
+
+.cms-btn-sm { padding: 3px 8px; font-size: .75rem; }
+.cms-btn-lg { padding: 8px 18px; font-size: .9375rem; }
+// NOTE: .cms-input-sm / .cms-select-sm are declared AFTER .cms-input / .cms-select
+// (below, in the form-controls section) — see the comment there. .cms-btn-sm/-lg
+// can live here because .cms-btn is declared above them.
+
+// ─── Form controls ───────────────────────────────────────────────────────────
+
+.cms-label {
+    display: block;
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--cms-text-secondary);
+    margin-bottom: 4px;
+}
+
+.cms-field-hint {
+    font-size: .75rem;
+    color: var(--cms-text-muted);
+    margin-top: 4px;
+}
+
+.cms-input {
+    border: 1px solid var(--cms-btn-border);
+    border-radius: var(--cms-radius);
+    padding: 5px 10px;
+    font-size: .8125rem;
+    color: var(--cms-text);
+    background: var(--cms-input-bg);
+    transition: border-color .1s, box-shadow .1s;
+    width: 100%;
+
+    &::placeholder { color: var(--cms-text-muted); }
+
+    &:focus {
+        outline: none;
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+    }
+}
+
+.cms-select {
+    border: 1px solid var(--cms-btn-border);
+    border-radius: var(--cms-radius);
+    padding: 5px 10px;
+    font-size: .8125rem;
+    color: var(--cms-text);
+    background: var(--cms-input-bg);
+    transition: border-color .1s, box-shadow .1s;
+    width: 100%;
+    cursor: pointer;
+
+    &:focus {
+        outline: none;
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+    }
+}
+
+// ─── Compact size modifier for the form controls ─────────────────────────────
+// ⚠️ These MUST stay below `.cms-input` / `.cms-select`. Both are single-class
+// selectors, so specificity ties and SOURCE ORDER decides — and `.cms-input-sm`
+// used to sit above `.cms-input`, which meant the base won and the modifier had
+// never done anything (#2125). Measured on the running app before the move: an
+// element with `cms-input cms-input-sm` computed to 13px / 5px 10px, identical
+// to a plain `.cms-input`, across ~35 usages. `.cms-select-sm` was simply
+// missing, so the compact selects that asked for it rendered full-size too.
+.cms-input-sm,
+.cms-select-sm { padding: 3px 8px; font-size: .75rem; }
+
+// ─── Bootstrap form-control normalisation ─────────────────────────────────────
+// Bootstrap ships .form-control with padding:.375rem .75rem and font-size:1rem
+// which makes its inputs ~36–38px tall — inconsistent with the CMS compact
+// design (.cms-input is 28–29px: padding:5px 10px, font-size:.8125rem).
+// This block overrides Bootstrap globally so every DynamicForm field, profile
+// settings tab, and any future form-control element matches the CMS style
+// without touching individual components.
+.form-control,
+.form-select {
+    padding: 5px 10px;
+    font-size: .8125rem;
+    border-radius: var(--cms-radius);
+    border-color: var(--cms-btn-border);
+    color: var(--cms-text);
+    line-height: 1.5;
+
+    &::placeholder { color: var(--cms-text-muted); }
+
+    &:focus {
+        outline: none;
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+    }
+}
+
+// Keep the small variant proportionally tighter
+.form-control-sm,
+.form-select-sm {
+    padding: 3px 8px;
+    font-size: .75rem;
+}
+
+// ─── Cards and panels ────────────────────────────────────────────────────────
+.cms-card {
+    background: var(--cms-surface);
+    border: 1px solid var(--cms-border);
+    border-radius: var(--cms-radius-lg);
+    box-shadow: var(--cms-shadow-sm);
+}
+
+.cms-panel {
+    background: var(--cms-surface);
+    border-left: 1px solid var(--cms-border);
+    height: 100%;
+    overflow-y: auto;
+}
+
+.cms-section-title {
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--cms-text-muted);
+    padding: 12px 12px 4px;
+}
+
+// ─── Dialogs ─────────────────────────────────────────────────────────────────
+.cdk-overlay-container .cms-dialog {
+    background: var(--cms-surface);
+    border-radius: var(--cms-radius-lg);
+    box-shadow: var(--cms-shadow-lg);
+    min-width: 360px;
+    max-width: 540px;
+}
+
+.cms-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cms-text);
+    border-bottom: 1px solid var(--cms-border);
+}
+
+.cms-dialog-close {
+    flex-shrink: 0;
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--cms-text-muted);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    padding: 0;
+    transition: background .12s, color .12s;
+    &:hover { background: var(--cms-border-light); color: var(--cms-text); }
+}
+
+.cms-dialog-body {
+    padding: 16px 20px;
+}
+
+.cms-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--cms-border);
+}
+
+// ─── Toolbar breadcrumb ──────────────────────────────────────────────────────
+.toolbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: .8125rem;
+    color: var(--cms-text-secondary);
+    flex-shrink: 0;
+}
+
+.crumb {
+    padding: 2px 6px;
+    border: none;
+    background: none;
+    color: var(--cms-text-secondary);
+    border-radius: var(--cms-radius-sm);
+    cursor: pointer;
+    font-size: .8125rem;
+    line-height: 1.5;
+    transition: background .1s, color .1s;
+
+    &:hover {
+        background: var(--cms-border-light);
+        color: var(--cms-text);
+    }
+
+    &--active {
+        color: var(--cms-text);
+        font-weight: 500;
+        cursor: default;
+        &:hover { background: none; }
+    }
+}
+
+.crumb-sep {
+    color: var(--cms-text-muted);
+    font-size: .75rem;
+    user-select: none;
+    line-height: 1;
+}
+
+// ─── CDK overlay ─────────────────────────────────────────────────────────────
+
+.cdk-overlay-dark-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.cdk-overlay-container {
+    z-index: 1000;
+}
+
+// Center dialogs and style the panel
+.cdk-global-overlay-wrapper {
+    align-items: center;
+    justify-content: center;
+}
+
+cdk-dialog-container {
+    background: var(--cms-surface);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    outline: none;
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+// ─── Form fields ─────────────────────────────────────────────────────────────
+
+.form-group {
+    margin-bottom: 16px;
+
+    label {
+        display: block;
+        font-size: .875rem;
+        font-weight: 500;
+        // Was #374151 — the literal value of --cms-text-body, which is what
+        // #2028 named this weight for. It survived because the colour ratchet
+        // skips styles.scss wholesale, so dark mode found it instead: the one
+        // label in an otherwise-clean dialog, at 1.53:1 (#2032).
+        color: var(--cms-text-body);
+        margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 5px 10px;
+        border: 1px solid var(--cms-btn-border);
+        border-radius: var(--cms-radius);
+        font-size: .8125rem;
+        color: var(--cms-text);
+        // These set no background at all, so they took the dialog's. Harmless
+        // while every surface was white; on dark it makes a field and the card
+        // it sits on the same colour. Identical to today in light mode.
+        background: var(--cms-input-bg);
+        box-sizing: border-box;
+        transition: border-color .15s;
+
+        &:focus {
+            outline: none;
+            border-color: var(--cms-accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+        }
+
+        &.invalid { border-color: var(--cms-danger); }
+    }
+
+    .field-error {
+        font-size: .8rem;
+        // --cms-danger-text, not --cms-danger: this is danger TEXT on a light
+        // ground, the same call #2028 made for ten other error labels. Not
+        // value-preserving — #ef4444 → #991b1b, so field errors darken in light
+        // mode and match every other error message in the admin.
+        color: var(--cms-danger-text);
+        margin-top: 4px;
+    }
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--cms-border);
+}
+
+// ─── Dynamic form layout ──────────────────────────────────────────────────────
+
+.form-group-section + .form-group-section {
+    margin-top: 1.5rem;
+}
+
+.form-group-section:not(.compact) .form-group-title {
+    margin-bottom: 1rem;
+}
+
+.dynamic-form-loading {
+    color: var(--cms-text-secondary);
+    padding: 24px 0;
+    text-align: center;
+    font-size: .9rem;
+}
+
+.field-not-supported {
+    font-size: .8rem;
+    color: var(--cms-text-muted);
+    font-style: italic;
+    padding: 4px 0;
+}
+
+// ─── Resizable panels ─────────────────────────────────────────────────────────
+.cms-resize-handle {
+    flex-shrink: 0;
+    background: var(--cms-border);
+    position: relative;
+    z-index: 1;
+    transition: background .15s;
+
+    &:hover, &:active { background: var(--cms-accent); }
+
+    &--vertical {
+        width: 4px;
+        cursor: col-resize;
+        margin: 0 -2px; // overlap slightly for easier grabbing
+    }
+
+    &--horizontal {
+        height: 4px;
+        cursor: row-resize;
+        margin: -2px 0;
+    }
+}
+
+.cms-panel-sidebar {
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width .15s ease;
+    border-right: 1px solid var(--cms-border);
+
+    &.collapsed { width: 0 !important; }
+}
+
+// Applied to <body> during a drag-resize — kills transition lag + text selection
+body.cms-resizing {
+    user-select: none;
+    cursor: col-resize;
+
+    .cms-panel-sidebar { transition: none; }
+}
+
+// ─── Custom select ────────────────────────────────────────────────────────────
+.cms-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+}
+
+.cms-select-native {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--cms-btn-border);
+    border-radius: var(--cms-radius);
+    padding: 5px 28px 5px 10px;
+    font-size: .8125rem;
+    color: var(--cms-text);
+    background: var(--cms-input-bg);
+    cursor: pointer;
+    width: 100%;
+    line-height: 1.5;
+    transition: border-color .1s;
+
+    &:focus {
+        outline: none;
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+    }
+}
+
+.cms-select-arrow {
+    position: absolute;
+    right: 8px;
+    pointer-events: none;
+    color: var(--cms-text-secondary);
+    font-size: .6875rem;
+    display: flex;
+    align-items: center;
+}
+
+// ─── Clearable select ─────────────────────────────────────────────────────────
+.cms-select-clearable {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    // When a clear button is present, push select text away from it
+    .cms-select-native { padding-right: 44px; }
+}
+
+.cms-select-clear {
+    position: absolute;
+    right: 24px; // leave room for chevron arrow
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cms-text-muted);
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color .1s, background .1s;
+    line-height: 1;
+
+    &:hover {
+        color: var(--cms-text);
+        background: var(--cms-border-light);
+    }
+
+    .bi { font-size: .625rem; }
+}
+
+// ─── Custom checkbox ──────────────────────────────────────────────────────────
+.cms-checkbox {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--cms-btn-border);
+    border-radius: 3px;
+    background: var(--cms-input-bg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .1s, border-color .1s;
+    user-select: none;
+
+    &.cms-checkbox--checked {
+        background: var(--cms-accent);
+        border-color: var(--cms-accent);
+        color: var(--cms-accent-fg);
+    }
+}
+
+// ─── Data tables ─────────────────────────────────────────────────────────────
+.cms-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .8125rem;
+
+    thead tr {
+        border-bottom: 2px solid var(--cms-border);
+    }
+
+    th {
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: .75rem;
+        color: var(--cms-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 9px 12px;
+        color: var(--cms-text);
+        border-bottom: 1px solid var(--cms-border-light);
+        vertical-align: middle;
+    }
+
+    tbody tr {
+        transition: background .1s;
+        &:hover { background: var(--cms-surface-hover, #f9f9f9); }
+        &:last-child td { border-bottom: none; }
+    }
+
+    .text-end { text-align: right; }
+    .text-muted { color: var(--cms-text-muted) !important; }
+}
+
+// ─── Badges ──────────────────────────────────────────────────────────────────
+.cms-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: .7rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    background: var(--cms-border-light);
+    color: var(--cms-text-secondary);
+
+    // All five on TOKENS (#2011). Three of them carried hard-coded hex, and
+    // two of those values — `#92400e` and `#1e40af` — were `--cms-warning-text`
+    // and `--cms-info-text` copied by value, so the palette and the badges said
+    // the same thing twice and only one of them would move on a theme change.
+    // The `-light` backgrounds shift shade very slightly by adopting the
+    // palette's own tints instead of a second set invented here; that is the
+    // point, since these must track the theme rather than a snapshot of it.
+    &--success { background: var(--cms-success-light); color: var(--cms-success-text); }
+    &--warning { background: var(--cms-warning-light); color: var(--cms-warning-text); }
+    &--danger  { background: var(--cms-danger-light);  color: var(--cms-danger-text); }
+    &--muted   { background: var(--cms-border-light);  color: var(--cms-text-muted); }
+    &--info    { background: var(--cms-info-light);    color: var(--cms-info-text); }
+}
+
+// ─── Typography utilities ─────────────────────────────────────────────────────
+.font-mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+.text-sm   { font-size: .8125rem; }
+
+// ─── TipTap / ProseMirror ─────────────────────────────────────────────────────
+// Must be global — TipTap creates .ProseMirror dynamically outside Angular's
+// component tree, so component-scoped styles (including ::ng-deep) don't reach it.
+.page-editor__tiptap .ProseMirror {
+    outline: none;
+    padding: 16px 20px;
+    min-height: 100%;
+    font-size: .9375rem;
+    line-height: 1.7;
+    cursor: text;
+
+    h1, h2, h3 { font-weight: 700; line-height: 1.3; margin: 1em 0 .4em; }
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.375rem; }
+    h3 { font-size: 1.125rem; }
+    p  { margin: 0 0 .75em; }
+    ul, ol { padding-left: 1.5em; margin: 0 0 .75em; }
+    blockquote { border-left: 3px solid var(--cms-border); margin: 0 0 .75em; padding-left: 1em; color: var(--cms-text-muted); }
+    code { font-family: ui-monospace, monospace; background: var(--cms-border-light); padding: 1px 4px; border-radius: 3px; font-size: .875em; }
+    pre code { background: none; padding: 0; }
+    pre { background: var(--cms-code-bg); color: var(--cms-code-text); padding: 12px 16px; border-radius: 6px; overflow-x: auto; margin: 0 0 .75em; }
+}
+
+.page-editor__tiptap .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--cms-text-muted);
+    float: left;
+    pointer-events: none;
+    height: 0;
+}
+
+// MediaWidgetRenderer / MediaGalleryWidget output: align utility classes.
+// Frontend page render and editor preview both use the same classes so the
+// same widget tag produces identical layout regardless of pipeline.
+.cms-media-align-left {
+    float: left;
+    margin: 0 1rem .5rem 0;
+}
+.cms-media-align-right {
+    float: right;
+    margin: 0 0 .5rem 1rem;
+}
+.cms-media-align-center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+// Caption styling for `<figure>` wrappers emitted when a caption param is set.
+figure > figcaption {
+    color: var(--cms-text-muted);
+    font-size: .8125rem;
+    line-height: 1.4;
+    margin-top: .25rem;
+    text-align: center;
+}
+
+// MediaWidget NodeView wrapper + corner resize handles.
+// Lives here (not in a component stylesheet) because Tiptap renders the
+// NodeView's DOM outside Angular's view-encapsulation tree.
+.media-widget-wrapper {
+    // Handles are hidden until the node is selected — keeps the editor
+    // visually quiet for un-focused images. Selection state is driven by
+    // ProseMirror's selectNode/deselectNode hooks via the --selected class.
+    .media-widget-handle { display: none; }
+
+    &--selected {
+        .media-widget-handle { display: block; }
+    }
+}
+.media-widget-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--cms-accent);
+    border: 2px solid var(--cms-surface);
+    border-radius: 50%;
+    box-shadow: var(--cms-shadow-sm);
+    z-index: 2;
+
+    &--nw { top: -6px;    left: -6px;    cursor: nw-resize; }
+    &--ne { top: -6px;    right: -6px;   cursor: ne-resize; }
+    &--sw { bottom: -6px; left: -6px;    cursor: sw-resize; }
+    &--se { bottom: -6px; right: -6px;   cursor: se-resize; }
+}
+
+/* Inline caption rendered by MediaNodeView. The node is inline so we
+   present the caption as a block on the next line, mirroring how the
+   server-side <figure>/<figcaption> reads at render time. */
+.media-widget-wrapper__caption {
+    display: block;
+    line-height: 1.4;
+    font-size: .8125rem;
+    color: var(--cms-text-muted);
+    text-align: center;
+    margin-top: .25rem;
+}
+
+// MediaGalleryWidget Tiptap node placeholder. Server-side MediaWidgetRenderer
+// produces the actual gallery markup; this is purely an editor hint.
+.cms-media-gallery-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: .5em 0;
+    border: 1px dashed var(--cms-border);
+    border-radius: var(--cms-radius);
+    background: var(--cms-bg);
+    color: var(--cms-text-secondary);
+    font-size: .8125rem;
+
+    &.ProseMirror-selectednode {
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 2px var(--cms-accent-light);
+    }
+}
+.cms-media-gallery-placeholder__icon {
+    color: var(--cms-accent);
+    font-size: 1.125rem;
+    display: inline-flex;
+    align-items: center;
+}
+.cms-media-gallery-placeholder__path {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: .75rem;
+    color: var(--cms-text);
+}
+.cms-media-gallery-placeholder__summary {
+    color: var(--cms-text-muted);
+    font-size: .75rem;
+}
+
+// DtmplEmbedNode Tiptap node placeholder. Server-side EmbedWidgetRenderer
+// produces the actual responsive iframe; this is purely an editor hint.
+.cms-embed-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: .5em 0;
+    border: 1px dashed var(--cms-border);
+    border-radius: var(--cms-radius);
+    background: var(--cms-bg);
+    color: var(--cms-text-secondary);
+    font-size: .8125rem;
+
+    &.ProseMirror-selectednode {
+        border-color: var(--cms-accent);
+        box-shadow: 0 0 0 2px var(--cms-accent-light);
+    }
+}
+.cms-embed-placeholder__icon {
+    color: var(--cms-accent);
+    font-size: 1.125rem;
+    display: inline-flex;
+    align-items: center;
+}
+.cms-embed-placeholder__label {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: .75rem;
+    color: var(--cms-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 32ch;
+}
+.cms-embed-placeholder__summary {
+    color: var(--cms-text-muted);
+    font-size: .75rem;
+}
+
+// File-TYPE identity, the same axis as the meta family (#2021): these say WHAT
+// KIND of node this is, not how it is doing, so they are not status colours and
+// have their own names. Worth naming rather than leaving literal because the
+// directory amber sits a few degrees off the brand accent by pure coincidence —
+// re-brand to blue and every folder icon stays amber.
+.vfs-icon--directory { color: var(--cms-filetype-directory); }
+.vfs-icon--system    { color: var(--cms-text-secondary); }
+.vfs-icon--resource  { color: var(--cms-filetype-resource); }
+.vfs-icon--package   { color: var(--cms-filetype-package); }
+.vfs-icon--symlink   { color: var(--cms-text-muted); }
+
+
+/* ── @media print: clean viewer output ─────────────────────────────
+ *
+ * When the user prints from inside the document viewer modal
+ * (window.print() fired from the DOCX viewer's Print button or
+ * Ctrl+P while the modal is open), the browser's default behaviour
+ * is to render the WHOLE admin UI through the modal — sidebar,
+ * topbar, breadcrumbs, modal chrome, page footer, the lot. The
+ * rules below isolate just the viewer body so the printed pages
+ * contain only document content.
+ *
+ * Path B of the DOCX Print fix design (graceful fallback when the
+ * Pdf module is unavailable). The "PDF-first" Path A — backend
+ * DOCX→PDF conversion + native PDF.js print — is deferred to a
+ * later phase; these rules guarantee acceptable output regardless.
+ */
+@media print {
+    /* Hide everything by default, then re-show the viewer subtree. */
+    body * {
+        visibility: hidden;
+    }
+    cms-viewer-modal,
+    cms-viewer-modal * {
+        visibility: visible;
+    }
+
+    /* PDF.js bundled + browser print service appends print containers
+     * as SIBLINGS of <cms-viewer-modal> directly under <body> at
+     * print-time (#printContainer + .printedPage rendered pages, plus
+     * .xfaPrintOnly for XFA forms). The visibility-isolation rule
+     * above would hide them; whitelist explicitly so PDF print
+     * preview actually shows the rendered pages. The DOCX path stays
+     * unaffected — its content is inside cms-viewer-modal. */
+    body > #printContainer,
+    body > #printContainer *,
+    body > .printedPage,
+    body > .xfaPrintOnly,
+    .printedPage,
+    .printedPage * {
+        visibility: visible !important;
+    }
+
+    /* PDF.js adds `body.printingPDFs` while its print service is
+     * active. In that mode the on-screen viewer chrome must NOT
+     * print alongside the rendered print pages — hide the modal so
+     * only #printContainer survives. DOCX print never sets this
+     * class, so its inline path is unaffected. */
+    body.printingPDFs cms-viewer-modal,
+    body.printingPDFs cms-viewer-modal * {
+        visibility: hidden !important;
+    }
+    body.printingPDFs #printContainer,
+    body.printingPDFs #printContainer * {
+        visibility: visible !important;
+    }
+
+    /* Strip the modal frame so the document fills the printed page
+     * naturally instead of being centred inside a dialog-shaped
+     * window. */
+    cms-viewer-modal .cms-viewer-modal {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Hide all viewer-modal header controls (filename / Download /
+     * Fullscreen / Close X) plus the inner docx viewer's own
+     * toolbar (Print button itself). */
+    cms-viewer-modal .cms-dialog-header,
+    cms-viewer-modal .cms-docx-viewer__toolbar {
+        display: none !important;
+    }
+
+    /* Let the docx-preview content flow across pages instead of
+     * scrolling inside a fixed-height container. */
+    cms-viewer-modal .cms-viewer-modal__body,
+    cms-viewer-modal .cms-docx-viewer,
+    cms-viewer-modal .cms-docx-viewer__container {
+        overflow: visible !important;
+        max-height: none !important;
+        height: auto !important;
+        padding: 0 !important;
+        border: none !important;
+        background: white !important;
+    }
+
+    /* CDK overlay backdrop / scrim shouldn't print. */
+    .cdk-overlay-backdrop,
+    .cdk-overlay-dark-backdrop {
+        display: none !important;
+    }
+
+    /* Reset the host's viewport-relative sizing so the dialog
+     * panel doesn't impose a 95vw × 92vh box on the printed page. */
+    .cdk-overlay-container,
+    .cdk-global-overlay-wrapper,
+    .cdk-overlay-pane {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+    }
+
+    /* Strip residual modal-frame shadows that render as a thin grey
+     * ring around the document in print preview. The CDK dialog
+     * container is an ANCESTOR of <cms-viewer-modal> (added by
+     * @angular/cdk/dialog), so it isn't reached by the rules above
+     * that scope to descendants. .cms-dialog.cms-viewer-modal is
+     * already covered, but explicit here for symmetry. */
+    .cdk-dialog-container,
+    .cdk-overlay-pane,
+    cms-viewer-modal .cms-dialog,
+    cms-viewer-modal .cms-viewer-modal {
+        box-shadow: none !important;
+        border: none !important;
+        outline: none !important;
+    }
+
+    /* DOCX-specific: docx-preview renders a screen-only "desk + page
+     * card" visual — grey background on .cms-docx-content-wrapper
+     * (mimics a desk surface) and a drop shadow on the page <section>
+     * (.cms-docx-content) so it looks like a sheet of paper. In
+     * print these create a visible grey frame around the content
+     * since the printer is already drawing on paper. Strip both:
+     * neutral white background, no shadow, no margins between pages
+     * (the library's per-page margin renders as an awkward gap when
+     * the printed page is the same size as the section). */
+    cms-viewer-modal .cms-docx-content-wrapper {
+        background: white !important;
+        padding: 0 !important;
+    }
+    cms-viewer-modal .cms-docx-content {
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+}
+
+
+// ═══ Bootstrap bridge (#2020) ═══════════════════════════════════════════════
+//
+// The admin carries 238 references to Bootstrap colour class names — a badge
+// written `class="badge bg-success"`, a hint written `text-muted`. They contain
+// no colour literal, so the hex ratchet cannot see them, and they read
+// BOOTSTRAP's palette rather than any `--cms-*` token: re-theming the running
+// admin left the datagrid's green Yes badge sitting on Bootstrap's #198754
+// while everything around it moved (#2018).
+//
+// Rewriting 238 call sites was the obvious fix and is the wrong one. Bootstrap
+// 5.3 drives its utilities from its OWN custom properties, and those are
+// overridable — proved by setting `--bs-secondary-color` in the live app and
+// watching every `.text-muted` change with it. So the bridge is a palette
+// remap, not a migration: no markup churn, and the 238 become themeable at once.
+//
+// TWO mechanisms, because Bootstrap uses both and neither covers the other:
+//
+//  1. Plain vars — `.text-muted` reads `--bs-secondary-color` directly.
+//  2. `-rgb` triplets — `.bg-success` is
+//     `rgba(var(--bs-success-rgb), var(--bs-bg-opacity))`, so it never reads
+//     `--bs-success` at all. A CSS custom property cannot decompose a hex into
+//     "25,135,84", so those utilities are overridden CLASS-side instead, which
+//     also keeps them on one source of truth rather than a triplet that would
+//     silently drift from its own token.
+:root {
+    // `.text-muted` is Bootstrap's most-used colour utility here (105 sites).
+    // It maps to --cms-text-SECONDARY, not --cms-text-muted, and that is a
+    // deliberate reading of intent rather than a name match: Bootstrap's muted
+    // computes rgba(33,37,41,.75) — a DARK grey — while --cms-text-muted is
+    // #9ca3af, much lighter. Matching the name would visibly lighten 105 places;
+    // matching the WEIGHT keeps them looking as they do now.
+    --bs-secondary-color: var(--cms-text-secondary);
+    --bs-body-color:      var(--cms-text);
+    --bs-emphasis-color:  var(--cms-text);
+    --bs-border-color:    var(--cms-border);
+
+    // The STRUCTURAL variable, not a utility — and the one the bridge missed
+    // until dark mode made it obvious (#2031). `.card`, `.form-control`,
+    // `.form-select` and every `.table` cell resolve their background through
+    // --bs-body-bg, so with it left at Bootstrap's white the largest surface on
+    // screen stayed white while the theme around it went dark. One variable
+    // accounted for all four; measured by overriding it alone and watching all
+    // of them move together. Value-preserving in light mode (#ffffff).
+    --bs-body-bg:        var(--cms-surface);
+    --bs-secondary-bg:   var(--cms-surface-muted);
+    --bs-tertiary-bg:    var(--cms-surface-muted);
+
+    --bs-primary:   var(--cms-primary);
+    --bs-secondary: var(--cms-text-secondary);
+    --bs-success:   var(--cms-success);
+    --bs-danger:    var(--cms-danger);
+    --bs-warning:   var(--cms-warning);
+    --bs-info:      var(--cms-info);
+    --bs-light:     var(--cms-bg);
+}
+
+// Mechanism 2: the `-rgb` compositors. Overridden class-side so each reads its
+// token directly. `!important` matches Bootstrap's own utilities, which carry it.
+.bg-success  { background-color: var(--cms-success) !important; }
+.bg-danger   { background-color: var(--cms-danger) !important; }
+.bg-warning  { background-color: var(--cms-warning) !important; }
+.bg-info     { background-color: var(--cms-info) !important; }
+.bg-primary  { background-color: var(--cms-primary) !important; }
+.bg-light    { background-color: var(--cms-bg) !important; }
+.bg-white    { background-color: var(--cms-surface) !important; }
+.bg-secondary{ background-color: var(--cms-text-secondary) !important; }
+
+.text-success { color: var(--cms-success-text) !important; }
+.text-danger  { color: var(--cms-danger-text) !important; }
+.text-warning { color: var(--cms-warning-text) !important; }
+.text-info    { color: var(--cms-info-text) !important; }
+
+// ─── Bridge completion (#2030) ───────────────────────────────────────────────
+//
+// #2020 built the bridge from Bootstrap's most-used names. It did NOT cover all
+// of them, and nothing said so: the ratchet counts a bridged `.text-muted` and
+// an unbridged `.text-white` identically, so "198 Bootstrap references" read as
+// one debt when it was really two — 155 already themeable, 43 not themed at all.
+//
+// Found by MEASURING rather than reading Bootstrap's source: probe elements for
+// every class actually used in this app, snapshot computed colour, override the
+// whole `--cms-*` palette on `:root`, snapshot again. Whatever did not move is
+// not bridged. That method is why `text-secondary` is in this list — Bootstrap's
+// #6c757d and the kit's #6b7280 differ by 1/255 per channel, so it looked
+// bridged on screen and was not.
+//
+// The invariant this must now satisfy is checked by `npm run lint:colors`:
+// every Bootstrap colour class used in markup has to appear here.
+// --cms-on-chrome, NOT --cms-text-inverse. Ten of the twelve call sites are
+// topbar controls (the wordmark, the breadcrumb, the quick-access buttons) and
+// the other two are a label over a `bg-danger` media overlay. All twelve want a
+// foreground that stays light, because none of their backgrounds lighten when
+// the theme flips — see the token's own note (#2031, correcting #2030).
+.text-white     { color: var(--cms-on-chrome) !important; }
+.text-secondary { color: var(--cms-text-secondary) !important; }
+// `.text-dark` is only ever used as dark text ON a light or coloured fill —
+// `badge bg-info text-dark`, `badge bg-warning text-dark` — which is what
+// --cms-text is for. Bootstrap's #212529 → #111827, marginally darker.
+.text-dark      { color: var(--cms-text) !important; }
+// --cms-primary, NOT --cms-accent. The kit carries both: accent (#F5A623) is the
+// brand action colour, primary (#2563eb) the informational blue, and this class
+// is Bootstrap's blue today. Its two call sites are selected-option labels in
+// the select fields, which arguably want the same --cms-accent-text that
+// `.cms-btn-active` uses — but that is a change to what selection LOOKS like,
+// not to whether it follows the theme, so it is left as an open question rather
+// than smuggled in through a bridge rule.
+.text-primary   { color: var(--cms-primary) !important; }
+
+// Alerts and tables drive themselves from their own custom properties, so these
+// go var-side: `.alert` reads --bs-alert-*, and a `.table-light` head reads
+// --bs-table-* from its own element. Verified live before being written —
+// setting each var on a probe moved the rendered colour.
+.alert-danger {
+    --bs-alert-color:        var(--cms-danger-text);
+    --bs-alert-bg:           var(--cms-danger-subtle);
+    --bs-alert-border-color: var(--cms-danger-subtle-border);
+}
+
+.alert-info {
+    --bs-alert-color:        var(--cms-info-text);
+    --bs-alert-bg:           var(--cms-info-subtle);
+    --bs-alert-border-color: var(--cms-info-subtle-border);
+}
+
+// Both uses are `<thead class="table-light">`, including the datagrid's sticky
+// header — the most-looked-at table surface in the admin, and it was sitting on
+// Bootstrap's #f8f9fa while every other muted fill followed the theme.
+.table-light {
+    --bs-table-bg:    var(--cms-surface-muted);
+    --bs-table-color: var(--cms-text);
+}
+
+// A badge's label sits ON its fill, so this one genuinely IS the inverse token:
+// white in light mode — unchanged — and dark in dark mode, where the brighter
+// status hues left white text at 2.28:1 (#2031).
+//
+// CLASS-side, and that placement is the whole point. `--bs-badge-color` looked
+// like a `:root` variable and is not: Bootstrap 5.3 declares component
+// variables INSIDE the component's own rule, so `.badge`'s own declaration beats
+// anything inherited from `:root`. A probe that set it on the ELEMENT reported
+// success — inline style outranks a class — and that nearly shipped the wrong
+// mechanism. The contrast measurement, run again after the build, is what
+// caught it: the number had not moved.
+.badge { --bs-badge-color: var(--cms-text-inverse); }
+
+// Bootstrap's inputs inherit --bs-body-bg, which now means "card". Point them
+// at the input surface instead so a Bootstrap field and a kit field agree —
+// `background-color`, not `background`, so `.form-select` keeps its chevron.
+.form-control,
+.form-select { background-color: var(--cms-input-bg); }
+
+// ── CDK drag previews ───────────────────────────────────────────────────────
+// A drag preview is rendered in the TOP LAYER (Angular CDK 18+ promotes it with
+// the Popover API), and Chrome's user-agent stylesheet gives `[popover]`
+// `overflow: auto`. The preview is sized to the source element's border box, so
+// content that needs even one pixel more than that raises a scrollbar — which
+// steals ~16px, forcing the other one, and the dragged card floats across the
+// screen with two scrollbars on it (reported #2101).
+//
+// Nothing this platform drags is meant to scroll while it is in the air, so the
+// UA default is simply wrong for us. Set here rather than per component: it hit
+// the dashboard first, but the ordered builder, the column chooser and the VFS
+// grid all drag previews through the same top layer.
+.cdk-drag-preview { overflow: visible; }

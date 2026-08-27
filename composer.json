@@ -1,0 +1,27 @@
+{
+    "name": "coolms/theme-admin",
+    "description": "Angular 19 administration SPA for CoolMS 2.0",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "CoolMS Team"
+        }
+    ],
+    "require": {
+        "php": ">=8.5",
+        "coolms/coolms": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CoolMS\\ThemeAdmin\\": "src/"
+        }
+    },
+    "extra": {
+        "symfony": {
+            "id": "coolms/theme-admin",
+            "allow-contrib": false
+        }
+    }
+}
