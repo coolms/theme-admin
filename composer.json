@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": ">=8.5",
-        "coolms/coolms": "^2.0"
+        "coolms/core": "^2.0"
     },
     "autoload": {
         "psr-4": {

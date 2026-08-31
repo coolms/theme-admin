@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CoolMS\ThemeAdmin\Provider;
 
-use App\Theme\Domain\Provider\ThemeProviderInterface;
+use CoolMS\Core\Theme\ThemeProviderInterface;
 
 /**
  * Registers coolms-admin as a known theme.
