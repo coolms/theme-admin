@@ -3,7 +3,6 @@
     "description": "Angular 22 administration SPA for CoolMS 2.0",
     "type": "symfony-bundle",
     "license": "MIT",
-    "version": "1.0.0",
     "authors": [
         {
             "name": "CoolMS Team"
