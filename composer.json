@@ -1,6 +1,6 @@
 {
     "name": "coolms/theme-admin",
-    "description": "Angular 19 administration SPA for CoolMS 2.0",
+    "description": "Angular 22 administration SPA for CoolMS 2.0",
     "type": "symfony-bundle",
     "license": "MIT",
     "version": "1.0.0",
