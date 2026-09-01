@@ -18,7 +18,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CmsLoaderComponent, DataGridComponent, DynamicRecordListComponent],
     template: `
-        <!-- ── Sticky breadcrumb band (above all content) ────────────────── -->
+        <!-- -- Sticky breadcrumb band (above all content) ------------------ -->
         @if (st.toolbarBreadcrumb()) {
             <nav class="de-breadcrumb-band">
                 <span class="crumb crumb--phpname">
@@ -52,7 +52,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         @if (showDynamicTypes() && st.activeRuntimeType()) {
         @if (st.activeRuntimeType(); as rt) {
 
-            <!-- ── Compact meta row ──────────────────────────────────────── -->
+            <!-- -- Compact meta row ---------------------------------------- -->
             <div class="de-detail-meta-row">
                 @if (rt.categoryTree) {
                     <span class="de-alias-pill">
@@ -61,7 +61,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
                 }
             </div>
 
-            <!-- ── Main content area: records list OR field structure ──────── -->
+            <!-- -- Main content area: records list OR field structure -------- -->
             <div class="de-fields-scroll">
                 @if (st.viewMode() === 'records') {
                     <app-dynamic-record-list
@@ -90,7 +90,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
                     </coolms-datagrid>
                 }
 
-                <!-- CHILD TYPES ─────────────────────────────────────────── -->
+                <!-- CHILD TYPES ------------------------------------------- -->
                 @if (!st.schemaLoading() && st.childTypes().length > 0) {
                     <table class="domain-field-table de-child-types-table">
                         <thead>
@@ -132,7 +132,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         } @else if (showEntities() && st.activeEntity()) {
         @if (st.activeEntity(); as entity) {
 
-            <!-- ── Main content: records OR field DataGrid ──────────── -->
+            <!-- -- Main content: records OR field DataGrid ------------ -->
             <div class="de-fields-scroll">
                 @if (st.viewMode() === 'records') {
                     @if (entity.isDynamic && entity.dynamicOrigin === 'runtime' && entity.dynamicAlias) {
@@ -225,7 +225,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             overflow: hidden;
         }
 
-        /* ── Sticky breadcrumb band (above content/grid) ─────────────────
+        /* -- Sticky breadcrumb band (above content/grid) -----------------
            Matches the accordion section header height; same pattern as the
            VFS / Media / Documents explorers (#246/#247). */
         .de-breadcrumb-band {
@@ -273,7 +273,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         .crumb-badge--dynamic    { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
         .crumb-badge--embeddable { background: var(--cms-surface-muted); color: var(--cms-text-body); }
 
-        /* ── Detail header (entity view) ────────────────────────────────── */
+        /* -- Detail header (entity view) ---------------------------------- */
         .de-detail-header {
             padding: 14px 20px 12px;
             border-bottom: 1px solid var(--cms-border-color);
@@ -298,7 +298,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             font-family: var(--cms-font-mono, monospace);
         }
 
-        /* ── Meta row ───────────────────────────────────────────────────── */
+        /* -- Meta row ----------------------------------------------------- */
         .de-detail-meta-row {
             display: flex;
             align-items: center;
@@ -317,7 +317,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             color: var(--cms-text-muted);
         }
 
-        /* ── Placeholder ────────────────────────────────────────────────── */
+        /* -- Placeholder -------------------------------------------------- */
         .de-placeholder {
             flex: 1;
             display: flex;
@@ -330,7 +330,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         .de-placeholder__icon { font-size: 3rem; opacity: .3; }
         .de-placeholder p { font-size: .9rem; margin: 0; }
 
-        /* ── Domain badges ──────────────────────────────────────────────── */
+        /* -- Domain badges ------------------------------------------------ */
         .domain-badge {
             display: inline-flex;
             align-items: center;
@@ -345,7 +345,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         .domain-badge--embeddable { background: var(--cms-success-light); color: var(--cms-success-text); }
         .domain-badge--runtime    { background: var(--cms-meta-subtle); color: var(--cms-meta); }
 
-        /* ── Fields scroll area ─────────────────────────────────────────── */
+        /* -- Fields scroll area ------------------------------------------- */
         .de-fields-scroll {
             flex: 1;
             overflow: hidden;
@@ -372,7 +372,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             padding: 24px;
         }
 
-        /* ── Child types table ──────────────────────────────────────────── */
+        /* -- Child types table -------------------------------------------- */
         .de-child-types-table {
             width: 100%;
             border-collapse: collapse;
@@ -428,7 +428,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             font-style: italic;
         }
 
-        /* ── Right-side action column ───────────────────────────────────── */
+        /* -- Right-side action column ------------------------------------- */
         .de-field-actions {
             width: 56px;
             white-space: nowrap;
@@ -477,15 +477,15 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         .text-center { text-align: center; }
         .me-1        { margin-right: 4px; }
 
-        /* ── Inheritance hints on field DataGrid rows ──────────────────────
+        /* -- Inheritance hints on field DataGrid rows ----------------------
            Driven by [attr.data-has-override] / [attr.title] which the field
            grid's row data carries (hasOverride + _rowTitle). ::ng-deep is
            required to reach into the encapsulated <coolms-datagrid> child.
 
-           runtime → inherited unchanged: italic + muted.
-           parent  → overrides parent's field of the same name.
-           db / file → overrides a static PHP / config field.
-        ────────────────────────────────────────────────────────────────── */
+           runtime -> inherited unchanged: italic + muted.
+           parent  -> overrides parent's field of the same name.
+           db / file -> overrides a static PHP / config field.
+        ------------------------------------------------------------------ */
         :host ::ng-deep tr[data-has-override="runtime"] td.data-cell {
             font-style: italic;
             color: var(--cms-text-muted);

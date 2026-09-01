@@ -19,7 +19,7 @@ import {
 import { PageSpaceStateService } from './page-space-state.service';
 
 /**
- * Pages explorer — thin shell (ADR-153, #1693).
+ * Pages explorer — thin shell.
  *
  * Owns nothing but the page-scoped state and the toolbar; the space accordion
  * and the tree grid are slot components resolved from the `content:pages-list`
@@ -41,7 +41,7 @@ import { PageSpaceStateService } from './page-space-state.service';
     providers: [PageSpaceStateService, PageFooterService],
     imports: [ExplorerLayoutComponent, ExplorerViewSwitcherComponent, PageToolbarComponent],
     template: `
-        <!-- #1696 — the header actions are bound to the LAYOUT, not to a
+        <!-- — the header actions are bound to the LAYOUT, not to a
              projected cms-page-header.
 
              ExplorerLayout renders its own header whenever the layout YAML
@@ -50,7 +50,7 @@ import { PageSpaceStateService } from './page-space-state.service';
              one, so the projected header this page used to pass was never in
              the DOM — and "New Page" / "New Collection" (both position: header)
              had nowhere to render. Creating a page from the Pages explorer was
-             impossible from #1693 until now. Documents gets away with the
+             impossible until now. Documents gets away with the
              projected form only because document:library declares no title. -->
         <app-explorer-layout
             #layout
@@ -66,7 +66,7 @@ import { PageSpaceStateService } from './page-space-state.service';
                 (actionClick)="onAction($event)"
                 (headerActionsChanged)="headerActions.set($event)"
             >
-                <!-- #1709 — the view switcher comes from the LAYOUT's declared
+                <!-- — the view switcher comes from the LAYOUT's declared
                      modes, not from NaviGraph actions. It used to be two
                      view-grid / view-list toolbar nodes seeded per module,
                      which is why every explorer had a different set. -->
@@ -96,7 +96,7 @@ export class PagesExplorerPage {
     readonly state = inject(PageSpaceStateService);
 
     /**
-     * Layout predicate context (#1711). `activeItem` is what `openOnSelect`
+     * Layout predicate context. `activeItem` is what `openOnSelect`
      * gates the right panel on — the layout has no other way to know whether
      * anything is selected, because the selection belongs to a slot it merely
      * renders.
@@ -106,7 +106,7 @@ export class PagesExplorerPage {
     }));
 
     /**
-     * The layout, for the view modes it parsed out of the YAML (#1709).
+     * The layout, for the view modes it parsed out of the YAML.
      *
      * A SIGNAL query, not `@ViewChild`: the layout resolves its config
      * asynchronously, so the effect below has to re-run when `defaultViewMode`
@@ -149,7 +149,7 @@ export class PagesExplorerPage {
      * slot, invisible from here.
      *
      * `_viewMode` is still published even though no NaviGraph node reads it
-     * since #1709 removed the view toggle from the tree — a module that wants
+     * removed the view toggle from the tree — a module that wants
      * an action only in one rendering (say, "arrange" in tiles) can predicate
      * on it without the host having to grow a new context key.
      */
@@ -164,7 +164,7 @@ export class PagesExplorerPage {
      *
      * The view toggle used to be intercepted here as two NaviGraph actions
      * (`view-grid` / `view-list`). It is now the shared switcher fed by the
-     * layout's declared modes (#1709), so this handler is pure forwarding.
+     * layout's declared modes, so this handler is pure forwarding.
      */
     onAction(action: string): void {
         this.state.actionRequested$.next(action);

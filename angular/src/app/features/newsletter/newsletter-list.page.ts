@@ -50,7 +50,7 @@ interface StatusTab {
  * chooser), the status (coloured badge) and the subscribed / confirmed dates.
  *
  * **Compose** lives behind the header "Compose" toolbar action — it opens the
- * standalone `app-newsletter-compose-dialog` (Option A, #974), seeded with the
+ * standalone `app-newsletter-compose-dialog` (Option A, ), seeded with the
  * confirmed-recipient count, which collects subject + HTML body and POSTs to
  * `/newsletter/campaigns` (the backend fans the send out asynchronously and
  * replies with the authoritative queued count). The "export" action writes a
@@ -59,7 +59,7 @@ interface StatusTab {
  * The Newsletter backend exposes no per-subscriber admin mutation (only list +
  * send-campaign), so the grid is display-only — there are no row actions.
  *
- * **`loadingMode: lazy` since #1724.** It used to be `client` — one request per
+ * **`loadingMode: lazy`.** It used to be `client` — one request per
  * tab, whole bucket, filtered in the browser — but the endpoint capped that at
  * 200 rows, so the list silently omitted subscribers past the cap AND every
  * filter searched a truncated window while presenting itself as complete. Rows
@@ -134,7 +134,7 @@ export class NewsletterListComponent implements OnInit {
     /**
      * Confirmed-bucket recipient count for the compose dialog.
      *
-     * Now the SERVER's count (#1724). It used to be `rows.length` off a list the
+     * Now the SERVER's count. It used to be `rows.length` off a list the
      * endpoint capped at 200, so a campaign to 5,000 confirmed subscribers
      * announced "200 recipients" in the compose dialog.
      */

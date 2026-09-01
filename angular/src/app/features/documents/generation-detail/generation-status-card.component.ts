@@ -193,7 +193,7 @@ import type { DocumentGenerationDto } from '../../../api/api.service';
             display: flex;
             justify-content: flex-end;
         }
-        /* Kit shadows removed (#2030). .cms-btn--danger was a PRIVATE variant
+        /* Kit shadows removed. .cms-btn--danger was a PRIVATE variant
            in kit-looking clothing: the kit spells it .cms-btn-danger, single
            dash, so this name matched nothing shared and quietly diverged into a
            solid red fill. The markup now uses the kit's variant. */

@@ -185,7 +185,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         this.state.clearSelection();
     }
 
-    // ── Toolbar ───────────────────────────────────────────────────────────────
+    // -- Toolbar ---------------------------------------------------------------
 
     /**
      * The bar renders this tree; the page only says what state it is in.
@@ -246,7 +246,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         };
     });
 
-    // ── Action handler ────────────────────────────────────────────────────────
+    // -- Action handler --------------------------------------------------------
 
     onVfsToolbarAction(action: string): void {
         const selected    = this.selectedNodes();
@@ -254,15 +254,15 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         const currentPath = this.state.currentPath();
 
         switch (action) {
-            // ── Background actions (NaviGraph keys) ───────────────────────────
+            // -- Background actions (NaviGraph keys) ---------------------------
             case 'VfsNewFolder':   void this.vfsActions.newFolder();            break;
             case 'VfsNewFile':     void this.vfsActions.newFile();              break;
             case 'VfsPaste':       void this.clipboard.paste(currentPath);      break;
 
-            // ── Upload — forwarded to VfsFilesSlotComponent via state subject ─
+            // -- Upload — forwarded to VfsFilesSlotComponent via state subject -
             case 'upload':         this.state.uploadRequested$.next();          break;
 
-            // ── Node actions: single-node ops ─────────────────────────────────
+            // -- Node actions: single-node ops ---------------------------------
             case 'VfsRename':      if (target) void this.vfsActions.rename(target); break;
             case 'VfsProperties':
                 if (target) void this.vfsActions.execute(
@@ -271,7 +271,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
                 );
                 break;
 
-            // ── Node actions: multi-node ops ──────────────────────────────────
+            // -- Node actions: multi-node ops ----------------------------------
             case 'VfsCut':         if (selected.length) this.clipboard.cut(selected);  break;
             case 'VfsCopy':        if (selected.length) this.clipboard.copy(selected); break;
             case 'VfsDelete':
@@ -279,12 +279,12 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
                         .forEach(n => void this.vfsActions.confirmDelete(n));
                 break;
 
-            // ── Right-toolbar UI actions ──────────────────────────────────────
+            // -- Right-toolbar UI actions --------------------------------------
             case 'show-hidden':    this.state.toggleShowHidden();               break;
             case 'view-grid':      this.state.setViewMode('grid');              break;
             case 'view-list':      this.state.setViewMode('list');              break;
 
-            // ── Delegate remaining NaviGraph actions (VfsDownload, VfsChmod, VfsChown …)
+            // -- Delegate remaining NaviGraph actions (VfsDownload, VfsChmod, VfsChown …)
             default: {
                 const node = this.toolbarNodes().find(n => n.meta['action'] === action);
                 if (node && target) void this.vfsActions.execute(node, target);
@@ -293,7 +293,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         }
     }
 
-    // ── Keyboard shortcuts ────────────────────────────────────────────────────
+    // -- Keyboard shortcuts ----------------------------------------------------
 
     @HostListener('document:keydown', ['$event'])
     onKeydown(event: KeyboardEvent): void {
@@ -334,7 +334,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         const queryPath = this.route.snapshot.queryParamMap.get('path');
         const startPath = (queryPath !== null && queryPath !== '') ? queryPath : (saved?.lastPath ?? '/');
 
-        // `?select=` names a FILE inside `?path=` to land on (#1668). The
+        // `?select=` names a FILE inside `?path=` to land on. The
         // list endpoint only accepts directories, so a caller that knows a
         // file — a notification announcing a generated document — splits it
         // into folder + name rather than passing the file path itself.

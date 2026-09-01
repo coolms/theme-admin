@@ -4,16 +4,16 @@ import { DrawerService, UserCalendarPreferencesService } from '@coolms/ui-angula
 import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
 
 /**
- * M1.2.f / M1.2.f.4 / Task #433 — Personal calendar quick-access icon
+ * / / Task — Personal calendar quick-access icon
  * button for the admin topbar. Opens the `CalendarQuickPanelComponent`
  * in the global right drawer (mini-cal + upcoming events). The button
  * no longer navigates directly to the full Calendar Detail page — the
  * drawer panel offers an "Open full" link for that.
  *
- * Slug resolution (Task #433): the slug now comes from
+ * Slug resolution (Task ): the slug now comes from
  * `UserCalendarPreferencesService.defaultCalendarSlug()`, which falls
  * back to `personal-{currentUserId}` (the canonical personal-calendar
- * slug minted by `PersonalCalendarSeeder` on user creation, M1.2.e)
+ * slug minted by `PersonalCalendarSeeder` on user creation,)
  * when the user has not explicitly chosen a different default.
  *
  * Hidden when no user is in scope (e.g., login-page render before

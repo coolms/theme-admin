@@ -30,13 +30,13 @@ export interface SectionPropertiesDialogData {
 }
 
 /**
- * Section properties (#1717) — everything a section declares about the posts
+ * Section properties — everything a section declares about the posts
  * inside it, and where a published one goes.
  *
  * ## Why this exists at all
  *
- * The per-section distribution config has been implemented since M6.a, but its
- * only door was a row action on a DIRECTORY row in the Pages grid — and #1706
+ * The per-section distribution config has been implemented since, but its
+ * only door was a row action on a DIRECTORY row in the Pages grid — and
  * moved folders out of that grid, so the action could no longer fire. The
  * capability was intact and unreachable. This is the door, in the place a
  * section now lives: the left-panel tree.
@@ -53,7 +53,7 @@ export interface SectionPropertiesDialogData {
  *  3. **Distribution** — which outbound channels a published post fans out to,
  *     and each selected channel's settings. The list comes from the
  *     `core.outbound_channels` OptionSource and the settings from
- *     `GET /outbound-channels` (#1719), both served off the same gated registry,
+ *     `GET /outbound-channels`, both served off the same gated registry,
  *     so installing a channel module extends both with no change here. Nothing
  *     in this file names a channel: the first version hard-coded one "Webhook
  *     URL" input, which made every other channel tickable but unconfigurable.
@@ -339,7 +339,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
 
     /**
      * Public feed URLs, derived by stripping the content root — the same
-     * mirror-the-path rule the pages themselves follow (#1707), so these are
+     * mirror-the-path rule the pages themselves follow, so these are
      * the real addresses rather than a guess.
      */
     protected readonly publicPath = computed<string>(() => {
@@ -400,7 +400,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
 
     /**
      * Nothing is ever masked, because nothing sensitive is ever held here: a
-     * `secretRef` field carries the NAME of a stored secret (#1721), which the
+     * `secretRef` field carries the NAME of a stored secret, which the
      * operator needs to read back to check. Masking it would be theatre that
      * makes a typo harder to spot.
      */
@@ -424,7 +424,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
     }
 
     /**
-     * Loaded config → the flat `channelId.fieldKey` map the inputs bind to.
+     * Loaded config -> the flat `channelId.fieldKey` map the inputs bind to.
      *
      * Only DECLARED keys are lifted: an undeclared key has no input, and
      * carrying it here would let a save write back a value nobody could see or
@@ -471,9 +471,9 @@ export class SectionPropertiesDialogComponent implements OnInit {
             for (const field of declared?.fields ?? []) {
                 // Every field round-trips, so blank always means CLEAR.
                 //
-                // #1719 needed a "blank secret means unchanged" exception,
+                // needed a "blank secret means unchanged" exception,
                 // because a masked credential could not be read back and saving
-                // the dialog would have erased it. #1721 removed the credential
+                // the dialog would have erased it. removed the credential
                 // rather than the exception: what a `secretRef` holds is a NAME,
                 // which reads back like anything else, so the special case — and
                 // the surprise of a field that ignores being emptied — is gone.

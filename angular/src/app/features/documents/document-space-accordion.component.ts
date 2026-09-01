@@ -37,7 +37,7 @@ import { DocumentPageStateService } from './explorer/document-page-state.service
  * fallback, which needs the signed-in user's id and so cannot be shared.
  *
  * Registered as `DocumentSpaceAccordion` in {@link app.config} so the
- * Document Library layout (`document:library` → `content.panel.left`)
+ * Document Library layout (`document:library` -> `content.panel.left`)
  * picks it up without further config changes.
  */
 @Component({
@@ -99,7 +99,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
             if (null === root) {
                 return;
             }
-            // #1683 — publish the space root for the breadcrumb, which
+            // — publish the space root for the breadcrumb, which
             // needs it to tell context from destination. This store is
             // provided on THIS component, so the main-slot grid cannot
             // reach it directly.
@@ -112,7 +112,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
 
                     return;
                 }
-                // #1688 — a RESTORED path below the space root belongs to
+                // — a RESTORED path below the space root belongs to
                 // the Documents view, same rule as clicking the folder.
                 // Without this a reload highlighted the subfolder in the
                 // tree while the pane showed the space's templates: two
@@ -133,14 +133,14 @@ export class DocumentSpaceAccordionComponent implements OnInit {
     }
 
     /**
-     * Right-click on a space header (#1679).
+     * Right-click on a space header.
      *
      * A space IS a folder — its `rootPath` — so it reuses the folder record
      * the folders tree already emits (`_kind: 'folder'` + `path`), which
      * means "Upload here" works on a space with no new NaviGraph node.
      *
-     * ⚠️ Opening the menu does NOT switch space, and that is a correction
-     * (#2394): it used to, and a right-click that navigates is a right-click
+     *  Opening the menu does NOT switch space, and that is a correction
+     *: it used to, and a right-click that navigates is a right-click
      * that moved the floor -- dismissing the menu left the operator in a space
      * they never asked for. The reason the switch existed is still true, so it
      * happens at ACTION time instead: everything that reaches `dispatchAction`
@@ -167,12 +167,12 @@ export class DocumentSpaceAccordionComponent implements OnInit {
                     this.state.uploadToFolderRequested$.next(payload.space.rootPath);
                     return;
                 }
-                // #1684 — new subfolder directly under the space root.
+                // — new subfolder directly under the space root.
                 if ('new-folder-here' === action) {
                     this.state.newFolderInRequested$.next(payload.space.rootPath);
                     return;
                 }
-                // ⚠️ HERE, not when the menu opened. Everything reaching
+                //  HERE, not when the menu opened. Everything reaching
                 // this line acts on the ACTIVE space, so it has to be this
                 // one -- but a right-click that navigated meant dismissing the
                 // menu left the operator in a space they never asked for.
@@ -187,7 +187,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
     onSpaceChange(key: string): void {
         const next = this.store.select(key);
         if (!next) return;
-        // #1688 — publish the NEW root BEFORE navigating. `selectFolder`
+        // — publish the NEW root BEFORE navigating. `selectFolder`
         // decides templates-vs-documents by comparing the target against
         // `spaceRoot`, and with the old root still in place a space switch
         // looked like a subfolder click and dropped the user into the

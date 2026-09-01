@@ -23,9 +23,9 @@ import { SyncEdgeDto, SyncFleetService } from './sync-fleet.service';
 import { EdgeRegisterDialogComponent } from './edge-register-dialog.component';
 
 /**
- * Sync fleet admin page (/admin/sync-fleet, ADR-150 B.3.2).
+ * Sync fleet admin page (/admin/sync-fleet, B.3.2).
  *
- * The operator view over the controller→edge mesh: every registered edge with
+ * The operator view over the controller->edge mesh: every registered edge with
  * its health, feed cursor, principal binding, and selective-sync scope, plus
  * register/edit (modal), remove, and a fleet-wide "Nudge" trigger. The whole
  * surface is gated server-side by the NESTED `root:sync_fleet 0o770` VFS node —
@@ -186,7 +186,7 @@ export class SyncFleetListPageComponent implements OnInit {
         return n === 0 ? '' : `${n} edge${n === 1 ? '' : 's'}`;
     });
 
-    /** Declared in the `sync:fleet-list` layout (ADR-127), not here. */
+    /** Declared in the `sync:fleet-list` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );

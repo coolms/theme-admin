@@ -12,15 +12,15 @@ import { OpenGalleryPickerHandler } from '../actions/open-gallery-picker.handler
  *
  * Side effects on app boot:
  *   1. Registers two action handlers with `EditorActionRegistry`:
- *        - `media.openPicker`         → OpenMediaPickerHandler
- *        - `media.openGalleryPicker`  → OpenGalleryPickerHandler
+ *        - `media.openPicker`         -> OpenMediaPickerHandler
+ *        - `media.openGalleryPicker`  -> OpenGalleryPickerHandler
  *      These are the action types declared by MediaInsertContributor and
  *      MediaGalleryInsertContributor on the PHP side (sub-prompt C1).
  *   2. Registers two Tiptap extension factories with EditorExtensionRegistry:
- *        - `mediaWidget`         → configured with the root EnvironmentInjector
+ *        - `mediaWidget`         -> configured with the root EnvironmentInjector
  *                                  so the NodeView can open the alt-editor
  *                                  CDK Overlay without a hidden global
- *        - `mediaGalleryWidget`  → bare node (no NodeView, no overlay)
+ *        - `mediaGalleryWidget`  -> bare node (no NodeView, no overlay)
  *
  * Module-supplied handlers register exactly the way `provideCoolmsEditor()`
  * registers built-ins — the `multi: true` APP_INITIALIZER plurality means

@@ -25,7 +25,7 @@ import {
 } from './trigger-spec-dialog.component';
 
 /**
- * #465 — Create-schedule modal dialog (replaces the inline create panel).
+ * — Create-schedule modal dialog (replaces the inline create panel).
  *
  * Opened from SchedulesListComponent's `create` toolbar action.
  */

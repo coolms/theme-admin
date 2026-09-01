@@ -24,7 +24,7 @@ import {
 } from '@coolms/ui-angular';
 import { LeadChannel, LeadDto, LeadsService } from './leads.service';
 
-/** Channel value → human label (mirrors the backend `LeadChannel::label()`). */
+/** Channel value -> human label (mirrors the backend `LeadChannel::label()`). */
 const CHANNEL_LABELS: Record<LeadChannel, string> = {
     web_form:     'Web form',
     dynamic_chat: 'Chat',
@@ -41,7 +41,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
  * plus the same Handle / Spam / Reopen triage actions the list offers (so a
  * lead can be worked without bouncing back to the queue).
  *
- * Reads `GET /leads/{id}` (#1337); a 404 (unknown id / deleted) surfaces as an
+ * Reads `GET /leads/{id}`; a 404 (unknown id / deleted) surfaces as an
  * error banner rather than an empty shell. Triage actions call the existing
  * transition endpoints then re-fetch, so the header chips + gated actions stay
  * in sync with the new status. All fields are plain text — Angular

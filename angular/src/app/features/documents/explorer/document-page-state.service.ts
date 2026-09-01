@@ -14,7 +14,7 @@ export interface OpenInstanceRequest {
 }
 
 /**
- * Both Documents view modes are the SHARED explorer vocabulary (#1709).
+ * Both Documents view modes are the SHARED explorer vocabulary.
  *
  * Was `'grid' | 'list'` in both cases, where `list` meant a hand-rolled table
  * with three click-to-sort headers. That table is now the platform DataGrid —
@@ -23,7 +23,7 @@ export interface OpenInstanceRequest {
 export type DocumentViewMode = ExplorerViewMode;
 
 /**
- * Phase A.1a: instances file zone has its own view mode independent
+ *.1a: instances file zone has its own view mode independent
  * of the folder-content view mode — a user may want details-view for
  * instances (location column matters) but stay on tiles for templates.
  */
@@ -76,7 +76,7 @@ export class DocumentPageStateService {
         // Restore the last folder BEFORE the space list is fetched.
         // `SpaceSelectionStore` re-selects a space by matching this path
         // against the space roots, so without it every reload lands on
-        // whichever space sorts first -- the gap #1588 found and left
+        // whichever space sorts first -- the gap found and left
         // open here. Field initialisers have already run by the time the
         // constructor body executes, so `currentPath` exists to overwrite.
         const saved = this.prefs.getPageState<{
@@ -88,14 +88,14 @@ export class DocumentPageStateService {
             this.currentPath.set(saved.lastPath);
         }
 
-        // #1761 — Documents was the only explorer that forgot its view mode:
+        // — Documents was the only explorer that forgot its view mode:
         // it persisted `lastPath` and nothing else, so every reload dropped
         // you back to Large icons however you had left it.
         //
         // `toExplorerViewMode` rather than a cast: the stored value is
         // whatever a previous build wrote, and an unrecognised mode must fall
         // back to the default instead of restoring one the view cannot draw.
-        // No `list` remap here (the shape Media carries from #1709) — this key
+        // No `list` remap here (the shape Media carries from ) — this key
         // has never been written before, so there is no legacy value to
         // translate.
         const restoredView = toExplorerViewMode(saved?.viewMode);
@@ -115,7 +115,7 @@ export class DocumentPageStateService {
             untracked(() => this.prefs.setPageState('documents', { lastPath: path }));
         });
 
-        // Separate effects, one key each (#1761). `setPageState` MERGES
+        // Separate effects, one key each. `setPageState` MERGES
         // (`{...existing, ...state}`), so these cannot clobber `lastPath` —
         // and each only re-runs for its own signal rather than rewriting the
         // whole record whenever any of the three changes.
@@ -140,7 +140,7 @@ export class DocumentPageStateService {
         }
     }
 
-    // ── State signals ────────────────────────────────────────────────
+    // -- State signals ------------------------------------------------
     readonly templates = signal<DocumentTemplate[]>([]);
 
     /** Legacy "shared / personal" folder lists; F.14c-3 replaced
@@ -165,14 +165,14 @@ export class DocumentPageStateService {
      * `currentPath` alone can't stand in for it: it may be a subfolder,
      * and the breadcrumb needs to know how far UP the module is willing
      * to go. Above the space root the chain is real but unreachable —
-     * Documents has no view for `/`, `/home` or `/home/{uuid}` (#1683).
+     * Documents has no view for `/`, `/home` or `/home/{uuid}`.
      *
      * `null` until the spaces response lands.
      */
     readonly spaceRoot = signal<string | null>(null);
 
     /**
-     * Bumped when a subfolder is created (#1684). The folder chips and
+     * Bumped when a subfolder is created. The folder chips and
      * the tree key their fetch on the PATH, which does not change when a
      * child appears underneath it — without this they would keep showing
      * the pre-create listing until the user navigated away and back.
@@ -182,20 +182,20 @@ export class DocumentPageStateService {
     /** Rendering of the folder-content (templates) view. */
     readonly viewMode = signal<DocumentViewMode>('large');
 
-    /** Phase A.1a: separate view mode for the instances file zone. */
+    /**.1a: separate view mode for the instances file zone. */
     readonly instancesViewMode = signal<InstancesViewMode>('large');
 
-    /** Phase A: which right-panel surface is mounted when a template is selected. */
+    /**: which right-panel surface is mounted when a template is selected. */
     readonly rightPanelMode = signal<RightPanelMode>('properties');
 
     /**
-     * #1683 — the SPACE scope for instances mode.
+     * — the SPACE scope for instances mode.
      *
      * Instances mode answers one of two questions, and this signal is
      * the discriminator:
-     *   `null`      → "what did THIS TEMPLATE produce?" (scope is
-     *                 `selectedTemplate`, the original Phase A.1a view)
-     *   `<vfsPath>` → "what has THIS SPACE produced?" (scope is the
+     *   `null`      -> "what did THIS TEMPLATE produce?" (scope is
+     *                 `selectedTemplate`, the original.1a view)
+     *   `<vfsPath>` -> "what has THIS SPACE produced?" (scope is the
      *                 VFS root, reached by clicking the space segment
      *                 in the breadcrumb)
      *
@@ -208,7 +208,7 @@ export class DocumentPageStateService {
     readonly instancesScopePath = signal<string | null>(null);
 
     /**
-     * #1683 — which of the three views the main pane is showing. ONE
+     * — which of the three views the main pane is showing. ONE
      * definition, read by the pane router, the breadcrumb and the
      * toolbar/context records, so they cannot disagree about where the
      * user is:
@@ -234,14 +234,14 @@ export class DocumentPageStateService {
     });
 
     /**
-     * Phase D hotfix #3: panel visibility is its own signal, not derived
+     * hotfix #3: panel visibility is its own signal, not derived
      * from selection. Single-click on a tile/card both selects AND opens
      * the panel; right-click only selects. Mode-properties toolbar toggle
      * flips this without touching selection.
      */
     readonly propertiesPanelOpen = signal<boolean>(false);
 
-    /** Phase A: instances-browser filter state. Reset on template change. */
+    /**: instances-browser filter state. Reset on template change. */
     readonly instanceFilters = signal<InstanceFilters>({
         outputFormat: null,
         status: null,
@@ -249,14 +249,14 @@ export class DocumentPageStateService {
     });
 
     /**
-     * Phase A: total count of instances for the selected template,
+     *: total count of instances for the selected template,
      * surfaced as a badge on the Show Instances toolbar toggle. `0` when
      * no template is selected.
      */
     readonly instanceCount = signal<number>(0);
 
     /**
-     * Phase A.1b: focused instance in the file zone. Drives the
+     *.1b: focused instance in the file zone. Drives the
      * three-pane layout in instances mode — when non-null the right
      * detail panel mounts InstanceDetail; null leaves the file zone
      * full-width.
@@ -274,7 +274,7 @@ export class DocumentPageStateService {
      */
     readonly expandedPaths = signal<ReadonlySet<string>>(new Set());
 
-    // ── Derived signals ──────────────────────────────────────────────
+    // -- Derived signals ----------------------------------------------
     readonly selectedTemplate = computed(() => {
         const id = this.selectedId();
         if (id === null) {
@@ -302,7 +302,7 @@ export class DocumentPageStateService {
         return this.toolbarNodes().find((n) => n.meta?.['action'] === targetAction) ?? null;
     });
 
-    // ── Imperative event subjects ────────────────────────────────────
+    // -- Imperative event subjects ------------------------------------
     /** Page subscribes; slots emit when they need a fresh fetch. */
     readonly refreshRequested$ = new Subject<void>();
     /** Slots dispatch a focused action up to the page (deletion, generation, etc.). */
@@ -313,7 +313,7 @@ export class DocumentPageStateService {
      *  modal — keeps the detail component free of dialog deps. */
     readonly openInstanceRequested$ = new Subject<OpenInstanceRequest>();
     /**
-     * Phase B: emitted when the user double-clicks a template tile or
+     *: emitted when the user double-clicks a template tile or
      * row. The page decides whether to open a viewer modal (imported
      * templates) or surface the "native editor coming soon"
      * placeholder (native templates). Generate stays as an explicit
@@ -336,18 +336,18 @@ export class DocumentPageStateService {
     readonly uploadToFolderRequested$ = new Subject<string>();
 
     /**
-     * #1684 — files dropped on the DOCUMENTS zone. Separate from
+     * — files dropped on the DOCUMENTS zone. Separate from
      * `uploadFilesRequested$`, which routes through the template
      * service and lands under `.templates`.
      */
     readonly uploadDocumentsRequested$ = new Subject<File[]>();
 
-    /** #1684 — "New folder here" from a tree/space right-click. Carries
+    /** — "New folder here" from a tree/space right-click. Carries
      *  the RIGHT-CLICKED path, not `currentPath`. */
     readonly newFolderInRequested$ = new Subject<string>();
 
     /**
-     * Phase A.1b backend ops: emitted by anything that mutates the
+     *.1b backend ops: emitted by anything that mutates the
      * instances collection (delete, regenerate, generate-success) to
      * tell the InstancesBrowser to refetch its current page. Cheaper
      * than tearing down + rebuilding the whole template selection.
@@ -375,7 +375,7 @@ export class DocumentPageStateService {
         this.actionDispatched$.next(action);
     }
 
-    // ── Folder/template selection helpers ────────────────────────────
+    // -- Folder/template selection helpers ----------------------------
 
     /**
      * Switching to a folder clears any template selection so the main
@@ -387,7 +387,7 @@ export class DocumentPageStateService {
         this.currentPath.set(path);
         this.selectedId.set(null);
 
-        // #1688 — a folder BELOW the space root cannot hold templates:
+        // — a folder BELOW the space root cannot hold templates:
         // `TemplateRootResolver` recognises only `<spaceRoot>/.templates`.
         // So picking a subfolder in the tree is DOCUMENTS navigation, and
         // staying in the templates view left the pane showing the space's
@@ -429,13 +429,13 @@ export class DocumentPageStateService {
         // Show Instances toggle, the revert-to-browsing effect). Clearing
         // the space scope here means the two scopes can never both be
         // live, so `instancesScopePath` alone answers "which question is
-        // this view answering?" (#1683).
+        // this view answering?".
         this.instancesScopePath.set(null);
         this.rightPanelMode.set(mode);
     }
 
     /**
-     * #1683 — enter the space-scoped Documents view: "everything this
+     * — enter the space-scoped Documents view: "everything this
      * space has produced", regardless of which template produced it.
      *
      * Reached by clicking the space segment in the breadcrumb while
@@ -450,7 +450,7 @@ export class DocumentPageStateService {
     }
 
     /**
-     * #1683 — show the template listing at the current path, from
+     * — show the template listing at the current path, from
      * either instances view. Reached by the Templates folder chip in
      * the space view and by the `Templates` breadcrumb segment in a
      * template's instances view.
@@ -459,7 +459,7 @@ export class DocumentPageStateService {
         // Templates are per-SPACE, not per-folder: `TemplateRootResolver`
         // only recognises `<spaceRoot>/.templates`, so a `.templates`
         // inside a subfolder would be inert — not a template root, not
-        // discovered, not writable through the template endpoints (#1684).
+        // discovered, not writable through the template endpoints.
         // Entering the Templates view therefore always returns to the
         // space root; leaving `currentPath` on a subfolder would show an
         // empty listing and a Templates breadcrumb pointing at a

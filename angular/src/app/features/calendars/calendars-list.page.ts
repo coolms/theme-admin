@@ -26,7 +26,7 @@ import {
 import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
 
 /**
- * #472 — Calendars admin list page (/admin/calendars).
+ * — Calendars admin list page (/admin/calendars).
  *
  * Server-side paginated. The DataGrid emits `(loadMore)` on its mount
  * + on every sort / filter change with `{offset, sort, columnFilters}`;

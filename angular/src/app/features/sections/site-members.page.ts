@@ -32,13 +32,13 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Phase I Layer 3d.3 — Members management page (ADR-117).
+ * Layer 3d.3 — Members management page.
  *
  * Routed at `/admin/sections/:slug/members`. Self-contained
  * page that lets an admin (anyone with
  * `currentUserMembership.canAdminister`) change site membership.
  *
- * Per ADR-117 site membership is *VFS perms on `/content/{slug}`*:
+ * Per site membership is *VFS perms on `/content/{slug}`*:
  * - the Node's `uid` is the owner
  * - the Node's `gid` is the editor group (`content` group ID for
  *   the default site)
@@ -72,7 +72,7 @@ import {
                 <!--
                   Standard page chrome. The back action is declared in the
                   backend layout config (web:section-members) and rendered in
-                  the cms-page-header bar (ADR-127); the FE re-labels it with
+                  the cms-page-header bar; the FE re-labels it with
                   the loaded site's name. Slug / member-count / read-only chips
                   project into the header-meta slot on the title baseline.
                   Owner / Editors mutations stay card-internal (contextual).
@@ -239,7 +239,7 @@ import {
                                 </dd>
                             </dl>
                             <p class="hint">
-                                Membership is VFS perms on this Node (per ADR-117).
+                                Membership is VFS permissions on this Node.
                             </p>
                         </div>
                     </section>
@@ -557,7 +557,7 @@ export class SiteMembersPageComponent implements OnInit {
 
     /**
      * Navigation actions for the cms-page-header bar — declared in the
-     * `web:section-members` layout config (ADR-127), not hardcoded. The
+     * `web:section-members` layout config, not hardcoded. The
      * generic `back` action is re-labelled at runtime with the loaded
      * site's name so it reads as the natural up-one-level destination.
      */
@@ -671,7 +671,7 @@ export class SiteMembersPageComponent implements OnInit {
         return id.length > 8 ? id.slice(0, 8) + '…' : id;
     }
 
-    // ── Add editor ──────────────────────────────────────────────────────────
+    // -- Add editor ----------------------------------------------------------
 
     /**
      * Adds the picked user to the editor group. The Identity
@@ -708,7 +708,7 @@ export class SiteMembersPageComponent implements OnInit {
         });
     }
 
-    // ── Remove editor ───────────────────────────────────────────────────────
+    // -- Remove editor -------------------------------------------------------
 
     confirmRemoveEditor(m: SiteMemberDto): void {
         if (this.isCurrentUser(m.userId)) return; // self-protection
@@ -753,7 +753,7 @@ export class SiteMembersPageComponent implements OnInit {
         });
     }
 
-    // ── Transfer ownership ──────────────────────────────────────────────────
+    // -- Transfer ownership --------------------------------------------------
 
     openTransferOwnership(): void {
         this.transferTargetUserId.set('');

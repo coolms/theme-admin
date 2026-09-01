@@ -10,12 +10,12 @@ import { ImageMapService } from './image-map.service';
 import type { ImageMapDto } from './image-map.types';
 
 export interface ImageMapFormDialogData {
-    /** Present → edit mode (slug immutable); absent → create. */
+    /** Present -> edit mode (slug immutable); absent -> create. */
     map?: ImageMapDto;
 }
 
 /**
- * Create/edit dialog for an ImageMap (`app-modal` + footer slot, the #520
+ * Create/edit dialog for an ImageMap (`app-modal` + footer slot, the
  * dialog shape; one dialog for both modes via optional DIALOG_DATA — the
  * sync edge-register pattern).
  *

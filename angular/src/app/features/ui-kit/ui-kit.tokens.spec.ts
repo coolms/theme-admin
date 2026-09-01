@@ -30,7 +30,7 @@ describe('ui kit tokens', () => {
         } as unknown as CSSStyleSheet;
     }
 
-    it('collects only --cms-* properties, sorted and deduplicated', () => {
+ it('collects only --cms-* properties, sorted and deduplicated', () => {
         const names = discoverTokenNames([
             sheetWith(['--cms-accent', '--bs-primary', 'color']),
             sheetWith(['--cms-bg', '--cms-accent']),
@@ -44,7 +44,7 @@ describe('ui kit tokens', () => {
      * unreadable sheet aborted the scan, the page would show an empty palette
      * and look like the kit had vanished — so each sheet is guarded on its own.
      */
-    it('skips a stylesheet it may not read without losing the others', () => {
+ it('skips a stylesheet it may not read without losing the others', () => {
         const names = discoverTokenNames([
             crossOriginSheet(),
             sheetWith(['--cms-accent']),
@@ -54,13 +54,13 @@ describe('ui kit tokens', () => {
         expect(names).toEqual(['--cms-accent']);
     });
 
-    it('returns nothing when no sheet declares kit tokens', () => {
+ it('returns nothing when no sheet declares kit tokens', () => {
         expect(discoverTokenNames([sheetWith(['--bs-primary'])])).toEqual([]);
         expect(discoverTokenNames([])).toEqual([]);
     });
 
-    describe('colour detection', () => {
-        it('recognises the forms the kit actually uses', () => {
+ describe('colour detection', () => {
+ it('recognises the forms the kit actually uses', () => {
             for (const value of ['#F5A623', '#fff', 'rgb(0,0,0)', 'rgba(0,0,0,.55)', 'hsl(0 0% 0%)', 'transparent']) {
                 expect(looksLikeColour(value)).withContext(value).toBeTrue();
             }
@@ -70,17 +70,17 @@ describe('ui kit tokens', () => {
          * An UNRESOLVED `var()` must not render as a swatch — an empty coloured
          * box would disguise a broken reference as a legitimate colour.
          */
-        it('rejects sizes, shadows and unresolved references', () => {
+ it('rejects sizes, shadows and unresolved references', () => {
             for (const value of ['8px', '.8125rem', '0 1px 2px rgba(0,0,0,.1)', 'var(--missing)']) {
                 expect(looksLikeColour(value)).withContext(value).toBeFalse();
             }
         });
     });
 
-    describe('grouping', () => {
+ describe('grouping', () => {
         const token = (name: string): UiKitToken => ({ name, value: '#000', isColour: true });
 
-        it('groups by the segment after the prefix', () => {
+ it('groups by the segment after the prefix', () => {
             const groups = groupTokens([
                 token('--cms-sidebar-bg'),
                 token('--cms-accent'),
@@ -98,7 +98,7 @@ describe('ui kit tokens', () => {
          * and `-text` — the one token a reader looks for was the one not beside
          * its variants. A group of one costs far less than a split family.
          */
-        it('keeps a family head with its variants rather than in a catch-all', () => {
+ it('keeps a family head with its variants rather than in a catch-all', () => {
             const groups = groupTokens([
                 token('--cms-accent'),
                 token('--cms-accent-hover'),

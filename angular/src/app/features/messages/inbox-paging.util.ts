@@ -1,5 +1,5 @@
 /**
- * Inbox paging state (#2120) — shared by the Messages PAGE and the topbar quick
+ * Inbox paging state — shared by the Messages PAGE and the topbar quick
  * panel, so the two cannot drift.
  *
  * `GET /chat/conversations` used to answer with every conversation the caller

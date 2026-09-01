@@ -2,9 +2,9 @@ import { type Routes } from '@angular/router';
 import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
- * M3.2.h FE -- Designer feature routes.
+ * FE -- Designer feature routes.
  *
- * For the M3.2 vertical slice the only surface is the DMN
+ * For the vertical slice the only surface is the DMN
  * decision-table editor, mounted directly at
  * `/admin/designer/dmn/:key`. The key segment is the same
  * `definitionKey` the backend uses for VFS path minting -- the user
@@ -12,8 +12,8 @@ import { unsavedChangesGuard } from '@coolms/ui-angular';
  * the cockpit is still pending.
  *
  * Later ships layer in:
- *  - `/admin/designer/bpmn/:key`         (M3.3 BPMN-Lite editor)
- *  - `/admin/designer/state/:key`        (M3.5 state-machine editor)
+ *  - `/admin/designer/bpmn/:key`         ( BPMN-Lite editor)
+ *  - `/admin/designer/state/:key`        ( state-machine editor)
  *  - `/admin/designer` index page        (cockpit list; M4)
  *
  * The lazy-load shape mirrors every other feature module (Inbox,
@@ -29,23 +29,23 @@ export const DESIGNER_ROUTES: Routes = [
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
-     * M3.3.h.2 -- BPMN-Lite designer page. Closes the M3.3
-     * authoring → deploy loop end-to-end. Routes to the M3.3.h.1
+     * -- BPMN-Lite designer page. Closes the
+     * authoring -> deploy loop end-to-end. Routes to the
      * backend draft + deploy endpoints via `DesignerService`.
      */
     {
         path: 'bpmn/:key',
         loadComponent: () =>
             import('./bpmn-editor.page').then(m => m.BpmnEditorPage),
-        // ⚠️ Only on routes whose component actually exposes dirty().
+        //  Only on routes whose component actually exposes dirty().
         // dmn/:key and state/:key do NOT yet, and adding it there would
         // make the config read as guarded while nothing is checked.
         canDeactivate: [unsavedChangesGuard],
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
-     * M3.5.e -- State Machine designer page. Authors a Symfony Workflow
-     * `state_machine` config visually; routes to the M3.5.e VFS-backed
+     * -- State Machine designer page. Authors a Symfony Workflow
+     * `state_machine` config visually; routes to the VFS-backed
      * draft + deploy endpoints via `DesignerService`.
      */
     {
@@ -58,7 +58,7 @@ export const DESIGNER_ROUTES: Routes = [
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
-     * M4.j slice 5 -- DMN DRD (Decision Requirements Diagram) designer
+     * Slice 5 -- DMN DRD (Decision Requirements Diagram) designer
      * page. Authors a decision's requirements graph visually + saves it
      * to the decision VFS draft as DMN 1.3 XML via `DesignerService`.
      * Deploy is pending the backend `DmnXmlParser` widening past single

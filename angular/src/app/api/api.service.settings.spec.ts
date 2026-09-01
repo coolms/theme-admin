@@ -16,7 +16,7 @@ import { ApiService } from './api.service';
  * `updateSettings()` did not, and nothing noticed: the PATCH persisted
  * correctly and only the in-memory echo was mangled, which stays invisible
  * until a caller READS a field off it. The per-user accent colour was the first
- * feature to do that, and it silently did nothing (#2033).
+ * feature to do that, and it silently did nothing.
  *
  * These pin the header on both, because the bug is a missing header and a test
  * that only checked the parsed body would pass against the broken version.
@@ -46,7 +46,7 @@ describe('ApiService settings content negotiation', () => {
 
     afterEach(() => http.verify());
 
-    it('asks for plain JSON when reading settings', () => {
+ it('asks for plain JSON when reading settings', () => {
         api.getSettings().subscribe();
 
         const req = http.expectOne('/api/v1/auth/me/settings');
@@ -54,21 +54,21 @@ describe('ApiService settings content negotiation', () => {
         req.flush({});
     });
 
-    it('asks for plain JSON when saving a section, so the keys survive', () => {
+ it('asks for plain JSON when saving a section, so the keys survive', () => {
         api.updateSettings('preferences', { accentColor: '#3366ff' }).subscribe();
 
         const req = http.expectOne('/api/v1/auth/me/settings/preferences');
         expect(req.request.method).toBe('PATCH');
-        // Without this the response comes back as {"member":[…]} and every
-        // caller that reads a named field off it gets undefined.
+ // Without this the response comes back as {"member":[…]} and every
+ // caller that reads a named field off it gets undefined.
         expect(req.request.headers.get('Accept')).toBe('application/json');
-        // The merge-patch content type must survive alongside it — API Platform
-        // rejects the PATCH outright without it.
+ // The merge-patch content type must survive alongside it — API Platform
+ // rejects the PATCH outright without it.
         expect(req.request.headers.get('Content-Type')).toBe('application/merge-patch+json');
         req.flush({});
     });
 
-    it('returns the saved section as a keyed object', () => {
+ it('returns the saved section as a keyed object', () => {
         let received: Record<string, unknown> | undefined;
         api.updateSettings('preferences', {}).subscribe(r => (received = r));
 

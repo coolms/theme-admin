@@ -36,7 +36,7 @@ import {
  *
  * Closes with the updated DocumentTemplate on commit, or `null` on
  * cancel. Format mismatch (e.g. PDF for a Word template) renders an
- * inline error and keeps the dialog in Phase A.
+ * inline error and keeps the dialog in.
  *
  * The picker is per-FORMAT, not Word: this dialog opens for whichever
  * template is selected, so a hard-coded `.docx` accept made replacing a
@@ -443,7 +443,7 @@ export class ReplaceTemplateDialogComponent {
         // dropzone phase and run the preview immediately. The user
         // already picked the file once in the upload dialog; asking
         // again would be redundant. Without a pre-loaded file the
-        // legacy two-phase select → preview flow runs unchanged.
+        // legacy two-phase select -> preview flow runs unchanged.
         const preLoaded = this.data.preLoadedFile;
         if (preLoaded) {
             this.selectedFile.set(preLoaded);

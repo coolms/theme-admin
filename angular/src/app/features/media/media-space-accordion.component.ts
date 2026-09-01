@@ -42,7 +42,7 @@ import { MediaService } from './media.service';
  * why the store is a store and not a generic component — see its header.
  *
  * Registered as `CollectionsTree` in {@link app.config} so the
- * Media Library layout (`media:library` → `content.panel.left`) picks
+ * Media Library layout (`media:library` -> `content.panel.left`) picks
  * it up without further config changes.
  */
 @Component({
@@ -102,7 +102,7 @@ export class MediaSpaceAccordionComponent implements OnInit {
 
             untracked(() => {
                 // The path bar's floor follows the resolved space, and must be
-                // set on RESTORE too (#1762) — not only when the operator
+                // set on RESTORE too — not only when the operator
                 // switches spaces, or a reload would leave it at the default
                 // while the explorer sat in a different space.
                 this.state.spaceRoot.set(root);
@@ -125,7 +125,7 @@ export class MediaSpaceAccordionComponent implements OnInit {
         const next = this.store.select(key);
         if (!next) return;
         this.state.currentDir.set(next.rootPath);
-        // Publish the floor alongside the directory (#1762) so the path bar
+        // Publish the floor alongside the directory so the path bar
         // knows where this space starts.
         this.state.spaceRoot.set(next.rootPath);
         // Reload the collections tree against the new root path so the
@@ -137,9 +137,9 @@ export class MediaSpaceAccordionComponent implements OnInit {
     }
 
     /**
-     * Right-click a SPACE row (#1786). Media was the last explorer whose space
+     * Right-click a SPACE row. Media was the last explorer whose space
      * rows had no menu at all — the accordion has emitted `spaceContextMenu`
-     * since it shipped, and Documents and Pages (#1759) were the only listeners.
+     * since it shipped, and Documents and Pages were the only listeners.
      *
      * ## Not the toolbar node set, unlike every other Media surface
      *
@@ -159,8 +159,8 @@ export class MediaSpaceAccordionComponent implements OnInit {
      * right-clicking an already-active space while the cursor sits three
      * collections deep must still create at the ROOT the menu is attached to.
      *
-     * ⚠️ "Merely dismissing the menu must not move anybody" is what this
-     * comment always said and what the code did not do until #2394 -- the
+     *  "Merely dismissing the menu must not move anybody" is what this
+     * comment always said and what the code did not do until -- the
      * switch ran as the menu OPENED, so a right-click navigated.
      */
     onSpaceContextMenu(payload: { space: SpaceDto; event: MouseEvent }): void {
@@ -168,7 +168,7 @@ export class MediaSpaceAccordionComponent implements OnInit {
         payload.event.stopPropagation();
 
         this.contextMenu.open(payload.event, [...MEDIA_ROOT_MENU_ITEMS], action => {
-            // ⚠️ The switch is HERE now (#2394) -- this comment's own promise,
+            //  The switch is HERE now -- this comment's own promise,
             // which the code broke by switching as the menu opened.
             if (payload.space.key !== this.activeSpaceKey()) {
                 this.onSpaceChange(payload.space.key);

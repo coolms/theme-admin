@@ -58,7 +58,7 @@ export function filterTreeDirectories(nodes: readonly NodeDto[]): NodeDto[] {
 export function nodeFromDto(dto: NodeDto): VfsTreeNode {
     return {
         path: dto.path,
-        // #1685 — `Node.title` when the folder carries one, so a folder
+        // — `Node.title` when the folder carries one, so a folder
         // created as "Счета" reads that way instead of showing its
         // `scheta` slug. Falls back to the on-disk name, which is what
         // every pre-existing folder has.

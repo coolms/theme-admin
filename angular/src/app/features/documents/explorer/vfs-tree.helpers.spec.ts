@@ -29,11 +29,11 @@ function makeNode(overrides: Partial<NodeDto> & Pick<NodeDto, 'name' | 'path' | 
 }
 
 describe('filterTreeDirectories', () => {
-    it('returns an empty list when the input is empty', () => {
+ it('returns an empty list when the input is empty', () => {
         expect(filterTreeDirectories([])).toEqual([]);
     });
 
-    it('drops file entries — files surface in the content view, not the tree', () => {
+ it('drops file entries — files surface in the content view, not the tree', () => {
         const nodes = [
             makeNode({ name: 'README.txt', path: '/documents/README.txt', type: 'file' }),
             makeNode({ name: 'reports', path: '/documents/reports', type: 'directory' }),
@@ -41,7 +41,7 @@ describe('filterTreeDirectories', () => {
         expect(filterTreeDirectories(nodes).map((n) => n.name)).toEqual(['reports']);
     });
 
-    it('drops the `.templates` discriminator directory', () => {
+ it('drops the `.templates` discriminator directory', () => {
         const nodes = [
             makeNode({ name: '.templates', path: '/documents/.templates', type: 'directory' }),
             makeNode({ name: 'reports', path: '/documents/reports', type: 'directory' }),
@@ -49,7 +49,7 @@ describe('filterTreeDirectories', () => {
         expect(filterTreeDirectories(nodes).map((n) => n.name)).toEqual(['reports']);
     });
 
-    it('sorts results alphabetically (case-insensitive)', () => {
+ it('sorts results alphabetically (case-insensitive)', () => {
         const nodes = [
             makeNode({ name: 'Zeta', path: '/documents/Zeta', type: 'directory' }),
             makeNode({ name: 'alpha', path: '/documents/alpha', type: 'directory' }),
@@ -58,7 +58,7 @@ describe('filterTreeDirectories', () => {
         expect(filterTreeDirectories(nodes).map((n) => n.name)).toEqual(['alpha', 'Beta', 'Zeta']);
     });
 
-    it('does not mutate the input array', () => {
+ it('does not mutate the input array', () => {
         const nodes = [
             makeNode({ name: 'b', path: '/documents/b', type: 'directory' }),
             makeNode({ name: 'a', path: '/documents/a', type: 'directory' }),
@@ -70,7 +70,7 @@ describe('filterTreeDirectories', () => {
 });
 
 describe('transformVfsToTree', () => {
-    it('returns nodes with hasChildren=true and children=null (lazy-load contract)', () => {
+ it('returns nodes with hasChildren=true and children=null (lazy-load contract)', () => {
         const nodes = [
             makeNode({ name: 'reports', path: '/documents/reports', type: 'directory' }),
         ];
@@ -82,9 +82,9 @@ describe('transformVfsToTree', () => {
         expect(tree[0].children).toBeNull();
     });
 
-    it('flattens nested input — only the directory entries at the listed level are surfaced', () => {
-        // listDirectory is intentionally non-recursive; transformVfsToTree
-        // mirrors that — children stay null until lazily loaded.
+ it('flattens nested input — only the directory entries at the listed level are surfaced', () => {
+ // listDirectory is intentionally non-recursive; transformVfsToTree
+ // mirrors that — children stay null until lazily loaded.
         const nodes = [
             makeNode({ name: 'a', path: '/documents/a', type: 'directory' }),
             makeNode({ name: 'b', path: '/documents/b', type: 'directory' }),
@@ -92,7 +92,7 @@ describe('transformVfsToTree', () => {
         expect(transformVfsToTree(nodes).map((n) => n.name)).toEqual(['a', 'b']);
     });
 
-    it('returns an empty list when no directory entries match', () => {
+ it('returns an empty list when no directory entries match', () => {
         const nodes = [
             makeNode({ name: 'README.txt', path: '/documents/README.txt', type: 'file' }),
             makeNode({ name: '.templates', path: '/documents/.templates', type: 'directory' }),
@@ -116,19 +116,19 @@ describe('filterTemplatesForFolder', () => {
             createdAt: null,
             updatedAt: null,
             ...overrides,
-            // AFTER the spread on purpose. `DocumentTemplate` gained `path`
-            // when native templates started opening through FileEditorRegistry,
-            // and `Partial<DocumentTemplate>` makes it `string | null |
-            // undefined` — spreading it over a default widens the property and
-            // the whole object stops satisfying `DocumentTemplate`, which broke
-            // the compile and with it the ENTIRE suite (karma reports one load
-            // error and runs zero specs). No caller overrides `path`, so
-            // pinning it here is exact rather than merely quiet.
+ // AFTER the spread on purpose. `DocumentTemplate` gained `path`
+ // when native templates started opening through FileEditorRegistry,
+ // and `Partial<DocumentTemplate>` makes it `string | null |
+ // undefined` — spreading it over a default widens the property and
+ // the whole object stops satisfying `DocumentTemplate`, which broke
+ // the compile and with it the ENTIRE suite (karma reports one load
+ // error and runs zero specs). No caller overrides `path`, so
+ // pinning it here is exact rather than merely quiet.
             path: null,
         };
     }
 
-    it('returns templates whose id matches a file node in the listing', () => {
+ it('returns templates whose id matches a file node in the listing', () => {
         const nodes = [
             makeNode({ name: 'a.docx', path: '/documents/.templates/a.docx', type: 'file', id: 't-a' }),
             makeNode({ name: 'b.docx', path: '/documents/.templates/b.docx', type: 'file', id: 't-b' }),
@@ -142,10 +142,10 @@ describe('filterTemplatesForFolder', () => {
         expect(result.map((t) => t.name)).toEqual(['A', 'B']);
     });
 
-    it('ignores directory entries when matching templates', () => {
+ it('ignores directory entries when matching templates', () => {
         const nodes = [
-            // Stray directory whose id collides with a template id.
-            // Filter must ignore directories — only file entries qualify.
+ // Stray directory whose id collides with a template id.
+ // Filter must ignore directories — only file entries qualify.
             makeNode({ name: 'a', path: '/documents/.templates/a', type: 'directory', id: 't-a' }),
         ];
         const templates = [
@@ -154,7 +154,7 @@ describe('filterTemplatesForFolder', () => {
         expect(filterTemplatesForFolder(nodes, templates)).toEqual([]);
     });
 
-    it('returns templates sorted alphabetically (case-insensitive)', () => {
+ it('returns templates sorted alphabetically (case-insensitive)', () => {
         const nodes = [
             makeNode({ name: 'a.docx', path: '/p/a.docx', type: 'file', id: '1' }),
             makeNode({ name: 'b.docx', path: '/p/b.docx', type: 'file', id: '2' }),
@@ -168,7 +168,7 @@ describe('filterTemplatesForFolder', () => {
         expect(filterTemplatesForFolder(nodes, templates).map((t) => t.name)).toEqual(['apple', 'Banana', 'Zebra']);
     });
 
-    it('returns an empty list when there are no file nodes', () => {
+ it('returns an empty list when there are no file nodes', () => {
         const nodes = [
             makeNode({ name: 'sub', path: '/documents/sub', type: 'directory' }),
         ];

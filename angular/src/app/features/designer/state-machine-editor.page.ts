@@ -33,9 +33,9 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * M3.5.e — State Machine designer page. Hosts the vanilla-TS
+ * — State Machine designer page. Hosts the vanilla-TS
  * {@link StateMachineEditor} (from `@coolms/designer/state-machine`)
- * inside the shared editor shell, wired to the M3.5.e VFS-backed
+ * inside the shared editor shell, wired to the VFS-backed
  * draft + deploy API via {@link DesignerService}. Mirrors the BPMN-Lite
  * designer page but is simpler: the SM editor ships selection +
  * property panel + click-to-select + auto-layout internally, so there's
@@ -138,7 +138,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
      * Unsaved-work flag, PUBLIC so `unsavedChangesGuard` can read it off the
      * route component. Driven by the COMMAND STACK: `load()` emits a change
      * but pushes no command, so subscribing to the editor would mark a
-     * freshly opened draft dirty before the user touched it (#2489).
+     * freshly opened draft dirty before the user touched it.
      */
     readonly dirty = signal(false);
 
@@ -302,7 +302,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         this.fitToContent();
     }
 
-    /** Toggle two-click connect mode (source state → target state). */
+    /** Toggle two-click connect mode (source state -> target state). */
     protected toggleConnect(): void {
         if (this.smEditor === undefined) return;
         const next = !this.connectActive();

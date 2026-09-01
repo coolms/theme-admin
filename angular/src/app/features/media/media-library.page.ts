@@ -132,7 +132,7 @@ export type ToolbarContext =
                         </select>
                     </div>
 
-                    <!-- #1709 — the same switcher Pages uses, fed by the modes
+                    <!-- — the same switcher Pages uses, fed by the modes
                          media:library declares. Media used to seed four view-*
                          NaviGraph nodes with its own icons and its own word for
                          the wide row ("list", which meant the TABLE in Pages).
@@ -159,7 +159,7 @@ export type ToolbarContext =
     `],
 })
 export class MediaLibraryPage implements OnInit {
-    // ── Injected services ───────────────────────────────────────────────────
+    // -- Injected services ---------------------------------------------------
 
     readonly state = inject(MediaPageStateService);
     private readonly footer     = inject(PageFooterService);
@@ -178,7 +178,7 @@ export class MediaLibraryPage implements OnInit {
 
     @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
-    // ── Page-local pagination state ─────────────────────────────────────────
+    // -- Page-local pagination state -----------------------------------------
 
     private readonly search     = signal('');
     private readonly mimeFilter = signal('');
@@ -187,14 +187,14 @@ export class MediaLibraryPage implements OnInit {
     private loadId              = 0;
     private readonly searchSubject = new Subject<string>();
 
-    // ── Computed context passed to ExplorerLayout ───────────────────────────
+    // -- Computed context passed to ExplorerLayout ---------------------------
 
     readonly pageContext = computed((): Record<string, unknown> => ({
         // The right panel hosts either an asset OR a collection — show it for both.
         activeItem: this.state.activeAsset() ?? this.state.activeCollection(),
     }));
 
-    // ── Computed toolbar state ──────────────────────────────────────────────
+    // -- Computed toolbar state ----------------------------------------------
 
     readonly selectedAssets = computed(() =>
         this.state.assets().filter(a => this.state.selectedIds().includes(a.id))
@@ -233,7 +233,7 @@ export class MediaLibraryPage implements OnInit {
      * carry `status eq 'ready'` -- operating on pending / failed assets risks
      * acting on pre-process bytes). A multi-selection reports `ready` only if
      * every asset is, otherwise `mixed` so the strict predicate hides them.
-     * Non-asset contexts do not expose it at all, and ADR-093 treats an absent
+     * Non-asset contexts do not expose it at all, and treats an absent
      * field as false, which is the outcome we want.
      */
     readonly actionContext = computed((): Record<string, unknown> => {
@@ -266,7 +266,7 @@ export class MediaLibraryPage implements OnInit {
         };
     });
 
-    // ── Constructor ─────────────────────────────────────────────────────────
+    // -- Constructor ---------------------------------------------------------
 
     constructor() {
         // Keep footer status bar in sync with media state
@@ -302,7 +302,7 @@ export class MediaLibraryPage implements OnInit {
         // Live updates: when another session creates / deletes / renames /
         // moves an asset in the collection we're viewing, the backend
         // publishes to `vfs.parent.{collectionNodeId}` (every VFS mutation
-        // emits since #722). Refetch the grid (debounced to collapse bursts
+        // emits). Refetch the grid (debounced to collapse bursts
         // like a multi-file upload). Mirrors the VFS File Explorer's
         // `VfsLiveEventsService` wiring, resolving the collection path to its
         // Node id via the same `/vfs/files` stat the explorer uses; switchMap
@@ -333,7 +333,7 @@ export class MediaLibraryPage implements OnInit {
         });
     }
 
-    // ── Lifecycle ───────────────────────────────────────────────────────────
+    // -- Lifecycle -----------------------------------------------------------
 
     ngOnInit(): void {
         // Load toolbar navgraph
@@ -386,7 +386,7 @@ export class MediaLibraryPage implements OnInit {
         this.loadCollections();
     }
 
-    // ── Toolbar action handler ──────────────────────────────────────────────
+    // -- Toolbar action handler ----------------------------------------------
 
     onToolbarAction(action: string): void {
         switch (action) {
@@ -503,7 +503,7 @@ export class MediaLibraryPage implements OnInit {
         }
     }
 
-    // ── File upload ─────────────────────────────────────────────────────────
+    // -- File upload ---------------------------------------------------------
 
     onFileInputChange(event: Event): void {
         const input = event.target as HTMLInputElement;
@@ -523,7 +523,7 @@ export class MediaLibraryPage implements OnInit {
         }
     }
 
-    // ── Dialogs ─────────────────────────────────────────────────────────────
+    // -- Dialogs -------------------------------------------------------------
 
     /**
      * Phase 1C: opens the headless image editor on the focused asset.
@@ -598,7 +598,7 @@ export class MediaLibraryPage implements OnInit {
         ).subscribe(() => this.resetAndLoad());
     }
 
-    // ── Asset deletion ──────────────────────────────────────────────────────
+    // -- Asset deletion ------------------------------------------------------
 
     private deleteAssets(assets: MediaAssetDto[]): void {
         if (!assets.length) return;
@@ -618,7 +618,7 @@ export class MediaLibraryPage implements OnInit {
         });
     }
 
-    // ── Collections ─────────────────────────────────────────────────────────
+    // -- Collections ---------------------------------------------------------
 
     private loadCollections(): void {
         // Load collections relative to the currently active space root.
@@ -693,7 +693,7 @@ export class MediaLibraryPage implements OnInit {
         );
     }
 
-    // ── Pagination ──────────────────────────────────────────────────────────
+    // -- Pagination ----------------------------------------------------------
 
     private resetAndLoad(): void {
         this.loadId++;
@@ -743,7 +743,7 @@ export class MediaLibraryPage implements OnInit {
         });
     }
 
-    // ── Keyboard shortcuts ──────────────────────────────────────────────────
+    // -- Keyboard shortcuts --------------------------------------------------
 
     @HostListener('document:keydown', ['$event'])
     onKeydown(event: KeyboardEvent): void {
@@ -764,12 +764,12 @@ export class MediaLibraryPage implements OnInit {
         }
     }
 
-    // ── Input handlers ──────────────────────────────────────────────────────
+    // -- Input handlers ------------------------------------------------------
 
     onSearchChange(value: string): void     { this.searchSubject.next(value); }
     onMimeFilterChange(value: string): void { this.mimeFilter.set(value); }
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
+    // -- Helpers -------------------------------------------------------------
 
     private getActionIcon(actionId: string, fallback = 'lock'): string {
         const node = this.state.toolbarNodes().find(n => n.meta['action'] === actionId);

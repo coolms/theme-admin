@@ -230,7 +230,7 @@ export class VfsTreeComponent implements OnInit {
      */
     protected readonly flashingNodeIds = signal<ReadonlySet<string>>(new Set());
 
-    // ── Non-reactive per-path pagination state ─────────────────────────────────
+    // -- Non-reactive per-path pagination state ---------------------------------
     /** Paths whose API response has been received at least once (prevents double-fetch). */
     private readonly pathLoaded    = new Set<string>();
     /** Whether each path has more pages available. */
@@ -238,7 +238,7 @@ export class VfsTreeComponent implements OnInit {
     /** Next-page cursor for each path. */
     private readonly pathCursorMap = new Map<string, string | null>();
 
-    // ── Computed: depth-first flat tree ───────────────────────────────────────
+    // -- Computed: depth-first flat tree ---------------------------------------
 
     /**
      * Flattens the entire visible tree into a single renderable list.
@@ -279,7 +279,7 @@ export class VfsTreeComponent implements OnInit {
         return item.kind === 'node' ? item.node.id : `more:${item.path}`;
     }
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    // -- Lifecycle --------------------------------------------------------------
 
     constructor() {
         // When currentPath changes (files-panel navigation), expand every ancestor
@@ -343,7 +343,7 @@ export class VfsTreeComponent implements OnInit {
         this.statRoot();
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    // -- Helpers ----------------------------------------------------------------
 
     indentPx(depth: number): number { return 12 + depth * 16; }
 
@@ -360,7 +360,7 @@ export class VfsTreeComponent implements OnInit {
         return this.dragOverNode()?.id === node.id;
     }
 
-    // ── User interactions ──────────────────────────────────────────────────────
+    // -- User interactions ------------------------------------------------------
 
     onContextMenu(node: VfsNodeDto, event: MouseEvent): void {
         const nodes = this.state.vfsToolbarNodes();
@@ -427,7 +427,7 @@ export class VfsTreeComponent implements OnInit {
         this.fetchPath(path, cursor);
     }
 
-    // ── CDK Drag & Drop ────────────────────────────────────────────────────────
+    // -- CDK Drag & Drop --------------------------------------------------------
 
     onTreeDropEnter(node: VfsNodeDto): void {
         if (node.type === 'directory') this.dragOverNode.set(node);
@@ -445,7 +445,7 @@ export class VfsTreeComponent implements OnInit {
         void this.clipboard.move(source.path, target.path);
     }
 
-    // ── Node label ─────────────────────────────────────────────────────────────
+    // -- Node label -------------------------------------------------------------
 
     /** /home/{uuid} dirs resolve to the owning user's identifier. */
     protected nodeLabel(node: VfsNodeDto): string {
@@ -454,7 +454,7 @@ export class VfsTreeComponent implements OnInit {
             : node.name;
     }
 
-    // ── Auto-expand ────────────────────────────────────────────────────────────
+    // -- Auto-expand ------------------------------------------------------------
 
     /**
      * Expand every ancestor directory along fullPath.
@@ -482,7 +482,7 @@ export class VfsTreeComponent implements OnInit {
         }
     }
 
-    // ── Private: expand a path ─────────────────────────────────────────────────
+    // -- Private: expand a path -------------------------------------------------
 
     private expand(path: string): void {
         this.expandedPaths.update(s => new Set([...s, path]));
@@ -492,7 +492,7 @@ export class VfsTreeComponent implements OnInit {
         }
     }
 
-    // ── Data loading ───────────────────────────────────────────────────────────
+    // -- Data loading -----------------------------------------------------------
 
     /**
      * Fetch one page of children for `path` and merge into `childrenMap`.
@@ -547,7 +547,7 @@ export class VfsTreeComponent implements OnInit {
         });
     }
 
-    // ── Phase 2 VFS live ──────────────────────────────────────────────────────
+    // -- Phase 2 VFS live ------------------------------------------------------
 
     /**
      * One-shot fetch of the root node's UUID via the `vfs/files`

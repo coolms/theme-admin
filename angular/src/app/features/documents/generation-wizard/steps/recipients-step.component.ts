@@ -22,7 +22,7 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
  * Stateless w.r.t. wizard: receives + emits `rql` and `count` model
  * signals so the wizard owns the source of truth.
  *
- * ## The count comes from preview-audience, not the user list (#1757)
+ * ## The count comes from preview-audience, not the user list
  *
  * This used to call `countUsers()`, which read `totalItems` off
  * `GET /auth/users` — an endpoint that returns a BARE ARRAY. The count was

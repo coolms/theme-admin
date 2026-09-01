@@ -12,7 +12,7 @@ import { CalendarSettingsPanelComponent } from './calendar-settings-panel.compon
 type SettingsTab = 'settings' | 'hours' | 'rules' | 'shares';
 
 /**
- * M1.2.f.4 — In-page Calendar settings side panel.
+ * — In-page Calendar settings side panel.
  *
  * Slides in from the right inside `calendar-detail.page.ts` (NOT in
  * the global right-side drawer). The architectural distinction:

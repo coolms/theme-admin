@@ -17,7 +17,7 @@ import { EmailService } from './email.service';
 import { MailboxDelegationDto } from './email.types';
 
 /**
- * #1426 — the Gmail/Workspace "delegate access" card on the mailbox editor
+ * — the Gmail/Workspace "delegate access" card on the mailbox editor
  * (Slice 3 of the delegation feature). Lists a mailbox's delegates and lets the
  * owner/admin grant + revoke; the backend MANAGE-gates every op and notifies the
  * owner on grant. A delegate gains read + send-as (no role tiers), so this is a

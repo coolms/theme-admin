@@ -15,7 +15,7 @@ export interface SetVariableResult {
 }
 
 /**
- * M4.c — "Set variable" dialog for the Process Cockpit detail page.
+ * "Set variable" dialog for the Process Cockpit detail page.
  *
  * A minimal two-field form (variable name + value, both text inputs). The
  * value is sent as a plain string — the backend stores it on the instance's

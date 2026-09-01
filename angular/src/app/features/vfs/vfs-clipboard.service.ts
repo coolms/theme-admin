@@ -161,7 +161,7 @@ export class VfsClipboardService {
             backdropClass: 'cdk-overlay-dark-backdrop',
         });
 
-        // Apply → ConflictResult; Cancel/X/backdrop/Esc → null|undefined (treated as skip).
+        // Apply -> ConflictResult; Cancel/X/backdrop/Esc -> null|undefined (treated as skip).
         const resolution = (await firstValueFrom(ref.closed)) ?? null;
         if (resolution?.applyToAll) {
             this.lastConflictDecision = resolution;

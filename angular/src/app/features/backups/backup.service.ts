@@ -57,7 +57,7 @@ export interface RestorePreviewResult {
 }
 
 /**
- * Backup admin API client (ADR-149, #1476/#1477).
+ * Backup admin API client.
  *
  * Talks to the superuser/backup-group-gated `/api/v1/backup` surface off
  * the generic `manifest.apiBase` — feature-local (not on the shared ApiService),

@@ -5,7 +5,7 @@ import { DrawerService } from '@coolms/ui-angular';
 import { CallDialPanelComponent } from './call-dial-panel.component';
 
 /**
- * M9.g Slice B — the topbar "dial a number" launcher. A phone-outbound icon in
+ * The topbar "dial a number" launcher. A phone-outbound icon in
  * the right-side quick-access cluster that opens the {@link CallDialPanelComponent}
  * dial pad in the shared right drawer (the messages/calendar quick-access
  * pattern). Click-to-dial over the existing `POST /call/originate`.

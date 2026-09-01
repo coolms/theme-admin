@@ -15,14 +15,14 @@ import { VfsNodeDto } from '@coolms/ui-angular';
 
 /**
  * Mime stamped on the Workflow Package container node
- * (`/workflows/{key}/`) by the M3.3.m
- * `App\Workflow\Infrastructure\Service\WorkflowVirtualMimeProvider`.
+ * (`/workflows/{key}/`) by the
+ * `WorkflowVirtualMimeProvider`.
  */
 export const WORKFLOW_PACKAGE_MIME = 'application/vnd.coolms.workflow';
 
 /**
  * Mime stamped on the BPMN-Lite body files
- * (`draft.bpmn.json`, `v{N}.bpmn.json`) by the M3.3.m installer +
+ * (`draft.bpmn.json`, `v{N}.bpmn.json`) by the installer +
  * deployer.
  */
 export const WORKFLOW_BPMN_LITE_BODY_MIME =
@@ -31,11 +31,11 @@ export const WORKFLOW_BPMN_LITE_BODY_MIME =
 /**
  * Derive the workflow definition key from a VFS node's path.
  *
- *  - Package container `/workflows/{key}/` → returns `{key}`.
+ *  - Package container `/workflows/{key}/` -> returns `{key}`.
  *  - Body file `/workflows/{key}/draft.bpmn.json` or
- *    `/workflows/{key}/v{N}.bpmn.json` → returns `{key}`.
+ *    `/workflows/{key}/v{N}.bpmn.json` -> returns `{key}`.
  *  - Anything else (path doesn't start with `/workflows/`, or has no
- *    key segment) → returns null. Callers surface this as a "cannot
+ *    key segment) -> returns null. Callers surface this as a "cannot
  *    derive workflow key" error.
  */
 export function workflowKeyFromNode(node: VfsNodeDto): string | null {
@@ -54,11 +54,11 @@ export function workflowKeyFromNode(node: VfsNodeDto): string | null {
  * non-version path — Package containers, `draft.bpmn.json`, and any
  * other shape default to editor mode.
  *
- *  - `/workflows/identity.verify/v3.bpmn.json` → `3`
- *  - `/workflows/identity.verify/draft.bpmn.json` → null
- *  - `/workflows/identity.verify` (Package) → null
- *  - `/workflows/identity.verify/v3.bpmn.json.bak` → null
- *  - `/workflows/x/v0.bpmn.json` → `0` (legal at the path level — the
+ *  - `/workflows/identity.verify/v3.bpmn.json` -> `3`
+ *  - `/workflows/identity.verify/draft.bpmn.json` -> null
+ *  - `/workflows/identity.verify` (Package) -> null
+ *  - `/workflows/identity.verify/v3.bpmn.json.bak` -> null
+ *  - `/workflows/x/v0.bpmn.json` -> `0` (legal at the path level — the
  *    backend returns 404 if no v0 exists, which is the correct UX)
  */
 export function workflowVersionFromNode(node: VfsNodeDto): number | null {

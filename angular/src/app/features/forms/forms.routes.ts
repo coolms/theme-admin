@@ -2,7 +2,7 @@ import { type Routes } from '@angular/router';
 import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
- * Form Builder admin routes (Track D.3).
+ * Form Builder admin routes.3).
  *   `/admin/forms`        — forms list page
  *   `/admin/forms/new`    — builder, blank (author a new form)
  *   `/admin/forms/:id`    — builder, editing an existing form

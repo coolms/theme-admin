@@ -18,7 +18,7 @@ import { FieldSchemaItem, SchemaService } from './schema.service';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
 import { ApiService } from '../../api/api.service';
 
-// ── Static-override tab index type ───────────────────────────────────────────
+// -- Static-override tab index type -------------------------------------------
 type TabIndex = 0 | 1 | 2;
 
 @Component({
@@ -71,7 +71,7 @@ type TabIndex = 0 | 1 | 2;
                 <form [formGroup]="staticForm" (ngSubmit)="onStaticOverrideSubmit()"
                       class="fdf-static-body">
 
-                    <!-- ── Tab 0: General ─────────────────────────────────── -->
+                    <!-- -- Tab 0: General ----------------------------------- -->
                     @if (activeTab() === 0) {
                         <div class="fdf-fields">
 
@@ -151,7 +151,7 @@ type TabIndex = 0 | 1 | 2;
                         </div>
                     }
 
-                    <!-- ── Tab 1: Security ────────────────────────────────── -->
+                    <!-- -- Tab 1: Security ---------------------------------- -->
                     @if (activeTab() === 1) {
                         <div class="fdf-fields">
 
@@ -196,7 +196,7 @@ type TabIndex = 0 | 1 | 2;
                         </div>
                     }
 
-                    <!-- ── Tab 2: Advanced ────────────────────────────────── -->
+                    <!-- -- Tab 2: Advanced ---------------------------------- -->
                     @if (activeTab() === 2) {
                         <div class="fdf-fields">
 
@@ -279,7 +279,7 @@ type TabIndex = 0 | 1 | 2;
                         </div>
                     }
 
-                    <!-- Per-locale field-LABEL translations (#706). The field's
+                    <!-- Per-locale field-LABEL translations. The field's
                          own display label, persisted to the XLIFF catalogue
                          (key definition.{uuid}.label) — NOT stored on the row.
                          Shown only in edit mode when >1 locale is configured;
@@ -391,10 +391,10 @@ type TabIndex = 0 | 1 | 2;
             flex-direction: column;
         }
 
-        /* ── Branch B body ──────────────────────────────────────────────── */
+        /* -- Branch B body ------------------------------------------------ */
         .fdf-body { overflow-y: auto; flex: 1; padding: 20px; }
 
-        /* ── Alert banners — shared structure, two colour variants ─────── */
+        /* -- Alert banners — shared structure, two colour variants ------- */
         .cms-alert {
             display: flex;
             align-items: center;
@@ -406,7 +406,7 @@ type TabIndex = 0 | 1 | 2;
             line-height: 1.4;
         }
 
-        /* ⚠️ These used --cms-*-light as the fill with the RAW HUE as ink.
+        /*  These used --cms-*-light as the fill with the RAW HUE as ink.
            MEASURED on a probe carrying these exact declarations: warning 3.07
            in LIGHT theme, info 4.44 in DARK -- one failure per theme, at
            .8125rem, which is why checking either theme alone missed both. The
@@ -430,7 +430,7 @@ type TabIndex = 0 | 1 | 2;
             margin: 8px 20px;
         }
 
-        /* ── Static override: identity row ─────────────────────────────── */
+        /* -- Static override: identity row ------------------------------- */
         .fdf-identity-row {
             display: flex;
             align-items: center;
@@ -456,10 +456,10 @@ type TabIndex = 0 | 1 | 2;
             margin-left: auto;
         }
 
-        /* ── Tab nav for static override ─────────────────────────────────
+        /* -- Tab nav for static override ---------------------------------
            Re-declared here because form-tabs__* is scoped to DynamicLayoutComponent
            and Angular's view encapsulation prevents it from reaching this host.
-        ────────────────────────────────────────────────────────────────── */
+        ------------------------------------------------------------------ */
         .fdf-tabs-nav {
             display: flex;
             gap: 0;
@@ -490,7 +490,7 @@ type TabIndex = 0 | 1 | 2;
             border-bottom-color: var(--cms-accent);
         }
 
-        /* ── Static override form body ──────────────────────────────────── */
+        /* -- Static override form body ------------------------------------ */
         .fdf-static-body {
             display: flex;
             flex-direction: column;
@@ -508,7 +508,7 @@ type TabIndex = 0 | 1 | 2;
             flex: 1;
         }
 
-        /* ── Toggle row alignment ───────────────────────────────────────── */
+        /* -- Toggle row alignment ----------------------------------------- */
         /* Bootstrap .form-check.form-switch adds padding-left:2.5em — reset it
            so the switch aligns flush with the input fields above it.           */
         .fdf-toggle-row {
@@ -543,7 +543,7 @@ type TabIndex = 0 | 1 | 2;
             font-size: .8125rem;
         }
 
-        /* ── Server error ───────────────────────────────────────────────── */
+        /* -- Server error ------------------------------------------------- */
         .fdf-server-error {
             margin: 0 20px;
             padding: 8px 12px;
@@ -554,11 +554,11 @@ type TabIndex = 0 | 1 | 2;
             color: var(--cms-danger-text);
         }
 
-        /* ── Utility ────────────────────────────────────────────────────── */
+        /* -- Utility ------------------------------------------------------ */
         .font-mono { font-family: var(--cms-font-mono, monospace); }
         .cms-field-error { font-size: .75rem; color: var(--cms-danger-text); margin-top: 4px; }
 
-        /* ── Option-label translations panel (F5.b Phase 5) ───────────────── */
+        /* -- Option-label translations panel (F5.b Phase 5) ----------------- */
         .fdf-opt-i18n {
             margin-bottom: 16px;
             padding: 12px;
@@ -641,7 +641,7 @@ export class FieldDefinitionFormComponent implements OnInit {
      */
     readonly isNumeric = isNumeric;
 
-    // ── Static-override form state ────────────────────────────────────────────
+    // -- Static-override form state --------------------------------------------
 
     /** Available Symfony form types loaded from the API. */
     readonly formTypes = signal<Array<{ value: string; label: string }>>([]);
@@ -694,7 +694,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         });
     })();
 
-    // ── Branch-B (DynamicForm) state ──────────────────────────────────────────
+    // -- Branch-B (DynamicForm) state ------------------------------------------
 
     /**
      * True until the user modifies at least one field in override mode.
@@ -714,7 +714,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
         // `type` is loaded VERBATIM. It used to be pushed through a
         // FORM_TYPE_MAP that folded the storage spellings onto form-select
-        // values — float/int/integer → 'number', string → 'text', datetime →
+        // values — float/int/integer -> 'number', string -> 'text', datetime ->
         // 'date'. That map was lossy in the one direction that mattered: submit
         // spreads `...values`, so the folded word was saved BACK, and editing a
         // `float` field's LABEL rewrote its type to `number`. The dropdown now
@@ -775,7 +775,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         };
     });
 
-    // ── Option-label translations (F5.b Phase 5 authoring) ─────────────────────
+    // -- Option-label translations (F5.b Phase 5 authoring) ---------------------
 
     /**
      * Per-option, per-locale label translations bound to the inputs in the
@@ -789,14 +789,14 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * The currently-authored overrides as loaded from the backend on open
-     * (`GET /field/definitions/{id}` → `optionLabels`), used as the diff baseline
+     * (`GET /field/definitions/{id}` -> `optionLabels`), used as the diff baseline
      * so untouched inputs are never re-sent. Same shape as {@link optionTranslations};
      * stays the pristine loaded copy because every edit goes through the immutable
      * {@link updateOptionTranslation} (which never mutates this reference).
      */
     readonly optionPrefill = signal<Record<string, Record<string, string>>>({});
 
-    // ── Field-LABEL translations (#706 authoring) ──────────────────────────────
+    // -- Field-LABEL translations (authoring) ------------------------------
 
     /**
      * Per-locale translations of the field's OWN display label, bound to the
@@ -809,7 +809,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * The currently-authored label overrides as loaded from the backend on open
-     * (`GET /field/definitions/{id}` → `labelTranslations`), used as the diff
+     * (`GET /field/definitions/{id}` -> `labelTranslations`), used as the diff
      * baseline so untouched inputs are never re-sent. Stays the pristine loaded
      * copy because every edit goes through the immutable
      * {@link updateLabelTranslation}.
@@ -843,7 +843,7 @@ export class FieldDefinitionFormComponent implements OnInit {
      * Collapse the label panel into the wire shape, diffing against the loaded
      * baseline ({@link labelPrefill}) — same rules as {@link collectOptionLabels}:
      * a fresh/edited non-empty value is sent as text; a prefilled value the
-     * operator emptied is sent as `null` (clear → revert to source); an untouched
+     * operator emptied is sent as `null` (clear -> revert to source); an untouched
      * value is omitted. Returns `locale => (text | null)`, or null when nothing
      * changed.
      */
@@ -926,11 +926,11 @@ export class FieldDefinitionFormComponent implements OnInit {
     /**
      * Collapse the panel state into the wire shape, diffing against the loaded
      * baseline ({@link optionPrefill}) so only real changes are sent:
-     *  - a fresh or edited non-empty value → sent as the new text;
-     *  - a prefilled value the operator emptied → sent as `null`, which the
+     *  - a fresh or edited non-empty value -> sent as the new text;
+     *  - a prefilled value the operator emptied -> sent as `null`, which the
      *    backend treats as a clear (removes the override; the locale reverts to
      *    the source label);
-     *  - an untouched value → omitted (no catalogue churn).
+     *  - an untouched value -> omitted (no catalogue churn).
      *
      * @returns `optionValue => locale => (text | null)`, or null when nothing changed.
      */
@@ -954,7 +954,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         return Object.keys(out).length > 0 ? out : null;
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // -- Lifecycle -------------------------------------------------------------
 
     ngOnInit(): void {
         if (this.isStaticOverride) {
@@ -998,7 +998,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         }
     }
 
-    // ── Submit handlers ───────────────────────────────────────────────────────
+    // -- Submit handlers -------------------------------------------------------
 
     /**
      * Submit handler for the static-override inline form (Branch A).
@@ -1122,7 +1122,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
         // Normalise the select-options editor output: drop blank rows (a value
         // is the required key), trim, and default an empty label to the value.
-        // For non-select fields the control is null/untouched → leave as-is so
+        // For non-select fields the control is null/untouched -> leave as-is so
         // the backend skips it (and never clobbers existing options).
         const rawOptions = payload['selectOptions'];
         if (Array.isArray(rawOptions)) {
@@ -1138,10 +1138,10 @@ export class FieldDefinitionFormComponent implements OnInit {
                 .map(o => ({ value: o.value, label: o.label === '' ? o.value : o.label }));
         }
 
-        // Attach per-locale label translations the operator changed (#706): the
+        // Attach per-locale label translations the operator changed: the
         // field's own label and each option's label. Both diff against their
         // loaded baseline; the backend persists them into the XLIFF catalogue
-        // (label → definition.{uuid}.label, options → …option.{value}.label).
+        // (label -> definition.{uuid}.label, options -> …option.{value}.label).
         // Absent = no change.
         const labelTranslations = this.collectLabelTranslations();
         if (labelTranslations) {
@@ -1197,7 +1197,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     close(): void { this.dialogRef.close(null); }
 }
 
-// ── Module-level helpers ──────────────────────────────────────────────────────
+// -- Module-level helpers ------------------------------------------------------
 
 /** Narrow an unknown value to a plain-object map. */
 function to(v: unknown): Record<string, unknown> | null {

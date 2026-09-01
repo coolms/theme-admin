@@ -19,7 +19,7 @@ import {
  * to match the schemaVersion-2 wire shape.
  */
 
-// `slashable` / `keywords` mirror the backend manifest (ledger #805): block
+// `slashable` / `keywords` mirror the backend manifest: block
 // entries are slashable (the smoke route exercises the `/`-palette off them);
 // inline format marks + meta actions are not.
 const SAMPLE_NODES: ReadonlyArray<EditorToolbarNodeManifest> = [

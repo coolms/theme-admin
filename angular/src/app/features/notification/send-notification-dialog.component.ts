@@ -178,7 +178,7 @@ const BODY_MAX_LENGTH = 2000;
             gap: 8px;
             margin-top: 4px;
         }
-        /* Kit shadows removed (#2030) — a token-for-token restatement of the
+        /* Kit shadows removed — a token-for-token restatement of the
            kit's own button, down to the same --cms-btn-* variables. */
     `],
 })

@@ -41,7 +41,7 @@ export class VfsBreadcrumbComponent {
         for (let i = 0; i < segments.length; i++) {
             const seg = segments[i];
             built += '/' + seg;
-            // /home/{uuid} → resolve to the owning user's identifier.
+            // /home/{uuid} -> resolve to the owning user's identifier.
             // Reading labelFor(seg)() inside computed() registers it as a
             // reactive dependency — the breadcrumb re-renders automatically
             // when the label cache is populated after the /home listing loads.

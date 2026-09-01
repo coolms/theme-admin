@@ -244,7 +244,7 @@ export class MediaDetailComponent {
 
 
     constructor() {
-        // New asset selected → reset to the default locale and populate from the
+        // New asset selected -> reset to the default locale and populate from the
         // (default-locale) payload the parent already loaded.
         effect(() => {
             const a = this.asset();
@@ -310,7 +310,7 @@ export class MediaDetailComponent {
         return this.titleControl.value;
     }
 
-    /** Rich-editor (comment profile) wrote HTML → mirror into the save control. */
+    /** Rich-editor (comment profile) wrote HTML -> mirror into the save control. */
     onDescriptionChange(html: string): void {
         if (this.descriptionControl.value === html) return;
         this.descriptionControl.setValue(html); // emits → marks the active locale dirty
@@ -385,7 +385,7 @@ export class MediaDetailComponent {
      *
      * Visibility is gated by `isImage()` in the template; backend voter
      * (ImageEditPermissionVoter) enforces VFS_WRITE before the save
-     * lands. Authors without write permission see a 403 → toast error
+     * lands. Authors without write permission see a 403 -> toast error
      * inside the dialog rather than a hidden button — keeps the UI
      * affordance discoverable.
      */

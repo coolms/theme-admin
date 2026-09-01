@@ -1,5 +1,5 @@
 /**
- * Track E Phase 4 (CDP personalization, P4.admin.c) — admin FE wire shapes for
+ *Phase 4 (CDP personalization, P4.admin.c) — admin FE wire shapes for
  * the content-personalization rule store.
  *
  * Mirrors the backend Web resource `PersonalizationRuleResource`

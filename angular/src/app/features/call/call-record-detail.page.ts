@@ -25,12 +25,12 @@ import {
 import { formatCallDuration } from './call-format';
 
 /**
- * M9.f.2 — Call detail admin page (/admin/call/records/:id).
+ * Call detail admin page (/admin/call/records/:id).
  *
- * Read-only view of one tracked call (M9.a.4 `GET /call/records/{id}`) with
- * an inline player for its `.wav` recording (M9.b `GET
+ * Read-only view of one tracked call (`GET /call/records/{id}`) with
+ * an inline player for its `.wav` recording (`GET
  * /call/records/{id}/recording`). CallRecords are minted + mutated only by
- * the AMI event stream (M9.a.2), so there is nothing to edit — the page is
+ * the AMI event stream, so there is nothing to edit — the page is
  * a set of read-only cards + the recording card.
  *
  * The recording is Bearer-gated, so a plain `<audio src>` can't reach it;
@@ -247,7 +247,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
     readonly agentLabel   = signal<string | null>(null);
 
     /** Single hardcoded back action; the page is read-only (no edit / delete). */
-    /** Declared in the `call:record-detail` layout (ADR-127), not here. */
+    /** Declared in the `call:record-detail` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );
@@ -301,7 +301,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
         this.revokeAudio();
     }
 
-    /** cms-page-header dispatcher. `back` → the call-history list. */
+    /** cms-page-header dispatcher. `back` -> the call-history list. */
     onAction(actionId: string): void {
         if (actionId === 'back') void this.router.navigate(['/call/records']);
     }

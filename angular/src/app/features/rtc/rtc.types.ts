@@ -1,6 +1,6 @@
 /**
- * Voice/Video Track B — WebRTC calling DTOs + realtime nudge shapes (Slice 4a,
- * the call-control plane). These mirror the `App\Rtc` backend: the REST resource
+ * Voice/Video— WebRTC calling DTOs + realtime nudge shapes (Slice 4a,
+ * the call-control plane). These mirror the `Rtc` backend: the REST resource
  * (`RtcCallResource`) and the three payloads the backend publishes on the Rtc
  * Centrifugo channels (`rtc.user.{id}` ring + `rtc.call.{id}` state/signal).
  */
@@ -27,7 +27,7 @@ export interface RtcCallDto {
     readonly connectedAt: string | null;
     readonly endedAt: string | null;
     readonly endReason: string | null;
-    /** Whether the call's media room is currently being recorded (ADR-145). */
+    /** Whether the call's media room is currently being recorded. */
     readonly recordingActive: boolean;
     readonly createdAt: string | null;
     readonly participants: readonly RtcCallParticipantDto[];
@@ -79,7 +79,7 @@ export interface RtcIceServersDto {
 }
 
 /**
- * `GET /rtc/calls/{id}/media-token` (ADR-144 Slice G2) — the join credentials for
+ * `GET /rtc/calls/{id}/media-token` ( Slice G2) — the join credentials for
  * a GROUP call's SFU media room: the LiveKit endpoint the browser connects to, a
  * short-lived signed token scoped to this call's room + the caller, and the room
  * name + identity. Fed to the LiveKit JS client (`Room.connect(url, token)`). The

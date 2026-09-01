@@ -21,10 +21,10 @@ interface Tile {
 }
 
 /**
- * The GROUP media plane (ADR-144, Track B group calling) — the SFU counterpart of
+ * The GROUP media plane (,group calling) — the SFU counterpart of
  * the 1:1 {@link RtcMediaController} P2P mesh. For a call with 3+ participants the
  * {@link RtcCallService} orchestrator drives THIS controller instead: it fetches
- * the LiveKit join credentials from `GET /rtc/calls/{id}/media-token` (the ADR-144
+ * the LiveKit join credentials from `GET /rtc/calls/{id}/media-token` (the
  * G2 endpoint) and connects to the SFU, where each client sends ONE uplink and the
  * server forwards the others — so group video scales where a mesh cannot.
  *
@@ -80,7 +80,7 @@ export class RtcSfuMediaController {
     /** True while the local participant is an active speaker (self-tile highlight). */
     readonly localSpeaking: Signal<boolean> = this._localSpeaking.asReadonly();
 
-    /** Join the call's SFU media room: fetch credentials → connect → publish → subscribe. */
+    /** Join the call's SFU media room: fetch credentials -> connect -> publish -> subscribe. */
     async start(callId: string, mediaKind: RtcMediaKind): Promise<void> {
         if (this.room !== null) {
             return; // already joined
@@ -181,7 +181,7 @@ export class RtcSfuMediaController {
         if (track.mediaStreamTrack.kind === 'video') {
             const tile = this.tiles.get(participant.identity);
             if (tile !== undefined) {
-                // Keep the tile (the party is still here) — just drop the video → avatar.
+                // Keep the tile (the party is still here) — just drop the video -> avatar.
                 tile.videoStream = null;
                 this.publishTiles();
             }

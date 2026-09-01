@@ -25,21 +25,21 @@ export class VfsPageStateService {
     private readonly destroyRef = inject(DestroyRef);
     private readonly homeLabels = inject(VfsHomeLabelService);
 
-    // ── Navigation & directory state ──────────────────────────────────────────
+    // -- Navigation & directory state ------------------------------------------
 
     readonly currentPath   = signal<string>('/');
     readonly nodes         = signal<VfsNodeDto[]>([]);
     readonly loading       = signal<boolean>(false);
     readonly error         = signal<string | null>(null);
 
-    // ── Pagination ────────────────────────────────────────────────────────────
+    // -- Pagination ------------------------------------------------------------
 
     /** Whether there are more items beyond the currently loaded set. */
     readonly hasMore    = signal<boolean>(false);
     /** Opaque cursor token for the next page; null when there is no next page. */
     readonly nextCursor = signal<string | null>(null);
 
-    // ── Selection & view ──────────────────────────────────────────────────────
+    // -- Selection & view ------------------------------------------------------
 
     readonly selectedNodes = signal<VfsNodeDto[]>([]);
     readonly viewMode      = signal<VfsViewMode>('grid');
@@ -53,7 +53,7 @@ export class VfsPageStateService {
      * signal rather than implicit on selection. Open via the
      * Properties action (toolbar or context menu), close via the
      * panel's Close X / ESC. Mirrors Document Library's
-     * `propertiesPanelOpen` pattern post-Phase D hotfix #3.
+     * `propertiesPanelOpen` pattern post- hotfix #3.
      */
     readonly panelOpen     = signal<boolean>(false);
 
@@ -68,7 +68,7 @@ export class VfsPageStateService {
         return this.vfsToolbarNodes().find((n) => n.meta?.['action'] === 'VfsProperties') ?? null;
     });
 
-    // ── Upload tracking ───────────────────────────────────────────────────────
+    // -- Upload tracking -------------------------------------------------------
 
     readonly uploads       = signal<UploadItem[]>([]);
 
@@ -85,7 +85,7 @@ export class VfsPageStateService {
      */
     readonly reloadTrigger = signal(0);
 
-    // ── Action subjects ────────────────────────────────────────────────────────
+    // -- Action subjects --------------------------------------------------------
 
     /** Toolbar or drop-zone triggers a file-input click. */
     readonly uploadRequested$ = new Subject<void>();
@@ -93,7 +93,7 @@ export class VfsPageStateService {
     /** Files dropped on the grid drop-zone. */
     readonly filesDropped$    = new Subject<File[]>();
 
-    // ── Navigation ────────────────────────────────────────────────────────────
+    // -- Navigation ------------------------------------------------------------
 
     navigateTo(path: string): void {
         this.currentPath.set(path);
@@ -108,7 +108,7 @@ export class VfsPageStateService {
      * `?path=` is a DIRECTORY contract: the list endpoint answers
      * "'…/x.docx' is not a directory" when handed a file, so a deep link
      * that knows a FILE — a notification announcing a generated document
-     * (#1668) — passes the folder in `path` and the file name in
+     * — passes the folder in `path` and the file name in
      * `select`. Selection has to wait for the HTTP response because the
      * node objects only exist once the page is loaded.
      */
@@ -222,7 +222,7 @@ export class VfsPageStateService {
         });
     }
 
-    // ── Selection ─────────────────────────────────────────────────────────────
+    // -- Selection -------------------------------------------------------------
 
     selectNode(node: VfsNodeDto): void {
         this.selectedNodes.set([node]);
@@ -236,7 +236,7 @@ export class VfsPageStateService {
         this.selectedNodes.set([]);
     }
 
-    // ── View mode ─────────────────────────────────────────────────────────────
+    // -- View mode -------------------------------------------------------------
 
     setViewMode(mode: VfsViewMode): void {
         this.viewMode.set(mode);
@@ -247,7 +247,7 @@ export class VfsPageStateService {
         this.loadDirectory(this.currentPath());
     }
 
-    // ── Upload tracking ───────────────────────────────────────────────────────
+    // -- Upload tracking -------------------------------------------------------
 
     startUpload(item: UploadItem): void {
         this.uploads.update(arr => [...arr, item]);

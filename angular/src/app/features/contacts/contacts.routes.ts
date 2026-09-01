@@ -1,8 +1,8 @@
 import { type Routes } from '@angular/router';
 
 /**
- * C.3 (ADR-143) — the /admin/contacts feature routes (lazy child of the admin shell).
- * `''` list; `:id` the Person-hub detail page (#1339 — contact + leads across channels).
+ * C.3 — the /admin/contacts feature routes (lazy child of the admin shell).
+ * `''` list; `:id` the Person-hub detail page (— contact + leads across channels).
  */
 export const CONTACTS_ROUTES: Routes = [
     {

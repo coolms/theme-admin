@@ -61,7 +61,7 @@ describe('DesignerI18nService', () => {
         }
     }
 
-    it('asks the platform which locale it resolved, not the browser', async () => {
+ it('asks the platform which locale it resolved, not the browser', async () => {
         const loading = svc.ensureLoaded();
 
         const probe = http.expectOne(LOCALE_URL);
@@ -69,25 +69,25 @@ describe('DesignerI18nService', () => {
         probe.flush({ locale: 'uk', supportedLocales: ['en', 'uk'], defaultLocale: 'en' });
         await tick();
 
-        // The locale it was TOLD drives the catalogue it fetches.
+ // The locale it was TOLD drives the catalogue it fetches.
         http.expectOne(catalogueUrl('uk')).flush(CATALOGUE);
         await loading;
 
         expect(svc.translate('designer.toolbar.undo', 'Undo')).toBe('Скасувати');
     });
 
-    it('skips the catalogue entirely for an English session', async () => {
+ it('skips the catalogue entirely for an English session', async () => {
         const loading = svc.ensureLoaded();
         await resolveAs('en');
         await loading;
 
-        // The package's fallbacks ARE the English baseline, so a catalogue
-        // could only echo them back.
+ // The package's fallbacks ARE the English baseline, so a catalogue
+ // could only echo them back.
         http.expectNone(catalogueUrl('en'));
         expect(svc.translate('designer.toolbar.undo', 'Undo')).toBe('Undo');
     });
 
-    it('falls back to the baseline when an entry has no override', async () => {
+ it('falls back to the baseline when an entry has no override', async () => {
         const loading = svc.ensureLoaded();
         await resolveAs('uk');
         await loading;
@@ -95,7 +95,7 @@ describe('DesignerI18nService', () => {
         expect(svc.translate('designer.toolbar.redo', 'Redo')).toBe('Redo');
     });
 
-    it('falls back to the call-site English for a key the catalogue lacks', async () => {
+ it('falls back to the call-site English for a key the catalogue lacks', async () => {
         const loading = svc.ensureLoaded();
         await resolveAs('uk');
         await loading;
@@ -105,7 +105,7 @@ describe('DesignerI18nService', () => {
         expect(out).not.toContain('designer.');
     });
 
-    it('interpolates into the TRANSLATED text, not the fallback', async () => {
+ it('interpolates into the TRANSLATED text, not the fallback', async () => {
         const loading = svc.ensureLoaded();
         await resolveAs('uk');
         await loading;
@@ -118,7 +118,7 @@ describe('DesignerI18nService', () => {
         ).toBe("З'єднати a та b");
     });
 
-    it('keeps rendering English when the catalogue request fails', async () => {
+ it('keeps rendering English when the catalogue request fails', async () => {
         const loading = svc.ensureLoaded();
         http.expectOne(LOCALE_URL).flush({
             locale: 'uk',
@@ -132,22 +132,22 @@ describe('DesignerI18nService', () => {
         });
         await loading;
 
-        // A 403 is a NORMAL case: the catalogue endpoint is admin-gated. It
-        // must degrade, never throw or blank the labels.
+ // A 403 is a NORMAL case: the catalogue endpoint is admin-gated. It
+ // must degrade, never throw or blank the labels.
         expect(svc.translate('designer.toolbar.undo', 'Undo')).toBe('Undo');
     });
 
-    it('keeps rendering English when the locale probe itself fails', async () => {
+ it('keeps rendering English when the locale probe itself fails', async () => {
         const loading = svc.ensureLoaded();
         http.expectOne(LOCALE_URL).flush('nope', { status: 500, statusText: 'Server Error' });
         await loading;
 
-        // Not knowing the locale must not mean guessing one.
+ // Not knowing the locale must not mean guessing one.
         http.expectNone(() => true);
         expect(svc.translate('designer.toolbar.undo', 'Undo')).toBe('Undo');
     });
 
-    it('loads once, however many editors mount', async () => {
+ it('loads once, however many editors mount', async () => {
         const first = svc.ensureLoaded();
         await resolveAs('uk');
         await first;
@@ -157,11 +157,11 @@ describe('DesignerI18nService', () => {
         http.expectNone(() => true);
     });
 
-    it('de-duplicates concurrent loads', async () => {
+ it('de-duplicates concurrent loads', async () => {
         const a = svc.ensureLoaded();
         const b = svc.ensureLoaded();
 
-        // Two editors mounting together must not race two probes.
+ // Two editors mounting together must not race two probes.
         await resolveAs('uk');
         await Promise.all([a, b]);
 

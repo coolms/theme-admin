@@ -36,9 +36,9 @@ const TREE_CODE = 'categories';
 
 /**
  * Admin page for the `categories` taxonomy tree (the picker source for the blog
- * `categoryIds` field + search faceting — ADR-129 W1.b).
+ * `categoryIds` field + search faceting — W1.b).
  *
- * Re-skinned onto the platform convention (#1213): a `<cms-list-page>` shell +
+ * Re-skinned onto the platform convention: a `<cms-list-page>` shell +
  * a backend-config-driven `<coolms-datagrid>` in **tree mode** + `.cms-dialog`
  * modal editors, mirroring the Pages list. All CRUD maps onto the unchanged
  * Taxonomy REST API via {@see TaxonomyService}. Reparenting is an explicit
@@ -125,7 +125,7 @@ export class CategoriesPageComponent implements OnInit {
     readonly gridData = computed((): DataGridData => {
         // The API OMITS `parentId` for root nodes (null skipped in serialization),
         // so a root's `parentId` is `undefined` — treat any falsy value as root
-        // (a strict `=== null` check silently drops every root → empty grid).
+        // (a strict `=== null` check silently drops every root -> empty grid).
         const roots = this.allNodes()
             .filter(n => !n.parentId)
             .sort((a, b) => a.lft - b.lft)
@@ -267,7 +267,7 @@ export class CategoriesPageComponent implements OnInit {
         return this.allNodes().find(n => n.id === id);
     }
 
-    /** Node → datagrid row. `hasChildren` (rgt-lft>1) drives the tree chevron. */
+    /** Node -> datagrid row. `hasChildren` (rgt-lft>1) drives the tree chevron. */
     private toRow(n: TaxonomyNodeDto): Record<string, unknown> {
         return {
             id:          n.id,

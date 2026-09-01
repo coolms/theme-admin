@@ -1,5 +1,5 @@
 /**
- * Wire shapes for the VFS file-history API (ADR-132 W6.3). The backend returns
+ * Wire shapes for the VFS file-history API ( W6.3). The backend returns
  * JSON-LD, so each object also carries `@id`/`@type`/`@context` keys we ignore.
  *
  * Note: the serializer OMITS null-valued properties, so `id` on the "current"

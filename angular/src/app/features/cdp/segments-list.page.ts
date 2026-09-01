@@ -38,7 +38,7 @@ interface SegmentRow {
 }
 
 /**
- * Track E Phase 3 (CDP core, #1150) — audience-Segment list (`/admin/cdp/segments`).
+ *Phase 3 (CDP core, ) — audience-Segment list (`/admin/cdp/segments`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the
  * `analytics:segments` config YAML) — matches Cockpit / Webhooks / Schedules

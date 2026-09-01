@@ -76,14 +76,14 @@ export interface CalendarEventEditorData {
 export type CalendarEventEditorResult =
     | { action: 'created'; item: CalendarItemDto }
     | { action: 'updated'; item: CalendarItemDto }
-    /** Phase 2 — "only this event" save → an override row was written. */
+    /** Phase 2 — "only this event" save -> an override row was written. */
     | { action: 'overridden'; parentItemId: string; overrideId: string }
-    /** Phase 3 — "this and following events" save → series was split. */
+    /** Phase 3 — "this and following events" save -> series was split. */
     | { action: 'split'; parentItemId: string; newBaseId: string; seriesId: string | null }
     | { action: 'deleted'; id: string }
-    /** Phase 2 — "only this event" delete → EXDATE was appended to the parent. */
+    /** Phase 2 — "only this event" delete -> EXDATE was appended to the parent. */
     | { action: 'occurrence-skipped'; parentItemId: string; recurrenceInstant: string }
-    /** Phase 3 — "delete this and following events" → series was truncated. */
+    /** Phase 3 — "delete this and following events" -> series was truncated. */
     | { action: 'following-deleted'; parentItemId: string; recurrenceInstant: string }
     | { action: 'cancelled' };
 
@@ -107,7 +107,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
 ];
 
 /**
- * M1.2.f — Calendar event editor modal.
+ * — Calendar event editor modal.
  *
  * Supports create + edit + delete. Recurrence editing is delegated to
  * the structured `<app-recurrence-form>` component, which renders a
@@ -146,7 +146,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
                     </label>
                 </div>
 
-                <!-- #436: coupled datetime range with built-in all-day toggle.
+                <!-- : coupled datetime range with built-in all-day toggle.
                      The "When" field is required, so allowClear is off — the
                      user can't accidentally null the range with a single click. -->
                 <app-datetime-range-picker
@@ -209,7 +209,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
                     }
                 </div>
 
-                <!-- M1.2.g — non-working-day policy. Visible only when
+                <!-- — non-working-day policy. Visible only when
                      the event actually has a recurrence; for one-shot
                      events the policy has no effect. -->
                 @if (recurrenceSpec()) {
@@ -365,7 +365,7 @@ export class CalendarEventEditorComponent {
     // Form state
     title_:        string = this.data.item?.title ?? '';
     type:          CalendarItemTypeCode = (this.data.item?.type ?? 'event');
-    // #436: coupled datetime range owned by <app-datetime-range-picker>.
+    // : coupled datetime range owned by <app-datetime-range-picker>.
     // We seed the picker's initial value from the existing item (edit)
     // or the date-select drag defaults (create). The picker emits
     // canonical ISO + allDay back into `rangeValue`.
@@ -389,7 +389,7 @@ export class CalendarEventEditorComponent {
     visibility:    CalendarItemVisibilityCode = (this.data.item?.visibility ?? 'default');
     status:        CalendarItemStatusCode     = (this.data.item?.status ?? 'confirmed');
     /**
-     * M1.2.g — non-working-day handling for the series. Server default
+     * — non-working-day handling for the series. Server default
      * is `off` so existing rows render with no change. Only sent on the
      * wire when the user actually picked a non-off value (saves a few
      * bytes and makes the diff in dev-tools cleaner).
@@ -480,8 +480,8 @@ export class CalendarEventEditorComponent {
      * an `end`, and the DB column is nullable). Returning `null` from
      * here strands the user with an empty "When" field they can't open
      * to inspect the original date. So we synthesise a default end:
-     *  - all-day → same day (single-day event)
-     *  - timed   → start + 1 hour (most-common event duration)
+     *  - all-day -> same day (single-day event)
+     *  - timed   -> start + 1 hour (most-common event duration)
      * The user can still adjust the range in the picker; we just refuse
      * to render an empty placeholder when we know the start.
      */
@@ -578,7 +578,7 @@ export class CalendarEventEditorComponent {
             color:       this.color || null,
             visibility:  this.visibility,
             status:      this.status,
-            // M1.2.g — only send NWD policy when the event actually has
+            // — only send NWD policy when the event actually has
             // a recurrence; the field is a no-op otherwise and we'd
             // rather keep one-shot writes minimal.
             ...(this.recurrenceSpec() ? { nwdPolicy: this.nwdPolicy } : {}),
@@ -705,9 +705,9 @@ export class CalendarEventEditorComponent {
 
         // Phase 2/3 — deleting one occurrence of a recurring series
         // prompts for scope:
-        //   "only this"      → POST /skip (append EXDATE)
-        //   "this and following" → POST /delete-following (truncate RRULE)
-        //   "all events"     → existing DELETE on the canonical row
+        //   "only this"      -> POST /skip (append EXDATE)
+        //   "this and following" -> POST /delete-following (truncate RRULE)
+        //   "all events"     -> existing DELETE on the canonical row
         if (this.isOccurrenceEdit()) {
             this.promptScope('delete').then(scope => {
                 if (scope === undefined) return;

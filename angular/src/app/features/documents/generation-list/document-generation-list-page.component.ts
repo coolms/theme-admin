@@ -86,7 +86,7 @@ export class DocumentGenerationListPageComponent implements OnInit {
      * Flips `true` after the first `loadMore` response (success OR error).
      * Before that, `hasMore` is forced `true` so the lazy sentinel fires the
      * initial fetch — empty rows + zero total would otherwise compute
-     * `hasMore = false` and trap the page in "No data found" forever (#1214).
+     * `hasMore = false` and trap the page in "No data found" forever.
      */
     private readonly loaded = signal(false);
 

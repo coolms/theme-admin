@@ -32,7 +32,7 @@ export type TriggerSpecDialogResult = string | undefined;
  * to inline the rich structured form.
  *
  * Same shape pattern as `RecurrenceDialogComponent` (which handles the
- * Calendar event editor's preset → Custom… flow). One dialog, two
+ * Calendar event editor's preset -> Custom… flow). One dialog, two
  * possible inner forms, picked by `data.kind`.
  */
 @Component({

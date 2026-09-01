@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 /**
- * M9.c payload — a flat, low-cardinality snapshot of a CallRecord state
+ * Payload — a flat, low-cardinality snapshot of a CallRecord state
  * transition, published by `CentrifugoCallEventPublisher`. The `type`
  * discriminator is `call.{state}` (`call.ringing` / `call.answered` /
  * `call.on_hold` / `call.ended`) so a wallboard can switch on the semantic
@@ -20,9 +20,9 @@ export interface CallLiveEvent {
     readonly toNumber:        string | null;
     readonly callerName:      string | null;
     readonly assignedUserRef: string | null;
-    /** M9.g A.2 — the extension that answered (raw fallback label). */
+    /** The extension that answered (raw fallback label). */
     readonly answeredExtension: string | null;
-    /** M9.g A.2 — the answering agent's resolved display name, or null. */
+    /** The answering agent's resolved display name, or null. */
     readonly answeredByName:  string | null;
     readonly startedAt:       string;
     readonly answeredAt:      string | null;
@@ -31,7 +31,7 @@ export interface CallLiveEvent {
 }
 
 /**
- * M9.f.3 — Call telephony realtime. Subscribes to the M9.c Centrifugo channels
+ * Call telephony realtime. Subscribes to the Centrifugo channels
  * and emits each parsed {@link CallLiveEvent}. Mirrors the per-feature
  * live-events-service convention ({@link MessagesLiveEventsService},
  * `InboxLiveEventsService`, `DynamicChatLiveEventsService`): a thin wrapper over

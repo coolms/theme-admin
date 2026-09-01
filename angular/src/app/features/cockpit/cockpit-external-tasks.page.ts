@@ -65,12 +65,12 @@ interface CockpitExternalTaskRow {
  * so it matches the rest of the operator surfaces (sortable columns,
  * per-column filter row incl. the state dropdown, column-visibility).
  *
- * `loadingMode: lazy` (ledger #1660): the grid emits `(loadMore)` on mount and
+ * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and
  * on every filter/sort/page change, and this page turns that into ONE server
  * request. It used to be `client` — one perPage=200 block filtered and sorted
  * in the browser. There is no external-task detail page;
  * the toolbar offers Reload, and Failed rows expose a `retry` row action
- * (#963) that re-opens the task for another worker attempt via
+ * that re-opens the task for another worker attempt via
  * `POST /cockpit/external-tasks/{id}/retry`, then reloads.
  */
 @Component({

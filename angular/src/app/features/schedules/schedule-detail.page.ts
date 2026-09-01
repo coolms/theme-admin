@@ -35,7 +35,7 @@ import {
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 
 /**
- * M1.3 — Schedule Detail admin page (/admin/schedules/:slug).
+ * — Schedule Detail admin page (/admin/schedules/:slug).
  *
  * Cards: Settings, Trigger, Calendar, Handler/Payload, History.
  * Header actions: Trigger Now, Delete.
@@ -56,7 +56,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
                 <!--
                   Standard page chrome. The back action is declared in the
                   backend layout config (scheduler:schedule-detail) and rendered
-                  in cms-page-header (ADR-127); status chips project into the
+                  in cms-page-header; status chips project into the
                   header-meta slot. Trigger Now / Delete live in the fixed footer.
                 -->
                 <cms-page-header
@@ -361,7 +361,7 @@ export class ScheduleDetailPageComponent implements OnInit {
 
     /**
      * Navigation actions for the cms-page-header bar — declared in the
-     * `scheduler:schedule-detail` layout config (ADR-127), not hardcoded.
+     * `scheduler:schedule-detail` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
@@ -382,7 +382,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         _triggering: this.triggering(),
     }));
 
-    /** cms-page-header dispatcher (navigation). `back` → schedules list. */
+    /** cms-page-header dispatcher (navigation). `back` -> schedules list. */
     onAction(actionId: string): void {
         if (actionId === 'back') {
             void this.router.navigate(['/schedules']);

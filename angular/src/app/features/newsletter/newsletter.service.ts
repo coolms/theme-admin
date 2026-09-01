@@ -30,9 +30,9 @@ export interface SubscriberDto {
 export interface CampaignDto {
     readonly id:             string;
     readonly subject:        string;
-    /** The site this campaign was sent to; `''` is the default list (#1736). */
+    /** The site this campaign was sent to; `''` is the default list. */
     readonly sectionSlug:    string;
-    /** VFS paths of the files that rode along (#1737). */
+    /** VFS paths of the files that rode along. */
     readonly attachments:    readonly string[];
     readonly recipientCount: number;
     readonly sentAt:         string | null;
@@ -40,7 +40,7 @@ export interface CampaignDto {
 }
 
 /**
- * One targetable list (#1736): a site slug, its label, and how many confirmed
+ * One targetable list: a site slug, its label, and how many confirmed
  * subscribers it has right now.
  *
  * The count is what makes the compose picker honest — an admin can see they are
@@ -76,7 +76,7 @@ export class NewsletterService {
     /** Subscribers in a bucket — newest-first (server-ordered). */
     /**
      * One PAGE of a subscriber bucket — newest-first, server-filtered and sorted
-     * (#1724).
+     *.
      *
      * Replaces the old `list()`, which fetched a whole bucket for a client-mode
      * grid. The endpoint capped that at 200 rows, so the browser was filtering a
@@ -109,7 +109,7 @@ export class NewsletterService {
     }
 
     /**
-     * Broadcast a campaign to ONE site's confirmed subscribers (#1736). Resolves
+     * Broadcast a campaign to ONE site's confirmed subscribers. Resolves
      * with the recorded campaign, whose `recipientCount` is how many emails were
      * queued.
      *
@@ -119,7 +119,7 @@ export class NewsletterService {
      * default list.
      */
     /**
-     * @param contents      per-locale `{subject, body}` (#1743) — one entry is a
+     * @param contents      per-locale `{subject, body}` — one entry is a
      *                      single-language campaign, several make each recipient
      *                      receive the one resolved for them
      * @param defaultLocale which entry a recipient falls back to; must be present

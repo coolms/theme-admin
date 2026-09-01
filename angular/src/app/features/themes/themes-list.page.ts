@@ -25,7 +25,7 @@ interface TemplateGroup {
 }
 
 /**
- * Themes Explorer (#1747) — the admin surface for which theme skins the site
+ * Themes Explorer — the admin surface for which theme skins the site
  * and what it overrides.
  *
  * ## Why this page exists
@@ -33,7 +33,7 @@ interface TemplateGroup {
  * The Theme module has had `/themes`, `/themes/{id}` and
  * `/themes/{slug}/templates` for some time with no admin UI at all, so the only
  * way to see which theme was serving a site — or to change it — was the database
- * or the CLI. #1744 made that concrete: a theme's `emails/default.html.dtmpl`
+ * or the CLI. made that concrete: a theme's `emails/default.html.dtmpl`
  * shadows MailComposer's own layout, and fixing the shadowed copy meant editing
  * a file on disk with nothing in the admin even hinting the override existed.
  *
@@ -47,7 +47,7 @@ interface TemplateGroup {
  *    offering a button that cannot work.
  *  - **Only SSR themes can be activated** — see {@link isSiteTheme}.
  *
- * Templates became READABLE in #1755: `/themes/{slug}/template-source` returns
+ * Templates became READABLE in : `/themes/{slug}/template-source` returns
  * one file's bytes, and clicking a row opens {@link TemplateSourceDialog}. The
  * view is read-only by design — a theme package is not an editing surface, and
  * writing to one would be edited-in-place state that no reinstall preserves.
@@ -111,7 +111,7 @@ interface TemplateGroup {
                                 @if (t.manifest.license) { <dt>License</dt><dd>{{ t.manifest.license }}</dd> }
                                 @if (t.manifest.feStack) { <dt>Stack</dt><dd>{{ t.manifest.feStack }}</dd> }
                                 <!--
-                                  The AUTHORITATIVE binding first (#1751): a section
+                                  The AUTHORITATIVE binding first: a section
                                   naming this theme resolves to it directly, ignoring
                                   isActive and Theme.sections entirely.
                                 -->
@@ -316,7 +316,7 @@ export class ThemesListComponent {
         }
 
         // `emails` first: it is the group that silently overrides a platform
-        // default (#1744), so it is the one an operator most needs to notice.
+        // default, so it is the one an operator most needs to notice.
         return [...byDir.entries()]
             .map(([dir, paths]) => ({ dir, paths: paths.sort() }))
             .sort((a, b) => (a.dir === 'emails' ? -1 : b.dir === 'emails' ? 1 : a.dir.localeCompare(b.dir)));
@@ -347,7 +347,7 @@ export class ThemesListComponent {
     }
 
     /**
-     * Sections this theme actually serves — the AUTHORITATIVE binding (#1751).
+     * Sections this theme actually serves — the AUTHORITATIVE binding.
      *
      * `ThemeSubscriber` fast-paths on `SiteSection.themeSlug`: when a section
      * names a theme it is resolved by slug and `isActive` / `Theme.sections[]`
@@ -377,7 +377,7 @@ export class ThemesListComponent {
     }
 
     /**
-     * Leftover `Theme.sections[]` from before the binding was unified (#1753).
+     * Leftover `Theme.sections[]` from before the binding was unified.
      *
      * The value is no longer read by anything — `Version20260731120000` folded it
      * into `SiteSection.themeSlug` and the resolver's per-section step is gone.
@@ -417,7 +417,7 @@ export class ThemesListComponent {
     }
 
     /**
-     * Open one template's source (#1755).
+     * Open one template's source.
      *
      * The dialog does its own fetch rather than being handed content: it is
      * lazily imported, so loading state and read failures belong to it and the
@@ -432,7 +432,7 @@ export class ThemesListComponent {
     activate(theme: ThemeDto): void {
         // Name the sections it will actually reach. "Will skin the public site"
         // was a promise the fast-path does not keep for sections that name a
-        // theme of their own (#1751).
+        // theme of their own.
         const reached = this.unassignedSections().join(', ');
 
         this.confirmSvc.open({

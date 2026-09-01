@@ -386,14 +386,14 @@ export class DocumentUploadDialog {
      * Template-Name-Conflict dialog on a 409. The conflict dialog's
      * three outcomes branch as:
      *
-     *   - `replace`  → close this dialog with the template returned
+     *   - `replace`  -> close this dialog with the template returned
      *                  by the Replace flow (or `null` if the user
      *                  cancelled inside Replace);
-     *   - `save-as`  → rename the File in-place and retry — may
+     *   - `save-as`  -> rename the File in-place and retry — may
      *                  recurse if the new name also collides, which
      *                  terminates when the user picks a free name
      *                  or cancels;
-     *   - `cancel`   → leave the dialog open in its idle state so
+     *   - `cancel`   -> leave the dialog open in its idle state so
      *                  the user can adjust the filename / folder
      *                  and try again.
      */

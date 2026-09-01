@@ -56,7 +56,7 @@ function decodeTokens(value: string): string[] {
  * Cross-module read surface — surfaces every deployed + draft
  * definition across Workflow + Decision (today; future Form, etc.).
  * Backend feeds rows from each registered
- * `DefinitionCatalogProviderInterface` via the tagged ADR-118 lazy
+ * `DefinitionCatalogProviderInterface` via the tagged lazy
  * registry; this slot renders them as one paginable, sortable table.
  *
  * Mounted inside `<cms-list-layout layoutId="definition:list">` —
@@ -68,8 +68,8 @@ function decodeTokens(value: string): string[] {
  * Reload + row-action Open (visible whenever a row is selected).
  *
  * **Click-through drill-down** — every row opens the generic
- * {@link DesignerEditorDialogComponent} MODAL (Workflow → `bpmn-lite`,
- * Decision → `dmn-table`), the same modal the VFS file explorer now
+ * {@link DesignerEditorDialogComponent} MODAL (Workflow -> `bpmn-lite`,
+ * Decision -> `dmn-table`), the same modal the VFS file explorer now
  * uses for `.bpmn.json` files. Modal-for-all mirrors how the image /
  * DTMPL file editors are invoked, so the chrome the operator sees is
  * consistent across surfaces. The standalone `/admin/designer/...`
@@ -79,7 +79,7 @@ function decodeTokens(value: string): string[] {
  * (default 30); FE loads the first page on mount and renders. Lazy
  * server-side pagination follows when the catalog crosses ~100 rows.
  *
- * **Lifecycle actions** (#1644) — Retire / Restore / Delete, routed
+ * **Lifecycle actions** — Retire / Restore / Delete, routed
  * through the shared `DefinitionLifecycleRegistry` seam. BODY editing
  * still belongs to the per-module Designer (Save/Deploy, Fork-to-VFS,
  * Revert); what lives here is the cross-module lifecycle, which has no
@@ -280,7 +280,7 @@ export class DefinitionsListPageComponent implements OnInit {
      * endpoint's named query params.
      *
      * The grid also emits ready-made RQL (`columnFilters`), which is what
-     * Doctrine-backed list endpoints consume — but this endpoint merges
+     * relational list endpoints consume — but this endpoint merges
      * rows across modules in memory and has no RQL parser behind it, so
      * it takes named params instead. Reading the structured filters is
      * the honest translation; picking the RQL strings apart with regexes
@@ -366,7 +366,7 @@ export class DefinitionsListPageComponent implements OnInit {
         }
     }
 
-    // ─── lifecycle actions ───────────────────────────────────────
+    // --- lifecycle actions ---------------------------------------
 
     /**
      * Retire = archive. Reversible and lossless, so no confirm — the
@@ -435,8 +435,8 @@ export class DefinitionsListPageComponent implements OnInit {
     /**
      * Per-module drill-down. Every designer now opens as an in-place
      * MODAL (matching the image / DTMPL / BPMN file editors), so the
-     * chrome is consistent: Workflow → the BPMN-Lite editor modal,
-     * Decision → the generic designer-editor modal hosting the DMN-table
+     * chrome is consistent: Workflow -> the BPMN-Lite editor modal,
+     * Decision -> the generic designer-editor modal hosting the DMN-table
      * page. The standalone `/admin/designer/...` routes stay as
      * deep-linkable surfaces.
      */

@@ -33,7 +33,7 @@ import {
 } from './webhook-secret-dialog.component';
 
 /**
- * M5.d.3 FE — inbound webhook triggers admin list (`/admin/webhooks`).
+ * FE — inbound webhook triggers admin list (`/admin/webhooks`).
  *
  * Client-mode datagrid over GET /connector/webhooks (small admin set; mirrors
  * the Definitions catalog). Toolbar (navi.toolbar.connector.webhooks): New

@@ -20,7 +20,7 @@ import { MediaAssetDto, MediaViewMode } from './media.types';
     imports: [CmsLoaderComponent, CmsItemInteractionsDirective, DataGridComponent],
     template: `
         @if (viewMode() === 'details') {
-            <!-- #1709 — the platform DataGrid, config at
+            <!-- — the platform DataGrid, config at
                  /api/v1/datagrids/media:assets. Media never had a table: its
                  modes were three thumbnail sizes plus a wide row, so "which of
                  these is 3 MB, and who uploaded it" had no answer short of
@@ -97,8 +97,8 @@ import { MediaAssetDto, MediaViewMode } from './media.types';
         }
     `,
     styles: [`
-        /* Both branches stretch into the height the slot now gives us
-           (#1760); the tiles keep their own rows at content height so a
+        /* Both branches stretch into the height the slot now gives us;
+the tiles keep their own rows at content height so a
            half-empty folder does not grow giant tiles. */
         :host > coolms-datagrid { flex: 1; min-height: 0; }
         .media-grid {
@@ -149,7 +149,7 @@ export class MediaGridComponent {
     contextMenuNodes = input<NaviGraphNode[]>([]);
 
     /**
-     * Server-side total, for the Details grid's row count (#1709). Defaults to
+     * Server-side total, for the Details grid's row count. Defaults to
      * 0 so the tile-only callers that predate the grid stay valid; the grid
      * falls back to the loaded length when it is unset.
      */
@@ -186,13 +186,13 @@ export class MediaGridComponent {
         (event.target as HTMLImageElement).style.display = 'none';
     }
 
-    /** Where the grid fetches its column config from (#1709). */
+    /** Where the grid fetches its column config from. */
     protected readonly configBaseUrl = computed(() =>
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
     /**
-     * The loaded window, shaped for the DataGrid (#1709).
+     * The loaded window, shaped for the DataGrid.
      *
      * `dimensionsLabel` is flattened here because `dimensions` is an object
      * and the grid renders values, not shapes.
@@ -222,7 +222,7 @@ export class MediaGridComponent {
     });
 
     /**
-     * Grid selection → the id list the tiles publish, so switching modes keeps
+     * Grid selection -> the id list the tiles publish, so switching modes keeps
      * the selection and the Properties panel keeps pointing at the same asset.
      */
     protected onGridRowSelected(row: Record<string, unknown> | null): void {
@@ -233,7 +233,7 @@ export class MediaGridComponent {
 
     /**
      * The row the grid last selected, remembered because the INPUT cannot be
-     * read back in the same tick (#1710).
+     * read back in the same tick.
      *
      * The grid emits `rowSelected` and then `rowContextMenu` synchronously
      * from one handler, so at right-click time `selectedIds()` still holds the
@@ -273,7 +273,7 @@ export class MediaGridComponent {
     }
 
     /**
-     * `details` is absent from both maps on purpose (#1709): that mode is the
+     * `details` is absent from both maps on purpose: that mode is the
      * DataGrid, which the slot swaps in instead of this component, so a column
      * width for it would describe a rendering that never happens here.
      */

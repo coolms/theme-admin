@@ -43,7 +43,7 @@ const TYPES: ReadonlyArray<{ value: HolidayRuleTypeCode; label: string }> = [
 const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
 
 /**
- * M1.2.c — Modal form for creating / editing a HolidayRule.
+ * — Modal form for creating / editing a HolidayRule.
  *
  * Dynamic params section switches on `type`. Validation is light at the
  * FE; the backend enforces the per-type schema via the Domain entity's
@@ -301,7 +301,7 @@ export class HolidayRuleFormComponent {
     readonly pickableRules = this.data.existingRules.filter(r =>
         r.id && r.id !== this.data.rule?.id);
 
-    /** Task #442 — option projection for `<app-lazy-select>`. */
+    /** Task — option projection for `<app-lazy-select>`. */
     readonly baseRuleOptions: readonly LazySelectOption[] = this.pickableRules.map(r => ({
         id:    r.id!,
         label: r.label ?? r.id!,

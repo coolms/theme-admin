@@ -5,7 +5,7 @@ import { PageEditorComponent } from './page-editor.component';
 FileEditorRegistry.register('package', { component: PageEditorComponent, mode: 'dialog' });
 
 export const CONTENT_ROUTES: Routes = [
-    // ADR-153 — Pages is an EXPLORER now (spaces + tree), not a bare list, so
+    // — Pages is an EXPLORER now (spaces + tree), not a bare list, so
     // the route mounts the thin host and the grid arrives as the
     // `content.main` slot. `fullHeight` matches the other explorers; without
     // it the layout cannot pin its footer.
@@ -23,7 +23,7 @@ export const CONTENT_ROUTES: Routes = [
             import('../documents/explorer/document-library.page').then(m => m.DocumentLibraryPage),
         data: { fullHeight: true, activeNav: '/admin/content/documents' },
     },
-    // ADR-153 (d), #1700 — the `articles` route is GONE. Pages absorbed it:
+    // (d), — the `articles` route is GONE. Pages absorbed it:
     // same Packages, same mime, and now the same spaces, per-space creation,
     // surface placement and editor. A bookmark to /admin/content/articles now
     // falls through the `**` catch-all to the dashboard, which is the same

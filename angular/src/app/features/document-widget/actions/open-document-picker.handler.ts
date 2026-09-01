@@ -6,7 +6,7 @@ import { DocumentPickerComponent, type DocumentPickerResult } from '../document-
 
 /**
  * Handles the `document.openPicker` editor action, dispatched by the backend
- * `block:document` toolbar/slash contributor (#1739). Opens the template picker;
+ * `block:document` toolbar/slash contributor. Opens the template picker;
  * on selection inserts a `documentWidget` node, which round-trips to
  * `{widget:document:<slug>}`.
  *

@@ -16,7 +16,7 @@ export interface FormatDisplayInfo {
     readonly color: string;
     /**
      * Canonical source MIME types this format accepts — both halves of
-     * ADR-084's source axis, so `['<docx mime>', 'text/x-dtmpl']` for Word.
+     *'s source axis, so `['<docx mime>', 'text/x-dtmpl']` for Word.
      *
      * Positionally paired with {@link extensions}: `extensions[i]` is the
      * extension of `mimeTypes[i]`. The backend states that contract on

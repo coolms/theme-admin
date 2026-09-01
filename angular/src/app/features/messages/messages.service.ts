@@ -14,7 +14,7 @@ export interface MentionDirectoryUser {
 
 /**
  * Internal Messages — thin API client over the generic Chat conversation +
- * message API (ledger #1007). Standalone per-feature service, like
+ * message API. Standalone per-feature service, like
  * {@link DynamicChatService} (the agent-panel sibling).
  *
  * `Accept: application/json` on collection reads forces the BARE array (not a
@@ -36,7 +36,7 @@ export class MessagesService {
 
     /**
      * GET /chat/conversations — the current user's conversations, newest-active
-     * first, PAGED (#2120).
+     * first, PAGED.
      *
      * The response is a bare array with no total, so "is there more?" is read
      * off the LENGTH: fewer rows back than asked for means that was the last
@@ -58,7 +58,7 @@ export class MessagesService {
 
     /**
      * POST /chat/conversations {withUserId} — open (or get the existing) 1:1
-     * DM with another user; the response carries both participants (#1006).
+     * DM with another user; the response carries both participants.
      */
     openDirect(withUserId: string): Observable<ChatConversationDto> {
         return this.http.post<ChatConversationDto>(
@@ -96,7 +96,7 @@ export class MessagesService {
 
     /**
      * POST /chat/conversations {selfNotes:true} — open (or return the existing)
-     * the current user's private "message yourself" NOTES conversation (#1333):
+     * the current user's private "message yourself" NOTES conversation:
      * a single-participant self-chat, idempotent (one per user). The response
      * carries the conversation (kind `self_notes`) so it drops straight into the
      * inbox and can be selected.
@@ -149,7 +149,7 @@ export class MessagesService {
      * Returns the conversation with its refreshed, enriched participant list.
      *
      * `shareHistory` (G2.1, default `true`) decides whether the new members may
-     * read messages posted BEFORE they joined: `true` → full history, `false` →
+     * read messages posted BEFORE they joined: `true` -> full history, `false` ->
      * they see only messages from now on. Enforced server-side per participant.
      */
     addParticipants(
@@ -174,11 +174,11 @@ export class MessagesService {
     }
 
     /**
-     * GET {identity.usersUrl}/{id} → a user's display label, for a group-composer
+     * GET {identity.usersUrl}/{id} -> a user's display label, for a group-composer
      * chip (the group slice). Best-effort: falls back to the raw id on any error
      * or missing manifest URL, so a chip always renders. Mirrors the label
      * fallback chain used by `<app-user-search-select>`
-     * (name → fullName → email → identifier → slug).
+     * (name -> fullName -> email -> identifier -> slug).
      */
     resolveUserLabel(userId: string): Observable<string> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
@@ -197,10 +197,10 @@ export class MessagesService {
     /**
      * GET {identity.usersUrl}?filter=firstName cn "q"|lastName cn "q"|identifier cn "q"
      * &filter=isSystem eq false — the mention typeahead's DIRECTORY search
-     * (`@`-mentions v2 / #1331): find users NOT (necessarily) in the conversation
+     * (`@`-mentions v2 / ): find users NOT (necessarily) in the conversation
      * so a mention can reach anyone. Matches by NAME (profile first/last) OR email
      * — the pipe (`|`) is one RQL OR-group inside a single `filter` param; the
-     * repeated `filter` AND-combines the system-user exclusion (#1014). System
+     * repeated `filter` AND-combines the system-user exclusion. System
      * users are hidden. Best-effort: degrades to `[]` on error / missing manifest
      * URL / blank query. Labels prefer the full name (the backend's `displayName`
      * policy), so results read as real names, not emails.
@@ -215,7 +215,7 @@ export class MessagesService {
             return of([]);
         }
         // Repeated `filter` params AND-combine server-side (the raw-QUERY_STRING RQL
-        // parser honours duplicate keys, #1014); the first clause is a single
+        // parser honours duplicate keys, ); the first clause is a single
         // pipe-separated OR group (name OR email) — hide system users.
         const params = new HttpParams()
             .append('filter', `firstName cn "${q}"|lastName cn "${q}"|identifier cn "${q}"`)
@@ -236,7 +236,7 @@ export class MessagesService {
             );
     }
 
-    /** Best display label for a user row (name → fullName → email → identifier → slug → fallback). */
+    /** Best display label for a user row (name -> fullName -> email -> identifier -> slug -> fallback). */
     private userLabel(row: Record<string, unknown>, fallback: string): string {
         for (const key of ['name', 'fullName', 'email', 'identifier', 'slug']) {
             const v = row[key];
@@ -260,7 +260,7 @@ export class MessagesService {
 
     /**
      * GET /chat/messages?conversationId=&limit= (NO cursor) — the NEWEST `limit`
-     * messages, ascending. The initial thread read for lazy paging (#1033): a
+     * messages, ascending. The initial thread read for lazy paging: a
      * long conversation opens on its latest page, not its head. Older pages are
      * pulled on demand via {@link listBefore} as the user scrolls up.
      */
@@ -275,7 +275,7 @@ export class MessagesService {
 
     /**
      * GET /chat/messages?conversationId=&beforeSeq=&limit= — the `limit` messages
-     * immediately BEFORE `beforeSeq`, ascending (lazy "load earlier", #1033).
+     * immediately BEFORE `beforeSeq`, ascending (lazy "load earlier", ).
      * The caller passes the lowest seq it currently holds and prepends the
      * returned page.
      */
@@ -294,7 +294,7 @@ export class MessagesService {
      * `SendMessageService::sendAsUser` (row-locked seq, `clientId` idempotency,
      * auto-resolves the sender's participant, realtime nudge). `bodyFormat`
      * selects the body kind: `plain` (escaped on render) or `html` (the rich
-     * `comment`-profile composer, #1005) — the backend sanitises `html` to the
+     * `comment`-profile composer, ) — the backend sanitises `html` to the
      * comment allow-list on write before it ever persists. Attachments are a
      * later slice.
      */
@@ -310,7 +310,7 @@ export class MessagesService {
         return this.http.post<ChatMessageDto>(
             `${this.apiBase}/chat/messages`,
             // `threadRootId` (Threads T1) posts the message as a reply under that
-            // root; omitted → a top-level message. `mentions` = the @-mentioned
+            // root; omitted -> a top-level message. `mentions` = the @-mentioned
             // users (each `{userId, label}`; may include non-members — the server
             // de-dupes + caps but does NOT membership-gate).
             {
@@ -366,7 +366,7 @@ export class MessagesService {
 
     /**
      * POST /chat/messages/{id}/react `{emoji}` — TOGGLE the caller's emoji reaction
-     * on a message (#1334). Reacting with an emoji the caller already used removes
+     * on a message. Reacting with an emoji the caller already used removes
      * it; 204. The server publishes a `reaction` room nudge so peers reconcile the
      * affected message's reaction chips. Reactions ride on the normal message reads
      * (no separate list endpoint — like mentions).
@@ -378,7 +378,7 @@ export class MessagesService {
     /**
      * POST /chat/attachments (multipart) — upload one file to the current user's
      * private chat-uploads store; returns the attachment descriptor to thread
-     * into a subsequent {@link postMessage} (ledger #1009). The server sniffs the
+     * into a subsequent {@link postMessage}. The server sniffs the
      * MIME (never trusts the client) + enforces an allow-list, so a rejected file
      * surfaces as a 4xx. We deliberately do NOT set `Content-Type` — the browser
      * must set the multipart boundary itself; the auth interceptor adds Bearer.
@@ -391,7 +391,7 @@ export class MessagesService {
 
     /**
      * POST /chat/conversations/{id}/typing — signal the current user is typing
-     * (ledger #1016). Fire-and-forget + ephemeral: the server publishes a body-less
+     *. Fire-and-forget + ephemeral: the server publishes a body-less
      * `typing` nudge on the room channel (nothing persisted), so a transient
      * failure is harmless — the next keystroke re-sends. Returns 204 (no body).
      */
@@ -404,7 +404,7 @@ export class MessagesService {
 
     /**
      * GET /chat/unread — unread messages across EVERY conversation, as one
-     * number (#2118).
+     * number.
      *
      * The topbar badge used to fetch the whole inbox for this — every
      * conversation, with participants enriched from the identity directory and a
@@ -426,11 +426,11 @@ export class MessagesService {
 
     /**
      * POST /chat/conversations/{id}/read[?upToSeq=N] — advance the caller's
-     * `lastReadSeq` (ledger #1017). Used to clear the unread badge on open.
+     * `lastReadSeq`. Used to clear the unread badge on open.
      * Fire-and-forget; the cursor only moves forward server-side, so a redundant
      * call is harmless. Returns 204.
      *
-     * ⚠️ SEND `upToSeq` — the seq this client has actually received (#2115).
+     *  SEND `upToSeq` — the seq this client has actually received.
      * Without it the server marks everything up to the conversation's CURRENT
      * `lastSeq`, including messages that landed after this client's last fetch:
      * they are silently cleared from the badge, and — worse — the read receipt
@@ -452,7 +452,7 @@ export class MessagesService {
 
     /**
      * POST|DELETE /chat/conversations/{id}/mute — MUTE (`POST`) or UNMUTE
-     * (`DELETE`) this conversation for the current user (#1332): a per-viewer
+     * (`DELETE`) this conversation for the current user: a per-viewer
      * notification preference. A muted conversation still delivers messages but is
      * excluded from the global unread badge + produces no live inbox nudge.
      * Body-less; 204. Idempotent server-side, so a redundant toggle is harmless.
@@ -472,7 +472,7 @@ export class MessagesService {
 
     /**
      * PATCH /auth/me/status {status} — set the current user's presence status
-     * (online/away/busy/offline, ledger #1019). The new status surfaces as a
+     * (online/away/busy/offline,. The new status surfaces as a
      * colored dot on every avatar the user appears on (others' Messages views).
      * Returns the updated user resource (ignored by the caller).
      *
@@ -491,9 +491,9 @@ export class MessagesService {
 
     /**
      * GET /chat/presence?userIds=a,b,c — batched connection-derived online
-     * lookup (ledger #1023). Returns a `{uid → online}` map for the queried
+     * lookup. Returns a `{uid -> online}` map for the queried
      * users, where `online` is TRUE iff that user currently holds a live
-     * realtime connection (NOT the self-set status, #1019). Best-effort: the
+     * realtime connection (NOT the self-set status, ). Best-effort: the
      * caller polls this (debounced) and degrades to "all offline" on error.
      * An empty `userIds` resolves to `{}` without a round-trip.
      */

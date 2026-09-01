@@ -3,7 +3,7 @@ import { type Routes } from '@angular/router';
 /**
  * W8.c — Lead inbox admin routes.
  * `/admin/leads`     — the lead triage queue (New / Handled / Spam).
- * `/admin/leads/:id` — one lead's detail view (omnichannel convergence, #1337).
+ * `/admin/leads/:id` — one lead's detail view (omnichannel convergence, ).
  */
 export const LEADS_ROUTES: Routes = [
     {

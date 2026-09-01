@@ -37,7 +37,7 @@ const PAGE_SIZE = 50;
  * `showActionColumn: false`). Plain-text fields are auto-escaped by Angular
  * interpolation — no XSS sink.
  *
- * **`loadingMode: lazy` since #1724.** It used to be `client` — the whole queue
+ * **`loadingMode: lazy`.** It used to be `client` — the whole queue
  * in one request, filtered in the browser — but the endpoint capped that at 200
  * rows. A drained queue hid the problem entirely; a spam flood, the one time a
  * moderator needs to filter the whole backlog, is exactly when it broke. Rows

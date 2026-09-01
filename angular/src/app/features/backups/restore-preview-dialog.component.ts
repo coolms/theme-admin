@@ -13,7 +13,7 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 import { BackupService, RestorePreviewResult } from './backup.service';
 
 /**
- * "Restore preview" dialog (ADR-149, #1478).
+ * "Restore preview" dialog.
  *
  * A read-only dry run: on open it POSTs to `/core/backups/{name}/restore-preview`
  * (which writes NOTHING) and renders the plan — the per-module list of what

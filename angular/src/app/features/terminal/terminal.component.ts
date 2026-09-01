@@ -14,7 +14,7 @@ import { TerminalHistoryService } from './terminal-history.service';
 /** Where a fresh shell starts, and the server's own default. */
 const CWD_ROOT = '/';
 
-/** Prefs slot for the remembered working directory (#1728). */
+/** Prefs slot for the remembered working directory. */
 const CWD_PREFS_KEY = 'terminal';
 
 /**
@@ -103,7 +103,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     private executing   = false;
 
     /**
-     * The shell's working directory (#1728).
+     * The shell's working directory.
      *
      * Client-held on purpose: the server resolves paths against whatever
      * arrives with each command, so nothing expires and two tabs are two
@@ -181,7 +181,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         this.term?.dispose();
     }
 
-    // ── Key handling ───────────────────────────────────────────────────────
+    // -- Key handling -------------------------------------------------------
 
     private handleKey(key: string, event: KeyboardEvent): void {
         // Allow Ctrl+C during execution
@@ -239,7 +239,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                     this.term.clear();
                     // Clear the BUFFER too, not just the screen. Without this the
                     // half-typed line survives invisibly and the next Enter runs
-                    // it — found while driving the terminal to verify #1728.
+                    // it — found while driving the terminal to verify .
                     this.currentLine = '';
                     this.writePrompt();
                     break;
@@ -258,7 +258,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    // ── Execution ──────────────────────────────────────────────────────────
+    // -- Execution ----------------------------------------------------------
 
     private execute(line: string): void {
         this.executing = true;
@@ -295,7 +295,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
-    // ── Tab completion ─────────────────────────────────────────────────────
+    // -- Tab completion -----------------------------------------------------
 
     private requestCompletion(): void {
         const cursorPos = this.currentLine.length;
@@ -331,7 +331,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         return line.endsWith(' ') ? '' : (tokens.at(-1) ?? '');
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
+    // -- Helpers ------------------------------------------------------------
 
     private writeWelcome(): void {
         this.term.writeln('\x1b[34m╭─────────────────────────────╮\x1b[0m');
@@ -343,7 +343,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
     /**
      * `coolms:{where} >` — the working directory is in the prompt, which is the
-     * whole point of having one (#1728).
+     * whole point of having one.
      *
      * Home contracts to `~`, mirroring `TerminalPath::forPrompt()` on the
      * server. A home path is `/home/{uuid}`; spelled out it would fill the line

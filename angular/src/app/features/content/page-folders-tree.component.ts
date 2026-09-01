@@ -25,7 +25,7 @@ interface FolderNode {
     children: FolderNode[] | null;   // null = not loaded yet
     expanded: boolean;
     /**
-     * A children request is in flight (#1714).
+     * A children request is in flight.
      *
      * Deliberately NOT rendered. It exists only to stop a second request when
      * the user expands a folder whose prefetch has not landed yet — the tree
@@ -35,7 +35,7 @@ interface FolderNode {
 }
 
 /**
- * Folder tree for the active page space (#1706).
+ * Folder tree for the active page space.
  *
  * Projected into the space accordion, so it renders under the space you picked
  * — the sections (`blog`, `docs`, `news`) that used to be rows in the grid.
@@ -96,7 +96,7 @@ interface FolderNode {
                 </button>
             </div>
 
-            <!-- NOTHING transient renders here (#1714). No "No subfolders."
+            <!-- NOTHING transient renders here. No "No subfolders."
                  note, and no "Loading…" either: both flashed for the length of
                  one request every time a section was opened, which is the
                  whole complaint. The tree prefetches one level ahead, so by
@@ -136,7 +136,7 @@ interface FolderNode {
         }
         .page-folders__twisty--open { transform: rotate(90deg); }
         /* Known leaf: keeps its width so the row stays aligned with its
-           siblings, but shows and clicks nothing (#1712). */
+           siblings, but shows and clicks nothing. */
         .page-folders__twisty--leaf { visibility: hidden; pointer-events: none; }
         .page-folders__name {
             flex: 1;
@@ -205,7 +205,7 @@ export class PageFoldersTreeComponent {
     }
 
     /**
-     * Right-click a section (#1712) — the left panel had no menu at all.
+     * Right-click a section — the left panel had no menu at all.
      *
      * Does NOT navigate. The first version selected the folder before opening
      * the menu, on the theory that the entries act on the folder cursor — but
@@ -231,7 +231,7 @@ export class PageFoldersTreeComponent {
 
                     return;
                 }
-                // #1717 — section properties act on the folder that was
+                // — section properties act on the folder that was
                 // right-clicked, NOT on the cursor, so the target travels with
                 // the action. Everything else is cursor/space-scoped and goes
                 // through the plain channel.
@@ -246,7 +246,7 @@ export class PageFoldersTreeComponent {
     }
 
     /**
-     * True once we KNOW the folder has nothing under it (#1712).
+     * True once we KNOW the folder has nothing under it.
      *
      * The tree is lazy, so `children: null` means "not asked yet", not
      * "empty" — the twisty has to stay until the first expand answers the
@@ -308,7 +308,7 @@ export class PageFoldersTreeComponent {
     }
 
     /**
-     * Silently resolve one level of children (#1714).
+     * Silently resolve one level of children.
      *
      * The tree cannot tell "empty" from "not asked yet" — `children: null`
      * means the latter — so before this, every folder wore a chevron on spec

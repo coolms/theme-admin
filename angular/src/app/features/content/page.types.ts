@@ -10,7 +10,7 @@
  *  - `PageVariantSummary` -- thin summary used by the pages list grid.
  */
 /**
- * A page kind offered by `GET /content/page-types` (ADR-153 step (b), #1696).
+ * A page kind offered by `GET /content/page-types` ( step (b), ).
  *
  * `key` is what gets stored as the Package's `contentType`; `template` is the
  * theme file it renders with, derived server-side by the same convention the
@@ -24,7 +24,7 @@ export interface PageTypeDto {
 }
 
 /**
- * A surface a page can be placed on (`GET /content/pages/surfaces`, #1698).
+ * A surface a page can be placed on (`GET /content/pages/surfaces`, ).
  */
 export interface PageSurfaceDto {
     key: string;
@@ -33,7 +33,7 @@ export interface PageSurfaceDto {
 }
 
 /**
- * One place a page currently appears (ADR-153 step (c), #1698).
+ * One place a page currently appears ( step (c), ).
  *
  * DERIVED from the symlink that exists — there is no stored "published to"
  * flag — so this list is always what the VFS actually holds.
@@ -53,7 +53,7 @@ export interface PageVariantSummaryDto {
     /** Per-locale `Node.title`; absent when the variant has none. */
     title?: string | null;
     /**
-     * Per-locale share image (#1693). SEO is per-VARIANT on this model, so
+     * Per-locale share image. SEO is per-VARIANT on this model, so
      * this is the honest home for it; `PageDto.ogImage` is only the derived
      * "which one does the tile show" answer.
      */
@@ -102,7 +102,7 @@ export interface PageDto {
      * Whether the enclosing content collection requires editorial review
      * (W6.c). Populated by the backend only on single-page reads (`?id=` /
      * `?path=`); drives whether the editor shows "Submit for review".
-     * `undefined`/`false` → publish directly (no review flow).
+     * `undefined`/`false` -> publish directly (no review flow).
      */
     requiresReview?: boolean;
     /**
@@ -112,20 +112,20 @@ export interface PageDto {
      * every Pages projection (a cheap extras read). Lets the editor decide the
      * landing-vs-prose canvas *synchronously* at open, so a landing page mounts
      * the block canvas directly instead of briefly mounting then tearing down
-     * the prose `<coolms-editor>`. `undefined`/`null` → a plain prose page.
+     * the prose `<coolms-editor>`. `undefined`/`null` -> a plain prose page.
      */
     contentType?: string | null;
     /**
      * True once the slug is FROZEN — the page/article has been published (a
      * variant went live, or the article was linked into a surface), so the
-     * backend set its `extras.slugLocked` ([#1618]). The editor uses it to warn
+     * backend set its `extras.slugLocked` ([]). The editor uses it to warn
      * before a rename (renaming a frozen slug changes the live URL and needs the
-     * `force` flag). `undefined`/`false` → not yet published, slug freely
+     * `force` flag). `undefined`/`false` -> not yet published, slug freely
      * renameable. Populated on the single-page reads (`?id=`/`?path=`).
      */
     slugLocked?: boolean;
     /**
-     * Share image for the explorer tile (#1693) — DERIVED by the backend from
+     * Share image for the explorer tile — DERIVED by the backend from
      * the variants (published wins, else the first that has one), not a field
      * of its own on the Package.
      *
@@ -134,7 +134,7 @@ export interface PageDto {
      */
     ogImage?: string | null;
     /**
-     * Surfaces this page is currently placed on (#1698). Empty/absent means
+     * Surfaces this page is currently placed on. Empty/absent means
      * the page is reachable only at its own URL.
      */
     placements?: PagePlacementDto[];

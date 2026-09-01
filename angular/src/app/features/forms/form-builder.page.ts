@@ -52,7 +52,7 @@ interface ChoiceRow { label: string; value: string; }
 type FieldModel = Record<string, unknown>;
 
 /**
- * Form Builder page (`/admin/forms/new`, `/admin/forms/:id`, Track D.3).
+ * Form Builder page (`/admin/forms/new`, `/admin/forms/:id`,.3).
  *
  * The second consumer of the generic {@link OrderedBuilderComponent} substrate
  * (the first is the landing Page Builder). The ordered-list machinery — type
@@ -62,7 +62,7 @@ type FieldModel = Record<string, unknown>;
  * `<ng-template>`: name, label, type, required, help, placeholder, choices),
  * and the create/edit lifecycle.
  *
- * Save routes through the Track D.2 chained writer (`POST`/`PATCH /forms`):
+ * Save routes through the.2 chained writer (`POST`/`PATCH /forms`):
  * editing a module-shipped form mints a DB override; user-created forms land
  * file-when-writable else DB. After a successful save the right pane renders a
  * **live preview** via `<app-dynamic-form [formId]>` (it fetches the persisted
@@ -449,7 +449,7 @@ export class FormBuilderPageComponent implements OnInit {
     private savedSnapshot = '';
 
     /**
-     * ⚠️ NOT `OrderedBuilderComponent.dirty`. That flag only flips when the
+     *  NOT `OrderedBuilderComponent.dirty`. That flag only flips when the
      * CONSUMER calls `markDirty()` -- the builder cannot see inside an element,
      * as its own docblock says -- and this page never calls it. So it catches
      * add / remove / reorder and misses every CONTENT edit, which is the common
@@ -498,7 +498,7 @@ export class FormBuilderPageComponent implements OnInit {
     readonly source = signal<string | null>(null);
     /**
      * The loaded form's top-level options + data_class, carried through
-     * load→save UNCHANGED (the builder doesn't surface them yet — FB-3 will edit
+     * load->save UNCHANGED (the builder doesn't surface them yet — FB-3 will edit
      * `formOptions.layout`). FB-0's replace save sends the FULL definition, so
      * these MUST round-trip or a replace would wipe a form's options/dataClass.
      */
@@ -574,7 +574,7 @@ export class FormBuilderPageComponent implements OnInit {
 
     /**
      * Header keeps navigation only and Save is pinned to the detail footer --
-     * both declared in the `form:builder` layout (ADR-127) rather than here,
+     * both declared in the `form:builder` layout rather than here,
      * including WHEN Save refuses: an invalid draft, or a save already running.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
@@ -617,7 +617,7 @@ export class FormBuilderPageComponent implements OnInit {
         }
     }
 
-    // ── Loads ────────────────────────────────────────────────────────────────
+    // -- Loads ----------------------------------------------------------------
 
     private loadTypes(): void {
         this.forms.getFieldTypes().pipe(
@@ -676,7 +676,7 @@ export class FormBuilderPageComponent implements OnInit {
         return typeof e === 'object' && e !== null && (e as { status?: number }).status === 404;
     }
 
-    // ── Header actions ───────────────────────────────────────────────────────
+    // -- Header actions -------------------------------------------------------
 
     onHeaderAction(id: string): void {
         if (id === 'back') { void this.router.navigate(['/forms']); return; }
@@ -741,7 +741,7 @@ export class FormBuilderPageComponent implements OnInit {
         return opts;
     }
 
-    // ── Substrate config (arrow props so `this` binds when passed as inputs) ──
+    // -- Substrate config (arrow props so `this` binds when passed as inputs) --
 
     readonly makeField: OrderedElementFactory = (typeId: string): OrderedElement | null => {
         const t = this.types().find(x => x.type === typeId);
@@ -793,7 +793,7 @@ export class FormBuilderPageComponent implements OnInit {
         return label || name || String(f['type'] ?? 'Field');
     };
 
-    // ── Field getters (the model is an opaque Record) ────────────────────────
+    // -- Field getters (the model is an opaque Record) ------------------------
 
     fname(f: FieldModel): string { return String(f['name'] ?? ''); }
     ftype(f: FieldModel): string { return String(f['type'] ?? ''); }
@@ -809,7 +809,7 @@ export class FormBuilderPageComponent implements OnInit {
         return this.types().find(t => t.type === type)?.hasOptions ?? false;
     }
 
-    // ── FB-1: data-source editor (select fields) ─────────────────────────────
+    // -- FB-1: data-source editor (select fields) -----------------------------
     // The platform `dataSource` model (static / enum / api) drives how a select's
     // options come to be; the builder emits `options.dataSource` and the render
     // builder resolves it. `enum`/`api` are developer-supplied (FQCN / route name).
@@ -848,7 +848,7 @@ export class FormBuilderPageComponent implements OnInit {
         return opts;
     }
 
-    // ── Field mutations (immutable on the signal) ────────────────────────────
+    // -- Field mutations (immutable on the signal) ----------------------------
 
     private patch(i: number, patch: Record<string, unknown>): void {
         this.fields.update(fs => fs.map((f, idx) => idx === i ? { ...f, ...patch } : f));
@@ -919,11 +919,11 @@ export class FormBuilderPageComponent implements OnInit {
     setDsMultiple(i: number, v: boolean): void { this.patch(i, { dsMultiple: v }); }
     setDsWidget(i: number, v: string): void { this.patch(i, { dsWidget: v }); }
 
-    // ── FB-2: relation / sub-form inspectors ─────────────────────────────────
-    // relation → options.relation {cardinality, maxItems?, targetFormId?, dataSource}
+    // -- FB-2: relation / sub-form inspectors ---------------------------------
+    // relation -> options.relation {cardinality, maxItems?, targetFormId?, dataSource}
     //   (the dataSource reuses the ds* editor above — a field is either select
     //    OR relation, so the shared fields never collide).
-    // subform  → options.subForm {formId, relation, maxItems?}.
+    // subform  -> options.subForm {formId, relation, maxItems?}.
 
     relCardinality(f: FieldModel): string { return f['relCardinality'] === 'many' ? 'many' : 'one'; }
     relMaxItems(f: FieldModel): string { return String(f['relMaxItems'] ?? ''); }
@@ -939,7 +939,7 @@ export class FormBuilderPageComponent implements OnInit {
     setSubRelation(i: number, v: string): void { this.patch(i, { subRelation: v }); }
     setSubMaxItems(i: number, v: string): void { this.patch(i, { subMaxItems: v }); }
 
-    // ── (De)serialisation: working model ↔ wire FormFieldEntry ───────────────
+    // -- (De)serialisation: working model ↔ wire FormFieldEntry ---------------
 
     private serializeAll(): FormFieldsMap {
         const out: Record<string, FormFieldEntry> = {};
@@ -970,7 +970,7 @@ export class FormBuilderPageComponent implements OnInit {
                 delete options['choices'];
                 delete options['enumClass'];
             } else if (this.ftype(f) === 'relation') {
-                // FB-2: relation → options.relation {cardinality, maxItems?,
+                // FB-2: relation -> options.relation {cardinality, maxItems?,
                 // targetFormId?, dataSource} (the dataSource reuses the ds* editor).
                 const rel: Record<string, unknown> = { cardinality: this.relCardinality(f) };
                 const max = parseInt(this.relMaxItems(f), 10);
@@ -982,7 +982,7 @@ export class FormBuilderPageComponent implements OnInit {
                 delete options['dataSource'];
                 delete options['choices'];
             } else if (this.ftype(f) === 'subform') {
-                // FB-2: sub-form → options.subForm {formId, relation, maxItems?}.
+                // FB-2: sub-form -> options.subForm {formId, relation, maxItems?}.
                 const sub: Record<string, unknown> = {
                     formId: this.subFormId(f).trim(),
                     relation: this.subRelation(f),
@@ -1153,7 +1153,7 @@ export class FormBuilderPageComponent implements OnInit {
         };
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // -- Helpers --------------------------------------------------------------
 
     private uniqueName(base: string): string {
         const clean = base.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'field';

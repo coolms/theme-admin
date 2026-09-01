@@ -22,9 +22,9 @@ export interface RecurrenceDialogData {
 
 /**
  * `RecurrenceDialogResult`:
- * - `string` → the new spec was saved.
- * - `null`   → the user explicitly set "Doesn't repeat" and saved.
- * - `undefined` → the user cancelled (no change).
+ * - `string` -> the new spec was saved.
+ * - `null`   -> the user explicitly set "Doesn't repeat" and saved.
+ * - `undefined` -> the user cancelled (no change).
  *
  * The undefined / null distinction matters: the editor's `recurrenceSpec`
  * signal already holds a value; only an explicit save should overwrite it.

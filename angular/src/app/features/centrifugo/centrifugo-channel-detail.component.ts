@@ -22,7 +22,7 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * ADR-099 Phase 1.5 sub-phase 1.5b -- per-channel admin view at
+ * Phase 1.5 sub-phase 1.5b -- per-channel admin view at
  * `/centrifugo/channel/:name` (rendered under the SPA's `/admin/`
  * base-href). Two panels share the channel
  * name from the URL:
@@ -288,7 +288,7 @@ import {
             color: var(--cms-text-secondary);
             font-size: .8rem;
         }
-        /* Kit shadows removed (#2030). The local .cms-btn-danger was a SOLID
+        /* Kit shadows removed. The local .cms-btn-danger was a SOLID
            red fill; the kit's is an outline — red text on a red border — which
            is what every other destructive button in the admin looks like. This
            one now matches them, so the change is visible and deliberate. */

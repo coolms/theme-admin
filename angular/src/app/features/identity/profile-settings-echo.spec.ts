@@ -10,7 +10,7 @@ import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfileCallTabComponent } from './profile-call-tab.component';
 
 /**
- * #2033 downstream audit — what the section PATCH's echo DID to the caches.
+ * downstream audit — what the section PATCH's echo DID to the caches.
  *
  * `updateSettings()` used to go out without `Accept: application/json`, so API
  * Platform answered in ld+json. A settings section is a MAP, and ld+json
@@ -40,7 +40,7 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  *
  * BOUNDARY — the one link these cannot execute is `ProfilePageComponent`
  * itself: it imports `DynamicFormComponent`, whose rich-text field pulls
- * `@coolms/editor-angular` → `@coolms/document-engine`, and the karma builder
+ * `@coolms/editor-angular` -> `@coolms/document-engine`, and the karma builder
  * (webpack) cannot resolve that package's `./x.js` specifiers to its `.ts`
  * sources the way the esbuild application builder does — importing the page
  * fails the whole suite at build time. So the three `update(...)` calls below
@@ -48,7 +48,7 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  * (profile-page.component.ts:571-572, :595-596, :612, :618-619); everything on
  * either side of those lines is the real thing.
  */
-describe('Settings-section echo → profile caches (#2033 fallout)', () => {
+describe('Settings-section echo -> profile caches', () => {
     const THEME_CACHE_KEY  = 'coolms_theme';
     const ACCENT_CACHE_KEY = 'coolms_accent';
 
@@ -113,11 +113,11 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
             providers: [
                 provideHttpClient(withXhr()),
                 provideHttpClientTesting(),
-                // Covers both roles this graph asks of the store: the API
-                // manifest (ApiService, platform defaults) and
-                // `AuthState.currentUser` — the manifest object carries no
-                // `id`, so the personal-calendar fallback resolves to null,
-                // which nothing here leans on.
+ // Covers both roles this graph asks of the store: the API
+ // manifest (ApiService, platform defaults) and
+ // `AuthState.currentUser` — the manifest object carries no
+ // `id`, so the personal-calendar fallback resolves to null,
+ // which nothing here leans on.
                 { provide: Store, useValue: { selectSnapshot: () => MANIFEST } },
             ],
         });
@@ -137,7 +137,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         document.documentElement.style.removeProperty('--cms-accent');
     });
 
-    // ── Calendar tab ─────────────────────────────────────────────────────────
+ // -- Calendar tab ---------------------------------------------------------
 
     /** What the user had when the page loaded, as GET /settings served it. */
     const CALENDAR_BEFORE: CalendarPrefs = {
@@ -156,16 +156,16 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         defaultCalendarSlug: 'team-ops',
     };
 
-    it('a calendar save reaches the live prefs — the widgets do not keep the pre-save values', () => {
+ it('a calendar save reaches the live prefs — the widgets do not keep the pre-save values', () => {
         calPrefs.update(CALENDAR_BEFORE);              // page ngOnInit seeds from GET /settings
         expect(calPrefs.tz()).toBe('UTC');
 
         const echo = saveSection('calendar', { ...CALENDAR_SAVED });
         calPrefs.update(echo as Partial<CalendarPrefs>);   // profile-page.component.ts:572
 
-        // Every one of these is read by something already on screen:
-        // FullCalendar's timeZone and firstDay, MiniCalendar, the date/time
-        // formatting service, and the topbar calendar quick-access.
+ // Every one of these is read by something already on screen:
+ // FullCalendar's timeZone and firstDay, MiniCalendar, the date/time
+ // formatting service, and the topbar calendar quick-access.
         expect(calPrefs.tz()).toBe('Europe/Berlin');
         expect(calPrefs.dateFormat()).toBe('dd.MM.yyyy');
         expect(calPrefs.timeFormat()).toBe('12h');
@@ -174,15 +174,15 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         expect(calPrefs.defaultCalendarSlug()).toBe('team-ops');
     });
 
-    it('re-opening the Calendar tab after a save offers the saved values back, not defaults', () => {
+ it('re-opening the Calendar tab after a save offers the saved values back, not defaults', () => {
         const echo = saveSection('calendar', { ...CALENDAR_SAVED });
 
-        // Switching profile tabs destroys the tab body and builds a new one
-        // from `settings()[section]`, which is this echo; the component reads
-        // `initial` once, in ngOnInit. Fed a keyless bag it falls to
-        // UTC / yyyy-MM-dd / 24h / monday / personal — and the next Save
-        // writes those over what the user actually stored, which is how a
-        // mangled echo turns into data loss.
+ // Switching profile tabs destroys the tab body and builds a new one
+ // from `settings()[section]`, which is this echo; the component reads
+ // `initial` once, in ngOnInit. Fed a keyless bag it falls to
+ // UTC / yyyy-MM-dd / 24h / monday / personal — and the next Save
+ // writes those over what the user actually stored, which is how a
+ // mangled echo turns into data loss.
         const tab = TestBed.createComponent(ProfileCalendarTabComponent);
         tab.componentRef.setInput('initial', echo);
 
@@ -196,7 +196,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         expect(emitted).toEqual(CALENDAR_SAVED);
     });
 
-    // ── Calls tab ────────────────────────────────────────────────────────────
+ // -- Calls tab ------------------------------------------------------------
 
     const CALL_BEFORE: CallOverlayPrefs = {
         overlayEnabled:     true,
@@ -210,23 +210,23 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         sipEndpoint:        'PJSIP/2002',
     };
 
-    it('a call-settings save reaches the live overlay prefs', () => {
+ it('a call-settings save reaches the live overlay prefs', () => {
         callPrefs.update(CALL_BEFORE);
         expect(callPrefs.overlayEnabled()).toBeTrue();
 
         const echo = saveSection('call', { ...CALL_SAVED });
         callPrefs.update(echo as Partial<CallOverlayPrefs>);   // profile-page.component.ts:596
 
-        // The screen-pop overlay is mounted once by the admin shell and
-        // refreshes only in its own ngOnInit, so a value that fails to land
-        // here outlives every route change: the user turns the popup off and
-        // it keeps popping up until the tab is reloaded.
+ // The screen-pop overlay is mounted once by the admin shell and
+ // refreshes only in its own ngOnInit, so a value that fails to land
+ // here outlives every route change: the user turns the popup off and
+ // it keeps popping up until the tab is reloaded.
         expect(callPrefs.overlayEnabled()).toBeFalse();
         expect(callPrefs.autoDismissSeconds()).toBe(0);
         expect(callPrefs.sipEndpoint()).toBe('PJSIP/2002');
     });
 
-    it('re-opening the Calls tab after a save keeps the SIP endpoint', () => {
+ it('re-opening the Calls tab after a save keeps the SIP endpoint', () => {
         const echo = saveSection('call', { ...CALL_SAVED });
 
         const tab = TestBed.createComponent(ProfileCallTabComponent);
@@ -238,15 +238,15 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         tab.componentInstance.ngOnInit();
         tab.componentInstance.save();
 
-        // The blank-string default is the dangerous one: an endpoint the tab
-        // never saw is an endpoint the next Save clears, and click-to-dial
-        // stops working for a user who merely visited the tab twice.
+ // The blank-string default is the dangerous one: an endpoint the tab
+ // never saw is an endpoint the next Save clears, and click-to-dial
+ // stops working for a user who merely visited the tab twice.
         expect(emitted).toEqual(CALL_SAVED);
     });
 
-    // ── Preferences tab ──────────────────────────────────────────────────────
+ // -- Preferences tab ------------------------------------------------------
 
-    it('a preferences save re-themes on the spot', () => {
+ it('a preferences save re-themes on the spot', () => {
         const echo = saveSection(
             'preferences',
             { theme: 'dark', accentColor: '#3366ff', locale: 'en', pageSize: 20 },
@@ -256,26 +256,26 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         theme.updateAccent(echo['accentColor']);  // profile-page.component.ts:619
         TestBed.flushEffects();
 
-        // The original #2033 report. Both of these read a NAMED field off the
-        // echo, so both received `undefined` and were dropped by the service's
-        // own guards: the save worked, and the admin stayed the colour it
-        // already was until the next reload.
+ // The original report. Both of these read a NAMED field off the
+ // echo, so both received `undefined` and were dropped by the service's
+ // own guards: the save worked, and the admin stayed the colour it
+ // already was until the next reload.
         expect(theme.choice()).toBe('dark');
         expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
         expect(theme.userAccent()).toBe('#3366ff');
         expect(document.documentElement.style.getPropertyValue('--cms-accent')).toBe('#3366ff');
     });
 
-    it('the echo a generic section caches is keyed, so the dynamic form can re-seed from it', () => {
+ it('the echo a generic section caches is keyed, so the dynamic form can re-seed from it', () => {
         const echo = saveSection(
             'preferences',
             { theme: 'dark', accentColor: '#3366ff', locale: 'en', pageSize: 20 },
         );
 
-        // DynamicFormComponent patches its group from `initialValue` once, when
-        // the definition arrives. A `{member:[…]}` bag is non-empty, so the
-        // patch RAN, matched no control, and the re-opened form showed the
-        // definition's defaults with nothing to suggest anything was wrong.
+ // DynamicFormComponent patches its group from `initialValue` once, when
+ // the definition arrives. A `{member:[…]}` bag is non-empty, so the
+ // patch RAN, matched no control, and the re-opened form showed the
+ // definition's defaults with nothing to suggest anything was wrong.
         expect(Object.keys(echo)).not.toContain('member');
         expect(echo['theme']).toBe('dark');
         expect(echo['pageSize']).toBe(20);

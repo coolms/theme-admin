@@ -24,7 +24,7 @@ import {
 import { NewsletterService, type NewsletterSiteDto } from './newsletter.service';
 
 /**
- * Newsletter "Compose campaign" dialog (Option A, #974).
+ * Newsletter "Compose campaign" dialog (Option A, ).
  *
  * Lifted out of the inline section on the Newsletter list page into the
  * platform `app-modal` (CDK Dialog), opened from the page's "Compose"
@@ -37,7 +37,7 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
  * `confirmedCount` arrives via `DIALOG_DATA` — the page already tracks it
  * for the confirmed bucket.
  *
- * **Multi-locale since #1743.** The same `<app-locale-switcher>` the Editor and
+ * **Multi-locale.** The same `<app-locale-switcher>` the Editor and
  * the Media panels use drives a per-locale `{subject, body}` map; at send, each
  * recipient gets the language resolved for them, falling back to the platform
  * default. A locale only exists once something is typed into it, and a
@@ -45,13 +45,13 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
  * readers would receive an empty email is worse than not offering it. The
  * switcher hides itself on a single-locale install, so nothing changes there.
  *
- * **The body is the rich `coolms-editor` since #1734**, on the `newsletter`
+ * **The body is the rich `coolms-editor`**, on the `newsletter`
  * profile. That profile is narrower than `full` on purpose — it drops grid
  * layouts, tables, code blocks, callouts and embeds, because those emit modern
  * CSS or scripted markup that Outlook ignores and no mail client executes, so
  * they would look broken in a way the author never sees while composing.
  *
- * ⚠️ **This could not ship before the send path rendered dtmpl** (#1733). The
+ *  **This could not ship before the send path rendered dtmpl**. The
  * profile's media insert emits a `{widget:media:UUID …}` tag; while
  * `SendCampaignEmailHandler` concatenated the body and sent it verbatim, every
  * inserted image would have arrived in the subscriber's inbox as that literal
@@ -218,7 +218,7 @@ export class NewsletterComposeDialogComponent {
     /**
      * Confirmed-recipient count, passed from the page. Now only the FALLBACK for
      * {@link recipientCount} while the site list loads — the authoritative number
-     * is per-list (#1736).
+     * is per-list.
      */
     readonly confirmedCount = inject<number>(DIALOG_DATA, { optional: true }) ?? 0;
 
@@ -245,7 +245,7 @@ export class NewsletterComposeDialogComponent {
     readonly sending = signal(false);
 
     /**
-     * What has been written, per locale (#1743) — the shape the API takes.
+     * What has been written, per locale — the shape the API takes.
      *
      * A locale is absent until something is typed into it, so an admin who only
      * ever writes one language sends exactly one, and the resolver at send time
@@ -283,15 +283,15 @@ export class NewsletterComposeDialogComponent {
     readonly subject = computed(() => this.contents()[this.activeLocale()]?.subject ?? '');
     readonly body    = computed(() => this.contents()[this.activeLocale()]?.body ?? '');
 
-    /** Targetable lists (#1736); a single-site install gets one and no picker. */
+    /** Targetable lists; a single-site install gets one and no picker. */
     readonly sites = signal<NewsletterSiteDto[]>([]);
     readonly site  = signal('');
 
     /**
-     * VFS paths to attach (#1737).
+     * VFS paths to attach.
      *
      * Picked with the generic `<cms-file-picker>` rather than the media picker
-     * (#1738): a campaign attachment is usually a PDF or a spreadsheet living in
+     *: a campaign attachment is usually a PDF or a spreadsheet living in
      * `/docs` or a home folder, and the media picker cannot leave `/media`. No
      * root is passed, so browsing starts at `/` and the server's permission
      * filtering decides what is reachable.
@@ -354,7 +354,7 @@ export class NewsletterComposeDialogComponent {
     }
 
     /**
-     * Browse for attachments in a dialog of their own (#1745).
+     * Browse for attachments in a dialog of their own.
      *
      * Previously the whole VFS tree was inlined here, which pushed the compose
      * form past the viewport and made it resize on every folder expansion. A

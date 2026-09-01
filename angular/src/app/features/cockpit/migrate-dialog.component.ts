@@ -22,7 +22,7 @@ export interface MigrateResult {
 }
 
 /**
- * M4.i — "Migrate version" dialog for the Process Cockpit detail page.
+ * "Migrate version" dialog for the Process Cockpit detail page.
  *
  * A single dropdown of the instance definition's OTHER deployed versions
  * (the current one is excluded). Re-pinning a suspended instance to the

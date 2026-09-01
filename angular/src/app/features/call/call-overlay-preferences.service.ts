@@ -5,7 +5,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { ApiService } from '../../api/api.service';
 
 /**
- * M9.g (Slice A) — reactive access to the user's incoming-call overlay
+ * Reactive access to the user's incoming-call overlay
  * preferences (mirrors {@link UserCalendarPreferencesService}, minus the
  * platform-defaults cascade: these are personal UX prefs, not an
  * operator-configured floor).
@@ -28,7 +28,7 @@ export interface CallOverlayPrefs {
      */
     readonly autoDismissSeconds: number;
     /**
-     * M9.g Slice B — the user's own device/channel for click-to-dial, e.g.
+     * The user's own device/channel for click-to-dial, e.g.
      * `PJSIP/1001`. Blank = the dial pad prompts them to set it. Rung first
      * when they place a call, then bridged to the dialled number.
      */
@@ -53,7 +53,7 @@ export class CallOverlayPreferencesService {
     private readonly loaded$ = new ReplaySubject<CallOverlayPrefs>(1);
     private loadOnce$?: Observable<CallOverlayPrefs>;
 
-    // ── Public signals (read-only) ────────────────────────────────────────────
+    // -- Public signals (read-only) --------------------------------------------
     readonly prefs              = this._prefs.asReadonly();
     readonly overlayEnabled     = computed(() => this._prefs().overlayEnabled);
     readonly autoDismissSeconds = computed(() => this._prefs().autoDismissSeconds);
@@ -102,7 +102,7 @@ export class CallOverlayPreferencesService {
         this.loadOnce$ = undefined;
     }
 
-    // ── Internals ─────────────────────────────────────────────────────────────
+    // -- Internals -------------------------------------------------------------
 
     private merge(overrides: Partial<CallOverlayPrefs>): CallOverlayPrefs {
         return {

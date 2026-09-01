@@ -15,7 +15,7 @@ export interface WebhookSecretDialogData {
 }
 
 /**
- * M5.d.3 FE — one-time secret reveal. Shown after create + rotate-secret; the
+ * FE — one-time secret reveal. Shown after create + rotate-secret; the
  * secret is never retrievable again from a read endpoint, so the admin must
  * copy it now into the external system that will sign its webhook calls.
  */

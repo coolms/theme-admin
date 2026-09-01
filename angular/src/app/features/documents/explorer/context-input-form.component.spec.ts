@@ -35,18 +35,18 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
     beforeEach(() => {
         TestBed.configureTestingModule({
             imports: [ContextInputFormComponent],
-            // The component injects EntitySearchService, which injects
-            // HttpClient. Nothing here issues a request, but the injector
-            // still has to be able to construct the chain.
+ // The component injects EntitySearchService, which injects
+ // HttpClient. Nothing here issues a request, but the injector
+ // still has to be able to construct the chain.
             providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
         });
         const fixture = TestBed.createComponent(ContextInputFormComponent);
         component = fixture.componentInstance;
 
-        // Schema must include the variable so `writeField` is
-        // semantically meaningful from the form's perspective; the
-        // test doesn't render the template — we drive the public
-        // signal/method surface directly.
+ // Schema must include the variable so `writeField` is
+ // semantically meaningful from the form's perspective; the
+ // test doesn't render the template — we drive the public
+ // signal/method surface directly.
         const variables: readonly FormVariableInput[] = [
             {
                 path:       '@identity_user',
@@ -62,17 +62,17 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
         emitted = [];
         component.valueChange.subscribe((v: ContextFormValue) => emitted.push(v));
 
-        // Run the constructor effect once so the initial-seed emit
-        // (`{}`) reaches our spy.
+ // Run the constructor effect once so the initial-seed emit
+ // (`{}`) reaches our spy.
         fixture.detectChanges();
     });
 
-    it('emits the user value verbatim after writeField (no clobber by the seed effect)', () => {
-        // Picker emission would call writeField('@identity_user', '<uuid>')
-        // from the template's (valueChange) binding. The form must
-        // emit that value upward; the dialog's `onVariablesChange`
-        // is bound to this output and stores the snapshot in its
-        // `variables` signal.
+ it('emits the user value verbatim after writeField (no clobber by the seed effect)', () => {
+ // Picker emission would call writeField('@identity_user', '<uuid>')
+ // from the template's (valueChange) binding. The form must
+ // emit that value upward; the dialog's `onVariablesChange`
+ // is bound to this output and stores the snapshot in its
+ // `variables` signal.
         (component as unknown as {
             writeField(p: string, v: string | string[] | null): void;
         }).writeField('@identity_user', '01HX-test-uuid');
@@ -81,7 +81,7 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
         expect(latest).toEqual({ '@identity_user': '01HX-test-uuid' });
     });
 
-    it('preserves `@`-prefixed key through nested-JSON round-trip', () => {
+ it('preserves `@`-prefixed key through nested-JSON round-trip', () => {
         const writer = component as unknown as {
             writeField(p: string, v: string | string[] | null): void;
         };
@@ -95,7 +95,7 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
             .toBe('2026-05-13T10:00:00Z');
     });
 
-    it('does not regress to `{}` on subsequent writes (effect cycle)', () => {
+ it('does not regress to `{}` on subsequent writes (effect cycle)', () => {
         const writer = component as unknown as {
             writeField(p: string, v: string | string[] | null): void;
         };
@@ -103,14 +103,14 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
         writer.writeField('@identity_user', 'uuid-2');
         writer.writeField('@identity_user', 'uuid-3');
 
-        // If the effect re-fired on every formData change, the last
-        // emit would be `{}` (or some stale state). It must instead
-        // be the most recent user value.
+ // If the effect re-fired on every formData change, the last
+ // emit would be `{}` (or some stale state). It must instead
+ // be the most recent user value.
         const latest = emitted[emitted.length - 1];
         expect(latest).toEqual({ '@identity_user': 'uuid-3' });
     });
 
-    it('supports collection-mode emission (string[] preserved)', () => {
+ it('supports collection-mode emission (string[] preserved)', () => {
         const writer = component as unknown as {
             writeField(p: string, v: string | string[] | null): void;
         };
@@ -120,7 +120,7 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
         expect(latest['@identity_user']).toEqual(['uuid-a', 'uuid-b']);
     });
 
-    it('supports null clear (explicit picker deselect)', () => {
+ it('supports null clear (explicit picker deselect)', () => {
         const writer = component as unknown as {
             writeField(p: string, v: string | string[] | null): void;
         };

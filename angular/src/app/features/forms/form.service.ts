@@ -12,7 +12,7 @@ import {
 } from './form.types';
 
 /**
- * Data layer for the Form Builder admin (Track D.3). Wraps the Form module's
+ * Data layer for the Form Builder admin.3). Wraps the Form module's
  * existing API surface:
  *
  *   - list / get   -> `GET /forms`, `GET /forms/{id}` (each row carries the
@@ -21,7 +21,7 @@ import {
  *                     so the client-supplied `id` is allowed despite API
  *                     Platform's usual id-on-POST rejection).
  *   - update       -> `PATCH /forms/{id}` (merge-patch; routes through the
- *                     Track D.2 chained writer — file-when-writable else DB,
+ *.2 chained writer — file-when-writable else DB,
  *                     shipped-form edits always land as a DB override).
  *   - delete       -> `DELETE /forms/{id}` (drops the user override; a
  *                     pure-shipped form cannot be hard-deleted -> 422).

@@ -24,7 +24,7 @@ import { ConfirmDialogService, ToastService, UserSearchSelectComponent } from '@
 type ShareeKind = 'user' | 'group';
 
 /**
- * M1.2.f Calendar Shares card -- adapts the Site Membership UX (#330)
+ * Calendar Shares card -- adapts the Site Membership UX
  * to the Calendar shares API at /api/v1/calendar/{slug}/shares.
  *
  * Two share targets:

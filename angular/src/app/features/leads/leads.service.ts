@@ -36,7 +36,7 @@ export interface LeadDto {
     readonly status:    LeadStatus;
     /** C.5: the Contact this lead's submitter was de-duplicated into (soft ref); null when unlinked. */
     readonly contactId?:    string | null;
-    /** The lead's live DynamicChat conversation id (single-lead read only); null → no live chat to open. */
+    /** The lead's live DynamicChat conversation id (single-lead read only); null -> no live chat to open. */
     readonly conversationId?: string | null;
     readonly createdAt: string;
     readonly handledAt: string | null;
@@ -64,7 +64,7 @@ export class LeadsService {
 
     /**
      * One PAGE of a lead bucket — newest-first, server-filtered and sorted
-     * (#1723).
+     *.
      *
      * Replaces the old `list()`, which fetched a whole bucket in one request for
      * a client-mode grid. The endpoint capped that at 200 rows, so the browser
@@ -111,17 +111,17 @@ export class LeadsService {
             .pipe(map(res => res.member ?? []));
     }
 
-    /** New → Handled (a lead you've actioned). */
+    /** New -> Handled (a lead you've actioned). */
     handle(id: string): Observable<LeadDto> {
         return this.http.post<LeadDto>(`${this.apiBase}/leads/${encodeURIComponent(id)}/handle`, {});
     }
 
-    /** New → Spam. */
+    /** New -> Spam. */
     spam(id: string): Observable<LeadDto> {
         return this.http.post<LeadDto>(`${this.apiBase}/leads/${encodeURIComponent(id)}/spam`, {});
     }
 
-    /** Handled / Spam → New (back into the actionable queue). */
+    /** Handled / Spam -> New (back into the actionable queue). */
     reopen(id: string): Observable<LeadDto> {
         return this.http.post<LeadDto>(`${this.apiBase}/leads/${encodeURIComponent(id)}/reopen`, {});
     }

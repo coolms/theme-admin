@@ -3,7 +3,7 @@ import { ExplorerViewMode } from '@coolms/ui-angular';
 export type MediaStatus = 'pending' | 'ready' | 'failed';
 export type MediaMimeCategory = 'image' | 'video' | 'audio' | 'document' | 'other';
 /**
- * Media's rendering is now the SHARED explorer vocabulary (#1709).
+ * Media's rendering is now the SHARED explorer vocabulary.
  *
  * Was `'large' | 'medium' | 'small' | 'list'`. Only the last name changed —
  * that mode is a wide row with a thumbnail, a name and a detail line, which is
@@ -101,7 +101,7 @@ export interface NodeMetaWire {
     permissions?: { write?: boolean };
 }
 
-// ── Collection tree node (used by sidebar, grid, context menus) ───────────────
+// -- Collection tree node (used by sidebar, grid, context menus) ---------------
 export interface CollectionNode {
     path:     string;
     name:     string;

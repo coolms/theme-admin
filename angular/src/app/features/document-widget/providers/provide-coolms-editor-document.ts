@@ -4,7 +4,7 @@ import { DocumentWidget } from '../dtmpl/dtmpl-document-node';
 import { OpenDocumentPickerHandler } from '../actions/open-document-picker.handler';
 
 /**
- * Bootstrap providers for the Document module's editor integration (#1739).
+ * Bootstrap providers for the Document module's editor integration.
  * Spread into `ApplicationConfig.providers` after `provideCoolmsEditor()` so
  * the bridge's registries exist before this initializer runs (mirrors
  * `provideCoolmsEditorForm()` / `provideCoolmsEditorMedia()`).

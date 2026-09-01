@@ -5,7 +5,7 @@ import { MarkdownService } from './markdown.service';
 import { ToastService } from '@coolms/ui-angular';
 
 /**
- * Paste / file-drop Markdown import dialog (Track B #1). The author pastes
+ * Paste / file-drop Markdown import dialog. The author pastes
  * Markdown (or picks a `.md` file, which is read into the textarea); on Import
  * the text is converted to safe HTML server-side via {@link MarkdownService}
  * and the dialog closes with `{ html }`. The caller (the editor's

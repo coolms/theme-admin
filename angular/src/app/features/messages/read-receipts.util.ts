@@ -1,12 +1,12 @@
 /**
- * Read-receipt derivation for the internal Messages surface (ledger #1018).
+ * Read-receipt derivation for the internal Messages surface.
  *
  * A tick is "Read" only once EVERY other participant has read that far, so the
  * receipt high-water is the MINIMUM of the peers' cursors — while the live
  * `read` nudge that advances it names ONE participant. Keeping the peers'
  * cursors and taking the min is the only way for both halves to agree; folding
  * them into a single number made one member's read speak for the whole group
- * (#2112).
+ *.
  *
  * Pure functions, deliberately outside the page component: this is the part
  * worth testing, and it was untestable while it lived as three lines spread

@@ -1,10 +1,10 @@
 /**
- * Track E Phase 3 (CDP core, #1150) — admin FE wire shapes.
+ *Phase 3 (CDP core, ) — admin FE wire shapes.
  *
  * Mirror the backend Analytics resources:
- *  - `AnalyticsSegmentResource`      → {@link SegmentDto}
- *  - `AnalyticsSegmentRuleCheckResource` → {@link SegmentRuleCheckDto}
- *  - `AnalyticsSubjectResource`      → {@link SubjectDto}
+ *  - `AnalyticsSegmentResource`      -> {@link SegmentDto}
+ *  - `AnalyticsSegmentRuleCheckResource` -> {@link SegmentRuleCheckDto}
+ *  - `AnalyticsSubjectResource`      -> {@link SubjectDto}
  *
  * The whole surface is `ROLE_ADMIN`; the Subject profiles are counts-only
  * (no PII), inheriting the event store's privacy-by-design posture.
@@ -21,7 +21,7 @@ export interface SegmentDto {
     readonly description: string | null;
     /**
      * Optional deployed WorkflowDefinition key started when a subject ENTERS
-     * this segment (Track E Phase 5, activation). `null` = passive membership.
+     * this segmentPhase 5, activation). `null` = passive membership.
      */
     readonly activationWorkflow: string | null;
 }

@@ -2,7 +2,7 @@ import { type Routes } from '@angular/router';
 
 /**
  * W8 — Analytics dashboard admin routes.
- * `/admin/analytics` — the "Top pages" leaderboard over the page-view ledger.
+ * `/admin/analytics` — the "Top pages" leaderboard over the page-view.
  */
 export const ANALYTICS_ROUTES: Routes = [
     {

@@ -11,13 +11,13 @@ import { DocumentInstance } from '@coolms/document-angular';
 import { filenameOf, formatLocation, formatSize } from './vfs-location.helpers';
 
 /**
- * Phase A.1b — focused-instance properties panel. Mounts in the right
+ *.1b — focused-instance properties panel. Mounts in the right
  * detail slot when `state.rightPanelMode === 'instances'` and an
  * instance is selected. The DocumentDetail dispatcher routes here
  * directly (no per-format split — instance metadata is uniform across
  * formats).
  *
- * Phase D hotfix #2: read-only metadata view. View / Download /
+ * hotfix #2: read-only metadata view. View / Download /
  * Regenerate / Delete live exclusively on the toolbar + right-click
  * context menu surfaces, dispatched through the page handler. The
  * inline action row used to live here too, which produced
@@ -186,7 +186,7 @@ export class InstanceDetailComponent {
     });
 
     /**
-     * Phase A.1b backend ops: file size lives on the resource now —
+     *.1b backend ops: file size lives on the resource now —
      * provider batch-resolves the VFS node per page. `null` for
      * pending rows or orphans (file gone but row still in DB).
      */

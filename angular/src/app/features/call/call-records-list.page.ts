@@ -22,15 +22,15 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * M9.f.1 — Call history admin list page (/admin/call/records).
+ * Call history admin list page (/admin/call/records).
  *
  * Read-only, server-side paginated: the DataGrid emits `(loadMore)` on mount
  * + on every sort / filter change; this page calls
  * {@link ApiService.listCallRecordsPage} and feeds the result envelope back
  * via `[externalData]` (mirrors the Schedules list, minus create/edit/delete —
- * CallRecords are minted only by the AMI event stream (M9.a.2), never the API).
+ * CallRecords are minted only by the AMI event stream, never the API).
  *
- * M9.f.2 — drill-in: the `open` row action (context menu) or the toolbar
+ * Drill-in: the `open` row action (context menu) or the toolbar
  * Open button (on a selected row) navigates to `/call/records/:id`.
  */
 @Component({
@@ -169,7 +169,7 @@ export class CallRecordsListComponent implements OnInit {
         if (id === 'open') { const row = this.selectedRow(); if (row) this.openDetail(row); }
     }
 
-    /** Navigate to the read-only call detail (M9.f.2). */
+    /** Navigate to the read-only call detail. */
     private openDetail(row: Record<string, unknown>): void {
         const id = row['id'];
         if (typeof id === 'string' && id !== '') void this.router.navigate(['/call/records', id]);

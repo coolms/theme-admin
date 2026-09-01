@@ -10,12 +10,12 @@
  *
  * **Tiered strictness across directories**:
  *
- * - src/app/shared           → strict (matches future theme-angular UI kit bar)
- * - src/app/core             → recommended-type-checked (services, state)
- * - src/app/features         → recommended-type-checked (volatile pages)
- * - src/app/shell            → the host: composes features, never packaged
+ * - src/app/shared           -> strict (matches future theme-angular UI kit bar)
+ * - src/app/core             -> recommended-type-checked (services, state)
+ * - src/app/features         -> recommended-type-checked (volatile pages)
+ * - src/app/shell            -> the host: composes features, never packaged
  * - core                    -> MOVED to packages/core-angular (@coolms/core-angular)
- * - src/app/coolms-(prefix)  → recommended only (embedded editor packages,
+ * - src/app/coolms-(prefix)  -> recommended only (embedded editor packages,
  *                              close to vendored — relaxed bar)
  *
  * Build-gate policy: errors fail the build. Warnings inform but don't

@@ -49,8 +49,8 @@ describe('template-source helpers', () => {
         };
     }
 
-    describe('templateSourceFilename', () => {
-        it('names a native WORD source .dtmpl, not .docx', () => {
+ describe('templateSourceFilename', () => {
+ it('names a native WORD source .dtmpl, not .docx', () => {
             const name = templateSourceFilename(
                 template({ native: true, sourceMimeType: DTMPL_MIME }),
                 advertising({ [DTMPL_MIME]: DTMPL_EXT }),
@@ -59,7 +59,7 @@ describe('template-source helpers', () => {
             expect(name).toBe('invoice.dtmpl');
         });
 
-        it('names a native SPREADSHEET source .dsheet, not .docx', () => {
+ it('names a native SPREADSHEET source .dsheet, not .docx', () => {
             const name = templateSourceFilename(
                 template({ format: 'spreadsheet', native: true, sourceMimeType: SHEET_DOCUMENT_MIME }),
                 advertising({ [SHEET_DOCUMENT_MIME]: SHEET_DOCUMENT_EXT }),
@@ -68,7 +68,7 @@ describe('template-source helpers', () => {
             expect(name).toBe('invoice.dsheet');
         });
 
-        it('keeps each imported format on its own Office extension', () => {
+ it('keeps each imported format on its own Office extension', () => {
             const advertised = advertising({
                 [DOCX_MIME]: '.docx',
                 [XLSX_MIME]: '.xlsx',
@@ -84,9 +84,9 @@ describe('template-source helpers', () => {
             ).toBe('invoice.pptx');
         });
 
-        it('takes the extension a NEW format advertises, with no change here', () => {
-            // The whole reason the lookup is injected: a format this spec has
-            // never heard of is named correctly because the backend said so.
+ it('takes the extension a NEW format advertises, with no change here', () => {
+ // The whole reason the lookup is injected: a format this spec has
+ // never heard of is named correctly because the backend said so.
             const name = templateSourceFilename(
                 template({ format: 'markdown', native: true, sourceMimeType: 'text/markdown' }),
                 advertising({ 'text/markdown': '.md' }),
@@ -95,7 +95,7 @@ describe('template-source helpers', () => {
             expect(name).toBe('invoice.md');
         });
 
-        it('falls back to the local map when nothing is advertised yet', () => {
+ it('falls back to the local map when nothing is advertised yet', () => {
             expect(
                 templateSourceFilename(
                     template({ native: true, sourceMimeType: DTMPL_MIME }),
@@ -111,10 +111,10 @@ describe('template-source helpers', () => {
             expect(templateSourceFilename(template(), nothingAdvertised)).toBe('invoice.docx');
         });
 
-        it('infers the right HALF of the axis when the row carries no mime', () => {
-            // `sourceMimeType` is the Node's mime and is null only when the
-            // Node has none. Guessing the imported mime for a native template
-            // is how a `.dtmpl` got called a `.docx` in the first place.
+ it('infers the right HALF of the axis when the row carries no mime', () => {
+ // `sourceMimeType` is the Node's mime and is null only when the
+ // Node has none. Guessing the imported mime for a native template
+ // is how a `.dtmpl` got called a `.docx` in the first place.
             expect(
                 templateSourceFilename(
                     template({ native: true, sourceMimeType: null }),
@@ -135,7 +135,7 @@ describe('template-source helpers', () => {
             ).toBe('invoice.xlsx');
         });
 
-        it('leaves the name bare rather than claim a format it cannot resolve', () => {
+ it('leaves the name bare rather than claim a format it cannot resolve', () => {
             const name = templateSourceFilename(
                 template({ format: 'markdown', native: true, sourceMimeType: null }),
                 nothingAdvertised,
@@ -145,37 +145,37 @@ describe('template-source helpers', () => {
         });
     });
 
-    describe('inferTemplateSourceMime', () => {
-        it('answers the native mime for a native template', () => {
+ describe('inferTemplateSourceMime', () => {
+ it('answers the native mime for a native template', () => {
             expect(inferTemplateSourceMime('word', true)).toBe(DTMPL_MIME);
             expect(inferTemplateSourceMime('spreadsheet', true)).toBe(SHEET_DOCUMENT_MIME);
         });
 
-        it('answers the imported Office mime otherwise', () => {
+ it('answers the imported Office mime otherwise', () => {
             expect(inferTemplateSourceMime('word', false)).toBe(DOCX_MIME);
             expect(inferTemplateSourceMime('spreadsheet', false)).toBe(XLSX_MIME);
             expect(inferTemplateSourceMime('presentation', false)).toBe(PPTX_MIME);
         });
 
-        it('has no native answer for a format with no native authoring', () => {
-            // Presentation's provider returns no native source mime — there is
-            // nothing to author, so there is nothing to name.
+ it('has no native answer for a format with no native authoring', () => {
+ // Presentation's provider returns no native source mime — there is
+ // nothing to author, so there is nothing to name.
             expect(inferTemplateSourceMime('presentation', true)).toBeNull();
         });
 
-        it('has no answer for an unknown format', () => {
+ it('has no answer for an unknown format', () => {
             expect(inferTemplateSourceMime('markdown', false)).toBeNull();
         });
     });
 
-    describe('extensionForSourceMime', () => {
-        it('prefers what the backend advertises over the local map', () => {
-            // Not a hypothetical: the local map is a frozen snapshot, and the
-            // endpoint is the format module speaking for itself.
+ describe('extensionForSourceMime', () => {
+ it('prefers what the backend advertises over the local map', () => {
+ // Not a hypothetical: the local map is a frozen snapshot, and the
+ // endpoint is the format module speaking for itself.
             expect(extensionForSourceMime(DOCX_MIME, '.docm')).toBe('.docm');
         });
 
-        it('returns an empty extension for a mime nobody knows', () => {
+ it('returns an empty extension for a mime nobody knows', () => {
             expect(extensionForSourceMime('application/x-unheard-of', null)).toBe('');
         });
     });
@@ -188,8 +188,8 @@ describe('template-source helpers', () => {
      * axis is not replaceable source, however loudly `format-info` advertises
      * it beside the imported half.
      */
-    describe('importedSourceMime', () => {
-        it('takes an imported template’s own mime, consulting no map', () => {
+ describe('importedSourceMime', () => {
+ it('takes an imported template’s own mime, consulting no map', () => {
             expect(importedSourceMime(template())).toBe(DOCX_MIME);
             expect(
                 importedSourceMime(template({ format: 'spreadsheet', sourceMimeType: XLSX_MIME })),
@@ -199,10 +199,10 @@ describe('template-source helpers', () => {
             ).toBe(PPTX_MIME);
         });
 
-        it('answers the IMPORTED half for a native template, not its own mime', () => {
-            // The bug this guards: a native spreadsheet's source mime is the
-            // `.dsheet`, and offering that in the picker would filter the
-            // chooser to the one file `replaceSource()` refuses.
+ it('answers the IMPORTED half for a native template, not its own mime', () => {
+ // The bug this guards: a native spreadsheet's source mime is the
+ // `.dsheet`, and offering that in the picker would filter the
+ // chooser to the one file `replaceSource()` refuses.
             expect(importedSourceMime(template({ native: true, sourceMimeType: DTMPL_MIME })))
                 .toBe(DOCX_MIME);
             expect(
@@ -212,16 +212,16 @@ describe('template-source helpers', () => {
             ).toBe(XLSX_MIME);
         });
 
-        it('infers from the format when the row carries no mime at all', () => {
+ it('infers from the format when the row carries no mime at all', () => {
             expect(importedSourceMime(template({ sourceMimeType: null }))).toBe(DOCX_MIME);
             expect(
                 importedSourceMime(template({ format: 'presentation', sourceMimeType: null })),
             ).toBe(PPTX_MIME);
         });
 
-        it('has no answer for a format nothing here has heard of', () => {
-            // Leaves the picker unfiltered rather than filtered to a guess —
-            // the backend still rejects a file it cannot read.
+ it('has no answer for a format nothing here has heard of', () => {
+ // Leaves the picker unfiltered rather than filtered to a guess —
+ // the backend still rejects a file it cannot read.
             expect(
                 importedSourceMime(template({ format: 'markdown', native: true, sourceMimeType: null })),
             ).toBeNull();
@@ -232,7 +232,7 @@ describe('template-source helpers', () => {
      * The index pairing `format-info` publishes, shared by the service (whole
      * cached registry) and the Replace dialog (one filtered entry).
      */
-    describe('extensionForMimeIn', () => {
+ describe('extensionForMimeIn', () => {
         const entry = (over: Partial<FormatDisplayInfo>): FormatDisplayInfo => ({
             format: 'word',
             label: 'Word Document',
@@ -243,7 +243,7 @@ describe('template-source helpers', () => {
             ...over,
         });
 
-        it('pairs a mime with the extension at the same index', () => {
+ it('pairs a mime with the extension at the same index', () => {
             const formats = [
                 entry({}),
                 entry({
@@ -258,14 +258,14 @@ describe('template-source helpers', () => {
             expect(extensionForMimeIn(formats, SHEET_DOCUMENT_MIME)).toBe(SHEET_DOCUMENT_EXT);
         });
 
-        it('answers null for an unadvertised mime and for an empty list', () => {
+ it('answers null for an unadvertised mime and for an empty list', () => {
             expect(extensionForMimeIn([entry({})], 'application/x-unheard-of')).toBeNull();
             expect(extensionForMimeIn([], DOCX_MIME)).toBeNull();
         });
 
-        it('answers null when the pairing does not hold for that entry', () => {
-            // A short `extensions` list. Taking SOME extension would be worse
-            // than none — the caller's fallback is at least honest.
+ it('answers null when the pairing does not hold for that entry', () => {
+ // A short `extensions` list. Taking SOME extension would be worse
+ // than none — the caller's fallback is at least honest.
             expect(extensionForMimeIn([entry({ extensions: ['.docx'] })], DTMPL_MIME)).toBeNull();
         });
     });

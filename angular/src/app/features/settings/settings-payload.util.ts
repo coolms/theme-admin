@@ -13,7 +13,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
 /**
  * Drop the keys this deployment pins in its environment.
  *
- * ⚠️ **Not cosmetic — the save fails without it.** Pinned controls are rendered
+ *  **Not cosmetic — the save fails without it.** Pinned controls are rendered
  * disabled, but Angular still reports a disabled control in `getRawValue()`,
  * which is what the dynamic form submits. So a pinned key would ride along, and
  * the server refuses any write carrying one (it would be stored and then ignored
@@ -38,7 +38,7 @@ export function withoutPinnedKeys(
 /**
  * Where a save response belongs.
  *
- * ⚠️ **A scoped response must NOT be written into the platform list.** That list
+ *  **A scoped response must NOT be written into the platform list.** That list
  * is the platform-wide view the rail renders and the scope selector returns to.
  * Folding one site's values into it makes the screen show that site's numbers
  * under "Platform (every site)" — which is not a cosmetic slip: an operator

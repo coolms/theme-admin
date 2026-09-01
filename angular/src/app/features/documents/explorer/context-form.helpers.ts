@@ -6,7 +6,7 @@
  * Three responsibilities:
  *   1. `setNestedValue` / `getNestedValue` — read & write into a
  *      `Record<string, unknown>` along a dotted path. The shape mirrors
- *      DTMPL's variable resolution (ADR-085) so the JSON the form
+ *      DTMPL's variable resolution so the JSON the form
  *      submits is what the renderer evaluates against.
  *   2. `buildGroupTree` — fold a flat `[{path: 'customer.name'}, …]`
  *      list into a recursive group tree the template walks for fieldset
@@ -71,7 +71,7 @@ export function getNestedValue(source: ContextFormValue, path: string): unknown 
  * Fold a flat list of variable paths into a recursive group tree.
  *
  *   ['signedAt', 'customer.name', 'customer.address.street']
- *      → [
+ *      -> [
  *          { path: '',         variables: [{path: 'signedAt'}],            subgroups: [] },
  *          { path: 'customer', variables: [{path: 'customer.name'}],
  *            subgroups: [
@@ -164,7 +164,7 @@ function byPath(a: FormVariableInput, b: FormVariableInput): number {
     return a.path.localeCompare(b.path);
 }
 
-/** `'customer.address'` → `'address'`; `'signedAt'` → `'signedAt'`. */
+/** `'customer.address'` -> `'address'`; `'signedAt'` -> `'signedAt'`. */
 export function lastSegment(path: string): string {
     const idx = path.lastIndexOf('.');
     return idx === -1 ? path : path.slice(idx + 1);

@@ -71,7 +71,7 @@ export interface UpdateExperimentInput {
 }
 
 /**
- * W8 — the experiment admin API client (#786).
+ * W8 — the experiment admin API client.
  *
  * Talks to the W8 experiment endpoints (`GET/POST /experiments`,
  * `POST /experiments/status`) off the generic `manifest.apiBase`, so no

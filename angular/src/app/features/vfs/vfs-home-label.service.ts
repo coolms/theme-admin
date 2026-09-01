@@ -9,7 +9,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  *
  * When the VFS backend lists /home, each child node carries a `uname` field —
  * the owning user's primary identifier (e.g. their email address or username).
- * This service collects those uuid → uname mappings as nodes are loaded and
+ * This service collects those uuid -> uname mappings as nodes are loaded and
  * surfaces them as reactive signals so the breadcrumb, tree, and file-grid
  * can show friendly labels instead of raw UUIDs with zero extra HTTP calls.
  *
@@ -20,7 +20,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 @Injectable({ providedIn: 'root' })
 export class VfsHomeLabelService {
 
-    /** Internal reactive store: uuid → display label. */
+    /** Internal reactive store: uuid -> display label. */
     private readonly map = signal<ReadonlyMap<string, string>>(new Map());
 
     /**

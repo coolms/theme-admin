@@ -20,7 +20,7 @@ export interface TopPageDto {
 }
 
 /**
- * W3.3.c — one search-analytics row (#816).
+ * W3.3.c — one search-analytics row.
  *
  * Mirrors the backend `SearchQueryStat` read group (`search_stat:read`): a
  * normalized search `term` plus its aggregate `searches` count over the window.
@@ -34,7 +34,7 @@ export interface SearchQueryStatDto {
 }
 
 /**
- * Track E — one event-stream summary row (#1057/#1070).
+ *— one event-stream summary row.
  *
  * Mirrors the backend `AnalyticsEventSummary` collection
  * (`GET /analytics/events/summary?days=`): an event `type` (lowercase dotted,
@@ -52,9 +52,9 @@ export interface EventSummaryDto {
  *
  * Talks to two privacy-first ledgers off the generic `manifest.apiBase` (so no
  * module-specific manifest entry is needed):
- *  - the page-view ledger (`GET /analytics/top-pages?days=&limit=`, #780), and
+ *  - the page-view(`GET /analytics/top-pages?days=&limit=`, ), and
  *  - the search-query log (`GET /search/analytics/{top-queries,
- *    zero-result-queries}?days=&limit=`, #816).
+ *    zero-result-queries}?days=&limit=`, ).
  *
  * Feature-local (not on the shared ApiService) — the analytics surface is small
  * and self-contained. Mirrors the W7.d ModerationService / W8.c LeadsService.
@@ -114,7 +114,7 @@ export class AnalyticsService {
     }
 
     /**
-     * Per-type totals over the generic Track E event stream (#1057/#1070) for
+     * Per-type totals over the genericevent stream for
      * the last `days`, busiest-type first (server-ordered). The backend clamps
      * `days` to 1..365 (default 30); there is no `limit` — the type set is small
      * and bounded, so the whole window is returned.

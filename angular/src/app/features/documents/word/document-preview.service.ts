@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 /**
  * Renders the editor's CURRENT (unsaved) content to a PDF that shows how the
- * .docx will actually look (#1773).
+ * .docx will actually look.
  *
  * The `<cms-context-frame>` preview answers "how will this look on the site";
  * this answers "how will this look on paper", and only the real engines can:
@@ -34,7 +34,7 @@ export class DocumentPreviewService {
     }
 
     /**
-     * The same render, delivered as a file (#1774).
+     * The same render, delivered as a file.
      *
      * An authored document has no Generate step, so this is how it leaves the
      * system. It shares the preview's composer deliberately: what the author

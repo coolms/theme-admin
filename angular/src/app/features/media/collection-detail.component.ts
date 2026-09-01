@@ -135,7 +135,7 @@ export class CollectionDetailComponent {
     });
 
     constructor() {
-        // New collection selected → reset to default locale and load it.
+        // New collection selected -> reset to default locale and load it.
         effect(() => {
             const p = this.path();
             if (!p) return;
@@ -175,7 +175,7 @@ export class CollectionDetailComponent {
         this.dirty.set(false);
     }
 
-    /** Rich-editor (comment profile) wrote HTML → mirror into the save control. */
+    /** Rich-editor (comment profile) wrote HTML -> mirror into the save control. */
     onDescriptionChange(html: string): void {
         if (this.descriptionControl.value === html) return;
         this.descriptionControl.setValue(html); // emits → marks dirty

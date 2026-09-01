@@ -68,17 +68,17 @@ import { registerWordComponents } from './features/documents/word/word-detail-re
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
 ComponentRegistry.register('MediaLibraryPage',  MediaLibraryPage);
 ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
-// Articles' three registrations are GONE (ADR-153 (d), #1700) along with the
+// Articles' three registrations are GONE ( (d), ) along with the
 // `content:articles` layout they served.
-// ADR-153 — Pages became an explorer, so its grid is a slot component now
+// — Pages became an explorer, so its grid is a slot component now
 // rather than a routed page, and it gained a space accordion beside it.
 ComponentRegistry.register('PageSpaceAccordion',    PageSpaceAccordionComponent);
 ComponentRegistry.register('PagesList',             PagesListComponent);
-// #1711 — Pages was the only explorer with no right panel, so everything a
+// — Pages was the only explorer with no right panel, so everything a
 // page IS beyond its name was reachable only by opening the editor.
 ComponentRegistry.register('PageDetail',            PageDetailComponent);
 
-// Document Library slot components (F.13b → F.14c-1 restructure)
+// Document Library slot components (F.13b -> F.14c-1 restructure)
 ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
 // H4 — DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
 // accordion (Personal / Shared / per-site). The accordion rebinds the
@@ -113,7 +113,7 @@ ComponentRegistry.register('VfsFileDetail', VfsFileDetailSlotComponent);
 // scaffold (routed directly, no slot registration). TranslationDetail still
 // renders through cms-list-layout's `i18n:translation-detail` slot.
 ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
-// ADR-127 reference adopter -- Routing Inspector slots rendered by
+// reference adopter -- Routing Inspector slots rendered by
 // cms-inspector-layout (id=web:routing-inspector). The three slots
 // share state through RoutingInspectorStateService, provided at the
 // route level in app.routes.ts.
@@ -135,7 +135,7 @@ FileEditorRegistry.register('application/xml',  { component: CodeEditorComponent
 // in the resolver, so this takes precedence over CodeEditor for dtmpl.
 FileEditorRegistry.register('text/x-dtmpl', { component: DtmplEditorDialogComponent });
 
-// File editor registry — native documents (ADR-159, #2290). The SAME dialog:
+// File editor registry — native documents. The SAME dialog:
 // everything around the content — the paged canvas, the split preview, the
 // download, the toolbar profile — is the same editor, and only the three calls
 // that touch the FILE differ.
@@ -147,7 +147,7 @@ FileEditorRegistry.register('text/x-dtmpl', { component: DtmplEditorDialogCompon
 // where it landed before this line existed.
 FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogComponent });
 
-// File editor registry — native spreadsheet templates (ADR-155). A `.dsheet`
+// File editor registry — native spreadsheet templates. A `.dsheet`
 // is a JSON grid document, and this is the GRID surface for it; CodeMirror held
 // the mime while that was being built, which made the format authorable only by
 // someone willing to hand-edit JSON.
@@ -162,13 +162,13 @@ FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogC
 // File editor registry — PageEditor for NodeType::Package (double-click in FileManager)
 FileEditorRegistry.register('package', { component: PageEditorComponent });
 
-// M3.3.m Phase C — Workflow BPMN-Lite designer, opened as a modal
+// — Workflow BPMN-Lite designer, opened as a modal
 // dialog. Two registrations, both routing to the same component:
 //  - The Package container at `/workflows/{key}/` carries the
 //    `application/vnd.coolms.workflow` mime; double-click on the
 //    package opens the dialog with the package node, the dialog
 //    derives the workflow key from the path, fetches the draft via
-//    the M3.3.h.1 endpoints, and mounts the M3.3 editor stack.
+//    the endpoints, and mounts the editor stack.
 //  - The body files (`draft.bpmn.json`, `v{N}.bpmn.json`) carry the
 //    `application/vnd.coolms.workflow.bpmn-lite+json` mime so a
 //    drill-in double-click on the draft also lands here. The generic
@@ -218,7 +218,7 @@ export const appConfig: ApplicationConfig = {
         // observability.
         provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, authInterceptor])),
         provideStore([AppConfigState, AuthState, SectionState, NaviState, VfsState]),
-        // ADR-099 sub-phase 2d -- Centrifugo realtime replaces the
+        // sub-phase 2d -- Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
         // in the repo as a fallback reference; remove in Phase 2 once
         // confidence builds.

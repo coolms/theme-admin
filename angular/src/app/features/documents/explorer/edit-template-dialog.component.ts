@@ -43,17 +43,17 @@ const FORMAT_OUTPUT_OPTIONS: Readonly<Record<string, readonly OutputFormatOption
         { value: 'docx', label: 'Word (.docx)' },
         { value: 'pdf', label: 'PDF (.pdf)' },
     ],
-    // #1777 — a spreadsheet template produces a spreadsheet. Without this entry
+    // — a spreadsheet template produces a spreadsheet. Without this entry
     // it fell through to the Word fallback below and offered .docx, which no
     // renderer supports for an xlsx source: the operator would have picked it
     // and got a generation that failed with nothing on screen explaining why.
-    // PDF joined in #1781 (LibreOffice paginates the filled workbook).
+    // PDF joined in (LibreOffice paginates the filled workbook).
     spreadsheet: [
         { value: 'xlsx', label: 'Excel (.xlsx)' },
         { value: 'pdf', label: 'PDF (.pdf)' },
     ],
-    // #1779 — same reasoning as spreadsheet: a deck template produces a deck.
-    // PDF (#1781) is one page per slide — the handout for recipients without
+    // — same reasoning as spreadsheet: a deck template produces a deck.
+    // PDF is one page per slide — the handout for recipients without
     // PowerPoint.
     presentation: [
         { value: 'pptx', label: 'PowerPoint (.pptx)' },
@@ -156,10 +156,10 @@ const FORMAT_OUTPUT_FALLBACK: readonly OutputFormatOption[] = [
                         </p>
                     </div>
 
-                    <!-- Orientation is its own axis (#1765): applied on top of
+                    <!-- Orientation is its own axis: applied on top of
                          whichever size is chosen, so A3 landscape is expressible
-                         without a preset per pairing. The backend has carried it
-                         since #1765; this is the control that lets anyone set it. -->
+                         without a preset per pairing. The backend has carried it;
+this is the control that lets anyone set it. -->
                     <div class="cms-edit-template-dialog__field">
                         <label class="cms-label" for="cms-edit-template-page-orientation">Orientation</label>
                         <select
@@ -278,7 +278,7 @@ export class EditTemplateDialogComponent {
     protected readonly suffixPlaceholder = '_{var:counter|pad:4,`0`}';
 
     /**
-     * Page size (Track B — page-size / docx-width). Mirrors the content
+     * Page size— page-size / docx-width). Mirrors the content
      * page-editor's Layout panel: the DOCX preset catalog + the template's
      * current size are fetched on open, and the choice is persisted via a VFS
      * merge-patch on the template Node's `extras.pageSize`. The template's VFS

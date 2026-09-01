@@ -1,5 +1,5 @@
 /**
- * How the agent queue is counted and ordered (#2123).
+ * How the agent queue is counted and ordered.
  *
  * Both rules were inlined in a component before — the count in the topbar
  * badge, the order in the quick panel — so neither had a test and the two could
@@ -34,10 +34,10 @@ export function countNewConversations(entries: readonly QueueEntry[]): number {
  * Waiting conversations first, then most-recently-active — the order an agent
  * works the queue in.
  *
- * ⚠️ Returns a NEW array: `Array.prototype.sort` mutates, and these lists come
+ *  Returns a NEW array: `Array.prototype.sort` mutates, and these lists come
  * straight out of a signal that other views read.
  *
- * ⚠️ The recency comparison is a STRING compare on `updatedAt`, which is only
+ *  The recency comparison is a STRING compare on `updatedAt`, which is only
  * an ordering because ISO-8601 sorts lexicographically — and only while every
  * timestamp shares one format, precision and offset. A server that started
  * emitting local-offset timestamps for some rows would silently misorder the

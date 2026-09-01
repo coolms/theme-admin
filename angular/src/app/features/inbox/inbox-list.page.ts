@@ -37,13 +37,13 @@ import {
 import { InboxTab, InboxTaskDto, TaskState } from './inbox.types';
 
 /**
- * M2.m FE — Inbox admin list page (/admin/inbox).
+ * FE — Inbox admin list page (/admin/inbox).
  *
  * **3-tab UX**: My / Claimable / Recent. Tab state lives in the URL
  * (`?tab=`) so refresh + deep-link work; the strip below the toolbar
  * switches tab on click.
  *
- * **Toolbar**: bound to the `navi.toolbar.inbox.tasks` tree (M2.m
+ * **Toolbar**: bound to the `navi.toolbar.inbox.tasks` tree (
  * Phase 3a) which carries the row-action gate logic
  * (`_selected`, `_canClaim`, `_ownedByMe`). Header actions (none today
  * for inbox -- no "New Task" CTA) bubble through `PageActionsService`.

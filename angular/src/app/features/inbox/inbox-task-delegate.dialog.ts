@@ -17,7 +17,7 @@ export interface DelegateDialogResult {
 }
 
 /**
- * M2.m FE — Delegate dialog.
+ * FE — Delegate dialog.
  *
  * Tiny wrapper around `<app-user-search-select>` + a Confirm/Cancel
  * footer. The consumer (`inbox-list.page`) opens it via the CDK

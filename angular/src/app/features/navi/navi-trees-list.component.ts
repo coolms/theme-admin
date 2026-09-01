@@ -104,7 +104,7 @@ export class NaviTreesListComponent implements OnInit {
         items: this.trees().map(t => ({
             ...t,
             group:   NaviTreesListComponent.deriveGroup(t.slug),
-            // Section badge (task #312 Deliverable 2). Inlined from the
+            // Section badge (Deliverable 2). Inlined from the
             // backend `siteSectionLabel` -- the projection mirrors backend
             // `NaviTree::$siteSectionId` semantics: public trees carry the
             // section's label here, admin/toolbar/context rows leave it

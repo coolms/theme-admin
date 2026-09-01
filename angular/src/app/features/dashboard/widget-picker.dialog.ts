@@ -3,7 +3,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
 import { ModalComponent } from '@coolms/ui-angular';
 
-/** One addable card, as the dashboard page describes it (#2097). */
+/** One addable card, as the dashboard page describes it. */
 export interface PickableWidget {
     readonly id: string;
     readonly label: string;
@@ -22,7 +22,7 @@ interface WidgetGroup {
 }
 
 /**
- * "Which card would you like to add?" (#2097).
+ * "Which card would you like to add?".
  *
  * ## This IS the prompt for a module that offers several
  *

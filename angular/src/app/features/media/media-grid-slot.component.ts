@@ -85,7 +85,7 @@ import { MediaGridComponent } from './media-grid.component';
         }
         .media-grid-scroll { flex: 1; min-height: 0; overflow-y: auto; }
         /*
-         * Fill the pane when short, still GROW when long (#1760).
+         * Fill the pane when short, still GROW when long.
          *
          * app-media-grid had no host display at all, so it laid out inline and
          * the DataGrid inside it ended after its last row with dead space
@@ -210,7 +210,7 @@ export class MediaGridSlotComponent implements AfterViewInit, OnDestroy {
 
     onBackgroundContextMenu(event: MouseEvent): void {
         const target = event.target as HTMLElement;
-        // A Details-grid ROW joins `.media-tile` as "not background" (#1710).
+        // A Details-grid ROW joins `.media-tile` as "not background".
         // The escape hatch was written when tiles were the only thing in this
         // pane, so a right-click on a grid row fell through here — and it fired
         // AFTER the asset menu the row handler had just opened, replacing

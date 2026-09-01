@@ -51,11 +51,11 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * M3.2.h FE -- DMN decision-table editor page.
+ * FE -- DMN decision-table editor page.
  *
  * **Vertical slice closure.** Wires the
- * `@coolms/designer` package (M3.2.a-g) to the backend
- * `DecisionDraftController` (M3.2.h backend) via the
+ * `@coolms/designer` package (-g) to the backend
+ * `DecisionDraftController` ( backend) via the
  * {@link DesignerService}. The full edit-loop:
  *
  *   1. `ngAfterViewInit` waits for the host `<div #host>` to be in
@@ -169,7 +169,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
 
     /**
      * Unsaved-work flag, PUBLIC so `unsavedChangesGuard` can read it off
-     * the route component (#2489).
+     * the route component.
      */
     readonly dirty = signal(false);
 
@@ -234,7 +234,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
 
         await this.loadDraft();
 
-        // ⚠️ Subscribed AFTER the draft is in. `fromXml()` goes through
+        //  Subscribed AFTER the draft is in. `fromXml()` goes through
         // `model.load()`, and whether that reaches the command stack is
         // not something this page should have to know -- starting the
         // watch here makes it irrelevant rather than load-bearing.

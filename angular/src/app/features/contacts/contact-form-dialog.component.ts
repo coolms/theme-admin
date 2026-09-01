@@ -25,7 +25,7 @@ export interface ContactFormDialogData {
 }
 
 /**
- * C.3 (ADR-143) — the create/edit Contact modal. One component, both modes
+ * C.3 — the create/edit Contact modal. One component, both modes
  * (branch on DIALOG_DATA, mirroring `UserEditDialogComponent`). Style-1
  * `app-modal` + `.cms-*` controls + `app-tag-input` for the repeatable emails /
  * phones (a `string[]` in the UI; mapped to `[{value, primary}]` on save, first =

@@ -37,7 +37,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
 ];
 
 /**
- * Task #433 (M1.2.f.2) — bespoke "Calendar" tab inside My Profile.
+ * Task () — bespoke "Calendar" tab inside My Profile.
  *
  * Renders the user's calendar preferences with a live date-format
  * preview, radio groups for binary choices (time format, week start),
@@ -183,7 +183,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
             </div>
         </div>
 
-        <!-- Default calendar — Task #441: lazy-select with debounced search -->
+        <!-- Default calendar — Task : lazy-select with debounced search -->
         <div class="group-row">
             <label class="group-label" for="cal-default">Default calendar</label>
             @if (loadingCalendars()) {
@@ -250,7 +250,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     readonly personalSlugHint = computed(() => this.prefs.defaultCalendarSlug());
 
     /**
-     * Task #441 — option projection for `<app-lazy-select>`.
+     * Task — option projection for `<app-lazy-select>`.
      *
      * Prepends a synthetic "(Personal)" row so users can revert to the
      * personal-calendar default without scrolling. The lazy-select uses
@@ -293,7 +293,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     }
 
     /**
-     * Task #441 — bridge LazySelect's string-only valueChange to the
+     * Task — bridge LazySelect's string-only valueChange to the
      * tristate `string | null` model used by the API. Empty string from
      * the lazy-select means "personal default".
      */

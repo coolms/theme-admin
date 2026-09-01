@@ -32,18 +32,18 @@ const ROW_LIMIT = 20;
  * days), surfacing four consent-gated aggregate ledgers via
  * {@link AnalyticsService}:
  *
- *  0. **Event stream** — per-type totals over the generic Track E store
- *     (#1057/#1070): the unified, consent-gated event ledger the legacy
+ *  0. **Event stream** — per-type totals over the genericstore
+ *: the unified, consent-gated eventthe legacy
  *     page-view / search ledgers will eventually graduate onto. Lead card.
- *  1. **Top pages** — the page-view leaderboard (#780): normalized path + count.
- *  2. **Top searches** — the most-run search terms (#816): term + count.
- *  3. **Content gaps** — searches that returned nothing (#816): the actionable
+ *  1. **Top pages** — the page-view leaderboard: normalized path + count.
+ *  2. **Top searches** — the most-run search terms: term + count.
+ *  3. **Content gaps** — searches that returned nothing: the actionable
  *     "what to write next" list, styled distinctly (amber) to stand apart from
  *     the two traffic leaderboards.
  *
  * Every section is a proportional bar list; none has per-row actions (each row
  * is an immutable, anonymous aggregate count). The three loads run in parallel
- * and degrade independently — one ledger failing (e.g. a not-yet-migrated
+ * and degrade independently — onefailing (e.g. a not-yet-migrated
  * search module) leaves the others working, with the failed section showing a
  * "couldn't load" note rather than blanking the page.
  *
@@ -70,7 +70,7 @@ const ROW_LIMIT = 20;
                 [activeId]="activeRange()"
                 (selected)="selectRange($any($event))" />
 
-            <!-- 0. Event stream — the unified Track E ledger (#1057/#1070):
+            <!-- 0. Event stream — the unified:
                  per-type totals over the generic store the legacy page-view /
                  search ledgers will eventually graduate onto. -->
             <section class="cms-analytics__card">
@@ -109,7 +109,7 @@ const ROW_LIMIT = 20;
                 }
             </section>
 
-            <!-- 1. Top pages — page-view leaderboard (#780) -->
+            <!-- 1. Top pages — page-view leaderboard -->
             <section class="cms-analytics__card">
                 <header class="cms-analytics__card-head">
                     <h2 class="cms-analytics__card-title">
@@ -143,7 +143,7 @@ const ROW_LIMIT = 20;
                 }
             </section>
 
-            <!-- 2. Top searches — most-run query terms (#816) -->
+            <!-- 2. Top searches — most-run query terms -->
             <section class="cms-analytics__card">
                 <header class="cms-analytics__card-head">
                     <h2 class="cms-analytics__card-title">
@@ -177,7 +177,7 @@ const ROW_LIMIT = 20;
                 }
             </section>
 
-            <!-- 3. Content gaps — zero-result searches (#816). The actionable
+            <!-- 3. Content gaps — zero-result searches. The actionable
                  "what to write next" list — styled amber to stand apart. -->
             <section class="cms-analytics__card cms-analytics__card--gap">
                 <header class="cms-analytics__card-head">
@@ -357,7 +357,7 @@ export class AnalyticsPageComponent implements OnInit {
     readonly topQueries  = signal<SearchQueryStatDto[]>([]);
     readonly zeroQueries = signal<SearchQueryStatDto[]>([]);
 
-    // Per-section load flags — one ledger failing must not blank the others.
+    // Per-section load flags — onefailing must not blank the others.
     readonly eventsError  = signal(false);
     readonly pagesError   = signal(false);
     readonly queriesError = signal(false);
@@ -377,7 +377,7 @@ export class AnalyticsPageComponent implements OnInit {
     readonly queriesTotalLabel = computed(() => this.sumLabel(this.topQueries(),  q => q.searches, 'search'));
     readonly zeroTotalLabel    = computed(() => this.sumLabel(this.zeroQueries(), q => q.searches, 'empty search'));
 
-    /** Declared in the `analytics:dashboard` layout (ADR-127), not here. */
+    /** Declared in the `analytics:dashboard` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );

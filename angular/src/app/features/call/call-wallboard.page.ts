@@ -33,15 +33,15 @@ interface LiveCall {
 const ENDED_LINGER_MS = 6_000;
 
 /**
- * M9.f.3 — Live-call wallboard (/admin/call/wallboard).
+ * Live-call wallboard (/admin/call/wallboard).
  *
- * A realtime board of in-progress calls, driven by the M9.c `calls.broadcast`
+ * A realtime board of in-progress calls, driven by the `calls.broadcast`
  * Centrifugo firehose ({@link CallLiveEventsService}). Each state transition
- * (ringing → answered → on_hold → ended) upserts a card, keyed by call id;
+ * (ringing -> answered -> on_hold -> ended) upserts a card, keyed by call id;
  * ended calls linger briefly (with their final duration) then age out. The
  * board is seeded on load from the recent non-terminal CallRecords so it isn't
  * empty until the next transition. Clicking a card drills into the call detail
- * (M9.f.2). Read-only — the wallboard never mutates state.
+ *. Read-only — the wallboard never mutates state.
  *
  * The live push needs a running Centrifugo + a PBX producing calls; without
  * them the board shows its empty state and the "Offline" indicator.

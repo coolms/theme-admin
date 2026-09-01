@@ -19,8 +19,8 @@ export interface PlacePageDialogData {
 }
 
 /**
- * Where a page appears — add or remove a surface placement (ADR-153 step (c),
- * #1698).
+ * Where a page appears — add or remove a surface placement ( step (c),
+ * ).
  *
  * ## The verb this dialog is NOT
  *
@@ -28,7 +28,7 @@ export interface PlacePageDialogData {
  * — and lives in the page editor. This is DISTRIBUTION: the same page linked
  * into a site's blog or news surface, still authored in one place. A personal
  * draft can be placed on a site's blog without ever being copied there, which
- * is the motivating case ADR-153 was written for.
+ * is the motivating case was written for.
  *
  * ## Why the site list comes from page spaces
  *
@@ -46,7 +46,7 @@ export interface PlacePageDialogData {
     imports: [FormsModule],
     template: `
         <div class="cms-dialog" style="width: 520px; max-width: 92vw;">
-            <!-- Same fix as the metadata dialog (#1716): cms-dialog-title is
+            <!-- Same fix as the metadata dialog: cms-dialog-title is
                  defined nowhere, so this heading rendered at the browser's 2em
                  default, and the dialog had no close button. -->
             <div class="cms-dialog-header">

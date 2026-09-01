@@ -26,25 +26,25 @@ import {
  * DTMPL contextSchema) into a recursive group tree and renders one
  * text input per variable. Submits as **nested JSON**: dotted paths
  * collapse into nested objects so the backend's DTMPL renderer can
- * resolve them per ADR-085 without flat-key reshaping.
+ * resolve them without flat-key reshaping.
  *
- * Replaceable. The contract — `(variables, initialValue) → emit
+ * Replaceable. The contract — `(variables, initialValue) -> emit
  * nested JSON` — is intentionally narrow so the future F.9 Form
  * Builder can swap this implementation without touching the dialog
  * or the page-level wire-up.
  *
  * F.14c-2 scope:
- *   • Scalar variables render `<input type="text">`. Type detection
+ *   - Scalar variables render `<input type="text">`. Type detection
  *     (date / number / boolean) is deferred.
- *   • Variables flagged as entity references (Phase 2 ADR-094 —
+ *   - Variables flagged as entity references (Phase 2 —
  *     `entityType` non-null on the schema variable) render
  *     `<cms-entity-picker>` instead, persisting the entity id (or
  *     list of ids when `collection: true`) into the same nested-JSON
  *     payload as plain inputs.
- *   • All variables are optional. The schema carries no required
+ *   - All variables are optional. The schema carries no required
  *     metadata yet; an empty value submits an empty string and the
  *     renderer formats it as `''`.
- *   • Loop-internal variables (those with a non-null `loopAlias` on
+ *   - Loop-internal variables (those with a non-null `loopAlias` on
  *     the source schema) are filtered upstream; this component never
  *     sees them.
  */
@@ -93,10 +93,10 @@ import {
 
         <!--
             Per-variable field renderer. Branches on whether the
-            variable carries a Phase 2 (ADR-094) entityType marker:
-              - entityType set → <cms-entity-picker>, value flows as
+            variable carries a Phase 2 entityType marker:
+              - entityType set -> <cms-entity-picker>, value flows as
                 string | string[] | null through writeField.
-              - otherwise → legacy <input type="text">.
+              - otherwise -> legacy <input type="text">.
         -->
         <ng-template #fieldTemplate let-variable>
             <div class="cms-context-form__field">

@@ -164,7 +164,7 @@ export class MediaService {
 
     /**
      * Patch an asset. `alt` / `caption` are LOCALE-SCOPED: pass `locale` so the
-     * write targets that locale (default → canonical column, other → i18n
+     * write targets that locale (default -> canonical column, other -> i18n
      * override). `tags` / `focalPoint` are locale-independent and apply as-is.
      */
     update(
@@ -212,8 +212,8 @@ export class MediaService {
     }
 
     /**
-     * Patch a Node's title/description, scoped to `locale` (default → canonical
-     * column, other → `extras.i18n` override). Mirrors `PageService.updateVariant`.
+     * Patch a Node's title/description, scoped to `locale` (default -> canonical
+     * column, other -> `extras.i18n` override). Mirrors `PageService.updateVariant`.
      */
     updateNodeMeta(
         path: string,

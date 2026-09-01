@@ -89,7 +89,7 @@ export function htmlToDtmpl(html: string): string {
         if (!formId) return match; // malformed marker — leave for source-mode fixing
         // Short, uniform notation: every widget is `{widget:<type>:<id>}`. The
         // backend routes a non-exact id to the generic FormRenderWidgetRenderer
-        // (positional id → `_id` → formId), so a form is addressed purely by id.
+        // (positional id -> `_id` -> formId), so a form is addressed purely by id.
         return '{widget:form:' + encodeFormId(formId) + '}';
     });
 }

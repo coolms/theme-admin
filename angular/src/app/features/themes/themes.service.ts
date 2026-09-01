@@ -40,7 +40,7 @@ export interface ThemeDto {
 /**
  * A site section, as far as themes are concerned.
  *
- * `themeSlug` is THE theme binding, and since #1754 it is a live setting: the
+ * `themeSlug` is THE theme binding, and it is a live setting: the
  * vhost carries no theme placeholder at all, so changing it needs neither a
  * regenerate nor an nginx reload. Set it on the Sections page.
  */
@@ -58,7 +58,7 @@ export interface ThemeTemplateDto {
     readonly label:     string;
 }
 
-/** One template's source, from `/themes/{slug}/template-source?path=…` (#1755). */
+/** One template's source, from `/themes/{slug}/template-source?path=…`. */
 export interface ThemeTemplateSourceDto {
     readonly slug:    string;
     readonly path:    string;
@@ -66,14 +66,14 @@ export interface ThemeTemplateSourceDto {
     readonly bytes:   number;
     /**
      * Which layer this content came from, and therefore which one RENDERS
-     * (#1756): `override` is the theme's VFS copy, `package` the shipped file.
+     *: `override` is the theme's VFS copy, `package` the shipped file.
      */
     readonly origin:  'package' | 'override';
     /** Server's verdict on whether Override is offerable; do not re-derive it. */
     readonly canOverride: boolean;
 }
 
-/** Result of creating an override (#1756). */
+/** Result of creating an override. */
 export interface ThemeTemplateOverrideDto {
     readonly slug:    string;
     readonly path:    string;
@@ -82,7 +82,7 @@ export interface ThemeTemplateOverrideDto {
 }
 
 /**
- * Themes admin surface (#1747).
+ * Themes admin surface.
  *
  * Read + activate + browse source, which is the whole of what the backend
  * exposes: there is deliberately **no POST** — themes are installed only via
@@ -107,7 +107,7 @@ export class ThemesService {
     }
 
     /**
-     * Site sections, read here for their `themeSlug` — since #1753 the ONE
+     * Site sections, read here for their `themeSlug` — the ONE
      * theme binding.
      *
      * `ThemeSubscriber` fast-paths on it: a section naming a theme never
@@ -131,7 +131,7 @@ export class ThemesService {
     }
 
     /**
-     * One template's source (#1755).
+     * One template's source.
      *
      * The path travels as a query parameter, not a path segment: it contains
      * slashes, and a `.+` uriVariable would swallow the sibling `/templates`
@@ -145,7 +145,7 @@ export class ThemesService {
 
     /**
      * Copy a packaged template into the theme's VFS so it can be edited and
-     * outranks the package at render time (#1756).
+     * outranks the package at render time.
      */
     createOverride(slug: string, path: string): Observable<ThemeTemplateOverrideDto> {
         return this.http.post<ThemeTemplateOverrideDto>(
@@ -182,7 +182,7 @@ export class ThemesService {
     /*
      * There is deliberately NO setSections().
      *
-     * `Theme.sections[]` was retired in #1753 — read path gone, write group
+     * `Theme.sections[]` was retired in — read path gone, write group
      * gone, data folded into `SiteSection.themeSlug`. Assignment lives on the
      * section, which is the only place it ever really lived.
      */

@@ -23,7 +23,7 @@ import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 type HistoryTab = 'revisions' | 'diff' | 'blame';
 
 /**
- * File-history panel (ADR-132 W6.3) for the content/page editor: lists a VFS
+ * File-history panel ( W6.3) for the content/page editor: lists a VFS
  * file's revision timeline, previews a revision's body, diffs any two points
  * (or a revision vs. the live content), shows per-line blame, and restores a
  * past version forward (non-destructive, behind a confirm + write gate).
@@ -70,7 +70,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
             } @else {
                 @switch (tab()) {
 
-                    <!-- ── Revisions timeline ──────────────────────────────── -->
+                    <!-- -- Revisions timeline -------------------------------- -->
                     @case ('revisions') {
                         @if (revisions().length === 0) {
                             <div class="fh__msg">No history yet — each save records a revision.</div>
@@ -109,7 +109,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
                         }
                     }
 
-                    <!-- ── Diff (any two, or vs current) ───────────────────── -->
+                    <!-- -- Diff (any two, or vs current) --------------------- -->
                     @case ('diff') {
                         <div class="fh__diff-controls">
                             <label class="fh__field">
@@ -161,7 +161,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
                         }
                     }
 
-                    <!-- ── Blame ───────────────────────────────────────────── -->
+                    <!-- -- Blame --------------------------------------------- -->
                     @case ('blame') {
                         @if (blameLoading()) {
                             <div class="fh__msg">Computing blame…</div>
@@ -285,7 +285,7 @@ export class FileHistoryPanelComponent {
     readonly blame        = signal<FileBlame | null>(null);
     readonly blameLoading = signal(false);
 
-    // ── Log ─────────────────────────────────────────────────────────────────
+    // -- Log -----------------------------------------------------------------
 
     reload(): void {
         const path = this._path();
@@ -313,14 +313,14 @@ export class FileHistoryPanelComponent {
     private applyLog(revisions: FileRevisionView[], canWrite: boolean): void {
         this.revisions.set(revisions);
         this.canWrite.set(canWrite);
-        // Seed diff defaults: previous version → current (the common "what
+        // Seed diff defaults: previous version -> current (the common "what
         // changed last" view). Falls back to the lone revision when there's one.
         if (!this.diffFrom()) {
             this.diffFrom.set(revisions[1]?.id ?? revisions[0]?.id ?? '');
         }
     }
 
-    // ── Revision preview ─────────────────────────────────────────────────────
+    // -- Revision preview -----------------------------------------------------
 
     toggleView(r: FileRevisionView): void {
         if (this.viewing() === r.id) {
@@ -337,7 +337,7 @@ export class FileHistoryPanelComponent {
             });
     }
 
-    // ── Diff ─────────────────────────────────────────────────────────────────
+    // -- Diff -----------------------------------------------------------------
 
     openDiff(): void {
         this.tab.set('diff');
@@ -376,7 +376,7 @@ export class FileHistoryPanelComponent {
         return op === 'insert' ? '+' : op === 'delete' ? '−' : ' ';
     }
 
-    // ── Blame ────────────────────────────────────────────────────────────────
+    // -- Blame ----------------------------------------------------------------
 
     openBlame(): void {
         this.tab.set('blame');
@@ -394,7 +394,7 @@ export class FileHistoryPanelComponent {
             });
     }
 
-    // ── Restore ──────────────────────────────────────────────────────────────
+    // -- Restore --------------------------------------------------------------
 
     restore(r: FileRevisionView): void {
         if (this.restoring()) return;

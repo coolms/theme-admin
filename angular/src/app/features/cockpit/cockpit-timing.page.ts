@@ -24,7 +24,7 @@ import { CockpitService } from './cockpit.service';
 import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.types';
 
 /**
- * M4.g — Process Cockpit per-definition bottleneck / timing report
+ * Process Cockpit per-definition bottleneck / timing report
  * (`/admin/cockpit/definitions/:definitionId/timing`).
  *
  * The deepest read-side slice of the Reporting leg: mines the engine's
@@ -207,7 +207,7 @@ export class CockpitTimingPageComponent implements OnInit {
 
     /**
      * Header actions (back to the report + reload) — declared in the
-     * `cockpit:timing` layout config (ADR-127), not hardcoded.
+     * `cockpit:timing` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),

@@ -75,7 +75,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
                     </p>
                 </div>
             } @else if (viewMode() === 'details') {
-                <!-- #1709 — the platform DataGrid, config at
+                <!-- — the platform DataGrid, config at
                      /api/v1/datagrids/document:templates. Replaces a
                      hand-rolled table whose three headers were the only
                      sorting Documents had and which offered no filtering or
@@ -125,7 +125,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
     `,
     styles: [`
         /*
-         * Flex column, not a scrolling block (#1760).
+         * Flex column, not a scrolling block.
          *
          * This was display:block + overflow:auto with the inner wrapper on
          * min-height:100%, so the DataGrid's own flex:1 had no flex
@@ -133,7 +133,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
          * (no backticks in this block: it lives inside a JS template literal
          * and one would end the string, which is how this file broke once)
          * the card stopped after the last row with dead white below it, the
-         * same defect #1712 fixed on Pages. The scroll moves DOWN to whichever
+         * same defect fixed on Pages. The scroll moves DOWN to whichever
          * branch is showing, because the two need opposite behaviour: tiles
          * scroll as a block, the grid scrolls its own card and must not be
          * wrapped in a second scroller.
@@ -197,7 +197,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
             font-size: 0.85rem;
         }
         .cms-folder-content__grid {
-            /* Owns the scroll now that :host is a flex column (#1760): tiles
+            /* Owns the scroll now that :host is a flex column: tiles
                overflow as a block, unlike the DataGrid which scrolls itself. */
             flex: 1;
             min-height: 0;
@@ -291,7 +291,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
             color: var(--cms-text-muted);
         }
 
-        /* #1709 — the three non-table renderings are the same tile at three
+        /* — the three non-table renderings are the same tile at three
            sizes, selected by the shared vocabulary. "large" is the untouched
            default the module has always shipped. */
         .cms-folder-content__grid[data-view-mode='small'] {
@@ -339,13 +339,13 @@ export class FolderContentComponent implements OnDestroy {
         filterTemplatesForFolder(this.folderNodes(), this.templates()),
     );
 
-    /** Where the grid fetches its column config from (#1709). */
+    /** Where the grid fetches its column config from. */
     protected readonly configBaseUrl = computed(() =>
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
     /**
-     * The same templates, shaped for the DataGrid (#1709).
+     * The same templates, shaped for the DataGrid.
      *
      * `formatLabel` is resolved HERE rather than declared as a cell type: the
      * label comes from `FormatInfoService`, which is a client-side registry the
@@ -355,8 +355,8 @@ export class FolderContentComponent implements OnDestroy {
     protected readonly gridData = computed((): DataGridData => {
         // The tile views have always shown a format icon; the details view
         // showed a bare filename, so switching modes lost the one signal that
-        // says what a row IS (#1762). The grid's `icon` cell reads these off
-        // the row, so the format→glyph mapping stays here with the other
+        // says what a row IS. The grid's `icon` cell reads these off
+        // the row, so the format->glyph mapping stays here with the other
         // format knowledge rather than leaking into the shared DataGrid.
         const items = this.visibleTemplates().map(t => ({
             ...t,
@@ -378,7 +378,7 @@ export class FolderContentComponent implements OnDestroy {
         };
     });
 
-    /** Grid selection → the single-id selection model both views share. */
+    /** Grid selection -> the single-id selection model both views share. */
     protected onGridRowSelected(row: Record<string, unknown> | null): void {
         const id = row?.['id'];
         this.gridRow = 'string' === typeof id ? id : null;
@@ -389,7 +389,7 @@ export class FolderContentComponent implements OnDestroy {
 
     /**
      * The row the grid last selected, remembered because the shared state
-     * cannot be read back in the same tick (#1710).
+     * cannot be read back in the same tick.
      *
      * The grid emits `rowSelected` and then `rowContextMenu` synchronously
      * from one handler, so at right-click time `state.selectedId()` still
@@ -444,7 +444,7 @@ export class FolderContentComponent implements OnDestroy {
 
     /**
      * E6 — gates the empty-area dropzone. Active when the right panel is
-     * NOT in instances mode (per ADR-092 §1: instances are generated,
+     * NOT in instances mode ( §1: instances are generated,
      * not uploaded). Accepts only DOCX so non-DOCX files are silently
      * filtered by the shared directive before reaching the handler.
      */
@@ -468,7 +468,7 @@ export class FolderContentComponent implements OnDestroy {
 
     constructor() {
         effect(() => {
-            // #1687 — the SPACE root, not `currentPath`. Templates live at
+            // — the SPACE root, not `currentPath`. Templates live at
             // one root per space (`TemplateRootResolver` recognises only
             // `<spaceRoot>/.templates`), and this component only ever
             // mounts for the templates view. Keying on `currentPath` meant
@@ -478,7 +478,7 @@ export class FolderContentComponent implements OnDestroy {
             this.loadFolder(this.state.spaceRoot() ?? this.currentPath());
         });
 
-        // Phase D: push the template count into the page footer so the
+        //: push the template count into the page footer so the
         // bottom status bar matches Media Library convention. Loaded
         // synchronously (no pagination on the templates listing), so
         // total == loaded always.
@@ -515,7 +515,7 @@ export class FolderContentComponent implements OnDestroy {
     }
 
     protected onActivate(template: DocumentTemplate): void {
-        // Phase D hotfix #4: double-click → primary action (View).
+        // hotfix #4: double-click -> primary action (View).
         // Routes through `actionDispatched$` so the toolbar / context
         // menu / dblclick all converge on the same `case 'view-template'`
         // branch in the page handler.
@@ -536,7 +536,7 @@ export class FolderContentComponent implements OnDestroy {
      * write is a defensive no-op when already selected.
      */
     /**
-     * Right-click on empty space in the file area (#1679).
+     * Right-click on empty space in the file area.
      *
      * Bubbles up from the tiles/rows too, so bail when the event started on
      * one — that item's own handler owns it and would otherwise be replaced
@@ -548,7 +548,7 @@ export class FolderContentComponent implements OnDestroy {
      */
     protected onBackgroundContextMenu(event: MouseEvent): void {
         const target = event.target as HTMLElement;
-        // A Details-grid ROW joins the tile/row selectors (#1710), or the
+        // A Details-grid ROW joins the tile/row selectors, or the
         // background menu would fire after — and replace — the template menu
         // the row handler just opened. The empty area BELOW the rows stays
         // background and still gets this menu.
@@ -564,7 +564,7 @@ export class FolderContentComponent implements OnDestroy {
         this.contextMenu.openFromNodes(
             event,
             [...nodes],
-            // `_view` mirrors the toolbar record (#1683): this component
+            // `_view` mirrors the toolbar record: this component
             // only ever mounts for the template listing, so the
             // background menu is the templates-view background.
             { _kind: 'background', _selected: false, _surface: 'context', _view: 'templates' },
@@ -580,7 +580,7 @@ export class FolderContentComponent implements OnDestroy {
             {
                 _kind: 'template',
                 _native: payload.item.native,
-                // Drives View-vs-Edit (#1678). Asked of the registry rather
+                // Drives View-vs-Edit. Asked of the registry rather
                 // than inferred from `_native`, so uninstalling the editor
                 // honestly turns the label back into "View".
                 _editable: FileEditorRegistry.hasEditorForMime(payload.item.sourceMimeType),
@@ -609,7 +609,7 @@ export class FolderContentComponent implements OnDestroy {
      * its 404 is swallowed into an empty list.
      */
     /**
-     * Monotonic request token (#1687). `loadFolder` has never cancelled a
+     * Monotonic request token. `loadFolder` has never cancelled a
      * previous call, so two overlapping loads raced and whichever RESPONSE
      * landed last won — including a stale one. It only became visible once
      * the effect could fire twice on mount (space root resolving after the

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-/** Response of `POST /api/v1/document/documents` (#1774). */
+/** Response of `POST /api/v1/document/documents`. */
 export interface NativeDocumentDto {
     readonly id: string;
     readonly title: string;
@@ -17,7 +17,7 @@ export interface NativeDocumentDto {
 
 /**
  * Creates a document to AUTHOR, as opposed to one uploaded or generated from a
- * template (#1774). The counterpart to `WordTemplateService.createNative()`.
+ * template. The counterpart to `WordTemplateService.createNative()`.
  */
 @Injectable({ providedIn: 'root' })
 export class NativeDocumentService {
@@ -27,7 +27,7 @@ export class NativeDocumentService {
      * Sends the TITLE only. The slug is derived server-side by the platform
      * slugger with national transliteration, so a document can be called
      * "Договор аренды" and still be `dogovor-arendy.dtmpl` on disk — folding it
-     * here is the bug #1687 fixed, since an ASCII regex cannot transliterate
+     * here is the bug fixed, since an ASCII regex cannot transliterate
      * and can only drop the characters it does not recognise.
      */
     create(folderPath: string, title: string, format?: string): Observable<NativeDocumentDto> {

@@ -63,7 +63,7 @@ type Tab = 'personal' | string;
             min-height: 480px;
         }
 
-        /* ── Left sidebar ─────────────────────────────────────────────────────── */
+        /* -- Left sidebar ------------------------------------------------------- */
         .profile-sidebar {
             width: 200px;
             flex-shrink: 0;
@@ -142,7 +142,7 @@ type Tab = 'personal' | string;
             margin-top: 4px;
         }
 
-        /* ── Right content ────────────────────────────────────────────────────── */
+        /* -- Right content ------------------------------------------------------ */
         .profile-content {
             flex: 1;
             min-width: 0;
@@ -330,7 +330,7 @@ type Tab = 'personal' | string;
                     @for (sec of sections(); track sec.section) {
                         @if (activeTab() === sec.section) {
                             @if (sec.formId === CALENDAR_FORM_ID) {
-                                <!-- Task #433 (M1.2.f.2) bespoke Calendar tab.
+                                <!-- Task () bespoke Calendar tab.
                                      Live previews + radios + async calendar
                                      picker don't fit the DynamicForm field
                                      registry, so we render a dedicated
@@ -354,7 +354,7 @@ type Tab = 'personal' | string;
                                     </button>
                                 </div>
                             } @else if (sec.formId === CALL_FORM_ID) {
-                                <!-- M9.g (Slice A) bespoke "Calls" tab — incoming-call
+                                <!-- bespoke "Calls" tab — incoming-call
                                      overlay on/off + auto-dismiss seconds. Persists
                                      through the same updateSettings endpoint and pushes
                                      the merged values into CallOverlayPreferencesService
@@ -451,14 +451,14 @@ export class ProfilePageComponent implements OnInit {
                 this.lastName  = user.lastName  ?? '';
                 this.sections.set(sections);
                 this.settings.set(settings);
-                // Task #433 — seed the calendar preferences service from the
+                // Task — seed the calendar preferences service from the
                 // freshly-loaded /auth/me/settings response so downstream
                 // calendar consumers (FullCalendar config, MiniCalendar,
                 // topbar QuickAccess) pick up user TZ / first-day / default
                 // calendar without each running its own request.
                 const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
                 if (cal) this.calPrefs.update(cal);
-                // M9.g — seed the call-overlay prefs so the live screen-pop picks
+                // Seed the call-overlay prefs so the live screen-pop picks
                 // up the user's on/off + auto-dismiss without its own request.
                 const call = settings['call'] as Partial<CallOverlayPrefs> | undefined;
                 if (call) this.callPrefs.update(call);
@@ -467,7 +467,7 @@ export class ProfilePageComponent implements OnInit {
         });
     }
 
-    // ── Personal ──────────────────────────────────────────────────────────────
+    // -- Personal --------------------------------------------------------------
 
     saveProfile(): void {
         this.savingProfile.set(true);
@@ -486,7 +486,7 @@ export class ProfilePageComponent implements OnInit {
             });
     }
 
-    // ── Avatar ────────────────────────────────────────────────────────────────
+    // -- Avatar ----------------------------------------------------------------
 
     onAvatarFileSelected(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
@@ -526,7 +526,7 @@ export class ProfilePageComponent implements OnInit {
             });
     }
 
-    // ── Avatar color ──────────────────────────────────────────────────────────
+    // -- Avatar color ----------------------------------------------------------
 
     updateColor(color: string): void {
         this.colorBusy.set(true);
@@ -544,10 +544,10 @@ export class ProfilePageComponent implements OnInit {
             });
     }
 
-    // ── Dynamic section settings ──────────────────────────────────────────────
+    // -- Dynamic section settings ----------------------------------------------
 
     /**
-     * Task #433 — submit handler for the bespoke Calendar tab. Mirrors
+     * Task — submit handler for the bespoke Calendar tab. Mirrors
      * `saveSection` (same PATCH endpoint) but also pushes the merged
      * values into `UserCalendarPreferencesService` so the topbar
      * quick-access, mini-cal, FullCalendar config, event editor, and
@@ -575,7 +575,7 @@ export class ProfilePageComponent implements OnInit {
     }
 
     /**
-     * M9.g — submit handler for the bespoke "Calls" tab. Mirrors
+     * Submit handler for the bespoke "Calls" tab. Mirrors
      * `saveCalendarPrefs`: PATCHes the section, then pushes the merged
      * values into `CallOverlayPreferencesService` so the live screen-pop
      * overlay reacts immediately (no reload).
@@ -605,7 +605,7 @@ export class ProfilePageComponent implements OnInit {
                 next: updated => {
                     this.settings.update(s => ({ ...s, [section]: updated }));
                     // Re-theme on the spot when the Preferences tab saves,
-                    // rather than on the next reload (#2031). Same seeding idea
+                    // rather than on the next reload. Same seeding idea
                     // as the calendar and call tabs above; `update` ignores a
                     // value that is not a known choice, so passing the whole
                     // merged bag's field is safe for every other section.

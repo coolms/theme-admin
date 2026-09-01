@@ -41,24 +41,24 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * M3.3.h.2 FE -- BPMN-Lite designer page mounted at
+ * FE -- BPMN-Lite designer page mounted at
  * `/admin/designer/bpmn/:key`.
  *
- * **Closes the M3.3 authoring → deploy loop end-to-end.**
- * Mounts the M3.3 `BpmnLiteEditor` (M3.3.b paint, M3.3.c flows,
- * M3.3.d palette, M3.3.e connect mode, M3.3.f property panel,
- * M3.3.g JSON serializer) inside the M3.2.d editor shell + wires
- * Save/Deploy buttons to the M3.3.h.1 backend endpoints via
+ * **Closes the authoring -> deploy loop end-to-end.**
+ * Mounts the `BpmnLiteEditor` ( paint, flows,
+ * palette, connect mode, property panel,
+ * JSON serializer) inside the editor shell + wires
+ * Save/Deploy buttons to the backend endpoints via
  * {@link DesignerService}.
  *
  * **Lifecycle**:
  *  1. `ngAfterViewInit` mounts the shell + the BpmnLiteEditor + the
- *     M3.3.d Palette into `editor.sidebar.paletteHost` + the M3.3.f
+ * Palette into `editor.sidebar.paletteHost` + the
  *     property panel into `editor.sidebar.propertyHost` + the
  *     selection controller. Connect mode is constructed lazily on
  *     the first toggle click.
  *  2. Fetches the draft via `getWorkflowDraft(key)`. If body is
- *     non-empty, parses with M3.3.g `bpmnLiteJsonToModel` and seeds
+ *     non-empty, parses with `bpmnLiteJsonToModel` and seeds
  *     via `editor.load(model)`. Empty body OR parse error -> empty
  *     model + toast (so the editor mounts cleanly even when the
  *     backend has a half-written body).
@@ -75,24 +75,24 @@ import { DesignerI18nService } from './designer-i18n.service';
  *     editor. Each is null-guarded so partial-mount teardown is
  *     safe.
  *
- * **Connect mode toggle**: M3.3.e Connect mode is a modal state.
+ * **Connect mode toggle**: Connect mode is a modal state.
  * The page exposes a button in its own toolbar row (the shell
  * toolbar already carries Save/Deploy/Undo/Redo; the connect
  * button lives in a page-level button group so it can show
  * pressed-state when active). The button's `aria-pressed`
  * reflects `connectMode.active`.
  *
- * **Deferred (M3.3.i+)**:
+ * **Deferred (+)**:
  *  - Decision-key / handler-key autocomplete in the property panel
- *    -- needs M2.j handler catalog + M3.2.f decision list piping
- *    into the M3.2.e XRefs registry.
- *  - Structured violation rendering: the M3.3.h.1 deploy processor
+ *    -- needs handler catalog + decision list piping
+ *    into the XRefs registry.
+ *  - Structured violation rendering: the deploy processor
  *    maps `DefinitionValidationException` to a 400 with the message
- *    string; M3.3.i will plumb the structured violation list +
+ *    string; will plumb the structured violation list +
  *    surface it in an inline error panel.
  *  - Dirty-state tracking with beforeunload guard.
  *  - Auto-save on idle.
- *  - Collaborative-edit warning via the M2.k Centrifugo realtime
+ *  - Collaborative-edit warning via the Centrifugo realtime
  *    bus when another author opens the same draft.
  */
 @Component({
@@ -320,9 +320,9 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
 
     /**
      * Unsaved-work flag, PUBLIC because `unsavedChangesGuard` reads it off
-     * the route component structurally (#2487).
+     * the route component structurally.
      *
-     * ⚠️ Driven by the COMMAND STACK, not by `editor.onChange`. `load()`
+     *  Driven by the COMMAND STACK, not by `editor.onChange`. `load()`
      * emits a change event but pushes no command, so subscribing to the
      * editor would mark a freshly opened draft dirty before the user had
      * touched it -- a prompt on every exit, which trains people to click
@@ -384,7 +384,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      */
     private offSelectionAutoToggle?: () => void;
     /**
-     * M3.3.i -- XRefs registry handed to the property panel. The
+     * -- XRefs registry handed to the property panel. The
      * page populates scopes `workflow.handlers` + `workflow.forms`
      * on mount + the panel's SELECT fields subscribe to it.
      */
@@ -397,7 +397,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     readonly loadError = signal<string | null>(null);
     readonly title = signal<string>('Workflow editor');
     readonly lastSavedAt = signal<string | null>(null);
-    /** Latest deployed version (in-session); > 0 → the shared status bar's "Deployed vN" badge. */
+    /** Latest deployed version (in-session); > 0 -> the shared status bar's "Deployed vN" badge. */
     readonly latestVersion = signal<number>(0);
     readonly connectActive = signal<boolean>(false);
     readonly panActive = signal<boolean>(false);
@@ -458,7 +458,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * `?version=N` on the routed page → read-only viewer. Returns null
+     * `?version=N` on the routed page -> read-only viewer. Returns null
      * for an absent/garbage value so the page falls back to editor mode.
      */
     private readVersionQueryParam(): number | null {
@@ -492,7 +492,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
 
         /**
          * Viewer mode: the `version` input pins the page to a deployed
-         * version, loaded read-only (File Explorer → `v{N}.bpmn.json`,
+         * version, loaded read-only (File Explorer -> `v{N}.bpmn.json`,
          * and the modal). Null = editor mode.
          *
          * The routed page also honours `?version=N`, which is how the
@@ -552,14 +552,14 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         });
 
         // All three guard layers for this page: the command stack marks it
-        // dirty, the registry covers a tab close (#2485), and the route's
-        // canDeactivate covers in-SPA navigation (#2487).
+        // dirty, the registry covers a tab close, and the route's
+        // canDeactivate covers in-SPA navigation.
         this.destroyRef.onDestroy(
             this.shellEditor.commands.onChange(() => this.dirty.set(true)),
         );
         this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
 
-        // M3.3.i -- the XRefs registry is constructed first so the
+        // -- the XRefs registry is constructed first so the
         // property panel subscribes to live scope updates from the
         // moment it mounts; the page then kicks off the async
         // populate (handler + form catalogs) in parallel with the
@@ -594,7 +594,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             });
         }
 
-        // M3.3.i -- populate XRefs in the background so the editor
+        // -- populate XRefs in the background so the editor
         // mounts on a hot path even when the catalog endpoints lag.
         // Errors are non-fatal: a missing handler catalog just leaves
         // the dropdown empty + raises a toast; it doesn't block
@@ -609,7 +609,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             editor: this.bpmnEditor,
         });
 
-        // M3.3.m.F-7.1 — drag-to-move on existing canvas elements.
+        //-7.1 — drag-to-move on existing canvas elements.
         // The isConnectActive / isPanActive gates flip OFF the move
         // gesture whenever ConnectMode or PanMode is active, keeping
         // the three pointer paths (connect / pan / move) mutually
@@ -639,7 +639,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             });
         }
 
-        // M3.3.m.F-4 / F-5 — keyboard shortcuts (Delete to remove
+        //-4 / F-5 — keyboard shortcuts (Delete to remove
         // selection; arrow-key pan + +/-/0 zoom hotkeys). Mirrors
         // the dialog wiring with `readOnly: false` because the
         // standalone page is always in editor mode.
@@ -964,7 +964,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * M3.3.i -- fetch + register the M3.2.e XRefs scopes the
+     * -- fetch + register the XRefs scopes the
      * property panel's variant-specific SELECT fields consume:
      *  - `'workflow.handlers'` <- `GET /api/v1/workflow/handlers`
      *  - `'workflow.forms'`    <- `GET /api/v1/forms`
@@ -1019,9 +1019,9 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Toggle the M3.3.e connect mode. First click constructs the
+     * Toggle the connect mode. First click constructs the
      * controller + enters; subsequent clicks toggle enter/exit.
-     * M3.3.m.F-4 — mutually exclusive with PanMode: entering Connect
+     *-4 — mutually exclusive with PanMode: entering Connect
      * forces Pan to exit, so the three pointer paths (connect / pan /
      * move) stay mutually exclusive without the controllers having
      * to know about each other.
@@ -1043,7 +1043,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * M3.3.m.F-4 / F-6 — toggle the hand-tool (pan) mode. Mirrors
+     *-4 / F-6 — toggle the hand-tool (pan) mode. Mirrors
      * {@link toggleConnect} but for {@link PanMode}: lazy-mount on
      * first toggle, mutually exclusive with Connect, surfaces in the
      * action-bar Toolbar via the `bi-hand-index` button.
@@ -1084,7 +1084,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * M3.3.m.F-6 — push the page's mode-active signals through to the
+     *-6 — push the page's mode-active signals through to the
      * shell Toolbar so the action-bar Connect + Hand buttons show
      * their pressed state. Called from every mode-toggle path
      * (toggleConnect / togglePan / onEscape).
@@ -1095,7 +1095,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * M3.3.m.F-7.4 — fit the loaded model into the canvas viewport
+     *-7.4 — fit the loaded model into the canvas viewport
      * with a 10% padding margin. Mirrors the dialog implementation:
      * computes the model's element bounding box + reads the canvas
      * SVG's DOM dimensions, then asks the viewport to atomically set

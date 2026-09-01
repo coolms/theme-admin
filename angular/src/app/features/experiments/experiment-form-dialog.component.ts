@@ -23,7 +23,7 @@ interface VariantRow {
 const KEY_RE = /^[a-z0-9][a-z0-9_-]*$/;
 
 /**
- * W8 — "New experiment" / "Edit experiment" modal (#786).
+ * W8 — "New experiment" / "Edit experiment" modal.
  *
  * **Create mode** (no dialog data): captures the experiment key + name and a
  * repeatable variant editor (key / label / weight rows, minimum two). The new

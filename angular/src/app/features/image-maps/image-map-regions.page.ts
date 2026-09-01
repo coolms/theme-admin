@@ -43,7 +43,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
 /**
  * ImageMap region authoring (`/admin/image-maps/:slug/regions`) — the
  * Fabric.js surface over `@coolms/image-editor-angular`'s engine (NOT the pixel
- * editor shell/host: regions are vector geometry saved through the #1525
+ * editor shell/host: regions are vector geometry saved through the
  * region API; the raster is never exported, so drawings are never baked
  * into the image). The engine's annotation seams (`addShapeAt`,
  * `getShapeGeometry`, `getImageBounds`, the `scenePointer` event) carry
@@ -53,7 +53,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
  * per the Region contract).
  *
  * Save is a diff against the loaded map: new shapes POST, moved/edited
- * shapes PATCH (geometry as a `shape`+`points` unit per #1525), removed
+ * shapes PATCH (geometry as a `shape`+`points` unit), removed
  * codes DELETE — then the map is re-fetched and the canvas rebuilt.
  */
 @Component({
@@ -206,7 +206,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
            --cms-primary-soft (a token nothing defines, so always its #dbeafe
            fallback) over a hard-coded blue border: a pale blue box that, on the
            dark theme, carried light text at 1.24:1 — the SELECTED tool was the
-           one you could not read (#2042). NO BACKTICKS IN HERE. */
+           one you could not read. NO BACKTICKS IN HERE. */
         .toolbar-sep { width: 1px; height: 24px; background: var(--cms-border-color, #e5e7eb); }
         .draw-hint { font-size: 12px; color: var(--cms-text-muted, #848b96); }
         .regions-body { display: flex; flex: 1; min-height: 0; }
@@ -261,14 +261,14 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
     private savedMetaVersion = 0;
 
     /**
-     * ⚠️ A METHOD, not a computed. `canUndo()` is a plain call rather
+     *  A METHOD, not a computed. `canUndo()` is a plain call rather
      * than a signal, so a computed would cache its first answer and
      * never re-run. Both consumers -- the route guard and the unload
      * registry -- pull on demand, so a method is the right shape.
      *
      * Two sources because there are two kinds of edit: the engine owns
      * region GEOMETRY, this page owns region METADATA, and checking
-     * only the engine would miss a renamed code (#2492).
+     * only the engine would miss a renamed code.
      */
     dirty(): boolean {
         return (this.engine?.canUndo() ?? false)
@@ -280,7 +280,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
     private engine: ImageEditorEngine | null = null;
     private resizeObserver: ResizeObserver | null = null;
     private map: ImageMapDto | null = null;
-    /** Layer id → page-side region metadata. THE authoring model. */
+    /** Layer id -> page-side region metadata. THE authoring model. */
     private readonly metaByLayer = new Map<string, RegionMeta>();
     /** Bumped whenever metaByLayer mutates so computed() views refresh. */
     private readonly metaVersion = signal(0);
@@ -361,10 +361,10 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
             this.resizeObserver.observe(container);
 
             this.renderRegions(map.regions);
-            // ⚠️ Baseline AFTER hydration. `renderRegions()` ends with a
+            //  Baseline AFTER hydration. `renderRegions()` ends with a
             // `metaVersion` bump even for zero regions, so without this the
             // page reports dirty the moment it opens -- measured: a freshly
-            // opened map with 0 regions blocked `beforeunload` (#2495). A
+            // opened map with 0 regions blocked `beforeunload`. A
             // guard that fires when nothing changed is the one people learn
             // to click through.
             this.savedMetaVersion = this.metaVersion();
@@ -627,7 +627,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
         this.previewPolyline.set(null);
     }
 
-    // Scene → screen for the SVG previews (screen = scene * zoom + pan).
+    // Scene -> screen for the SVG previews (screen = scene * zoom + pan).
     private toScreen(p: { x: number; y: number }): { x: number; y: number } {
         const engine = this.engine!;
         const zoom = engine.getZoom();
@@ -758,7 +758,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
         return Math.round(v * 10000) / 10000;
     }
 
-    // --- save (diff → region API) --------------------------------------------
+    // --- save (diff -> region API) --------------------------------------------
 
     async save(): Promise<void> {
         // Capture the grid-snap intent BEFORE stopVertexEdit() clears it.
@@ -826,7 +826,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
                 const origRef  = original.subjectRef ?? '';
                 if (meta.subjectType.trim() !== origType || meta.subjectRef.trim() !== origRef) {
                     if (meta.subjectType.trim() === '') {
-                        // Explicit empty-string subjectType clears the binding (#1525).
+                        // Explicit empty-string subjectType clears the binding.
                         patch.subjectType = '';
                     } else {
                         patch.subjectType = meta.subjectType.trim();

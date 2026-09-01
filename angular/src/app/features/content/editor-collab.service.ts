@@ -27,7 +27,7 @@ export interface PeerSaveEvent {
 
 /**
  * Collaborative-editing presence + activity for one open document
- * (Track B #8, ledger #804). Wraps the singleton
+ *,. Wraps the singleton
  * {@see CentrifugoClientService} for the per-document channel
  * `editor.doc.{nodeId}` — the typed editor sibling of
  * `VfsLiveEventsService`, but stateful (it owns one active channel at a
@@ -56,7 +56,7 @@ export class EditorCollabService implements OnDestroy {
     /** Constant for an editor session; used for self-exclusion + self-save suppression. */
     private readonly currentUserId = this.store.selectSnapshot(AuthState.currentUser)?.id ?? null;
 
-    /** clientId → ClientInfo for everyone present on the active channel. */
+    /** clientId -> ClientInfo for everyone present on the active channel. */
     private readonly clients = signal<Map<string, ClientInfo>>(new Map());
 
     /** Distinct *other* users present in the active document (self + multi-tab deduped). */

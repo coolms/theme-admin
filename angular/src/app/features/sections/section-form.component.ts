@@ -59,9 +59,9 @@ export class SectionFormComponent {
                 matchPathPrefix: value['matchPathPrefix'] as string | undefined,
                 feStack:         value['feStack'] as string | undefined,
                 matchPriority:   value['matchPriority'] as number | undefined,
-                // #1752 — was absent, so the one field that actually decides a
+                // — was absent, so the one field that actually decides a
                 // section's theme could not be changed from the admin at all.
-                // Empty select → null, which CLEARS the binding (fall back to the
+                // Empty select -> null, which CLEARS the binding (fall back to the
                 // active theme); leaving it undefined would silently keep the old
                 // value under merge-patch and make "clear" impossible.
                 themeSlug:       this.themeSlugFrom(value),

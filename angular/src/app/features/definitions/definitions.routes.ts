@@ -7,8 +7,8 @@ import { type Routes } from '@angular/router';
  * count), rendered directly (no cms-list-layout wrapper).
  *
  * Drill-down lands on per-module Designer surfaces:
- *  - workflow → opens the BPMN-Lite editor modal in place
- *  - decision → routes to `/admin/designer/dmn/:key`
+ *  - workflow -> opens the BPMN-Lite editor modal in place
+ *  - decision -> routes to `/admin/designer/dmn/:key`
  * The catalog itself has no detail page — clicking a row jumps
  * straight to the appropriate editor.
  */

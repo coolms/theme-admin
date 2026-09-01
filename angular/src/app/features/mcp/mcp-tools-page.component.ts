@@ -16,7 +16,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { CmsListPageComponent, DataGridComponent, type DataGridData } from '@coolms/ui-angular';
 
 /**
- * MCP tool-governance audit (ADR-147) — the operator-facing view over
+ * MCP tool-governance audit — the operator-facing view over
  * `GET /api/mcp/tools` (`McpToolCatalogController`, ROLE_ADMIN). It lists
  * every tool an external AI agent can call through the governed JSON-RPC
  * endpoint (`POST /api/mcp/rpc`) and, crucially, the AUTHORIZATION GATE on
@@ -26,11 +26,11 @@ import { CmsListPageComponent, DataGridComponent, type DataGridData } from '@coo
  *
  * Read-only. The gate is defined in code (the tool's `requiredRole()` +
  * runtime governance shape); this screen is the single auditable inventory
- * ADR-147 mandates ("tools stay centralized in src/Mcp … auditable in one
+ * mandates ("tools stay centralized in src/Mcp … auditable in one
  * place"). Lives under /admin/--system next to the Centrifugo dashboard —
  * both are platform-plumbing operator surfaces.
  *
- * **Platform list shell** (ledger #1657): `<cms-list-page>` +
+ * **Platform list shell**: `<cms-list-page>` +
  * `<coolms-datagrid gridId="mcp:tools">` + the `navi.toolbar.mcp.tools`
  * toolbar tree. It previously hand-rolled a `<table>` inside a bespoke card,
  * which cost it sorting, filtering, the column chooser, selection and the

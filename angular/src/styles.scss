@@ -1,4 +1,4 @@
-// ─── CoolMS Brand tokens ─────────────────────────────────────────────────────
+// --- CoolMS Brand tokens -----------------------------------------------------
 :root {
     // Brand accent
     --cms-accent:               #F5A623;
@@ -24,11 +24,11 @@
     // Muted surface for inset/zebra/placeholder fills (hover rows, empty cells,
     // progress troughs). Defined here because ~7 `var(--cms-surface-muted)` usages
     // referenced it while UNDEFINED — and drifted between #f3f4f6 and #f8f9fa; one
-    // definition makes them consistent (#1043).
+    // definition makes them consistent.
     --cms-surface-muted:        #f3f4f6;
-    // `--cms-canvas` was REFERENCED 13 times and never DEFINED (#2022) — the
+    // `--cms-canvas` was REFERENCED 13 times and never DEFINED — the
     // same fault this file already records for --cms-primary and
-    // --cms-surface-muted (#1043), and it had already produced drift: 10 sites
+    // --cms-surface-muted, and it had already produced drift: 10 sites
     // fell back to #f9fafb and 3 to #f3f4f6, EIGHT and THREE of them inside
     // messages.page.ts alone, so one page rendered the same recessed surface as
     // two different greys.
@@ -44,7 +44,7 @@
     // editor's deep navy work surface and is genuinely a different thing.
     --cms-canvas:               var(--cms-surface-muted);
 
-    // ── Aliases for names the app already uses (#2023) ────────────────────
+    // -- Aliases for names the app already uses --------------------
     //
     // An audit of every `var(--cms-*)` reference found **44 tokens referenced
     // and never defined** against 63 defined. That is not a tidiness problem:
@@ -55,7 +55,7 @@
     //    `border-color: var(--cms-border-color)` computes **currentColor**, so 9
     //    borders draw in the TEXT colour.
     //  - With a fallback, each site carries its own, and they drift — the
-    //    #1043 / #2022 fault repeated across dozens of names.
+    //    / fault repeated across dozens of names.
     //
     // Most of them are SYNONYMS coined independently for roles that already have
     // a token: six different names for "muted / hover surface" alone. Aliasing
@@ -76,7 +76,7 @@
     --cms-bg-surface:           var(--cms-surface);
     --cms-border-color:         var(--cms-border);
     --cms-border-strong:        var(--cms-btn-border);
-    // Selected/active ROW fill. Referenced twice with no fallback (#2023's
+    // Selected/active ROW fill. Referenced twice with no fallback ('s
     // guard), so the domain-explorer tree's active entity and type rows were
     // rendering with NO background at all — only the blue text and bold weight
     // distinguished them. Aliased to --cms-info-subtle because that is what
@@ -99,7 +99,7 @@
     //
     // --cms-canvas-bg: matches the sidebar's deep navy so the editor
     //   reads as a "tool surface" and stays clearly distinct from the
-    //   typical dark image content (#000 ish photos no longer blend
+    //   typical dark image content (ish photos no longer blend
     //   into the backdrop the way they did against #2a2a2a).
     --cms-canvas-bg:            var(--cms-sidebar-bg);
     --cms-overlay-scrim:        rgba(0, 0, 0, .55);
@@ -112,11 +112,11 @@
 
     // Text
     --cms-text:                 #111827;
-    // The rung that had no name (#2028). `#374151` is used as a label/body
+    // The rung that had no name. `#374151` is used as a label/body
     // weight in 18 places — `.chip--channel`, `.ffp-row__label`,
     // `.crumb-badge--embeddable` as well as `.btn-secondary` — and the ONLY
     // token holding it was `--cms-btn-text`. Pointing a chip label at a BUTTON
-    // token is the coupling error #2013 warned about, so the value gets its own
+    // token is the coupling error warned about, so the value gets its own
     // name and the button token becomes an alias of it: one value, two names,
     // each honest about what it means.
     --cms-text-body:            #374151;
@@ -127,14 +127,14 @@
     // #6b7f96 on a dark ground already passes.
     --cms-text-muted:           #848b96;
     // Text ON a coloured fill — the single largest hard-coded value in the app
-    // (#2025): `color: #fff` appears 61 times, always on a solid success /
+    //: `color: #fff` appears 61 times, always on a solid success /
     // danger / primary background. It had no token, which is why it stayed a
     // literal through four drain passes: there was nothing to move it to.
     // NOT --cms-surface (that is a surface, not a text colour) and NOT
     // --cms-accent-fg (near-black, for the AMBER fill specifically).
     --cms-text-inverse:         #ffffff;
     // Foreground on the app CHROME — topbar and sidebar — as distinct from
-    // --cms-text-inverse, which is foreground on a filled swatch (#2031).
+    // --cms-text-inverse, which is foreground on a filled swatch.
     //
     // The two looked like one token until dark mode proved otherwise. A swatch
     // fill INVERTS with the theme, so text on it must invert too; the chrome is
@@ -162,7 +162,7 @@
     --cms-info-light:           #eff6ff;
     --cms-info-text:            #1e40af;
 
-    // ── Status, SUBTLE tier (#2018) ───────────────────────────────────────
+    // -- Status, SUBTLE tier ---------------------------------------
     //
     // A SECOND tint scale, added because the admin had already grown one
     // without saying so. `-light` above is the pale wash a full-width alert or
@@ -183,19 +183,19 @@
     --cms-success-subtle:       #dcfce7;
     // Completes the -subtle-border rung, which danger and info already had and
     // success did not — noticed because a routing-inspector banner needed one
-    // and the alternative was referencing a token nothing defines (#2043).
+    // and the alternative was referencing a token nothing defines.
     --cms-success-subtle-border: #86efac;
     --cms-warning-subtle:       #fef3c7;
     // Completes the semantic family: danger, info and success all carry a
     // -subtle-border, warning did not, so callers hard-coded #fcd34d.
     --cms-warning-subtle-border: #fcd34d;
     --cms-info-subtle:          #dbeafe;
-    // Added with the bridge completion (#2030): `.alert-info` needs a border to
+    // Added with the bridge completion: `.alert-info` needs a border to
     // map, and only danger had one. Same one-step-darker relationship as
-    // #fee2e2 → #fecaca, in the same Tailwind rung the rest of this scale uses.
+    // #fee2e2 -> #fecaca, in the same Tailwind rung the rest of this scale uses.
     --cms-info-subtle-border:   #bfdbfe;
 
-    // ── Meta: KIND and OWNERSHIP, not status (#2021) ──────────────────────
+    // -- Meta: KIND and OWNERSHIP, not status ----------------------
     //
     // The admin had grown a purple family with no palette entry, and it is not
     // a sixth status — it answers a different question. success/danger/warning/
@@ -213,13 +213,13 @@
     // many, collapsing them is a palette edit rather than a sweep.
     // A code block is chrome, not a surface: dark in EVERY theme, like the
     // topbar. Named so it can be re-pointed, and deliberately NOT overridden in
-    // the dark block — the same reasoning as --cms-on-chrome (#2032).
+    // the dark block — the same reasoning as --cms-on-chrome.
     --cms-code-bg:              #1e1e1e;
     --cms-code-text:            #d4d4d4;
 
     // PAPER — the printed page inside the document editor, and the mirror image
     // of the chrome tokens above: light in EVERY theme, because a sheet of A4
-    // does not turn navy when the operator prefers dark (#2036).
+    // does not turn navy when the operator prefers dark.
     //
     // The document editor had painted the sheet with --cms-surface and its own
     // comment said why: "the sheet is --cms-surface (white)". True while there
@@ -234,7 +234,7 @@
     // The third member, and it exists for a reason worth stating: authored
     // links were `--cms-accent`, which is theme-INVARIANT amber and therefore
     // measured 2.03 on this paper in BOTH themes — under even the 3:1 that
-    // applies to non-text (#2476). `--cms-accent-text` is not the fix either:
+    // applies to non-text. `--cms-accent-text` is not the fix either:
     // it flips with the theme (#7c4d00 light, #f5c173 dark) while the paper
     // does NOT, so it would read 7.20 in one theme and ~1.9 in the other.
     // A theme-invariant surface needs a theme-invariant ink. This is the light
@@ -249,7 +249,7 @@
     --cms-paper-muted:          #6b7280;
 
     // Tells the BROWSER which way this theme runs, which is the only way to
-    // reach the parts of the UI no stylesheet owns (#2038): scrollbars, the
+    // reach the parts of the UI no stylesheet owns: scrollbars, the
     // popup a native <select> opens, date pickers, and any control that sets
     // no background of its own and so falls through to `background: field`.
     // The email composer's recipient input was a white block in dark mode for
@@ -278,13 +278,13 @@
     // / #0d6efd / #3b82f6 …) — and a few had NO fallback, so they rendered the
     // initial colour outright. One definition makes them all consistent. NOTE:
     // intentionally distinct from the AMBER brand --cms-accent — kept blue to
-    // preserve the current look (#1043); switching to the accent would be a
+    // preserve the current look; switching to the accent would be a
     // deliberate rebrand, not this fix.
     --cms-primary:              #2563eb;
     --cms-primary-hover:        #1d4ed8;
 
     // Neutral button
-    // The input surface, named at last (#2031). Two components had already
+    // The input surface, named at last. Two components had already
     // invented `var(--cms-input-bg, #fff)` and the kit itself wrote
     // `background: white` three times, so the concept existed in three places
     // and the token in none. Dark mode is what forced it: a field that cannot
@@ -292,7 +292,7 @@
     --cms-input-bg:             #ffffff;
     --cms-btn-bg:               #ffffff;
     --cms-btn-border:           #d1d5db;
-    // Aliased to the general body weight (#2028) — same value it always held,
+    // Aliased to the general body weight — same value it always held,
     // now stated once. A button label IS body text; it was only spelled
     // separately because this token happened to be defined first.
     --cms-btn-text:             var(--cms-text-body);
@@ -324,10 +324,10 @@
     --cms-row-height-lg:        48px;   /* media grid cards label area               */
 }
 
-// ═══ Dark mode (#2031) ═══════════════════════════════════════════════════════
+// ═══ Dark mode ═══════════════════════════════════════════════════════
 //
 // A pure TOKEN override — no new rules, no component touched. That it can be
-// written this way is the whole return on #2014–#2030: every colour the admin
+// written this way is the whole return on –: every colour the admin
 // paints has to arrive through one of these names, so re-pointing the names
 // re-themes the app. Anything that does NOT flip is, by definition, a colour
 // that escaped the palette, which makes this the sharpest probe for the
@@ -336,11 +336,11 @@
 // Only BASE tokens appear here. The aliases (--cms-canvas, --cms-hover,
 // --cms-surface-alt, --cms-bg-muted, --cms-border-color …) are defined as
 // var() chains onto these, so they follow without being restated — the reason
-// #2022 named them as aliases instead of copying values.
+// named them as aliases instead of copying values.
 //
 // The selector carries one class of specificity more than the `:root` above, so
 // it wins wherever it applies. That is also the mechanism the user asked about
-// for per-user colours: theme default (`:root`) → system settings → user prefs
+// for per-user colours: theme default (`:root`) -> system settings -> user prefs
 // is nothing more than three rules of increasing specificity over the same
 // names. Setting `data-theme` is left to whatever chooses the theme; this block
 // only says what dark MEANS.
@@ -410,7 +410,7 @@
     --cms-warning-text:         #fcd34d;
     --cms-warning-subtle:       #33270f;
     --cms-warning-subtle-border: #5c4318;
-    // ⚠️ Was defined for LIGHT ONLY, so the one caller that used it drew a
+    //  Was defined for LIGHT ONLY, so the one caller that used it drew a
     // mint-green border on a dark panel. In family with danger (#5c2a2f) and
     // info (#24405f).
     --cms-success-subtle-border: #2a5c39;
@@ -436,7 +436,7 @@
     --cms-overlay-scrim:        rgba(0, 0, 0, .70);
 }
 
-// ─── Typography ──────────────────────────────────────────────────────────────
+// --- Typography --------------------------------------------------------------
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
     font-size: 14px;
@@ -460,7 +460,7 @@ body {
     gap: 8px;
 }
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
+// --- Sidebar -----------------------------------------------------------------
 .cms-sidebar {
     background: var(--cms-sidebar-bg);
     width: 220px;
@@ -551,7 +551,7 @@ body {
     white-space: nowrap;
 }
 
-// ─── Buttons ─────────────────────────────────────────────────────────────────
+// --- Buttons -----------------------------------------------------------------
 .cms-btn {
     display: inline-flex;
     align-items: center;
@@ -589,7 +589,7 @@ body {
     .bi { font-size: .875rem; line-height: 1; }
 }
 
-// ── Native form controls: brand accent by DEFAULT ─────────────────────────
+// -- Native form controls: brand accent by DEFAULT -------------------------
 //
 // The reported defect was "some checkboxes are orange, others are browser
 // blue". The cause was not inconsistent markup — it was that NOTHING styled
@@ -612,9 +612,9 @@ input[type="range"] {
     accent-color: var(--cms-accent);
 }
 
-// ── Checkbox + radio: the KIT's control, not the browser's ────────────────
+// -- Checkbox + radio: the KIT's control, not the browser's ----------------
 //
-// `accent-color` (the #1731 fix) made every checkbox the brand colour, which
+// `accent-color` (the fix) made every checkbox the brand colour, which
 // closed the reported defect — but it only TINTS the browser's own control, so
 // the size and shape stayed whatever the OS drew, around 13px and visually thin
 // beside the rest of the admin. Repainting them is what makes them the kit's:
@@ -737,9 +737,9 @@ input[type="radio"] {
     }
 }
 
-// ── Toggle / switch ───────────────────────────────────────────────────────
+// -- Toggle / switch -------------------------------------------------------
 //
-// PROMOTED FROM `datagrid.component.ts` (#2011). It was a genuine kit control
+// PROMOTED FROM `datagrid.component.ts`. It was a genuine kit control
 // living in one component's SCOPED styles, so every other page that wanted a
 // switch had to re-implement or do without — and `cms-toggle` was the only
 // toggle in the admin because of it. Angular scopes component styles by
@@ -843,7 +843,7 @@ input[type="radio"] {
 }
 
 // The missing variant that kept 15 call sites on Bootstrap's `btn-link` — and
-// therefore on Bootstrap's blue (#1732). Reads as a link, behaves as a button:
+// therefore on Bootstrap's blue. Reads as a link, behaves as a button:
 // no border or fill, accent-coloured, underline on hover only.
 //
 // Distinct from `.cms-btn-ghost`, which is a BUTTON that recedes until hovered.
@@ -876,7 +876,7 @@ input[type="radio"] {
 // (below, in the form-controls section) — see the comment there. .cms-btn-sm/-lg
 // can live here because .cms-btn is declared above them.
 
-// ─── Form controls ───────────────────────────────────────────────────────────
+// --- Form controls -----------------------------------------------------------
 
 .cms-label {
     display: block;
@@ -929,18 +929,18 @@ input[type="radio"] {
     }
 }
 
-// ─── Compact size modifier for the form controls ─────────────────────────────
-// ⚠️ These MUST stay below `.cms-input` / `.cms-select`. Both are single-class
+// --- Compact size modifier for the form controls -----------------------------
+//  These MUST stay below `.cms-input` / `.cms-select`. Both are single-class
 // selectors, so specificity ties and SOURCE ORDER decides — and `.cms-input-sm`
 // used to sit above `.cms-input`, which meant the base won and the modifier had
-// never done anything (#2125). Measured on the running app before the move: an
+// never done anything. Measured on the running app before the move: an
 // element with `cms-input cms-input-sm` computed to 13px / 5px 10px, identical
 // to a plain `.cms-input`, across ~35 usages. `.cms-select-sm` was simply
 // missing, so the compact selects that asked for it rendered full-size too.
 .cms-input-sm,
 .cms-select-sm { padding: 3px 8px; font-size: .75rem; }
 
-// ─── Bootstrap form-control normalisation ─────────────────────────────────────
+// --- Bootstrap form-control normalisation -------------------------------------
 // Bootstrap ships .form-control with padding:.375rem .75rem and font-size:1rem
 // which makes its inputs ~36–38px tall — inconsistent with the CMS compact
 // design (.cms-input is 28–29px: padding:5px 10px, font-size:.8125rem).
@@ -972,7 +972,7 @@ input[type="radio"] {
     font-size: .75rem;
 }
 
-// ─── Cards and panels ────────────────────────────────────────────────────────
+// --- Cards and panels --------------------------------------------------------
 .cms-card {
     background: var(--cms-surface);
     border: 1px solid var(--cms-border);
@@ -996,7 +996,7 @@ input[type="radio"] {
     padding: 12px 12px 4px;
 }
 
-// ─── Dialogs ─────────────────────────────────────────────────────────────────
+// --- Dialogs -----------------------------------------------------------------
 .cdk-overlay-container .cms-dialog {
     background: var(--cms-surface);
     border-radius: var(--cms-radius-lg);
@@ -1047,7 +1047,7 @@ input[type="radio"] {
     border-top: 1px solid var(--cms-border);
 }
 
-// ─── Toolbar breadcrumb ──────────────────────────────────────────────────────
+// --- Toolbar breadcrumb ------------------------------------------------------
 .toolbar-breadcrumb {
     display: flex;
     align-items: center;
@@ -1088,7 +1088,7 @@ input[type="radio"] {
     line-height: 1;
 }
 
-// ─── CDK overlay ─────────────────────────────────────────────────────────────
+// --- CDK overlay -------------------------------------------------------------
 
 .cdk-overlay-dark-backdrop {
     background: rgba(0, 0, 0, 0.5);
@@ -1113,7 +1113,7 @@ cdk-dialog-container {
     max-height: 90vh;
 }
 
-// ─── Form fields ─────────────────────────────────────────────────────────────
+// --- Form fields -------------------------------------------------------------
 
 .form-group {
     margin-bottom: 16px;
@@ -1123,9 +1123,9 @@ cdk-dialog-container {
         font-size: .875rem;
         font-weight: 500;
         // Was #374151 — the literal value of --cms-text-body, which is what
-        // #2028 named this weight for. It survived because the colour ratchet
+        // named this weight for. It survived because the colour ratchet
         // skips styles.scss wholesale, so dark mode found it instead: the one
-        // label in an otherwise-clean dialog, at 1.53:1 (#2032).
+        // label in an otherwise-clean dialog, at 1.53:1.
         color: var(--cms-text-body);
         margin-bottom: 6px;
     }
@@ -1159,8 +1159,8 @@ cdk-dialog-container {
     .field-error {
         font-size: .8rem;
         // --cms-danger-text, not --cms-danger: this is danger TEXT on a light
-        // ground, the same call #2028 made for ten other error labels. Not
-        // value-preserving — #ef4444 → #991b1b, so field errors darken in light
+        // ground, the same call made for ten other error labels. Not
+        // value-preserving — #ef4444 -> #991b1b, so field errors darken in light
         // mode and match every other error message in the admin.
         color: var(--cms-danger-text);
         margin-top: 4px;
@@ -1176,7 +1176,7 @@ cdk-dialog-container {
     border-top: 1px solid var(--cms-border);
 }
 
-// ─── Dynamic form layout ──────────────────────────────────────────────────────
+// --- Dynamic form layout ------------------------------------------------------
 
 .form-group-section + .form-group-section {
     margin-top: 1.5rem;
@@ -1200,7 +1200,7 @@ cdk-dialog-container {
     padding: 4px 0;
 }
 
-// ─── Resizable panels ─────────────────────────────────────────────────────────
+// --- Resizable panels ---------------------------------------------------------
 .cms-resize-handle {
     flex-shrink: 0;
     background: var(--cms-border);
@@ -1240,7 +1240,7 @@ body.cms-resizing {
     .cms-panel-sidebar { transition: none; }
 }
 
-// ─── Custom select ────────────────────────────────────────────────────────────
+// --- Custom select ------------------------------------------------------------
 .cms-select-wrap {
     position: relative;
     display: inline-flex;
@@ -1279,7 +1279,7 @@ body.cms-resizing {
     align-items: center;
 }
 
-// ─── Clearable select ─────────────────────────────────────────────────────────
+// --- Clearable select ---------------------------------------------------------
 .cms-select-clearable {
     position: relative;
     display: inline-flex;
@@ -1314,7 +1314,7 @@ body.cms-resizing {
     .bi { font-size: .625rem; }
 }
 
-// ─── Custom checkbox ──────────────────────────────────────────────────────────
+// --- Custom checkbox ----------------------------------------------------------
 .cms-checkbox {
     width: 16px;
     height: 16px;
@@ -1338,7 +1338,7 @@ body.cms-resizing {
     }
 }
 
-// ─── Data tables ─────────────────────────────────────────────────────────────
+// --- Data tables -------------------------------------------------------------
 .cms-table {
     width: 100%;
     border-collapse: collapse;
@@ -1376,7 +1376,7 @@ body.cms-resizing {
     .text-muted { color: var(--cms-text-muted) !important; }
 }
 
-// ─── Badges ──────────────────────────────────────────────────────────────────
+// --- Badges ------------------------------------------------------------------
 .cms-badge {
     display: inline-flex;
     align-items: center;
@@ -1389,7 +1389,7 @@ body.cms-resizing {
     background: var(--cms-border-light);
     color: var(--cms-text-secondary);
 
-    // All five on TOKENS (#2011). Three of them carried hard-coded hex, and
+    // All five on TOKENS. Three of them carried hard-coded hex, and
     // two of those values — `#92400e` and `#1e40af` — were `--cms-warning-text`
     // and `--cms-info-text` copied by value, so the palette and the badges said
     // the same thing twice and only one of them would move on a theme change.
@@ -1403,11 +1403,11 @@ body.cms-resizing {
     &--info    { background: var(--cms-info-light);    color: var(--cms-info-text); }
 }
 
-// ─── Typography utilities ─────────────────────────────────────────────────────
+// --- Typography utilities -----------------------------------------------------
 .font-mono { font-family: var(--cms-font-mono, monospace); }
 .text-sm   { font-size: .8125rem; }
 
-// ─── TipTap / ProseMirror ─────────────────────────────────────────────────────
+// --- TipTap / ProseMirror -----------------------------------------------------
 // Must be global — TipTap creates .ProseMirror dynamically outside Angular's
 // component tree, so component-scoped styles (including ::ng-deep) don't reach it.
 .page-editor__tiptap .ProseMirror {
@@ -1579,7 +1579,7 @@ figure > figcaption {
     font-size: .75rem;
 }
 
-// File-TYPE identity, the same axis as the meta family (#2021): these say WHAT
+// File-TYPE identity, the same axis as the meta family: these say WHAT
 // KIND of node this is, not how it is doing, so they are not status colours and
 // have their own names. Worth naming rather than leaving literal because the
 // directory amber sits a few degrees off the brand accent by pure coincidence —
@@ -1591,7 +1591,7 @@ figure > figcaption {
 .vfs-icon--symlink   { color: var(--cms-text-muted); }
 
 
-/* ── @media print: clean viewer output ─────────────────────────────
+/* -- @media print: clean viewer output -----------------------------
  *
  * When the user prints from inside the document viewer modal
  * (window.print() fired from the DOCX viewer's Print button or
@@ -1603,7 +1603,7 @@ figure > figcaption {
  *
  * Path B of the DOCX Print fix design (graceful fallback when the
  * Pdf module is unavailable). The "PDF-first" Path A — backend
- * DOCX→PDF conversion + native PDF.js print — is deferred to a
+ * DOCX->PDF conversion + native PDF.js print — is deferred to a
  * later phase; these rules guarantee acceptable output regardless.
  */
 @media print {
@@ -1737,14 +1737,14 @@ figure > figcaption {
 }
 
 
-// ═══ Bootstrap bridge (#2020) ═══════════════════════════════════════════════
+// ═══ Bootstrap bridge ═══════════════════════════════════════════════
 //
 // The admin carries 238 references to Bootstrap colour class names — a badge
 // written `class="badge bg-success"`, a hint written `text-muted`. They contain
 // no colour literal, so the hex ratchet cannot see them, and they read
 // BOOTSTRAP's palette rather than any `--cms-*` token: re-theming the running
 // admin left the datagrid's green Yes badge sitting on Bootstrap's #198754
-// while everything around it moved (#2018).
+// while everything around it moved.
 //
 // Rewriting 238 call sites was the obvious fix and is the wrong one. Bootstrap
 // 5.3 drives its utilities from its OWN custom properties, and those are
@@ -1773,7 +1773,7 @@ figure > figcaption {
     --bs-emphasis-color:  var(--cms-text);
     --bs-border-color:    var(--cms-border);
 
-    // ⚠️ The TRANSLUCENT siblings, and the ones the bridge missed until a
+    //  The TRANSLUCENT siblings, and the ones the bridge missed until a
     // contrast sweep made them obvious. `.card` does NOT resolve through
     // --bs-border-color -- it uses the translucent one, which still held
     // Bootstrap's rgba(0,0,0,.175). Measured on the DataGrid card in dark
@@ -1781,7 +1781,7 @@ figure > figcaption {
     // wash on a dark surface is not a border.
     //
     // The shadows are the same story: .075-.175 alpha black, which is the
-    // exact weakness #2443 found in 35 hand-rolled shadows while these sat
+    // exact weakness found in 35 hand-rolled shadows while these sat
     // here untouched. --cms-shadow-* carry .45-.55 in dark.
     //
     // -inset stays: an inset hairline inside a form control reads on either
@@ -1792,7 +1792,7 @@ figure > figcaption {
     --bs-box-shadow-lg:  var(--cms-shadow-lg);
 
     // The STRUCTURAL variable, not a utility — and the one the bridge missed
-    // until dark mode made it obvious (#2031). `.card`, `.form-control`,
+    // until dark mode made it obvious. `.card`, `.form-control`,
     // `.form-select` and every `.table` cell resolve their background through
     // --bs-body-bg, so with it left at Bootstrap's white the largest surface on
     // screen stayed white while the theme around it went dark. One variable
@@ -1827,9 +1827,9 @@ figure > figcaption {
 .text-warning { color: var(--cms-warning-text) !important; }
 .text-info    { color: var(--cms-info-text) !important; }
 
-// ─── Bridge completion (#2030) ───────────────────────────────────────────────
+// --- Bridge completion -----------------------------------------------
 //
-// #2020 built the bridge from Bootstrap's most-used names. It did NOT cover all
+// built the bridge from Bootstrap's most-used names. It did NOT cover all
 // of them, and nothing said so: the ratchet counts a bridged `.text-muted` and
 // an unbridged `.text-white` identically, so "198 Bootstrap references" read as
 // one debt when it was really two — 155 already themeable, 43 not themed at all.
@@ -1847,12 +1847,12 @@ figure > figcaption {
 // topbar controls (the wordmark, the breadcrumb, the quick-access buttons) and
 // the other two are a label over a `bg-danger` media overlay. All twelve want a
 // foreground that stays light, because none of their backgrounds lighten when
-// the theme flips — see the token's own note (#2031, correcting #2030).
+// the theme flips — see the token's own note (, correcting ).
 .text-white     { color: var(--cms-on-chrome) !important; }
 .text-secondary { color: var(--cms-text-secondary) !important; }
 // `.text-dark` is only ever used as dark text ON a light or coloured fill —
 // `badge bg-info text-dark`, `badge bg-warning text-dark` — which is what
-// --cms-text is for. Bootstrap's #212529 → #111827, marginally darker.
+// --cms-text is for. Bootstrap's #212529 -> #111827, marginally darker.
 .text-dark      { color: var(--cms-text) !important; }
 // --cms-primary, NOT --cms-accent. The kit carries both: accent (#F5A623) is the
 // brand action colour, primary (#2563eb) the informational blue, and this class
@@ -1889,7 +1889,7 @@ figure > figcaption {
 
 // A badge's label sits ON its fill, so this one genuinely IS the inverse token:
 // white in light mode — unchanged — and dark in dark mode, where the brighter
-// status hues left white text at 2.28:1 (#2031).
+// status hues left white text at 2.28:1.
 //
 // CLASS-side, and that placement is the whole point. `--bs-badge-color` looked
 // like a `:root` variable and is not: Bootstrap 5.3 declares component
@@ -1906,13 +1906,13 @@ figure > figcaption {
 .form-control,
 .form-select { background-color: var(--cms-input-bg); }
 
-// ── CDK drag previews ───────────────────────────────────────────────────────
+// -- CDK drag previews -------------------------------------------------------
 // A drag preview is rendered in the TOP LAYER (Angular CDK 18+ promotes it with
 // the Popover API), and Chrome's user-agent stylesheet gives `[popover]`
 // `overflow: auto`. The preview is sized to the source element's border box, so
 // content that needs even one pixel more than that raises a scrollbar — which
 // steals ~16px, forcing the other one, and the dragged card floats across the
-// screen with two scrollbars on it (reported #2101).
+// screen with two scrollbars on it (reported ).
 //
 // Nothing this platform drags is meant to scroll while it is in the air, so the
 // UA default is simply wrong for us. Set here rather than per component: it hit

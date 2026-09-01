@@ -29,7 +29,7 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Landing-page section builder (ADR-130, W5.d) — the admin authoring surface
+ * Landing-page section builder (, W5.d) — the admin authoring surface
  * for `extras.blocks`.
  *
  * Self-contained and self-hiding: given a page `path`, it fetches
@@ -39,16 +39,16 @@ import {
  *
  * The ordered-list machinery — the type palette (click / drag to place), the
  * drag-drop reorder, move ↑/↓, remove, dirty/Save plumbing — lives in the
- * generic {@link OrderedBuilderComponent} substrate (Track D). This component is
+ * generic {@link OrderedBuilderComponent} substrate. This component is
  * the landing-block *consumer*: it owns the `blocks` source signal (two-way into
  * the builder), the block-type catalog, the page-load lifecycle, and the
  * per-block field inspector (a projected `<ng-template>`) driven by the catalog's
  * field schema:
  *
- *   - `text`  → a plain input
- *   - `url`   → an input + an allow-list hint (the backend re-validates the
+ *   - `text`  -> a plain input
+ *   - `url`   -> an input + an allow-list hint (the backend re-validates the
  *               scheme on render; this is just guidance)
- *   - `group` → a repeater of sub-rows (e.g. `features.items`, `faq.items`)
+ *   - `group` -> a repeater of sub-rows (e.g. `features.items`, `faq.items`)
  *
  * "Save sections" merge-patches `extras.blocks`; the SSR renderer reads it live,
  * so the public page updates without a republish. Validation stays server-side,
@@ -229,7 +229,7 @@ export class BlockEditorComponent {
         return this.builder()?.save$() ?? EMPTY;
     }
 
-    // ── Substrate config (arrow props so `this` is bound when passed as inputs) ──
+    // -- Substrate config (arrow props so `this` is bound when passed as inputs) --
 
     /** Build a default block of `id` from its type's field schema, or null. */
     readonly makeBlock: OrderedElementFactory = (id: string): OrderedElement | null => {
@@ -247,7 +247,7 @@ export class BlockEditorComponent {
     readonly saveBlocks: OrderedSaveFn = (els: OrderedElement[]) =>
         this.svc.save(this.loadedPath, els);
 
-    // ── Lookups / formatting ────────────────────────────────────────────────
+    // -- Lookups / formatting ------------------------------------------------
 
     typeFor(block: BlockModel): BlockTypeSchemaDto | undefined {
         return this.types().find(t => t.id === block['type']);
@@ -276,7 +276,7 @@ export class BlockEditorComponent {
         return v == null ? '' : String(v);
     }
 
-    /** camelCase / snake → "Title Case" label. */
+    /** camelCase / snake -> "Title Case" label. */
     humanize(name: string): string {
         const spaced = name
             .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -285,7 +285,7 @@ export class BlockEditorComponent {
         return spaced.charAt(0).toUpperCase() + spaced.slice(1);
     }
 
-    // ── Per-block content mutations (immutable on the signal) ────────────────
+    // -- Per-block content mutations (immutable on the signal) ----------------
     //
     // The substrate owns structural ops (add / insert / move / remove / reorder);
     // these are the block-specific *content* edits. Each mutates `blocks` (which
@@ -330,7 +330,7 @@ export class BlockEditorComponent {
         this.builder()?.markDirty();
     }
 
-    // ── Load ────────────────────────────────────────────────────────────────
+    // -- Load ----------------------------------------------------------------
 
     private load(path: string): void {
         this.svc.fetch(path)

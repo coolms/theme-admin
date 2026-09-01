@@ -36,14 +36,14 @@ import { AgentConversationDto, ChatAttachmentDto, ChatMessageDto, QueueAgentDto,
 const QUEUE_POLL_MS = 12_000;
 
 /**
- * DynamicChat agent inbox (`/admin/dynamic-chat`, ledger #995) — closes the
+ * DynamicChat agent inbox (`/admin/dynamic-chat`, — closes the
  * two-way DynamicChat loop in the UI.
  *
  * **Two-pane layout** under a `cms-page-header`: the left pane is the
  * visitor queue (every active DynamicChat conversation), the right pane is the
  * selected conversation's thread + a composer.
  *
- * **Flow.** Selecting a conversation JOINs it (`POST …/join` → the agent
+ * **Flow.** Selecting a conversation JOINs it (`POST …/join` -> the agent
  * becomes a participant + we learn our `agentParticipantId`), then reads the
  * history via the generic Chat cursor read, then subscribes to
  * `chat.room.{id}` for push. Each realtime nudge (body-less) triggers a
@@ -84,10 +84,10 @@ const QUEUE_POLL_MS = 12_000;
                 (actionClick)="onHeaderAction($event)" />
 
             <div class="lc-body">
-                <!-- ─ Queue pane ─ -->
+                <!-- - Queue pane - -->
                 <aside class="lc-queue">
-                    <!-- Queue tabs (#1028): triage by claim state. New customers land
-                         in Unassigned; a manager opens one to CLAIM it (→ Mine); All
+                    <!-- Queue tabs: triage by claim state. New customers land
+                         in Unassigned; a manager opens one to CLAIM it (-> Mine); All
                          is the full active set. Counts let a manager see load at a glance. -->
                     <div class="lc-tabs" role="tablist">
                         <button type="button" class="lc-tab" role="tab"
@@ -160,7 +160,7 @@ const QUEUE_POLL_MS = 12_000;
                     </div>
                 </aside>
 
-                <!-- ─ Thread pane ─ -->
+                <!-- - Thread pane - -->
                 <section class="lc-thread-pane">
                     @if (selectedConversation(); as conv) {
                         <header class="lc-thread-head">
@@ -182,7 +182,7 @@ const QUEUE_POLL_MS = 12_000;
                                     <span class="lc-thread-head__hint">Joining…</span>
                                 } @else if (claimedHere()) {
                                     <!-- Release un-claims (leaves) so the conversation drops back
-                                         to Unassigned for another manager to pick up (#1028). -->
+                                         to Unassigned for another manager to pick up. -->
                                     <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm"
                                             [disabled]="releasing()"
                                             (click)="release(conv)"
@@ -312,7 +312,7 @@ const QUEUE_POLL_MS = 12_000;
         .lc-page { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .lc-body { display: flex; flex: 1; min-height: 0; }
 
-        /* ─ Queue ─ */
+        /* - Queue - */
         .lc-queue {
             width: 320px;
             flex-shrink: 0;
@@ -323,7 +323,7 @@ const QUEUE_POLL_MS = 12_000;
             min-height: 0;
         }
 
-        /* Queue triage tabs (#1028) */
+        /* Queue triage tabs */
         .lc-tabs {
             display: flex;
             flex-shrink: 0;
@@ -408,7 +408,7 @@ const QUEUE_POLL_MS = 12_000;
             color: var(--cms-text-muted);
         }
 
-        /* ─ Status badge + lead chip ─ */
+        /* - Status badge + lead chip - */
         .lc-badge {
             font-size: .6875rem;
             font-weight: 600;
@@ -419,7 +419,7 @@ const QUEUE_POLL_MS = 12_000;
         }
         .lc-badge--active { background: var(--cms-success-light); color: var(--cms-success-text); }
         .lc-badge--closed { background: var(--cms-border-light);  color: var(--cms-text-secondary); }
-        /* Triage status (#1028): New = visitor waiting (attention), Answered = agent replied last (calm). */
+        /* Triage status: New = visitor waiting (attention), Answered = agent replied last (calm). */
         .lc-badge--new      { background: var(--cms-warning-light); color: var(--cms-warning-text); }
         .lc-badge--answered { background: var(--cms-border-light);  color: var(--cms-text-secondary); }
         .lc-chip {
@@ -434,7 +434,7 @@ const QUEUE_POLL_MS = 12_000;
             gap: 4px;
         }
 
-        /* Handling-agent avatar stack on a queue row (#1026). */
+        /* Handling-agent avatar stack on a queue row. */
         .lc-agents {
             display: inline-flex;
             align-items: center;
@@ -450,7 +450,7 @@ const QUEUE_POLL_MS = 12_000;
             color: var(--cms-text-secondary, #6b7280);
         }
 
-        /* ─ Thread pane ─ */
+        /* - Thread pane - */
         .lc-thread-pane {
             flex: 1;
             min-width: 0;
@@ -535,7 +535,7 @@ const QUEUE_POLL_MS = 12_000;
             max-width: 80%;
             text-align: center;
         }
-        /* Per-day separator chip (#1033) — one date pill above each day's run, so
+        /* Per-day separator chip — one date pill above each day's run, so
          * the bubbles only carry the time. Mirrors the Messages thread. */
         .lc-daysep {
             align-self: center;
@@ -549,7 +549,7 @@ const QUEUE_POLL_MS = 12_000;
             border-radius: 999px;
         }
 
-        /* ─ Message attachments ─ */
+        /* - Message attachments - */
         .lc-atts {
             display: flex;
             flex-wrap: wrap;
@@ -600,7 +600,7 @@ const QUEUE_POLL_MS = 12_000;
             color: var(--cms-text);
         }
 
-        /* ─ Composer ─ */
+        /* - Composer - */
         .lc-composer {
             display: flex;
             flex-direction: column;
@@ -633,7 +633,7 @@ const QUEUE_POLL_MS = 12_000;
         .lc-composer__attach:hover:not(:disabled) { background: var(--cms-bg); color: var(--cms-text); }
         .lc-composer__attach:disabled { opacity: .5; cursor: not-allowed; }
 
-        /* ─ Pending (staged) attachments ─ */
+        /* - Pending (staged) attachments - */
         .lc-pending { display: flex; flex-wrap: wrap; gap: 6px; }
         .lc-pending__chip {
             display: inline-flex;
@@ -688,7 +688,7 @@ const QUEUE_POLL_MS = 12_000;
         .lc-composer__input:disabled { background: var(--cms-bg); cursor: not-allowed; }
         .lc-composer__send { flex-shrink: 0; }
 
-        /* ─ Empty states ─ */
+        /* - Empty states - */
         .lc-empty {
             display: flex;
             flex-direction: column;
@@ -712,7 +712,7 @@ export class DynamicChatPageComponent implements OnInit {
     private readonly api        = inject(DynamicChatService);
     private readonly live       = inject(DynamicChatLiveEventsService);
 
-    /** WS connection state as a stream (built in the injection context, #1042). */
+    /** WS connection state as a stream (built in the injection context, ). */
     private readonly connected$ = toObservable(this.live.isConnected);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -724,25 +724,25 @@ export class DynamicChatPageComponent implements OnInit {
 
     /**
      * Conversation id to auto-select once the queue has loaded it, from a
-     * `?c=<id>` deep-link (the topbar quick-panel, #1029). One-shot: cleared
+     * `?c=<id>` deep-link (the topbar quick-panel, ). One-shot: cleared
      * after it's applied so a later poll can't yank the agent back to it; a new
      * `?c=` value re-arms it.
      */
     private pendingPreselect: string | null = null;
 
-    // ─ Queue state ─
+    // - Queue state -
     readonly conversations = signal<ReadonlyArray<AgentConversationDto>>([]);
     readonly loadingQueue  = signal(true);
     private readonly queueReload$ = new Subject<void>();
 
-    /** Queue triage tab (#1028): Unassigned (no agent) / Mine (I claimed it) / All. */
+    /** Queue triage tab: Unassigned (no agent) / Mine (I claimed it) / All. */
     readonly tab = signal<'unassigned' | 'mine' | 'all'>('all');
 
-    // ─ Thread state ─
+    // - Thread state -
     readonly selectedId         = signal<string | null>(null);
     readonly agentParticipantId = signal<string | null>(null);
     readonly messages           = signal<ReadonlyArray<ChatMessageDto>>([]);
-    /** Thread bucketed into per-day groups for the WhatsApp-style date separators (#1033). */
+    /** Thread bucketed into per-day groups for the WhatsApp-style date separators. */
     readonly dayGroups = computed<DayGroup<ChatMessageDto>[]>(
         () => groupByDay(this.messages(), m => m.createdAt, this.dtf),
     );
@@ -752,7 +752,7 @@ export class DynamicChatPageComponent implements OnInit {
     readonly sending            = signal(false);
     readonly draft              = signal('');
 
-    // ─ Attachment state ─
+    // - Attachment state -
     /** Files uploaded but not yet sent (staged in the composer). */
     readonly pendingAttachments = signal<ReadonlyArray<ChatAttachmentDto>>([]);
     /** Count of in-flight uploads (composer is busy while > 0). */
@@ -770,7 +770,7 @@ export class DynamicChatPageComponent implements OnInit {
         this.conversations().find(c => c.id === this.selectedId()) ?? null,
     );
 
-    // ─ Queue triage (#1028) ─
+    // - Queue triage -
     /** Unassigned = no joined agent; Mine = I claimed it; All = everything. */
     readonly filteredConversations = computed(() => {
         const all = this.conversations();
@@ -832,16 +832,16 @@ export class DynamicChatPageComponent implements OnInit {
     });
 
     constructor() {
-        // QUEUE — realtime-first (#1042): refetch on a `queue.changed` nudge, on
+        // QUEUE — realtime-first: refetch on a `queue.changed` nudge, on
         // each WS (re)connect, on manual Refresh, OR on a fallback timer tick that
         // only fires while the WS is DISCONNECTED (so polling is a true no-WS
-        // fallback, not a parallel 12s poll). Errors → null so a transient failure
+        // fallback, not a parallel 12s poll). Errors -> null so a transient failure
         // leaves the last good list.
-        // ⚠️ The fallback tick and the connect signal both fire at cold load
+        //  The fallback tick and the connect signal both fire at cold load
         // (~420ms apart), so `switchMap` aborts the first request mid-flight and
         // DevTools shows a cancelled `agent/conversations` on every page open.
         // That is correct behaviour and it was MEASURED not worth removing
-        // (#2123): this first tick IS the queue's initial load, so any coalescing
+        //: this first tick IS the queue's initial load, so any coalescing
         // window delays the queue appearing by exactly that window, and the
         // window has to be wider than the connect gap to suppress anything. A
         // cancelled request nobody can feel, traded for a queue that paints late
@@ -868,7 +868,7 @@ export class DynamicChatPageComponent implements OnInit {
                 }
             });
 
-        // `?c=<id>` deep-link from the topbar quick-panel (#1029): arm the
+        // `?c=<id>` deep-link from the topbar quick-panel: arm the
         // preselect on each distinct value; it's applied once the queue contains it.
         this.route.queryParamMap
             .pipe(
@@ -918,7 +918,7 @@ export class DynamicChatPageComponent implements OnInit {
 
     /**
      * Apply a pending `?c=` preselect once the queue contains that conversation
-     * (#1029). One-shot: clears `pendingPreselect` after selecting so a later
+     *. One-shot: clears `pendingPreselect` after selecting so a later
      * poll can't drag the agent back if they navigate to another conversation.
      */
     private tryApplyPreselect(): void {
@@ -936,7 +936,7 @@ export class DynamicChatPageComponent implements OnInit {
         }
     }
 
-    /** Open a conversation: join (→ participant + agentParticipantId), then load history. */
+    /** Open a conversation: join (-> participant + agentParticipantId), then load history. */
     select(conv: AgentConversationDto): void {
         if (this.selectedId() === conv.id) {
             return;
@@ -971,7 +971,7 @@ export class DynamicChatPageComponent implements OnInit {
     /**
      * Un-claim (release) a conversation: leave it server-side so it returns to
      * the Unassigned queue, then close the open thread + refresh the queue
-     * (#1028). Idempotent on the backend, so a double-click is harmless.
+     *. Idempotent on the backend, so a double-click is harmless.
      */
     release(conv: AgentConversationDto): void {
         if (this.releasing()) {
@@ -1087,24 +1087,24 @@ export class DynamicChatPageComponent implements OnInit {
     }
 
     /**
-     * Today → time; older → date + time, in the user's tz + 12h/24h pref (#1032).
+     * Today -> time; older -> date + time, in the user's tz + 12h/24h pref.
      * Delegates to the shared {@link DateTimeFormatService} so the queue rows +
      * thread bubbles match the Calendar (was a raw `toLocaleTimeString` that
-     * ignored the saved pref → always the browser locale's 12h).
+     * ignored the saved pref -> always the browser locale's 12h).
      */
     formatTime(iso: string | null): string {
         return this.dtf.auto(iso);
     }
 
-    /** Per-bubble thread timestamp = TIME only — the date lives on the per-day separator chip (#1033). */
+    /** Per-bubble thread timestamp = TIME only — the date lives on the per-day separator chip. */
     formatBubbleTime(iso: string | null): string {
         return this.dtf.time(iso);
     }
 
-    /** At most this many handling-agent avatars render in a queue row; the rest collapse to "+N" (#1026). */
+    /** At most this many handling-agent avatars render in a queue row; the rest collapse to "+N". */
     private static readonly MAX_QUEUE_AGENTS = 3;
 
-    /** The handling agents shown as avatars in a queue row (capped, #1026). */
+    /** The handling agents shown as avatars in a queue row (capped, ). */
     displayedAgents(conv: AgentConversationDto): readonly QueueAgentDto[] {
         return (conv.agents ?? []).slice(0, DynamicChatPageComponent.MAX_QUEUE_AGENTS);
     }
@@ -1133,7 +1133,7 @@ export class DynamicChatPageComponent implements OnInit {
         return kb < 1024 ? `${kb.toFixed(kb < 10 ? 1 : 0)} KB` : `${(kb / 1024).toFixed(1)} MB`;
     }
 
-    // ─ Attachment uploads (composer) ─
+    // - Attachment uploads (composer) -
 
     /** A file picked from the hidden `<input type=file>` — upload + stage it. */
     onFilesSelected(event: Event): void {
@@ -1196,7 +1196,7 @@ export class DynamicChatPageComponent implements OnInit {
         }
     }
 
-    // ─ Attachment rendering (thread) ─
+    // - Attachment rendering (thread) -
 
     /** The object URL for an image attachment, or null while it loads. */
     imageUrlFor(nodeId: string): string | null {

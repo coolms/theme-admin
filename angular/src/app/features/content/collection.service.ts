@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
-/** Payload for `POST /api/v1/content/collections` (ADR-129, W5.g). */
+/** Payload for `POST /api/v1/content/collections` (, W5.g). */
 export interface CreateCollectionRequest {
     readonly slug: string;
     readonly label?: string;
@@ -31,7 +31,7 @@ export interface CollectionDto {
 }
 
 /**
- * The M6.a distribution config on a collection (#1230/#1231): which outbound
+ * The distribution config on a collection: which outbound
  * channels a published post fans out to + per-channel settings. `isCollection`
  * is false when the target dir isn't actually a content collection, so the UI
  * can degrade gracefully.
@@ -50,7 +50,7 @@ export interface SetCollectionDistributionRequest {
 }
 
 /**
- * A section's own settings — what the posts inside it ARE (#1717), as opposed
+ * A section's own settings — what the posts inside it ARE, as opposed
  * to {@link CollectionDistribution}, which is where a published one goes.
  *
  * `isCollection` false means the directory was never declared: it lists and
@@ -67,11 +67,11 @@ export interface CollectionSettings {
 }
 
 /**
- * One setting a channel declares it needs (#1719), mirroring
- * `App\Core\Domain\Channel\ChannelConfigField`.
+ * One setting a channel declares it needs, mirroring
+ * `ChannelConfigField`.
  *
  * `type: 'secretRef'` means the value is the NAME of a stored secret, not the
- * secret itself (#1721) — so it displays and round-trips like any other text.
+ * secret itself — so it displays and round-trips like any other text.
  * There is deliberately no "raw credential" field kind: per-section config is
  * persisted in the collection Node's `extras`, so a live token could never sit
  * here safely no matter how the input was rendered.
@@ -107,7 +107,7 @@ export interface SetCollectionSettingsRequest {
 }
 
 /**
- * Data layer for content collections (ADR-129, W5.g). A collection is a
+ * Data layer for content collections (, W5.g). A collection is a
  * declared directory Node under the site's content root whose `extras` tell
  * the platform how its child posts behave (post content-type, templates,
  * field sets, sidebar). Mints one via the Content-owned create endpoint; the
@@ -159,7 +159,7 @@ export class CollectionService {
     }
 
     /**
-     * The enabled outbound channels and what each one needs configured (#1719).
+     * The enabled outbound channels and what each one needs configured.
      *
      * Distinct from the `core.outbound_channels` option source the picker reads:
      * that answers "what may I pick", this answers "and what must I then fill
@@ -174,7 +174,7 @@ export class CollectionService {
         );
     }
 
-    /** Write the distribution config (API-Platform PATCH → merge-patch, else 415). */
+    /** Write the distribution config (API-Platform PATCH -> merge-patch, else 415). */
     setDistribution(req: SetCollectionDistributionRequest): Observable<unknown> {
         const url = `${this.apiBase}/content/collections/distribution`;
         return this.http.patch(url, req, {
@@ -183,7 +183,7 @@ export class CollectionService {
     }
 
     /**
-     * Read a section's settings (#1717) — same trick as `getDistribution`: the
+     * Read a section's settings — same trick as `getDistribution`: the
      * node-meta endpoint returns the whole `extras` bag, so both reads are one
      * projection each and neither needs an endpoint of its own.
      *
@@ -216,7 +216,7 @@ export class CollectionService {
     /**
      * Write the section settings. Passing `collectionType` for a plain
      * directory PROMOTES it into a content collection — which is what gives the
-     * section a feed (#1717).
+     * section a feed.
      */
     setSettings(req: SetCollectionSettingsRequest): Observable<unknown> {
         const url = `${this.apiBase}/content/collections/settings`;

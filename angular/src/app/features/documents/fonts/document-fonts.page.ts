@@ -27,7 +27,7 @@ import {
 } from './document-font.service';
 
 /**
- * Installed document fonts (/admin/content/document-fonts, #2318).
+ * Installed document fonts (/admin/content/document-fonts, ).
  *
  * The operator surface over the font store: what is installed, install another,
  * remove one. The families the platform SHIPS are not here and cannot be — they
@@ -35,7 +35,7 @@ import {
  * them (the editor would measure the upload and the renderer would print the
  * image's copy).
  *
- * ## ⚠️ The upload form has ONE field
+ * ##  The upload form has ONE field
  *
  * A file, and nothing else. The family and the face are read from the font's
  * own tables on the server, so four uploads assemble one family without anybody
@@ -43,18 +43,18 @@ import {
  * bytes could contradict. What it turned out to be is REPORTED back in the
  * toast.
  *
- * ## The catalogue (#2324)
+ * ## The catalogue
  *
  * "Browse Google Fonts" opens a panel over the same page. The list comes from
  * the server, which reduces 1,942 families to name, category and the faces this
  * platform can hold, and marks the ones already here so the panel does not
  * offer something that would be refused a moment later.
  *
- * ⚠️ An unreachable catalogue is a LINE IN THE PANEL, not an error toast. An
+ *  An unreachable catalogue is a LINE IN THE PANEL, not an error toast. An
  * installation with no outbound network still installs fonts by upload, and a
  * red toast would say the page is broken when it is not.
  *
- * ## ⚠️ An install refreshes the editor's registry
+ * ##  An install refreshes the editor's registry
  *
  * `document-fonts.ts` memoises the merged registry for the life of the page. An
  * author who installs a font and then opens a document in the same session
@@ -271,7 +271,7 @@ export class DocumentFontsPageComponent implements OnInit {
     }
 
     /**
-     * ⚠️ Debounced, and the timer is cleared before a new one is set.
+     *  Debounced, and the timer is cleared before a new one is set.
      *
      * The catalogue is 1,942 families and the endpoint filters server-side, so
      * a request per keystroke is a request per keystroke -- and the answers can
@@ -311,7 +311,7 @@ export class DocumentFontsPageComponent implements OnInit {
             next: result => {
                 this.catalogueLoading.set(false);
                 this.catalogue.set(result.families);
-                // ⚠️ Not an error toast. An installation with no outbound
+                //  Not an error toast. An installation with no outbound
                 // network still installs fonts by upload; saying so in the
                 // panel is the truth, and a red toast would not be.
                 this.catalogueReason.set(result.available ? null : (result.reason ?? 'The catalogue is not reachable.'));

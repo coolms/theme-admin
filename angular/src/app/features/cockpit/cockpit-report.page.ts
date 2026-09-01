@@ -33,9 +33,9 @@ interface StateTile {
 }
 
 /**
- * M4.d — Process Cockpit aggregate report (`/admin/cockpit/report`).
+ * Process Cockpit aggregate report (`/admin/cockpit/report`).
  *
- * The read-side complement to M4.c steering: an operator dashboard over
+ * The read-side complement to steering: an operator dashboard over
  * `GET /api/v1/cockpit/report` (ROLE_ADMIN) — platform-wide instance counts
  * by lifecycle state (KPI tiles), rolling throughput windows (24h / 7d /
  * 30d started vs completed), and a per-definition state breakdown table
@@ -107,7 +107,7 @@ interface StateTile {
                     </div>
                 </section>
 
-                <!-- Task health (M4.k): the task-level complement to the process
+                <!-- Task health: the task-level complement to the process
                      metrics above. Loaded independently, so it degrades to a
                      hidden section if /cockpit/task-metrics fails. -->
                 @if (taskMetrics(); as tm) {
@@ -298,7 +298,7 @@ interface StateTile {
         }
         .timing-link:hover { text-decoration: underline; }
 
-        /* Task health (M4.k) — display-only metric tiles + state chips. */
+        /* Task health — display-only metric tiles + state chips. */
         .tiles--tight { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); margin-bottom: 12px; }
         .tile--static { cursor: default; }
         .tile--static:hover { border-color: var(--cms-border, #e5e7eb); box-shadow: none; }
@@ -326,14 +326,14 @@ export class CockpitReportPageComponent implements OnInit {
     readonly layout  = signal<LayoutConfig | null>(null);
 
     readonly report  = signal<CockpitReportDto | null>(null);
-    /** M4.k — supplementary; null when the metrics endpoint fails (section hidden). */
+    /** Supplementary; null when the metrics endpoint fails (section hidden). */
     readonly taskMetrics = signal<CockpitTaskMetricsDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
 
     /**
      * Header actions (back to the cockpit + reload) — declared in the
-     * `cockpit:report` layout config (ADR-127), not hardcoded.
+     * `cockpit:report` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
@@ -352,7 +352,7 @@ export class CockpitReportPageComponent implements OnInit {
         return order.map(o => ({ ...o, count: counts[o.state] ?? 0 }));
     });
 
-    /** M4.k — per-task-state chips, in a fixed lifecycle order. */
+    /** Per-task-state chips, in a fixed lifecycle order. */
     readonly taskStateTiles = computed<StateTile[]>(() => {
         const counts = this.taskMetrics()?.stateCounts ?? {};
         const order: Array<{ state: string; label: string; badgeClass: string }> = [
@@ -384,7 +384,7 @@ export class CockpitReportPageComponent implements OnInit {
     }
 
     /**
-     * M4.c+ — fetch the per-definition report as CSV from
+     *+ — fetch the per-definition report as CSV from
      * `GET /cockpit/reports/export?kind=definitions` and download it
      * client-side (the JSON-envelope download pattern: the Bearer-authed SPA
      * can't do a raw `<a download>`, so the backend hands back the CSV body
@@ -415,7 +415,7 @@ export class CockpitReportPageComponent implements OnInit {
         void this.router.navigate(['/cockpit'], { queryParams: { definitionId: d.definitionId } });
     }
 
-    /** Drill into the per-element bottleneck / timing report (M4.g). */
+    /** Drill into the per-element bottleneck / timing report. */
     openTiming(d: CockpitDefinitionStatDto, ev: Event): void {
         ev.stopPropagation(); // don't also trigger the row's instance-list drill-in
         void this.router.navigate(['/cockpit/definitions', d.definitionId, 'timing']);
@@ -459,7 +459,7 @@ export class CockpitReportPageComponent implements OnInit {
                 },
             });
 
-        // Task health (M4.k) loads independently: a failure here just hides the
+        // Task health loads independently: a failure here just hides the
         // section — it must never block or error the process report above.
         this.cockpit
             .getTaskMetrics()

@@ -33,7 +33,7 @@ import { filenameOf, formatLocation } from './vfs-location.helpers';
 import { filterTreeDirectories } from './vfs-tree.helpers';
 
 /**
- * Phase A.1a — instances file zone.
+ *.1a — instances file zone.
  *
  * Mounts in the main slot when `state.rightPanelMode === 'instances'`,
  * spans the full middle+right area (the right detail panel collapses
@@ -66,7 +66,7 @@ type SortDir = 'asc' | 'desc';
         CmsLoaderComponent,
     ],
     template: `
-        <!-- #1684 — the documents file zone is a real file zone: it takes
+        <!-- — the documents file zone is a real file zone: it takes
              a right-click (background actions) and an OS file drop, the
              same affordances the templates zone has always had. Both are
              gated on the path scope, since a template's instances view
@@ -76,7 +76,7 @@ type SortDir = 'asc' | 'desc';
              [cmsDropzone]="dropzoneConfig()"
              (contextmenu)="onBackgroundContextMenu($event)"
              (filesDropped)="onFilesDropped($event)">
-            <!-- #1683 — the way back to Templates. Sits ABOVE the
+            <!-- — the way back to Templates. Sits ABOVE the
                  mode-dependent body on purpose, so it is present in
                  grid, list, empty AND filtered-empty states: in the
                  space scope the root is the last breadcrumb segment
@@ -95,7 +95,7 @@ type SortDir = 'asc' | 'desc';
                          non-recursive to match, so a document filed
                          into one of these leaves the parent. -->
                     @for (folder of subfolders(); track folder.path) {
-                        <!-- Display name over the on-disk name (#1685):
+                        <!-- Display name over the on-disk name:
                              the directory is a slug, the title is what
                              the user typed. Tooltip keeps the real path
                              visible so the two are never confused. -->
@@ -145,7 +145,7 @@ type SortDir = 'asc' | 'desc';
                     </div>
                 </div>
             } @else if (viewMode() === 'details') {
-                <!-- #1709 — the platform DataGrid, config at
+                <!-- — the platform DataGrid, config at
                      /api/v1/datagrids/document:instances. Replaces a table
                      whose five headers hand-rolled sorting and whose filtering
                      lived in two toolbar selects; the grid does both, per
@@ -262,13 +262,13 @@ type SortDir = 'asc' | 'desc';
             justify-content: center;
         }
 
-        /* ── Tile views ─────────────────────────────────────────── */
+        /* -- Tile views ------------------------------------------- */
         .cms-instances-zone__grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: var(--cms-panel-padding);
         }
-        /* #1709 — one card, three sizes, keyed off the shared vocabulary on
+        /* — one card, three sizes, keyed off the shared vocabulary on
            the zone wrapper. "large" is the untouched default. */
         .cms-instances-zone[data-view-mode='small'] .cms-instances-zone__grid {
             grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
@@ -287,7 +287,7 @@ type SortDir = 'asc' | 'desc';
             gap: 12px;
             text-align: left;
         }
-        /* #1683 — Templates folder strip. A chip rather than a full
+        /* — Templates folder strip. A chip rather than a full
            card in the grid: it is navigation, not one of the listed
            documents, and it has to read the same in list mode where
            there is no card grid at all. */
@@ -389,7 +389,7 @@ type SortDir = 'asc' | 'desc';
             background: var(--cms-danger-light);
             color: var(--cms-danger-text);
         }
-        /* #1684 — uploaded, i.e. not produced here at all. Deliberately
+        /* — uploaded, i.e. not produced here at all. Deliberately
            neutral rather than another success colour: it is a statement
            of origin, not of outcome. */
         .cms-instance-card__badge--status[data-status="uploaded"] {
@@ -397,7 +397,7 @@ type SortDir = 'asc' | 'desc';
             color: var(--cms-info-text);
         }
 
-        /* ── List view ──────────────────────────────────────────── */
+        /* -- List view -------------------------------------------- */
         .cms-instances-zone__table {
             width: 100%;
             border-collapse: collapse;
@@ -494,7 +494,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     readonly template = input.required<DocumentTemplate | null>();
 
     /**
-     * #1683 — when set, this browser lists everything produced at or
+     * — when set, this browser lists everything produced at or
      * below one VFS root instead of everything produced by one
      * template, and `template()` is ignored. See `scope()`.
      */
@@ -505,7 +505,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
      * and poll reads THIS rather than `template()` — the two scopes
      * differ only in the filter predicate, so keeping one code path
      * means the open / download / regenerate / delete behaviour fixed
-     * in #1670 and #1682 can't fork between them.
+     * in and can't fork between them.
      */
     protected readonly scope = computed<InstanceScope | null>(() => {
         const path = this.pathScope();
@@ -528,7 +528,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Direct child directories of the scoped folder, for the chip strip
-     * (#1684). Sourced from the VFS rather than the instances endpoint —
+     *. Sourced from the VFS rather than the instances endpoint —
      * a folder is not a document, and an empty one still has to be
      * reachable. `filterTreeDirectories` also drops `.templates`, which
      * gets its own chip and is a security gate, not a subfolder.
@@ -546,13 +546,13 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     protected readonly filters = computed<InstanceFilters>(() => this.state.instanceFilters());
     protected readonly viewMode = computed(() => this.state.instancesViewMode());
 
-    /** Where the grid fetches its column config from (#1709). */
+    /** Where the grid fetches its column config from. */
     protected readonly configBaseUrl = computed(() =>
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
     /**
-     * The loaded window, shaped for the DataGrid (#1709).
+     * The loaded window, shaped for the DataGrid.
      *
      * `name` and `location` are DERIVED here, not sent by the API: the
      * filename falls back through `vfsPath` for rows generated before the
@@ -592,7 +592,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     private readonly cancel$ = new Subject<void>();
 
     constructor() {
-        // #1684 — subfolder chips follow the scoped folder. Kept separate
+        // — subfolder chips follow the scoped folder. Kept separate
         // from the instance fetch: filters and sort must not change which
         // folders exist.
         effect(() => {
@@ -642,14 +642,14 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
                 }
             });
 
-        // Phase A.1b backend ops: explicit refresh trigger from
+        //.1b backend ops: explicit refresh trigger from
         // delete/regenerate handlers. Refetches in place to preserve
         // the user's scroll position.
         this.state.refreshInstancesRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.refetchVisible());
 
-        // Phase D: push the loaded/total count into the page footer so
+        //: push the loaded/total count into the page footer so
         // the bottom status bar is consistent with Media Library / DataGrid
         // pages. The inline "All N loaded" text under the grid was
         // removed in favour of this single footer slot.
@@ -710,7 +710,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
         this.state.resetInstanceFilters();
     }
 
-    /** Grid selection → the single-instance selection model both views share. */
+    /** Grid selection -> the single-instance selection model both views share. */
     protected onGridRowSelected(row: Record<string, unknown> | null): void {
         const instance = null === row ? undefined : this.instanceFor(row);
         this.gridRow = instance ?? null;
@@ -721,7 +721,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
     /**
      * The row the grid last selected, remembered because the shared state
-     * cannot be read back in the same tick (#1710).
+     * cannot be read back in the same tick.
      *
      * The grid emits `rowSelected` and then `rowContextMenu` synchronously
      * from one handler, so at right-click time `state.selectedInstance()`
@@ -762,7 +762,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * #1683 — leave the space-scoped Documents view for the template
+     * — leave the space-scoped Documents view for the template
      * listing at the same path. Single click, because this is folder
      * NAVIGATION (same gesture as the folders tree), not selection of
      * an item that a second click would open.
@@ -771,7 +771,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
      * Unlike the templates zone, this accepts ANY file type: "not all
      * the uploaded docs are templates" is the whole point of the
      * Documents view, so restricting to DOCX here would recreate the
-     * gap (#1684). Disabled outside the space scope — a template's
+     * gap. Disabled outside the space scope — a template's
      * instances view is a projection, not a folder.
      */
     protected readonly dropzoneConfig = computed<CmsDropzoneConfig>(() => ({
@@ -795,7 +795,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
         if (null === this.pathScope()) {
             return;
         }
-        // A Details-grid ROW is not background (#1710): without this the
+        // A Details-grid ROW is not background: without this the
         // background menu fires after — and replaces — the instance menu the
         // row handler just opened. The empty area below the rows still is.
         if ((event.target as HTMLElement).closest('coolms-datagrid tbody tr')) {
@@ -824,7 +824,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * #1684 — navigate into a subfolder. `selectFolder` moves
+     * — navigate into a subfolder. `selectFolder` moves
      * `currentPath`, and the page's rescope effect re-points the space
      * scope at it, so the listing and the breadcrumb follow together.
      */
@@ -866,10 +866,10 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     protected onActivate(instance: DocumentInstance): void {
-        // Phase D hotfix #4: double-click → primary action (View).
+        // hotfix #4: double-click -> primary action (View).
         // Pending / failed instances are no-op (the page handler's
         // `case 'view-instance'` checks `generatedFileId`).
-        // #1684 — `uploaded` opens too: what makes a row viewable is
+        // — `uploaded` opens too: what makes a row viewable is
         // bytes on disk, not who wrote them.
         if (!this.isReadable(instance) || !instance.generatedFileId) {
             return;

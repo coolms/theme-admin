@@ -16,7 +16,7 @@ type LocationKind = 'inbox' | 'shared' | 'custom';
  * **`docs/`, not `docs/inbox/`.** The home layout
  * (`DefaultHomeDirectoryPolicy::getSubdirectories`) ships exactly
  * `pages`/`media`/`docs`/`tmp`/`public` — there is no `inbox`, and since
- * #1667 `docs/` IS the drop-box the `document` group may write into
+ * `docs/` IS the drop-box the `document` group may write into
  * (mode 3730). Writing a level deeper would have created a directory
  * owned by whoever generated first, outside the drop-box contract.
  *
@@ -249,7 +249,7 @@ export class CmsWizardOutputStepComponent {
      * The template's own alias for its user recipient, e.g. `@identity_user`.
      *
      * Matched by ENTITY TYPE, not by name. This used to test
-     * `v.path === '@user'` (#1670) — a literal no shipped template uses. The
+     * `v.path === '@user'` — a literal no shipped template uses. The
      * welcome-letter declares `@identity_user`, so the personal-space option
      * was unreachable for every template in the system, which is why the
      * only way to deliver into someone's home was to hand-type the DTMPL
@@ -276,7 +276,7 @@ export class CmsWizardOutputStepComponent {
      * resolves per generated instance either way: Single mode materialises
      * exactly one recipient and binds it to the same variable, so
      * "deliver this invoice into that customer's documents" — the case
-     * #1667 built the drop-box for — was being refused for no reason.
+     * built the drop-box for — was being refused for no reason.
      */
     protected readonly showInbox = computed<boolean>(() => null !== this.recipientAlias());
 
