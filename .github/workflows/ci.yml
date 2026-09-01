@@ -71,6 +71,9 @@ jobs:
       - name: Lint sources
         run: find src -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
+      - name: Run tests
+        run: vendor/bin/phpunit
+
   boundary:
     name: No application code
     runs-on: ubuntu-latest
@@ -81,8 +84,6 @@ jobs:
  # contracts it implements into coolms/core precisely so this is true;
  # asserted rather than trusted, because a single `use App\...` added
  # later would compile fine here and break only for consumers.
-      - name: Run tests
-        run: vendor/bin/phpunit
       - name: Assert nothing references an application namespace
         run: |
           if grep -rnE '\bApp\\+[A-Z]' src/ ; then
