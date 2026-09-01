@@ -260,16 +260,16 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             align-items: end;
         }
         input, select, textarea {
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 6px 8px;
             font-size: .9rem;
             font-family: inherit;
         }
         input[type="color"] { padding: 2px; height: 32px; }
-        textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        textarea.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        textarea { font-family: var(--cms-font-mono, monospace); }
+        textarea.mono { font-family: var(--cms-font-mono, monospace); }
+        .mono { font-family: var(--cms-font-mono, monospace); }
 
         /* Recurrence summary shown under the preset dropdown when the
            current value is a non-preset spec. Two lines: humanised
@@ -278,16 +278,16 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             display: flex; align-items: center; gap: 8px;
             margin-top: 4px;
             font-size: .8rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .recurrence-summary__text { flex: 1; }
         .recurrence-summary__edit {
             background: none; border: none; padding: 0;
-            color: var(--cms-accent, #2563eb);
+            color: var(--cms-accent, #F5A623);
             font-size: .8rem; cursor: pointer;
             text-decoration: underline;
         }
-        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; margin: 0; }
+        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; margin: 0; }
 
         /* Footer slot is "display: flex; justify-content: flex-end; gap: 8px"
            (see styles.scss .cms-dialog-footer). Pushing the Delete button

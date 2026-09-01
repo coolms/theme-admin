@@ -114,7 +114,7 @@ import type { DocumentGenerationDto } from '../../../api/api.service';
             gap: .5rem;
         }
         .cms-gen-status__id {
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .85rem;
             color: var(--cms-text-secondary);
         }
@@ -128,36 +128,36 @@ import type { DocumentGenerationDto } from '../../../api/api.service';
             color: var(--cms-text-secondary);
         }
         .cms-gen-status__badge--pending {
-            background: var(--cms-info-bg, rgba(33, 150, 243, .12));
-            color: var(--cms-info, #1d6fd0);
+            background: var(--cms-info-light, #eff6ff);
+            color: var(--cms-info, #2563eb);
         }
         .cms-gen-status__badge--running {
-            background: var(--cms-info-bg, rgba(33, 150, 243, .12));
-            color: var(--cms-info, #1d6fd0);
+            background: var(--cms-info-light, #eff6ff);
+            color: var(--cms-info, #2563eb);
         }
         .cms-gen-status__badge--completed {
-            background: var(--cms-success-bg, rgba(76, 175, 80, .12));
-            color: var(--cms-success, #1f8a32);
+            background: var(--cms-success-light, #f0fdf4);
+            color: var(--cms-success, #16a34a);
         }
         .cms-gen-status__badge--partial {
-            background: var(--cms-warning-bg, rgba(255, 152, 0, .12));
-            color: var(--cms-warning, #b06a00);
+            background: var(--cms-warning-light, #fffbeb);
+            color: var(--cms-warning, #d97706);
         }
         .cms-gen-status__badge--failed {
-            background: var(--cms-danger-bg, rgba(244, 67, 54, .12));
-            color: var(--cms-danger, #c62828);
+            background: var(--cms-danger-light, #fef2f2);
+            color: var(--cms-danger, #dc2626);
         }
 
         .cms-gen-status__progress { display: flex; flex-direction: column; gap: .25rem; }
         .cms-gen-status__bar {
             height: 8px;
             background: var(--cms-border-light);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             overflow: hidden;
         }
         .cms-gen-status__bar-fill {
             height: 100%;
-            background: var(--cms-info, #1d6fd0);
+            background: var(--cms-info, #2563eb);
             transition: width .2s ease;
         }
         .cms-gen-status__progress-text {
@@ -165,7 +165,7 @@ import type { DocumentGenerationDto } from '../../../api/api.service';
             color: var(--cms-text-secondary);
         }
         .cms-gen-status__failed {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
             font-weight: 600;
         }
 
@@ -185,7 +185,7 @@ import type { DocumentGenerationDto } from '../../../api/api.service';
             color: var(--cms-text);
         }
         .cms-gen-status__error {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
             white-space: pre-wrap;
         }
 

@@ -294,13 +294,13 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
 
         .vfs-grid-item {
             width: 96px; padding: 8px;
-            border-radius: 8px; cursor: pointer;
+            border-radius: var(--cms-radius-md, 8px); cursor: pointer;
             text-align: center; user-select: none;
             border: 2px solid transparent;
             transition: background 120ms, border-color 120ms;
         }
-        .vfs-grid-item:hover    { background: #f1f5f9; }
-        .vfs-grid-item.selected { background: var(--cms-info-subtle); border-color: #93c5fd; }
+        .vfs-grid-item:hover    { background: var(--cms-surface-hover); }
+        .vfs-grid-item.selected { background: var(--cms-accent-light); border-color: var(--cms-accent); }
         .vfs-grid-icon          { font-size: 2rem; line-height: 1.2; color: var(--cms-text-muted); }
         .vfs-grid-name          { max-width: 88px; margin: 4px auto 2px; }
 
@@ -311,11 +311,11 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             align-items: center;
             padding: 6px 12px;
             background: var(--cms-surface-muted);
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--cms-border);
             font-size: .8125rem;
             font-weight: 600;
             flex-shrink: 0;
-            color: #64748b;
+            color: var(--cms-text-secondary);
             position: sticky;
             top: 0;
             z-index: 1;
@@ -334,12 +334,12 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             height: var(--cms-row-height, 36px);
             padding: 0 12px;
             cursor: pointer;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--cms-border-light);
             user-select: none;
             box-sizing: border-box;
         }
         .vfs-list-row:hover          { background: var(--cms-surface-muted); }
-        .vfs-list-row--selected      { background: var(--cms-info-subtle) !important; }
+        .vfs-list-row--selected      { background: var(--cms-accent-light) !important; }
 
         .vfs-list-col                { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vfs-list-col--name          { flex: 1; min-width: 0; }
@@ -384,7 +384,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             width: 56px;
             height: 56px;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             display: block;
             position: relative;
             z-index: 1;
@@ -395,11 +395,11 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
 
         .vfs-grid-item.vfs-dir-hover {
             background: var(--cms-info-subtle);
-            border-color: #3b82f6;
-            outline: 2px dashed #3b82f6;
+            border-color: var(--cms-primary);
+            outline: 2px dashed var(--cms-primary);
             outline-offset: -2px;
         }
-        .vfs-list-row.vfs-dir-hover { background: var(--cms-info-subtle) !important; border-left: 3px solid #3b82f6; }
+        .vfs-list-row.vfs-dir-hover { background: var(--cms-info-subtle) !important; border-left: 3px solid var(--cms-primary); }
 
         .vfs-drag-preview {
             display: inline-flex;
@@ -407,18 +407,18 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             gap: 6px;
             background: var(--cms-surface);
             border: 1px solid var(--cms-border);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             padding: 6px 12px;
             font-size: .875rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
             pointer-events: none;
         }
 
         .vfs-drag-placeholder {
             width: 96px; height: 96px;
             background: var(--cms-info-subtle);
-            border: 2px dashed #3b82f6;
-            border-radius: 8px;
+            border: 2px dashed var(--cms-primary);
+            border-radius: var(--cms-radius-md, 8px);
             pointer-events: none;
         }
 

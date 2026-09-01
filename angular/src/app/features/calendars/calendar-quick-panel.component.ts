@@ -139,13 +139,18 @@ const LOOKAHEAD_DAYS = 14;
             gap: 4px;
             border: 0;
             background: transparent;
-            color: var(--cms-accent, #2563eb);
+            /* ⚠️ TEXT, so it takes the ink tier. The raw accent measured 2.03
+               on --cms-surface in light theme -- below even the 3:1 that
+               applies to glyphs. --cms-accent-text is 7.20 light / 9.59 dark.
+               No literal fallback: unlike --cms-accent this token differs
+               between themes, so any single literal would disagree with one. */
+            color: var(--cms-accent-text);
             font-size: .8rem;
             cursor: pointer;
             padding: 4px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
         }
-        .link-btn:hover { background: #eff6ff; }
+        .link-btn:hover { background: var(--cms-info-light); }
 
         .qp__mini { flex-shrink: 0; }
 
@@ -166,8 +171,8 @@ const LOOKAHEAD_DAYS = 14;
             justify-content: stretch;
         }
 
-        .status { color: var(--cms-text-muted, #6b7280); padding: 8px 4px; margin: 0; }
-        .status--error { color: var(--cms-danger, #b91c1c); }
+        .status { color: var(--cms-text-muted, #848b96); padding: 8px 4px; margin: 0; }
+        .status--error { color: var(--cms-danger, #dc2626); }
 
         .empty {
             display: flex;
@@ -175,7 +180,7 @@ const LOOKAHEAD_DAYS = 14;
             align-items: center;
             gap: 8px;
             padding: 24px 12px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-align: center;
         }
         .empty i { font-size: 1.6rem; }
@@ -186,7 +191,7 @@ const LOOKAHEAD_DAYS = 14;
             margin: 0;
             font-size: .72rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-transform: uppercase;
             letter-spacing: .03em;
             padding: 2px 0;
@@ -202,7 +207,7 @@ const LOOKAHEAD_DAYS = 14;
             align-items: center;
             gap: 8px;
             padding: 5px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
             transition: background .1s;
         }
@@ -214,7 +219,7 @@ const LOOKAHEAD_DAYS = 14;
             height: 8px;
             border-radius: 50%;
             flex-shrink: 0;
-            background: var(--cms-accent, #2563eb);
+            background: var(--cms-accent, #F5A623);
         }
         .ev__title {
             flex: 1;
@@ -228,14 +233,14 @@ const LOOKAHEAD_DAYS = 14;
         .ev__time {
             flex-shrink: 0;
             font-size: .72rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-variant-numeric: tabular-nums;
         }
         .horizon {
             margin: 8px 0 0;
             text-align: center;
             font-size: .7rem;
-            color: var(--cms-text-muted, #9ca3af);
+            color: var(--cms-text-muted, #848b96);
             font-style: italic;
         }
     `],
@@ -260,7 +265,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly lookaheadDays = LOOKAHEAD_DAYS;
-    readonly defaultColor  = 'var(--cms-accent, #2563eb)';
+    readonly defaultColor  = 'var(--cms-accent, #F5A623)';
 
     readonly items   = signal<CalendarItemDto[]>([]);
     readonly loading = signal<boolean>(true);

@@ -94,10 +94,10 @@ import { VfsPageStateService } from './vfs-page-state.service';
             padding: 4px 10px;
             margin-top: 6px;
             background: var(--cms-warning-light);
-            border: 1px solid #fcd34d;
+            border: 1px solid var(--cms-warning-subtle-border);
             border-radius: var(--cms-radius);
             font-size: .8125rem;
-            color: var(--cms-warning);
+            color: var(--cms-warning-text);
             align-self: flex-start;
         }
     `],

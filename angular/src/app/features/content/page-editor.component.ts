@@ -530,7 +530,7 @@ type RailTab = string;
         }
         .page-editor__tab-list { display: flex; align-items: center; gap: 4px; }
         .page-editor__tab {
-            padding: 4px 12px; border-radius: 4px; font-size: .8125rem; font-weight: 500;
+            padding: 4px 12px; border-radius: var(--cms-radius-sm, 4px); font-size: .8125rem; font-weight: 500;
             border: 1px solid transparent; background: transparent; cursor: pointer;
             color: var(--cms-text-muted);
             display: flex; align-items: center; gap: 4px;
@@ -547,7 +547,7 @@ type RailTab = string;
             background: var(--cms-warning);
         }
         .page-editor__new-locale-input {
-            min-width: 160px; padding: 4px 8px; border-radius: 4px;
+            min-width: 160px; padding: 4px 8px; border-radius: var(--cms-radius-sm, 4px);
             border: 1px solid var(--cms-border); font-size: .8125rem;
             background: var(--cms-surface);
         }
@@ -610,12 +610,12 @@ type RailTab = string;
             flex-shrink: 0;
         }
         .page-editor__slug-label { font-size: .75rem; font-weight: 600; white-space: nowrap; color: var(--cms-text-muted); }
-        .page-editor__slug-prefix { color: var(--cms-text-muted); font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+        .page-editor__slug-prefix { color: var(--cms-text-muted); font-family: var(--cms-font-mono, monospace); }
         .page-editor__slug-input {
             flex: 1; min-width: 0;
-            border: 1px solid var(--cms-border); border-radius: 4px;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius-sm, 4px);
             padding: 3px 8px;
-            font-size: .8125rem; font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+            font-size: .8125rem; font-family: var(--cms-font-mono, monospace);
             background: var(--cms-surface, transparent); color: var(--cms-text);
         }
         .page-editor__slug-lock {
@@ -636,7 +636,7 @@ type RailTab = string;
         .page-editor--landing .page-editor__post { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         /* Layout panel: a page-size max-width caps + centers the editing canvas. */
         .page-editor__canvas { width: 100%; margin-inline: auto; }
-        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #6c757d); margin: .5rem 0 0; }
+        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: .5rem 0 0; }
 
         /* Right side-rail (History / Meta / Schedule / Fields) */
         .page-editor__rail { display: flex; flex-shrink: 0; border-left: 1px solid var(--cms-border); }
@@ -646,7 +646,7 @@ type RailTab = string;
         .page-editor__rail-tab {
             position: relative; width: 34px; height: 34px;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid transparent; border-radius: 6px;
+            border: 1px solid transparent; border-radius: var(--cms-radius, 6px);
             background: transparent; color: var(--cms-text-muted); cursor: pointer;
         }
         .page-editor__rail-tab:hover { background: var(--cms-border-light); color: var(--cms-text); }

@@ -275,12 +275,12 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
            which is the question you actually ask while looking at a site tree.
            The rest stay neutral so the published ones read at a glance. */
         .page-tile__chip--published {
-            border-color: var(--cms-success, #198754);
-            color: var(--cms-success, #198754);
+            border-color: var(--cms-success, #16a34a);
+            color: var(--cms-success, #16a34a);
         }
         .page-tile__chip--review {
-            border-color: var(--cms-warning, #b8860b);
-            color: var(--cms-warning, #b8860b);
+            border-color: var(--cms-warning, #d97706);
+            color: var(--cms-warning, #d97706);
         }
 
         .page-tiles__empty {

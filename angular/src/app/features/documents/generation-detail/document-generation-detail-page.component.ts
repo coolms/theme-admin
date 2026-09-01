@@ -180,7 +180,7 @@ const INSTANCE_PAGE_LIMIT = 200;
             text-align: center;
             color: var(--cms-text-secondary);
         }
-        .cms-gen-detail__error { color: var(--cms-danger); }
+        .cms-gen-detail__error { color: var(--cms-danger-text); }
 
         .cms-gen-detail__config {
             background: var(--cms-surface);
@@ -207,7 +207,7 @@ const INSTANCE_PAGE_LIMIT = 200;
         }
         .cms-gen-detail__config dd { margin: 0; color: var(--cms-text); }
         .cms-gen-detail__config code {
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .8rem;
             color: var(--cms-text);
             background: var(--cms-border-light);

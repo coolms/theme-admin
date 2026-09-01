@@ -266,16 +266,16 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
             font-size: 0.85rem;
         }
         .cms-replace-template-dialog__badge[data-class="compatible"] {
-            background: rgba(16, 185, 129, 0.12);
-            color: rgb(6, 95, 70);
+            background: var(--cms-success-light);
+            color: var(--cms-success-text);
         }
         .cms-replace-template-dialog__badge[data-class="extended"] {
-            background: rgba(245, 158, 11, 0.12);
-            color: rgb(146, 64, 14);
+            background: var(--cms-warning-light);
+            color: var(--cms-warning-text);
         }
         .cms-replace-template-dialog__badge[data-class="different"] {
-            background: rgba(249, 115, 22, 0.16);
-            color: rgb(154, 52, 18);
+            background: var(--cms-warning-subtle);
+            color: var(--cms-warning-text);
         }
         .cms-replace-template-dialog__class-description {
             font-size: 0.85rem;
@@ -297,8 +297,8 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
             align-items: center;
             gap: 6px;
         }
-        .cms-replace-template-dialog__diff-section--added { color: rgb(6, 95, 70); }
-        .cms-replace-template-dialog__diff-section--removed { color: rgb(153, 27, 27); }
+        .cms-replace-template-dialog__diff-section--added { color: var(--cms-success-text); }
+        .cms-replace-template-dialog__diff-section--removed { color: var(--cms-danger-text); }
         .cms-replace-template-dialog__diff-section--unchanged { cursor: pointer; user-select: none; }
 
         .cms-replace-template-dialog__diff-item {
@@ -312,12 +312,12 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
             font-family: var(--cms-font-mono, ui-monospace, SFMono-Regular, monospace);
         }
         .cms-replace-template-dialog__diff-item--added code {
-            background: rgba(16, 185, 129, 0.12);
-            color: rgb(6, 95, 70);
+            background: var(--cms-success-light);
+            color: var(--cms-success-text);
         }
         .cms-replace-template-dialog__diff-item--removed code {
-            background: rgba(239, 68, 68, 0.12);
-            color: rgb(153, 27, 27);
+            background: var(--cms-danger-light);
+            color: var(--cms-danger-text);
         }
 
         .cms-replace-template-dialog__back {
@@ -336,7 +336,7 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
 
         .cms-replace-template-dialog__error {
             font-size: 0.8rem;
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             margin: 0;
         }
     `],

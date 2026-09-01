@@ -182,7 +182,7 @@ interface EditorRow {
         .editor__input:focus {
             outline: 0;
             border-color: var(--bs-primary, #0d6efd);
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+            box-shadow: 0 0 0 0.2rem var(--cms-accent-light);
         }
     `],
 })

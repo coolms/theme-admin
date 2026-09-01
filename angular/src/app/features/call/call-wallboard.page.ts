@@ -103,8 +103,8 @@ const ENDED_LINGER_MS = 6_000;
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .board { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 0 32px; }
 
-        .conn { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--cms-text-muted, #6b7280); }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
+        .conn { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--cms-text-muted, #848b96); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cms-text-muted); }
         .dot--on { background: var(--cms-success); }
 
         /* Centered, deliberate empty state — fills the board and sits dead-centre. */
@@ -116,14 +116,14 @@ const ENDED_LINGER_MS = 6_000;
             justify-content: center;
             text-align: center;
             padding: 48px 24px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .empty__badge {
             position: relative;
             width: 76px; height: 76px;
             display: grid; place-items: center;
             border-radius: 50%;
-            background: rgba(22, 163, 74, .1);
+            background: var(--cms-success-light);
             color: var(--cms-success);
             margin-bottom: 18px;
         }
@@ -134,7 +134,7 @@ const ENDED_LINGER_MS = 6_000;
             content: '';
             position: absolute; inset: -8px;
             border-radius: 50%;
-            border: 2px solid rgba(22, 163, 74, .35);
+            border: 2px solid var(--cms-success-subtle-border);
             opacity: 0;
         }
         .empty--live .empty__badge::after { animation: wb-ring 2.4s ease-out infinite; }
@@ -149,10 +149,10 @@ const ENDED_LINGER_MS = 6_000;
             border-radius: 999px;
             font-size: .75rem;
             background: var(--cms-surface-muted, #f3f4f6);
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
-        .empty__pulse { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; }
-        .empty__status--on { background: rgba(22, 163, 74, .1); color: #15803d; }
+        .empty__pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--cms-text-muted); }
+        .empty__status--on { background: var(--cms-success-light); color: var(--cms-success-text); }
         .empty__status--on .empty__pulse { background: var(--cms-success); animation: wb-blink 1.4s ease-in-out infinite; }
 
         @keyframes wb-ring {
@@ -173,35 +173,35 @@ const ENDED_LINGER_MS = 6_000;
             padding: 12px 14px;
             border: 1px solid var(--cms-border, #e5e7eb);
             border-left: 4px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             background: var(--cms-surface, #fff);
             cursor: pointer;
             font: inherit;
             transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
         }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0, 0, 0, .09); }
-        .card:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-        .card[data-state="ringing"]  { border-left-color: #f59e0b; }
+        .card:hover { transform: translateY(-2px); box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10)); }
+        .card:focus-visible { outline: 2px solid var(--cms-success); outline-offset: 2px; }
+        .card[data-state="ringing"]  { border-left-color: var(--cms-warning); }
         .card[data-state="answered"] { border-left-color: var(--cms-success); }
-        .card[data-state="on_hold"]  { border-left-color: #6366f1; }
+        .card[data-state="on_hold"]  { border-left-color: var(--cms-meta); }
         .card[data-state="ended"]    { border-left-color: var(--cms-text-muted); opacity: .6; }
 
         .card__top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
         .who { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .state { display: inline-flex; align-items: center; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #6b7280); white-space: nowrap; }
+        .state { display: inline-flex; align-items: center; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #848b96); white-space: nowrap; }
 
         /* Small pulsing indicator on live (non-ended) cards. */
-        .livedot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; background: #9ca3af; }
-        .livedot[data-state="ringing"]  { background: #f59e0b; animation: wb-blink 1s   ease-in-out infinite; }
+        .livedot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; background: var(--cms-text-muted); }
+        .livedot[data-state="ringing"]  { background: var(--cms-warning); animation: wb-blink 1s   ease-in-out infinite; }
         .livedot[data-state="answered"] { background: var(--cms-success); animation: wb-blink 1.6s ease-in-out infinite; }
-        .livedot[data-state="on_hold"]  { background: #6366f1; }
+        .livedot[data-state="on_hold"]  { background: var(--cms-meta); }
 
-        .card__nums { display: flex; gap: 8px; align-items: baseline; font-size: .8rem; color: var(--cms-text-muted, #6b7280); }
+        .card__nums { display: flex; gap: 8px; align-items: baseline; font-size: .8rem; color: var(--cms-text-muted, #848b96); }
         .dir { text-transform: capitalize; }
 
         .card__timer { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .mono { font-family: var(--cms-font-mono, monospace); }
     `],
 })
 export class CallWallboardComponent implements OnInit {

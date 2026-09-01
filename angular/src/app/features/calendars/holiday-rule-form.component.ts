@@ -243,15 +243,15 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
         input, select {
             width: 100%;
             box-sizing: border-box;
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 6px 8px;
             font-size: .9rem;
             font-family: inherit;
         }
         .params { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .hint { color: var(--cms-text-muted, #6b7280); font-size: .8rem; margin: 4px 0; }
-        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; }
+        .hint { color: var(--cms-text-muted, #848b96); font-size: .8rem; margin: 4px 0; }
+        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; }
 
         /* One-off date row — keep the year/month/day inputs reasonably
            wide while leaving room for the X button on the right. */
@@ -264,20 +264,20 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             justify-content: center;
             width: 32px;
             height: 32px;
-            border: 1px solid var(--cms-border, #d1d5db);
+            border: 1px solid var(--cms-border, #e5e7eb);
             background: transparent;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .icon-btn:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
-        .icon-btn--danger:hover { color: var(--cms-danger, #b91c1c); border-color: var(--cms-danger, #b91c1c); }
+        .icon-btn--danger:hover { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }
 
         .link-btn {
             background: none;
             border: none;
             padding: 4px 0;
-            color: var(--cms-accent, #2563eb);
+            color: var(--cms-accent, #F5A623);
             font-size: .85rem;
             cursor: pointer;
             text-decoration: underline;

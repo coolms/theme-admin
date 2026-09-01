@@ -197,13 +197,13 @@ import { NotificationStore } from './notification-store.service';
             background: transparent;
             border: 0;
             padding: 0;
-            color: var(--cms-text-muted, #6c757d);
+            color: var(--cms-text-muted, #848b96);
             font-size: .85rem;
             line-height: 1;
             cursor: pointer;
         }
         .cms-notification-drawer__sound-toggle:hover {
-            color: var(--cms-primary, #0d6efd);
+            color: var(--cms-primary, #2563eb);
         }
         .cms-notification-drawer__list {
             flex: 1;
@@ -217,7 +217,7 @@ import { NotificationStore } from './notification-store.service';
         }
         .cms-notification-drawer__empty {
             text-align: center;
-            color: var(--cms-text-muted, #6c757d);
+            color: var(--cms-text-muted, #848b96);
             font-size: .8rem;
             padding: 2rem 1rem;
         }
@@ -229,13 +229,13 @@ import { NotificationStore } from './notification-store.service';
             user-select: none;
         }
         .cms-notification-row:hover {
-            background-color: rgba(0, 0, 0, .03);
+            background-color: var(--cms-surface-muted);
         }
         .cms-notification-row--unread {
-            background-color: rgba(13, 110, 253, .04);
+            background-color: var(--cms-info-light);
         }
         .cms-notification-row--unread .fw-semibold {
-            color: var(--cms-primary, #0d6efd);
+            color: var(--cms-primary, #2563eb);
         }
         .cms-notification-row--selected {
             background-color: var(--cms-accent-light);
@@ -245,7 +245,7 @@ import { NotificationStore } from './notification-store.service';
         .cms-notification-row__body {
             margin: .5rem 0 .25rem 0;
             padding: .5rem .75rem;
-            background: var(--cms-surface-muted, #f8f9fa);
+            background: var(--cms-surface-muted, #f3f4f6);
             border-left: 2px solid var(--cms-border);
             border-radius: 0 var(--cms-radius) var(--cms-radius) 0;
             font-size: .8rem;

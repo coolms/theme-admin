@@ -249,7 +249,7 @@ import {
         .ui-kit__swatch {
             width: 20px; height: 20px; flex-shrink: 0;
             border: 1px solid var(--cms-border);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
         }
         /* A non-colour token still gets a slot so the columns stay aligned. */
         .ui-kit__swatch--none { background: repeating-linear-gradient(45deg, var(--cms-border-light) 0 4px, transparent 4px 8px); }

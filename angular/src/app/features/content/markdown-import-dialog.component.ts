@@ -40,7 +40,7 @@ import { ToastService } from '@coolms/ui-angular';
                 <textarea class="cms-input"
                           rows="14"
                           spellcheck="false"
-                          style="font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; resize: vertical;"
+                          style="font-family: var(--cms-font-mono, monospace); resize: vertical;"
                           placeholder="# Heading&#10;&#10;Paste GitHub-flavoured Markdown here…"
                           [ngModel]="markdown()"
                           (ngModelChange)="markdown.set($event)"></textarea>

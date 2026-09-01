@@ -130,10 +130,10 @@ import { EdgeRegisterDialogComponent } from './edge-register-dialog.component';
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .cms-sf { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 1rem; overflow-y: auto; }
-        .cms-sf__hint { color: var(--cms-text-muted, #6b7280); }
+        .cms-sf__hint { color: var(--cms-text-muted, #848b96); }
         .cms-sf__empty {
             display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-            padding: 3rem 1rem; text-align: center; color: var(--cms-text-muted, #6b7280);
+            padding: 3rem 1rem; text-align: center; color: var(--cms-text-muted, #848b96);
         }
         .cms-sf__empty .bi { font-size: 2rem; }
         .cms-sf__table { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: var(--cms-surface, #fff); }
@@ -143,24 +143,24 @@ import { EdgeRegisterDialogComponent } from './edge-register-dialog.component';
         }
         .cms-sf__table th {
             font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
-            color: var(--cms-text-muted, #6b7280); border-bottom-width: 2px;
+            color: var(--cms-text-muted, #848b96); border-bottom-width: 2px;
         }
         .cms-sf__table tr.disabled td { opacity: 0.55; }
         .cms-sf__table td.num, .cms-sf__table th.num { text-align: right; font-variant-numeric: tabular-nums; }
         .cms-sf__table td.act, .cms-sf__table th.act { text-align: right; white-space: nowrap; }
         .mono { font-family: var(--cms-font-mono, ui-monospace, monospace); font-size: 0.82rem; }
-        .sub { font-size: 0.75rem; color: var(--cms-text-muted, #6b7280); }
-        .sub.err { color: var(--cms-danger, #b91c1c); max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sub { font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }
+        .sub.err { color: var(--cms-danger, #dc2626); max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .cms-sf__badge {
             display: inline-block; font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 999px;
-            background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #6b7280);
+            background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #848b96);
         }
         .cms-sf__badge--healthy { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .cms-sf__badge--unreachable, .cms-sf__badge--none { background: var(--cms-danger-subtle); color: var(--cms-danger-text); }
         .cms-sf__badge--bound { background: var(--cms-info-subtle); color: var(--cms-primary-hover); }
         .cms-sf__tier {
             display: inline-block; font-size: 0.72rem; padding: 0.05rem 0.45rem; margin-right: 0.25rem;
-            border-radius: 999px; background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #6b7280);
+            border-radius: 999px; background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #848b96);
         }
     `],
 })

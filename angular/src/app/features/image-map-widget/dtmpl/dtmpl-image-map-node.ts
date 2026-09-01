@@ -100,7 +100,7 @@ export const ImageMapWidget = Node.create({
             // that could correct it, and a #f1f5f9 box is a light block on a
             // dark editor. The colour ratchet caught this before it shipped.
             'style': 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:6px 0;'
-                + 'border:1px dashed var(--cms-border-strong);border-radius:8px;'
+                + 'border:1px dashed var(--cms-border-strong);border-radius:var(--cms-radius-md, 8px);'
                 + 'background:var(--cms-surface-muted);'
                 + 'color:var(--cms-text);font-size:13px;font-weight:600;user-select:none;',
             'contenteditable': 'false',

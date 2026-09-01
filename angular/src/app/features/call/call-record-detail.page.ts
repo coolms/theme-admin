@@ -176,9 +176,9 @@ import { formatCallDuration } from './call-format';
         .chip {
             display: inline-block;
             padding: 1px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .7rem;
-            background: #eef2ff; color: #4338ca;
+            background: var(--cms-meta-subtle); color: var(--cms-meta-text);
         }
         .chip--ok { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .chip--off { background: var(--cms-danger-subtle); color: var(--cms-danger-text); }
@@ -186,7 +186,7 @@ import { formatCallDuration } from './call-format';
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             margin-bottom: 16px;
             overflow: hidden;
         }
@@ -198,25 +198,25 @@ import { formatCallDuration } from './call-format';
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        dt { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .recording { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
         .recording audio { width: 100%; max-width: 480px; }
 
-        .hint { color: var(--cms-text-muted, #6b7280); font-size: .85rem; margin: 0; }
-        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; margin: 0; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .hint { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; margin: 0; }
+        .mono { font-family: var(--cms-font-mono, monospace); }
 
         .btn {
             display: inline-flex; align-items: center; gap: 4px;
             padding: 6px 14px;
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             background: transparent;
             font-size: .85rem;
             text-decoration: none;
-            color: var(--cms-text, #1f2937);
+            color: var(--cms-text, #111827);
             cursor: pointer;
         }
     `],

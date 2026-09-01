@@ -133,8 +133,8 @@ export interface CmsDocumentGenerationWizardResult {
                 max-height: 90vh;
                 background: var(--cms-surface);
                 color: var(--cms-text);
-                border-radius: 6px;
-                box-shadow: 0 12px 36px rgba(0, 0, 0, .25);
+                border-radius: var(--cms-radius, 6px);
+                box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
                 overflow: hidden;
             }
             .cms-doc-wizard {
@@ -159,7 +159,7 @@ export interface CmsDocumentGenerationWizardResult {
             }
             .cms-doc-wizard__error {
                 margin: 1rem 0 0;
-                color: var(--cms-danger);
+                color: var(--cms-danger-text);
                 font-size: .9rem;
             }
         `,

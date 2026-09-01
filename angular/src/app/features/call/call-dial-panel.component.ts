@@ -83,8 +83,8 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
 
         .dial__warn {
             display: flex; align-items: flex-start; gap: 8px;
-            padding: 10px 12px; border-radius: 8px;
-            background: rgba(245, 158, 11, .12); color: var(--cms-warning-text);
+            padding: 10px 12px; border-radius: var(--cms-radius-md, 8px);
+            background: var(--cms-warning-light); color: var(--cms-warning-text);
             font-size: .8rem; line-height: 1.45;
         }
         .dial__link {
@@ -96,7 +96,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
             width: 100%; text-align: center;
             font-size: 1.5rem; font-variant-numeric: tabular-nums; letter-spacing: .04em;
             padding: 10px 12px;
-            border: 1px solid var(--cms-border, #e5e7eb); border-radius: 10px;
+            border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px);
             background: var(--cms-surface, #fff); color: var(--cms-text, #111827);
         }
 
@@ -105,7 +105,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
         }
         .dial__key {
             height: 52px;
-            border: 1px solid var(--cms-border, #e5e7eb); border-radius: 10px;
+            border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px);
             background: var(--cms-surface, #fff); color: var(--cms-text, #111827);
             font-size: 1.2rem; font-weight: 500; cursor: pointer;
             transition: background .1s ease, transform .06s ease;
@@ -117,7 +117,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
         .dial__aux {
             flex: 0 0 auto; width: 46px; height: 46px;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--cms-border, #e5e7eb); border-radius: 10px;
+            border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px);
             background: var(--cms-surface, #fff); color: var(--cms-text-secondary, #6b7280);
             cursor: pointer;
         }
@@ -125,14 +125,14 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
         .dial__call {
             flex: 1 1 auto; height: 46px;
             display: inline-flex; align-items: center; justify-content: center;
-            border: none; border-radius: 10px;
+            border: none; border-radius: var(--cms-radius-lg, 10px);
             background: var(--cms-success); color: var(--cms-text-inverse); font-size: .95rem; font-weight: 600; cursor: pointer;
             transition: filter .12s ease;
         }
         .dial__call:hover:not(:disabled) { filter: brightness(1.06); }
         .dial__call:disabled { opacity: .5; cursor: default; }
 
-        .dial__hint { margin: 0; font-size: .75rem; color: var(--cms-text-muted, #6b7280); text-align: center; }
+        .dial__hint { margin: 0; font-size: .75rem; color: var(--cms-text-muted, #848b96); text-align: center; }
     `],
 })
 export class CallDialPanelComponent implements OnInit {

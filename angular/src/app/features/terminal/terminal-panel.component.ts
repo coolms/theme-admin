@@ -26,7 +26,7 @@ import { TerminalComponent } from './terminal.component';
         <!-- Panel header -->
         <div class="terminal-panel-header">
             <div class="d-flex align-items-center gap-2">
-                <span style="font-family:monospace; font-size:.8rem; color:var(--cms-text-muted)">&gt;_</span>
+                <span style="font-family:var(--cms-font-mono, monospace); font-size:.8rem; color:var(--cms-text-muted)">&gt;_</span>
                 <span class="small fw-semibold" style="color:#e5e7eb">Terminal</span>
             </div>
             <div class="d-flex gap-1">

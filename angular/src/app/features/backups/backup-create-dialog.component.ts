@@ -55,7 +55,7 @@ import { BackupService, CreateBackupResult } from './backup.service';
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #6b7280); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #848b96); }
         .hint code { font-family: var(--cms-font-mono, ui-monospace, monospace); font-size: 0.78rem; }
         .field { display: flex; flex-direction: column; margin-bottom: 0.5rem; }
     `],

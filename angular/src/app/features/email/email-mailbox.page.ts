@@ -790,11 +790,11 @@ interface ComposeDraft {
         .mbx__accounts { display: flex; flex-direction: column; gap: 2px; }
         .mbx__account {
             display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
-            padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+            padding: 6px 8px; border: 0; border-radius: var(--cms-radius-md, 8px); background: transparent; cursor: pointer;
             color: var(--cms-text); font: inherit;
         }
         .mbx__account:hover { background: var(--cms-surface-hover); }
-        .mbx__account--active { background: var(--cms-surface-selected, var(--cms-surface-hover)); }
+        .mbx__account--active { background: var(--cms-accent-light, #FEF7E6); }
         .mbx__account-avatar {
             position: relative; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
             display: inline-flex; align-items: center; justify-content: center;
@@ -805,22 +805,22 @@ interface ComposeDraft {
         .mbx__account--active .mbx__account-label { font-weight: 600; }
         .mbx__account-badge {
             position: absolute; top: -3px; right: -3px;
-            background: var(--cms-accent, #F5A623); color: var(--cms-text-inverse); border-radius: 999px;
+            background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
             font-size: .625rem; font-weight: 600; line-height: 1; padding: 2px 5px; min-width: 16px;
             text-align: center; box-shadow: 0 0 0 2px var(--cms-surface);
         }
         .mbx__folders { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
         .mbx__folder {
             display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
-            padding: 7px 9px; border: 0; border-radius: 6px; background: transparent; cursor: pointer;
+            padding: 7px 9px; border: 0; border-radius: var(--cms-radius, 6px); background: transparent; cursor: pointer;
             color: var(--cms-text); font-size: .875rem;
         }
         .mbx__folder:hover { background: var(--cms-surface-hover); }
-        .mbx__folder--active { background: var(--cms-surface-selected, var(--cms-surface-hover)); font-weight: 600; }
+        .mbx__folder--active { background: var(--cms-accent-light, #FEF7E6); font-weight: 600; }
         .mbx__folder-name { flex: 1; }
         .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; }
         .mbx__badge {
-            background: var(--cms-accent, #F5A623); color: var(--cms-text-inverse); border-radius: 999px;
+            background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
             font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
         }
         .mbx__rail-note, .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
@@ -835,8 +835,8 @@ interface ComposeDraft {
             background: transparent; color: var(--cms-text);
         }
         .mbx__row:hover { background: var(--cms-surface-hover); }
-        .mbx__row--active { background: var(--cms-surface-selected, var(--cms-surface-hover)); }
-        .mbx__row--checked { background: var(--cms-accent-soft, color-mix(in srgb, var(--cms-accent) 14%, transparent)); }
+        .mbx__row--active { background: var(--cms-accent-light, #FEF7E6); }
+        .mbx__row--checked { background: var(--cms-accent-light, #FEF7E6); }
         .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
         .mbx__row-main {
             display: flex; flex-direction: column; gap: 2px; text-align: left; flex: 1 1 auto;
@@ -862,7 +862,7 @@ interface ComposeDraft {
         .mbx__row-date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
         .mbx__row-subject { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: 6px; background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
+        .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
 
         .mbx__search {
             display: flex; align-items: center; gap: 6px; padding: 8px 10px;
@@ -872,7 +872,7 @@ interface ComposeDraft {
         .mbx__search-icon { color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__search-input {
             flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--cms-border);
-            border-radius: 6px; background: var(--cms-surface); color: var(--cms-text); font: inherit; font-size: .8125rem;
+            border-radius: var(--cms-radius, 6px); background: var(--cms-surface); color: var(--cms-text); font: inherit; font-size: .8125rem;
         }
         .mbx__search-clear { border: 0; background: transparent; cursor: pointer; color: var(--cms-text-muted); padding: 2px 4px; }
         .mbx__search-summary {
@@ -881,7 +881,7 @@ interface ComposeDraft {
         }
         .mbx__row-folder {
             display: inline-block; font-size: .6875rem; background: var(--cms-surface-alt, var(--cms-surface-hover));
-            border-radius: 4px; padding: 0 5px; margin-right: 5px; color: var(--cms-text-secondary);
+            border-radius: var(--cms-radius-sm, 4px); padding: 0 5px; margin-right: 5px; color: var(--cms-text-secondary);
         }
 
         .mbx__detail { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
@@ -893,11 +893,11 @@ interface ComposeDraft {
         .mbx__move-menu {
             position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 150px; max-height: 240px;
             overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px;
-            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: 6px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, .14);
+            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
+            box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
         }
         .mbx__move-opt {
-            border: 0; background: transparent; text-align: left; padding: 6px 10px; border-radius: 4px;
+            border: 0; background: transparent; text-align: left; padding: 6px 10px; border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer; color: var(--cms-text); font: inherit; white-space: nowrap;
         }
         .mbx__move-opt:hover { background: var(--cms-surface-hover); }
@@ -906,30 +906,30 @@ interface ComposeDraft {
         .mbx__confirm {
             position: absolute; top: calc(100% + 4px); right: 0; z-index: 40; min-width: 220px;
             display: flex; flex-direction: column; gap: 2px; padding: 6px;
-            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: 8px;
-            box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px);
+            box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
         }
         .mbx__confirm-head { padding: 4px 8px 6px; font-size: .8125rem; font-weight: 600; color: var(--cms-text); }
         .mbx__confirm-opt {
             display: flex; align-items: center; gap: 10px; border: 0; background: transparent; text-align: left;
-            padding: 8px 10px; border-radius: 6px; cursor: pointer; color: var(--cms-text); font: inherit;
+            padding: 8px 10px; border-radius: var(--cms-radius, 6px); cursor: pointer; color: var(--cms-text); font: inherit;
         }
         .mbx__confirm-opt:hover { background: var(--cms-surface-hover); }
         .mbx__confirm-opt i { font-size: 1rem; }
         .mbx__confirm-opt span { display: flex; flex-direction: column; line-height: 1.25; }
         .mbx__confirm-opt small { color: var(--cms-text-muted); font-size: .75rem; }
         .mbx__confirm-opt--danger { color: var(--cms-danger, #dc2626); }
-        .mbx__confirm-opt--danger:hover { background: rgba(220, 38, 38, .1); }
+        .mbx__confirm-opt--danger:hover { background: var(--cms-danger-light); }
         .mbx__confirm-cancel {
             margin-top: 2px; border: 0; background: transparent; text-align: center; padding: 6px 10px;
-            border-radius: 6px; cursor: pointer; color: var(--cms-text-muted); font: inherit; font-size: .8125rem;
+            border-radius: var(--cms-radius, 6px); cursor: pointer; color: var(--cms-text-muted); font: inherit; font-size: .8125rem;
         }
         .mbx__confirm-cancel:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
         .mbx__btn--danger { color: var(--cms-danger); }
         .mbx__btn--danger:hover:not(:disabled) { border-color: var(--cms-danger); background: var(--cms-danger); color: var(--cms-text-inverse); }
         .mbx__detail-snippet { white-space: pre-wrap; }
         .mbx__thread {
-            margin-top: 14px; border: 1px solid var(--cms-border); border-radius: 8px; overflow: hidden;
+            margin-top: 14px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); overflow: hidden;
         }
         .mbx__thread-head {
             display: flex; align-items: center; gap: 6px; padding: 7px 11px;
@@ -945,7 +945,7 @@ interface ComposeDraft {
         }
         .mbx__thread-item:last-child { border-bottom: 0; }
         .mbx__thread-item:hover { background: var(--cms-surface-hover); }
-        .mbx__thread-item--active { background: var(--cms-surface-selected, var(--cms-surface-hover)); }
+        .mbx__thread-item--active { background: var(--cms-accent-light, #FEF7E6); }
         .mbx__thread-item--unread { font-weight: 600; }
         .mbx__thread-from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8125rem; }
         .mbx__thread-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cms-text-muted); font-size: .8125rem; }
@@ -956,7 +956,7 @@ interface ComposeDraft {
         .mbx__raw summary { cursor: pointer; color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__raw pre {
             margin-top: 8px; padding: 12px; background: var(--cms-surface-alt, var(--cms-surface)); border: 1px solid var(--cms-border);
-            border-radius: 6px; max-height: 400px; overflow: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
+            border-radius: var(--cms-radius, 6px); max-height: 400px; overflow: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
         }
 
         /* Attachment chip row (backlog slice 6b). */
@@ -966,7 +966,7 @@ interface ComposeDraft {
         .mbx__attachment-list { display: flex; flex-wrap: wrap; gap: 8px; }
         .mbx__attachment {
             display: flex; align-items: center; gap: 8px; max-width: 320px;
-            padding: 6px 8px; border: 1px solid var(--cms-border); border-radius: 8px; background: var(--cms-surface);
+            padding: 6px 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); background: var(--cms-surface);
         }
         .mbx__attachment-icon { font-size: 1.1rem; color: var(--cms-accent, #F5A623); flex: 0 0 auto; }
         .mbx__attachment-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -975,27 +975,27 @@ interface ComposeDraft {
         .mbx__attachment-actions { display: flex; gap: 2px; flex: 0 0 auto; }
         .mbx__icon-btn {
             display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
-            border: 0; border-radius: 6px; background: transparent; color: var(--cms-text-secondary); cursor: pointer;
+            border: 0; border-radius: var(--cms-radius, 6px); background: transparent; color: var(--cms-text-secondary); cursor: pointer;
         }
         .mbx__icon-btn:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
         .mbx__icon-btn:disabled { opacity: .6; cursor: default; }
 
         .mbx__btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px;
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--cms-radius, 6px);
             border: 1px solid var(--cms-border); background: var(--cms-surface); color: var(--cms-text);
             cursor: pointer; font-size: .8125rem;
         }
         .mbx__btn:hover { background: var(--cms-surface-hover); }
-        .mbx__btn--primary { background: var(--cms-accent, #F5A623); border-color: var(--cms-accent, #F5A623); color: var(--cms-text-inverse); }
+        .mbx__btn--primary { background: var(--cms-accent, #F5A623); border-color: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); }
         .mbx__btn:disabled { opacity: .6; cursor: default; }
 
         .mbx__overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex;
+            position: fixed; inset: 0; background: var(--cms-overlay-scrim); display: flex;
             align-items: center; justify-content: center; z-index: 50;
         }
         .mbx__compose {
             width: 560px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;
-            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: 10px; overflow: hidden;
+            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: var(--cms-radius-lg, 10px); overflow: hidden;
         }
         .mbx__compose-head {
             display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
@@ -1006,7 +1006,7 @@ interface ComposeDraft {
         .mbx__field { display: flex; flex-direction: column; gap: 4px; font-size: .8125rem; }
         .mbx__field span { color: var(--cms-text-secondary); }
         .mbx__field input, .mbx__field textarea {
-            width: 100%; padding: 8px; border: 1px solid var(--cms-border); border-radius: 6px;
+            width: 100%; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface); color: var(--cms-text); font: inherit;
         }
         .mbx__field textarea { resize: vertical; }
@@ -1024,7 +1024,7 @@ interface ComposeDraft {
         .mbx__dock { position: fixed; right: 24px; bottom: 0; z-index: 50; }
         .mbx__compose--dock {
             width: 680px; max-width: calc(100vw - 48px); max-height: min(80vh, 720px);
-            border-radius: 10px 10px 0 0; box-shadow: 0 8px 30px rgba(0, 0, 0, .28);
+            border-radius: 10px 10px 0 0; box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
         }
         .mbx__compose--dock.mbx__compose--min { max-height: none; }
         .mbx__compose--min .mbx__compose-body,
@@ -1041,7 +1041,7 @@ interface ComposeDraft {
         .mbx__rail-actions { display: flex; gap: 6px; }
         .mbx__rail-action {
             display: inline-flex; align-items: center; gap: 5px; flex: 1; justify-content: center;
-            padding: 5px 8px; border: 1px solid var(--cms-border); border-radius: 6px;
+            padding: 5px 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface); color: var(--cms-text); cursor: pointer; font-size: .75rem;
         }
         .mbx__rail-action:hover { background: var(--cms-surface-hover); }
@@ -1049,14 +1049,14 @@ interface ComposeDraft {
         .mbx__rail-action:disabled { opacity: .6; cursor: default; }
 
         .mbx__compose--wide { width: 640px; }
-        .mbx__fieldset { border: 1px solid var(--cms-border); border-radius: 8px; padding: 12px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+        .mbx__fieldset { border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); padding: 12px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
         .mbx__fieldset legend { padding: 0 6px; font-size: .75rem; color: var(--cms-text-muted); text-transform: uppercase; }
         .mbx__grid { display: flex; gap: 12px; }
         .mbx__field--grow { flex: 1 1 auto; }
         .mbx__field--port { flex: 0 0 88px; }
         .mbx__field--sec { flex: 0 0 130px; }
         .mbx__field select {
-            width: 100%; padding: 8px; border: 1px solid var(--cms-border); border-radius: 6px;
+            width: 100%; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface); color: var(--cms-text); font: inherit;
         }
         .mbx__field-hint { color: var(--cms-text-muted); font-size: .6875rem; }
@@ -1069,7 +1069,7 @@ interface ComposeDraft {
         .mbx__btn--danger { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }
         .mbx__btn--danger:hover { background: var(--cms-danger, #dc2626); color: var(--cms-text-inverse); }
 
-        .mbx__oauth { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--cms-border); border-radius: 8px; }
+        .mbx__oauth { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); }
         .mbx__oauth-label { font-size: .75rem; color: var(--cms-text-muted); text-transform: uppercase; }
         .mbx__oauth-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .mbx__oauth-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .8125rem; color: var(--cms-text-muted); }

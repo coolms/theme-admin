@@ -99,9 +99,9 @@ export interface ChownDialogData {
     `,
     styles: [`
         .field-group    { margin-bottom: 14px; }
-        .field-label    { display: block; font-size: .8rem; font-weight: 600; color: var(--cms-text, #374151); margin-bottom: 5px; }
-        .dlg-sep        { margin: 12px 0; border: none; border-top: 1px solid var(--cms-border, #f1f5f9); }
-        .chk-row        { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--cms-text, #374151); cursor: pointer; user-select: none; margin-bottom: 6px; }
+        .field-label    { display: block; font-size: .8rem; font-weight: 600; color: var(--cms-text, #111827); margin-bottom: 5px; }
+        .dlg-sep        { margin: 12px 0; border: none; border-top: 1px solid var(--cms-border, #e5e7eb); }
+        .chk-row        { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--cms-text, #111827); cursor: pointer; user-select: none; margin-bottom: 6px; }
         .recursive-opts { padding-left: 24px; display: flex; flex-direction: column; }
     `],
 })

@@ -160,7 +160,7 @@ import { VfsNodeDto } from '@coolms/ui-angular';
 
         .detail-muted {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
 
         /* Metadata definition list — no background, clean two-column rows */
@@ -175,13 +175,13 @@ import { VfsNodeDto } from '@coolms/ui-angular';
             grid-template-columns: 40% 1fr;
             gap: 4px 8px;
             padding: 5px 0;
-            border-bottom: 1px solid var(--cms-border-light, #f3f4f6);
+            border-bottom: 1px solid var(--cms-border-light, #f0f2f5);
             align-items: baseline;
         }
         .detail-row:last-child { border-bottom: none; }
         dt {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-weight: 400;
             margin: 0;
         }

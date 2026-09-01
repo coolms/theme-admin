@@ -135,7 +135,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog {
             background: var(--cms-bg-surface, #ffffff);
             border-radius: var(--cms-radius, 8px);
-            box-shadow: var(--cms-shadow-modal, 0 12px 32px rgba(0, 0, 0, 0.18));
+            box-shadow: var(--cms-shadow-lg);
             display: flex;
             flex-direction: column;
             min-width: min(540px, 95vw);
@@ -147,9 +147,9 @@ export interface TemplateConflictDialogResult {
             align-items: center;
             gap: 10px;
             padding: 14px 18px;
-            border-bottom: 1px solid var(--cms-border-light, #e5e7eb);
+            border-bottom: 1px solid var(--cms-border-light, #f0f2f5);
         }
-        .cms-template-conflict-dialog__icon { color: #f59e0b; font-size: 1.25rem; }
+        .cms-template-conflict-dialog__icon { color: var(--cms-warning); font-size: 1.25rem; }
         .cms-template-conflict-dialog__title { margin: 0; font-size: 1rem; font-weight: 600; color: var(--cms-text, #111827); }
 
         .cms-template-conflict-dialog__body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
@@ -163,7 +163,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__intro code {
             background: var(--cms-bg-muted, #f3f4f6);
             padding: 1px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: 0.825em;
         }
 
@@ -193,11 +193,11 @@ export interface TemplateConflictDialogResult {
             border-color: var(--cms-border-strong, #d1d5db);
         }
         .cms-template-conflict-dialog__option--active {
-            border-color: var(--cms-accent, #3b82f6);
-            background: var(--cms-accent-light, #eff6ff);
+            border-color: var(--cms-accent, #F5A623);
+            background: var(--cms-accent-light, #FEF7E6);
         }
         .cms-template-conflict-dialog__option i { font-size: 1rem; color: var(--cms-text-secondary); padding-top: 2px; }
-        .cms-template-conflict-dialog__option--active i { color: var(--cms-accent, #3b82f6); }
+        .cms-template-conflict-dialog__option--active i { color: var(--cms-accent, #F5A623); }
         .cms-template-conflict-dialog__option strong {
             display: block;
             font-size: 0.875rem;
@@ -207,7 +207,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__option small {
             display: block;
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             line-height: 1.4;
         }
 
@@ -219,19 +219,19 @@ export interface TemplateConflictDialogResult {
         }
         .cms-template-conflict-dialog__name-field span {
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-weight: 500;
         }
         .cms-template-conflict-dialog__name-field input {
             padding: 6px 10px;
-            border: 1px solid var(--cms-border, #d1d5db);
+            border: 1px solid var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-sm, 6px);
             font: inherit;
             font-size: 0.875rem;
         }
         .cms-template-conflict-dialog__name-field input:focus {
-            border-color: var(--cms-accent, #3b82f6);
-            outline: 2px solid var(--cms-accent-light, #dbeafe);
+            border-color: var(--cms-accent, #F5A623);
+            outline: 2px solid var(--cms-accent-light, #FEF7E6);
             outline-offset: -1px;
         }
 
@@ -246,7 +246,7 @@ export interface TemplateConflictDialogResult {
             justify-content: flex-end;
             gap: 8px;
             padding: 12px 18px;
-            border-top: 1px solid var(--cms-border-light, #e5e7eb);
+            border-top: 1px solid var(--cms-border-light, #f0f2f5);
         }
     `],
 })

@@ -180,8 +180,8 @@ export interface DynamicTypeDialogData {
             gap: 6px;
             margin: 0;
             padding: 8px 12px;
-            border-radius: 6px;
-            background: var(--cms-surface-2, rgba(0,0,0,.04));
+            border-radius: var(--cms-radius, 6px);
+            background: var(--cms-surface-muted, #f3f4f6);
             color: var(--cms-text-muted);
             font-size: .85rem;
         }
@@ -191,7 +191,7 @@ export interface DynamicTypeDialogData {
             align-items: center;
             gap: 6px;
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             background: var(--cms-danger-light);
             border: 1px solid var(--cms-danger-subtle-border);
             font-size: .8rem;

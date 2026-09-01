@@ -145,7 +145,7 @@ export interface FootnoteRow {
             max-width: 18rem;
             padding: 2px 8px;
             border: 1px solid var(--cms-border);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             background: var(--cms-surface);
             color: var(--cms-text-body);
             font: inherit;

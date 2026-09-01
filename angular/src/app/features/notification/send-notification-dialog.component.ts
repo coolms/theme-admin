@@ -155,7 +155,7 @@ const BODY_MAX_LENGTH = 2000;
             font-weight: 500;
             color: var(--cms-text);
         }
-        .cms-send-dialog__required { color: var(--cms-danger, #b91c1c); }
+        .cms-send-dialog__required { color: var(--cms-danger, #dc2626); }
         .cms-send-dialog__field input,
         .cms-send-dialog__field select,
         .cms-send-dialog__field textarea {
@@ -169,7 +169,7 @@ const BODY_MAX_LENGTH = 2000;
         }
         .cms-send-dialog__field textarea { resize: vertical; min-height: 80px; }
         .cms-send-dialog__error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             font-size: .75rem;
         }
         .cms-send-dialog__actions {

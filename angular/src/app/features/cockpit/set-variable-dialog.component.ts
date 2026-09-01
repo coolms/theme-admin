@@ -69,7 +69,7 @@ export interface SetVariableResult {
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
         .error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             margin: 0;
             font-size: 0.8125rem;
         }

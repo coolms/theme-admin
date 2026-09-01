@@ -74,7 +74,7 @@ type SettingsTab = 'settings' | 'hours' | 'rules' | 'shares';
         .backdrop {
             position: absolute;
             inset: 0;
-            background: rgba(17, 24, 39, .35);
+            background: var(--cms-overlay-scrim);
             z-index: 30;
             animation: fadeIn 160ms ease-out;
         }
@@ -124,8 +124,8 @@ type SettingsTab = 'settings' | 'hours' | 'rules' | 'shares';
             height: 28px;
             border: 0;
             background: transparent;
-            border-radius: 4px;
-            color: var(--cms-text-muted, #6b7280);
+            border-radius: var(--cms-radius-sm, 4px);
+            color: var(--cms-text-muted, #848b96);
             cursor: pointer;
         }
         .close-btn:hover { background: var(--cms-surface-muted); color: var(--cms-text); }

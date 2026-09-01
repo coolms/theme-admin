@@ -142,7 +142,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
         }
         .card--muted { background: var(--cms-surface-muted); }
@@ -159,16 +159,16 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             margin: 0;
             font-size: .9rem;
             font-weight: 600;
-            color: var(--cms-text, #111);
+            color: var(--cms-text, #111827);
             display: flex;
             align-items: center;
             gap: 6px;
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             background: var(--cms-surface-muted);
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
         }
         .card__body { padding: 12px 16px; }
@@ -179,7 +179,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             grid-template-columns: 1fr auto;
             gap: 8px 12px;
             padding: 12px 16px;
-            border-bottom: 1px solid var(--cms-border, #f3f4f6);
+            border-bottom: 1px solid var(--cms-border, #e5e7eb);
             align-items: flex-start;
         }
         .step-row:nth-child(even) { background: var(--cms-surface-muted); }
@@ -202,10 +202,10 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             font-size: .75rem;
             font-weight: 600;
         }
-        .step-row__name { font-weight: 500; color: var(--cms-text, #111); }
+        .step-row__name { font-weight: 500; color: var(--cms-text, #111827); }
         .step-row__note {
             margin-top: 4px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-size: .85rem;
         }
         .step-row__details { display: flex; align-items: center; }
@@ -214,7 +214,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             margin-top: 6px;
             background: #0f172a;
             color: #f1f5f9;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 10px 12px;
             overflow: auto;
         }
@@ -231,7 +231,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-size: .7rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -241,9 +241,9 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         }
         .chip--matched     { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .chip--not-matched { background: var(--cms-danger-subtle); color: var(--cms-danger-text); }
-        .chip--skipped     { background: var(--cms-surface-muted); color: #4b5563; }
+        .chip--skipped     { background: var(--cms-surface-muted); color: var(--cms-text-body); }
         .chip--error       { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
-        .chip--kind        { background: var(--cms-info-subtle); color: var(--cms-info-text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .chip--kind        { background: var(--cms-info-subtle); color: var(--cms-info-text); font-family: var(--cms-font-mono, monospace); }
 
         .kv {
             margin: 0;
@@ -252,13 +252,13 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             gap: 6px 16px;
         }
         .kv dt {
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-size: .8rem;
             align-self: center;
         }
         .kv dd {
             margin: 0;
-            color: var(--cms-text, #111);
+            color: var(--cms-text, #111827);
             word-break: break-word;
             display: flex;
             gap: 6px;
@@ -266,8 +266,8 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             flex-wrap: wrap;
         }
 
-        .mono  { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .muted { color: var(--cms-text-muted, #6b7280); }
+        .mono  { font-family: var(--cms-font-mono, monospace); }
+        .muted { color: var(--cms-text-muted, #848b96); }
 
     `],
 })

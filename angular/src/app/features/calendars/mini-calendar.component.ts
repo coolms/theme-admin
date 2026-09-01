@@ -84,7 +84,7 @@ interface MiniCell {
         .mini {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             padding: 10px;
             font-size: .8rem;
             user-select: none;
@@ -104,8 +104,8 @@ interface MiniCell {
             height: 22px;
             border: 0;
             background: transparent;
-            border-radius: 4px;
-            color: var(--cms-text-muted, #6b7280);
+            border-radius: var(--cms-radius-sm, 4px);
+            color: var(--cms-text-muted, #848b96);
             cursor: pointer;
         }
         .nav:hover { background: var(--cms-surface-muted); color: var(--cms-text); }
@@ -117,7 +117,7 @@ interface MiniCell {
             font-size: .85rem;
             cursor: pointer;
             padding: 2px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             color: var(--cms-text);
         }
         .title:hover { background: var(--cms-surface-muted); }
@@ -132,7 +132,7 @@ interface MiniCell {
             text-align: center;
             font-size: .65rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-transform: uppercase;
         }
 
@@ -150,21 +150,21 @@ interface MiniCell {
             background: transparent;
             color: var(--cms-text);
             font-size: .75rem;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
             line-height: 1;
         }
         .cell:hover { background: var(--cms-surface-muted); }
-        .cell--out { color: #d1d5db; }
+        .cell--out { color: var(--cms-text-muted); }
         .cell--today {
-            border-color: var(--cms-accent, #2563eb);
+            border-color: var(--cms-accent, #F5A623);
             font-weight: 600;
         }
         .cell--selected {
-            background: var(--cms-accent, #2563eb);
-            color: var(--cms-text-inverse);
+            background: var(--cms-accent, #F5A623);
+            color: var(--cms-accent-fg, #1a1a1a);
         }
-        .cell--selected:hover { background: var(--cms-accent, #1d4ed8); }
+        .cell--selected:hover { background: var(--cms-accent, #F5A623); }
     `],
 })
 export class MiniCalendarComponent {

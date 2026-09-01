@@ -31,7 +31,7 @@ export interface LinkUserDialogResult {
     imports: [ModalComponent, UserSearchSelectComponent],
     template: `
         <app-modal [title]="'Link platform user — ' + data.contactName" [width]="440">
-            <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #6c757d);">
+            <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #848b96);">
                 Associate this contact with an existing platform user account.
             </p>
 

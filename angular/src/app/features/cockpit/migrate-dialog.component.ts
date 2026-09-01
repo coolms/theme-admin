@@ -73,8 +73,8 @@ export interface MigrateResult {
     `,
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
-        .lead { margin: 0; font-size: 0.85rem; color: var(--cms-text-muted, #6b7280); }
-        .error { color: var(--cms-danger, #b91c1c); margin: 0; font-size: 0.8125rem; }
+        .lead { margin: 0; font-size: 0.85rem; color: var(--cms-text-muted, #848b96); }
+        .error { color: var(--cms-danger, #dc2626); margin: 0; font-size: 0.8125rem; }
     `],
 })
 export class MigrateDialogComponent {

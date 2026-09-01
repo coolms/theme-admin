@@ -76,15 +76,15 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
         }
         .group-help {
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             margin: 0;
         }
         .preview {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 4px;
-            background: #eef2ff;
-            color: #1e3a8a;
+            border-radius: var(--cms-radius-sm, 4px);
+            background: var(--cms-meta-subtle);
+            color: var(--cms-info-text);
             font-variant-numeric: tabular-nums;
             font-size: .8rem;
             margin-left: 6px;
@@ -110,11 +110,11 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
         .future-card {
             margin-top: 16px;
             padding: 12px 14px;
-            border: 1px dashed var(--cms-border, #d1d5db);
-            border-radius: 8px;
-            color: var(--cms-text-muted, #6b7280);
+            border: 1px dashed var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-md, 8px);
+            color: var(--cms-text-muted, #848b96);
             font-size: .8rem;
-            background: var(--cms-bg-subtle, #f9fafb);
+            background: var(--cms-surface-muted, #f3f4f6);
         }
         .future-card strong { color: var(--cms-text, #111827); }
     `],

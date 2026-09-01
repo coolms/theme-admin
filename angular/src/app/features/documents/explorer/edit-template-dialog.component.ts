@@ -234,7 +234,7 @@ const FORMAT_OUTPUT_FALLBACK: readonly OutputFormatOption[] = [
             margin: 0;
         }
         .cms-edit-template-dialog__hint--warning {
-            color: var(--cms-warning, #92400e);
+            color: var(--cms-warning, #d97706);
         }
         .cms-edit-template-dialog__hint code {
             background: var(--cms-border-light);
@@ -257,7 +257,7 @@ const FORMAT_OUTPUT_FALLBACK: readonly OutputFormatOption[] = [
         }
         .cms-edit-template-dialog__error {
             font-size: 0.8rem;
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             margin: 0;
         }
     `],

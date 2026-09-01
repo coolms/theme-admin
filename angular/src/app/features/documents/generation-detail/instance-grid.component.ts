@@ -184,7 +184,7 @@ export type InstanceFilterTab = 'all' | 'failed' | 'pending' | 'done';
             border-bottom: 1px solid var(--cms-border-light);
             color: var(--cms-text);
         }
-        .cms-instance-grid__row--failed { background: var(--cms-danger-bg, transparent); }
+        .cms-instance-grid__row--failed { background: var(--cms-danger-light, #fef2f2); }
 
         .cms-instance-grid__col--idx { color: var(--cms-text-muted); }
         .cms-instance-grid__col--name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -204,22 +204,22 @@ export type InstanceFilterTab = 'all' | 'failed' | 'pending' | 'done';
             text-transform: capitalize;
         }
         .cms-instance-grid__badge--rendered {
-            background: var(--cms-success-bg, rgba(76, 175, 80, .12));
-            color: var(--cms-success, #1f8a32);
+            background: var(--cms-success-light, #f0fdf4);
+            color: var(--cms-success, #16a34a);
         }
         .cms-instance-grid__badge--pending {
-            background: var(--cms-info-bg, rgba(33, 150, 243, .12));
-            color: var(--cms-info, #1d6fd0);
+            background: var(--cms-info-light, #eff6ff);
+            color: var(--cms-info, #2563eb);
         }
         .cms-instance-grid__badge--failed {
-            background: var(--cms-danger-bg, rgba(244, 67, 54, .12));
-            color: var(--cms-danger, #c62828);
+            background: var(--cms-danger-light, #fef2f2);
+            color: var(--cms-danger, #dc2626);
         }
 
         .cms-instance-grid__expand {
             background: none;
             border: none;
-            color: var(--cms-link, var(--cms-text));
+            color: var(--cms-primary, #2563eb);
             cursor: pointer;
             font-size: .8rem;
             padding: 0;
@@ -230,8 +230,8 @@ export type InstanceFilterTab = 'all' | 'failed' | 'pending' | 'done';
         .cms-instance-grid__error {
             padding: .5rem 1rem .75rem 60px;
             font-size: .8rem;
-            color: var(--cms-danger);
-            background: var(--cms-danger-bg, rgba(244, 67, 54, .06));
+            color: var(--cms-danger-text);
+            background: var(--cms-danger-light, #fef2f2);
             white-space: pre-wrap;
             word-break: break-word;
         }

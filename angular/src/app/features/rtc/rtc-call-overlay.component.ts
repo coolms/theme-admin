@@ -258,7 +258,7 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
         .rtc-btn:hover { filter: brightness(1.08); }
         .rtc-btn--accept { background: var(--cms-success); }
         .rtc-btn--end    { background: var(--cms-danger); }
-        .rtc-btn--mute   { background: var(--cms-text-muted, #6b7280); }
+        .rtc-btn--mute   { background: var(--cms-text-muted, #848b96); }
         .rtc-btn--mute.rtc-btn--on { background: var(--cms-warning, #d97706); }
 
         /* Video stage (Slice 4d) — a floating 1:1 call window. */
@@ -282,7 +282,7 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
         .rtc-selfview {
             position: absolute; top: 10px; right: 10px;
             width: 92px; aspect-ratio: 3 / 4; object-fit: cover;
-            border-radius: 8px; border: 2px solid rgba(255,255,255,.7);
+            border-radius: var(--cms-radius-md, 8px); border: 2px solid rgba(255,255,255,.7);
             background: #000;
             transform: scaleX(-1); /* mirror the local self-view, like a mirror */
         }
@@ -360,7 +360,7 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
             position: relative;
             aspect-ratio: 4 / 3;
             background: #05070c;
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
             border: 2px solid transparent;
         }

@@ -406,19 +406,27 @@ type TabIndex = 0 | 1 | 2;
             line-height: 1.4;
         }
 
+        /* ⚠️ These used --cms-*-light as the fill with the RAW HUE as ink.
+           MEASURED on a probe carrying these exact declarations: warning 3.07
+           in LIGHT theme, info 4.44 in DARK -- one failure per theme, at
+           .8125rem, which is why checking either theme alone missed both. The
+           house pair is -subtle for the fill and -text for the ink, the same
+           one styles.scss bridges Bootstrap's .alert-danger / .alert-info to.
+           Re-measured after the swap: 6.37 / 10.13 warning, 7.15 / 8.42 info. */
+
         /* Yellow — runtime override (Branch B, inside padded .fdf-body) */
         .cms-alert--warning {
-            background: var(--cms-warning-light);
-            border-color: var(--cms-warning);
-            color: var(--cms-warning);
+            background: var(--cms-warning-subtle);
+            border-color: var(--cms-warning-subtle-border);
+            color: var(--cms-warning-text);
             margin-bottom: 12px;
         }
 
         /* Blue — static PHP entity override (Branch A, between identity row + tabs) */
         .cms-alert--info {
-            background: var(--cms-info-light);
-            border-color: var(--cms-info);
-            color: var(--cms-info);
+            background: var(--cms-info-subtle);
+            border-color: var(--cms-info-subtle-border);
+            color: var(--cms-info-text);
             margin: 8px 20px;
         }
 
@@ -434,7 +442,7 @@ type TabIndex = 0 | 1 | 2;
         }
 
         .fdf-identity-name {
-            font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .875rem;
             font-weight: 600;
             color: var(--cms-text);
@@ -543,12 +551,12 @@ type TabIndex = 0 | 1 | 2;
             background: var(--cms-danger-light);
             border: 1px solid var(--cms-danger);
             font-size: .8rem;
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
         }
 
         /* ── Utility ────────────────────────────────────────────────────── */
-        .font-mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; }
-        .cms-field-error { font-size: .75rem; color: var(--cms-danger); margin-top: 4px; }
+        .font-mono { font-family: var(--cms-font-mono, monospace); }
+        .cms-field-error { font-size: .75rem; color: var(--cms-danger-text); margin-top: 4px; }
 
         /* ── Option-label translations panel (F5.b Phase 5) ───────────────── */
         .fdf-opt-i18n {

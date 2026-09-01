@@ -283,7 +283,7 @@ import {
             background: var(--cms-bg); padding: .35rem .5rem;
             border-radius: var(--cms-radius-sm);
         }
-        .cms-centrifugo-channel__offset { font-family: monospace; }
+        .cms-centrifugo-channel__offset { font-family: var(--cms-font-mono, monospace); }
         .cms-centrifugo-channel__count {
             color: var(--cms-text-secondary);
             font-size: .8rem;

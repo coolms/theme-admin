@@ -88,7 +88,7 @@ type Tab = 'personal' | string;
         .avatar-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, .45);
+            background: var(--cms-overlay-scrim);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -119,7 +119,7 @@ type Tab = 'personal' | string;
         }
         .color-dot:hover:not(:disabled) { transform: scale(1.2); }
         .color-dot--active {
-            box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--cms-accent);
+            box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-accent);
         }
 
         .sidebar-name {

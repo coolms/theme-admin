@@ -59,25 +59,25 @@ import type { CockpitTokenDto } from './cockpit.types';
     styles: [`
         :host { display: block; }
         .diag-host { position: relative; width: 100%; height: 360px; display: flex; min-height: 0; }
-        .diag-empty { color: var(--cms-text-muted, #6b7280); font-size: .85rem; margin: 0; padding: 8px 0; }
+        .diag-empty { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; padding: 8px 0; }
         .d-none { display: none !important; }
 
         .diag-legend {
             display: flex; gap: 16px; flex-wrap: wrap;
-            padding: 8px 2px 0; font-size: .75rem; color: var(--cms-text-muted, #6b7280);
+            padding: 8px 2px 0; font-size: .75rem; color: var(--cms-text-muted, #848b96);
         }
         .lg { display: inline-flex; align-items: center; gap: 5px; }
         .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-        .dot--active  { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
-        .dot--waiting { background: #f59e0b; box-shadow: 0 0 4px #f59e0b; }
-        .dot--failed  { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
+        .dot--active  { background: var(--cms-success); box-shadow: 0 0 4px var(--cms-success); }
+        .dot--waiting { background: var(--cms-warning); box-shadow: 0 0 4px var(--cms-warning); }
+        .dot--failed  { background: var(--cms-danger); box-shadow: 0 0 4px var(--cms-danger); }
 
         /* Token-position glow on the rendered designer nodes. ::ng-deep is
            required because the SVG is created imperatively by the designer,
            so it carries no Angular emulated-encapsulation attribute. */
-        :host ::ng-deep [data-element-id].cockpit-tok-active  { filter: drop-shadow(0 0 5px #22c55e); }
-        :host ::ng-deep [data-element-id].cockpit-tok-waiting { filter: drop-shadow(0 0 5px #f59e0b); }
-        :host ::ng-deep [data-element-id].cockpit-tok-failed  { filter: drop-shadow(0 0 6px #ef4444); }
+        :host ::ng-deep [data-element-id].cockpit-tok-active  { filter: drop-shadow(0 0 5px var(--cms-success)); }
+        :host ::ng-deep [data-element-id].cockpit-tok-waiting { filter: drop-shadow(0 0 5px var(--cms-warning)); }
+        :host ::ng-deep [data-element-id].cockpit-tok-failed  { filter: drop-shadow(0 0 6px var(--cms-danger)); }
     `],
 })
 export class CockpitDiagramComponent implements AfterViewInit, OnDestroy {

@@ -180,7 +180,7 @@ export type DesignerEditorDialogData =
             width: 90vw;
             height: 90vh;
             max-width: 1600px;
-            background: var(--cms-bg, #fff);
+            background: var(--cms-bg, #f8f9fa);
             border-radius: var(--cms-radius, 6px);
             overflow: hidden;
         }

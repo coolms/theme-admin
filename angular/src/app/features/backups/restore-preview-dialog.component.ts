@@ -59,7 +59,7 @@ import { BackupService, RestorePreviewResult } from './backup.service';
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #6b7280); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #848b96); }
         .hint code { font-family: var(--cms-font-mono, ui-monospace, monospace); font-size: 0.78rem; }
         .err { color: var(--cms-danger-text); font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
         .ptable { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -72,12 +72,12 @@ import { BackupService, RestorePreviewResult } from './backup.service';
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .ptable code {
             font-family: var(--cms-font-mono, ui-monospace, monospace);
             font-size: 0.76rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
     `],
 })

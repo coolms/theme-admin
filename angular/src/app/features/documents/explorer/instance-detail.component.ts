@@ -117,12 +117,12 @@ import { filenameOf, formatLocation, formatSize } from './vfs-location.helpers';
             font-weight: 500;
         }
         .cms-instance-detail__badge[data-status="rendered"] {
-            background: rgba(16, 185, 129, 0.12);
-            color: rgb(6, 95, 70);
+            background: var(--cms-success-light);
+            color: var(--cms-success-text);
         }
         .cms-instance-detail__badge[data-status="failed"] {
-            background: rgba(239, 68, 68, 0.12);
-            color: rgb(153, 27, 27);
+            background: var(--cms-danger-light);
+            color: var(--cms-danger-text);
         }
         .cms-instance-detail__meta {
             display: grid;
@@ -148,7 +148,7 @@ import { filenameOf, formatLocation, formatSize } from './vfs-location.helpers';
             border-radius: var(--cms-radius-sm);
         }
         .cms-instance-detail__error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             font-size: 0.8rem;
         }
     `],

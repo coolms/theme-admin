@@ -102,18 +102,18 @@ export interface TemplateSourceData {
         }
         /* Without min-height:0 the flex child refuses to shrink and CodeMirror
            grows the dialog instead of scrolling. */
-        .src__editor { flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 6px; }
+        .src__editor { flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: var(--cms-radius, 6px); }
         /* CodeMirror builds .cm-editor imperatively, so it carries no emulated-
            encapsulation attribute — pierce with :host ::ng-deep, which MUST
            lead with :host (same rule as the VFS code editor). */
         :host ::ng-deep .cm-editor { height: 100%; }
 
-        .src__state { margin: 0; padding: 12px 2px; color: var(--cms-muted, #6c757d); font-size: 13px; }
-        .src__state--error { color: var(--cms-danger, #dc3545); }
+        .src__state { margin: 0; padding: 12px 2px; color: var(--cms-text-secondary, #6b7280); font-size: 13px; }
+        .src__state--error { color: var(--cms-danger, #dc2626); }
 
         .src__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
-        .src__meta { color: var(--cms-muted, #6c757d); font-size: 12px; }
-        .src__badge { color: var(--cms-primary, #f97316); }
+        .src__meta { color: var(--cms-text-secondary, #6b7280); font-size: 12px; }
+        .src__badge { color: var(--cms-primary, #2563eb); }
         .src__actions { display: flex; gap: 8px; flex-shrink: 0; }
     `],
 })

@@ -104,7 +104,7 @@ export interface ScopePromptDialogData {
         .lead {
             margin: 0 0 12px;
             font-size: .875rem;
-            color: var(--cms-text, #1f2937);
+            color: var(--cms-text, #111827);
         }
         .choices {
             display: flex; flex-direction: column;
@@ -127,7 +127,7 @@ export interface ScopePromptDialogData {
         .choice strong { font-size: .8125rem; font-weight: 500; }
         .choice small {
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .choice--disabled {
             opacity: .55;

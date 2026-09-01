@@ -127,7 +127,7 @@ import { MediaGridComponent } from './media-grid.component';
         }
         .drop-card {
             background: var(--cms-surface); border-radius: 12px; padding: 24px 40px;
-            text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,.1);
+            text-align: center; box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
         }
     `],
 })

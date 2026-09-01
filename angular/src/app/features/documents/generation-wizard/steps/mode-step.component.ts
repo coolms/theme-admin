@@ -110,7 +110,7 @@ export const USER_ENTITY_FQCN = 'App\\Identity\\Domain\\Entity\\User';
             gap: .75rem;
             padding: .75rem 1rem;
             border: 1px solid var(--cms-border);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface);
             cursor: pointer;
         }

@@ -56,16 +56,16 @@ import { UploadProgress } from './media.types';
     `,
     styles: [`
         .media-upload-zone {
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
+            border: 2px dashed var(--cms-border);
+            border-radius: var(--cms-radius-md, 8px);
             cursor: pointer;
             transition: border-color .2s, background .2s;
         }
         .media-upload-zone.cms-dropzone--active {
-            border-color: #0d6efd;
-            background: #f0f6ff;
+            border-color: var(--cms-primary);
+            background: var(--cms-info-light);
         }
-        .media-upload-zone:hover { border-color: #adb5bd; }
+        .media-upload-zone:hover { border-color: var(--cms-btn-hover-border); }
     `],
 })
 export class MediaUploadComponent {

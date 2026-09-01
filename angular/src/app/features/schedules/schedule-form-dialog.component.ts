@@ -130,7 +130,7 @@ import {
             gap: 14px;
         }
         .error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             margin: 0;
             font-size: .8125rem;
         }

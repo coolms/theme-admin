@@ -138,7 +138,7 @@ type FlatItem =
         }
 
         .vfs-tree-item {
-            cursor: pointer; border-radius: 4px;
+            cursor: pointer; border-radius: var(--cms-radius-sm, 4px);
             transition: background 100ms;
             user-select: none;
             padding-left: var(--item-indent, 12px);
@@ -146,13 +146,13 @@ type FlatItem =
             padding-right: 8px;
             padding-bottom: 6px;
         }
-        .vfs-tree-item:hover  { background: #f1f5f9; }
-        .vfs-tree-item.active { background: var(--cms-info-subtle); font-weight: 600; }
+        .vfs-tree-item:hover  { background: var(--cms-surface-hover); }
+        .vfs-tree-item.active { background: var(--cms-accent-light); font-weight: 600; }
 
         .vfs-tree-drop-hover {
             background: var(--cms-info-subtle) !important;
-            border-radius: 4px;
-            outline: 2px dashed #3b82f6;
+            border-radius: var(--cms-radius-sm, 4px);
+            outline: 2px dashed var(--cms-primary);
         }
 
         /* Phase 2 VFS live -- 2s fade flash on a row whose node

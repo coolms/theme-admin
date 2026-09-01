@@ -78,7 +78,7 @@ interface Breadcrumb {
                 <!-- Terminal toggle -->
                 <button type="button"
                         class="cms-btn cms-btn-sm"
-                        style="font-family: monospace; font-size: .8rem; padding: 4px 10px"
+                        style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
                         title="Toggle Terminal (Ctrl+\`)"
                         (click)="terminalToggle.emit()">
                     &gt;_
