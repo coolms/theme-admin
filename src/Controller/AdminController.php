@@ -87,11 +87,17 @@ final class AdminController
 
     private readonly string $buildDir;
 
-    public function __construct()
+    /**
+     * @param string|null $buildDir Overrides the build output location.
+     *                              Null keeps the real one, so nothing about
+     *                              production changes; a test passes a fixture
+     *                              instead of requiring `ng build` to have run.
+     */
+    public function __construct(?string $buildDir = null)
     {
         // packages/theme-admin/public/browser/  -- Angular build output.
         // __DIR__ = .../src/Controller  ->  dirname(2) = package root.
-        $this->buildDir = dirname(__DIR__, 2) . '/public/browser';
+        $this->buildDir = $buildDir ?? dirname(__DIR__, 2) . '/public/browser';
     }
 
     public function __invoke(string $path = ''): Response

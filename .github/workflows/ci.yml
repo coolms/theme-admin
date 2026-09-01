@@ -81,6 +81,8 @@ jobs:
  # contracts it implements into coolms/core precisely so this is true;
  # asserted rather than trusted, because a single `use App\...` added
  # later would compile fine here and break only for consumers.
+      - name: Run tests
+        run: vendor/bin/phpunit
       - name: Assert nothing references an application namespace
         run: |
           if grep -rnE '\bApp\\+[A-Z]' src/ ; then
