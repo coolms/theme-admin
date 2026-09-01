@@ -16,8 +16,8 @@ import { ModuleSettingsBlockDto, ModuleSettingsWireDto } from './module-settings
  * to do something array-shaped with it — spread it, hand it to a form — would be
  * right by the type and wrong at runtime. Normalised once, on the way in.
  *
- * The same function also composes `effective`, so no caller has to remember
- * which of `data` and `defaults` wins.
+ * `effective` is NOT composed here. It arrives composed, from the one reader
+ * every module reads its own settings through -- see below.
  */
 function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
     const data = asMap(wire.data);
@@ -28,7 +28,60 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
     // `data` is why a screen for a module running happily on its defaults came
     // up blank, with a required select reading "-- Select --" for a value the
     // system definitely had.
-    return { ...wire, data, defaults, effective: { ...defaults, ...data } };
+    //
+    // This used to spread `{ ...defaults, ...data }` right here, which made it
+    // the SECOND implementation of that rule -- the PHP consumers merged the
+    // same two sources with a per-key type guard. The two disagreed for a key
+    // saved as `null`: this file called it cleared, the server went on using the
+    // shipped value, and the screen confidently described a configuration that
+    // was not running. Taken from the server now (ADR-165).
+    //
+    // A wire without `effective` therefore yields an EMPTY map, deliberately.
+    // Recomposing it as a fallback would restore the divergence for exactly the
+    // cases where the server is already misbehaving, and a blank form is a
+    // problem someone reports; a plausible wrong one is not.
+    return {
+        ...wire,
+        data,
+        defaults,
+        effective: asMap(wire.effective),
+        locked: asStringMap(wire.locked),
+        // Both default to the platform-wide reading, which is what every block
+        // was before per-site overrides existed and what most of them stay.
+        siteScopable: true === wire.siteScopable,
+        scope: orNull(wire.scope),
+        // ⚠️ **The wire never sends `null` — it sends NOTHING.** API Platform
+        // defaults `skip_null_values` to true, so every null property is omitted
+        // from the JSON and arrives here as `undefined`, while the DTO promises
+        // `string | null`. A reader written to that promise with an explicit
+        // `null !== x` test then lets `undefined` straight through.
+        //
+        // That is not hypothetical: it took the whole settings screen down. The
+        // grouping helper guarded `moduleRoute` with `null !==` and called
+        // `.replace` on it, which was harmless for as long as every block
+        // happened to declare a route — and threw the moment the first block
+        // without one existed. Normalised here so the DTO's promise is true for
+        // every consumer rather than each one having to remember.
+        moduleLabel: orNull(wire.moduleLabel),
+        moduleIcon: orNull(wire.moduleIcon),
+        moduleRoute: orNull(wire.moduleRoute),
+        formId: orNull(wire.formId),
+        storedAt: orNull(wire.storedAt),
+    };
+}
+
+/** A non-empty string, or null — for a field the wire may simply omit. */
+function orNull(value: unknown): string | null {
+    return 'string' === typeof value && '' !== value ? value : null;
+}
+
+/** `locked` is `key -> env var name`; drop anything that is not that shape. */
+function asStringMap(value: unknown): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [key, name] of Object.entries(asMap(value))) {
+        if ('string' === typeof name && '' !== name) out[key] = name;
+    }
+    return out;
 }
 
 /** PHP has one array type, so an empty map arrives as `[]`. Normalise once. */
@@ -95,35 +148,52 @@ export class ModuleSettingsService {
         return this.list().pipe(map(blocks => blocks.filter(b => b.module === module)));
     }
 
-    /** One block's saved values. 404 when no module declared the key. */
-    get(key: string): Observable<ModuleSettingsBlockDto> {
+    /**
+     * One block's values. 404 when no module declared the key.
+     *
+     * With a `site`, the per-site view: `data` is what that site overrode and
+     * `effective` is what it runs on. 422 when the block is platform-wide.
+     */
+    get(key: string, site?: string | null): Observable<ModuleSettingsBlockDto> {
         return this.http
-            .get<ModuleSettingsWireDto>(
-                `${this.apiBase}/module-settings/${encodeURIComponent(key)}`,
-                { headers: ModuleSettingsService.JSON_HEADERS },
-            )
+            .get<ModuleSettingsWireDto>(this.blockUrl(key, site), { headers: ModuleSettingsService.JSON_HEADERS })
             .pipe(map(toBlock));
     }
 
     /**
-     * Replace one block. The response echoes what was PERSISTED (the store
-     * normalises), not what was sent, so the caller should adopt it.
+     * Replace one block, for the platform or for one site. The response echoes
+     * what was PERSISTED (the store normalises), not what was sent, so the
+     * caller should adopt it.
      */
-    save(key: string, data: Record<string, unknown>): Observable<ModuleSettingsBlockDto> {
+    save(key: string, data: Record<string, unknown>, site?: string | null): Observable<ModuleSettingsBlockDto> {
         return this.http
             .put<ModuleSettingsWireDto>(
-                `${this.apiBase}/module-settings/${encodeURIComponent(key)}`,
+                this.blockUrl(key, site),
                 { data },
                 { headers: ModuleSettingsService.JSON_HEADERS },
             )
             .pipe(map(toBlock));
     }
 
-    /** Drop the saved block so the module's shipped defaults apply again. */
-    reset(key: string): Observable<void> {
-        return this.http.delete<void>(
-            `${this.apiBase}/module-settings/${encodeURIComponent(key)}`,
-            { headers: ModuleSettingsService.JSON_HEADERS },
-        );
+    /**
+     * Drop what is saved so the layer beneath applies again.
+     *
+     * ⚠️ With a `site` that means the PLATFORM's values, not the module's
+     * defaults — a site sits on top of the platform row, and dropping the site's
+     * override reveals what was underneath rather than what shipped.
+     */
+    reset(key: string, site?: string | null): Observable<void> {
+        return this.http.delete<void>(this.blockUrl(key, site), { headers: ModuleSettingsService.JSON_HEADERS });
+    }
+
+    /**
+     * The scope is a PATH segment, not a query parameter: it says which resource
+     * is being addressed rather than how to filter one, and the server reads it
+     * the same way for a read and a write.
+     */
+    private blockUrl(key: string, site?: string | null): string {
+        const block = `${this.apiBase}/module-settings/${encodeURIComponent(key)}`;
+
+        return site ? `${block}/sites/${encodeURIComponent(site)}` : block;
     }
 }
