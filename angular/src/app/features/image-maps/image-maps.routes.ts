@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
  * ImageMap feature routes (`/admin/image-maps`). List-only — create/edit run
@@ -12,5 +13,6 @@ export const IMAGE_MAP_ROUTES: Routes = [
     {
         path: ':slug/regions',
         loadComponent: () => import('./image-map-regions.page').then(m => m.ImageMapRegionsPageComponent),
+        canDeactivate: [unsavedChangesGuard],
     },
 ];
