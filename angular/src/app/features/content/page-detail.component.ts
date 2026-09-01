@@ -105,13 +105,27 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
                         @if (p.variants.length) {
                             <ul class="pd__variants">
                                 @for (v of p.variants; track v.locale) {
-                                    <li class="pd__variant">
+                                    <li class="pd__variant" [class.pd__variant--unserved]="false === v.served">
                                         <span class="pd__locale">{{ v.locale }}</span>
                                         <span class="pd__status"
                                               [class.pd__status--published]="'published' === v.status"
                                               [class.pd__status--review]="isInReview(v)">
                                             {{ statusLabel(v) }}
                                         </span>
+                                        @if (false === v.served) {
+                                            <!-- Marked, never hidden. The
+                                                 translation is intact and this
+                                                 site is not publishing its
+                                                 language; turning the language
+                                                 back on brings it back with
+                                                 nothing lost. Saying that is
+                                                 the whole point of showing the
+                                                 row at all. -->
+                                            <span class="pd__unserved"
+                                                  title="This site does not publish in this language. The translation is kept and will be served again if the language is turned back on.">
+                                                not published on this site
+                                            </span>
+                                        }
                                         @if (v.title) {
                                             <span class="pd__variant-title">{{ v.title }}</span>
                                         }
@@ -217,7 +231,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
             word-break: break-all;
         }
         .pd__muted { color: var(--cms-text-muted); font-size: .8125rem; }
-        .pd__warn { color: var(--cms-warning, #b8860b); font-size: .78rem; }
+        .pd__warn { color: var(--cms-warning, #d97706); font-size: .78rem; }
         .pd__warn--block { margin: 0; line-height: 1.4; }
 
         .pd__section { display: flex; flex-direction: column; gap: 6px; }
@@ -255,8 +269,19 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
         }
         /* Published is the only status worth colour: it answers "is this
            live?", the question the panel exists to answer at a glance. */
-        .pd__status--published { border-color: var(--cms-success, #198754); color: var(--cms-success, #198754); }
-        .pd__status--review { border-color: var(--cms-warning, #b8860b); color: var(--cms-warning, #b8860b); }
+        .pd__status--published { border-color: var(--cms-success, #16a34a); color: var(--cms-success, #16a34a); }
+        .pd__status--review { border-color: var(--cms-warning, #d97706); color: var(--cms-warning, #d97706); }
+        .pd__variant--unserved .pd__locale { opacity: .6; }
+
+        .pd__unserved {
+            font-size: .75rem;
+            padding: 1px 6px;
+            border-radius: var(--cms-radius-sm);
+            border: 1px solid var(--cms-border);
+            color: var(--cms-text-muted);
+            background: var(--cms-surface-2);
+        }
+
         .pd__variant-title {
             color: var(--cms-text-muted);
             font-size: .75rem;

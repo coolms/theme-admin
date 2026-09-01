@@ -8,6 +8,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { HttpClient } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { PageService } from './page.service';
 import { PageTypeDto } from './page.types';
@@ -103,7 +104,7 @@ import { AppConfigState } from '@coolms/core-angular';
                                            hidden (change)="onMarkdownFile($event)" />
                                 </label>
                                 <textarea class="cms-input" rows="6" spellcheck="false"
-                                          style="font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; resize: vertical;"
+                                          style="font-family: var(--cms-font-mono, monospace); resize: vertical;"
                                           placeholder="# Heading&#10;&#10;Paste GitHub-flavoured Markdown to seed the body…"
                                           [(ngModel)]="markdown"></textarea>
                                 <div class="cms-field-hint">
@@ -133,6 +134,7 @@ export class CreatePageDialogComponent {
     private readonly pageSvc   = inject(PageService);
     private readonly toast     = inject(ToastService);
     private readonly store     = inject(Store);
+    private readonly http      = inject(HttpClient);
 
     /**
      * The space to create in, handed down by the explorer (#1699).
@@ -197,12 +199,31 @@ export class CreatePageDialogComponent {
     readonly saving = signal(false);
 
     /**
-     * Resolved supported locales from the API manifest. Falls back to
-     * a single 'en' entry on the rare race where the dialog opens
-     * before manifest load completes -- the backend default-locale
-     * floor catches this anyway.
+     * Locales THIS SITE publishes in, fetched from
+     * `i18n.site_enabled_locales`; empty until it answers.
+     */
+    private readonly siteLocales = signal<{ code: string; label: string }[]>([]);
+
+    /**
+     * The locales offered for the first variant.
+     *
+     * Prefers the SITE's set over the platform manifest. The manifest is
+     * structural metadata served to anonymous callers, so it lists every locale
+     * the install supports -- and a site may publish in fewer. Offering one it
+     * has turned off produces a page whose only URL answers 404; the backend
+     * refuses that now, so without this the author would meet an error instead
+     * of never being offered the choice.
+     *
+     * Falls back to the manifest, then to a single 'en' entry: a locale list
+     * that failed to load must not block page creation, and the backend applies
+     * the site's own default when the picker sends nothing it can honour.
      */
     readonly locales = computed(() => {
+        const site = this.siteLocales();
+        if (site.length > 0) {
+            return site;
+        }
+
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const supported = manifest?.supportedLocales ?? [];
         if (supported.length === 0) {
@@ -215,6 +236,32 @@ export class CreatePageDialogComponent {
         // Default to the first configured locale -- tenant default.
         const first = this.locales()[0];
         if (first) this.locale = first.code;
+
+        // The site's own set, which narrows the list above once it arrives. A
+        // failure leaves the manifest list in place rather than blocking
+        // creation on a config read.
+        this.http.get<{ member?: { value: string; label: string }[] }>(
+            '/api/v1/options/i18n.site_enabled_locales',
+        )
+            .pipe(takeUntilDestroyed())
+            .subscribe({
+                next: res => {
+                    const rows = (res.member ?? []).map(o => ({ code: o.value, label: o.label }));
+                    if (rows.length === 0) {
+                        return;
+                    }
+                    this.siteLocales.set(rows);
+
+                    // ⚠️ Re-pick if what was chosen a moment ago is not on this
+                    // site's list. The constructor defaults before the fetch
+                    // returns, so leaving it would submit a locale the backend
+                    // is about to refuse -- an error the operator never chose.
+                    if (!rows.some(r => r.code === this.locale)) {
+                        this.locale = rows[0].code;
+                    }
+                },
+                error: () => { /* keep the manifest list */ },
+            });
 
         // #1696 — the kinds this installation offers. Failure leaves the list
         // empty, which degrades to the "Default" option alone rather than
