@@ -107,23 +107,23 @@ export interface ConflictDialogData {
             align-items: center;
             gap: 10px;
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             border: 1.5px solid var(--cms-border, #e5e7eb);
             cursor: pointer;
             transition: border-color .12s, background .12s;
         }
         .conflict-card--active {
-            border-color: var(--cms-accent, #3b82f6);
-            background: var(--cms-accent-light, #eff6ff);
+            border-color: var(--cms-accent, #F5A623);
+            background: var(--cms-accent-light, #FEF7E6);
         }
         .conflict-card-icon { font-size: 1rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; width: 20px; text-align: center; }
-        .conflict-card--active .conflict-card-icon { color: var(--cms-accent, #3b82f6); }
+        .conflict-card--active .conflict-card-icon { color: var(--cms-accent, #F5A623); }
         .conflict-card-title { font-size: .875rem; font-weight: 600; color: var(--cms-text, #111827); }
         .conflict-card-desc  { font-size: .75rem; color: var(--cms-text-secondary, #6b7280); }
 
-        .rename-panel       { padding: 10px 12px; border-radius: 6px; background: var(--cms-bg-subtle, #f8f9fa); margin-bottom: 4px; border: 1px solid var(--cms-border, #e5e7eb); }
-        .rename-panel-label { font-size: .8rem; font-weight: 600; margin-bottom: 6px; color: var(--cms-text, #374151); }
-        .chk-row            { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--cms-text, #374151); cursor: pointer; user-select: none; }
+        .rename-panel       { padding: 10px 12px; border-radius: var(--cms-radius, 6px); background: var(--cms-surface-muted, #f3f4f6); margin-bottom: 4px; border: 1px solid var(--cms-border, #e5e7eb); }
+        .rename-panel-label { font-size: .8rem; font-weight: 600; margin-bottom: 6px; color: var(--cms-text, #111827); }
+        .chk-row            { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--cms-text, #111827); cursor: pointer; user-select: none; }
     `],
 })
 export class VfsConflictDialogComponent {

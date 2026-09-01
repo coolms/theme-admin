@@ -36,7 +36,7 @@ export interface DelegateDialogResult {
     imports: [ModalComponent, UserSearchSelectComponent],
     template: `
         <app-modal [title]="'Delegate task — ' + data.activityId" [width]="440">
-            <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #6c757d);">
+            <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #848b96);">
                 Pick the user this task should be handed off to.
             </p>
 

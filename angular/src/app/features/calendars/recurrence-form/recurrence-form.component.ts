@@ -308,7 +308,7 @@ import {
         }
         .rrule-row__unit {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             margin-bottom: 6px;
         }
         .field {
@@ -328,7 +328,7 @@ import {
         .field__label {
             font-size: .8125rem;
             font-weight: 500;
-            color: var(--cms-text-secondary, #4b5563);
+            color: var(--cms-text-secondary, #6b7280);
         }
         .field-inline {
             display: inline-flex; align-items: center;
@@ -343,7 +343,7 @@ import {
             font-family: inherit;
             box-sizing: border-box;
             max-width: 100%;
-            color: var(--cms-text, #1f2937);
+            color: var(--cms-text, #111827);
             background: var(--cms-surface);
         }
         /* Field-scoped inputs/selects (those owning their own row) take
@@ -359,7 +359,7 @@ import {
         .inline-input[type="date"] { width: 150px; }
         .inline-input--narrow { width: 72px; flex: 0 0 auto; }
         textarea.mono {
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-family: var(--cms-font-mono, monospace);
         }
 
         /* Weekday picker — toggle pills */
@@ -368,9 +368,9 @@ import {
         }
         .weekday-picker__btn {
             width: 36px; height: 32px;
-            border: 1px solid var(--cms-border, #d1d5db);
+            border: 1px solid var(--cms-border, #e5e7eb);
             background: var(--cms-surface);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .85rem;
             cursor: pointer;
             transition: background .12s, color .12s, border-color .12s;
@@ -379,12 +379,12 @@ import {
             cursor: not-allowed; opacity: .6;
         }
         .weekday-picker__btn:hover:not(:disabled) {
-            border-color: var(--cms-accent, #2563eb);
+            border-color: var(--cms-accent, #F5A623);
         }
         .weekday-picker__btn.is-selected {
-            background: var(--cms-accent, #2563eb);
-            color: var(--cms-text-inverse);
-            border-color: var(--cms-accent, #2563eb);
+            background: var(--cms-accent, #F5A623);
+            color: var(--cms-accent-fg, #1a1a1a);
+            border-color: var(--cms-accent, #F5A623);
         }
 
         /* Anchor + End fieldsets — flat radio rows */
@@ -398,7 +398,7 @@ import {
             padding: 0 6px;
             font-size: .8125rem;
             font-weight: 500;
-            color: var(--cms-text-secondary, #4b5563);
+            color: var(--cms-text-secondary, #6b7280);
         }
         .anchor .field-inline, .end .field-inline {
             display: flex;
@@ -432,14 +432,14 @@ import {
         .exclude__remove {
             background: transparent;
             border: none;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             cursor: pointer;
             font-size: 1rem;
             line-height: 1;
             padding: 0 4px;
         }
         .exclude__remove:hover:not(:disabled) {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
         }
 
         /* Preview */
@@ -447,7 +447,7 @@ import {
             border: 1px solid var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius, 4px);
             padding: 6px 12px 8px;
-            background: #fafbfc;
+            background: var(--cms-surface-muted);
         }
         .preview__head {
             display: flex; align-items: center;
@@ -455,23 +455,23 @@ import {
         }
         .preview__pending {
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .preview__list {
             list-style: disc;
             margin: 4px 0 0;
             padding-left: 20px;
             font-size: .8125rem;
-            color: var(--cms-text, #1f2937);
+            color: var(--cms-text, #111827);
         }
         .preview__list li { margin: 1px 0; }
 
 
-        .hint { font-size: .75rem; color: var(--cms-text-muted, #6b7280); margin: 4px 0 0; }
+        .hint { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: 4px 0 0; }
         .hint--inline { margin: 0; }
-        .error { font-size: .8rem; color: var(--cms-danger, #b91c1c); margin: 4px 0 0; }
+        .error { font-size: .8rem; color: var(--cms-danger, #dc2626); margin: 4px 0 0; }
         code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-family: var(--cms-font-mono, monospace);
             background: var(--cms-surface-muted); padding: 1px 4px; border-radius: 3px;
         }
     `],

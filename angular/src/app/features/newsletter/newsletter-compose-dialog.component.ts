@@ -179,21 +179,21 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #6b7280); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #848b96); }
         .field { display: flex; flex-direction: column; margin-bottom: 0.85rem; }
-        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #6b7280); }
-        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #6b7280); }
+        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }
+        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #848b96); }
         app-locale-switcher { display: block; margin-bottom: 0.6rem; }
         .attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.5rem; }
         .attachment {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 3px 6px 3px 8px; border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 6px; font-size: 0.8125rem; max-width: 100%;
+            border-radius: var(--cms-radius, 6px); font-size: 0.8125rem; max-width: 100%;
         }
         .attachment__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .attachment__remove {
             border: 0; background: transparent; cursor: pointer; line-height: 1;
-            font-size: 1rem; color: var(--cms-text-muted, #6b7280); padding: 0 2px;
+            font-size: 1rem; color: var(--cms-text-muted, #848b96); padding: 0 2px;
         }
         .attachment__remove:hover { color: var(--cms-danger, #dc2626); }
         /* The editor sizes to its content; cap it so a long campaign scrolls
@@ -202,7 +202,7 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         .recipients {
             margin-right: auto;
             font-size: 0.82rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
     `],
 })

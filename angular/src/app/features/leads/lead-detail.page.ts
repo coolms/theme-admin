@@ -173,9 +173,9 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         .chip {
             display: inline-block;
             padding: 1px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .7rem;
-            background: #eef2ff; color: #4338ca;
+            background: var(--cms-meta-subtle); color: var(--cms-meta-text);
         }
         .chip--channel { background: var(--cms-surface-muted); color: var(--cms-text-body); }
         .chip--new { background: var(--cms-info-subtle); color: var(--cms-info-text); }
@@ -185,7 +185,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             margin-bottom: 16px;
             overflow: hidden;
         }
@@ -197,12 +197,12 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        dt { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .message { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: .9rem; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .muted { color: var(--cms-text-muted, #6b7280); }
+        .mono { font-family: var(--cms-font-mono, monospace); }
+        .muted { color: var(--cms-text-muted, #848b96); }
     `],
 })
 export class LeadDetailComponent implements OnInit {

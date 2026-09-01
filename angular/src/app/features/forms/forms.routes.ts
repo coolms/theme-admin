@@ -1,4 +1,5 @@
 import { type Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
  * Form Builder admin routes (Track D.3).
@@ -19,10 +20,12 @@ export const FORM_ROUTES: Routes = [
         path: 'new',
         loadComponent: () =>
             import('./form-builder.page').then(m => m.FormBuilderPageComponent),
+        canDeactivate: [unsavedChangesGuard],
     },
     {
         path: ':id',
         loadComponent: () =>
             import('./form-builder.page').then(m => m.FormBuilderPageComponent),
+        canDeactivate: [unsavedChangesGuard],
     },
 ];

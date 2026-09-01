@@ -80,8 +80,8 @@ import { LazySelectComponent, ModalComponent } from '@coolms/ui-angular';
         .form-row label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; }
         .form-row label.span-2 { grid-column: span 2; }
         .form-row input {
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 6px 8px;
             font-size: .9rem;
         }
@@ -93,7 +93,7 @@ import { LazySelectComponent, ModalComponent } from '@coolms/ui-angular';
             padding-top: 16px;
             border-top: 1px solid var(--cms-border, #e5e7eb);
         }
-        .error { color: var(--cms-danger, #b91c1c); margin: 8px 0; font-size: .85rem; }
+        .error { color: var(--cms-danger, #dc2626); margin: 8px 0; font-size: .85rem; }
     `],
 })
 export class CalendarFormDialogComponent {

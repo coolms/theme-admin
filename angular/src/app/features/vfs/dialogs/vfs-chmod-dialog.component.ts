@@ -222,21 +222,21 @@ function rowsToOctal(rows: [PermRow, PermRow, PermRow], special = 0): string {
         .perm-table           { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
         .perm-table th        { font-size: .78rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); padding: 2px 8px; text-align: center; }
         .perm-table td        { padding: 4px 8px; text-align: center; }
-        .perm-label           { text-align: left !important; font-size: .875rem; color: var(--cms-text, #374151); min-width: 60px; }
+        .perm-label           { text-align: left !important; font-size: .875rem; color: var(--cms-text, #111827); min-width: 60px; }
         .perm-table--sm       { font-size: .8rem; }
         .perm-table--sm .perm-label { font-size: .8rem; }
         .octal-preview        { font-size: .8rem; color: var(--cms-text-secondary, #6b7280); margin-bottom: 4px; }
-        .dlg-sep              { margin: 12px 0; border: none; border-top: 1px solid var(--cms-border, #f1f5f9); }
+        .dlg-sep              { margin: 12px 0; border: none; border-top: 1px solid var(--cms-border, #e5e7eb); }
         /* Checkbox row: wrapper flex label + text */
         .chk-row {
             display: flex; align-items: center; gap: 8px;
-            font-size: .875rem; color: var(--cms-text, #374151);
+            font-size: .875rem; color: var(--cms-text, #111827);
             cursor: pointer; user-select: none;
             margin-bottom: 6px;
         }
         .recursive-opts       { padding-left: 24px; display: flex; flex-direction: column; }
         .text-muted           { color: var(--cms-text-secondary, #6b7280); font-size: .8rem; margin-bottom: 6px; }
-        .bit-desc             { color: var(--cms-text-muted, #9ca3af); font-size: .78rem; margin-left: 2px; }
+        .bit-desc             { color: var(--cms-text-muted, #848b96); font-size: .78rem; margin-left: 2px; }
     `],
 })
 export class VfsChmodDialogComponent {

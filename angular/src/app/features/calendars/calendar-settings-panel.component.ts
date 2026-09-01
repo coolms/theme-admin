@@ -330,7 +330,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
             grid-template-columns: repeat(4, 1fr);
             gap: 2px;
             background: var(--cms-surface-muted);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             padding: 2px;
         }
         .tabs button {
@@ -343,8 +343,8 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
             font-weight: 500;
             border: 0;
             background: transparent;
-            border-radius: 4px;
-            color: var(--cms-text-muted, #6b7280);
+            border-radius: var(--cms-radius-sm, 4px);
+            color: var(--cms-text-muted, #848b96);
             cursor: pointer;
             line-height: 1;
         }
@@ -353,7 +353,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
         .tabs__btn--active {
             background: var(--cms-surface, #fff) !important;
             color: var(--cms-text) !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+            box-shadow: var(--cms-shadow-sm, 0 1px 3px rgba(0,0,0,.08));
         }
 
         .tab-body { display: flex; flex-direction: column; gap: 10px; }
@@ -363,19 +363,19 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
         .tab-body--shares ::ng-deep .card__body { padding: 0; }
 
         .field { display: flex; flex-direction: column; gap: 4px; }
-        .field__label { font-size: .72rem; color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        .field__label { font-size: .72rem; color: var(--cms-text-muted, #848b96); font-weight: 500; }
         .field input, .field select {
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 5px 8px;
             font-size: .85rem;
             background: var(--cms-surface, #fff);
         }
         .tab-actions { display: flex; justify-content: flex-end; padding-top: 4px; }
 
-        .hint { color: var(--cms-text-muted, #6b7280); font-size: .75rem; margin: 0; }
-        .error { color: var(--cms-danger, #b91c1c); margin: 4px 0 0; font-size: .8rem; }
-        .empty { color: var(--cms-text-muted, #6b7280); margin: 0; font-size: .8rem; }
+        .hint { color: var(--cms-text-muted, #848b96); font-size: .75rem; margin: 0; }
+        .error { color: var(--cms-danger, #dc2626); margin: 4px 0 0; font-size: .8rem; }
+        .empty { color: var(--cms-text-muted, #848b96); margin: 0; font-size: .8rem; }
 
         .hours-list { display: flex; flex-direction: column; gap: 6px; }
         .day-block {
@@ -388,25 +388,25 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
         .day-block__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .day-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; }
         .weekday { font-weight: 600; }
-        .closed-tag { font-size: .68rem; color: var(--cms-text-muted, #9ca3af); text-transform: uppercase; letter-spacing: .03em; }
+        .closed-tag { font-size: .68rem; color: var(--cms-text-muted, #848b96); text-transform: uppercase; letter-spacing: .03em; }
         .intervals { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-left: 22px; }
         /* The time-of-day pickers are wider than the old native inputs
            (2–3 selects each), so allow the row to wrap in the narrow
            settings drawer rather than overflow. */
         .interval-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
-        .interval-row .dash { color: var(--cms-text-muted, #9ca3af); }
+        .interval-row .dash { color: var(--cms-text-muted, #848b96); }
         .overnight-tag {
             display: inline-flex;
             align-items: center;
             gap: 3px;
             padding: 1px 6px;
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             font-size: .62rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: .02em;
-            background: #e0e7ff;
-            color: #3730a3;
+            background: var(--cms-meta-subtle);
+            color: var(--cms-meta-text);
             white-space: nowrap;
         }
         .overnight-tag i { font-size: .72rem; }
@@ -420,7 +420,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
             justify-content: space-between;
             gap: 6px;
             padding: 6px 0;
-            border-bottom: 1px solid var(--cms-border, #f3f4f6);
+            border-bottom: 1px solid var(--cms-border, #e5e7eb);
         }
         .list__row:last-child { border-bottom: 0; }
         .list__main { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; min-width: 0; }
@@ -430,7 +430,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
         .badge {
             display: inline-flex;
             padding: 1px 5px;
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             font-size: .6rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -448,7 +448,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
             border: 0;
             background: transparent;
             border-radius: 3px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             cursor: pointer;
         }
         .btn-icon:hover { background: var(--cms-surface-muted); color: var(--cms-text); }

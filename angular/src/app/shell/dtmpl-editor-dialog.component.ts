@@ -14,7 +14,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
-import { AuthoringContextDto, AuthoringContextService, CmsContextFrameComponent, ToastService, VfsNodeDto } from '@coolms/ui-angular';
+import { AuthoringContextDto, AuthoringContextService, CmsContextFrameComponent, ConfirmDialogService, ToastService, UnsavedChangesService, VfsNodeDto } from '@coolms/ui-angular';
 import { CoolmsEditorComponent, type PageGeometry } from '@coolms/editor-angular';
 import {
     DDOC_CUSTOM_SIZE,
@@ -357,7 +357,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
         }
         .dtmpl-editor-dialog__pane--preview {
             border-left: 1px solid var(--cms-border);
-            background: var(--cms-surface-muted, #f8f9fa);
+            background: var(--cms-surface-muted, #f3f4f6);
             overflow: hidden;
         }
         .dtmpl-editor-dialog__body--split .dtmpl-editor-dialog__pane--preview {
@@ -401,7 +401,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
             padding: 16px; text-align: center; font-size: .875rem;
         }
         .dtmpl-editor-dialog__preview-idle { color: var(--cms-text-muted); }
-        .dtmpl-editor-dialog__preview-error { color: var(--cms-danger, #dc3545); }
+        .dtmpl-editor-dialog__preview-error { color: var(--cms-danger, #dc2626); }
         /* The viewer is the whole pane; without this it collapses to its
          * intrinsic height inside the flex column. */
         .dtmpl-editor-dialog__pane--preview cms-pdf-viewer {
@@ -428,7 +428,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
             flex-shrink: 0;
             font-size: .8125rem;
         }
-        .dtmpl-editor-dialog__dirty { color: var(--cms-warning); font-size: .75rem; }
+        .dtmpl-editor-dialog__dirty { color: var(--cms-warning-text); font-size: .75rem; }
         .dtmpl-editor-dialog__status { color: var(--cms-text-muted); }
     `],
 })
@@ -438,6 +438,8 @@ export class DtmplEditorDialogComponent {
     private readonly http       = inject(HttpClient);
     private readonly store      = inject(Store);
     private readonly toast      = inject(ToastService);
+    private readonly confirm    = inject(ConfirmDialogService);
+    private readonly unsaved    = inject(UnsavedChangesService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly pageSizes  = inject(DocumentPageSizeService);
     private readonly previews   = inject(DocumentPreviewService);
@@ -658,6 +660,10 @@ export class DtmplEditorDialogComponent {
     private readonly docFeed$ = new Subject<string>();
 
     constructor() {
+        // beforeunload half of the guard (#2484): the per-dialog confirm
+        // cannot see a tab close or a reload. Disposed with the component, so
+        // a closed editor stops voting.
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
         this.loadContent();
         this.loadSheet();
         this.wireDocumentPreview();
@@ -1192,8 +1198,24 @@ export class DtmplEditorDialogComponent {
             });
     }
 
+    /**
+     * ⚠️ Was an unconditional close. The footer rendered "unsaved changes"
+     * and Cancel threw them away without asking -- the flag was shown to the
+     * user and ignored by the code that discarded the work.
+     *
+     * `confirmDiscard` completes after one value, so a plain subscribe is
+     * enough; there is nothing to unsubscribe from.
+     */
     close(): void {
-        this.dialogRef.close();
+        if (!this.dirty()) {
+            this.dialogRef.close();
+
+            return;
+        }
+
+        this.confirm.confirmDiscard(this.node.name).subscribe((discard) => {
+            if (discard) this.dialogRef.close();
+        });
     }
 
     private fileContentUrl(): string | null {

@@ -144,7 +144,7 @@ const KEY_RE = /^[a-z0-9][a-z0-9_-]*$/;
             font-size: 0.72rem;
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             padding: 0 0.1rem;
         }
         .variant-row__weight { text-align: right; }
@@ -152,11 +152,11 @@ const KEY_RE = /^[a-z0-9][a-z0-9_-]*$/;
         .variants__add { align-self: flex-start; margin-top: 2px; }
         .cms-input--locked {
             background: var(--cms-surface-muted, #f3f4f6);
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             cursor: not-allowed;
         }
         .error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             margin: 0;
             font-size: 0.8125rem;
         }

@@ -25,10 +25,29 @@ describe('settings grouping', () => {
             data: {},
             defaults: {},
             effective: {},
+            locked: {},
+            // Added with per-site overrides; the normaliser defaults an
+            // omitting payload to exactly this pair.
+            siteScopable: false,
+            scope: null,
             storedAt: null,
             ...over,
         };
     }
+
+    it('survives a block whose moduleRoute the server omitted', () => {
+        // The crash that took the settings screen down: the guard tested
+        // `null !== moduleRoute` while the wire omits null properties outright,
+        // so an absent route reached `.replace`. Cast because the DTO types the
+        // field as `string | null` — which is exactly the promise the wire does
+        // not keep.
+        const groups = groupBlocks([
+            block({ key: 'web.page_cache', module: 'web', moduleRoute: undefined as unknown as null }),
+        ]);
+
+        expect(groups.length).toBe(1);
+        expect(groups[0].route).toBeNull();
+    });
 
     it('groups blocks by module, both levels alphabetical', () => {
         const groups = groupBlocks([

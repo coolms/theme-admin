@@ -145,7 +145,7 @@ interface FlatCollectionItem {
             padding: 6px 8px; border-bottom: 1px solid var(--cms-border);
             display: flex; align-items: center; gap: 4px;
             position: sticky; top: 0; z-index: 1;
-            background: var(--cms-sidebar-bg, #fff);
+            background: var(--cms-sidebar-bg, #1a2332);
         }
         .sidebar-header-label {
             font-size: .75rem; font-weight: 600; color: var(--cms-text-secondary);

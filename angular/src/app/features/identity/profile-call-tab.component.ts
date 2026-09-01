@@ -35,7 +35,7 @@ import { WebPhoneService } from '../call/web-phone.service';
         .group { display: flex; flex-direction: column; gap: 6px; max-width: 480px; }
         .group + .group { margin-top: 18px; }
         .group-label { font-size: .85rem; font-weight: 600; color: var(--cms-text, #111827); }
-        .group-help { font-size: .75rem; color: var(--cms-text-muted, #6b7280); margin: 0; }
+        .group-help { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: 0; }
 
         .switch-row { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .875rem; }
         .switch-row input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
@@ -45,24 +45,24 @@ import { WebPhoneService } from '../call/web-phone.service';
         .seconds-row input[disabled] { opacity: .55; }
         .seconds-unit { font-size: .8rem; color: var(--cms-text-secondary, #6b7280); }
 
-        .group input[type="text"].form-control { max-width: 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .group input[type="text"].form-control { max-width: 260px; font-family: var(--cms-font-mono, monospace); }
 
         .phone-card {
             margin-top: 20px;
             padding: 12px 14px;
-            border: 1px dashed var(--cms-border, #d1d5db);
-            border-radius: 8px;
-            color: var(--cms-text-muted, #6b7280);
+            border: 1px dashed var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-md, 8px);
+            color: var(--cms-text-muted, #848b96);
             font-size: .8rem;
-            background: var(--cms-bg-subtle, #f9fafb);
+            background: var(--cms-surface-muted, #f3f4f6);
             max-width: 480px;
         }
         .phone-card strong { color: var(--cms-text, #111827); }
         /* Registered is the only state that is a solid fact rather than an absence. */
         .phone-card--ready {
             border-style: solid;
-            border-color: var(--cms-success-border, #a7f3d0);
-            background: var(--cms-success-bg, #ecfdf5);
+            border-color: var(--cms-success-subtle-border, #86efac);
+            background: var(--cms-success-light, #f0fdf4);
         }
     `],
     template: `

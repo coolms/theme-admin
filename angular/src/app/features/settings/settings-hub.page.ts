@@ -9,7 +9,7 @@ import {
     signal,
     viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
@@ -28,8 +28,12 @@ import {
 import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
 
 
+import { Store } from '@ngxs/store';
+
+import { SectionState } from '../sections/section.state';
 import { ModuleSettingsService } from './module-settings.service';
 import { ModuleSettingsBlockDto } from './module-settings.types';
+import { adoptSavedBlock, withoutPinnedKeys } from './settings-payload.util';
 import { deslugify, groupBlocks, isEdited, type ModuleGroup } from './settings-grouping.util';
 
 /** Where the rail's folded branches are remembered, per user. */
@@ -170,6 +174,51 @@ const PREFS_KEY = 'settings';
                             </div>
 
                             <div class="settings__pane">
+                                @if (b.siteScopable && multiSite()) {
+                                    <!-- Only where the block declared it. Offering
+                                         the choice on a platform-wide block would
+                                         invite a save the server refuses.
+
+                                         WHICH site comes from the header's Site
+                                         Selector, not from a second list here.
+                                         This control picks the LAYER; that one
+                                         picks the site, as it already does
+                                         everywhere else in the admin. -->
+                                    <div class="settings__scope-bar">
+                                    @if (activeSite(); as site) {
+                                        <div class="settings__scope">
+                                            <span id="scope-label">Applies to</span>
+                                            <div class="settings__scope-choice" role="group" aria-labelledby="scope-label">
+                                                <button type="button"
+                                                        [class.is-active]="'platform' === scopeMode()"
+                                                        [attr.aria-pressed]="'platform' === scopeMode()"
+                                                        (click)="chooseScope('platform')">Platform (every site)</button>
+                                                <button type="button"
+                                                        [class.is-active]="'site' === scopeMode()"
+                                                        [attr.aria-pressed]="'site' === scopeMode()"
+                                                        (click)="chooseScope('site')">{{ site.label }}</button>
+                                            </div>
+                                        </div>
+                                    } @else {
+                                        <p class="settings__note">
+                                            Editing the values every site uses. To set them for one site, pick that
+                                            site in the header first.
+                                        </p>
+                                    }
+                                    @if ('site' === scopeMode() && activeSite()) {
+                                        <!-- The saved values are what THIS SITE
+                                             overrode; the rest is inherited. Without
+                                             saying so, an operator cannot tell a
+                                             value they set here from one coming
+                                             from the platform. -->
+                                        <p class="settings__note">
+                                            Showing this site's settings. Fields it has not overridden are
+                                            inherited from the platform, and Reset drops only this site's
+                                            overrides &mdash; it does not change the platform.
+                                        </p>
+                                    }
+                                    </div>
+                                }
                                 @if (b.formId) {
                                     <!-- Rebuilt on formKey() so Reset and Discard
                                          re-read the stored values into the
@@ -180,8 +229,21 @@ const PREFS_KEY = 'settings';
                                             [formId]="b.formId"
                                             context="edit"
                                             [initialValue]="b.effective"
+                                            [readonlyFields]="lockedAliases(b)"
                                             [showActions]="false"
                                             (submitted)="save($event)" />
+                                    }
+                                    @if (lockedAliases(b).length) {
+                                        <!-- Naming the variable is the point. A greyed
+                                             control with no explanation reads as a bug;
+                                             "set by PAGE_CACHE_TTL" tells an operator
+                                             exactly where to change it for real. -->
+                                        <p class="settings__note">
+                                            Set by the environment and not editable here:
+                                            @for (entry of lockedEntries(b); track entry.alias) {
+                                                <code>{{ entry.alias }}</code> (<code>{{ entry.variable }}</code>){{ $last ? '' : ', ' }}
+                                            }
+                                        </p>
                                     }
                                 } @else {
                                     <p class="settings__note">
@@ -323,7 +385,7 @@ const PREFS_KEY = 'settings';
         .rail-item:hover { background: var(--cms-hover-bg); }
         .rail-item:focus-visible { outline: 2px solid var(--cms-accent); outline-offset: -2px; }
         .rail-item--active {
-            background: var(--cms-active-bg);
+            background: var(--cms-accent-light, #FEF7E6);
             border-left-color: var(--cms-accent);
             font-weight: 600;
         }
@@ -365,6 +427,58 @@ const PREFS_KEY = 'settings';
         }
 
         .settings__note { font-size: .8125rem; color: var(--cms-text-muted); margin: 0 0 8px; }
+
+        /* The scope picker is a control ABOUT the form, not a field in it. The
+           rule and the gap sit under the picker AND its explanation, so the two
+           read as one band that the form starts below — not as a separator
+           driven between a control and the sentence describing it.
+
+           Reported from the screen: without this the select sat hard against the
+           first checkbox and the two looked like one group. */
+        .settings__scope-bar {
+            margin: 0 0 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--cms-border);
+        }
+
+        .settings__scope {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin: 0 0 6px;
+            font-size: .8125rem;
+            color: var(--cms-text-muted);
+        }
+
+        .settings__scope-choice { display: inline-flex; }
+
+        .settings__scope-choice button {
+            border: 1px solid var(--cms-border);
+            background: var(--cms-surface);
+            color: var(--cms-text);
+            padding: 4px 12px;
+            font-size: .8125rem;
+            cursor: pointer;
+        }
+
+        .settings__scope-choice button:first-child {
+            border-radius: var(--cms-radius-sm) 0 0 var(--cms-radius-sm);
+        }
+
+        .settings__scope-choice button:last-child {
+            border-radius: 0 var(--cms-radius-sm) var(--cms-radius-sm) 0;
+            border-left: none;
+        }
+
+        /* The selected layer, in the accent the admin uses for a chosen state. */
+        .settings__scope-choice button.is-active {
+            background: var(--cms-accent);
+            border-color: var(--cms-accent);
+            color: var(--cms-accent-fg);
+        }
+
+        /* Already spaced by the bar below it. */
+        .settings__scope-bar .settings__note { margin-bottom: 0; }
 
         .settings__raw {
             background: var(--cms-code-bg);
@@ -428,6 +542,64 @@ export class SettingsHubPageComponent implements OnInit {
     /** Bumped to force the form to rebuild from the stored values. */
     readonly formKey = signal(0);
 
+    // ⚠️ Declared ABOVE the signals that read it. Field initialisers run in
+    // source order, so a `toSignal(this.store…)` above this line compiles and
+    // then reads undefined at runtime — TS2729 catches it, which is the only
+    // reason it is not a boot-time mystery.
+    private readonly store = inject(Store);
+
+    /**
+     * Which LAYER is being edited. The SITE is not chosen here.
+     *
+     * ⚠️ This screen used to carry its own list of sites, which put a second site
+     * picker on a page that already had one in the header — and the header's is
+     * the platform's answer to "which site am I working on", stamped onto every
+     * API call as `X-CoolMS-Section`. Two controls for one question is the
+     * question asked twice.
+     *
+     * What the header CANNOT express is the platform itself: its empty option is
+     * `(host-derived)`, meaning "infer the site from the host", which is not the
+     * same as "the values every site shares". That distinction is the only thing
+     * this control exists for.
+     */
+    readonly scopeMode = signal<'platform' | 'site'>('platform');
+
+    /** Every section the operator can see, from the same state the header uses. */
+    private readonly sections = toSignal(this.store.select(SectionState.sections), { initialValue: [] });
+
+    /** The header's current site, or null when it is host-derived. */
+    readonly activeSite = toSignal(this.store.select(SectionState.currentSection), { initialValue: null });
+
+    /**
+     * Whether a per-site choice means anything here.
+     *
+     * With one section there is nothing to distinguish — the platform's values
+     * ARE that site's — and the header's own selector hides itself for exactly
+     * that reason. A layer toggle there would offer a decision with one outcome.
+     */
+    readonly multiSite = computed(() => this.sections().length > 1);
+
+    /**
+     * The scope to address the API with: a site id, or null for the platform.
+     *
+     * ⚠️ A plain signal, SET in {@link chooseScope} -- not a computed over
+     * `scopeMode` and `activeSite`. As a computed it fed `selected()`, which the
+     * template reads, and clicking the site button FROZE the renderer. The exact
+     * cycle was not worth chasing: a settings screen that hangs the admin is not
+     * a trade to make for removing one assignment.
+     */
+    readonly selectedSite = signal<string | null>(null);
+
+    /**
+     * The selected block AS SEEN AT `selectedSite()`.
+     *
+     * Held apart from {@link blocks} rather than written into it: that list is
+     * the platform-wide view the rail renders, and folding a site's values into
+     * it would make the rail describe one site while claiming to describe the
+     * platform.
+     */
+    readonly scopedBlock = signal<ModuleSettingsBlockDto | null>(null);
+
     /**
      * Modules whose branch is folded away — the COLLAPSED set, not the expanded
      * one, so a newly installed module shows up rather than hiding until someone
@@ -451,6 +623,10 @@ export class SettingsHubPageComponent implements OnInit {
 
     readonly selected = computed((): ModuleSettingsBlockDto | null => {
         const key = this.selectedKey();
+        const scoped = this.scopedBlock();
+        if (null !== key && null !== scoped && scoped.key === key && null !== this.selectedSite()) {
+            return scoped;
+        }
 
         return null === key ? null : this.blocks().find(b => b.key === key) ?? null;
     });
@@ -631,17 +807,36 @@ export class SettingsHubPageComponent implements OnInit {
         this.formKey.update(k => k + 1);
     }
 
+    /** Aliases this deployment pins in its environment. */
+    lockedAliases(block: ModuleSettingsBlockDto): string[] {
+        return Object.keys(block.locked ?? {});
+    }
+
+    /** The same, paired with the variable that owns each, for the note. */
+    lockedEntries(block: ModuleSettingsBlockDto): { alias: string; variable: string }[] {
+        return Object.entries(block.locked ?? {}).map(([alias, variable]) => ({ alias, variable }));
+    }
+
     save(value: Record<string, unknown>): void {
         const key = this.selectedKey();
         if (null === key) {
             return;
         }
 
-        this.settings.save(key, value).subscribe({
+        // Pinned keys must not travel — see `withoutPinnedKeys` for why a
+        // disabled control still ends up in the payload, and what it costs.
+        const payload = withoutPinnedKeys(value, this.selected()?.locked ?? {});
+
+        this.settings.save(key, payload, this.selectedSite()).subscribe({
             next: saved => {
                 // Adopt the response: the store normalises and strips its own
-                // bookkeeping, so what came back is what a reload would show.
-                this.blocks.update(rows => rows.map(r => (r.key === saved.key ? saved : r)));
+                // bookkeeping, so what came back is what a reload would show —
+                // but into the RIGHT place. See `adoptSavedBlock`.
+                const { blocks, scoped } = adoptSavedBlock(this.blocks(), saved, this.selectedSite());
+                this.blocks.set(blocks);
+                if (null !== scoped) {
+                    this.scopedBlock.set(scoped);
+                }
                 this.form()?.resetSaving();
                 this.toast.success('Settings saved.');
             },
@@ -655,25 +850,103 @@ export class SettingsHubPageComponent implements OnInit {
             return;
         }
 
+        const site = this.selectedSite();
+        // ⚠️ Different promise per scope. A site sits ON TOP of the platform
+        // row, so dropping its overrides reveals the platform's values, not the
+        // module's shipped ones -- and an operator told "defaults apply again"
+        // would expect the wrong outcome.
+        const question = null === site ? 'Reset to defaults?' : "Drop this site's overrides?";
+        const detail = null === site
+            ? `Drops the saved values for "${b.label}". The module's shipped defaults apply again.`
+            : `Drops what this site overrode for "${b.label}". The platform's values apply again.`;
+
         this.confirm
-            .confirm(
-                'Reset to defaults?',
-                `Drops the saved values for "${b.label}". The module's shipped defaults apply again.`,
-            )
+            .confirm(question, detail)
             .subscribe(ok => {
                 if (!ok) {
                     return;
                 }
 
-                this.settings.reset(b.key).subscribe({
+                this.settings.reset(b.key, site).subscribe({
                     next: () => {
-                        const cleared = { ...b, data: {}, storedAt: null };
-                        this.blocks.update(rows => rows.map(r => (r.key === cleared.key ? cleared : r)));
+                        if (null === site) {
+                            const cleared = { ...b, data: {}, storedAt: null };
+                            this.blocks.update(rows => rows.map(r => (r.key === cleared.key ? cleared : r)));
+                        }
+                        // Re-read rather than patch: at a site scope the values
+                        // in force after a reset are the platform's, which this
+                        // client does not hold and must not guess.
+                        this.reloadScoped();
                         this.formKey.update(k => k + 1);
-                        this.toast.success('Settings reset to defaults.');
+                        this.toast.success(null === site ? 'Settings reset to defaults.' : "This site's overrides dropped.");
                     },
                     error: err => this.toast.error(this.errors.humanize(err)),
                 });
             });
     }
+
+    /**
+     * Switch which LAYER the form is editing. The site comes from the header.
+     *
+     * ⚠️ **The form is rebuilt when the values ARRIVE, not when the layer is
+     * chosen.** `DynamicFormComponent` patches its initial value once, at
+     * definition load, so a rebuild triggered here — before the scoped fetch
+     * returns — patches the PLATFORM's values and then never re-reads. On the
+     * real screen that showed a site with a saved TTL of 60 as 300, with a Reset
+     * button proving a row existed: the screen contradicting itself.
+     *
+     * So only the platform switch bumps synchronously; the site switch leaves it
+     * to {@link reloadScoped}, which knows when there is something to show.
+     */
+    chooseScope(mode: 'platform' | 'site'): void {
+        const site = this.activeSite();
+        this.scopeMode.set(mode);
+        this.selectedSite.set('site' === mode && site?.id ? site.id : null);
+        this.scopedBlock.set(null);
+        this.reloadScoped();
+
+        if (null === this.selectedSite()) {
+            this.formKey.update(k => k + 1);
+        }
+    }
+
+    // ⚠️ There is deliberately NO effect watching the header's site here.
+    // The first attempt at one wrote `scopeMode` while also reading it, and the
+    // renderer FROZE -- a settings screen that hangs the admin is a far worse
+    // trade than a stale label. If the header's site changes while this screen is
+    // open, the toggle still names the site it was showing until it is clicked
+    // again; that is visible and recoverable, which a frozen tab is not.
+    /**
+     * Fetch the selected block at the selected scope.
+     *
+     * A no-op at the platform scope: {@link blocks} already holds that view, and
+     * re-fetching it would be a second source for the same row.
+     */
+    private reloadScoped(): void {
+        const key = this.selectedKey();
+        const site = this.selectedSite();
+        if (null === key || null === site) {
+            this.scopedBlock.set(null);
+
+            return;
+        }
+
+        this.settings.get(key, site).subscribe({
+            next: block => {
+                this.scopedBlock.set(block);
+                // NOW the form has something scoped to render — see chooseSite.
+                this.formKey.update(k => k + 1);
+            },
+            error: err => {
+                // Fall back to the platform view rather than showing a block
+                // whose values belong to neither scope.
+                this.scopeMode.set('platform');
+                this.selectedSite.set(null);
+                this.scopedBlock.set(null);
+                this.formKey.update(k => k + 1);
+                this.toast.error(this.errors.humanize(err));
+            },
+        });
+    }
+
 }

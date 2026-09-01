@@ -110,7 +110,7 @@ import { MediaAssetDto, MediaViewMode } from './media.types';
         }
         .media-tile {
             border: 2px solid transparent;
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
             cursor: pointer;
             background: var(--cms-surface);

@@ -109,10 +109,10 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
             margin: 0;
         }
         .cms-recipients-step__status--empty {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
         }
         .cms-recipients-step__status--error {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
             display: flex;
             align-items: center;
             gap: .5rem;
@@ -120,7 +120,7 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
         .cms-recipients-step__retry {
             background: none;
             border: 1px solid var(--cms-border);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 2px 8px;
             cursor: pointer;
             color: var(--cms-text);
@@ -133,7 +133,7 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
             margin: 0;
             padding: .5rem .75rem .5rem 1.6rem;
             border: 1px solid var(--cms-border);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             /* Bounded: a sample is a spot-check, not a directory. */
             max-height: 11rem;
             overflow-y: auto;

@@ -2,6 +2,7 @@ import {
     AfterViewInit,
     ChangeDetectionStrategy,
     Component,
+    DestroyRef,
     ElementRef,
     OnDestroy,
     computed,
@@ -19,7 +20,7 @@ import {
 } from '@coolms/image-editor-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { MediaService } from '../media/media.service';
-import { CmsPageHeaderComponent, ToastService } from '@coolms/ui-angular';
+import { CmsPageHeaderComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { ImageMapService } from './image-map.service';
 import type { ImageMapDto, ImageMapRegionDto, UpdateRegionRequest } from './image-map.types';
 
@@ -207,7 +208,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
            dark theme, carried light text at 1.24:1 — the SELECTED tool was the
            one you could not read (#2042). NO BACKTICKS IN HERE. */
         .toolbar-sep { width: 1px; height: 24px; background: var(--cms-border-color, #e5e7eb); }
-        .draw-hint { font-size: 12px; color: var(--cms-text-muted, #6b7280); }
+        .draw-hint { font-size: 12px; color: var(--cms-text-muted, #848b96); }
         .regions-body { display: flex; flex: 1; min-height: 0; }
         .canvas-wrap {
             position: relative; flex: 1; min-width: 0; overflow: hidden; outline: none;
@@ -216,7 +217,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
         }
         .canvas-overlay-msg {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; color: var(--cms-text-muted, #6b7280); z-index: 3;
+            font-size: 14px; color: var(--cms-text-muted, #848b96); z-index: 3;
         }
         .canvas-overlay-msg.error { color: var(--cms-danger-text); }
         .draw-preview {
@@ -233,17 +234,17 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
             padding: 12px 16px; background: var(--cms-surface, #fff);
         }
         .panel-title { font-size: 13px; font-weight: 600; margin: 8px 0; }
-        .panel-empty { font-size: 12px; color: var(--cms-text-muted, #6b7280); }
+        .panel-empty { font-size: 12px; color: var(--cms-text-muted, #848b96); }
         .field { margin-bottom: 10px; }
         .region-list { list-style: none; margin: 0; padding: 0; }
         .region-list li {
-            display: flex; gap: 8px; padding: 4px 6px; border-radius: 4px;
+            display: flex; gap: 8px; padding: 4px 6px; border-radius: var(--cms-radius-sm, 4px);
             font-size: 12px; cursor: pointer;
         }
         .region-list li:hover { background: var(--cms-hover, #f3f4f6); }
-        .region-list li.selected { background: var(--cms-primary-soft, #dbeafe); }
+        .region-list li.selected { background: var(--cms-accent-light, #FEF7E6); }
         .region-list .code { font-weight: 600; }
-        .region-list .label { color: var(--cms-text-muted, #6b7280); }
+        .region-list .label { color: var(--cms-text-muted, #848b96); }
     `],
 })
 export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
@@ -253,6 +254,26 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
     private readonly router = inject(Router);
     private readonly toast  = inject(ToastService);
     private readonly errors = inject(ErrorHandlerService);
+    private readonly unsaved = inject(UnsavedChangesService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    /** metaVersion at the last successful save -- the clean point. */
+    private savedMetaVersion = 0;
+
+    /**
+     * ⚠️ A METHOD, not a computed. `canUndo()` is a plain call rather
+     * than a signal, so a computed would cache its first answer and
+     * never re-run. Both consumers -- the route guard and the unload
+     * registry -- pull on demand, so a method is the right shape.
+     *
+     * Two sources because there are two kinds of edit: the engine owns
+     * region GEOMETRY, this page owns region METADATA, and checking
+     * only the engine would miss a renamed code (#2492).
+     */
+    dirty(): boolean {
+        return (this.engine?.canUndo() ?? false)
+            || this.metaVersion() !== this.savedMetaVersion;
+    }
 
     private readonly canvasWrap = viewChild.required<ElementRef<HTMLElement>>('canvasWrap');
 
@@ -300,6 +321,10 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
         return id === null ? null : this.metaByLayer.get(id) ?? null;
     });
 
+    constructor() {
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
+    }
+
     async ngAfterViewInit(): Promise<void> {
         const slug = this.route.snapshot.paramMap.get('slug') ?? '';
         try {
@@ -336,6 +361,13 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
             this.resizeObserver.observe(container);
 
             this.renderRegions(map.regions);
+            // ⚠️ Baseline AFTER hydration. `renderRegions()` ends with a
+            // `metaVersion` bump even for zero regions, so without this the
+            // page reports dirty the moment it opens -- measured: a freshly
+            // opened map with 0 regions blocked `beforeunload` (#2495). A
+            // guard that fires when nothing changed is the one people learn
+            // to click through.
+            this.savedMetaVersion = this.metaVersion();
             this.loading.set(false);
         } catch (e: unknown) {
             this.loading.set(false);
@@ -824,6 +856,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
             // would be out of sync with the (now default-filled) canvas.
             this.statusPreview.set(false);
             this.toast.success(`Regions saved (${fresh.regions.length} on "${fresh.slug}")`);
+            this.savedMetaVersion = this.metaVersion();
         } catch (e: unknown) {
             this.toast.error(this.errors.humanize(e));
         } finally {

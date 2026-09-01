@@ -38,13 +38,19 @@ describe('ModuleSettingsService', () => {
         data: { countries: ['BY', 'PL'], require_contact: 'either' },
         defaults: { require_contact: 'either', default_country: 'US' },
         effective: { default_country: 'US', countries: ['BY', 'PL'], require_contact: 'either' },
+        locked: {},
+        // Added with per-site overrides. The service defaults a wire payload
+        // that omits them to exactly this pair, so the fixture matches what
+        // the normaliser produces rather than inventing a shape.
+        siteScopable: false,
+        scope: null,
         storedAt: '/app/config/modules/settings/dynamic_chat.prechat.yaml',
     };
 
     /**
-     * The saved values win, the shipped ones fill the gaps, and the form gets
-     * the result -- rendering only `data` is what left a settings screen blank
-     * for a module running on its defaults.
+     * The values in force reach the form, and `data` / `defaults` stay separate
+     * beside them -- the Reset button needs to know whether anything is saved,
+     * which `effective` alone cannot say.
      */
     function expectEffective(block: ModuleSettingsBlockDto): void {
         expect(block.effective).toEqual({ default_country: 'US', require_contact: 'saved', countries: ['BY'] });
@@ -162,7 +168,7 @@ describe('ModuleSettingsService', () => {
         expect(got!.data).toEqual({});
     });
 
-    it('composes the values in force from the shipped defaults and the saved ones', () => {
+    it('carries the values in force through to the form', () => {
         let got: ModuleSettingsBlockDto | null = null;
         settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
 
@@ -170,34 +176,120 @@ describe('ModuleSettingsService', () => {
             ...BLOCK,
             data: { require_contact: 'saved', countries: ['BY'] },
             defaults: { require_contact: 'either', default_country: 'US' },
+            effective: { default_country: 'US', require_contact: 'saved', countries: ['BY'] },
         });
 
         expectEffective(got!);
     });
 
-    it('falls back to the shipped values for a block nobody has edited', () => {
+    it('takes the server at its word instead of recomposing the merge', () => {
+        // The whole reason `effective` moved server-side. A key saved as `null`
+        // means CLEARED, and a spread here would agree -- but the PHP consumers
+        // merged with a per-key type guard and went on using the shipped value,
+        // so the screen described a configuration that was not running.
+        //
+        // Feeding an `effective` that a naive `{ ...defaults, ...data }` could
+        // not produce is what makes this test able to fail: recompose here and
+        // `require_contact` comes back 'either', not null.
+        let got: ModuleSettingsBlockDto | null = null;
+        settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
+
+        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat').flush({
+            ...BLOCK,
+            data: { require_contact: null },
+            defaults: { require_contact: 'either', default_country: 'US' },
+            effective: { require_contact: null, default_country: 'US' },
+        });
+
+        expect(got!.effective).toEqual({ require_contact: null, default_country: 'US' });
+    });
+
+    it('shows a block nobody has edited running on its shipped values', () => {
         // The bug this exists for: the screen for a module running happily on
         // its defaults rendered blank, and a REQUIRED select read "-- Select --"
-        // for a value the system definitely had.
+        // for a value the system definitely had. The server composes it now, so
+        // what this pins is that an empty `data` still arrives as a map and does
+        // not swallow what came with it.
         let got: ModuleSettingsBlockDto | null = null;
         settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
 
         http.expectOne('/api/v1/module-settings/dynamic_chat.prechat')
-            .flush({ ...BLOCK, data: [], defaults: { require_contact: 'either' } });
+            .flush({ ...BLOCK, data: [], defaults: { require_contact: 'either' }, effective: { require_contact: 'either' } });
 
         expect(got!.effective).toEqual({ require_contact: 'either' });
         expect(got!.data).toEqual({}, 'still says nothing is saved');
     });
 
-    it('treats missing defaults as none, so an older server still renders', () => {
+    it('carries the environment-pinned keys and the variables that own them', () => {
         let got: ModuleSettingsBlockDto | null = null;
         settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
 
-        const { defaults: _dropped, ...withoutDefaults } = BLOCK;
-        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat').flush(withoutDefaults);
+        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat')
+            .flush({ ...BLOCK, locked: { require_contact: 'PRECHAT_REQUIRE_CONTACT' } });
 
-        expect(got!.defaults).toEqual({});
-        expect(got!.effective).toEqual(BLOCK.data);
+        // The variable NAME is the payload, not a boolean: a greyed field with no
+        // explanation reads as a bug, and the operator needs to know where the
+        // value actually comes from.
+        expect(got!.locked).toEqual({ require_contact: 'PRECHAT_REQUIRE_CONTACT' });
+    });
+
+    it('drops a lock entry that does not name a variable', () => {
+        let got: ModuleSettingsBlockDto | null = null;
+        settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
+
+        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat')
+            .flush({ ...BLOCK, locked: { a: 'REAL_VAR', b: true, c: '', d: null } });
+
+        // A lock we cannot explain would disable a control and say nothing about
+        // why — worse than not locking it.
+        expect(got!.locked).toEqual({ a: 'REAL_VAR' });
+    });
+
+    it('treats a block with no locks as fully editable', () => {
+        let got: ModuleSettingsBlockDto | null = null;
+        settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
+
+        const { locked: _dropped, ...withoutLocked } = BLOCK;
+        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat').flush(withoutLocked);
+
+        expect(got!.locked).toEqual({});
+    });
+
+    it('turns a field the server OMITTED into null, not undefined', () => {
+        // ⚠️ **The wire never sends `null` — it sends nothing.** API Platform
+        // defaults `skip_null_values` to true, so a null property is dropped from
+        // the JSON entirely while the DTO still promises `string | null`. A
+        // consumer written to that promise with an explicit `null !== x` test
+        // then lets `undefined` through.
+        //
+        // Not hypothetical: it took the whole settings screen down with
+        // "Cannot read properties of undefined (reading 'replace')" the moment
+        // the first block without a `moduleRoute` existed.
+        let got: ModuleSettingsBlockDto | null = null;
+        settings.get('web.page_cache').subscribe(b => (got = b));
+
+        const { moduleRoute: _r, moduleLabel: _l, moduleIcon: _i, storedAt: _s, ...omitted } = BLOCK;
+        http.expectOne('/api/v1/module-settings/web.page_cache').flush(omitted);
+
+        expect(got!.moduleRoute).toBeNull();
+        expect(got!.moduleLabel).toBeNull();
+        expect(got!.moduleIcon).toBeNull();
+        expect(got!.storedAt).toBeNull();
+    });
+
+    it('leaves the values in force EMPTY when the server sent none', () => {
+        // Deliberate, and the opposite of resilient. Recomposing the merge as a
+        // fallback would put the second implementation back exactly where the
+        // server is already misbehaving. A blank form gets reported; a plausible
+        // wrong one does not.
+        let got: ModuleSettingsBlockDto | null = null;
+        settings.get('dynamic_chat.prechat').subscribe(b => (got = b));
+
+        const { effective: _dropped, ...withoutEffective } = BLOCK;
+        http.expectOne('/api/v1/module-settings/dynamic_chat.prechat').flush(withoutEffective);
+
+        expect(got!.effective).toEqual({});
+        expect(got!.data).toEqual(BLOCK.data, 'the saved values still arrive');
     });
 
     it('filters the collection to one module', () => {

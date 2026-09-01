@@ -143,7 +143,7 @@ import {
         .blk__field { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 2px; }
         .blk__hint { font-size: .6875rem; color: var(--cms-text-muted); }
         .cms-label--sm { font-size: .6875rem; }
-        .blk__danger { color: var(--cms-danger, #c0392b); }
+        .blk__danger { color: var(--cms-danger, #dc2626); }
         .blk__group {
             flex: 1 0 100%; display: flex; flex-direction: column; gap: 6px;
             border: 1px dashed var(--cms-border); border-radius: var(--cms-radius, 6px);
@@ -152,7 +152,7 @@ import {
         .blk__group-head { display: flex; align-items: center; justify-content: space-between; }
         .blk__item {
             display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
-            padding: 6px; border-radius: 4px; background: var(--cms-border-light);
+            padding: 6px; border-radius: var(--cms-radius-sm, 4px); background: var(--cms-border-light);
         }
         .blk__item-del { margin-left: auto; }
     `],

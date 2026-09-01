@@ -58,6 +58,19 @@ export interface PageVariantSummaryDto {
      * "which one does the tile show" answer.
      */
     ogImage?: string | null;
+    /**
+     * Whether the SITE currently publishes this locale.
+     *
+     * False means the translation exists and is not being served -- and the row
+     * is still listed on purpose. Hiding it is what makes an editor believe
+     * hundreds of translations were deleted, which is the fear the reversible
+     * design exists to remove.
+     *
+     * Optional because a response from before the field existed, or from an
+     * install without I18nBundle, simply omits it; absent reads as served,
+     * which is the honest answer when nothing has an opinion.
+     */
+    served?: boolean;
 }
 
 export interface PageDto {
@@ -168,4 +181,5 @@ export interface PageVariantDto {
      * readers; this is the generic source for the declaration-driven Meta panel.
      */
     extras?: Record<string, unknown>;
+
 }

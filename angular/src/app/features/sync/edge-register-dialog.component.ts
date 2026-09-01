@@ -134,8 +134,8 @@ const ALL_TIERS = ['config', 'content', 'runtime'] as const;
     `,
     styles: [`
         .field { display: flex; flex-direction: column; margin-bottom: 0.7rem; }
-        .hint { margin: 0.25rem 0 0; font-size: 0.78rem; color: var(--cms-text-muted, #6b7280); }
-        .hint.warn { color: var(--cms-danger, #b91c1c); }
+        .hint { margin: 0.25rem 0 0; font-size: 0.78rem; color: var(--cms-text-muted, #848b96); }
+        .hint.warn { color: var(--cms-danger, #dc2626); }
         .cms-check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; }
         .tiers { display: flex; gap: 1rem; margin-top: 0.35rem; padding-left: 1.4rem; }
     `],

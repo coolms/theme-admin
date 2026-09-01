@@ -52,10 +52,44 @@ export interface ModuleSettingsBlockDto {
     readonly defaults: Record<string, unknown>;
     /**
      * `data` over `defaults` -- the configuration actually IN FORCE, and what a
-     * form should render. Composed on the way in so no caller has to remember
-     * which one wins.
+     * form should render.
+     *
+     * Composed by the SERVER, by the same reader every module reads its own
+     * settings through, and passed straight through here. It used to be
+     * recomposed in this file with a spread while each PHP consumer recomposed
+     * it with a type guard, and the two disagreed for a key saved as `null`:
+     * cleared on screen, still-the-default on the server. One merge, one answer
+     * (ADR-165).
      */
     readonly effective: Record<string, unknown>;
+    /**
+     * Keys this deployment PINS in its environment, as
+     * `settings key -> env var name`. Empty for most blocks.
+     *
+     * Rendered read-only, naming the variable. That pairing is the whole point:
+     * `effective` already ignores a saved value for a pinned key, so an editable
+     * control would take an edit, report a save, and change nothing. The server
+     * refuses a write carrying one, so these must also be kept OUT of the
+     * payload (ADR-165).
+     */
+    readonly locked: Record<string, string>;
+    /**
+     * Whether one site may override this block.
+     *
+     * The site selector renders only where this is true. Most blocks are
+     * platform-wide, and offering the choice anyway would invite a save the
+     * server then refuses with a 422.
+     */
+    readonly siteScopable: boolean;
+    /**
+     * Which site these values are for, or null for the platform-wide view.
+     *
+     * ⚠️ At a site scope `data` is what THAT SITE overrode and `effective` is
+     * what it runs on. The screen needs both: without the difference an operator
+     * cannot tell a value they set here from one they are inheriting, and would
+     * reset a site expecting the platform value to change.
+     */
+    readonly scope: string | null;
     /**
      * Where the last write landed: an absolute path, or `db://settings/{key}`.
      * Surfaced after a save because "it went to the database because config/ is
@@ -72,7 +106,12 @@ export interface ModuleSettingsBlockDto {
  * back typed as a list. ModuleSettingsService normalises it once on the way in
  * and hands the rest of the app the honest {@link ModuleSettingsBlockDto}.
  */
-export interface ModuleSettingsWireDto extends Omit<ModuleSettingsBlockDto, 'data' | 'defaults' | 'effective'> {
+export interface ModuleSettingsWireDto
+    extends Omit<ModuleSettingsBlockDto, 'data' | 'defaults' | 'effective' | 'locked' | 'siteScopable' | 'scope'> {
     readonly data: unknown;
     readonly defaults?: unknown;
+    readonly effective?: unknown;
+    readonly locked?: unknown;
+    readonly siteScopable?: unknown;
+    readonly scope?: unknown;
 }

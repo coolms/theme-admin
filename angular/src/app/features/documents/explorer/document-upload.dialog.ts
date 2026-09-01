@@ -253,8 +253,8 @@ export interface DocumentUploadDialogData {
         }
         .cms-document-upload__error {
             padding: 8px 12px;
-            background: var(--cms-error-bg, #fee);
-            color: var(--cms-error-text, #b10);
+            background: var(--cms-danger-light, #fef2f2);
+            color: var(--cms-danger-text, #991b1b);
             border-radius: var(--cms-radius-sm);
             font-size: 0.85rem;
         }

@@ -138,11 +138,11 @@ export interface SegmentEditorDialogData {
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
         .error { color: var(--cms-danger-text, #991b1b); margin: 0; font-size: .8125rem; }
-        .cms-label em { color: var(--cms-text-muted, #6b7280); font-weight: 400; }
+        .cms-label em { color: var(--cms-text-muted, #848b96); font-weight: 400; }
         .cms-check { display: flex; align-items: center; gap: 8px; font-size: .875rem; cursor: pointer; }
         textarea.cms-input { resize: vertical; font-family: var(--cms-font-mono, monospace); }
         .validate-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .validate-row .ok  { color: var(--cms-success, #059669); font-size: .8125rem; }
+        .validate-row .ok  { color: var(--cms-success, #16a34a); font-size: .8125rem; }
         .validate-row .bad { color: var(--cms-danger, #dc2626); font-size: .8125rem; }
         code { word-break: break-all; }
     `],

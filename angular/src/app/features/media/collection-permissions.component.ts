@@ -229,9 +229,9 @@ import { MediaService } from './media.service';
             display: flex; align-items: center; justify-content: center;
             font-size: .8125rem; flex-shrink: 0;
         }
-        .perm-avatar--key   { background: #fef9c3; color: #a16207; }
+        .perm-avatar--key   { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
         .perm-avatar--group { background: var(--cms-meta-subtle); color: var(--cms-meta); }
-        .perm-avatar--globe { background: var(--cms-success-subtle); color: #15803d; }
+        .perm-avatar--globe { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .perm-name  { font-size: .8125rem; font-weight: 500; color: var(--cms-text); }
         .perm-sub   { font-size: .7rem; color: var(--cms-text-muted); }
         .perm-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -256,7 +256,7 @@ import { MediaService } from './media.service';
         .perm-mode-chip {
             background: var(--cms-border-light); border: 1px solid var(--cms-border);
             border-radius: var(--cms-radius-sm); padding: 1px 6px;
-            font-family: monospace; font-size: .8rem; color: var(--cms-text);
+            font-family: var(--cms-font-mono, monospace); font-size: .8rem; color: var(--cms-text);
         }
         .perm-mode-octal { font-size: .8rem; color: var(--cms-text-muted); }
         .perm-variants { display: flex; flex-direction: column; gap: 6px; }

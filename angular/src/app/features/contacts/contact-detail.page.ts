@@ -218,11 +218,11 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
 
         .detail-chips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
         .chip {
-            display: inline-block; padding: 1px 6px; border-radius: 4px;
-            font-size: .7rem; background: #eef2ff; color: #4338ca;
+            display: inline-block; padding: 1px 6px; border-radius: var(--cms-radius-sm, 4px);
+            font-size: .7rem; background: var(--cms-meta-subtle); color: var(--cms-meta-text);
         }
         .chip--shared  { background: var(--cms-meta-subtle); color: var(--cms-meta); }
-        .chip--user    { background: #e0f2fe; color: #075985; }
+        .chip--user    { background: var(--cms-info-subtle); color: var(--cms-info-text); }
         .chip--channel { background: var(--cms-surface-muted); color: var(--cms-text-body); }
         .chip--new { background: var(--cms-info-subtle); color: var(--cms-info-text); }
         .chip--ok  { background: var(--cms-success-subtle); color: var(--cms-success-text); }
@@ -231,7 +231,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px; margin-bottom: 16px; overflow: hidden;
+            border-radius: var(--cms-radius-md, 8px); margin-bottom: 16px; overflow: hidden;
         }
         .card__head {
             display: flex; align-items: center; gap: 8px;
@@ -239,35 +239,35 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         }
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .card__count {
-            font-size: .72rem; background: #e5e7eb; color: var(--cms-text-body);
-            border-radius: 10px; padding: 1px 8px;
+            font-size: .72rem; background: var(--cms-surface-muted); color: var(--cms-text-body);
+            border-radius: var(--cms-radius-lg, 10px); padding: 1px 8px;
         }
         .card__body { padding: 12px 16px; }
 
         dl { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: .9rem; margin: 0; }
-        dt { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .line { padding: 1px 0; }
         .tag {
-            display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px;
-            font-size: .68rem; background: var(--cms-surface-muted); color: #4b5563;
+            display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: var(--cms-radius-sm, 4px);
+            font-size: .68rem; background: var(--cms-surface-muted); color: var(--cms-text-body);
         }
 
         .leads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
         .lead {
             display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 6px;
+            padding: 8px 10px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px);
             cursor: pointer; font-size: .88rem;
         }
-        .lead:hover { background: var(--cms-canvas, #f9fafb); }
+        .lead:hover { background: var(--cms-canvas, #f3f4f6); }
         .lead__name { flex: 1 1 auto; font-weight: 500; word-break: break-word; }
         .lead__date { flex: 0 0 auto; font-size: .8rem; }
-        .lead__chevron { color: var(--cms-text-muted, #9ca3af); font-size: .8rem; }
+        .lead__chevron { color: var(--cms-text-muted, #848b96); font-size: .8rem; }
 
-        .hint { color: var(--cms-text-muted, #6b7280); font-size: .85rem; margin: 0; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-        .muted { color: var(--cms-text-muted, #6b7280); }
+        .hint { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .mono { font-family: var(--cms-font-mono, monospace); }
+        .muted { color: var(--cms-text-muted, #848b96); }
     `],
 })
 export class ContactDetailComponent implements OnInit {

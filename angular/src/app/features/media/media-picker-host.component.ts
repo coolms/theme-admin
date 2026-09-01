@@ -53,6 +53,17 @@ const SINGLE_CONFIG_DEFAULTS: SingleConfig = {
     caption: '',
 };
 
+/**
+ * What the caller wants out of the dialog.
+ *
+ *   - 'insert' (default): the editor's Insert-media flow -- single asset or
+ *     gallery, with placement and caption.
+ *   - 'image': just one image. The mode tabs, the placement row and the
+ *     insert-as footer are hidden, because none of them survive the caller's
+ *     use (the PDF viewer stamps the picture onto a page).
+ */
+export type MediaPickerPurpose = 'insert' | 'image';
+
 export interface MediaPickerHostData {
     readonly options: MediaPickerOptions;
     /**
@@ -61,6 +72,8 @@ export interface MediaPickerHostData {
      * user can still flip modes inside the dialog via the tab toggle.
      */
     readonly initialMode?: HostMode;
+    /** Defaults to 'insert'. See {@link MediaPickerPurpose}. */
+    readonly purpose?: MediaPickerPurpose;
 }
 
 /** Result returned to the page editor when the user confirms a pick. */
@@ -114,13 +127,15 @@ export type MediaPickerHostResult =
     template: `
         <div class="picker-host">
             <div class="cms-dialog-header">
-                <span><i class="bi bi-image me-1"></i> Insert media</span>
+                <span><i class="bi bi-image me-1"></i> {{ heading }}</span>
                 <button class="cms-dialog-close" type="button" (click)="cancel()">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
 
-            <!-- Mode toggle: single asset vs gallery. -->
+            <!-- Mode toggle: single asset vs gallery. Not offered when the
+                 caller asked for a plain image. -->
+            @if (!imageOnly) {
             <div class="picker-host__modes" role="tablist">
                 <button type="button"
                         class="picker-host__mode"
@@ -139,10 +154,12 @@ export type MediaPickerHostResult =
                     <i class="bi bi-grid-3x3-gap-fill"></i> Gallery
                 </button>
             </div>
+            }
 
             <!-- Mode-specific config row. Both single + gallery rows live in
                  the same min-height container so toggling modes doesn't shift
                  the picker grid below. -->
+            @if (!imageOnly) {
             <div class="picker-host__config">
                 @if (hostMode() === 'gallery') {
                     <label class="picker-host__field">
@@ -235,6 +252,7 @@ export type MediaPickerHostResult =
                     </label>
                 }
             </div>
+            }
 
             <div class="picker-host__body">
                 <app-media-picker
@@ -242,7 +260,7 @@ export type MediaPickerHostResult =
                     [value]="value()"
                     [cardinality]="'one'"
                     [mode]="'embedded'"
-                    [enableInsertModeToggle]="hostMode() !== 'gallery'"
+                    [enableInsertModeToggle]="!imageOnly && hostMode() !== 'gallery'"
                     [enableCreateCollection]="hostMode() === 'gallery'"
                     (valueChange)="onPicked($event)" />
             </div>
@@ -389,6 +407,10 @@ export class MediaPickerHostComponent {
     readonly value = signal<string | null>(null);
     /** Seeded from `data.initialMode` so handlers can pre-select gallery mode. */
     readonly hostMode = signal<HostMode>(this.data.initialMode ?? 'single');
+
+    /** True when the caller wants one image and nothing else configured. */
+    readonly imageOnly = 'image' === this.data.purpose;
+    readonly heading = this.imageOnly ? 'Choose an image' : 'Insert media';
     readonly galleryConfig = signal<GalleryConfig>(this.readGalleryConfig());
     readonly singleConfig  = signal<SingleConfig>(this.readSingleConfig());
 

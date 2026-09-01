@@ -64,15 +64,15 @@ export interface WebhookSecretDialogData {
             margin: 0;
             display: flex; align-items: flex-start; gap: 8px;
             color: var(--cms-warning-text, #92400e);
-            background: var(--cms-warning-light, #fef3c7);
+            background: var(--cms-warning-light, #fffbeb);
             border-radius: var(--cms-radius, 6px);
             padding: 10px 12px;
             font-size: .8125rem;
         }
         .reveal__code {
             display: block;
-            background: var(--cms-border-light, #f1f5f9);
-            border: 1px solid var(--cms-border, #e2e8f0);
+            background: var(--cms-border-light, #f0f2f5);
+            border: 1px solid var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius, 6px);
             padding: 8px 10px;
             font-size: .8125rem;

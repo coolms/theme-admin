@@ -239,14 +239,14 @@ interface StateTile {
         .tile {
             display: flex; flex-direction: column; gap: 4px;
             background: var(--cms-surface, #fff); border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px; padding: 14px 16px; text-decoration: none; color: inherit;
+            border-radius: var(--cms-radius-md, 8px); padding: 14px 16px; text-decoration: none; color: inherit;
             transition: border-color .12s, box-shadow .12s;
         }
-        .tile:hover { border-color: var(--cms-accent, #2563eb); box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+        .tile:hover { border-color: var(--cms-accent, #F5A623); box-shadow: var(--cms-shadow-sm, 0 1px 3px rgba(0,0,0,.08)); }
         .tile--total { background: var(--cms-surface-muted); }
         .tile__count { font-size: 1.6rem; font-weight: 700; line-height: 1; }
         .tile__label {
-            font-size: .78rem; color: var(--cms-text-muted, #6b7280);
+            font-size: .78rem; color: var(--cms-text-muted, #848b96);
             display: inline-flex; align-items: center; gap: 6px;
         }
         .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cms-text-muted); }
@@ -259,7 +259,7 @@ interface StateTile {
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px; margin-bottom: 16px; overflow: hidden;
+            border-radius: var(--cms-radius-md, 8px); margin-bottom: 16px; overflow: hidden;
         }
         .card__head {
             display: flex; align-items: center; gap: 8px;
@@ -268,33 +268,33 @@ interface StateTile {
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .count {
             font-size: .7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #6b7280);
+            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96);
         }
-        .avg-note { font-size: .75rem; color: var(--cms-text-muted, #6b7280); margin-left: auto; }
+        .avg-note { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin-left: auto; }
         .card__body { padding: 12px 16px; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+        .mono { font-family: var(--cms-font-mono, monospace); font-size: .82rem; }
 
         .tbl { width: 100%; border-collapse: collapse; font-size: .85rem; }
         .tbl th {
-            text-align: left; font-weight: 600; color: var(--cms-text-muted, #6b7280);
+            text-align: left; font-weight: 600; color: var(--cms-text-muted, #848b96);
             padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); white-space: nowrap;
         }
         .tbl td {
-            padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #f1f5f9); vertical-align: top;
+            padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); vertical-align: top;
         }
         .tbl tr:last-child td { border-bottom: none; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         .strong { font-weight: 600; }
-        .row-head { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        .row-head { color: var(--cms-text-muted, #848b96); font-weight: 500; }
 
         .def-row { cursor: pointer; }
         .def-row:hover td { background: var(--cms-surface-muted); }
         .def-name { font-weight: 500; }
-        .def-key { display: block; color: var(--cms-text-muted, #6b7280); }
+        .def-key { display: block; color: var(--cms-text-muted, #848b96); }
 
         .timing-link {
             display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
-            color: var(--cms-accent, #2563eb); font-size: .8rem; white-space: nowrap;
+            color: var(--cms-accent, #F5A623); font-size: .8rem; white-space: nowrap;
         }
         .timing-link:hover { text-decoration: underline; }
 
@@ -306,7 +306,7 @@ interface StateTile {
         .state-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 2px 0 4px; }
         .state-chip {
             display: inline-flex; align-items: center; gap: 6px;
-            font-size: .8rem; color: var(--cms-text-muted, #6b7280);
+            font-size: .8rem; color: var(--cms-text-muted, #848b96);
         }
         .state-chip__count { font-weight: 600; color: var(--cms-text, inherit); font-variant-numeric: tabular-nums; }
         .tbl--mt { margin-top: 4px; }

@@ -71,20 +71,20 @@ import { VfsPageStateService } from './vfs-page-state.service';
 
         .vfs-drop-zone {
             position: absolute; inset: 0; z-index: 100;
-            background: rgba(59, 130, 246, .12);
-            border: 3px dashed #3b82f6;
-            border-radius: 8px;
+            background: var(--cms-info-light);
+            border: 3px dashed var(--cms-primary);
+            border-radius: var(--cms-radius-md, 8px);
             display: flex; align-items: center; justify-content: center;
             pointer-events: none;
         }
-        .vfs-drop-content { text-align: center; color: #2563eb; }
+        .vfs-drop-content { text-align: center; color: var(--cms-primary); }
 
         .vfs-upload-progress-panel {
             position: absolute; bottom: 16px; right: 16px; z-index: 200;
             background: var(--cms-surface); border: 1px solid var(--cms-border);
-            border-radius: 8px; padding: 12px 16px;
+            border-radius: var(--cms-radius-md, 8px); padding: 12px 16px;
             min-width: 260px; max-width: 320px;
-            box-shadow: 0 4px 20px rgba(0,0,0,.12);
+            box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
         }
     `],
 })

@@ -84,7 +84,7 @@ export const DocumentWidget = Node.create({
             // Editor-only chip styling; storage drops the div entirely for the
             // `{widget:document:…}` tag, so none of this reaches saved content.
             'style': 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:6px 0;'
-                + 'border:1px dashed #94a3b8;border-radius:8px;background:#f1f5f9;'
+                + 'border:1px dashed #94a3b8;border-radius:var(--cms-radius-md, 8px);background:#f1f5f9;'
                 + 'color:#334155;font-size:13px;font-weight:600;user-select:none;',
             'contenteditable': 'false',
         };

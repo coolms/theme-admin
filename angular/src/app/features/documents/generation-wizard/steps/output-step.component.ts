@@ -155,7 +155,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
             flex-direction: column;
             gap: .5rem;
             border: 1px solid var(--cms-border);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             padding: .75rem 1rem 1rem;
             margin: 0;
         }
@@ -191,7 +191,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
             margin-left: 1.5rem;
             padding: 6px 10px;
             border: 1px solid var(--cms-border);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             background: var(--cms-surface);
             color: var(--cms-text);
             font: inherit;
@@ -204,7 +204,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
             margin-top: .5rem;
             margin-left: 1.5rem;
             border: 1px solid var(--cms-border);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             overflow: hidden;
         }
         .cms-output-step__field {

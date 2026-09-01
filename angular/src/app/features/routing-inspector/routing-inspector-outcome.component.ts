@@ -45,13 +45,13 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             justify-content: space-between;
             gap: 12px;
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface-muted);
             border: 1px solid var(--cms-border);
             flex-wrap: wrap;
         }
         .banner--success { background: var(--cms-success-subtle); border-color: var(--cms-success-subtle-border); color: var(--cms-success-text); }
-        .banner--warn    { background: var(--cms-warning-subtle); border-color: #fcd34d; color: var(--cms-warning-text); }
+        .banner--warn    { background: var(--cms-warning-subtle); border-color: var(--cms-warning-subtle-border); color: var(--cms-warning-text); }
         .banner--danger  { background: var(--cms-danger-subtle); border-color: var(--cms-danger-border); color: var(--cms-danger-text); }
         .banner__main { display: flex; gap: 8px; align-items: baseline; }
         .banner__label {
@@ -62,14 +62,14 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         }
         .banner__value { font-weight: 600; font-size: 1rem; }
         .banner__meta { display: flex; gap: 12px; font-size: .85rem; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .mono { font-family: var(--cms-font-mono, monospace); }
 
         .placeholder {
             padding: 32px 16px;
             text-align: center;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             border: 1px dashed var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
         }
     `],
 })

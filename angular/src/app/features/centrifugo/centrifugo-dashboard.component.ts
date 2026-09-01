@@ -213,9 +213,9 @@ import { CentrifugoPublishDialogComponent } from './centrifugo-publish-dialog.co
             padding: 1rem;
         }
         .cms-centrifugo__error {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
             padding: .75rem;
-            background: var(--cms-danger-bg, rgba(244, 67, 54, .08));
+            background: var(--cms-danger-light, #fef2f2);
             border-radius: var(--cms-radius-sm);
         }
         .cms-centrifugo__stats {
@@ -257,7 +257,7 @@ import { CentrifugoPublishDialogComponent } from './centrifugo-publish-dialog.co
             border: 1px solid var(--cms-border);
             border-radius: var(--cms-radius-sm);
             padding: .35rem .6rem;
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .85rem;
         }
         .cms-centrifugo__channels {

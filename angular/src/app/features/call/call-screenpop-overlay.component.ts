@@ -133,7 +133,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             padding: 12px 14px;
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-left: 4px solid #9ca3af;
+            border-left: 4px solid var(--cms-text-muted);
             border-radius: var(--cms-radius, 10px);
             box-shadow: var(--cms-shadow-md, 0 6px 24px rgba(0, 0, 0, .12));
             animation: callpop-in .18s ease;
@@ -142,9 +142,9 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             from { transform: translateY(12px); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
         }
-        .callpop[data-state="ringing"]  { border-left-color: #f59e0b; }
+        .callpop[data-state="ringing"]  { border-left-color: var(--cms-warning); }
         .callpop[data-state="answered"] { border-left-color: var(--cms-success); }
-        .callpop[data-state="on_hold"]  { border-left-color: #6366f1; }
+        .callpop[data-state="on_hold"]  { border-left-color: var(--cms-meta); }
         .callpop[data-state="ended"]    { border-left-color: var(--cms-text-muted); }
 
         .callpop__icon {
@@ -152,7 +152,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
-            background: rgba(22, 163, 74, .1);
+            background: var(--cms-success-light);
             color: var(--cms-success);
             font-size: 1.05rem;
         }
@@ -174,9 +174,9 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             padding: 1px 7px; border-radius: 999px;
             background: var(--cms-surface-muted); color: var(--cms-text-secondary);
         }
-        .callpop__chip[data-state="ringing"]  { background: rgba(245, 158, 11, .14); color: #b45309; }
-        .callpop__chip[data-state="answered"] { background: rgba(22, 163, 74, .14);  color: #15803d; }
-        .callpop__chip[data-state="on_hold"]  { background: rgba(99, 102, 241, .14); color: #4338ca; }
+        .callpop__chip[data-state="ringing"]  { background: rgba(245, 158, 11, .14); color: var(--cms-warning-text); }
+        .callpop__chip[data-state="answered"] { background: rgba(22, 163, 74, .14);  color: var(--cms-success-text); }
+        .callpop__chip[data-state="on_hold"]  { background: rgba(99, 102, 241, .14); color: var(--cms-meta-text); }
         .callpop__sub {
             font-size: .75rem; color: var(--cms-text-secondary, #6b7280);
             font-variant-numeric: tabular-nums;
@@ -187,17 +187,17 @@ const HARD_MAX_MS = 15 * 60 * 1000;
         .callpop__btn {
             width: 30px; height: 30px;
             display: flex; align-items: center; justify-content: center;
-            border: none; border-radius: 8px;
-            background: transparent; color: var(--cms-text-muted, #6b7280);
+            border: none; border-radius: var(--cms-radius-md, 8px);
+            background: transparent; color: var(--cms-text-muted, #848b96);
             cursor: pointer; font-size: .9rem;
             transition: background .12s ease, color .12s ease;
         }
         .callpop__btn:hover { background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text, #111827); }
 
         .callpop__btn--answer { background: var(--cms-success); color: var(--cms-text-inverse); }
-        .callpop__btn--answer:hover { background: #15803d; color: var(--cms-text-inverse); }
-        .callpop__btn--hangup { background: #dc2626; color: var(--cms-text-inverse); }
-        .callpop__btn--hangup:hover { background: #b91c1c; color: var(--cms-text-inverse); }
+        .callpop__btn--answer:hover { background: var(--cms-success-text); color: var(--cms-text-inverse); }
+        .callpop__btn--hangup { background: var(--cms-danger); color: var(--cms-text-inverse); }
+        .callpop__btn--hangup:hover { background: var(--cms-danger-text); color: var(--cms-text-inverse); }
     `],
 })
 export class CallScreenpopOverlayComponent {

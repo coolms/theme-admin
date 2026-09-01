@@ -153,27 +153,27 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         :host { display: block; height: 100%; }
         .mqp { display: flex; flex-direction: column; height: 100%; min-height: 0; }
         .mqp__head { padding: .25rem 0 .6rem; flex-shrink: 0; }
-        .mqp__new { width: 100%; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: 8px; padding: .5rem .7rem; font: inherit; font-size: .85rem; cursor: pointer; }
+        .mqp__new { width: 100%; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius-md, 8px); padding: .5rem .7rem; font: inherit; font-size: .85rem; cursor: pointer; }
         .mqp__picker { padding: 0 0 .6rem; flex-shrink: 0; }
-        .mqp__err { margin: 0 0 .5rem; padding: .45rem .6rem; background: var(--cms-danger-light); color: var(--cms-danger-text); font-size: .8rem; border-radius: 6px; cursor: pointer; }
+        .mqp__err { margin: 0 0 .5rem; padding: .45rem .6rem; background: var(--cms-danger-light); color: var(--cms-danger-text); font-size: .8rem; border-radius: var(--cms-radius, 6px); cursor: pointer; }
         .mqp__hint { padding: 1rem .2rem; color: var(--cms-text-secondary, #6b7280); font-size: .85rem; }
         .mqp__rows { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
-        .mqp__row { display: flex; align-items: center; gap: .55rem; width: 100%; text-align: left; border: 0; background: transparent; padding: .55rem .5rem; font: inherit; font-size: .9rem; cursor: pointer; border-radius: 8px; color: var(--cms-text, #111827); }
+        .mqp__row { display: flex; align-items: center; gap: .55rem; width: 100%; text-align: left; border: 0; background: transparent; padding: .55rem .5rem; font: inherit; font-size: .9rem; cursor: pointer; border-radius: var(--cms-radius-md, 8px); color: var(--cms-text, #111827); }
         .mqp__row:hover { background: var(--cms-hover, #f3f4f6); }
         .mqp__row-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mqp__badge { flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); font-size: .68rem; font-weight: 700; line-height: 1; }
         /* Inbox "Load more" (#2120) — sits between the scrolling rows and the
            "Open Messages" footer, so both stay reachable. */
-        .mqp__more { flex: 0 0 auto; width: 100%; border: 0; background: transparent; padding: .45rem .5rem; margin-top: .25rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); border-radius: 8px; cursor: pointer; }
+        .mqp__more { flex: 0 0 auto; width: 100%; border: 0; background: transparent; padding: .45rem .5rem; margin-top: .25rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius-md, 8px); cursor: pointer; }
         .mqp__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .mqp__more:disabled { cursor: default; opacity: .7; }
-        .mqp__open-full { flex-shrink: 0; margin-top: .5rem; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; border: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); color: var(--cms-text, #111827); border-radius: 8px; padding: .5rem .7rem; font: inherit; font-size: .82rem; cursor: pointer; }
-        .mqp__open-full:hover { background: var(--cms-hover, #f9fafb); }
+        .mqp__open-full { flex-shrink: 0; margin-top: .5rem; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; width: 100%; border: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); color: var(--cms-text, #111827); border-radius: var(--cms-radius-md, 8px); padding: .5rem .7rem; font: inherit; font-size: .82rem; cursor: pointer; }
+        .mqp__open-full:hover { background: var(--cms-hover, #f3f4f6); }
 
         /* THREAD mode (#1025) */
         .mqp__thead { display: flex; align-items: center; gap: .5rem; padding: .2rem 0 .6rem; flex-shrink: 0; border-bottom: 1px solid var(--cms-border, #e5e7eb); margin-bottom: .5rem; }
         .mqp__thead-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .9rem; }
-        .mqp__icon { flex: 0 0 auto; border: 0; background: transparent; cursor: pointer; color: var(--cms-text-secondary, #6b7280); font-size: 1rem; padding: .3rem .4rem; border-radius: 6px; }
+        .mqp__icon { flex: 0 0 auto; border: 0; background: transparent; cursor: pointer; color: var(--cms-text-secondary, #6b7280); font-size: 1rem; padding: .3rem .4rem; border-radius: var(--cms-radius, 6px); }
         .mqp__icon:hover { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .mqp__msgs { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .3rem; padding: .2rem 0; }
         .mqp__line { display: flex; }
@@ -183,13 +183,13 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__bubble :is(p) { margin: 0; }
         /* Per-bubble timestamp + per-day separator chip (#1033) — same model as
          * the full Messages thread, scaled to the drawer. */
-        .mqp__meta { margin-top: .15rem; font-size: .62rem; line-height: 1; text-align: right; color: var(--cms-text-secondary, #9ca3af); font-variant-numeric: tabular-nums; }
+        .mqp__meta { margin-top: .15rem; font-size: .62rem; line-height: 1; text-align: right; color: var(--cms-text-secondary, #6b7280); font-variant-numeric: tabular-nums; }
         .mqp__bubble--mine .mqp__meta { color: rgba(255, 255, 255, .8); }
         .mqp__daysep { align-self: center; margin: .3rem 0 .1rem; padding: .12rem .55rem; font-size: .64rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
         .mqp__hint--older { text-align: center; padding: .3rem; }
         .mqp__composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding-top: .5rem; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 8px; padding: .45rem .6rem; font: inherit; font-size: .85rem; }
-        .mqp__send { flex: 0 0 auto; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: 8px; width: 38px; height: 38px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
+        .mqp__send { flex: 0 0 auto; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius-md, 8px); width: 38px; height: 38px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .mqp__send:disabled { opacity: .5; cursor: default; }
     `],
 })

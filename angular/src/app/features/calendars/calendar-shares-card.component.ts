@@ -159,7 +159,7 @@ type ShareeKind = 'user' | 'group';
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -183,9 +183,9 @@ type ShareeKind = 'user' | 'group';
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             background: var(--cms-surface-muted);
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
         }
         .card__body { padding: 12px 16px; }
@@ -197,7 +197,7 @@ type ShareeKind = 'user' | 'group';
             justify-content: space-between;
             gap: 12px;
             padding: 8px 0;
-            border-bottom: 1px solid var(--cms-border, #f3f4f6);
+            border-bottom: 1px solid var(--cms-border, #e5e7eb);
         }
         .row:last-child { border-bottom: 0; }
         .row__main {
@@ -218,7 +218,7 @@ type ShareeKind = 'user' | 'group';
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-size: .7rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -227,15 +227,15 @@ type ShareeKind = 'user' | 'group';
         .chip--user  { background: var(--cms-info-subtle); color: var(--cms-info-text); }
         .chip--group { background: var(--cms-meta-subtle); color: var(--cms-meta-text); }
 
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; }
-        .mono--muted { color: var(--cms-text-muted, #6b7280); }
+        .mono { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
+        .mono--muted { color: var(--cms-text-muted, #848b96); }
 
-        .empty { color: var(--cms-text-muted, #6b7280); margin: 0 0 8px; }
-        .error { color: var(--cms-danger, #b91c1c); margin: 0 0 8px; }
+        .empty { color: var(--cms-text-muted, #848b96); margin: 0 0 8px; }
+        .error { color: var(--cms-danger, #dc2626); margin: 0 0 8px; }
         .hint {
             margin: 8px 0 0;
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .hint--warn { color: var(--cms-warning-text); }
 
@@ -258,8 +258,8 @@ type ShareeKind = 'user' | 'group';
         .field-inline { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; }
 
         .role-select {
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 4px 8px;
             font-size: .85rem;
             background: var(--cms-surface);

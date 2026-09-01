@@ -65,7 +65,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
             align-items: flex-end;
             padding: 12px 16px;
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             background: var(--cms-surface, #fff);
             flex-wrap: wrap;
         }
@@ -78,19 +78,19 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
         .inspector-form__field--grow { flex: 1; min-width: 240px; }
         .inspector-form__field label {
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-transform: uppercase;
             letter-spacing: .03em;
         }
         .inspector-form__field input {
             padding: 6px 10px;
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .9rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-family: var(--cms-font-mono, monospace);
         }
         .inspector-form__field input:focus {
-            outline: 2px solid var(--cms-accent, #2563eb);
+            outline: 2px solid var(--cms-accent, #F5A623);
             outline-offset: -1px;
             border-color: transparent;
         }
@@ -101,7 +101,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
             align-items: center;
             gap: 8px;
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
         }
         .banner--error { background: var(--cms-danger-light); border: 1px solid var(--cms-danger-border); color: var(--cms-danger-text); }
 

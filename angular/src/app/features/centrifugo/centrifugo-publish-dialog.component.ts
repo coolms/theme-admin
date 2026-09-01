@@ -119,12 +119,12 @@ const CHANNEL_MAX_LENGTH = 200;
             border: 1px solid var(--cms-border);
             border-radius: var(--cms-radius-sm);
             padding: .4rem .6rem;
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .85rem;
         }
         .cms-cent-publish-dialog__field textarea { resize: vertical; min-height: 120px; }
         .cms-cent-publish-dialog__field-error {
-            color: var(--cms-danger);
+            color: var(--cms-danger-text);
             font-size: .75rem;
         }
         .cms-cent-publish-dialog__actions {

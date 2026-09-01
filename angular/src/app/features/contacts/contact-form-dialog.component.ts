@@ -101,7 +101,7 @@ export interface ContactFormDialogData {
     `,
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
-        .error { color: var(--cms-danger, #b91c1c); margin: 0; font-size: .8125rem; }
+        .error { color: var(--cms-danger, #dc2626); margin: 0; font-size: .8125rem; }
     `],
 })
 export class ContactFormDialogComponent implements OnInit {

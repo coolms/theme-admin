@@ -253,11 +253,11 @@ export interface SectionPropertiesDialogData {
             padding: 10px 12px;
             border: 1px solid var(--cms-border);
             border-radius: var(--cms-radius-sm, 4px);
-            background: var(--cms-bg-subtle, transparent);
+            background: var(--cms-surface-muted, #f3f4f6);
         }
         .spd__channel-title { font-size: .8125rem; font-weight: 600; }
 
-        .spd__req { color: var(--cms-danger, #dc3545); }
+        .spd__req { color: var(--cms-danger, #dc2626); }
 
         .spd__warn {
             display: flex;
@@ -265,7 +265,7 @@ export interface SectionPropertiesDialogData {
             font-size: .75rem;
             color: var(--cms-warning-text, var(--cms-text-muted));
         }
-        .spd__warn i { color: var(--cms-warning, #f0ad4e); flex: none; margin-top: 1px; }
+        .spd__warn i { color: var(--cms-warning, #d97706); flex: none; margin-top: 1px; }
 
         .spd__secret { display: flex; gap: 6px; align-items: flex-start; }
         .spd__secret i { color: var(--cms-accent); flex: none; margin-top: 2px; }

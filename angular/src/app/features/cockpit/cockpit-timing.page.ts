@@ -136,7 +136,7 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px; margin-bottom: 16px; overflow: hidden;
+            border-radius: var(--cms-radius-md, 8px); margin-bottom: 16px; overflow: hidden;
         }
         .card__head {
             display: flex; align-items: center; gap: 8px;
@@ -145,30 +145,30 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .count {
             font-size: .7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #6b7280);
+            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96);
         }
         .card__body { padding: 12px 16px; }
-        .empty { color: var(--cms-text-muted, #6b7280); font-size: .85rem; margin: 0; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+        .empty { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .mono { font-family: var(--cms-font-mono, monospace); font-size: .82rem; }
 
         .kv { display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px; font-size: .9rem; margin: 0; }
-        .kv dt { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        .kv dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
         .kv dd { margin: 0; word-break: break-all; }
 
         .tbl { width: 100%; border-collapse: collapse; font-size: .85rem; }
         .tbl th {
-            text-align: left; font-weight: 600; color: var(--cms-text-muted, #6b7280);
+            text-align: left; font-weight: 600; color: var(--cms-text-muted, #848b96);
             padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); white-space: nowrap;
         }
         .tbl td {
-            padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #f1f5f9); vertical-align: middle;
+            padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); vertical-align: middle;
         }
         .tbl tr:last-child td { border-bottom: none; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         .strong { font-weight: 600; }
 
         .el-name { font-weight: 500; }
-        .el-id { display: block; color: var(--cms-text-muted, #6b7280); }
+        .el-id { display: block; color: var(--cms-text-muted, #848b96); }
         .kind {
             font-size: .72rem; padding: 1px 8px; border-radius: 999px;
             background: var(--cms-border-light); color: var(--cms-text-secondary);
@@ -177,9 +177,9 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         .bar-col { width: 180px; }
         .bar {
             display: block; height: 8px; border-radius: 999px;
-            background: var(--cms-border, #eef2f7); overflow: hidden;
+            background: var(--cms-border, #e5e7eb); overflow: hidden;
         }
-        .bar__fill { display: block; height: 100%; border-radius: 999px; background: var(--cms-accent, #2563eb); }
+        .bar__fill { display: block; height: 100%; border-radius: 999px; background: var(--cms-accent, #F5A623); }
     `],
 })
 export class CockpitTimingPageComponent implements OnInit {

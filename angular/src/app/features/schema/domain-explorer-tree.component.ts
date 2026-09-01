@@ -247,8 +247,8 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
             font-size: .7rem;
             font-weight: 400;
             color: var(--cms-text-muted);
-            background: var(--cms-surface-2, rgba(0,0,0,.05));
-            border-radius: 8px;
+            background: var(--cms-surface-muted, #f3f4f6);
+            border-radius: var(--cms-radius-md, 8px);
             padding: 1px 6px;
         }
         .de-module__count--records { background: var(--cms-info-subtle); color: var(--cms-info-text); }
@@ -273,7 +273,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         }
         .de-entity-item:hover { background: var(--cms-hover-bg); }
         .de-entity-item--active {
-            background: var(--cms-active-bg);
+            background: var(--cms-accent-light, #FEF7E6);
             color: var(--cms-primary);
             font-weight: 500;
         }
@@ -282,7 +282,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         .de-entity-item__icon--embeddable { color: var(--cms-success-text); }
         .de-entity-item__icon--plain { color: var(--cms-text-muted); }
         .de-entity-item__name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-        .de-entity-item__dynamic { font-size: .65rem; color: #854d0e; }
+        .de-entity-item__dynamic { font-size: .65rem; color: var(--cms-warning-text); }
 
         /* Runtime type rows */
         .de-type-row {
@@ -299,7 +299,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         }
         .de-type-row:hover { background: var(--cms-hover-bg); }
         .de-type-row--active {
-            background: var(--cms-active-bg);
+            background: var(--cms-accent-light, #FEF7E6);
             color: var(--cms-primary);
             font-weight: 500;
         }

@@ -223,32 +223,32 @@ interface TemplateGroup {
             grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
         }
         .theme {
-            border: 1px solid var(--cms-border, #e5e7eb); border-radius: 8px;
+            border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px);
             padding: 0.9rem 1rem; background: var(--cms-surface, #fff);
         }
-        .theme--active { border-color: var(--cms-accent, #f0a500); }
+        .theme--active { border-color: var(--cms-accent, #F5A623); }
         .theme__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
         .theme__title h3 { margin: 0; font-size: 1rem; }
-        .theme__slug { font-size: 0.75rem; color: var(--cms-text-muted, #6b7280); }
+        .theme__slug { font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }
         .theme__badges { display: flex; gap: 4px; flex-wrap: wrap; }
         .badge {
             font-size: 0.7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border-light, #f3f4f6); color: var(--cms-text, #374151); white-space: nowrap;
+            background: var(--cms-border-light, #f0f2f5); color: var(--cms-text, #111827); white-space: nowrap;
         }
         .badge--ok { background: var(--cms-success-subtle); color: var(--cms-success-text); }
-        .badge--muted { background: transparent; border: 1px dashed var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #6b7280); }
-        .theme__desc { margin: 0.5rem 0 0.6rem; font-size: 0.85rem; color: var(--cms-text-secondary, #4b5563); }
+        .badge--muted { background: transparent; border: 1px dashed var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96); }
+        .theme__desc { margin: 0.5rem 0 0.6rem; font-size: 0.85rem; color: var(--cms-text-secondary, #6b7280); }
         .theme__meta {
             display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;
             margin: 0 0 0.75rem; font-size: 0.78rem;
         }
-        .theme__meta dt { color: var(--cms-text-muted, #6b7280); }
+        .theme__meta dt { color: var(--cms-text-muted, #848b96); }
         .theme__meta dd { margin: 0; overflow-wrap: anywhere; }
         .path { font-size: 0.72rem; }
         .theme__actions { display: flex; gap: 6px; flex-wrap: wrap; }
         .count {
             display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 999px;
-            background: var(--cms-border-light, #f3f4f6); font-size: 0.7rem;
+            background: var(--cms-border-light, #f0f2f5); font-size: 0.7rem;
         }
         /*
          * Capped + self-scrolling: a theme can ship 59 templates, and letting
@@ -261,7 +261,7 @@ interface TemplateGroup {
         .tpl__group + .tpl__group { margin-top: 0.6rem; }
         .tpl__group h4 { margin: 0 0 0.25rem; font-size: 0.8rem; }
         .tpl__group ul { margin: 0; padding-left: 1.1rem; }
-        .tpl__group li { font-size: 0.75rem; color: var(--cms-text-secondary, #4b5563); }
+        .tpl__group li { font-size: 0.75rem; color: var(--cms-text-secondary, #6b7280); }
         /*
          * A button, not a bare <li> with a click handler: these open a dialog,
          * so they must be reachable and activatable from the keyboard. Styled
@@ -272,14 +272,14 @@ interface TemplateGroup {
             text-align: left; cursor: pointer;
         }
         .tpl__open:hover code, .tpl__open:focus-visible code {
-            text-decoration: underline; color: var(--cms-primary, #f97316);
+            text-decoration: underline; color: var(--cms-primary, #2563eb);
         }
-        .hint { font-weight: 400; font-size: 0.72rem; color: var(--cms-text-muted, #6b7280); }
+        .hint { font-weight: 400; font-size: 0.72rem; color: var(--cms-text-muted, #848b96); }
         .warn {
-            margin: 0 0 0.6rem; padding: 6px 8px; border-radius: 6px;
+            margin: 0 0 0.6rem; padding: 6px 8px; border-radius: var(--cms-radius, 6px);
             background: var(--cms-warning-subtle); color: var(--cms-warning-text); font-size: 0.76rem;
         }
-        .state { font-size: 0.85rem; color: var(--cms-text-muted, #6b7280); }
+        .state { font-size: 0.85rem; color: var(--cms-text-muted, #848b96); }
         .state--foot { margin-top: 1rem; }
     `],
 })

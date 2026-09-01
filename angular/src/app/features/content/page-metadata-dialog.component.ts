@@ -144,7 +144,7 @@ export interface PageMetadataDialogData {
             text-transform: none;
             color: var(--cms-text-muted);
         }
-        .pmd__locale-status--published { color: var(--cms-success, #198754); }
+        .pmd__locale-status--published { color: var(--cms-success, #16a34a); }
 
         .pmd__path {
             font-family: var(--cms-font-mono, ui-monospace, SFMono-Regular, monospace);

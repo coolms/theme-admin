@@ -75,6 +75,26 @@ describe('SiteSelectorComponent', () => {
         expect(called).toBe(true);
     });
 
+    // The persisted slug must reach the BOX, not just the store. The control
+    // is bound with [value] while its options come from an @for below it, so
+    // Angular applies the binding at the select's own index -- before the
+    // repeater has created any option to match. The browser then resets the
+    // select to its first option, and the binding never runs again because the
+    // bound value itself has not changed. The result is a control reporting no
+    // site while X-CoolMS-Section is being stamped with one.
+    it('shows the persisted section on first render, before any interaction', () => {
+        setup();
+        fixture = TestBed.createComponent(SiteSelectorComponent);
+        store.reset({ ...store.snapshot(), sections: { sections, currentSectionSlug: 'marketing', loading: false, error: null } });
+        fixture.detectChanges();
+        const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
+        expect(select.value).toBe('marketing');
+        // selectedIndex is what the operator actually reads: -1 or 0 both mean
+        // the box disagrees with the store, and 0 is the misleading one because
+        // it names the host-derived option as though it had been chosen.
+        expect(select.selectedIndex).toBe(2);
+    });
+
     it('dispatches LoadSections on init when list is empty', () => {
         setup([]);
         const dispatchSpy = spyOn(TestBed.inject(Store), 'dispatch').and.callThrough();

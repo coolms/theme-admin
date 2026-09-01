@@ -118,7 +118,7 @@ import { MailboxDelegationDto } from './email.types';
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -130,7 +130,7 @@ import { MailboxDelegationDto } from './email.types';
             gap: 8px;
             padding: 10px 16px;
             border-bottom: 1px solid var(--cms-border, #e5e7eb);
-            background: var(--cms-surface-hover, #fafafa);
+            background: var(--cms-surface-hover, #f3f4f6);
         }
         .card__title {
             margin: 0;
@@ -142,9 +142,9 @@ import { MailboxDelegationDto } from './email.types';
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             background: var(--cms-border, #e5e7eb);
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
         }
         .card__body { padding: 12px 16px; }
@@ -156,7 +156,7 @@ import { MailboxDelegationDto } from './email.types';
             justify-content: space-between;
             gap: 12px;
             padding: 8px 0;
-            border-bottom: 1px solid var(--cms-border, #f3f4f6);
+            border-bottom: 1px solid var(--cms-border, #e5e7eb);
         }
         .row:last-child { border-bottom: 0; }
         .row__main {
@@ -173,7 +173,7 @@ import { MailboxDelegationDto } from './email.types';
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-size: .7rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -182,15 +182,15 @@ import { MailboxDelegationDto } from './email.types';
             color: var(--cms-info-text);
         }
 
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; }
-        .mono--muted { color: var(--cms-text-muted, #6b7280); }
+        .mono { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
+        .mono--muted { color: var(--cms-text-muted, #848b96); }
 
-        .empty { color: var(--cms-text-muted, #6b7280); margin: 0 0 8px; }
-        .error { color: var(--cms-danger, #b91c1c); margin: 0 0 8px; }
+        .empty { color: var(--cms-text-muted, #848b96); margin: 0 0 8px; }
+        .error { color: var(--cms-danger, #dc2626); margin: 0 0 8px; }
         .hint {
             margin: 8px 0 0;
             font-size: .75rem;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
         .hint--warn { color: var(--cms-warning-text); }
 

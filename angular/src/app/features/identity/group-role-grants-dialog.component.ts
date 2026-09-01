@@ -120,7 +120,7 @@ export interface GroupRoleGrantsDialogData {
             font-size: .75rem;
             color: var(--cms-warning-text, var(--cms-text-muted));
         }
-        .grg__warn i { color: var(--cms-warning, #f0ad4e); flex: none; margin-top: 1px; }
+        .grg__warn i { color: var(--cms-warning, #d97706); flex: none; margin-top: 1px; }
     `],
 })
 export class GroupRoleGrantsDialogComponent implements OnInit {

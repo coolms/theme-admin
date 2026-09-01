@@ -72,7 +72,13 @@ export function groupBlocks(blocks: readonly ModuleSettingsBlockDto[]): ModuleGr
                 // Normalised to an absolute admin path: a module declares
                 // `dynamic-chat`, and a heading link has to resolve from the
                 // router root, not from wherever the hub happens to sit.
-                route: null !== first.moduleRoute && '' !== first.moduleRoute
+                // A TRUTHY test, not `null !== …`: the wire omits null
+                // properties entirely (API Platform's `skip_null_values`), so a
+                // field the DTO types as `string | null` can arrive `undefined`
+                // and an explicit null comparison lets it through to `.replace`.
+                // The service normalises this now; the guard stays honest anyway
+                // because this helper takes whatever it is handed.
+                route: first.moduleRoute
                     ? `/${first.moduleRoute.replace(/^\//, '')}`
                     : null,
                 badge: sorted.length > 1 ? String(sorted.length) : '',

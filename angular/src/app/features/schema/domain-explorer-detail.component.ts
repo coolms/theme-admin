@@ -239,7 +239,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             position: sticky;
             top: 0;
             z-index: 2;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-family: var(--cms-font-mono, monospace);
             overflow: hidden;
         }
         .crumb {
@@ -249,7 +249,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             text-overflow: ellipsis;
         }
         .crumb--phpname {
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
             font-size: .85rem;
             color: var(--cms-text-muted);
         }
@@ -259,18 +259,18 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             gap: 3px;
             font-size: .72rem;
             padding: 2px 7px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-weight: 500;
             white-space: nowrap;
             flex-shrink: 0;
         }
         .crumb-badge--alias {
-            background: var(--cms-surface-2, rgba(0,0,0,.05));
+            background: var(--cms-surface-muted, #f3f4f6);
             color: var(--cms-text-muted);
-            font-family: monospace;
+            font-family: var(--cms-font-mono, monospace);
         }
         .crumb-badge--aggregate  { background: var(--cms-info-subtle); color: var(--cms-primary-hover); }
-        .crumb-badge--dynamic    { background: #fef9c3; color: #a16207; }
+        .crumb-badge--dynamic    { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
         .crumb-badge--embeddable { background: var(--cms-surface-muted); color: var(--cms-text-body); }
 
         /* ── Detail header (entity view) ────────────────────────────────── */
@@ -312,8 +312,8 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         .de-alias-pill {
             font-size: .75rem;
             padding: 2px 8px;
-            border-radius: 4px;
-            background: var(--cms-surface-2, rgba(0,0,0,.04));
+            border-radius: var(--cms-radius-sm, 4px);
+            background: var(--cms-surface-muted, #f3f4f6);
             color: var(--cms-text-muted);
         }
 
@@ -336,13 +336,13 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-size: .75rem;
             font-weight: 500;
         }
         .domain-badge--aggregate  { background: var(--cms-info-subtle); color: var(--cms-info-text); }
-        .domain-badge--dynamic    { background: #fef9c3; color: #854d0e; }
-        .domain-badge--embeddable { background: #f0fdf4; color: var(--cms-success-text); }
+        .domain-badge--dynamic    { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
+        .domain-badge--embeddable { background: var(--cms-success-light); color: var(--cms-success-text); }
         .domain-badge--runtime    { background: var(--cms-meta-subtle); color: var(--cms-meta); }
 
         /* ── Fields scroll area ─────────────────────────────────────────── */
@@ -403,7 +403,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             text-transform: uppercase;
             letter-spacing: .06em;
             color: var(--cms-text-muted);
-            background: var(--cms-surface-2, rgba(0,0,0,.02));
+            background: var(--cms-surface-muted, #f3f4f6);
             border-top: 1px solid var(--cms-border-color);
             border-bottom: 1px solid var(--cms-border-color);
         }
@@ -439,9 +439,9 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             border: none;
             background: none;
             padding: 2px 4px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             font-size: .8rem;
             line-height: 1;
         }
@@ -458,14 +458,14 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             vertical-align: middle;
         }
         .de-mini-badge--id       { background: var(--cms-info-subtle); color: var(--cms-info-text); }
-        .de-mini-badge--embedded { background: #f0fdf4; color: var(--cms-success-text); }
+        .de-mini-badge--embedded { background: var(--cms-success-light); color: var(--cms-success-text); }
 
         .de-module__count {
             font-size: .7rem;
             font-weight: 400;
             color: var(--cms-text-muted);
-            background: var(--cms-surface-2, rgba(0,0,0,.05));
-            border-radius: 8px;
+            background: var(--cms-surface-muted, #f3f4f6);
+            border-radius: var(--cms-radius-md, 8px);
             padding: 1px 6px;
         }
         .de-module__count--records { background: var(--cms-info-subtle); color: var(--cms-info-text); }
@@ -522,7 +522,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             padding: 1px 6px;
             border-radius: var(--cms-radius-sm);
             background: var(--cms-info-light);
-            color: var(--cms-info);
+            color: var(--cms-info-text);
             font-size: .65rem;
             font-weight: 600;
             font-style: normal;

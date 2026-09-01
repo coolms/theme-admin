@@ -233,16 +233,16 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             align-items: center;
             gap: 12px;
             padding: 48px 24px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
         }
-        .detail-status--error { color: var(--cms-danger, #b91c1c); }
+        .detail-status--error { color: var(--cms-danger, #dc2626); }
 
         .page {
             display: flex;
             flex-direction: column;
             flex: 1;
             min-height: 0;
-            background: var(--cms-bg, #f9fafb);
+            background: var(--cms-bg, #f8f9fa);
         }
 
         /* .chip styles stay — the slug chip now projects into the
@@ -257,24 +257,24 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-decoration: none;
             font-size: .8rem;
         }
-        .back-link:hover { color: var(--cms-accent, #2563eb); }
+        .back-link:hover { color: var(--cms-accent, #F5A623); }
         .chip {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             padding: 2px 8px;
-            border-radius: 10px;
+            border-radius: var(--cms-radius-lg, 10px);
             font-size: .7rem;
             font-weight: 500;
             background: var(--cms-surface-muted);
             color: var(--cms-text-body);
             line-height: 1;
         }
-        .chip--slug { background: var(--cms-surface-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .chip--slug { background: var(--cms-surface-muted); font-family: var(--cms-font-mono, monospace); }
 
         .page__body {
             display: flex;
@@ -304,7 +304,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             flex-direction: column;
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             overflow: hidden;
         }
 
@@ -320,13 +320,13 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
         }
         .toolbar__nav { display: flex; align-items: center; gap: 4px; }
         .toolbar__title { margin: 0 0 0 8px; font-size: .95rem; font-weight: 600; color: var(--cms-text); }
-        .toolbar__views { display: flex; gap: 2px; background: var(--cms-surface); border-radius: 6px; padding: 2px; border: 1px solid var(--cms-border, #e5e7eb); }
+        .toolbar__views { display: flex; gap: 2px; background: var(--cms-surface); border-radius: var(--cms-radius, 6px); padding: 2px; border: 1px solid var(--cms-border, #e5e7eb); }
         .toolbar__actions { display: flex; gap: 6px; align-items: center; }
 
         .side-card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             padding: 10px 12px;
             font-size: .8rem;
         }
@@ -334,7 +334,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             margin: 0 0 8px;
             font-size: .75rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             text-transform: uppercase;
             letter-spacing: .03em;
             display: flex;
@@ -348,7 +348,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             margin: 0 0 8px;
             font-size: .8rem;
         }
-        .meta dt { color: var(--cms-text-muted, #6b7280); }
+        .meta dt { color: var(--cms-text-muted, #848b96); }
         .meta dd { margin: 0; color: var(--cms-text); }
         .side-card__btn {
             display: flex;
@@ -359,7 +359,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
             margin-top: 4px;
             background: transparent;
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .75rem;
             color: var(--cms-text);
             cursor: pointer;

@@ -246,9 +246,9 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
         .chip {
             display: inline-block;
             padding: 1px 6px;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             font-size: .7rem;
-            background: #eef2ff; color: #4338ca;
+            background: var(--cms-meta-subtle); color: var(--cms-meta-text);
         }
         .chip--ok { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .chip--off { background: var(--cms-danger-subtle); color: var(--cms-danger-text); }
@@ -256,7 +256,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
         .card {
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 8px;
+            border-radius: var(--cms-radius-md, 8px);
             margin-bottom: 16px;
             overflow: hidden;
         }
@@ -275,12 +275,12 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
         .form-row label.span-2 { grid-column: span 2; }
 
         .block { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; margin-bottom: 12px; }
-        .block__label { font-size: .85rem; color: var(--cms-text, #1f2937); }
-        .block textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; }
+        .block__label { font-size: .85rem; color: var(--cms-text, #111827); }
+        .block textarea { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
 
         input, select, textarea {
-            border: 1px solid var(--cms-border, #d1d5db);
-            border-radius: 4px;
+            border: 1px solid var(--cms-border, #e5e7eb);
+            border-radius: var(--cms-radius-sm, 4px);
             padding: 6px 8px;
             font-size: .9rem;
             width: 100%;
@@ -290,15 +290,15 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
 
         .form-actions { display: flex; gap: 8px; }
 
-        .hint { color: var(--cms-text-muted, #6b7280); font-size: .8rem; margin: 4px 0 0; }
-        .error { color: var(--cms-danger, #b91c1c); font-size: .8rem; margin: 4px 0 0; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .hint { color: var(--cms-text-muted, #848b96); font-size: .8rem; margin: 4px 0 0; }
+        .error { color: var(--cms-danger, #dc2626); font-size: .8rem; margin: 4px 0 0; }
+        .mono { font-family: var(--cms-font-mono, monospace); }
 
         .history dl {
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        .history dt { color: var(--cms-text-muted, #6b7280); font-weight: 500; }
+        .history dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
 
     `],
 })

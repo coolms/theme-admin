@@ -193,7 +193,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
         .fh { display: flex; flex-direction: column; gap: 8px; font-size: .8125rem; }
         .fh__tabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--cms-border); padding-bottom: 6px; }
         .fh__tab {
-            padding: 4px 10px; border-radius: 4px; border: 1px solid transparent;
+            padding: 4px 10px; border-radius: var(--cms-radius-sm, 4px); border: 1px solid transparent;
             background: transparent; cursor: pointer; color: var(--cms-text-muted);
             display: flex; align-items: center; gap: 5px; font-size: .8125rem;
         }
@@ -202,7 +202,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
         .fh__refresh { margin-left: auto; }
 
         .fh__msg { padding: 12px; color: var(--cms-text-muted); }
-        .fh__msg--error { color: var(--cms-danger); }
+        .fh__msg--error { color: var(--cms-danger-text); }
 
         /* Revisions list */
         .fh__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
@@ -216,7 +216,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
         .fh__rev-actions { display: flex; gap: 6px; margin-top: 6px; }
         .fh__content {
             margin: 8px 0 0; padding: 8px; background: var(--cms-code-bg, var(--cms-border-light));
-            border-radius: 4px; max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+            border-radius: var(--cms-radius-sm, 4px); max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word;
             font-family: 'Courier New', monospace; font-size: .75rem;
         }
 
@@ -224,10 +224,12 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
         .fh__diff-controls { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
         .fh__field { display: flex; flex-direction: column; gap: 2px; }
         .fh__field > span { font-size: .7rem; color: var(--cms-text-muted); }
-        .fh__field select { padding: 3px 6px; border-radius: 4px; border: 1px solid var(--cms-border); background: var(--cms-surface); font-size: .8125rem; }
+        .fh__field select { padding: 3px 6px; border-radius: var(--cms-radius-sm, 4px); border: 1px solid var(--cms-border); background: var(--cms-surface); font-size: .8125rem; }
         .fh__diff-summary { display: flex; gap: 10px; padding: 2px 0; }
-        .fh__add { color: var(--cms-success); font-weight: 600; }
-        .fh__del { color: var(--cms-danger); font-weight: 600; }
+        /* The diff pair moves together: --cms-success measured 3.30 in
+           light, and leaving --del on the raw hue would mismatch its twin. */
+        .fh__add { color: var(--cms-success-text); font-weight: 600; }
+        .fh__del { color: var(--cms-danger-text); font-weight: 600; }
         .fh__same { color: var(--cms-text-muted); }
         .fh__diff {
             border: 1px solid var(--cms-border); border-radius: var(--cms-radius);

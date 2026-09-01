@@ -139,7 +139,7 @@ import {
         ':host { display: flex; flex-direction: column; flex: 1; min-height: 0; }',
         // --cms-* is CHROME, not paper: this panel is admin furniture and has
         // to follow the theme, dark mode included.
-        '.catalogue-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 40; }',
+        '.catalogue-backdrop { position: fixed; inset: 0; background: var(--cms-overlay-scrim); z-index: 40; }',
         '.catalogue { position: fixed; top: 10vh; left: 50%; transform: translateX(-50%);'
             + ' width: min(560px, 92vw); max-height: 74vh; overflow: auto; z-index: 41;'
             + ' background: var(--cms-surface); color: var(--cms-text);'

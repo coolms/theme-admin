@@ -38,10 +38,10 @@ export interface CompleteDialogResult {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ModalComponent, DynamicFormComponent, FormsModule],
     styles: [`
-        .inbox-ctx { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 8px; background: var(--cms-canvas, #f9fafb); }
-        .inbox-ctx__title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #6b7280); margin-bottom: 6px; }
+        .inbox-ctx { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
+        .inbox-ctx__title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #848b96); margin-bottom: 6px; }
         .inbox-ctx__row { display: flex; gap: 10px; padding: 2px 0; font-size: .85rem; }
-        .inbox-ctx__label { flex: 0 0 84px; color: var(--cms-text-muted, #6b7280); }
+        .inbox-ctx__label { flex: 0 0 84px; color: var(--cms-text-muted, #848b96); }
         .inbox-ctx__value { flex: 1 1 auto; color: var(--cms-text, #111827); word-break: break-word; }
     `],
     template: `
@@ -63,7 +63,7 @@ export interface CompleteDialogResult {
                 </div>
             }
             @if (task.formKey) {
-                <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #6c757d);">
+                <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #848b96);">
                     Form: <code>{{ task.formKey }}</code>
                 </p>
                 <app-dynamic-form
@@ -73,17 +73,17 @@ export interface CompleteDialogResult {
                     (submitted)="onFormSubmit($event)"
                     (cancelled)="cancel()" />
             } @else {
-                <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #6c757d);">
+                <p style="margin: 0 0 12px 0; color: var(--cms-text-muted, #848b96);">
                     No form binding for this task. Provide <code>formData</code> as JSON.
                 </p>
                 <textarea
                     rows="8"
-                    style="width: 100%; font-family: monospace; font-size: 12px;"
+                    style="width: 100%; font-family: var(--cms-font-mono, monospace); font-size: 12px;"
                     [(ngModel)]="rawJson"
                     [class.is-invalid]="rawError() !== null"
                     placeholder='{}'></textarea>
                 @if (rawError(); as err) {
-                    <div style="color: #c0392b; margin-top: 4px;">{{ err }}</div>
+                    <div style="color: var(--cms-danger); margin-top: 4px;">{{ err }}</div>
                 }
             }
 

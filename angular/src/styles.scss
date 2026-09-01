@@ -121,7 +121,11 @@
     // each honest about what it means.
     --cms-text-body:            #374151;
     --cms-text-secondary:       #6b7280;
-    --cms-text-muted:           #9ca3af;
+    // 3.06-3.43:1 across the four grounds muted text lands on. Was #9ca3af
+    // at 2.26-2.54, which failed every floor -- and was the source of ALL
+    // 194 low-contrast elements measured across 7 pages. Dark is unchanged;
+    // #6b7f96 on a dark ground already passes.
+    --cms-text-muted:           #848b96;
     // Text ON a coloured fill — the single largest hard-coded value in the app
     // (#2025): `color: #fff` appears 61 times, always on a solid success /
     // danger / primary background. It had no token, which is why it stayed a
@@ -182,6 +186,9 @@
     // and the alternative was referencing a token nothing defines (#2043).
     --cms-success-subtle-border: #86efac;
     --cms-warning-subtle:       #fef3c7;
+    // Completes the semantic family: danger, info and success all carry a
+    // -subtle-border, warning did not, so callers hard-coded #fcd34d.
+    --cms-warning-subtle-border: #fcd34d;
     --cms-info-subtle:          #dbeafe;
     // Added with the bridge completion (#2030): `.alert-info` needs a border to
     // map, and only danger had one. Same one-step-darker relationship as
@@ -224,6 +231,22 @@
     // when --cms-text has inverted.
     --cms-paper:                #ffffff;
     --cms-paper-text:           #111827;
+    // The third member, and it exists for a reason worth stating: authored
+    // links were `--cms-accent`, which is theme-INVARIANT amber and therefore
+    // measured 2.03 on this paper in BOTH themes — under even the 3:1 that
+    // applies to non-text (#2476). `--cms-accent-text` is not the fix either:
+    // it flips with the theme (#7c4d00 light, #f5c173 dark) while the paper
+    // does NOT, so it would read 7.20 in one theme and ~1.9 in the other.
+    // A theme-invariant surface needs a theme-invariant ink. This is the light
+    // accent ink, pinned: 7.20 on white, and still recognisably the brand hue.
+    --cms-paper-link:           #7c4d00;
+    // Same argument for the quieter ink. Blockquotes on paper were
+    // `--cms-text-muted`, which is #848b96 light and #6b7f96 dark — so the
+    // quote drew at roughly 3.3 in one theme and 4.2 in the other ON THE SAME
+    // WHITE PAPER. Dim rather than broken, but varying by theme on a surface
+    // that does not vary is the same defect as the link above, and a token
+    // that only happens to land above 3 is one palette edit from not doing so.
+    --cms-paper-muted:          #6b7280;
 
     // Tells the BROWSER which way this theme runs, which is the only way to
     // reach the parts of the UI no stylesheet owns (#2038): scrollbars, the
@@ -279,6 +302,10 @@
     // Spacing / radius / shadow
     --cms-radius:               6px;
     --cms-radius-sm:            4px;
+    // 8px was the second most common radius in the app (72 components
+    // chose it independently) and had no name. The vocabulary was
+    // missing a step, not the components.
+    --cms-radius-md:            8px;
     --cms-radius-lg:            10px;
     --cms-shadow-sm:            0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
     --cms-shadow-md:            0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
@@ -286,7 +313,10 @@
 
     // Layout spacing — single source of truth for content area insets
     --cms-content-padding:      20px;   /* standard content area padding             */
-    --cms-panel-padding:        12px;   /* compact panel / sidebar padding           */
+    --cms-panel-padding:        12px;
+    // The document viewers' modal ceiling. Was only ever the fallback
+    // inside docx-viewer.component.ts, so nothing could find it.
+    --cms-viewer-max-height:    80vh;   /* compact panel / sidebar padding           */
 
     // Row heights — one standard across all list / grid / tree views
     --cms-row-height:           36px;   /* DataGrid rows, VFS list rows              */
@@ -379,6 +409,11 @@
     --cms-warning-light:        #2e2211;
     --cms-warning-text:         #fcd34d;
     --cms-warning-subtle:       #33270f;
+    --cms-warning-subtle-border: #5c4318;
+    // ⚠️ Was defined for LIGHT ONLY, so the one caller that used it drew a
+    // mint-green border on a dark panel. In family with danger (#5c2a2f) and
+    // info (#24405f).
+    --cms-success-subtle-border: #2a5c39;
 
     --cms-info:                 #3b82f6;
     --cms-info-light:           #122036;
@@ -633,7 +668,7 @@ input[type="radio"] {
 }
 
 input[type="checkbox"] {
-    border-radius: 4px;
+    border-radius: var(--cms-radius-sm, 4px);
 
     &:checked {
         background-color: var(--cms-accent);
@@ -990,7 +1025,7 @@ input[type="radio"] {
     background: transparent;
     cursor: pointer;
     color: var(--cms-text-muted);
-    border-radius: 6px;
+    border-radius: var(--cms-radius, 6px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1071,7 +1106,7 @@ input[type="radio"] {
 
 cdk-dialog-container {
     background: var(--cms-surface);
-    border-radius: 8px;
+    border-radius: var(--cms-radius-md, 8px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
     outline: none;
     overflow-y: auto;
@@ -1333,7 +1368,7 @@ body.cms-resizing {
 
     tbody tr {
         transition: background .1s;
-        &:hover { background: var(--cms-surface-hover, #f9f9f9); }
+        &:hover { background: var(--cms-surface-hover, #f3f4f6); }
         &:last-child td { border-bottom: none; }
     }
 
@@ -1369,7 +1404,7 @@ body.cms-resizing {
 }
 
 // ─── Typography utilities ─────────────────────────────────────────────────────
-.font-mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+.font-mono { font-family: var(--cms-font-mono, monospace); }
 .text-sm   { font-size: .8125rem; }
 
 // ─── TipTap / ProseMirror ─────────────────────────────────────────────────────
@@ -1392,7 +1427,7 @@ body.cms-resizing {
     blockquote { border-left: 3px solid var(--cms-border); margin: 0 0 .75em; padding-left: 1em; color: var(--cms-text-muted); }
     code { font-family: ui-monospace, monospace; background: var(--cms-border-light); padding: 1px 4px; border-radius: 3px; font-size: .875em; }
     pre code { background: none; padding: 0; }
-    pre { background: var(--cms-code-bg); color: var(--cms-code-text); padding: 12px 16px; border-radius: 6px; overflow-x: auto; margin: 0 0 .75em; }
+    pre { background: var(--cms-code-bg); color: var(--cms-code-text); padding: 12px 16px; border-radius: var(--cms-radius, 6px); overflow-x: auto; margin: 0 0 .75em; }
 }
 
 .page-editor__tiptap .ProseMirror p.is-editor-empty:first-child::before {
@@ -1496,7 +1531,7 @@ figure > figcaption {
     align-items: center;
 }
 .cms-media-gallery-placeholder__path {
-    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-family: var(--cms-font-mono, monospace);
     font-size: .75rem;
     color: var(--cms-text);
 }
@@ -1531,7 +1566,7 @@ figure > figcaption {
     align-items: center;
 }
 .cms-embed-placeholder__label {
-    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-family: var(--cms-font-mono, monospace);
     font-size: .75rem;
     color: var(--cms-text);
     overflow: hidden;
@@ -1737,6 +1772,24 @@ figure > figcaption {
     --bs-body-color:      var(--cms-text);
     --bs-emphasis-color:  var(--cms-text);
     --bs-border-color:    var(--cms-border);
+
+    // ⚠️ The TRANSLUCENT siblings, and the ones the bridge missed until a
+    // contrast sweep made them obvious. `.card` does NOT resolve through
+    // --bs-border-color -- it uses the translucent one, which still held
+    // Bootstrap's rgba(0,0,0,.175). Measured on the DataGrid card in dark
+    // mode: 1.074 against its own surface, 1.063 against the page. A black
+    // wash on a dark surface is not a border.
+    //
+    // The shadows are the same story: .075-.175 alpha black, which is the
+    // exact weakness #2443 found in 35 hand-rolled shadows while these sat
+    // here untouched. --cms-shadow-* carry .45-.55 in dark.
+    //
+    // -inset stays: an inset hairline inside a form control reads on either
+    // ground, and there is no inset token to point it at.
+    --bs-border-color-translucent: var(--cms-border);
+    --bs-box-shadow-sm:  var(--cms-shadow-sm);
+    --bs-box-shadow:     var(--cms-shadow-md);
+    --bs-box-shadow-lg:  var(--cms-shadow-lg);
 
     // The STRUCTURAL variable, not a utility — and the one the bridge missed
     // until dark mode made it obvious (#2031). `.card`, `.form-control`,

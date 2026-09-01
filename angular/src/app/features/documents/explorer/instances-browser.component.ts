@@ -234,7 +234,7 @@ type SortDir = 'asc' | 'desc';
             font-size: 0.8rem;
         }
         .cms-instances-zone__status--error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
         }
         .cms-instances-zone__empty {
             text-align: center;
@@ -316,7 +316,7 @@ type SortDir = 'asc' | 'desc';
             background: var(--cms-surface-hover, var(--cms-surface));
         }
         .cms-folder-chip__icon {
-            color: var(--cms-folder-color, #e8b339);
+            color: var(--cms-filetype-directory, #f59e0b);
             font-size: 1.05rem;
         }
         .cms-folder-chip__name {
@@ -347,7 +347,7 @@ type SortDir = 'asc' | 'desc';
             opacity: 0.75;
         }
         .cms-instance-card--failed {
-            border-color: var(--cms-danger, #b91c1c);
+            border-color: var(--cms-danger, #dc2626);
         }
         .cms-instance-card__icon {
             font-size: 2.5rem;
@@ -382,19 +382,19 @@ type SortDir = 'asc' | 'desc';
             font-weight: 500;
         }
         .cms-instance-card__badge--status[data-status="rendered"] {
-            background: rgba(16, 185, 129, 0.12);
-            color: rgb(6, 95, 70);
+            background: var(--cms-success-light);
+            color: var(--cms-success-text);
         }
         .cms-instance-card__badge--status[data-status="failed"] {
-            background: rgba(239, 68, 68, 0.12);
-            color: rgb(153, 27, 27);
+            background: var(--cms-danger-light);
+            color: var(--cms-danger-text);
         }
         /* #1684 — uploaded, i.e. not produced here at all. Deliberately
            neutral rather than another success colour: it is a statement
            of origin, not of outcome. */
         .cms-instance-card__badge--status[data-status="uploaded"] {
-            background: rgba(59, 130, 246, 0.12);
-            color: rgb(30, 64, 175);
+            background: var(--cms-info-light);
+            color: var(--cms-info-text);
         }
 
         /* ── List view ──────────────────────────────────────────── */
@@ -447,7 +447,7 @@ type SortDir = 'asc' | 'desc';
             opacity: 0.75;
         }
         .cms-instances-zone__row--failed {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
         }
         .cms-instances-zone__row td {
             padding: 8px;
@@ -471,16 +471,16 @@ type SortDir = 'asc' | 'desc';
             text-transform: lowercase;
         }
         .cms-instances-zone__badge[data-status="rendered"] {
-            background: rgba(16, 185, 129, 0.12);
-            color: rgb(6, 95, 70);
+            background: var(--cms-success-light);
+            color: var(--cms-success-text);
         }
         .cms-instances-zone__badge[data-status="failed"] {
-            background: rgba(239, 68, 68, 0.12);
-            color: rgb(153, 27, 27);
+            background: var(--cms-danger-light);
+            color: var(--cms-danger-text);
         }
         .cms-instances-zone__badge[data-status="uploaded"] {
-            background: rgba(59, 130, 246, 0.12);
-            color: rgb(30, 64, 175);
+            background: var(--cms-info-light);
+            color: var(--cms-info-text);
         }
         .cms-instances-zone__muted {
             color: var(--cms-text-muted);

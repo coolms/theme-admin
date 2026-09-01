@@ -22,7 +22,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
         <div style="min-width: 380px; max-width: 480px">
 
             <div class="cms-dialog-header">
-                <i class="bi bi-link-45deg" style="color: #6366f1"></i>
+                <i class="bi bi-link-45deg" style="color: var(--cms-meta)"></i>
                 <span style="flex:1">{{ node.name }}</span>
                 <button type="button" class="cms-dialog-close" (click)="cancel()" title="Close">
                     <i class="bi bi-x-lg"></i>
@@ -72,7 +72,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             display: block;
             font-size: .78rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #6b7280);
+            color: var(--cms-text-muted, #848b96);
             margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: .04em;
@@ -85,16 +85,16 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
         .rmd-readonly-value {
             font-size: .875rem;
             color: var(--cms-text, #111827);
-            font-family: monospace;
-            background: var(--cms-surface, #f8fafc);
+            font-family: var(--cms-font-mono, monospace);
+            background: var(--cms-surface, #ffffff);
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             padding: 6px 10px;
         }
         .rmd-textarea {
             width: 100%;
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: 6px;
+            border-radius: var(--cms-radius, 6px);
             padding: 8px 10px;
             font-size: .875rem;
             color: var(--cms-text, #111827);
@@ -102,7 +102,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             outline: none;
             box-sizing: border-box;
         }
-        .rmd-textarea:focus { border-color: var(--cms-primary, #3b82f6); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+        .rmd-textarea:focus { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px var(--cms-info-subtle); }
         .rmd-chips {
             display: flex;
             gap: 6px;
@@ -113,7 +113,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             padding: 3px 10px;
             border-radius: 999px;
             background: var(--cms-meta-subtle);
-            color: #4f46e5;
+            color: var(--cms-meta);
             font-size: .75rem;
             font-weight: 600;
             letter-spacing: .03em;

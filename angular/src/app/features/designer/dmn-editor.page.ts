@@ -6,6 +6,7 @@ import {
     ElementRef,
     OnDestroy,
     ViewChild,
+    DestroyRef,
     inject,
     input,
     output,
@@ -43,7 +44,7 @@ function isNewDecisionBody(err: unknown): boolean {
     );
 }
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService } from '@coolms/ui-angular';
+import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
 import { DesignerService } from './designer.service';
@@ -151,7 +152,7 @@ import { DesignerI18nService } from './designer-i18n.service';
         .dmn-editor-page__host { flex: 1; display: flex; min-height: 0; }
         .dmn-editor-page__overlay {
             position: absolute; inset: 0; display: grid; place-items: center;
-            background: rgba(255,255,255,.7); z-index: 5; font: 500 14px/1.4 sans-serif;
+            background: color-mix(in srgb, var(--cms-surface) 70%, transparent); z-index: 5; font: 500 14px/1.4 sans-serif;
         }
     `],
 })
@@ -163,6 +164,14 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
     private readonly designer = inject(DesignerService);
     private readonly i18n = inject(DesignerI18nService);
     private readonly toast    = inject(ToastService);
+    private readonly unsaved  = inject(UnsavedChangesService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    /**
+     * Unsaved-work flag, PUBLIC so `unsavedChangesGuard` can read it off
+     * the route component (#2489).
+     */
+    readonly dirty = signal(false);
 
     /**
      * Optional inputs for hosting this page inside the generic
@@ -224,6 +233,15 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         });
 
         await this.loadDraft();
+
+        // ⚠️ Subscribed AFTER the draft is in. `fromXml()` goes through
+        // `model.load()`, and whether that reaches the command stack is
+        // not something this page should have to know -- starting the
+        // watch here makes it irrelevant rather than load-bearing.
+        this.destroyRef.onDestroy(
+            this.editor.commands.onChange(() => this.dirty.set(true)),
+        );
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
     }
 
     /** GET the current draft XML + seed the editor. Re-runnable from the error-banner Retry. */
@@ -294,6 +312,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         try {
             await firstValueFrom(this.designer.saveDraft(this.decisionKey, xml));
             this.lastSavedAt.set(new Date().toISOString());
+            this.dirty.set(false);
             this.toast.success(`Saved draft for "${this.decisionKey}".`);
         } catch (err) {
             this.toast.error(`Save failed: ${errorMessage(err)}`);
