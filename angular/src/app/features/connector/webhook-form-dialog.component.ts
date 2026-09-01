@@ -21,7 +21,7 @@ export interface WebhookFormDialogData {
 }
 
 /**
- * M5.d.3 FE — create / edit modal for an inbound webhook trigger.
+ * FE — create / edit modal for an inbound webhook trigger.
  *
  * Closes with the saved {@link WebhookTriggerDto} (the create response carries the
  * one-time `secret`, which the list page reveals); closes with `null` on cancel.

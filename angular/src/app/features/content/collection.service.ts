@@ -31,7 +31,7 @@ export interface CollectionDto {
 }
 
 /**
- * The M6.a distribution config on a collection: which outbound
+ * The distribution config on a collection: which outbound
  * channels a published post fans out to + per-channel settings. `isCollection`
  * is false when the target dir isn't actually a content collection, so the UI
  * can degrade gracefully.
@@ -68,7 +68,7 @@ export interface CollectionSettings {
 
 /**
  * One setting a channel declares it needs, mirroring
- * `App\Core\Domain\Channel\ChannelConfigField`.
+ * `ChannelConfigField`.
  *
  * `type: 'secretRef'` means the value is the NAME of a stored secret, not the
  * secret itself — so it displays and round-trips like any other text.

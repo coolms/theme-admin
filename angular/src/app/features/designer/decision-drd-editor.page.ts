@@ -36,7 +36,7 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * M4.j slice 5 — DMN DRD (Decision Requirements Diagram) designer page.
+ * Slice 5 — DMN DRD (Decision Requirements Diagram) designer page.
  * Hosts the vanilla-TS {@link DmnDrdEditor} (from
  * `@coolms/designer/dmn-drd`) inside the shared editor shell, wired to
  * the decision VFS draft via {@link DesignerService} (`getDraft` /
@@ -62,7 +62,7 @@ import { DesignerI18nService } from './designer-i18n.service';
  * **Deploy** validates the DRD graph (backend `DmnDrdValidator`) + mints
  * an immutable `v{N}.dmn` version — save-then-deploy, mirroring the BPMN
  * and state-machine editors. The backend auto-provisions a fresh key on
- * first save (M4.j). Route: `/admin/designer/decision/:key`.
+ * first save. Route: `/admin/designer/decision/:key`.
  */
 @Component({
     selector: 'app-decision-drd-editor-page',

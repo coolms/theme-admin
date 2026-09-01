@@ -13,7 +13,7 @@ import { CallOverlayPrefs } from '../call/call-overlay-preferences.service';
 import { WebPhoneService } from '../call/web-phone.service';
 
 /**
- * M9.g (Slice A) — bespoke "Calls" tab inside My Profile.
+ * Bespoke "Calls" tab inside My Profile.
  *
  * Controls the global incoming-call screen-pop overlay: whether it shows
  * at all, and how long a settled (answered/ended) card lingers before it
@@ -130,7 +130,7 @@ import { WebPhoneService } from '../call/web-phone.service';
 })
 export class ProfileCallTabComponent implements OnInit {
     /**
-     * The softphone's LIVE registration state (M9.g C.3-infra). Read, never
+     * The softphone's LIVE registration state. Read, never
      * driven: the shell boots the service from the screen-pop overlay, so this
      * panel only reports what is actually true. It replaced a hardcoded "coming
      * soon" notice that outlived the feature it described — the softphone had

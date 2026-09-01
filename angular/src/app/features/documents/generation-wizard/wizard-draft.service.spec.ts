@@ -42,14 +42,14 @@ describe('WizardDraftService', () => {
 
     afterEach(() => localStorage.clear());
 
-    it('round-trips a saved draft through localStorage', () => {
+ it('round-trips a saved draft through localStorage', () => {
         service.save(TEMPLATE_ID, sampleInput());
         const raw = localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`);
         expect(raw).not.toBeNull();
         const parsed = JSON.parse(raw!) as WizardDraft;
-        // Asserted as a literal on purpose: when the draft shape changes and
-        // `VERSION` is bumped, this fails and makes whoever bumped it decide
-        // what happens to drafts already sitting in users' localStorage.
+ // Asserted as a literal on purpose: when the draft shape changes and
+ // `VERSION` is bumped, this fails and makes whoever bumped it decide
+ // what happens to drafts already sitting in users' localStorage.
         expect(parsed.version).toBe(2);
         expect(parsed.templateId).toBe(TEMPLATE_ID);
         expect(parsed.mode).toBe('filter');
@@ -59,7 +59,7 @@ describe('WizardDraftService', () => {
         expect(parsed.audience).toEqual({ org: 'org-uuid-1' });
     });
 
-    it('invokes apply on restore when confirm returns true', () => {
+ it('invokes apply on restore when confirm returns true', () => {
         service.save(TEMPLATE_ID, sampleInput());
         let applied: WizardDraft | null = null;
         service.maybeRestore(TEMPLATE_ID, (d) => (applied = d), () => true);
@@ -67,7 +67,7 @@ describe('WizardDraftService', () => {
         expect(applied!.mode).toBe('filter');
     });
 
-    it('clears the draft and skips apply when confirm returns false', () => {
+ it('clears the draft and skips apply when confirm returns false', () => {
         service.save(TEMPLATE_ID, sampleInput());
         let called = false;
         service.maybeRestore(TEMPLATE_ID, () => (called = true), () => false);
@@ -75,7 +75,7 @@ describe('WizardDraftService', () => {
         expect(localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`)).toBeNull();
     });
 
-    it('discards a draft whose version does not match', () => {
+ it('discards a draft whose version does not match', () => {
         localStorage.setItem(
             `wizard-draft-${TEMPLATE_ID}`,
             JSON.stringify({ ...sampleInput(), version: 99, timestamp: Date.now(), templateId: TEMPLATE_ID }),
@@ -86,15 +86,15 @@ describe('WizardDraftService', () => {
         expect(localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`)).toBeNull();
     });
 
-    it('discards a draft whose timestamp is older than TTL', () => {
+ it('discards a draft whose timestamp is older than TTL', () => {
         const ancient = Date.now() - 48 * 60 * 60 * 1000; // 48h ago
         localStorage.setItem(
             `wizard-draft-${TEMPLATE_ID}`,
-            // `version` MUST be the current one. `maybeRestore` checks the
-            // version before the timestamp, so seeding a stale version here
-            // (this line said `1` until the suite was first actually run)
-            // discards the draft on the version branch and never exercises
-            // the TTL branch this test is named for.
+ // `version` MUST be the current one. `maybeRestore` checks the
+ // version before the timestamp, so seeding a stale version here
+ // (this line said `1` until the suite was first actually run)
+ // discards the draft on the version branch and never exercises
+ // the TTL branch this test is named for.
             JSON.stringify({ ...sampleInput(), version: 2, timestamp: ancient, templateId: TEMPLATE_ID }),
         );
         let called = false;
@@ -103,7 +103,7 @@ describe('WizardDraftService', () => {
         expect(localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`)).toBeNull();
     });
 
-    it('discards corrupt JSON without throwing', () => {
+ it('discards corrupt JSON without throwing', () => {
         localStorage.setItem(`wizard-draft-${TEMPLATE_ID}`, '{not json');
         let called = false;
         expect(() =>
@@ -113,7 +113,7 @@ describe('WizardDraftService', () => {
         expect(localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`)).toBeNull();
     });
 
-    it('clear() removes the entry', () => {
+ it('clear() removes the entry', () => {
         service.save(TEMPLATE_ID, sampleInput());
         service.clear(TEMPLATE_ID);
         expect(localStorage.getItem(`wizard-draft-${TEMPLATE_ID}`)).toBeNull();

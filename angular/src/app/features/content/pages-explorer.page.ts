@@ -50,7 +50,7 @@ import { PageSpaceStateService } from './page-space-state.service';
              one, so the projected header this page used to pass was never in
              the DOM — and "New Page" / "New Collection" (both position: header)
              had nowhere to render. Creating a page from the Pages explorer was
-             impossible from #1693 until now. Documents gets away with the
+             impossible until now. Documents gets away with the
              projected form only because document:library declares no title. -->
         <app-explorer-layout
             #layout

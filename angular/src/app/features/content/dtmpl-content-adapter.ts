@@ -62,7 +62,7 @@ export class DtmplContentAdapter implements ContentAdapter {
     stripDisallowedWidgets(content: string, allowedWidgets: ReadonlyArray<string>): string {
         if (allowedWidgets.includes('*')) return content;
         const allowed = new Set(allowedWidgets);
-        // Mirror App\Editor\Application\Service\ContentSanitizer's pattern:
+        // Mirror ContentSanitizer's pattern:
         //   {widget:NAMESPACE:ID …}
         // NAMESPACE = [a-zA-Z][a-zA-Z0-9_-]* ; ID = up to whitespace or `}`.
         return content.replace(

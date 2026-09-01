@@ -30,19 +30,19 @@ describe('CallOverlayPreferencesService.update()', () => {
         return TestBed.inject(CallOverlayPreferencesService);
     }
 
-    it('applies a keyed section to the live signals', () => {
+ it('applies a keyed section to the live signals', () => {
         const svc = setup();
 
         svc.update(STORED);
 
-        // `false` and `0` are both real user choices here — popup off, and
-        // "keep the card until I close it" — so neither may fall back.
+ // `false` and `0` are both real user choices here — popup off, and
+ // "keep the card until I close it" — so neither may fall back.
         expect(svc.overlayEnabled()).toBeFalse();
         expect(svc.autoDismissSeconds()).toBe(0);
         expect(svc.sipEndpoint()).toBe('PJSIP/2002');
     });
 
-    it('keeps wire junk out of the VO — a keyless bag stores nothing and changes nothing', () => {
+ it('keeps wire junk out of the VO — a keyless bag stores nothing and changes nothing', () => {
         const svc = setup();
         svc.update(STORED);
 

@@ -87,7 +87,7 @@ const QUEUE_POLL_MS = 12_000;
                 <!-- - Queue pane - -->
                 <aside class="lc-queue">
                     <!-- Queue tabs: triage by claim state. New customers land
-                         in Unassigned; a manager opens one to CLAIM it (→ Mine); All
+                         in Unassigned; a manager opens one to CLAIM it (-> Mine); All
                          is the full active set. Counts let a manager see load at a glance. -->
                     <div class="lc-tabs" role="tablist">
                         <button type="button" class="lc-tab" role="tab"
@@ -182,7 +182,7 @@ const QUEUE_POLL_MS = 12_000;
                                     <span class="lc-thread-head__hint">Joining…</span>
                                 } @else if (claimedHere()) {
                                     <!-- Release un-claims (leaves) so the conversation drops back
-                                         to Unassigned for another manager to pick up (#1028). -->
+                                         to Unassigned for another manager to pick up. -->
                                     <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm"
                                             [disabled]="releasing()"
                                             (click)="release(conv)"

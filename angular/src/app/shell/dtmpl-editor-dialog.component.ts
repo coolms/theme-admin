@@ -175,7 +175,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
                                 <!-- Isolated on purpose: theme CSS styles body,
                                      headings and links, and would restyle the admin
                                      around the editor if injected rather than
-                                     framed (#1767). -->
+                                     framed. -->
                                 <cms-context-frame
                                     [html]="previewHtml()"
                                     [css]="context().css"

@@ -27,7 +27,7 @@ describe('WordTemplateService', () => {
 
     afterEach(() => http.verify());
 
-    it('posts the requested format, not a hard-coded one', () => {
+ it('posts the requested format, not a hard-coded one', () => {
         svc.createNative('Invoice', 'spreadsheet').subscribe();
 
         const req = http.expectOne(ENDPOINT);
@@ -36,7 +36,7 @@ describe('WordTemplateService', () => {
         req.flush({});
     });
 
-    it('still posts word when word is what was asked for', () => {
+ it('still posts word when word is what was asked for', () => {
         svc.createNative('Invoice', 'word').subscribe();
 
         const req = http.expectOne(ENDPOINT);
@@ -44,7 +44,7 @@ describe('WordTemplateService', () => {
         req.flush({});
     });
 
-    it('sends the NAME only — the slug is derived server-side (#1687)', () => {
+ it('sends the NAME only — the slug is derived server-side', () => {
         svc.createNative('Счета', 'word').subscribe();
 
         const req = http.expectOne(ENDPOINT);

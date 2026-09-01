@@ -4,7 +4,7 @@
     {
       "name": "angular-admin",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start", "--prefix", "/home/ag/projects/coolms-v2/backend/packages/theme-admin/angular"],
+      "runtimeArgs": ["start", "--prefix", "."],
       "port": 4200
     }
   ]

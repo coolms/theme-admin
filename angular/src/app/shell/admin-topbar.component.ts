@@ -96,7 +96,7 @@ interface Breadcrumb {
                 <!-- DynamicChat agent-queue quick-access -->
                 <app-dynamic-chat-quick-access />
 
-                <!-- Click-to-dial pad (M9.g Slice B) -->
+                <!-- Click-to-dial pad -->
                 <app-call-dial-quick-access />
 
                 <!-- Notification bell -->

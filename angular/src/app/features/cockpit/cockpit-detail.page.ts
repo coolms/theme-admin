@@ -45,7 +45,7 @@ import type {
 } from './cockpit.types';
 
 /**
- * M4.b — Process Cockpit instance detail page (`/admin/cockpit/:id`).
+ * Process Cockpit instance detail page (`/admin/cockpit/:id`).
  *
  * Read-only operator view of one process instance, backed by the enriched
  * item GET (`GET /api/v1/cockpit/instances/{id}`, ROLE_ADMIN) which returns
@@ -53,10 +53,10 @@ import type {
  * positions), `history` (the audit timeline), and `variables`.
  *
  * Mirrors the schedule-detail three-state shell (loading | error-with-back |
- * detail). M4.c adds state-gated steering actions to the header:
+ * detail). adds state-gated steering actions to the header:
  *   - running   -> Suspend, Set variable, Cancel
  *   - suspended -> Resume, Set variable, Cancel
- *   - failed    -> Retry (M4.f)
+ *   - failed    -> Retry
  *   - terminal (completed / cancelled) -> read-only (no actions)
  * Cancel confirms first (destructive); every successful action re-fetches the
  * detail (so the state badge + tokens + history + variables refresh) and
@@ -115,7 +115,7 @@ import type {
                     </div>
                 </section>
 
-                <!-- Process diagram with live token overlay (M4.h) -->
+                <!-- Process diagram with live token overlay -->
                 @if (i.definitionBody) {
                     <section class="card">
                         <header class="card__head"><h2 class="card__title">Diagram</h2></header>
@@ -569,9 +569,9 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * M4.h — the element id that the engine recorded as failed (so the diagram
+     * The element id that the engine recorded as failed (so the diagram
      * paints it red). Scans the history for the most recent
-     * `workflow.process.failed` event (M4.f failure capture) and returns its
+     * `workflow.process.failed` event (failure capture) and returns its
      * `elementId` payload; null when the instance never failed.
      */
     failedElementId(i: CockpitInstanceDetailDto): string | null {

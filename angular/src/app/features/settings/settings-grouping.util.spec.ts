@@ -26,8 +26,8 @@ describe('settings grouping', () => {
             defaults: {},
             effective: {},
             locked: {},
-            // Added with per-site overrides; the normaliser defaults an
-            // omitting payload to exactly this pair.
+ // Added with per-site overrides; the normaliser defaults an
+ // omitting payload to exactly this pair.
             siteScopable: false,
             scope: null,
             storedAt: null,
@@ -35,12 +35,12 @@ describe('settings grouping', () => {
         };
     }
 
-    it('survives a block whose moduleRoute the server omitted', () => {
-        // The crash that took the settings screen down: the guard tested
-        // `null !== moduleRoute` while the wire omits null properties outright,
-        // so an absent route reached `.replace`. Cast because the DTO types the
-        // field as `string | null` — which is exactly the promise the wire does
-        // not keep.
+ it('survives a block whose moduleRoute the server omitted', () => {
+ // The crash that took the settings screen down: the guard tested
+ // `null !== moduleRoute` while the wire omits null properties outright,
+ // so an absent route reached `.replace`. Cast because the DTO types the
+ // field as `string | null` — which is exactly the promise the wire does
+ // not keep.
         const groups = groupBlocks([
             block({ key: 'web.page_cache', module: 'web', moduleRoute: undefined as unknown as null }),
         ]);
@@ -49,7 +49,7 @@ describe('settings grouping', () => {
         expect(groups[0].route).toBeNull();
     });
 
-    it('groups blocks by module, both levels alphabetical', () => {
+ it('groups blocks by module, both levels alphabetical', () => {
         const groups = groupBlocks([
             block({ key: 'navi.b', module: 'navi', label: 'Zebra' }),
             block({ key: 'chat.a', module: 'dynamic-chat', label: 'Pre-chat form policy' }),
@@ -60,34 +60,34 @@ describe('settings grouping', () => {
         expect(groups[1].blocks.map(b => b.label)).toEqual(['Alpha', 'Zebra']);
     });
 
-    it('heads a group with the name and icon the module declared', () => {
+ it('heads a group with the name and icon the module declared', () => {
         const [group] = groupBlocks([
             block({ module: 'dynamic-chat', moduleLabel: 'Dynamic Chat', moduleIcon: 'chat-left-dots' }),
         ]);
 
         expect(group.label).toBe('Dynamic Chat');
         expect(group.icon).toBe('chat-left-dots');
-        // The slug still groups and still tracks; it just never reaches a heading.
+ // The slug still groups and still tracks; it just never reaches a heading.
         expect(group.module).toBe('dynamic-chat');
     });
 
-    it('links the heading to the module page, rooted at the router', () => {
-        // The module declares a bare `dynamic-chat`; a heading link has to
-        // resolve from the router root, not from wherever the hub sits.
+ it('links the heading to the module page, rooted at the router', () => {
+ // The module declares a bare `dynamic-chat`; a heading link has to
+ // resolve from the router root, not from wherever the hub sits.
         const [group] = groupBlocks([block({ module: 'dynamic-chat', moduleRoute: 'dynamic-chat' })]);
         expect(group.route).toBe('/dynamic-chat');
 
-        // Already-absolute is left alone rather than doubled.
+ // Already-absolute is left alone rather than doubled.
         const [absolute] = groupBlocks([block({ module: 'x', moduleRoute: '/x/page' })]);
         expect(absolute.route).toBe('/x/page');
     });
 
-    it('leaves the heading as plain text for a module with no page', () => {
+ it('leaves the heading as plain text for a module with no page', () => {
         expect(groupBlocks([block({})])[0].route).toBeNull();
     });
 
-    it('reads a slug back as words when the module did not name itself', () => {
-        // Otherwise the heading is a slug shouting: DYNAMIC-CHAT.
+ it('reads a slug back as words when the module did not name itself', () => {
+ // Otherwise the heading is a slug shouting: DYNAMIC-CHAT.
         expect(deslugify('dynamic-chat')).toBe('Dynamic Chat');
         expect(deslugify('dynamic_entity')).toBe('Dynamic Entity');
 
@@ -96,7 +96,7 @@ describe('settings grouping', () => {
         expect(group.icon).toBe('puzzle');
     });
 
-    it('counts a group only when the count says something', () => {
+ it('counts a group only when the count says something', () => {
         const [multi, solo] = groupBlocks([
             block({ key: 'm.a', module: 'm', label: 'A' }),
             block({ key: 'm.b', module: 'm', label: 'B' }),
@@ -104,11 +104,11 @@ describe('settings grouping', () => {
         ]);
 
         expect(multi.badge).toBe('2');
-        // A badge reading "1" beside a single visible row is noise.
+ // A badge reading "1" beside a single visible row is noise.
         expect(solo.badge).toBe('');
     });
 
-    it('marks only the blocks that have saved values', () => {
+ it('marks only the blocks that have saved values', () => {
         expect(isEdited(block({ data: { countries: ['BY'] } }))).toBeTrue();
         expect(isEdited(block({}))).toBeFalse();
     });

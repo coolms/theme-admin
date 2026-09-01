@@ -58,7 +58,7 @@ export const DESIGNER_ROUTES: Routes = [
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
-     * M4.j slice 5 -- DMN DRD (Decision Requirements Diagram) designer
+     * Slice 5 -- DMN DRD (Decision Requirements Diagram) designer
      * page. Authors a decision's requirements graph visually + saves it
      * to the decision VFS draft as DMN 1.3 XML via `DesignerService`.
      * Deploy is pending the backend `DmnXmlParser` widening past single

@@ -14,7 +14,7 @@ import {
 } from './inbox.types';
 
 /**
- * M2.m FE — thin API client for the Inbox backend (M2.k).
+ * FE — thin API client for the Inbox backend.
  *
  * Standalone service (not bolted onto the project-wide `ApiService`)
  * because the surface is small + tab-routed and the platform

@@ -1252,7 +1252,7 @@ export class DomainExplorerStateService {
 
     /**
      * Returns the fully-qualified PHP class name for the breadcrumb.
-     * e.g. "App\Content\Domain\Entity\PageVariant"
+     * e.g. "PageVariant"
      */
     private buildEntityPath(entity: DomainEntityItem): string {
         return entity.className;

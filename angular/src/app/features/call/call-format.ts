@@ -2,7 +2,7 @@
  * Shared Call-feature formatting helpers.
  *
  * Extracted from the duplicated `formatDuration` that lived in both the call
- * detail page (M9.f.2) and the live wallboard (M9.f.3) — one source of truth
+ * detail page and the live wallboard — one source of truth
  * for how a call's duration reads across the module.
  */
 

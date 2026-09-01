@@ -22,14 +22,14 @@ const resolve = (uuid: string): MediaResolveResult | null =>
     ({ url: `/media/preview/${uuid}.jpg`, kind: 'image' });
 
 describe('dtmplToHtml — single vs gallery disambiguation', () => {
-    it('renders a single-asset tag (no type=) as an <img> marker', () => {
+ it('renders a single-asset tag (no type=) as an <img> marker', () => {
         const html = dtmplToHtml(`{widget:media:${ASSET_UUID} size=medium}`, resolve);
         expect(html).toContain('data-widget="media"');
         expect(html).toContain(`data-uuid="${ASSET_UUID}"`);
         expect(html).not.toContain('media-gallery');
     });
 
-    it('renders a gallery tag (type=) as a media-gallery placeholder div', () => {
+ it('renders a gallery tag (type=) as a media-gallery placeholder div', () => {
         const html = dtmplToHtml(`{widget:media:${COLL_UUID} type=grid cols=3}`, resolve);
         expect(html).toContain('data-widget="media-gallery"');
         expect(html).toContain(`data-collection="${COLL_UUID}"`);
@@ -52,16 +52,16 @@ describe('htmlToDtmpl — single-asset string params are backtick-delimited (SSR
     const imgWith = (attrs: string) =>
         `<img data-widget="media" data-kind="image" data-uuid="${ASSET_UUID}" data-size="medium" src="/x.jpg"${attrs}>`;
 
-    it('emits a caption as a backtick param, never a double-quoted one', () => {
+ it('emits a caption as a backtick param, never a double-quoted one', () => {
         const figure =
             `<figure>${imgWith('')}<figcaption>Hello world</figcaption></figure>`;
         const dtmpl = htmlToDtmpl(figure);
-        // Backtick delimiter, not the SSR-fatal double quote.
+ // Backtick delimiter, not the SSR-fatal double quote.
         expect(dtmpl).toContain('caption=`Hello world`');
         expect(dtmpl).not.toContain('caption="');
     });
 
-    it('emits alt and class as backtick params', () => {
+ it('emits alt and class as backtick params', () => {
         const dtmpl = htmlToDtmpl(imgWith(' alt="A caption" class="hero big"'));
         expect(dtmpl).toContain('alt=`A caption`');
         expect(dtmpl).toContain('class=`hero big`');
@@ -69,26 +69,26 @@ describe('htmlToDtmpl — single-asset string params are backtick-delimited (SSR
         expect(dtmpl).not.toContain('class="');
     });
 
-    it('stores RAW text — decodes the HTML entities the editor serialized', () => {
-        // The editor serializes alt="Tom & \"Jerry\"" as the entity form below.
+ it('stores RAW text — decodes the HTML entities the editor serialized', () => {
+ // The editor serializes alt="Tom & \"Jerry\"" as the entity form below.
         const dtmpl = htmlToDtmpl(imgWith(' alt="Tom &amp; &quot;Jerry&quot;"'));
-        // Decoded back to raw; double quotes are SAFE inside a backtick string.
+ // Decoded back to raw; double quotes are SAFE inside a backtick string.
         expect(dtmpl).toContain('alt=`Tom & "Jerry"`');
         expect(dtmpl).not.toContain('&amp;');
         expect(dtmpl).not.toContain('&quot;');
     });
 
-    it('escapes an embedded backtick in a caption', () => {
+ it('escapes an embedded backtick in a caption', () => {
         const figure =
             `<figure>${imgWith('')}<figcaption>a \` b</figcaption></figure>`;
         const dtmpl = htmlToDtmpl(figure);
-        // Literal backtick is escaped as \` so it doesn't close the string.
+ // Literal backtick is escaped as \` so it doesn't close the string.
         expect(dtmpl).toContain('caption=`a \\` b`');
     });
 });
 
 describe('single-asset round-trip dtmpl -> html -> dtmpl (backtick params)', () => {
-    it('preserves a caption across save/reload', () => {
+ it('preserves a caption across save/reload', () => {
         const original = '{widget:media:' + ASSET_UUID + ' size=medium caption=`Hello world`}';
         const back = htmlToDtmpl(dtmplToHtml(original, resolve));
         expect(back).toContain('{widget:media:' + ASSET_UUID + ' ');
@@ -96,14 +96,14 @@ describe('single-asset round-trip dtmpl -> html -> dtmpl (backtick params)', () 
         expect(back).not.toContain('caption="');
     });
 
-    it('preserves alt and class across save/reload', () => {
+ it('preserves alt and class across save/reload', () => {
         const original = '{widget:media:' + ASSET_UUID + ' size=medium alt=`A caption` class=`hero`}';
         const back = htmlToDtmpl(dtmplToHtml(original, resolve));
         expect(back).toContain('alt=`A caption`');
         expect(back).toContain('class=`hero`');
     });
 
-    it('preserves double quotes carried inside a backtick caption', () => {
+ it('preserves double quotes carried inside a backtick caption', () => {
         const original = '{widget:media:' + ASSET_UUID + ' caption=`He said "hi"`}';
         const back = htmlToDtmpl(dtmplToHtml(original, resolve));
         expect(back).toContain('caption=`He said "hi"`');
@@ -111,7 +111,7 @@ describe('single-asset round-trip dtmpl -> html -> dtmpl (backtick params)', () 
 });
 
 describe('htmlToDtmpl — gallery placeholder div', () => {
-    it('rewrites a gallery div to a UUID widget tag with only lex-safe params', () => {
+ it('rewrites a gallery div to a UUID widget tag with only lex-safe params', () => {
         const div =
             `<div data-widget="media-gallery" data-collection="${COLL_UUID}"`
             + ' data-name="portraits" data-type="slider" data-cols="" data-limit="20" data-depth="1"'
@@ -121,9 +121,9 @@ describe('htmlToDtmpl — gallery placeholder div', () => {
         expect(dtmpl).toContain('type=slider');
         expect(dtmpl).toContain('limit=20');
         expect(dtmpl).toContain('depth=1');
-        // The DTMPL tag lexer's only string delimiter is the backtick — a
-        // double-quoted value 500s at SSR. So the tag must carry NO `"` and the
-        // display name must NOT be serialized.
+ // The DTMPL tag lexer's only string delimiter is the backtick — a
+ // double-quoted value 500s at SSR. So the tag must carry NO `"` and the
+ // display name must NOT be serialized.
         expect(dtmpl).not.toContain('"');
         expect(dtmpl).not.toContain('name=');
         expect(dtmpl).not.toContain('/'); // no path form, no slash anywhere in the tag
@@ -131,7 +131,7 @@ describe('htmlToDtmpl — gallery placeholder div', () => {
 });
 
 describe('gallery round-trip dtmpl -> html -> dtmpl', () => {
-    it('preserves collection uuid, type, and numeric params (name not stored)', () => {
+ it('preserves collection uuid, type, and numeric params (name not stored)', () => {
         const original = `{widget:media:${COLL_UUID} type=grid cols=3 limit=20}`;
         const back = htmlToDtmpl(dtmplToHtml(original, resolve));
         expect(back).toContain(`{widget:media:${COLL_UUID} `);
@@ -143,7 +143,7 @@ describe('gallery round-trip dtmpl -> html -> dtmpl', () => {
 });
 
 describe('extractMediaUuids', () => {
-    it('returns single-asset uuids and skips gallery (collection) uuids', () => {
+ it('returns single-asset uuids and skips gallery (collection) uuids', () => {
         const content =
             `{widget:media:${ASSET_UUID} size=medium} and `
             + `{widget:media:${COLL_UUID} type=grid cols=3}`;

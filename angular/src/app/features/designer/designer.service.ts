@@ -21,7 +21,7 @@ export interface DecisionDeployResult {
 
 /**
  * — shape of `GET / PUT /api/v1/state-machines/{key}/draft`
- * ({@see \App\StateMachine\Infrastructure\ApiPlatform\Resource\StateMachineDraftResource}).
+ * ({@see \StateMachineDraftResource}).
  * `body` is the editor's model JSON string; the page seeds the editor via
  * `JSON.parse(body)` -> `StateMachineEditor.load()`. A fresh key returns a
  * blank starter model, so opening a new key mounts an empty machine.
@@ -61,7 +61,7 @@ export interface StateMachineDeployResult {
  * intent visible on the wire and matches the controller's
  * `Accept`-agnostic body read.
  *
- * Mirrors the precedent set by the M2.m `InboxService` -- per-feature
+ * Mirrors the precedent set by the `InboxService` -- per-feature
  * thin client, not bolted onto the platform `ApiService`.
  */
 @Injectable({ providedIn: 'root' })
@@ -156,8 +156,8 @@ export class DesignerService {
 
     /**
      * POST the workflow deploy trigger. Backend reads the just-saved
-     * draft body from VFS, parses + validates via M2.c, mints
-     * `v{N+1}.bpmn.json` via M2.d's `WorkflowDeployer`. Save MUST
+     * draft body from VFS, parses + validates via, mints
+     * `v{N+1}.bpmn.json` via's `WorkflowDeployer`. Save MUST
      * precede deploy -- the deployer reads VFS bytes, not request
      * body.
      *

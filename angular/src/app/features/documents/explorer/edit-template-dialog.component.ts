@@ -158,8 +158,8 @@ const FORMAT_OUTPUT_FALLBACK: readonly OutputFormatOption[] = [
 
                     <!-- Orientation is its own axis: applied on top of
                          whichever size is chosen, so A3 landscape is expressible
-                         without a preset per pairing. The backend has carried it
-                         since #1765; this is the control that lets anyone set it. -->
+                         without a preset per pairing. The backend has carried it;
+this is the control that lets anyone set it. -->
                     <div class="cms-edit-template-dialog__field">
                         <label class="cms-label" for="cms-edit-template-page-orientation">Orientation</label>
                         <select

@@ -48,7 +48,7 @@ describe('FormatInfoService', () => {
         http.expectOne(r => r.url === '/api/v1/document/format-info').flush(payload(formats, acceptString));
     }
 
-    it('offers exactly the formats the backend flags as natively authorable', () => {
+ it('offers exactly the formats the backend flags as natively authorable', () => {
         load([
             { format: 'word', label: 'Word Document', supportsNativeAuthoring: true },
             { format: 'spreadsheet', label: 'Spreadsheet', supportsNativeAuthoring: true },
@@ -58,9 +58,9 @@ describe('FormatInfoService', () => {
         expect(svc.nativeAuthoringFormats().map(f => f.format)).toEqual(['word', 'spreadsheet']);
     });
 
-    it('picks up a NEW native format without a code change here', () => {
-        // The whole point of driving the list off the endpoint: a format this
-        // spec has never heard of shows up because the backend said so.
+ it('picks up a NEW native format without a code change here', () => {
+ // The whole point of driving the list off the endpoint: a format this
+ // spec has never heard of shows up because the backend said so.
         load([
             { format: 'word', label: 'Word Document', supportsNativeAuthoring: true },
             { format: 'markdown', label: 'Markdown', supportsNativeAuthoring: true },
@@ -69,16 +69,16 @@ describe('FormatInfoService', () => {
         expect(svc.nativeAuthoringFormats().map(f => f.format)).toEqual(['word', 'markdown']);
     });
 
-    it('treats a missing flag as NOT authorable', () => {
-        // An older backend omits the field. Offering the format anyway would
-        // send the operator into a 422; offering none falls back to the
-        // single-format prompt, which is what they had before.
+ it('treats a missing flag as NOT authorable', () => {
+ // An older backend omits the field. Offering the format anyway would
+ // send the operator into a 422; offering none falls back to the
+ // single-format prompt, which is what they had before.
         load([{ format: 'word', label: 'Word Document' }]);
 
         expect(svc.nativeAuthoringFormats()).toEqual([]);
     });
 
-    it('offers nothing before the payload arrives', () => {
+ it('offers nothing before the payload arrives', () => {
         expect(svc.nativeAuthoringFormats()).toEqual([]);
     });
 
@@ -92,7 +92,7 @@ describe('FormatInfoService', () => {
      * modules that own them, and a frontend map is what made both download
      * named `.docx`.
      */
-    describe('extensionForMime', () => {
+ describe('extensionForMime', () => {
         const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         const DTMPL = 'text/x-dtmpl';
         const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -115,39 +115,39 @@ describe('FormatInfoService', () => {
             ]);
         }
 
-        it('pairs each mime with the extension at the same index', () => {
+ it('pairs each mime with the extension at the same index', () => {
             loadRealShape();
 
-            // The NATIVE half is the half that was missing: a template whose
-            // source mime is the second entry must not take the first
-            // extension.
+ // The NATIVE half is the half that was missing: a template whose
+ // source mime is the second entry must not take the first
+ // extension.
             expect(svc.extensionForMime(DTMPL)).toBe('.dtmpl');
             expect(svc.extensionForMime(DSHEET)).toBe('.dsheet');
             expect(svc.extensionForMime(DOCX)).toBe('.docx');
             expect(svc.extensionForMime(XLSX)).toBe('.xlsx');
         });
 
-        it('answers for a format it has never heard of', () => {
+ it('answers for a format it has never heard of', () => {
             load([{ format: 'markdown', mimeTypes: ['text/markdown'], extensions: ['.md'] }]);
 
             expect(svc.extensionForMime('text/markdown')).toBe('.md');
         });
 
-        it('returns null for an unadvertised mime', () => {
+ it('returns null for an unadvertised mime', () => {
             loadRealShape();
 
             expect(svc.extensionForMime('application/x-unheard-of')).toBeNull();
         });
 
-        it('returns null before the payload arrives', () => {
+ it('returns null before the payload arrives', () => {
             expect(svc.extensionForMime(DTMPL)).toBeNull();
         });
 
-        it('returns null when a format advertises a mime with no extension', () => {
-            // A short `extensions` list means the pairing does not hold for
-            // that entry. Answering with SOME extension would be worse than
-            // answering with none — the caller's fallback is at least honest
-            // about being a guess.
+ it('returns null when a format advertises a mime with no extension', () => {
+ // A short `extensions` list means the pairing does not hold for
+ // that entry. Answering with SOME extension would be worse than
+ // answering with none — the caller's fallback is at least honest
+ // about being a guess.
             load([{ format: 'word', mimeTypes: [DOCX, DTMPL], extensions: ['.docx'] }]);
 
             expect(svc.extensionForMime(DTMPL)).toBeNull();
@@ -163,7 +163,7 @@ describe('FormatInfoService', () => {
      * named from it. A one-format answer stored there would outlive the dialog
      * that asked for it, so the narrowing must reach the caller and stop.
      */
-    describe('a filtered load', () => {
+ describe('a filtered load', () => {
         const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -180,7 +180,7 @@ describe('FormatInfoService', () => {
             return received;
         }
 
-        it('asks the backend for that format alone', () => {
+ it('asks the backend for that format alone', () => {
             svc.loadFormatInfo('spreadsheet').subscribe();
 
             const request = http.expectOne(r => r.url === '/api/v1/document/format-info');
@@ -188,35 +188,35 @@ describe('FormatInfoService', () => {
             request.flush(payload([SPREADSHEET]));
         });
 
-        it('hands the narrowed payload to its caller', () => {
+ it('hands the narrowed payload to its caller', () => {
             const received = loadFiltered('spreadsheet', [SPREADSHEET]);
 
             expect(received.map(f => f.format)).toEqual(['spreadsheet']);
         });
 
-        it('leaves the cached registry whole', () => {
+ it('leaves the cached registry whole', () => {
             load([WORD, SPREADSHEET], '.docx,.xlsx');
             loadFiltered('word', [WORD]);
 
-            // The grid behind the dialog still knows every format it did
-            // before — including the one nobody asked about.
+ // The grid behind the dialog still knows every format it did
+ // before — including the one nobody asked about.
             expect(svc.getAllFormats().map(f => f.format)).toEqual(['word', 'spreadsheet']);
             expect(svc.label('spreadsheet')).toBe('Spreadsheet');
             expect(svc.extensionForMime(XLSX_MIME)).toBe('.xlsx');
             expect(svc.acceptString()).toBe('.docx,.xlsx');
         });
 
-        it('does not seed an empty cache with one format either', () => {
-            // Before the page's own load lands, a cache holding one format
-            // reads as the whole registry: every other row loses its icon and
-            // the upload dialog's accept string shrinks to this one format.
+ it('does not seed an empty cache with one format either', () => {
+ // Before the page's own load lands, a cache holding one format
+ // reads as the whole registry: every other row loses its icon and
+ // the upload dialog's accept string shrinks to this one format.
             loadFiltered('word', [WORD]);
 
             expect(svc.getAllFormats()).toEqual([]);
             expect(svc.acceptString()).toBe('');
         });
 
-        it('clears the loading flag like any other load', () => {
+ it('clears the loading flag like any other load', () => {
             loadFiltered('word', [WORD]);
 
             expect(svc.loading()).toBe(false);

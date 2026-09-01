@@ -6,7 +6,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { RtcCallDto, RtcIceServersDto, RtcMediaKind, RtcMediaTokenDto, RtcSignal } from './rtc.types';
 
 /**
- * Thin REST client over the `App\Rtc` calling API (Slice 3, `/api/v1/rtc/*`).
+ * Thin REST client over the `Rtc` calling API (Slice 3, `/api/v1/rtc/*`).
  * Standalone per-feature service like {@link MessagesService}. Auth headers are
  * attached by the global interceptor; body-less action ops send `{}`.
  */

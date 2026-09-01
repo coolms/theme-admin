@@ -16,7 +16,7 @@ import { VfsNodeDto } from '@coolms/ui-angular';
 /**
  * Mime stamped on the Workflow Package container node
  * (`/workflows/{key}/`) by the
- * `App\Workflow\Infrastructure\Service\WorkflowVirtualMimeProvider`.
+ * `WorkflowVirtualMimeProvider`.
  */
 export const WORKFLOW_PACKAGE_MIME = 'application/vnd.coolms.workflow';
 

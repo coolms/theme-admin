@@ -26,7 +26,7 @@ import {
 } from './email.types';
 
 /**
- * M8.a.4 — thin API client for the Email mailbox client, over the backend
+ * Thin API client for the Email mailbox client, over the backend
  * read/send/reply/folders/seen resources–). Standalone
  * per-feature service, like {@link MessagesService}.
  *
@@ -85,7 +85,7 @@ export class EmailService {
 
     /**
      * POST /email/mailboxes/{id}/authorize — begin the OAuth connect flow for a
-     * pending OAuth mailbox (M8.f.2d ). Returns the provider consent URL; the
+     * pending OAuth mailbox (). Returns the provider consent URL; the
      * caller redirects the browser there. Empty body (the mailbox is the `{id}`).
      */
     authorizeMailbox(id: string): Observable<MailboxConnectResultDto> {

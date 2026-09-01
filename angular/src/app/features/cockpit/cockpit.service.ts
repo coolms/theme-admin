@@ -17,7 +17,7 @@ import {
 } from './cockpit.types';
 
 /**
- * M4.a FE — thin API client for the Process Cockpit backend
+ * FE — thin API client for the Process Cockpit backend
  * (`/api/v1/cockpit/instances`).
  *
  * Standalone per-feature service (mirrors `InboxService`): small + read-only,
@@ -145,7 +145,7 @@ export class CockpitService {
 
     /**
      * GET /cockpit/instances/{id} — the enriched single-instance detail
-     * (M4.b). Unlike the collection, the item op returns a single JSON-LD
+     *. Unlike the collection, the item op returns a single JSON-LD
      * object (not a Hydra envelope), so we just normalize the optional
      * engine-state arrays and return it as the detail DTO.
      */
@@ -165,7 +165,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/report — the aggregate operator report (M4.d): platform
+     * GET /cockpit/report — the aggregate operator report: platform
      * state counts + rolling throughput + per-definition breakdown. A
      * singleton item GET (no identifier), so it returns a single JSON-LD
      * object; we normalize the optional arrays/maps defensively.
@@ -188,7 +188,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/task-metrics — aggregate user-task metrics (M4.k): the
+     * GET /cockpit/task-metrics — aggregate user-task metrics: the
      * task-level complement to the process report — count by task state, the
      * open subtotal, overdue count, mean queue-/cycle-time, and completion
      * throughput. A singleton item GET (no identifier), so it returns a single
@@ -215,7 +215,7 @@ export class CockpitService {
 
     /**
      * GET /cockpit/definitions/{definitionId}/timing — the per-definition
-     * bottleneck report (M4.g): each AST element's mean + max dwell across
+     * bottleneck report: each AST element's mean + max dwell across
      * the definition's instances, slowest-average first. A single JSON-LD
      * object; we normalize the optional `elements` array defensively. 404 if
      * the definition is unknown (surfaced by the caller's error handler).
@@ -229,7 +229,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/reports/export?kind=… (M4.c+) — a Cockpit report rendered
+     * GET /cockpit/reports/export?kind=… (+) — a Cockpit report rendered
      * server-side as CSV, wrapped in a JSON envelope ({kind, filename, csv,
      * generatedAt}). The caller triggers the `.csv` download client-side from
      * the returned `csv`/`filename` (a raw attachment would 401 — a plain
@@ -252,7 +252,7 @@ export class CockpitService {
     }
 
     /**
-     * M4.c — steering actions. Each POSTs to a verb sub-resource and the
+     * Steering actions. Each POSTs to a verb sub-resource and the
      * backend returns the updated instance read view. The detail page
      * re-fetches `getInstance(id)` after every successful action (so the
      * token positions + history + variables refresh too), so the returned
@@ -279,7 +279,7 @@ export class CockpitService {
     }
 
     /**
-     * POST /cockpit/instances/{id}/retry — failed -> running (M4.f). Un-fails
+     * POST /cockpit/instances/{id}/retry — failed -> running. Un-fails
      * the instance, re-activates the token parked at the failed service task,
      * and re-drives the engine; on a repeat handler failure it lands Failed
      * again. Retrying a non-failed instance surfaces as a 409.
@@ -295,7 +295,7 @@ export class CockpitService {
 
     /**
      * POST /cockpit/instances/{id}/migrate — in-flight version migration
-     * (M4.i): re-pin a Suspended instance to a different deployed version of
+     *: re-pin a Suspended instance to a different deployed version of
      * its own definition. The backend validates same-definition + that every
      * live token's element id exists in the target AST; a violation (or a
      * non-suspended instance) surfaces as a 409.

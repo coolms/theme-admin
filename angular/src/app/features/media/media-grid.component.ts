@@ -97,8 +97,8 @@ import { MediaAssetDto, MediaViewMode } from './media.types';
         }
     `,
     styles: [`
-        /* Both branches stretch into the height the slot now gives us
-           (#1760); the tiles keep their own rows at content height so a
+        /* Both branches stretch into the height the slot now gives us;
+the tiles keep their own rows at content height so a
            half-empty folder does not grow giant tiles. */
         :host > coolms-datagrid { flex: 1; min-height: 0; }
         .media-grid {

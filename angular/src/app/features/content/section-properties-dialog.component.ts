@@ -35,7 +35,7 @@ export interface SectionPropertiesDialogData {
  *
  * ## Why this exists at all
  *
- * The per-section distribution config has been implemented since M6.a, but its
+ * The per-section distribution config has been implemented since, but its
  * only door was a row action on a DIRECTORY row in the Pages grid — and
  * moved folders out of that grid, so the action could no longer fire. The
  * capability was intact and unreachable. This is the door, in the place a

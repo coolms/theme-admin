@@ -55,7 +55,7 @@ import { transformVfsToTree, type VfsTreeNode } from './vfs-tree.helpers';
                          Embedded in the space accordion there is exactly one
                          root — the space that was just clicked — so the button
                          restated the selection directly under it and selecting
-                         it did what selecting the space already does (#1705).
+                         it did what selecting the space already does.
                          Standalone (the forest) it still earns its place. -->
                     @if (!embedded()) {
                         <button

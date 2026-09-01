@@ -1,7 +1,7 @@
 /**
  * Internal Messages (admin user↔user chat) — shared DTOs.
  *
- * The page consumes the generic Chat conversation + message API (M7.d):
+ * The page consumes the generic Chat conversation + message API:
  *  - `GET /chat/conversations` / `POST /chat/conversations {withUserId}` ->
  *    {@link ChatConversationDto} (carries enriched {@link ConversationParticipantDto}s).
  *  - `GET/POST /chat/messages` -> {@link ChatMessageDto}.

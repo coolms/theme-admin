@@ -11,7 +11,7 @@ import { DynamicChatQuickPanelComponent } from './dynamic-chat-quick-panel.compo
 
 /**
  * DynamicChat agent-queue quick-access icon for the admin topbar,
- * Slice C of the ambient-chat redesign). Opens {@link DynamicChatQuickPanelComponent}
+ * of the ambient-chat redesign). Opens {@link DynamicChatQuickPanelComponent}
  * in the global right drawer — a from-anywhere visitor-queue launcher. As of
  * this is the PRIMARY entry (Dynamic Chat no longer has a left-sidebar
  * item); the icon carries a live **new-count badge** = the number of

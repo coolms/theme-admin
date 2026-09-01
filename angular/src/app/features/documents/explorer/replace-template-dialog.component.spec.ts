@@ -74,9 +74,9 @@ describe('ReplaceTemplateDialogComponent', () => {
         TestBed.configureTestingModule({
             imports: [ReplaceTemplateDialogComponent, HttpClientTestingModule],
             providers: [
-                // A factory, not a value: `build()` swaps the template in
-                // before the component is created and the dialog reads its
-                // data once, at construction.
+ // A factory, not a value: `build()` swaps the template in
+ // before the component is created and the dialog reads its
+ // data once, at construction.
                 { provide: DIALOG_DATA, useFactory: () => dialogData },
                 { provide: DialogRef, useValue: { close } },
             ],
@@ -156,10 +156,10 @@ describe('ReplaceTemplateDialogComponent', () => {
         return match;
     }
 
-    describe('with the registry already cached', () => {
+ describe('with the registry already cached', () => {
         beforeEach(() => loadWholeRegistry());
 
-        it('accepts .docx for a Word template', () => {
+ it('accepts .docx for a Word template', () => {
             const fixture = build({ template: template() });
 
             expect(accept(fixture)).toBe(`.docx,${DOCX_MIME}`);
@@ -167,7 +167,7 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).toContain('Accepted: Word Document (.docx)');
         });
 
-        it('accepts .xlsx for a SPREADSHEET template, not .docx', () => {
+ it('accepts .xlsx for a SPREADSHEET template, not .docx', () => {
             const fixture = build({
                 template: template({ format: 'spreadsheet', sourceMimeType: XLSX_MIME }),
             });
@@ -179,7 +179,7 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).not.toContain('Word');
         });
 
-        it('accepts .pptx for a PRESENTATION template', () => {
+ it('accepts .pptx for a PRESENTATION template', () => {
             const fixture = build({
                 template: template({ format: 'presentation', sourceMimeType: PPTX_MIME }),
             });
@@ -188,18 +188,18 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).toContain('Accepted: Presentation (.pptx)');
         });
 
-        it('never offers the NATIVE half the payload advertises beside it', () => {
-            // `format-info` says word is ['.docx', '.dtmpl'] — the whole list
-            // would offer a file `replaceSource()` cannot read.
+ it('never offers the NATIVE half the payload advertises beside it', () => {
+ // `format-info` says word is ['.docx', '.dtmpl'] — the whole list
+ // would offer a file `replaceSource()` cannot read.
             expect(accept(build({ template: template() }))).not.toContain('.dtmpl');
             expect(
                 accept(build({ template: template({ format: 'spreadsheet', sourceMimeType: XLSX_MIME }) })),
             ).not.toContain('.dsheet');
         });
 
-        it('offers the imported half even when the template ITSELF is native', () => {
-            // A native spreadsheet's own source mime is the `.dsheet`, and
-            // that is precisely the file the backend will not take back.
+ it('offers the imported half even when the template ITSELF is native', () => {
+ // A native spreadsheet's own source mime is the `.dsheet`, and
+ // that is precisely the file the backend will not take back.
             const fixture = build({
                 template: template({
                     format: 'spreadsheet',
@@ -213,9 +213,9 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(accept(fixture)).not.toContain('.dsheet');
         });
 
-        it('takes the extension a NEW format advertises, with no change here', () => {
-            // Nothing in the frontend knows `markdown`; the row's own source
-            // mime plus the payload's pairing name it anyway.
+ it('takes the extension a NEW format advertises, with no change here', () => {
+ // Nothing in the frontend knows `markdown`; the row's own source
+ // mime plus the payload's pairing name it anyway.
             const fixture = build({
                 template: template({ format: 'markdown', sourceMimeType: 'text/x-markdown-tmpl' }),
             });
@@ -239,18 +239,18 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).toContain('Accepted: Markdown (.mdtmpl)');
         });
 
-        it('asks for nothing when the cache already answers', () => {
+ it('asks for nothing when the cache already answers', () => {
             const fixture = build({
                 template: template({ format: 'spreadsheet', sourceMimeType: XLSX_MIME }),
             });
 
-            // A filtered fetch here would be a round-trip per dialog open for
-            // an answer the page loaded once on mount.
+ // A filtered fetch here would be a round-trip per dialog open for
+ // an answer the page loaded once on mount.
             expect(http.match(r => r.url === '/api/v1/document/format-info').length).toBe(0);
             expect(accept(fixture)).toBe(`.xlsx,${XLSX_MIME}`);
         });
 
-        it('still closes with null from the Cancel button', () => {
+ it('still closes with null from the Cancel button', () => {
             const fixture = build({ template: template() });
 
             buttonLabelled(fixture, 'Cancel').click();
@@ -259,8 +259,8 @@ describe('ReplaceTemplateDialogComponent', () => {
         });
     });
 
-    describe('without a cached registry', () => {
-        it('fetches just its own format', () => {
+ describe('without a cached registry', () => {
+ it('fetches just its own format', () => {
             const fixture = build({
                 template: template({ format: 'spreadsheet', sourceMimeType: XLSX_MIME }),
             });
@@ -279,10 +279,10 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).toContain('Accepted: Spreadsheet (.xlsx)');
         });
 
-        it('names the imported extension from the local map when the fetch fails', () => {
-            // format-info is best-effort on the page too — its errors are
-            // swallowed. A dialog that filtered to nothing here would be
-            // worse than one that filters to the fallback map's answer.
+ it('names the imported extension from the local map when the fetch fails', () => {
+ // format-info is best-effort on the page too — its errors are
+ // swallowed. A dialog that filtered to nothing here would be
+ // worse than one that filters to the fallback map's answer.
             const fixture = build({
                 template: template({ format: 'presentation', sourceMimeType: PPTX_MIME }),
             });
@@ -294,7 +294,7 @@ describe('ReplaceTemplateDialogComponent', () => {
             expect(copy(fixture)).toContain('Accepted: Presentation (.pptx)');
         });
 
-        it('leaves the picker unfiltered rather than guess an unknown format', () => {
+ it('leaves the picker unfiltered rather than guess an unknown format', () => {
             const fixture = build({
                 template: template({ format: 'markdown', native: true, sourceMimeType: null }),
             });

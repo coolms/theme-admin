@@ -7,7 +7,7 @@ import { HydraCollection } from '../../api/api.service';
 import { WebhookSecretDto, WebhookTriggerDto } from './webhook.types';
 
 /**
- * M5.d.3 FE — thin API client for the inbound-webhook admin CRUD
+ * FE — thin API client for the inbound-webhook admin CRUD
  * (`/api/v1/connector/webhooks`).
  *
  * Standalone per-feature service (mirrors `CockpitService`): small + scoped, so

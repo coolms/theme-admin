@@ -25,12 +25,12 @@ import {
 import { formatCallDuration } from './call-format';
 
 /**
- * M9.f.2 — Call detail admin page (/admin/call/records/:id).
+ * Call detail admin page (/admin/call/records/:id).
  *
- * Read-only view of one tracked call (M9.a.4 `GET /call/records/{id}`) with
- * an inline player for its `.wav` recording (M9.b `GET
+ * Read-only view of one tracked call (`GET /call/records/{id}`) with
+ * an inline player for its `.wav` recording (`GET
  * /call/records/{id}/recording`). CallRecords are minted + mutated only by
- * the AMI event stream (M9.a.2), so there is nothing to edit — the page is
+ * the AMI event stream, so there is nothing to edit — the page is
  * a set of read-only cards + the recording card.
  *
  * The recording is Bearer-gated, so a plain `<audio src>` can't reach it;

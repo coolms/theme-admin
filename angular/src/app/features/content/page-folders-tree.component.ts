@@ -136,7 +136,7 @@ interface FolderNode {
         }
         .page-folders__twisty--open { transform: rotate(90deg); }
         /* Known leaf: keeps its width so the row stays aligned with its
-           siblings, but shows and clicks nothing (#1712). */
+           siblings, but shows and clicks nothing. */
         .page-folders__twisty--leaf { visibility: hidden; pointer-events: none; }
         .page-folders__name {
             flex: 1;

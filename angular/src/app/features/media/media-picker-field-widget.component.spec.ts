@@ -38,9 +38,9 @@ describe('MediaPickerFieldWidgetComponent', () => {
         });
     });
 
-    // -- options: every key of the blob is optional ---------------------------
+ // -- options: every key of the blob is optional ---------------------------
 
-    it('falls back to uuid/thumb/any when the backend sent no widget options', () => {
+ it('falls back to uuid/thumb/any when the backend sent no widget options', () => {
         mount({});
 
         expect(widget.options()).toEqual({
@@ -53,7 +53,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
         });
     });
 
-    it('passes a preset display through, and rejects an unknown one', () => {
+ it('passes a preset display through, and rejects an unknown one', () => {
         mount({ display: 'preset:hero' });
         expect(widget.options().display).toBe('preset:hero');
 
@@ -63,7 +63,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
             .toBe('thumb');
     });
 
-    it('reads bindValue, bindTarget and the boolean toggles', () => {
+ it('reads bindValue, bindTarget and the boolean toggles', () => {
         mount({
             bindValue:    'path',
             bindTarget:   'either',
@@ -82,9 +82,9 @@ describe('MediaPickerFieldWidgetComponent', () => {
         });
     });
 
-    // -- cardinality: the one key the FIELD contributes -----------------------
+ // -- cardinality: the one key the FIELD contributes -----------------------
 
-    it('takes cardinality from the config, defaulting to one', () => {
+ it('takes cardinality from the config, defaulting to one', () => {
         mount({});
         expect(widget.cardinality()).toBe('one');
 
@@ -92,9 +92,9 @@ describe('MediaPickerFieldWidgetComponent', () => {
         expect(widget.cardinality()).toBe('many');
     });
 
-    // -- value narrowing ------------------------------------------------------
+ // -- value narrowing ------------------------------------------------------
 
-    it('narrows the bound value to what the picker accepts', () => {
+ it('narrows the bound value to what the picker accepts', () => {
         mount({}, '');
         expect(widget.picked()).withContext('empty string is not a selection').toBeNull();
 
@@ -107,28 +107,28 @@ describe('MediaPickerFieldWidgetComponent', () => {
             .toEqual(['uuid-1', 'uuid-2']);
     });
 
-    // -- the encoding the backend depends on ----------------------------------
+ // -- the encoding the backend depends on ----------------------------------
 
-    it('stores a scalar pick unchanged', () => {
+ it('stores a scalar pick unchanged', () => {
         mount();
         widget.onPick('uuid-1');
         expect(stored).toEqual(['uuid-1']);
     });
 
-    it('stores null when the picker clears', () => {
+ it('stores null when the picker clears', () => {
         mount({}, 'uuid-1');
         widget.onPick(null);
         expect(stored).toEqual([null]);
     });
 
-    it('JSON-encodes a bindTarget:either discriminator so it survives form serialisation', () => {
+ it('JSON-encodes a bindTarget:either discriminator so it survives form serialisation', () => {
         mount({ bindTarget: 'either' });
         widget.onPick({ kind: 'collection', value: '/media/press' } as never);
 
         expect(stored).toEqual(['{"kind":"collection","value":"/media/press"}']);
     });
 
-    it('encodes per element for a many pick, leaving plain strings alone', () => {
+ it('encodes per element for a many pick, leaving plain strings alone', () => {
         mount({ bindTarget: 'either', cardinality: 'many' });
         widget.onPick(['uuid-1', { kind: 'asset', value: 'uuid-2' }] as never);
 

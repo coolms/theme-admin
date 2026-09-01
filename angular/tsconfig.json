@@ -2,9 +2,9 @@
     "compileOnSave": false,
     "compilerOptions": {
         "outDir": "./dist/out-tsc",
-        // The program spans two sibling packages -- this app and the
-        // source-consumed @coolms/core-angular -- so the root is
-        // packages/. Was inferred until TS6 removed baseUrl.
+ // The program spans two sibling packages -- this app and the
+ // source-consumed @coolms/core-angular -- so the root is
+ // packages/. Was inferred until TS6 removed baseUrl.
         "rootDir": "../..",
         "strict": true,
         "noImplicitOverride": true,
@@ -21,19 +21,19 @@
         "module": "ES2022",
         "useDefineForClassFields": false,
         "paths": {
-            // Source-consumed from packages/core-angular. Its bare specifiers
-            // resolve through packages/core-angular/node_modules, a RELATIVE
-            // symlink to this app's -- one physical @angular tree, so no
-            // duplicate type identities, and every subpath export works.
+ // Source-consumed from packages/core-angular. Its bare specifiers
+ // resolve through packages/core-angular/node_modules, a RELATIVE
+ // symlink to this app's -- one physical @angular tree, so no
+ // duplicate type identities, and every subpath export works.
             "@coolms/core-angular": ["../../core-angular/src/public-api.ts"],
-            // The UI kit. Source-consumed from packages/ui-angular exactly as
-            // core is: its bare specifiers resolve through that package's
-            // node_modules, a RELATIVE symlink to this app's, so one physical
-            // @angular tree serves both and no type identity is duplicated.
+ // The UI kit. Source-consumed from packages/ui-angular exactly as
+ // core is: its bare specifiers resolve through that package's
+ // node_modules, a RELATIVE symlink to this app's, so one physical
+ // @angular tree serves both and no type identity is duplicated.
             "@coolms/ui-angular": ["../../ui-angular/src/public-api.ts"],
-            // The spreadsheet editor. Its own package because the formula
-            // engine, formula helper and filtering land inside it, and that
-            // work would otherwise churn the UI kit's public surface.
+ // The spreadsheet editor. Its own package because the formula
+ // engine, formula helper and filtering land inside it, and that
+ // work would otherwise churn the UI kit's public surface.
             "@coolms/sheet-editor-angular": ["../../sheet-editor-angular/src/public-api.ts"],
             "@coolms/editor-angular": ["../../editor-angular/src/public-api.ts"],
             "@coolms/image-editor-angular": ["../../image-editor-angular/src/index.ts"],
@@ -56,11 +56,11 @@
           "checks": {
             "nullishCoalescingNotNullable": "suppress",
             "optionalChainNotNullable": "suppress",
-            // NG8116. A structural directive missing from the component
-            // `imports` parses as a plain attribute and renders NOTHING --
-            // as a WARNING that shipped three dead `*cdkDragPreview` /
-            // `*cdkDragPlaceholder` templates behind a green build (#2201).
-            // A silent no-op feature is a build failure, not a note.
+ // NG8116. A structural directive missing from the component
+ // `imports` parses as a plain attribute and renders NOTHING --
+ // as a WARNING that shipped three dead `*cdkDragPreview` /
+ // `*cdkDragPlaceholder` templates behind a green build.
+ // A silent no-op feature is a build failure, not a note.
             "missingStructuralDirective": "error"
           }
         },

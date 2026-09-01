@@ -24,17 +24,17 @@ import { SHEET_DOCUMENT_MIME } from './sheet-document.constants';
  * "simplify" it into an `application/json` fallback that cannot fire.
  */
 describe('native spreadsheet template editor registration', () => {
-    it('cannot inherit an editor from a wildcard, so the entry must be exact', () => {
-        // The resolver's ONLY fallback is the mime's first segment plus `/*`.
-        // For `application/x-coolms-sheet+json` that is `application/*`, which
-        // nothing registers — the `+json` suffix does not reach
-        // `application/json`.
-        expect(SHEET_DOCUMENT_MIME.split('/')[0] + '/*').toBe('application/*');
+ it('cannot inherit an editor from a wildcard, so the entry must be exact', () => {
+ // The resolver's ONLY fallback is the mime's first segment plus `/*`.
+ // For `application/x-coolms-sheet+json` that is `application/*`, which
+ // nothing registers — the `+json` suffix does not reach
+ // `application/json`.
+ expect(SHEET_DOCUMENT_MIME.split('/')[0] + '/*').toBe('application/*');
         expect(FileEditorRegistry.hasEditorForMime('application/*')).toBeFalse();
         expect(SHEET_DOCUMENT_MIME).not.toBe('application/json');
     });
 
-    it('resolves once an exact entry exists, and misses without one', () => {
+ it('resolves once an exact entry exists, and misses without one', () => {
         const mime = 'application/x-coolms-sheet-spec+json';
 
         expect(FileEditorRegistry.hasEditorForMime(mime)).toBeFalse();
@@ -46,7 +46,7 @@ describe('native spreadsheet template editor registration', () => {
     });
 
     /** The backend constant this must match: XlsxFormatProvider::DSHEET_MIME. */
-    it('spells the mime the backend stamps on a native template', () => {
+ it('spells the mime the backend stamps on a native template', () => {
         expect(SHEET_DOCUMENT_MIME).toBe('application/x-coolms-sheet+json');
     });
 });

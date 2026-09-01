@@ -16,10 +16,10 @@ export interface CompleteDialogResult {
 }
 
 /**
- * M2.m FE — Complete dialog with form-bound rendering.
+ * FE — Complete dialog with form-bound rendering.
  *
  * Renders `<app-dynamic-form>` against the task's `formKey` (resolved
- * server-side from the per-instance pinned AST, M2.m Phase 1). The
+ * server-side from the per-instance pinned AST, Phase 1). The
  * dynamic-form component fetches the form definition from
  * `GET /api/v1/forms/{formKey}/render`, builds a reactive
  * FormGroup from the schema, and emits the submitted value through

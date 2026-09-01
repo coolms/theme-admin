@@ -183,8 +183,8 @@ const MIN_COLUMNS = 1;
                                      [style.--cms-widget-span]="card.columns"
                                      cdkDrag [cdkDragDisabled]="!editing()">
                                 @if (editing()) {
-                                    <!-- An affordance, not the only way in
-                                         (#2101). The card itself drags: with
+                                    <!-- An affordance, not the only way in.
+The card itself drags: with
                                          cdkDragHandle the grip was the ONLY
                                          thing that worked, and most of a card's
                                          surface is the article's own empty flex
@@ -256,7 +256,7 @@ const MIN_COLUMNS = 1;
         .dashboard__grid {
             display: grid;
             /* TWELVE columns, always, because that is what a widget's width is
-               expressed in (#2091). The old auto-fill grid could not honour a
+               expressed in. The old auto-fill grid could not honour a
                declared width at all: it decided the track count itself, so
                "span 4" meant a third on one screen and everything on another.
                minmax(0, 1fr) rather than 1fr so a long unbroken value cannot
@@ -265,7 +265,7 @@ const MIN_COLUMNS = 1;
             gap: 16px;
             /* Vertical only. The shell's body owns the horizontal edge, and
                padding here is what inset the cards 20px from the header bar
-               above them (#2090). */
+               above them. */
             padding: 16px 0;
         }
 
@@ -312,7 +312,7 @@ const MIN_COLUMNS = 1;
            233px: a breakpoint that fires early does not look broken, it just
            silently stops honouring what the widget asked for.
 
-           ⚠️ These MUST stay BELOW the base rule. A container query adds no
+            These MUST stay BELOW the base rule. A container query adds no
            specificity, so source order is the only thing deciding — written
            above it they parse, lint and ship as dead CSS. */
         @container (max-width: 700px) {
@@ -323,7 +323,7 @@ const MIN_COLUMNS = 1;
         }
 
         /*  user-select is the fix for "I dragged the card and then nothing
-           worked" (#2101). Pressing on a card's text and moving SELECTS it, and
+           worked". Pressing on a card's text and moving SELECTS it, and
            the browser then offers that selection as a NATIVE drag — which
            competes with the CDK drag, swallows clicks until it ends, and lands
            in the menu-item drop handler carrying "107.46 MB Storage used"

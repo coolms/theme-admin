@@ -70,8 +70,8 @@ import { LoadSections } from './section.actions';
                 <!--
                   Standard page chrome. Actions are declared in the backend
                   layout config (web:section-detail): navigation in the
-                  cms-page-header bar, primary/destructive in the fixed footer
-                  (ADR-127). Status / role chips project into the header-meta
+                  cms-page-header bar, primary/destructive in the fixed footer.
+Status / role chips project into the header-meta
                   slot on the title baseline.
                 -->
                 <cms-page-header

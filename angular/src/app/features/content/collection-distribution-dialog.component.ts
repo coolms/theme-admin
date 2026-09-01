@@ -19,7 +19,7 @@ interface DistributionDialogData {
 }
 
 /**
- * M6.a — per-section outbound-distribution config (backend). Opened from
+ * Per-section outbound-distribution config (backend). Opened from
  * the Pages list right-click menu on a content-collection directory row; sets
  * which outbound channels a published post in the collection fans out to.
  *

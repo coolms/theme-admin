@@ -108,7 +108,7 @@ import {
                 </label>
                 <p class="hint">
                     Multi-line. Backend parses via
-                    <code>App\\Recurrence\\RRuleParser</code>. See RFC 5545 §3.8.5.
+                    <code>the server's RRULE parser</code>. See RFC 5545 §3.8.5.
                 </p>
             }
 

@@ -1,5 +1,5 @@
 /**
- * M4.a — Process Cockpit FE types.
+ * Process Cockpit FE types.
  *
  * Mirrors the backend `CockpitInstanceResource` wire shape
  * (`/api/v1/cockpit/instances`). Read-only for this slice; steering
@@ -160,7 +160,7 @@ export interface CockpitHistoryEventDto {
 }
 
 /**
- * M4.i — one deployed version of the instance's definition, offered as an
+ * One deployed version of the instance's definition, offered as an
  * in-flight migration target. The migrate dialog renders these (excluding
  * `isCurrent`) as the target dropdown.
  */
@@ -172,7 +172,7 @@ export interface CockpitVersionOptionDto {
 }
 
 /**
- * M4.b — enriched single-instance detail. Returned by the item GET
+ * Enriched single-instance detail. Returned by the item GET
  * (`GET /api/v1/cockpit/instances/{id}`); extends the list row with the
  * engine's per-instance token positions, history timeline, and variables.
  */
@@ -187,22 +187,22 @@ export interface CockpitInstanceDetailDto extends CockpitInstanceDto {
     tasks: CockpitTaskDto[];
     variables: Record<string, unknown>;
     /**
-     * M4.h — raw pinned BPMN-Lite JSON body for the diagram overlay; absent
+     * Raw pinned BPMN-Lite JSON body for the diagram overlay; absent
      * (API Platform omits nulls) when the body can't be loaded. Guard with
      * truthiness before rendering the diagram card.
      */
     definitionBody?: string | null;
-    /** M4.i — the version number the instance currently pins; absent if unresolved. */
+    /** The version number the instance currently pins; absent if unresolved. */
     definitionVersion?: number | null;
     /**
-     * M4.i — every deployed version of the instance's definition (migration
+     * Every deployed version of the instance's definition (migration
      * targets), oldest-first. Absent on the list view; default to `[]`.
      */
     availableVersions?: CockpitVersionOptionDto[];
 }
 
 /**
- * M4.d — rolling-window throughput counters from the aggregate report.
+ * Rolling-window throughput counters from the aggregate report.
  * `started*` = instances started in the window (any state); `completed*` =
  * instances that reached `completed` in the window.
  */
@@ -215,7 +215,7 @@ export interface CockpitThroughputDto {
     completed30d: number;
 }
 
-/** M4.d — per-definition state breakdown row from the aggregate report. */
+/** Per-definition state breakdown row from the aggregate report. */
 export interface CockpitDefinitionStatDto {
     definitionId: string;
     definitionKey: string | null;
@@ -226,12 +226,12 @@ export interface CockpitDefinitionStatDto {
     completed: number;
     failed: number;
     cancelled: number;
-    /** M4.e — mean completion seconds for this definition; null if none completed. */
+    /** Mean completion seconds for this definition; null if none completed. */
     avgDurationSeconds: number | null;
 }
 
 /**
- * M4.d — aggregate operator report. Returned by the singleton GET
+ * Aggregate operator report. Returned by the singleton GET
  * (`GET /api/v1/cockpit/report`, ROLE_ADMIN): platform-wide state counts +
  * rolling throughput + per-definition breakdown.
  */
@@ -241,12 +241,12 @@ export interface CockpitReportDto {
     stateCounts: Record<string, number>;
     throughput: CockpitThroughputDto;
     definitions: CockpitDefinitionStatDto[];
-    /** M4.e — mean completion seconds across all completed instances; null if none. */
+    /** Mean completion seconds across all completed instances; null if none. */
     avgDurationSeconds: number | null;
 }
 
 /**
- * M4.k — aggregate user-task metrics. Returned by the singleton GET
+ * Aggregate user-task metrics. Returned by the singleton GET
  * (`GET /api/v1/cockpit/task-metrics`, ROLE_ADMIN): the task-level complement
  * to `CockpitReportDto` — count by task state, the open subtotal, overdue
  * (SLA-breach) count, mean queue-/cycle-time, and completion throughput.
@@ -271,7 +271,7 @@ export interface CockpitTaskMetricsDto {
 }
 
 /**
- * M4.g — one element's dwell timing row from the per-definition bottleneck
+ * One element's dwell timing row from the per-definition bottleneck
  * report. `elementLabel`/`elementKind` are best-effort AST enrichment (null
  * when the id isn't resolvable). Note: API Platform omits null properties, so
  * a missing field arrives as `undefined` — guard with `== null`.
@@ -286,7 +286,7 @@ export interface CockpitElementTimingDto {
 }
 
 /**
- * M4.g — per-definition bottleneck / timing report. Returned by
+ * Per-definition bottleneck / timing report. Returned by
  * `GET /api/v1/cockpit/definitions/{definitionId}/timing` (ROLE_ADMIN):
  * each AST element's mean + max dwell across the definition's instances,
  * slowest-average first.
@@ -300,7 +300,7 @@ export interface CockpitTimingReportDto {
 }
 
 /**
- * M4.c+ — the CSV-export envelope returned by
+ *+ — the CSV-export envelope returned by
  * `GET /api/v1/cockpit/reports/export?kind=…` (ROLE_ADMIN). The CSV body rides
  * in `csv` (with a suggested `filename`) so the Bearer-authed admin SPA can
  * fetch it (auth header attached by the interceptor) and trigger the download

@@ -1,5 +1,5 @@
 /**
- * M8.a.4 — DTOs for the Email mailbox client, mirroring the backend read/write
+ * DTOs for the Email mailbox client, mirroring the backend read/write
  * resources–). Fields are optional/nullable to tolerate the
  * partial shapes each endpoint returns.
  */
@@ -23,7 +23,7 @@ export interface EmailMailboxDto {
     /** Workflow-definition key started on a new-conversation inbound email. */
     inboundWorkflowKey?: string | null;
     hasCredential?: boolean;
-    /** How the mailbox authenticates: `password` (default) or `oauth` (M8.f, ). */
+    /** How the mailbox authenticates: `password` (default) or `oauth` (, ). */
     authMethod?: string;
     /** OAuth provider key (e.g. `google`) when `authMethod` is `oauth`; null otherwise. */
     oauthProvider?: string | null;
@@ -67,7 +67,7 @@ export type MailboxAuthMethod = 'password' | 'oauth';
 
 /**
  * The consent URL an authorize call returns (`POST /email/mailboxes/{id}/authorize`,
- * M8.f.2d ). The FE redirects the browser to `authorizationUrl` to start the
+ * ). The FE redirects the browser to `authorizationUrl` to start the
  * OAuth flow; the provider then calls back the public `/email/oauth/callback` which
  * seals the grant and bounces to `/admin/email?oauth=connected`.
  */
@@ -77,7 +77,7 @@ export interface MailboxConnectResultDto {
 }
 
 /**
- * A registered OAuth mail provider (`GET /email/oauth/providers`, M8.h ). The
+ * A registered OAuth mail provider (`GET /email/oauth/providers`, ). The
  * mailbox editor's provider picker lists these — a new backend provider appears with
  * no FE change. `key` is what `oauthProvider` stores (e.g. `google`, `microsoft`).
  */

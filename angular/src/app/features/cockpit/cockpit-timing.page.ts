@@ -24,7 +24,7 @@ import { CockpitService } from './cockpit.service';
 import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.types';
 
 /**
- * M4.g — Process Cockpit per-definition bottleneck / timing report
+ * Process Cockpit per-definition bottleneck / timing report
  * (`/admin/cockpit/definitions/:definitionId/timing`).
  *
  * The deepest read-side slice of the Reporting leg: mines the engine's

@@ -57,7 +57,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
              navigableFrom = the space root: /, /home and /home/{uuid} are real
              ancestors of a personal pages folder, but this module has no view
              for any of them, so they render as context and are not links (the
-             #1683 rule).
+             rule).
 
              editable:false — the folder is addressed by Node id (?parent=), and
              a typed path has no id to list children by. The address bar would
@@ -673,7 +673,7 @@ export class PagesListComponent implements OnInit {
     /**
      * Section properties — feed, post defaults, distribution channels.
      *
-     * This is the surface that gives the M6.a distribution config a door again:
+     * This is the surface that gives the distribution config a door again:
      * it was a row action on a directory row, and took directory rows out
      * of the grid, so it had become unreachable.
      */

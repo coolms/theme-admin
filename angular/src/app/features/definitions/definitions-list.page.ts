@@ -280,7 +280,7 @@ export class DefinitionsListPageComponent implements OnInit {
      * endpoint's named query params.
      *
      * The grid also emits ready-made RQL (`columnFilters`), which is what
-     * Doctrine-backed list endpoints consume — but this endpoint merges
+     * relational list endpoints consume — but this endpoint merges
      * rows across modules in memory and has no RQL parser behind it, so
      * it takes named params instead. Reading the structured filters is
      * the honest translation; picking the RQL strings apart with regexes

@@ -111,7 +111,7 @@ interface TemplateGroup {
                                 @if (t.manifest.license) { <dt>License</dt><dd>{{ t.manifest.license }}</dd> }
                                 @if (t.manifest.feStack) { <dt>Stack</dt><dd>{{ t.manifest.feStack }}</dd> }
                                 <!--
-                                  The AUTHORITATIVE binding first (#1751): a section
+                                  The AUTHORITATIVE binding first: a section
                                   naming this theme resolves to it directly, ignoring
                                   isActive and Theme.sections entirely.
                                 -->

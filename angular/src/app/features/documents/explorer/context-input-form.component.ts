@@ -93,10 +93,10 @@ import {
 
         <!--
             Per-variable field renderer. Branches on whether the
-            variable carries a Phase 2 (ADR-094) entityType marker:
-              - entityType set → <cms-entity-picker>, value flows as
+            variable carries a Phase 2 entityType marker:
+              - entityType set -> <cms-entity-picker>, value flows as
                 string | string[] | null through writeField.
-              - otherwise → legacy <input type="text">.
+              - otherwise -> legacy <input type="text">.
         -->
         <ng-template #fieldTemplate let-variable>
             <div class="cms-context-form__field">

@@ -49,7 +49,7 @@ interface MailboxFormModel {
     password: string;
     enabled: boolean;
     inboundWorkflowKey: string;
-    /** M8.f: `password` uses the password field; `oauth` connects via Google. */
+    /**: `password` uses the password field; `oauth` connects via Google. */
     authMethod: MailboxAuthMethod;
     /** OAuth provider key when `authMethod` is `oauth` (only `google` today). */
     oauthProvider: string;
@@ -68,8 +68,8 @@ interface ComposeDraft {
 }
 
 /**
- * M8.a.4 — the Email mailbox client (`/admin/email`). A three-pane reader over
- * the M8.a read/send/reply/folders/seen APIs–):
+ * The Email mailbox client (`/admin/email`). A three-pane reader over
+ * the read/send/reply/folders/seen APIs–):
  *
  *  - LEFT rail: the mailbox picker + folder list (each folder shows its unread
  *    count, `GET /email/mailboxes/{id}/folders`).
@@ -473,7 +473,7 @@ interface ComposeDraft {
             }
 
             <!-- Composer dock (compose + reply) — Gmail-style: floats bottom-right, does
-                 NOT block the mailbox behind it, and minimizes to its header bar (#1309). -->
+                 NOT block the mailbox behind it, and minimizes to its header bar. -->
             @if (composeOpen()) {
                 <div class="mbx__dock">
                     <div class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
@@ -1251,7 +1251,7 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly composeKey = signal<string>('0');
 
-    // M8.d search: when active, the middle pane shows mailbox-wide search
+    // Search: when active, the middle pane shows mailbox-wide search
     // hits instead of the current folder's messages.
     private static readonly SEARCH_PAGE_SIZE = 20;
     readonly searchActive = signal<boolean>(false);
@@ -1262,7 +1262,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private searchPage = 1;
     private searchSeq = 0;
 
-    // M8.e import: upload a .eml/.mbox file into the current folder.
+    // Import: upload a .eml/.mbox file into the current folder.
     readonly importing = signal<boolean>(false);
 
     readonly mailboxEditorOpen = signal<boolean>(false);
@@ -1278,14 +1278,14 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly securityOptions: MailboxSecurity[] = ['none', 'ssl', 'starttls'];
     mbForm: MailboxFormModel = EmailMailboxPageComponent.blankMailboxForm();
 
-    // M8.f OAuth connect: the edited mailbox's connection state + an
+    // OAuth connect: the edited mailbox's connection state + an
     // in-flight "Connect with …" redirect.
     readonly connecting = signal<boolean>(false);
     readonly editingOauthConnected = signal<boolean>(false);
     /** After returning from the provider's consent, select this mailbox once the list loads. */
     private pendingSelectId: string | null = null;
 
-    // M8.h OAuth provider picker: the registered providers (backend-driven,
+    // OAuth provider picker: the registered providers (backend-driven,
     // so a new one appears with no FE change) + their editable IMAP/SMTP presets.
     readonly oauthProviders = signal<EmailOAuthProviderDto[]>([{ key: 'google', label: 'Google' }]);
     private static readonly PROVIDER_PRESETS: Partial<Record<string, { imapHost: string; smtpHost: string; smtpPort: number; smtpSecurity: MailboxSecurity }>> = {
@@ -1488,7 +1488,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Run a full-text search across the selected mailbox (, M8.d). */
+    /** Run a full-text search across the selected mailbox (,). */
     runSearch(): void {
         const q = this.searchQuery.trim();
         const mailboxId = this.selectedMailboxId();
@@ -2510,7 +2510,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Begin the OAuth connect for the edited mailbox (M8.f.2d ): fetch the consent
+     * Begin the OAuth connect for the edited mailbox (): fetch the consent
      * URL and hand the browser off to Google. On return, `/email/oauth/callback` bounces
      * back to `/admin/email?oauth=connected` (handled by {@link consumeOAuthReturn}).
      */
@@ -2539,7 +2539,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Handle a redirect back from Google's consent (`?oauth=connected|error&mailbox=`,
-     * M8.f.2d ): toast the outcome, remember which mailbox to select, and strip the
+     * ): toast the outcome, remember which mailbox to select, and strip the
      * query so a page refresh doesn't re-toast.
      */
     private consumeOAuthReturn(): void {

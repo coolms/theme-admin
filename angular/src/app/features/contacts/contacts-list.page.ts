@@ -171,7 +171,7 @@ export class ContactsListComponent implements OnInit {
      * The one place contacts are fetched. Fired on mount, on every filter/sort
      * change (`reset`, offset 0) and when the lazy sentinel scrolls in.
      *
-     * `columnFilters` is passed VERBATIM: this endpoint is RQL-native (Doctrine-
+     * `columnFilters` is passed VERBATIM: this endpoint is RQL-native (the ORM-
      * backed), and its allowlist is derived from the same `contact:contacts`
      * YAML that renders the filter row.
      */

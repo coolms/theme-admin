@@ -482,10 +482,10 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
            grid's row data carries (hasOverride + _rowTitle). ::ng-deep is
            required to reach into the encapsulated <coolms-datagrid> child.
 
-           runtime → inherited unchanged: italic + muted.
-           parent  → overrides parent's field of the same name.
-           db / file → overrides a static PHP / config field.
-        ────────────────────────────────────────────────────────────────── */
+           runtime -> inherited unchanged: italic + muted.
+           parent  -> overrides parent's field of the same name.
+           db / file -> overrides a static PHP / config field.
+        ------------------------------------------------------------------ */
         :host ::ng-deep tr[data-has-override="runtime"] td.data-cell {
             font-style: italic;
             color: var(--cms-text-muted);

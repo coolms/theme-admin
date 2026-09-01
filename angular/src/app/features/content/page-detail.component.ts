@@ -98,7 +98,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
 
                     <!-- LIFECYCLE: which locale is live. Deliberately separate
                          from placement below — publishing a variant and placing
-                         a page are two verbs (ADR-153), and collapsing them into
+                         a page are two verbs, and collapsing them into
                          one "status" is what made Articles confusing. -->
                     <section class="pd__section">
                         <h4 class="pd__heading">Variants</h4>

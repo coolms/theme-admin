@@ -56,7 +56,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
                 <!--
                   Standard page chrome. The back action is declared in the
                   backend layout config (scheduler:schedule-detail) and rendered
-                  in cms-page-header (ADR-127); status chips project into the
+                  in cms-page-header; status chips project into the
                   header-meta slot. Trigger Now / Delete live in the fixed footer.
                 -->
                 <cms-page-header

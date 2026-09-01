@@ -40,7 +40,7 @@ describe('DocumentAggregatorService upload', () => {
 
     afterEach(() => httpMock.verify());
 
-    it('sends the file and folder', () => {
+ it('sends the file and folder', () => {
         const body = upload();
 
         expect(body.get('file')).toBeInstanceOf(File);
@@ -52,12 +52,12 @@ describe('DocumentAggregatorService upload', () => {
      * but not sending it keeps the ordinary upload's body exactly what it was
      * before conversion existed — so nothing about the common path changed.
      */
-    it('omits convert entirely unless it was asked for', () => {
+ it('omits convert entirely unless it was asked for', () => {
         expect(upload().has('convert')).toBeFalse();
         expect(upload(false).has('convert')).toBeFalse();
     });
 
-    it('sends convert when the caller asks to make the upload editable', () => {
+ it('sends convert when the caller asks to make the upload editable', () => {
         expect(upload(true).get('convert')).toBe('1');
     });
 
@@ -69,19 +69,19 @@ describe('DocumentAggregatorService upload', () => {
      * file in the wrong place with no error. This pins the hop the browser
      * owns; the backend's is pinned by ConvertedUploadTargetTest.
      */
-    it('sends the target the caller chose, not a default of its own', () => {
+ it('sends the target the caller chose, not a default of its own', () => {
         expect(upload(true, 'document').get('target')).toBe('document');
         expect(upload(true, 'template').get('target')).toBe('template');
     });
 
     /** Meaningless without a conversion, so it is not sent at all. */
-    it('omits the target when nothing is being converted', () => {
+ it('omits the target when nothing is being converted', () => {
         expect(upload(false, 'document').has('target')).toBeFalse();
         expect(upload().has('target')).toBeFalse();
     });
 
     /** The service does not invent one either -- an unasked-for call still says template. */
-    it('defaults to a template when the caller names no target', () => {
+ it('defaults to a template when the caller names no target', () => {
         expect(upload(true).get('target')).toBe('template');
     });
 });

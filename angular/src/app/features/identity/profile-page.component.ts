@@ -354,7 +354,7 @@ type Tab = 'personal' | string;
                                     </button>
                                 </div>
                             } @else if (sec.formId === CALL_FORM_ID) {
-                                <!-- M9.g (Slice A) bespoke "Calls" tab — incoming-call
+                                <!-- bespoke "Calls" tab — incoming-call
                                      overlay on/off + auto-dismiss seconds. Persists
                                      through the same updateSettings endpoint and pushes
                                      the merged values into CallOverlayPreferencesService
@@ -458,7 +458,7 @@ export class ProfilePageComponent implements OnInit {
                 // calendar without each running its own request.
                 const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
                 if (cal) this.calPrefs.update(cal);
-                // M9.g — seed the call-overlay prefs so the live screen-pop picks
+                // Seed the call-overlay prefs so the live screen-pop picks
                 // up the user's on/off + auto-dismiss without its own request.
                 const call = settings['call'] as Partial<CallOverlayPrefs> | undefined;
                 if (call) this.callPrefs.update(call);
@@ -575,7 +575,7 @@ export class ProfilePageComponent implements OnInit {
     }
 
     /**
-     * M9.g — submit handler for the bespoke "Calls" tab. Mirrors
+     * Submit handler for the bespoke "Calls" tab. Mirrors
      * `saveCalendarPrefs`: PATCHes the section, then pushes the merged
      * values into `CallOverlayPreferencesService` so the live screen-pop
      * overlay reacts immediately (no reload).

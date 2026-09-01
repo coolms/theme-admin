@@ -38,12 +38,12 @@ const MAX_VISIBLE = 4;
 const HARD_MAX_MS = 15 * 60 * 1000;
 
 /**
- * M9.g (Slice A) — the global incoming-call screen-pop.
+ * The global incoming-call screen-pop.
  *
  * Mounted once in the admin shell (a sibling of the WebRTC
  * `RtcCallOverlayComponent`), so a manager mid-task sees a call arrive as
  * a small, non-intrusive card in the corner without leaving whatever page
- * they're on. Driven by the M9.c `calls.broadcast` firehose
+ * they're on. Driven by the `calls.broadcast` firehose
  * ({@link CallLiveEventsService}) — each state transition
  * (ringing -> answered -> on_hold -> ended) upserts a card keyed by call id;
  * once a call settles (someone picks up, or it ends) its auto-dismiss
@@ -79,7 +79,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
                                 </div>
                             </div>
                             <div class="callpop__actions">
-                                <!-- Softphone (Slice C.3): Answer/Decline a ringing call, or hang up a
+                                <!-- Softphone: Answer/Decline a ringing call, or hang up a
                                      live one — only when the browser SIP endpoint is registered. -->
                                 @if (webphone.status() === 'registered') {
                                     @if (c.state === 'ringing' && webphone.incoming()) {
@@ -204,7 +204,7 @@ export class CallScreenpopOverlayComponent {
     private readonly liveEvents = inject(CallLiveEventsService);
     private readonly prefs      = inject(CallOverlayPreferencesService);
     private readonly router     = inject(Router);
-    /** The in-browser softphone (Slice C.3) — drives the Answer/Hangup controls. */
+    /** The in-browser softphone — drives the Answer/Hangup controls. */
     readonly webphone = inject(WebPhoneService);
 
     /** All popped calls, keyed by call id (pruned as they age out). */
@@ -240,7 +240,7 @@ export class CallScreenpopOverlayComponent {
         const timer = setInterval(() => this.tick(), 1000);
         inject(DestroyRef).onDestroy(() => clearInterval(timer));
 
-        // Boot the in-browser softphone (Slice C.3). Idempotent + self-guarding:
+        // Boot the in-browser softphone. Idempotent + self-guarding:
         // it stays dormant unless the deployment has a WebRTC PBX configured AND
         // this user has a provisioned credential — so it's a no-op everywhere else.
         void this.webphone.start();
@@ -256,12 +256,12 @@ export class CallScreenpopOverlayComponent {
         if (next.delete(c.id)) this.calls.set(next);
     }
 
-    /** Answer the ringing softphone call (Slice C.3). */
+    /** Answer the ringing softphone call. */
     answer(): void {
         void this.webphone.answer();
     }
 
-    /** Decline a ringing call or hang up a live one (Slice C.3). */
+    /** Decline a ringing call or hang up a live one. */
     hangup(): void {
         void this.webphone.hangup();
     }

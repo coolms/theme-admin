@@ -8,7 +8,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
  * whole karma build — see the note in the util.
  */
 describe('withoutPinnedKeys', () => {
-    it('drops a pinned key and keeps everything else', () => {
+ it('drops a pinned key and keeps everything else', () => {
         const sent = withoutPinnedKeys(
             { ttl: 300, enabled: true, label: 'Pages' },
             { ttl: 'PAGE_CACHE_TTL' },
@@ -17,9 +17,9 @@ describe('withoutPinnedKeys', () => {
         expect(sent).toEqual({ enabled: true, label: 'Pages' });
     });
 
-    it('drops a pinned key even when its value is falsy', () => {
-        // `in`, not a truthiness check: 0 and '' and null are all real values an
-        // admin could be looking at, and all of them must still be dropped.
+ it('drops a pinned key even when its value is falsy', () => {
+ // `in`, not a truthiness check: 0 and '' and null are all real values an
+ // admin could be looking at, and all of them must still be dropped.
         const sent = withoutPinnedKeys(
             { ttl: 0, enabled: false, note: '' },
             { ttl: 'PAGE_CACHE_TTL', enabled: 'PAGE_CACHE_ENABLED' },
@@ -28,19 +28,19 @@ describe('withoutPinnedKeys', () => {
         expect(sent).toEqual({ note: '' });
     });
 
-    it('sends everything when nothing is pinned', () => {
+ it('sends everything when nothing is pinned', () => {
         const value = { ttl: 300, enabled: true };
 
         expect(withoutPinnedKeys(value, {})).toEqual(value);
     });
 
-    it('ignores a pin for a key the form did not carry', () => {
-        // A block can pin a key its form does not render; that must not invent
-        // one in the payload or drop an unrelated field.
+ it('ignores a pin for a key the form did not carry', () => {
+ // A block can pin a key its form does not render; that must not invent
+ // one in the payload or drop an unrelated field.
         expect(withoutPinnedKeys({ enabled: true }, { ttl: 'PAGE_CACHE_TTL' })).toEqual({ enabled: true });
     });
 
-    it('keeps a key whose name merely resembles a pinned one', () => {
+ it('keeps a key whose name merely resembles a pinned one', () => {
         expect(withoutPinnedKeys({ ttl_seconds: 300 }, { ttl: 'PAGE_CACHE_TTL' })).toEqual({ ttl_seconds: 300 });
     });
 });
@@ -76,7 +76,7 @@ describe('adoptSavedBlock', () => {
         };
     }
 
-    it('keeps a SITE response out of the platform list', () => {
+ it('keeps a SITE response out of the platform list', () => {
         const platform = [block({ effective: { ttl: 300 } })];
         const saved = block({ scope: 'site-a', effective: { ttl: 60 } });
 
@@ -86,7 +86,7 @@ describe('adoptSavedBlock', () => {
         expect(scoped).toBe(saved);
     });
 
-    it('puts a PLATFORM response into the platform list', () => {
+ it('puts a PLATFORM response into the platform list', () => {
         const platform = [block({ effective: { ttl: 300 } }), block({ key: 'other.block' })];
         const saved = block({ effective: { ttl: 120 } });
 
@@ -97,7 +97,7 @@ describe('adoptSavedBlock', () => {
         expect(scoped).toBeNull();
     });
 
-    it('does not invent a row for a key the list never had', () => {
+ it('does not invent a row for a key the list never had', () => {
         const { blocks } = adoptSavedBlock([block({ key: 'a.b' })], block({ key: 'c.d' }), null);
 
         expect(blocks.length).toBe(1);

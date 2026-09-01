@@ -1,6 +1,6 @@
 /**
  * Voice/Video— WebRTC calling DTOs + realtime nudge shapes (Slice 4a,
- * the call-control plane). These mirror the `App\Rtc` backend: the REST resource
+ * the call-control plane). These mirror the `Rtc` backend: the REST resource
  * (`RtcCallResource`) and the three payloads the backend publishes on the Rtc
  * Centrifugo channels (`rtc.user.{id}` ring + `rtc.call.{id}` state/signal).
  */

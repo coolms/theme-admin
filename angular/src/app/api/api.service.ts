@@ -152,7 +152,7 @@ export interface SiteMemberDto {
 
 // --- Routing Inspector DTOs ( Layer 3b/3d.2) --------------------------
 //
-// Mirrors `App\Web\Domain\ValueObject\RoutingTrace` (and its child VOs
+// Mirrors `RoutingTrace` (and its child VOs
 // `RoutingStep` + `RoutingTarget`). Endpoint:
 // `GET /api/v1/web/routing/inspect?host=&path=` (admin-only).
 //
@@ -982,7 +982,7 @@ export interface ListCalendarItemsOptions {
 
 // --- Service -----------------------------------------------------------------
 
-/** Read-only snapshot of a tracked telephony call (M9.a.4) for the admin call-history list. */
+/** Read-only snapshot of a tracked telephony call for the admin call-history list. */
 export interface CallRecordDto {
     readonly id?:               string;
     readonly callId?:           string;
@@ -995,7 +995,7 @@ export interface CallRecordDto {
     readonly assignedUserRef?:  string | null;
     /** Resolved display name of the assigned agent (M9), or null when unassigned/unknown. */
     readonly assignedUserName?: string | null;
-    /** M9.g A.2 — the extension that answered, or null (fallback "answered on" label). */
+    /** The extension that answered, or null (fallback "answered on" label). */
     readonly answeredExtension?: string | null;
     readonly recordingNodeRef?: string | null;
     readonly startedAt?:        string;
@@ -1011,7 +1011,7 @@ export interface CallRecordDto {
     readonly updatedAt?:        string;
 }
 
-/** M9.g Slice B — click-to-dial request body (`POST /call/originate`). */
+/** Click-to-dial request body (`POST /call/originate`). */
 export interface CallOriginateRequest {
     /** The caller's own device, e.g. `PJSIP/1001`. */
     readonly endpoint: string;
@@ -1020,13 +1020,13 @@ export interface CallOriginateRequest {
     readonly callerId?: string;
 }
 
-/** M9.g Slice B — click-to-dial response: the created channel id. */
+/** Click-to-dial response: the created channel id. */
 export interface CallOriginateDto {
     readonly channelId?: string | null;
     readonly originated?: boolean;
 }
 
-/** M9.g Slice C.1/C.2 — the browser softphone connection descriptor (`GET /call/webphone/config`). */
+/** The browser softphone connection descriptor (`GET /call/webphone/config`). */
 export interface WebPhoneConfigDto {
     readonly enabled: boolean;
     readonly wssUrl: string;
@@ -1295,7 +1295,7 @@ export class ApiService {
         const pageSize = opts.pageSize ?? 50;
         const page     = opts.page ?? 1;
         params = params.set('page',     String(page));
-        // RQL parser reads `?limit=N` (see App\Core\Application\Rql\RqlParser).
+        // RQL parser reads `?limit=N` (see RqlParser).
         // Sending `pageSize` was a no-op — backend silently fell back to
         // RqlQuery::DEFAULT_LIMIT (20), and the FE's offset math (built on
         // PAGE_SIZE=50) requested page 1 over and over, duplicating rows.
@@ -1620,7 +1620,7 @@ export class ApiService {
         const pageSize = opts.pageSize ?? 50;
         const page     = opts.page ?? 1;
         params = params.set('page',     String(page));
-        // RQL parser reads `?limit=N` (see App\Core\Application\Rql\RqlParser).
+        // RQL parser reads `?limit=N` (see RqlParser).
         // Sending `pageSize` was a no-op — backend silently fell back to
         // RqlQuery::DEFAULT_LIMIT (20), and the FE's offset math (built on
         // PAGE_SIZE=50) requested page 1 over and over, duplicating rows.
@@ -1647,7 +1647,7 @@ export class ApiService {
     }
 
     /**
-     * M9.f.1 — page the read-only call history (M9.a.4 `GET /call/records`).
+     * Page the read-only call history (`GET /call/records`).
      * A verbatim shape-copy of {@link listSchedulesPage}: server-side paginated +
      * RQL-filterable, `?limit=N` (the RQL parser ignores `pageSize`), JSON-LD.
      */
@@ -1685,7 +1685,7 @@ export class ApiService {
     }
 
     /**
-     * M9.f.2 — fetch one tracked call by id (M9.a.4 `GET /call/records/{id}`).
+     * Fetch one tracked call by id (`GET /call/records/{id}`).
      * Plain JSON (like {@link getSchedule}); the item op returns the
      * CallRecordResource projection.
      */
@@ -1695,7 +1695,7 @@ export class ApiService {
     }
 
     /**
-     * M9.f.2 — stream a call's `.wav` recording (M9.b `GET
+     * Stream a call's `.wav` recording (`GET
      * /call/records/{id}/recording`). The admin is a Bearer SPA, so a plain
      * `<audio src>` can't carry the token — this goes through HttpClient
      * (the auth interceptor attaches the Bearer) as a Blob the caller turns
@@ -1707,7 +1707,7 @@ export class ApiService {
     }
 
     /**
-     * M9.g Slice B — click-to-dial (`POST /call/originate`). Rings the caller's
+     * Click-to-dial (`POST /call/originate`). Rings the caller's
      * own device (`endpoint`, e.g. `PJSIP/1001`), then bridges it out to the
      * dialled `extension`; the backend fills the dialplan context. Returns the
      * created channel id (the same call soon pops on the incoming-call overlay).
@@ -1718,7 +1718,7 @@ export class ApiService {
     }
 
     /**
-     * M9.g Slice C — the browser softphone's connection descriptor (WSS URI + SIP
+     * The browser softphone's connection descriptor (WSS URI + SIP
      * identity + owner-only password). `enabled` is false where no WebRTC PBX is
      * configured or the user has no device, in which case the softphone stays dormant.
      */
@@ -1727,7 +1727,7 @@ export class ApiService {
         return this.http.get<WebPhoneConfigDto>(url);
     }
 
-    /** M9.g Slice C — ICE servers for the softphone peer connection (shared Coturn, reused). */
+    /** ICE servers for the softphone peer connection (shared Coturn, reused). */
     getCallIceServers(): Observable<CallIceServersDto> {
         const url = `${this.manifest.apiBase}/rtc/ice-servers`;
         return this.http.get<CallIceServersDto>(url);

@@ -72,7 +72,7 @@ import {
                 <!--
                   Standard page chrome. The back action is declared in the
                   backend layout config (web:section-members) and rendered in
-                  the cms-page-header bar (ADR-127); the FE re-labels it with
+                  the cms-page-header bar; the FE re-labels it with
                   the loaded site's name. Slug / member-count / read-only chips
                   project into the header-meta slot on the title baseline.
                   Owner / Editors mutations stay card-internal (contextual).
@@ -239,7 +239,7 @@ import {
                                 </dd>
                             </dl>
                             <p class="hint">
-                                Membership is VFS perms on this Node (per ADR-117).
+                                Membership is VFS permissions on this Node.
                             </p>
                         </div>
                     </section>

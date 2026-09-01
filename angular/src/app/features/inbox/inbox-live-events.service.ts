@@ -5,7 +5,7 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
 import { InboxLiveEvent } from './inbox.types';
 
 /**
- * M2.m FE — typed wrapper over the realtime transport for the
+ * FE — typed wrapper over the realtime transport for the
  * per-user channel `inbox.{userIdRfc4122}`. Mirror of
  * `CalendarLiveEventsService`.
  *

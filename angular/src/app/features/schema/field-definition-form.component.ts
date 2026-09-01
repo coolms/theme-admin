@@ -459,7 +459,7 @@ type TabIndex = 0 | 1 | 2;
         /* -- Tab nav for static override ---------------------------------
            Re-declared here because form-tabs__* is scoped to DynamicLayoutComponent
            and Angular's view encapsulation prevents it from reaching this host.
-        ────────────────────────────────────────────────────────────────── */
+        ------------------------------------------------------------------ */
         .fdf-tabs-nav {
             display: flex;
             gap: 0;

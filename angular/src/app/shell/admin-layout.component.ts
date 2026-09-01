@@ -395,7 +395,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <!-- Global WebRTC call overlay — incoming ring + in-call bar, above every route -->
         <app-rtc-call-overlay />
 
-        <!-- Global telephony (PBX) incoming-call screen-pop (M9.g) — a non-intrusive
+        <!-- Global telephony (PBX) incoming-call screen-pop — a non-intrusive
              card as calls ring/answer/end, driven by the calls.broadcast firehose -->
         <app-call-screenpop-overlay />
     `,

@@ -451,7 +451,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                         <!-- A bare at-sign in a conversation with no other members
                              has nothing to list until the directory is searched, and
                              an invisible menu reads as "mentions are broken" — which
-                             is how it was reported (#2106). Say what to do instead. -->
+                             is how it was reported. Say what to do instead. -->
                         @if (mentionMenuOpen() && !mentionCandidates().length && mentionQuery() === '') {
                             <div class="msg__mention-pop msg__mention-pop--hint">
                                 <span class="msg__mention-hint">Type a name to mention anyone…</span>
@@ -512,7 +512,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                                (change)="onFilesPicked($event)" />
 
                         <!-- One unified input shell: the rich editor fills the width,
-                             with an action bar (emoji · attach │ Send) beneath it. -->
+                             with an action bar (emoji · attach | Send) beneath it. -->
                         <div class="msg__composer-shell">
                             <coolms-editor class="msg__editor"
                                            profile="comment"
@@ -851,7 +851,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            the last/rightmost item in the threadbar) so it grows LEFTWARD, over the
            bubble. Left-anchoring ('left: 0') grew it rightward and overflowed the
            container's right edge on own messages (the line is right-aligned), which
-           tripped the stream's horizontal scrollbar (#1334 follow-up). */
+           tripped the stream's horizontal scrollbar (follow-up). */
         .msg__react-palette { position: absolute; bottom: 100%; right: 0; margin-bottom: .3rem; display: flex; gap: .1rem; padding: .2rem; background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10)); z-index: 20; }
         .msg__react-opt { border: 0; background: transparent; cursor: pointer; font-size: 1.15rem; line-height: 1; padding: .15rem .25rem; border-radius: var(--cms-radius, 6px); transition: background .1s ease; }
         .msg__react-opt:hover { background: var(--cms-canvas, #f3f4f6); }

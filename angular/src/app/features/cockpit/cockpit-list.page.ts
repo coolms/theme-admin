@@ -53,7 +53,7 @@ interface CockpitRow {
 }
 
 /**
- * M4.a — Process Cockpit list page (`/admin/cockpit`).
+ * Process Cockpit list page (`/admin/cockpit`).
  *
  * The first M4 operator surface: a read-only table of process instances the
  * engine has run, filterable by state, backed by `GET /api/v1/cockpit/instances`
@@ -157,7 +157,7 @@ export class CockpitListPageComponent implements OnInit {
     ngOnInit(): void {
         this.titleSvc.set('Process Cockpit');
         // Re-fetch whenever the drill-in filter changes — the report page links
-        // here with `?definitionId=` / `?state=` (M4.d). `queryParamMap` emits
+        // here with `?definitionId=` / `?state=`. `queryParamMap` emits
         // the initial value, but the FIRST load is the grid's own `(loadMore)`
         // on mount; asking the grid to reload covers both without racing it.
         let first = true;
@@ -223,7 +223,7 @@ export class CockpitListPageComponent implements OnInit {
      * Maps the grid's structured column filters to the endpoint's named query
      * params. Like the Definitions catalog and unlike the RQL-native
      * endpoints, this provider takes named params — it reads a projected view
-     * built by `CockpitQueryService`, not a plain Doctrine entity.
+     * built by `CockpitQueryService`, not a plain ORM entity.
      *
      * `state` is multi-select; the endpoint takes a comma-separated list.
      * An unmapped column is ignored rather than guessed at.
@@ -258,11 +258,11 @@ export class CockpitListPageComponent implements OnInit {
 
     onToolbarAction(id: string): void {
         if (id === 'reload') { this.load(); return; }
-        // Jump to the aggregate operator report (M4.d).
+        // Jump to the aggregate operator report.
         if (id === 'report') { void this.router.navigate(['/cockpit', 'report']); return; }
-        // Export the currently-loaded (filtered) instances as CSV (M4.e).
+        // Export the currently-loaded (filtered) instances as CSV.
         if (id === 'export') { this.exportCsv(); return; }
-        // Selection-gated Open drills into the read-only instance detail (M4.b).
+        // Selection-gated Open drills into the read-only instance detail.
         if (id === 'open') {
             const id2 = this.selectedRow()?.['id'];
             if (id2) void this.router.navigate(['/cockpit', String(id2)]);
@@ -270,7 +270,7 @@ export class CockpitListPageComponent implements OnInit {
     }
 
     /**
-     * M4.e — client-side CSV export of the LOADED instance rows.
+     * Client-side CSV export of the LOADED instance rows.
      *
      * With lazy paging "loaded" is what the operator has scrolled
      * through, not the whole filtered set — so when it covers less than the

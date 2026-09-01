@@ -155,7 +155,7 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
                 <!-- The shared switcher, fed by the modes document:library
                      declares. Routes to whichever of the two view-mode signals
                      the current pane obeys — templates and instances keep
-                     independent renderings on purpose (#1709). -->
+                     independent renderings on purpose. -->
                 <app-explorer-view-switcher
                     toolbar-right-extra
                     [modes]="layout.viewModes()"

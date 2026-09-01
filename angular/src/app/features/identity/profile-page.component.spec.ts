@@ -38,7 +38,7 @@ import { ProfilePageComponent } from './profile-page.component';
  * MAP, and ld+json renders a map as a Hydra Collection with the KEYS STRIPPED.
  * The spec never picks the good shape — the `Accept` header the code sends does.
  */
-describe('ProfilePageComponent — save handlers over a real render (#2033/#2034)', () => {
+describe('ProfilePageComponent — save handlers over a real render', () => {
     const THEME_CACHE_KEY  = 'coolms_theme';
     const ACCENT_CACHE_KEY = 'coolms_accent';
 
@@ -182,11 +182,11 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
             providers: [
                 provideHttpClient(withXhr()),
                 provideHttpClientTesting(),
-                // Covers both roles this graph asks of the store: the API
-                // manifest (ApiService, FormRenderService, ThemeService) and
-                // `AuthState.currentUser` (the calendar prefs' personal-calendar
-                // fallback). The manifest object carries no `id`, so that
-                // fallback resolves to null — nothing here leans on it.
+ // Covers both roles this graph asks of the store: the API
+ // manifest (ApiService, FormRenderService, ThemeService) and
+ // `AuthState.currentUser` (the calendar prefs' personal-calendar
+ // fallback). The manifest object carries no `id`, so that
+ // fallback resolves to null — nothing here leans on it.
                 { provide: Store, useValue: { selectSnapshot: () => MANIFEST } },
             ],
         });
@@ -199,7 +199,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         fixture = TestBed.createComponent(ProfilePageComponent);
         page    = fixture.componentInstance;
 
-        // ngOnInit's forkJoin — the page renders nothing until all three land.
+ // ngOnInit's forkJoin — the page renders nothing until all three land.
         fixture.detectChanges();
         http.expectOne(ME_URL).flush(USER);
         http.expectOne(SECTIONS_URL).flush({ member: SECTIONS });
@@ -215,7 +215,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         document.documentElement.style.removeProperty('--cms-accent');
     });
 
-    // -- The builder itself ---------------------------------------------------
+ // -- The builder itself ---------------------------------------------------
 
     /**
      * The pin on the change that made this file possible. `paginateFlow` is the
@@ -227,26 +227,26 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
      * sources, this fails as a one-line diagnosis instead of ~40 opaque
      * "Can't resolve" errors and a suite that executes nothing.
      */
-    it('resolves @coolms/document-engine to real code, not an empty module', () => {
+ it('resolves @coolms/document-engine to real code, not an empty module', () => {
         expect(typeof paginateFlow).toBe('function');
     });
 
-    it('renders the page, so every component it imports is reachable from a spec', () => {
+ it('renders the page, so every component it imports is reachable from a spec', () => {
         expect(page.user()?.fullName).toBe('Dmitry Popov');
         expect(page.sections().length).toBe(3);
         expect(fixture.nativeElement.textContent).toContain('Dmitry Popov');
     });
 
-    // -- ngOnInit seeding -----------------------------------------------------
+ // -- ngOnInit seeding -----------------------------------------------------
 
-    it('seeds the calendar and call prefs from the load response', () => {
-        // Both services are shared with widgets mounted elsewhere in the shell,
-        // so the page loading is what saves them a request each.
+ it('seeds the calendar and call prefs from the load response', () => {
+ // Both services are shared with widgets mounted elsewhere in the shell,
+ // so the page loading is what saves them a request each.
         expect(calPrefs.tz()).toBe('UTC');
         expect(callPrefs.sipEndpoint()).toBe('PJSIP/1001');
     });
 
-    // -- saveCalendarPrefs ----------------------------------------------------
+ // -- saveCalendarPrefs ----------------------------------------------------
 
     const CALENDAR_SAVED = {
         tz:                  'Europe/Berlin',
@@ -256,16 +256,16 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         defaultCalendarSlug: 'team-ops',
     };
 
-    it('saveCalendarPrefs pushes the echo into the live prefs the widgets read', () => {
+ it('saveCalendarPrefs pushes the echo into the live prefs the widgets read', () => {
         expect(calPrefs.tz()).toBe('UTC');
 
         page.saveCalendarPrefs('calendar', CALENDAR_SAVED);
         flushSave('calendar', { ...CALENDAR_SAVED });
 
-        // Each of these is read by something already on screen: FullCalendar's
-        // timeZone and firstDay, MiniCalendar, the date/time formatting
-        // service, the topbar calendar quick-access. The handler's
-        // `this.calPrefs.update(updated)` is the only thing that moves them.
+ // Each of these is read by something already on screen: FullCalendar's
+ // timeZone and firstDay, MiniCalendar, the date/time formatting
+ // service, the topbar calendar quick-access. The handler's
+ // `this.calPrefs.update(updated)` is the only thing that moves them.
         expect(calPrefs.tz()).toBe('Europe/Berlin');
         expect(calPrefs.dateFormat()).toBe('dd.MM.yyyy');
         expect(calPrefs.timeFormat()).toBe('12h');
@@ -274,32 +274,32 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(calPrefs.defaultCalendarSlug()).toBe('team-ops');
     });
 
-    it('saveCalendarPrefs caches the echo under its section and clears the spinner', () => {
+ it('saveCalendarPrefs caches the echo under its section and clears the spinner', () => {
         page.saveCalendarPrefs('calendar', CALENDAR_SAVED);
         expect(page.savingCalendar()).withContext('spinner during the request').toBeTrue();
 
         flushSave('calendar', { ...CALENDAR_SAVED });
 
-        // `settings()[section]` is what re-seeds a tab body when the user
-        // leaves the tab and comes back; a keyless bag there sends the tab to
-        // its hardcoded defaults, and the next Save writes THOSE to the server.
+ // `settings()[section]` is what re-seeds a tab body when the user
+ // leaves the tab and comes back; a keyless bag there sends the tab to
+ // its hardcoded defaults, and the next Save writes THOSE to the server.
         expect(page.settings()['calendar']).toEqual(CALENDAR_SAVED);
         expect(page.savingCalendar()).toBeFalse();
     });
 
-    it('the Calendar tab, re-opened after a save, offers the saved values back', () => {
+ it('the Calendar tab, re-opened after a save, offers the saved values back', () => {
         page.saveCalendarPrefs('calendar', CALENDAR_SAVED);
         flushSave('calendar', { ...CALENDAR_SAVED });
 
-        // Switching to the tab builds the body from `settings()[section]`, so
-        // this runs the cache the handler just wrote through the real
-        // component, exactly as a user returning to the tab would. Fed a
-        // keyless bag the tab falls to UTC / yyyy-MM-dd / 24h / monday and the
-        // next Save writes THOSE over what the user actually stored.
+ // Switching to the tab builds the body from `settings()[section]`, so
+ // this runs the cache the handler just wrote through the real
+ // component, exactly as a user returning to the tab would. Fed a
+ // keyless bag the tab falls to UTC / yyyy-MM-dd / 24h / monday and the
+ // next Save writes THOSE over what the user actually stored.
         openTab('calendar');
         http.expectOne(CALENDAR_LIST_URL).flush({ member: [] });
-        // The tab's timezone picker is a lazy-select over the
-        // `calendar.timezones` OptionSource — rows keyed by `value`, not `id`.
+ // The tab's timezone picker is a lazy-select over the
+ // `calendar.timezones` OptionSource — rows keyed by `value`, not `id`.
         http.expectOne(r => r.url === TIMEZONE_OPTIONS_URL).flush({
             member: [
                 { value: 'UTC',           label: 'UTC',    group: 'Other'  },
@@ -319,18 +319,18 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(tab.defaultCalendarSlug).toBe('team-ops');
     });
 
-    it('a failed calendar save leaves the previous prefs alone and stops the spinner', () => {
+ it('a failed calendar save leaves the previous prefs alone and stops the spinner', () => {
         page.saveCalendarPrefs('calendar', CALENDAR_SAVED);
         http.expectOne(`${SETTINGS_URL}/calendar`).flush({ detail: 'nope' }, { status: 422, statusText: 'Unprocessable' });
 
-        // A half-applied save is worse than a failed one: the widgets would
-        // show a timezone the server does not have.
+ // A half-applied save is worse than a failed one: the widgets would
+ // show a timezone the server does not have.
         expect(calPrefs.tz()).toBe('UTC');
         expect(page.settings()['calendar']).toEqual(SETTINGS_ON_LOAD.calendar);
         expect(page.savingCalendar()).toBeFalse();
     });
 
-    // -- saveCallSettings -----------------------------------------------------
+ // -- saveCallSettings -----------------------------------------------------
 
     const CALL_SAVED = {
         overlayEnabled:     false,
@@ -338,14 +338,14 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         sipEndpoint:        'PJSIP/2002',
     };
 
-    it('saveCallSettings reaches the live overlay prefs', () => {
+ it('saveCallSettings reaches the live overlay prefs', () => {
         page.saveCallSettings('call', CALL_SAVED);
         flushSave('call', { ...CALL_SAVED });
 
-        // The screen-pop overlay is mounted once by the admin shell and
-        // refreshes only in its own ngOnInit, so a value that fails to land
-        // here outlives every route change: the user turns the popup off and it
-        // keeps popping up until the tab is reloaded.
+ // The screen-pop overlay is mounted once by the admin shell and
+ // refreshes only in its own ngOnInit, so a value that fails to land
+ // here outlives every route change: the user turns the popup off and it
+ // keeps popping up until the tab is reloaded.
         expect(callPrefs.overlayEnabled()).toBeFalse();
         expect(callPrefs.autoDismissSeconds()).toBe(0);
         expect(callPrefs.sipEndpoint()).toBe('PJSIP/2002');
@@ -353,7 +353,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(page.savingCall()).toBeFalse();
     });
 
-    // -- saveSection, driven through the real DynamicForm ---------------------
+ // -- saveSection, driven through the real DynamicForm ---------------------
 
     /** Open Preferences and answer the form-definition fetch it triggers. */
     function openPreferencesTab(): DynamicFormComponent {
@@ -368,20 +368,20 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         return el.componentInstance as DynamicFormComponent;
     }
 
-    it('the Preferences tab renders the dynamic form seeded from the cached section', () => {
+ it('the Preferences tab renders the dynamic form seeded from the cached section', () => {
         const form = openPreferencesTab();
 
-        // The surface that had no coverage at all: the form loads a definition,
-        // builds its group, and patches it from `settings()['preferences']`.
+ // The surface that had no coverage at all: the form loads a definition,
+ // builds its group, and patches it from `settings()['preferences']`.
         expect(form.loading()).toBeFalse();
         expect(form.formGroup().getRawValue()).toEqual({ theme: 'light', accentColor: '#112233' });
     });
 
-    it('submitting the form re-themes on the spot and clears the form spinner', () => {
+ it('submitting the form re-themes on the spot and clears the form spinner', () => {
         const form = openPreferencesTab();
         form.formGroup().patchValue({ theme: 'dark', accentColor: '#3366ff' });
 
-        // The real chain from here: submit() -> `submitted` -> saveSection().
+ // The real chain from here: submit() -> `submitted` -> saveSection().
         form.submit();
         expect(form.saving()).withContext('form spinner during the request').toBeTrue();
 
@@ -389,25 +389,25 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         TestBed.flushEffects();
         fixture.detectChanges();
 
-        // The original report. Both reads take a NAMED field off the
-        // echo, so under a keyless Hydra bag both got `undefined` and were
-        // dropped by the services' own guards: the save worked, and the admin
-        // stayed the colour it already was until the next reload.
+ // The original report. Both reads take a NAMED field off the
+ // echo, so under a keyless Hydra bag both got `undefined` and were
+ // dropped by the services' own guards: the save worked, and the admin
+ // stayed the colour it already was until the next reload.
         expect(theme.choice()).toBe('dark');
         expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
         expect(theme.userAccent()).toBe('#3366ff');
         expect(document.documentElement.style.getPropertyValue('--cms-accent')).toBe('#3366ff');
 
-        // `settingsForm()?.resetSaving()` — a viewChild call that was
-        // unreachable from a spec until this file could exist. Miss it and the
-        // button says "Saving…" forever after a successful save.
+ // `settingsForm()?.resetSaving()` — a viewChild call that was
+ // unreachable from a spec until this file could exist. Miss it and the
+ // button says "Saving…" forever after a successful save.
         expect(form.saving()).toBeFalse();
         expect(page.settings()['preferences']).toEqual({
             theme: 'dark', accentColor: '#3366ff', locale: 'en', pageSize: 20,
         });
     });
 
-    it('a rejected save shows the server detail on the form and re-enables it', () => {
+ it('a rejected save shows the server detail on the form and re-enables it', () => {
         const form = openPreferencesTab();
         form.formGroup().patchValue({ theme: 'dark', accentColor: 'not-a-hex' });
         form.submit();
@@ -416,14 +416,14 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
             .flush({ detail: 'accentColor: must be a 6-digit hex colour.' }, { status: 422, statusText: 'Unprocessable' });
         fixture.detectChanges();
 
-        // The error branch reads `e.error.detail` and hands it to the same
-        // viewChild. Without it the user gets a generic toast and no idea which
-        // field the server rejected.
+ // The error branch reads `e.error.detail` and hands it to the same
+ // viewChild. Without it the user gets a generic toast and no idea which
+ // field the server rejected.
         expect(form.serverError()).toBe('accentColor: must be a 6-digit hex colour.');
         expect(form.saving()).toBeFalse();
         expect(fixture.nativeElement.textContent).toContain('must be a 6-digit hex colour');
 
-        // Nothing may be applied from a rejected save.
+ // Nothing may be applied from a rejected save.
         expect(theme.choice()).not.toBe('dark');
         expect(page.settings()['preferences']).toEqual(SETTINGS_ON_LOAD.preferences);
     });

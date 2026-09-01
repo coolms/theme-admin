@@ -118,7 +118,7 @@ export function buildDefaultState(dtstart: Date): RecurrenceFormState {
 
 /**
  * Serialize structured form state into a RFC 5545 multi-line spec
- * string. The backend parser (`App\Recurrence\Application\Service\RRuleParser::parseSpec`)
+ * string. The backend parser (`RRuleParser::parseSpec`)
  * accepts whatever we emit here unchanged.
  *
  * Returns `null` for `mode: 'NONE'` — the caller treats null as "no

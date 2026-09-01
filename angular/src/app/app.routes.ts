@@ -56,7 +56,7 @@ export const routes: Routes = [
                     import('./features/schedules/schedules.routes').then(m => m.SCHEDULE_ROUTES),
                 data: { activeNav: '/schedules' },
             },
-            // M9.f.1 — Call history admin (read-only list over the AMI-tracked
+            // Call history admin (read-only list over the AMI-tracked
             // CallRecord read API; detail + recording player + live card follow).
             {
                 path: 'call/records',
@@ -64,14 +64,14 @@ export const routes: Routes = [
                     import('./features/call/call.routes').then(m => m.CALL_ROUTES),
                 data: { activeNav: '/call/records' },
             },
-            // M9.f.3 — live-call wallboard (realtime over the M9.c calls.broadcast channel)
+            // Live-call wallboard (realtime over the calls.broadcast channel)
             {
                 path: 'call/wallboard',
                 loadComponent: () =>
                     import('./features/call/call-wallboard.page').then(m => m.CallWallboardComponent),
                 data: { activeNav: '/call/wallboard' },
             },
-            // M2.m — Inbox: 3-tab user-task queue (My / Claimable / Recent)
+            // Inbox: 3-tab user-task queue (My / Claimable / Recent)
             // for workflow user tasks. URL-driven tabs via ?tab=...
             // Realtime updates via the inbox.{userId} channel.
             {
@@ -80,7 +80,7 @@ export const routes: Routes = [
                     import('./features/inbox/inbox.routes').then(m => m.INBOX_ROUTES),
                 data: { activeNav: '/inbox' },
             },
-            // M4.a — Process Cockpit: operator read-only view over the
+            // Process Cockpit: operator read-only view over the
             // Workflow engine state (running/finished process instances).
             {
                 path: 'cockpit',
@@ -135,8 +135,8 @@ export const routes: Routes = [
                     import('./features/messages/messages.routes').then(m => m.MESSAGES_ROUTES),
                 data: { activeNav: '/messages', fullHeight: true },
             },
-            // M8.a.4 — Email mailbox client: a three-pane reader (mailbox rail /
-            // message list / detail + composer) over the M8.a read/send/reply/
+            // Email mailbox client: a three-pane reader (mailbox rail /
+            // message list / detail + composer) over the read/send/reply/
             // folders/seen APIs (–). Full-height like the Messages
             // two-pane. ROLE_ADMIN server-side on every endpoint.
             {
@@ -205,7 +205,7 @@ export const routes: Routes = [
                     import('./features/definitions/definitions.routes').then(m => m.DEFINITION_ROUTES),
                 data: { activeNav: '/definitions' },
             },
-            // M5.d.3 — Connector admin: inbound webhook triggers CRUD
+            // Connector admin: inbound webhook triggers CRUD
             // (/admin/webhooks), backed by /api/v1/connector/webhooks.
             {
                 path: 'webhooks',

@@ -281,7 +281,7 @@ import { CentrifugoPublishDialogComponent } from './centrifugo-publish-dialog.co
             font-size: .8rem;
         }
         /* .cms-btn and .cms-btn-primary were re-declared here, shadowing the
-           kit inside this component (#2030). The primary copy was also DEAD —
+           kit inside this component. The primary copy was also DEAD —
            no markup used it — and it painted --cms-primary (blue) where the kit
            paints --cms-accent (amber), so it would have rendered the one blue
            primary button in the admin had anything reached it. */

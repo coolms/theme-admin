@@ -7,7 +7,7 @@ import { AppConfigState } from '@coolms/core-angular';
 /**
  * One side-panel the editor should offer for a node, as declared by an
  * installed module. Mirrors the backend `EditorPanel` VO
- * (`App\Core\Domain\Editor\EditorPanel`).
+ * (`EditorPanel`).
  */
 export interface EditorPanelDto {
     readonly id: string;

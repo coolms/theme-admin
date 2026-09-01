@@ -18,7 +18,7 @@ import { ApiService } from '../../api/api.service';
 export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' | 'failed';
 
 /**
- * M9.g Slice C.3 — the in-browser softphone.
+ * The in-browser softphone.
  *
  * Makes the browser a real SIP endpoint: it REGISTERs to Asterisk `res_pjsip`
  * over a secure WebSocket (the descriptor from `GET /call/webphone/config` — C.1
@@ -35,7 +35,7 @@ export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' |
  * Single-call model (v1): one active SIP session at a time; a second incoming
  * INVITE while busy is rejected.
  *
- * Requires a WS(S)-capable Asterisk. The dev rig has one since M9.g C.3-infra —
+ * Requires a WS(S)-capable Asterisk. The dev rig has one since —
  * plain `ws://localhost:8088/ws`, legal because `http://localhost` is a secure
  * context, so no certificate is involved (docker/asterisk/pjsip.conf). A real
  * deployment must terminate TLS and serve `wss://`; browsers refuse `ws://` from

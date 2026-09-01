@@ -47,32 +47,32 @@ describe('SidebarNavItemComponent route resolution', () => {
                 provideRouter([]),
                 provideHttpClient(),
                 provideHttpClientTesting(),
-                // NaviGraphService reaches the NGXS store, so the component
-                // cannot be constructed without it even though route
-                // resolution never touches it.
+ // NaviGraphService reaches the NGXS store, so the component
+ // cannot be constructed without it even though route
+ // resolution never touches it.
                 provideStore([]),
             ],
         });
     });
 
-    it('carries a multi-segment generic route through untouched', () => {
-        // The shape a declared third-party screen uses: the generic
-        // `dynamic-records/:typeAlias` screen, named by a module that ships no
-        // component of its own.
+ it('carries a multi-segment generic route through untouched', () => {
+ // The shape a declared third-party screen uses: the generic
+ // `dynamic-records/:typeAlias` screen, named by a module that ships no
+ // component of its own.
         expect(linkFor(node({ meta: { route: 'dynamic-records/acme_crm' } })))
             .toBe('/dynamic-records/acme_crm');
     });
 
-    it('does not double a leading slash', () => {
+ it('does not double a leading slash', () => {
         expect(linkFor(node({ meta: { route: '/dynamic-records/acme_crm' } })))
             .toBe('/dynamic-records/acme_crm');
     });
 
-    it('accepts routerLink as the older spelling', () => {
+ it('accepts routerLink as the older spelling', () => {
         expect(linkFor(node({ meta: { routerLink: 'media' } }))).toBe('/media');
     });
 
-    it('falls back to the node path with the /admin prefix removed', () => {
+ it('falls back to the node path with the /admin prefix removed', () => {
         expect(linkFor(node({ path: '/admin/example', meta: {} }))).toBe('/example');
     });
 });

@@ -84,7 +84,7 @@ import { DesignerI18nService } from './designer-i18n.service';
  *
  * **Deferred (+)**:
  *  - Decision-key / handler-key autocomplete in the property panel
- *    -- needs M2.j handler catalog + decision list piping
+ *    -- needs handler catalog + decision list piping
  *    into the XRefs registry.
  *  - Structured violation rendering: the deploy processor
  *    maps `DefinitionValidationException` to a 400 with the message
@@ -92,7 +92,7 @@ import { DesignerI18nService } from './designer-i18n.service';
  *    surface it in an inline error panel.
  *  - Dirty-state tracking with beforeunload guard.
  *  - Auto-save on idle.
- *  - Collaborative-edit warning via the M2.k Centrifugo realtime
+ *  - Collaborative-edit warning via the Centrifugo realtime
  *    bus when another author opens the same draft.
  */
 @Component({

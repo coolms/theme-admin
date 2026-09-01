@@ -185,7 +185,7 @@ type RailTab = string;
                             </button>
                         } @else if (v.status === 'in_review') {
                             <!-- Emphasis via cms-btn-primary, the platform's affirmative
-                                 button (#2125). This asked for cms-btn-success, which the
+                                 button. This asked for cms-btn-success, which the
                                  platform does not define — the variants are primary / danger
                                  / ghost / link / active / sm / lg — so it fell back to the
                                  plain neutral and read IDENTICALLY to the "Request changes"

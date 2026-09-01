@@ -1,17 +1,17 @@
 /**
- * Wire-shapes for the Inbox FE (M2.m). Mirrors `App\Inbox\Infrastructure\ApiPlatform\Resource\InboxTaskResource`
+ * Wire-shapes for the Inbox FE. Mirrors `InboxTaskResource`
  * on the backend.
  *
  * The DTO is intentionally flat: every field on the backend resource is
  * a string / nullable string / nullable ISO datetime, no nested object
  * graph. The form-bound complete dialog drives off `formKey` (resolved
- * server-side from the per-instance pinned AST, M2.m Phase 1).
+ * server-side from the per-instance pinned AST, Phase 1).
  */
 
 export type InboxTab = 'assigned' | 'claimable' | 'recent';
 
 /**
- * State enum mirroring `App\Workflow\Domain\Enum\TaskState` (M2.i).
+ * State enum mirroring `TaskState`.
  * The backend serialises these as snake_case strings.
  */
 export type TaskState = 'pending' | 'assigned' | 'completed' | 'cancelled';
@@ -21,7 +21,7 @@ export interface InboxTaskDto {
     readonly processInstanceId:    string;
     readonly activityId:           string;
     readonly state:                TaskState;
-    /** Frozen Form snapshot pointer (M2.k reserved; null today). */
+    /** Frozen Form snapshot pointer (reserved; null today). */
     readonly formConfigVersionId:  string | null;
     readonly assigneeId:           string | null;
     readonly delegatedFromId:      string | null;
@@ -33,7 +33,7 @@ export interface InboxTaskDto {
     readonly claimedAt:            string | null;
     readonly completedAt:          string | null;
     /**
-     * AST-resolved BPMN-Lite form binding (M2.m Phase 1). Drives the
+     * AST-resolved BPMN-Lite form binding (Phase 1). Drives the
      * form-bound complete dialog through `<app-dynamic-form
      * [formId]="task.formKey">`. Null when the AST is unavailable -- the
      * dialog falls back to a raw-JSON formData editor.
@@ -79,8 +79,8 @@ export interface CompleteRequest {
 }
 
 /**
- * Realtime payload shapes mirror `App\Inbox\Application\Realtime\InboxLivePublisher`
- * (M2.k). Backend publishes one of three discriminated types on the
+ * Realtime payload shapes mirror `InboxLivePublisher`
+ *. Backend publishes one of three discriminated types on the
  * per-user channel `inbox.{userIdRfc4122}`.
  */
 export type InboxLiveEvent =

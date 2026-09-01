@@ -206,7 +206,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
            --cms-primary-soft (a token nothing defines, so always its #dbeafe
            fallback) over a hard-coded blue border: a pale blue box that, on the
            dark theme, carried light text at 1.24:1 — the SELECTED tool was the
-           one you could not read (#2042). NO BACKTICKS IN HERE. */
+           one you could not read. NO BACKTICKS IN HERE. */
         .toolbar-sep { width: 1px; height: 24px; background: var(--cms-border-color, #e5e7eb); }
         .draw-hint { font-size: 12px; color: var(--cms-text-muted, #848b96); }
         .regions-body { display: flex; flex: 1; min-height: 0; }
