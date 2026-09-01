@@ -11,9 +11,16 @@ import { SiteSectionDto } from '../../../api/api.service';
  * H7 -- admin Site Selector dropdown.
  *
  * Renders the list of {@link SiteSectionDto} the operator can switch into.
- * The selected slug is dispatched via {@link SetCurrentSection}; downstream
- * the section interceptor stamps every `/api/v1/*` request with
- * `X-CoolMS-Section: <slug>` so site-scoped backend providers honour it.
+ * The selected slug is dispatched via {@link SetCurrentSection} and persisted
+ * to user preferences; downstream the section interceptor stamps every
+ * `/api/v1/*` request with `X-CoolMS-Section: <slug>`.
+ *
+ * Scope, stated so the control is not read as more than it is: the header
+ * decides which site a NEWLY CREATED page or collection lands in, and nothing
+ * else -- see the interceptor for the count. The empty option means
+ * "(host-derived)", i.e. infer the site from the request host; it does NOT
+ * mean "all sites", which is why the settings screen carries its own
+ * platform/this-site layer toggle instead of reusing this list.
  *
  * The component is hidden by default when only a single section exists
  * (single-tenant dev): the dropdown adds visual noise with no decision to
@@ -41,7 +48,7 @@ import { SiteSectionDto } from '../../../api/api.service';
             cursor: pointer;
         }
         .site-selector-select option {
-            color: #222;
+            color: var(--cms-text);
             background: var(--cms-surface);
         }
         .site-selector-select:focus {
@@ -53,13 +60,22 @@ import { SiteSectionDto } from '../../../api/api.service';
         @if (visible()) {
             <span class="site-selector-root" title="Active site (X-CoolMS-Section)">
                 <i class="bi bi-globe2 site-selector-icon" aria-hidden="true"></i>
+                <!-- The selection is expressed on the OPTIONS, never as
+                     [value] on the select. Angular applies a binding at the
+                     element's own index, which for the select is BEFORE the
+                     @for below it has created anything to match; the browser
+                     discards an assignment naming no option and falls back to
+                     the first one, and the binding never fires again because
+                     the bound value has not itself changed. The box then read
+                     host-derived while a section was current -- and was
+                     stamping X-CoolMS-Section with it. An option binding runs
+                     inside the option's own view, after it exists. -->
                 <select class="site-selector-select"
-                        [value]="currentSlug() ?? ''"
                         (change)="onSelect($event)"
                         aria-label="Active site">
-                    <option value="">(host-derived)</option>
+                    <option value="" [selected]="null === currentSlug()">(host-derived)</option>
                     @for (s of sections(); track s.slug) {
-                        <option [value]="s.slug ?? ''">{{ s.label }}</option>
+                        <option [value]="s.slug ?? ''" [selected]="s.slug === currentSlug()">{{ s.label }}</option>
                     }
                 </select>
             </span>
