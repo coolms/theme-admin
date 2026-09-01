@@ -3,6 +3,7 @@ import {
     AfterViewInit,
     ChangeDetectionStrategy,
     Component,
+    DestroyRef,
     ElementRef,
     HostListener,
     OnDestroy,
@@ -32,7 +33,7 @@ import {
     emptyBpmnLiteModel,
 } from '@coolms/designer/bpmn-lite';
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService } from '@coolms/ui-angular';
+import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { contributorSourceVersion, isContributorSource409 } from './shared/contributor-source';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
@@ -269,7 +270,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 inset: 0;
                 display: grid;
                 place-items: center;
-                background: rgba(255, 255, 255, 0.7);
+                background: color-mix(in srgb, var(--cms-surface) 70%, transparent);
                 z-index: 5;
                 font: 500 14px/1.4 sans-serif;
             }
@@ -282,10 +283,10 @@ import { DesignerI18nService } from './designer-i18n.service';
             .bpmn-editor-page__contributor-banner-inner {
                 max-width: 640px;
                 padding: 32px;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
+                border: 1px solid var(--cms-btn-border);
+                border-radius: var(--cms-radius-md, 8px);
                 background: var(--cms-surface-muted);
-                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+                box-shadow: var(--cms-shadow-sm, 0 1px 3px rgba(0,0,0,.08));
             }
             .bpmn-editor-page__contributor-banner-title {
                 font: 600 18px/1.3 system-ui, sans-serif;
@@ -295,7 +296,7 @@ import { DesignerI18nService } from './designer-i18n.service';
             }
             .bpmn-editor-page__contributor-banner-body {
                 font: 14px/1.5 system-ui, sans-serif;
-                color: #4b5563;
+                color: var(--cms-text-body);
                 margin: 0 0 20px;
             }
             .bpmn-editor-page__contributor-banner-actions {
@@ -314,6 +315,20 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     private readonly designer = inject(DesignerService);
     private readonly i18n = inject(DesignerI18nService);
     private readonly toast = inject(ToastService);
+    private readonly unsaved = inject(UnsavedChangesService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    /**
+     * Unsaved-work flag, PUBLIC because `unsavedChangesGuard` reads it off
+     * the route component structurally (#2487).
+     *
+     * ⚠️ Driven by the COMMAND STACK, not by `editor.onChange`. `load()`
+     * emits a change event but pushes no command, so subscribing to the
+     * editor would mark a freshly opened draft dirty before the user had
+     * touched it -- a prompt on every exit, which trains people to click
+     * through the one that matters.
+     */
+    readonly dirty = signal(false);
 
     /**
      * Optional inputs for hosting this page inside the generic
@@ -535,6 +550,14 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             commands: this.shellEditor.commands,
             svgGroup: this.shellEditor.canvasGroup,
         });
+
+        // All three guard layers for this page: the command stack marks it
+        // dirty, the registry covers a tab close (#2485), and the route's
+        // canDeactivate covers in-SPA navigation (#2487).
+        this.destroyRef.onDestroy(
+            this.shellEditor.commands.onChange(() => this.dirty.set(true)),
+        );
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
 
         // M3.3.i -- the XRefs registry is constructed first so the
         // property panel subscribes to live scope updates from the
@@ -1119,6 +1142,10 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                 this.designer.saveWorkflowDraft(this.definitionKey, body),
             );
             this.lastSavedAt.set(result.lastModifiedAt);
+            // Saved IS the clean point. The undo history is deliberately
+            // left intact -- clearing the stack to reset the flag would
+            // cost the user every undo they had earned.
+            this.dirty.set(false);
             this.toast.success(`Saved draft for "${this.definitionKey}".`);
         } catch (err) {
             this.toast.error(`Save failed: ${errorMessage(err)}`);

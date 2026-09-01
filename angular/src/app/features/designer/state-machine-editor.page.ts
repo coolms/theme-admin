@@ -5,6 +5,7 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
+  DestroyRef,
   inject,
   signal,
   ChangeDetectionStrategy
@@ -25,7 +26,7 @@ import {
     type StateMachineModel,
 } from '@coolms/designer/state-machine';
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService } from '@coolms/ui-angular';
+import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
 import { DesignerService } from './designer.service';
@@ -115,7 +116,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 inset: 0;
                 display: grid;
                 place-items: center;
-                background: rgba(255, 255, 255, 0.7);
+                background: color-mix(in srgb, var(--cms-surface) 70%, transparent);
                 z-index: 5;
                 font: 500 14px/1.4 sans-serif;
             }
@@ -130,6 +131,16 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
     private readonly designer = inject(DesignerService);
     private readonly i18n = inject(DesignerI18nService);
     private readonly toast = inject(ToastService);
+    private readonly unsaved = inject(UnsavedChangesService);
+    private readonly destroyRef = inject(DestroyRef);
+
+    /**
+     * Unsaved-work flag, PUBLIC so `unsavedChangesGuard` can read it off the
+     * route component. Driven by the COMMAND STACK: `load()` emits a change
+     * but pushes no command, so subscribing to the editor would mark a
+     * freshly opened draft dirty before the user touched it (#2489).
+     */
+    readonly dirty = signal(false);
 
     private shellEditor?: Editor;
     private smEditor?: StateMachineEditor;
@@ -175,6 +186,13 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
             // the DRD page does.
             onToggleConnect: () => this.toggleConnect(),
         });
+
+        // Two of the three guard layers wire up here; the third is
+        // `canDeactivate` on this page's route.
+        this.destroyRef.onDestroy(
+            this.shellEditor.commands.onChange(() => this.dirty.set(true)),
+        );
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
 
         // The SM editor's command stack IS the shell's, so the shell
         // toolbar's undo/redo drive the same history the property panel
@@ -386,6 +404,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
             );
             this.latestVersion.set(result.latestVersion);
             this.lastSavedAt.set(new Date().toISOString());
+            this.dirty.set(false);
             this.toast.success('Draft saved.');
         } catch (err) {
             this.toast.error(`Save failed: ${errorMessage(err)}`);
@@ -406,6 +425,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
             );
             this.latestVersion.set(result.version);
             this.lastSavedAt.set(new Date().toISOString());
+            this.dirty.set(false);
             this.toast.success(
                 `Deployed "${this.definitionKey}" v${result.version}.`,
             );

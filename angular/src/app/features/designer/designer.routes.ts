@@ -1,4 +1,5 @@
 import { type Routes } from '@angular/router';
+import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
  * M3.2.h FE -- Designer feature routes.
@@ -24,6 +25,7 @@ export const DESIGNER_ROUTES: Routes = [
         path: 'dmn/:key',
         loadComponent: () =>
             import('./dmn-editor.page').then(m => m.DmnEditorPage),
+        canDeactivate: [unsavedChangesGuard],
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
@@ -35,6 +37,10 @@ export const DESIGNER_ROUTES: Routes = [
         path: 'bpmn/:key',
         loadComponent: () =>
             import('./bpmn-editor.page').then(m => m.BpmnEditorPage),
+        // ⚠️ Only on routes whose component actually exposes dirty().
+        // dmn/:key and state/:key do NOT yet, and adding it there would
+        // make the config read as guarded while nothing is checked.
+        canDeactivate: [unsavedChangesGuard],
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
@@ -48,6 +54,7 @@ export const DESIGNER_ROUTES: Routes = [
             import('./state-machine-editor.page').then(
                 m => m.StateMachineEditorPage,
             ),
+        canDeactivate: [unsavedChangesGuard],
         data: { activeNav: '/designer', fullHeight: true },
     },
     /**
@@ -63,6 +70,7 @@ export const DESIGNER_ROUTES: Routes = [
             import('./decision-drd-editor.page').then(
                 m => m.DecisionDrdEditorPage,
             ),
+        canDeactivate: [unsavedChangesGuard],
         data: { activeNav: '/designer', fullHeight: true },
     },
 ];

@@ -19,6 +19,7 @@ import {
     OrderedBuilderComponent,
     PageTitleService,
     ToastService,
+    UnsavedChangesService,
     type LayoutNode,
     type OrderedElement,
     type OrderedElementFactory,
@@ -404,7 +405,7 @@ type FieldModel = Record<string, unknown>;
         .fb__cell--type { flex: 0 0 160px; }
         .fb__cell--req { flex: 0 0 70px; align-items: flex-start; }
         .cms-label--sm { font-size: .6875rem; }
-        .fb__danger { color: var(--cms-danger, #c0392b); }
+        .fb__danger { color: var(--cms-danger, #dc2626); }
         .fb__choices {
             flex: 0 0 100%; display: flex; flex-direction: column; gap: 6px;
             border: 1px dashed var(--cms-border); border-radius: var(--cms-radius, 6px); padding: 8px;
@@ -442,6 +443,41 @@ export class FormBuilderPageComponent implements OnInit {
     private readonly router     = inject(Router);
     private readonly titleSvc   = inject(PageTitleService);
     private readonly toast      = inject(ToastService);
+    private readonly unsaved    = inject(UnsavedChangesService);
+
+    /** The serialized form as of the last load or save -- the clean point. */
+    private savedSnapshot = '';
+
+    /**
+     * ⚠️ NOT `OrderedBuilderComponent.dirty`. That flag only flips when the
+     * CONSUMER calls `markDirty()` -- the builder cannot see inside an element,
+     * as its own docblock says -- and this page never calls it. So it catches
+     * add / remove / reorder and misses every CONTENT edit, which is the common
+     * case: rename three fields, navigate away, work gone, guard silent.
+     * (Measured in the browser: editing a label left the page reporting clean.)
+     *
+     * Comparing the serialized form to the last saved snapshot cannot miss a
+     * category of edit the way a hand-placed markDirty() call can. PUBLIC so
+     * `unsavedChangesGuard` can read it off the route component; only ever
+     * called at navigation / unload time, so serializing on demand is free.
+     */
+    dirty(): boolean {
+        try {
+            return JSON.stringify(this.serializeAll()) !== this.savedSnapshot;
+        } catch {
+            // Mid-teardown or half-built state must not trap the user.
+            return false;
+        }
+    }
+
+    /** Call after a load or a successful save. */
+    private markSaved(): void {
+        try {
+            this.savedSnapshot = JSON.stringify(this.serializeAll());
+        } catch {
+            this.savedSnapshot = '';
+        }
+    }
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -554,6 +590,10 @@ export class FormBuilderPageComponent implements OnInit {
         _saving:  this.saving(),
     }));
 
+    constructor() {
+        this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
+    }
+
     ngOnInit(): void {
         // Page chrome is backend-defined; one cached fetch, degrading to no
         // actions on failure so the builder itself still opens.
@@ -614,6 +654,9 @@ export class FormBuilderPageComponent implements OnInit {
                 const layout = dto.formOptions?.['layout'];
                 this.layoutNodes.set(Array.isArray(layout) ? (layout as LayoutNode[]) : []);
                 this.previewNonce.update(n => n + 1);
+                // Baseline AFTER the fields land, or the page reports
+                // dirty from the moment it opens.
+                this.markSaved();
             },
             error: (e: unknown) => {
                 // A 404 means the form was deleted (or the URL is stale) — don't sit
@@ -667,6 +710,7 @@ export class FormBuilderPageComponent implements OnInit {
                 this.saving.set(false);
                 this.source.set(dto.source ?? this.source());
                 this.toast.success(`Form "${id}" saved`);
+                this.markSaved();
                 if (create) {
                     // Re-route to the edit URL so subsequent saves PATCH; the
                     // component recreates and loads the persisted form (and its
