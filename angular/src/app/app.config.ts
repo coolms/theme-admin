@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/ht
 import { provideStore, Store } from '@ngxs/store';
 import { ViewerComponentRegistry, DocxViewerComponent } from '@coolms/document-viewer-angular';
 import { provideCoolmsPdf } from '@coolms/pdf-angular';
+import { provideCoolmsPdfMedia } from './features/media/providers/provide-coolms-pdf-media';
 import {
     EDITOR_MANIFEST_PROVIDER,
     type EditorManifestProvider,
@@ -235,6 +236,9 @@ export const appConfig: ApplicationConfig = {
         // the bootstrap call is the only thing that has to move when
         // the Word frontend package is created.
         provideCoolmsPdf(),
+        // The viewer's image tool opens the Media Library rather than the
+        // browser's upload dialog. Must follow provideCoolmsPdf().
+        provideCoolmsPdfMedia(),
         provideAppInitializer(() => {
             const registry = inject(ViewerComponentRegistry);
             registry.register('app-docx-viewer', DocxViewerComponent);
