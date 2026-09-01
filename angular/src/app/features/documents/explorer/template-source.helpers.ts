@@ -2,11 +2,11 @@
  * Pure helpers for naming a template's SOURCE file.
  *
  * A template's source is whatever bytes back its Node, and that is NOT one
- * shape per format — it is one per point on ADR-084's source axis:
+ * shape per format — it is one per point on's source axis:
  *
- *   word        imported → .docx      native → .dtmpl   (ADR-154)
- *   spreadsheet imported → .xlsx      native → .dsheet  (ADR-155)
- *   presentation imported → .pptx     (no native authoring)
+ *   word        imported -> .docx      native -> .dtmpl
+ *   spreadsheet imported -> .xlsx      native -> .dsheet
+ *   presentation imported -> .pptx     (no native authoring)
  *
  * Every map here is a FALLBACK, reached only when the backend's
  * `format-info` payload has not arrived (it loads async on page mount and
@@ -21,7 +21,7 @@ import { type FormatDisplayInfo } from '../shared/format-info.types';
 import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '../shared/sheet-document.constants';
 
 /**
- * The NATIVE Word source (ADR-154). A native Word template is a `.dtmpl`
+ * The NATIVE Word source. A native Word template is a `.dtmpl`
  * whose body IS the source; the `.docx` exists only as generation output.
  */
 export const DTMPL_MIME = 'text/x-dtmpl';
@@ -127,7 +127,7 @@ export type TemplateSourceAxis = Pick<DocumentTemplate, 'format' | 'native' | 's
  * Every provider gates a replacement on `validateUpload()`, and every
  * `validateUpload()` opens the bytes as an Office file (`DocxTextExtractor`,
  * `XlsxTemplate::open()`, `PptxTemplate::open()`). So the NATIVE half of
- * ADR-084's source axis — `.dtmpl`, `.dsheet` — is not replaceable source even
+ *'s source axis — `.dtmpl`, `.dsheet` — is not replaceable source even
  * though `format-info` advertises it beside the imported half. A picker
  * offering a format's whole extension list would hand the operator a file the
  * backend refuses.

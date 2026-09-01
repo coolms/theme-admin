@@ -43,7 +43,7 @@ export interface CatalogueResponseDto {
 /**
  * The installed-fonts endpoints.
  *
- * ⚠️ The upload names NOTHING about the file. The family and the face come out
+ *  The upload names NOTHING about the file. The family and the face come out
  * of the font's own `name` and `OS/2` tables on the server, so four uploads
  * assemble one family without the operator typing "bold" anywhere — and a form
  * field that DID name it would be stating something the bytes could

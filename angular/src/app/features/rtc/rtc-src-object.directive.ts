@@ -1,7 +1,7 @@
 import { Directive, ElementRef, effect, inject, input } from '@angular/core';
 
 /**
- * Binds a `MediaStream` to a media element's `srcObject` (Track B, Slice 4d).
+ * Binds a `MediaStream` to a media element's `srcObject`, Slice 4d).
  * `srcObject` is a live object property, not a reflected attribute, so there is
  * no native template binding for it — this directive sets it reactively from a
  * signal input, letting the overlay declare `<video [rtcSrcObject]="stream()">`.

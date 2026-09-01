@@ -247,7 +247,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
     readonly agentLabel   = signal<string | null>(null);
 
     /** Single hardcoded back action; the page is read-only (no edit / delete). */
-    /** Declared in the `call:record-detail` layout (ADR-127), not here. */
+    /** Declared in the `call:record-detail` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );
@@ -301,7 +301,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
         this.revokeAudio();
     }
 
-    /** cms-page-header dispatcher. `back` → the call-history list. */
+    /** cms-page-header dispatcher. `back` -> the call-history list. */
     onAction(actionId: string): void {
         if (actionId === 'back') void this.router.navigate(['/call/records']);
     }

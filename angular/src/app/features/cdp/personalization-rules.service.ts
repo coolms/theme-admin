@@ -8,7 +8,7 @@ import { HydraCollection } from '../../api/api.service';
 import { PersonalizationRuleDto, PersonalizationRuleWriteDto } from './personalization-rules.types';
 
 /**
- * Track E Phase 4 (CDP personalization, P4.admin.c) — admin API client for the
+ *Phase 4 (CDP personalization, P4.admin.c) — admin API client for the
  * content-personalization rule store.
  *
  * Feature-local (not on the shared ApiService), mirroring {@link ./cdp.service}:

@@ -10,7 +10,7 @@ import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfileCallTabComponent } from './profile-call-tab.component';
 
 /**
- * #2033 downstream audit — what the section PATCH's echo DID to the caches.
+ * downstream audit — what the section PATCH's echo DID to the caches.
  *
  * `updateSettings()` used to go out without `Accept: application/json`, so API
  * Platform answered in ld+json. A settings section is a MAP, and ld+json
@@ -40,7 +40,7 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  *
  * BOUNDARY — the one link these cannot execute is `ProfilePageComponent`
  * itself: it imports `DynamicFormComponent`, whose rich-text field pulls
- * `@coolms/editor-angular` → `@coolms/document-engine`, and the karma builder
+ * `@coolms/editor-angular` -> `@coolms/document-engine`, and the karma builder
  * (webpack) cannot resolve that package's `./x.js` specifiers to its `.ts`
  * sources the way the esbuild application builder does — importing the page
  * fails the whole suite at build time. So the three `update(...)` calls below
@@ -137,7 +137,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         document.documentElement.style.removeProperty('--cms-accent');
     });
 
-    // ── Calendar tab ─────────────────────────────────────────────────────────
+    // -- Calendar tab ---------------------------------------------------------
 
     /** What the user had when the page loaded, as GET /settings served it. */
     const CALENDAR_BEFORE: CalendarPrefs = {
@@ -196,7 +196,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         expect(emitted).toEqual(CALENDAR_SAVED);
     });
 
-    // ── Calls tab ────────────────────────────────────────────────────────────
+    // -- Calls tab ------------------------------------------------------------
 
     const CALL_BEFORE: CallOverlayPrefs = {
         overlayEnabled:     true,
@@ -244,7 +244,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         expect(emitted).toEqual(CALL_SAVED);
     });
 
-    // ── Preferences tab ──────────────────────────────────────────────────────
+    // -- Preferences tab ------------------------------------------------------
 
     it('a preferences save re-themes on the spot', () => {
         const echo = saveSection(
@@ -256,7 +256,7 @@ describe('Settings-section echo → profile caches (#2033 fallout)', () => {
         theme.updateAccent(echo['accentColor']);  // profile-page.component.ts:619
         TestBed.flushEffects();
 
-        // The original #2033 report. Both of these read a NAMED field off the
+        // The original report. Both of these read a NAMED field off the
         // echo, so both received `undefined` and were dropped by the service's
         // own guards: the save worked, and the admin stayed the colour it
         // already was until the next reload.

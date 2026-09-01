@@ -7,7 +7,7 @@ import {
 } from './wizard-draft.service';
 
 /**
- * Phase X-2.6a — behaviour spec for WizardDraftService.
+ *-2.6a — behaviour spec for WizardDraftService.
  *
  * Coverage:
  *   1. save() round-trips through localStorage.

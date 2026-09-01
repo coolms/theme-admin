@@ -104,7 +104,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
                 </div>
             } @else {
                 @if (viewMode() === 'grid') {
-                    <!-- ── Grid view ──────────────────────────────────────── -->
+                    <!-- -- Grid view ---------------------------------------- -->
                     <div class="d-flex flex-wrap gap-3 p-3 align-content-start">
                         @if (parentPath()) {
                             <div class="vfs-grid-item"
@@ -188,7 +188,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
                     }
 
                 } @else {
-                    <!-- ── List view — CDK virtual scroll ─────────────────── -->
+                    <!-- -- List view — CDK virtual scroll ------------------- -->
                     <div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
 
                     <!-- Fixed header (outside viewport so it stays sticky) -->
@@ -290,7 +290,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
     styles: [`
         :host { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 
-        /* ── Grid ─────────────────────────────────────────────────────────── */
+        /* -- Grid ----------------------------------------------------------- */
 
         .vfs-grid-item {
             width: 96px; padding: 8px;
@@ -304,7 +304,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
         .vfs-grid-icon          { font-size: 2rem; line-height: 1.2; color: var(--cms-text-muted); }
         .vfs-grid-name          { max-width: 88px; margin: 4px auto 2px; }
 
-        /* ── List (virtual scroll) ────────────────────────────────────────── */
+        /* -- List (virtual scroll) ------------------------------------------ */
 
         .vfs-list-header {
             display: flex;
@@ -348,7 +348,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
         .vfs-list-col--perm          { width: 110px; flex-shrink: 0; }
         .vfs-list-col--date          { width: 110px; flex-shrink: 0; }
 
-        /* ── Shared ───────────────────────────────────────────────────────── */
+        /* -- Shared --------------------------------------------------------- */
 
         .vfs-hidden-node        { opacity: .6; }
         .vfs-hidden-node .vfs-grid-name { font-style: italic; }
@@ -364,7 +364,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
 
         /* .vfs-icon--* color classes are defined globally in styles.scss */
 
-        /* ── Image thumbnail with BI fallback ────────────────────────────────── */
+        /* -- Image thumbnail with BI fallback ---------------------------------- */
 
         .vfs-thumb-wrap {
             position: relative;
@@ -577,7 +577,7 @@ export class VfsFilesComponent {
         return parts.length === 0 ? '/' : parts.join('/') || '/';
     });
 
-    // ── Virtual scroll pagination ────────────────────────────────────────────
+    // -- Virtual scroll pagination --------------------------------------------
 
     /**
      * Triggered by CdkVirtualScrollViewport as the user scrolls in list view.
@@ -603,7 +603,7 @@ export class VfsFilesComponent {
         return node.id;
     }
 
-    // ── Selection ───────────────────────────────────────────────────────────────
+    // -- Selection ---------------------------------------------------------------
 
     isSelected(node: VfsNodeDto): boolean {
         return this.selected().some(n => n.id === node.id);
@@ -614,7 +614,7 @@ export class VfsFilesComponent {
                (this.clipboard.clipboard()?.nodes.some(n => n.id === node.id) ?? false);
     }
 
-    // ── Selection (directive-driven) ────────────────────────────────────────────
+    // -- Selection (directive-driven) --------------------------------------------
 
     /**
      * Selection bridge — directive consumes a reference-stable array of the
@@ -668,7 +668,7 @@ export class VfsFilesComponent {
         this.open(node);
     }
 
-    // ── Navigation ─────────────────────────────────────────────────────────────
+    // -- Navigation -------------------------------------------------------------
 
     navigateUp(): void {
         const parent = this.parentPath();
@@ -756,7 +756,7 @@ export class VfsFilesComponent {
     }
 
     open(node: VfsNodeDto): void {
-        // 1. Container + execute → navigate inside.
+        // 1. Container + execute -> navigate inside.
         //    Containers with a registered editor: prefer the editor on dbl-click.
         //    Drill-in stays accessible via the 'Open as folder' context-menu entry.
         if (node.isContainer && node.permissions.execute && !this.editorRegistry.resolve(node)) {
@@ -765,12 +765,12 @@ export class VfsFilesComponent {
             return;
         }
 
-        // 2. No read permission → silent return
+        // 2. No read permission -> silent return
         if (!node.permissions.read) {
             return;
         }
 
-        // 3. Resource node → open Resource Meta Dialog
+        // 3. Resource node -> open Resource Meta Dialog
         if (node.type === 'resource') {
             this.dialog.open(VfsResourceMetaDialogComponent, {
                 data:       { node },
@@ -779,7 +779,7 @@ export class VfsFilesComponent {
             return;
         }
 
-        // 4. Image MIME → open the headless image editor with VFS
+        // 4. Image MIME -> open the headless image editor with VFS
         // context (Phase 1C). Skips the FileEditorRegistry because
         // the editor host expects our discriminated `vfs` data shape,
         // not the registry's `{ node }` envelope.
@@ -788,19 +788,19 @@ export class VfsFilesComponent {
             return;
         }
 
-        // 5. Registered editor → open it
+        // 5. Registered editor -> open it
         if (this.editorRegistry.openFor(node)) {
             return;
         }
 
-        // 6. Registered viewer for this MIME → open ViewerModal.
+        // 6. Registered viewer for this MIME -> open ViewerModal.
         // Federation-style lookup via the backend's viewer manifest
         // (same registry Document Library uses for instance preview).
         if (this.openViewerFor(node)) {
             return;
         }
 
-        // 7. No editor or viewer registered → info toast
+        // 7. No editor or viewer registered -> info toast
         this.toast.info('No viewer for this file type', node.name);
     }
 
@@ -909,7 +909,7 @@ export class VfsFilesComponent {
     nodeIconClass(node: VfsNodeDto): string        { return this.icons.nodeIconClass(node); }
     nodeIconBadge(node: VfsNodeDto): string | null { return this.icons.nodeIconBadge(node); }
 
-    // ── CDK Drag & Drop ────────────────────────────────────────────────────────
+    // -- CDK Drag & Drop --------------------------------------------------------
 
     isDraggingNode(node: VfsNodeDto): boolean {
         return this.draggingNode()?.id === node.id;
@@ -975,7 +975,7 @@ export class VfsFilesComponent {
         void this.clipboard.move(node.path, targetDirPath);
     }
 
-    // ── HTML5 Drag-and-drop (file upload from OS) ──────────────────────────────
+    // -- HTML5 Drag-and-drop (file upload from OS) ------------------------------
 
     onDragEnter(event: DragEvent): void {
         event.preventDefault();
@@ -1013,7 +1013,7 @@ export class VfsFilesComponent {
         this.uploadService.uploadFiles(list.files);
     }
 
-    // ── File input (toolbar Upload button) ────────────────────────────────────
+    // -- File input (toolbar Upload button) ------------------------------------
 
     triggerFileInput(): void {
         this.fileInputRef?.nativeElement.click();

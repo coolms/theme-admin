@@ -553,7 +553,7 @@ export class MediaPickerHostComponent {
         if (this.hostMode() === 'gallery') {
             // Picker emits the collection PATH as a string when
             // bindTarget='collection'. The gallery widget stores the collection's
-            // UUID (the path form 500s in the DTMPL lexer), so resolve path → Node
+            // UUID (the path form 500s in the DTMPL lexer), so resolve path -> Node
             // id here before closing. The folder name (last path segment) rides
             // along as the placeholder-card label.
             const path = typeof emit === 'string' ? emit : null;

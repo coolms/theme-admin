@@ -1,7 +1,7 @@
 import { ChannelRef, channelTriggerAt, linkifyChannelRefs, matchChannels } from './channel-refs.util';
 
 /**
- * `#channel` references (#2114): what counts as a trigger, what the typeahead
+ * `#channel` references: what counts as a trigger, what the typeahead
  * offers, and which handles become live references in a rendered body.
  */
 describe('channel refs', () => {

@@ -6,10 +6,10 @@ import { WordTemplateService } from './word-template.service';
 /**
  * `createNative()` sends the format it was ASKED for.
  *
- * It hard-coded `'word'` from #1680 until the admin gained a format choice,
+ * It hard-coded `'word'` from until the admin gained a format choice,
  * which stranded the native spreadsheet path end to end: the backend could
- * mint a `.dsheet` (#1987), render it (#1990) and edit it in the grid
- * (#1991), and nothing could ask for one. Asserting the request BODY rather
+ * mint a `.dsheet`, render it and edit it in the grid
+ *, and nothing could ask for one. Asserting the request BODY rather
  * than a 2xx, because a service that quietly re-hard-codes the format would
  * still return a template — just always the wrong kind.
  */

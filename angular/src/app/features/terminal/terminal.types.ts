@@ -3,7 +3,7 @@ export interface TerminalExecuteEvent {
     done?: boolean;
     error?: string;
     /**
-     * A new working directory, emitted by `cd` (#1728).
+     * A new working directory, emitted by `cd`.
      *
      * Its own event kind rather than a specially-formatted `line`, because a
      * command that happened to print the same shape would otherwise move the

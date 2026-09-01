@@ -210,12 +210,12 @@ export class WebhookFormDialogComponent implements OnInit {
         });
     }
 
-    /** `{a:b, c:d}` → "a = b\nc = d". */
+    /** `{a:b, c:d}` -> "a = b\nc = d". */
     private serializeMap(map: Record<string, string>): string {
         return Object.entries(map).map(([k, v]) => `${k} = ${v}`).join('\n');
     }
 
-    /** "a = b\nc=d" → `{a:b, c:d}` (skips blank/malformed lines). */
+    /** "a = b\nc=d" -> `{a:b, c:d}` (skips blank/malformed lines). */
     private parseMap(text: string): Record<string, string> {
         const out: Record<string, string> = {};
         for (const line of text.split('\n')) {

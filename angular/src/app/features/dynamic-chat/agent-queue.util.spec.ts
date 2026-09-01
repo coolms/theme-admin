@@ -1,7 +1,7 @@
 import { QueueEntry, countNewConversations, isNewInQueue, sortQueue } from './agent-queue.util';
 
 /**
- * The agent queue's count and order (#2123) — the first specs the DynamicChat
+ * The agent queue's count and order — the first specs the DynamicChat
  * feature has had.
  */
 describe('agent queue', () => {
@@ -14,7 +14,7 @@ describe('agent queue', () => {
         });
 
         it('counts an ABSENT status as not new', () => {
-            // ⚠️ `agentStatus` is optional on the wire. A row the server did not
+            //  `agentStatus` is optional on the wire. A row the server did not
             // resolve must not inflate the badge and send an agent looking for
             // work that is not there.
             expect(countNewConversations([entry(undefined), entry('new')])).toBe(1);
@@ -69,7 +69,7 @@ describe('agent queue', () => {
         });
 
         it('does NOT mutate the array it was given', () => {
-            // ⚠️ These lists come straight out of a signal other views read, and
+            //  These lists come straight out of a signal other views read, and
             // `Array.prototype.sort` sorts in place.
             const original = [
                 { id: 'answered', agentStatus: 'answered', updatedAt: '2026-08-13T10:00:00Z' },

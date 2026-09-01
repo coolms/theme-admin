@@ -36,7 +36,7 @@ export class WordTemplateService {
     private readonly http = inject(HttpClient);
 
     /**
-     * Create an empty NATIVE template (#1680).
+     * Create an empty NATIVE template.
      *
      * The named format yields a node of that format's native source mime
      * under the space's `.templates/` — `text/x-dtmpl` for `'word'`,
@@ -47,8 +47,8 @@ export class WordTemplateService {
      * pass a path.
      *
      * `format` is a PARAMETER rather than the hard-coded `'word'` it was
-     * through #1680–#1991: the backend has minted native spreadsheets since
-     * #1987 and renders and edits them (#1990/#1991), but nothing could ask
+     * through –: the backend has minted native spreadsheets since
+     * and renders and edits them, but nothing could ask
      * for one. Callers should source the value from
      * `FormatInfoService.nativeAuthoringFormats()` — the backend's own list
      * of formats with native authoring — so this stays the only place that
@@ -56,7 +56,7 @@ export class WordTemplateService {
      * formats. A format the provider cannot author natively is refused with
      * a 422.
      *
-     * #1687 — sends the NAME only. The slug is derived server-side by the
+     * — sends the NAME only. The slug is derived server-side by the
      * platform slugger, with national transliteration, so a template can
      * be called `Счета` and still be `scheta.dtmpl` on disk. An explicit
      * `slug` is still accepted by the endpoint for callers that own one.

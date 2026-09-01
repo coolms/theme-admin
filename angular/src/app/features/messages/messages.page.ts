@@ -37,15 +37,15 @@ import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
 
 /**
- * Internal Messages (`/admin/messages`, ledger #1007 shell · #1008 rich composer
- * · #1009 attachments · #1010 realtime · #1011 emoji · #1019 self-set status ·
- * #1023 connection-derived online dot) — the user↔user chat
+ * Internal Messages (`/admin/messages`, shell · rich composer
+ * · attachments · realtime · emoji · self-set status ·
+ * connection-derived online dot) — the user↔user chat
  * surface over the generic Chat engine. Two panes:
  *  - LEFT: the current user's conversations + a "New message" user picker that
- *    opens (or reuses) a 1:1 DM via `POST /chat/conversations {withUserId}` (#1006).
+ *    opens (or reuses) a 1:1 DM via `POST /chat/conversations {withUserId}`.
  *  - RIGHT: the selected thread + a rich-text composer.
  *
- * Realtime (#1010): subscribing to the selected conversation's
+ * Realtime: subscribing to the selected conversation's
  * `chat.room.{id}` Centrifugo channel ({@link MessagesLiveEventsService}) makes
  * new messages appear instantly — on a body-less `message.posted` nudge we
  * cursor-refetch anything past our local `lastSeq`. A slow (20s) reconcile poll
@@ -54,17 +54,17 @@ import { RtcMediaKind } from '../rtc/rtc.types';
  *
  * The composer is the `comment`-profile `<coolms-editor>` (bold/italic/strike/
  * sup/sub/link) and posts `bodyFormat:html` — the backend sanitises the HTML to
- * the comment allow-list on write (#1005), so nothing unsafe ever persists.
+ * the comment allow-list on write, so nothing unsafe ever persists.
  * Messages render html via Angular's auto-sanitised `[innerHTML]` (plain bodies
  * still escape through `{{ }}`). Enter sends; Shift+Enter inserts a newline
  * (a capture-phase intercept stops ProseMirror from splitting the paragraph on
  * a bare Enter).
  *
- * Attachments (#1009): a 📎 button uploads each picked file to the user's private
- * chat-uploads store (`POST /chat/attachments`, multipart) → pending chips →
+ * Attachments: a 📎 button uploads each picked file to the user's private
+ * chat-uploads store (`POST /chat/attachments`, multipart) -> pending chips ->
  * `doSend()` threads the descriptors into the message (an attachment-only message
  * with an empty body is allowed). On a message, image attachments render inline
- * via the auth-aware `[vfsSecureSrc]` directive (Bearer → blob → object URL);
+ * via the auth-aware `[vfsSecureSrc]` directive (Bearer -> blob -> object URL);
  * other files render a download chip that fetches the blob and triggers a
  * browser download. Emoji + realtime are follow-up slices.
  *
@@ -270,7 +270,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                     </ul>
                     }
                     @if (hasMoreConversations()) {
-                        <!-- Inbox paging (#2120). Rendered OUTSIDE the match/no-match
+                        <!-- Inbox paging. Rendered OUTSIDE the match/no-match
                              branch on purpose: the search is client-side over the rows
                              loaded so far, so "no conversations match" is exactly the
                              moment the user needs to reach the rest. -->
@@ -473,7 +473,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                                 }
                             </div>
                         }
-                        <!-- #channel typeahead (#2114). Same shell as the mention
+                        <!-- #channel typeahead. Same shell as the mention
                              popover; only channels WITH a handle can be cited, so
                              an empty result says why rather than showing nothing. -->
                         @if (channelMenuOpen()) {
@@ -584,7 +584,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         @if (ctxMenu(); as ctx) {
             <div class="msg__ctx-backdrop" (click)="closeCtxMenu()" (contextmenu)="$event.preventDefault(); closeCtxMenu()"></div>
             <div class="msg__ctx" role="menu" [style.left.px]="ctx.x" [style.top.px]="ctx.y">
-                <!-- Not offered to an EXCLUDED viewer (#2111): MarkRead 403s a
+                <!-- Not offered to an EXCLUDED viewer: MarkRead 403s a
                      participant who has left, and the click used to fire anyway
                      and swallow the failure — clearing the row's badge locally
                      while the topbar's re-derived count stayed put, so the two
@@ -766,7 +766,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__channel-join { border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
         .msg__channel-open { border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
         .msg__picker { padding: .6rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
-        /* "Message yourself" quick-action (#1333) at the top of the New composer. */
+        /* "Message yourself" quick-action at the top of the New composer. */
         .msg__selfnotes { display: flex; align-items: center; gap: .5rem; width: 100%; margin-bottom: .5rem; padding: .45rem .6rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); color: var(--cms-text, #111827); font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; }
         .msg__selfnotes:hover { background: var(--cms-hover, #f3f4f6); border-color: var(--cms-primary, #2563eb); }
         .msg__selfnotes:disabled { opacity: .6; cursor: default; }
@@ -780,7 +780,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__group-title:focus { outline: none; border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
         .msg__start { margin-top: .55rem; width: 100%; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius, 6px); padding: .4rem .7rem; font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; }
         .msg__start:disabled { opacity: .6; cursor: default; }
-        /* Self set-status control (#1019) under the list header. */
+        /* Self set-status control under the list header. */
         .msg__status { position: relative; }
         .msg__status-btn { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid var(--cms-border, #e5e7eb); background: transparent; cursor: pointer; font: inherit; font-size: .8rem; color: var(--cms-text, #111827); padding: .3rem .6rem; border-radius: var(--cms-radius, 6px); }
         .msg__status-btn:hover { background: var(--cms-hover, #f3f4f6); }
@@ -817,19 +817,19 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         /* Unread conversation: strengthen the name + preview so it pops in the list. */
         .msg__row--unread .msg__row-name { font-weight: 700; }
         .msg__row--unread .msg__row-preview { color: var(--cms-text, #111827); font-weight: 500; }
-        /* Muted conversation (#1332): dim the row + a small bell-slash marker. */
+        /* Muted conversation: dim the row + a small bell-slash marker. */
         .msg__row--muted { opacity: .62; }
         .msg__row-mute { flex: 0 0 auto; font-size: .72rem; color: var(--cms-text-secondary, #6b7280); }
-        /* Unread count badge on a conversation row (#1017). */
+        /* Unread count badge on a conversation row. */
         .msg__badge { flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); font-size: .68rem; font-weight: 700; line-height: 1; }
         .msg__hint { padding: 1rem; color: var(--cms-text-secondary, #6b7280); font-size: .85rem; }
-        /* Inbox "Load more" (#2120) — a footer under the scrolling row list, so it
+        /* Inbox "Load more" — a footer under the scrolling row list, so it
            stays reachable while the rows above it scroll. */
         .msg__more { flex: 0 0 auto; width: 100%; border: 0; border-top: 1px solid var(--cms-border-light, #f0f2f5); background: transparent; padding: .5rem 1rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); cursor: pointer; }
         .msg__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .msg__more:disabled { cursor: default; opacity: .7; }
         .msg__thread { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-        /* ─ Threads T2: per-message thread affordances + the thread side-panel ─ */
+        /* - Threads T2: per-message thread affordances + the thread side-panel - */
         .msg__threadbar { display: flex; align-items: center; gap: .4rem; margin-top: .3rem; }
         .msg__threadcount { display: inline-flex; align-items: center; gap: .3rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 600; color: var(--cms-primary, #2563eb); padding: 0; }
         .msg__threadcount:hover { text-decoration: underline; }
@@ -837,7 +837,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__threadreply { display: inline-flex; align-items: center; gap: .25rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; color: var(--cms-text-secondary, #6b7280); padding: 0; opacity: 0; transition: opacity .12s ease; }
         .msg__bubble:hover .msg__threadreply { opacity: 1; }
         .msg__bubble--me .msg__threadreply { color: rgba(255,255,255,.75); }
-        /* Reactions (#1334): per-emoji chips below the bubble + a quick-react palette. */
+        /* Reactions: per-emoji chips below the bubble + a quick-react palette. */
         .msg__reactions { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .3rem; }
         .msg__reaction { display: inline-flex; align-items: center; gap: .2rem; border: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-canvas, #f3f4f6); border-radius: 999px; padding: .05rem .4rem; cursor: pointer; font: inherit; font-size: .74rem; line-height: 1.4; transition: background .12s ease, border-color .12s ease; }
         .msg__reaction:hover:not(:disabled) { border-color: var(--cms-primary, #2563eb); }
@@ -874,7 +874,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__empty { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; color: var(--cms-text-secondary, #6b7280); }
         .msg__thread-head { display: flex; align-items: center; gap: .6rem; padding: .7rem 1.1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); font-weight: 600; flex-shrink: 0; }
         .msg__thread-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
-        /* Audio / video call actions in the thread header (#2124). These carried NO
+        /* Audio / video call actions in the thread header. These carried NO
            rule at all: the class was in the markup and nothing matched it, so both
            rendered with the BROWSER'S default button chrome — an outset border,
            #f0f0f0, black text, square corners — which matched nothing else in the
@@ -951,7 +951,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__sender { display: block; margin-bottom: .12rem; font-size: .7rem; font-weight: 600; line-height: 1.2; color: var(--cms-text-secondary, #6b7280); }
         .msg__bubble { max-width: 100%; min-width: 0; background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; border-bottom-left-radius: 3px; padding: .45rem .7rem; font-size: .9rem; line-height: 1.4; word-wrap: break-word; }
         .msg__bubble--me { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-color: transparent; border-bottom-left-radius: 12px; border-bottom-right-radius: 3px; }
-        /* A message that @-mentions YOU (#2124). The class binding was live and
+        /* A message that @-mentions YOU. The class binding was live and
            mentionsMe() worked, but NOTHING matched the class — so the one message
            in a busy thread that needs to stand out looked exactly like every other
            one. Same accent as the inline mention token. */
@@ -973,13 +973,13 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__sys { align-self: center; display: inline-flex; align-items: center; gap: .5rem; color: var(--cms-text-secondary, #6b7280); font-size: .78rem; font-style: italic; }
         .msg__sys-dl { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-primary, #2563eb); border-radius: var(--cms-radius, 6px); padding: .15rem .5rem; font: inherit; font-size: .78rem; font-style: normal; cursor: pointer; }
         .msg__sys-dl:hover { background: var(--cms-border-light, #f0f2f5); border-color: var(--cms-primary, #2563eb); }
-        /* Per-day separator chip (#1033) — one date pill above each day's run of
+        /* Per-day separator chip — one date pill above each day's run of
          * messages (Today / Yesterday / a formatted date), so the bubbles only
          * need to carry the time. */
         .msg__daysep { align-self: center; margin: .5rem 0 .25rem; padding: .16rem .7rem; font-size: .7rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
-        /* In-bubble meta line (#1033): the message time + (own messages) the
+        /* In-bubble meta line: the message time + (own messages) the
          * sent/read tick, grouped bottom-right WhatsApp-style. "Read" is the
-         * tinted double-check; "Sent" the single check (#1018). */
+         * tinted double-check; "Sent" the single check. */
         .msg__meta { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; margin-top: .15rem; font-size: .66rem; line-height: 1; color: var(--cms-text-secondary, #6b7280); }
         .msg__bubble--me .msg__meta { color: rgba(255, 255, 255, .8); }
         .msg__metatime { font-variant-numeric: tabular-nums; }
@@ -987,21 +987,21 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__tick--read { color: #0ea5e9; }
         .msg__bubble--me .msg__tick--read { color: #bae6fd; }
         .msg__hint--older { text-align: center; padding: .4rem; }
-        /* "X is typing…" hint above the composer (#1016). */
+        /* "X is typing…" hint above the composer. */
         .msg__typing { display: flex; align-items: center; gap: .45rem; padding: .25rem 1.1rem .1rem; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; }
         .msg__typing-dots { display: inline-flex; gap: 3px; }
         .msg__typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--cms-text-secondary, #6b7280); display: inline-block; animation: msg-typing-bounce 1.2s infinite ease-in-out both; }
         .msg__typing-dots i:nth-child(2) { animation-delay: .15s; }
         .msg__typing-dots i:nth-child(3) { animation-delay: .3s; }
         @keyframes msg-typing-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-3px); opacity: 1; } }
-        /* ─ Composer (#1008 rich · redesigned: one unified input shell) ─
-         * The editor fills the shell width with an action bar (emoji · attach │
+        /* - Composer (rich · redesigned: one unified input shell) -
+         * The editor fills the shell width with an action bar (emoji · attach |
          * Send) beneath it, like a modern chat composer. .msg__composer stays the
          * relatively-positioned padding wrapper so the emoji popover anchors to it. */
         .msg__composer { position: relative; padding: .7rem 1.1rem; border-top: 1px solid var(--cms-border, #e5e7eb); flex-shrink: 0; background: var(--cms-surface); }
         .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
         .msg__composer-shell:focus-within { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
-        /* The rich editor now spans the full shell width (was flex:0 0 auto → cramped). */
+        /* The rich editor now spans the full shell width (was flex:0 0 auto -> cramped). */
         .msg__editor { display: block; width: 100%; }
         .msg__composer .cms-editor { min-height: 0; border: 0; background: transparent; }
         .msg__composer .cms-editor__mount,
@@ -1045,7 +1045,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         /* An @-mention token inside a rendered message body. */
         .msg__mention { color: var(--cms-primary, #2563eb); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: 0 .2rem; font-weight: 600; }
         .msg__bubble--me .msg__mention { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
-        /* A #channel reference (#2114) — same tint as a mention, but clickable. */
+        /* A #channel reference — same tint as a mention, but clickable. */
         .msg__chanref { color: var(--cms-primary, #2563eb); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: 0 .2rem; font-weight: 600; cursor: pointer; }
         .msg__chanref:hover { text-decoration: underline; }
         .msg__bubble--me .msg__chanref { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
@@ -1082,7 +1082,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly rtcCall   = inject(RtcCallService);
 
     /**
-     * Pending `?c=<id>` preselect (from the topbar quick-panel, #1012/#1029).
+     * Pending `?c=<id>` preselect (from the topbar quick-panel, /).
      * Re-armed on every distinct `?c=` value — so clicking "open full" on a
      * conversation while ALREADY on `/messages` switches to it (the snapshot-once
      * approach didn't, since Angular reuses the component on a query-param change).
@@ -1112,13 +1112,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly error         = signal<string | null>(null);
 
     /**
-     * Inbox paging (#2120). The list used to be the WHOLE inbox on every load —
+     * Inbox paging. The list used to be the WHOLE inbox on every load —
      * and on every background refresh — so its cost grew with tenure and never
      * came back down.
      *
      * `hasMoreConversations` is inferred from the page LENGTH (the endpoint
      * returns a bare array with no total): a short page is the last one.
-     * ⚠️ {@link reloadList} re-reads as many rows as are ON SCREEN, not one
+     *  {@link reloadList} re-reads as many rows as are ON SCREEN, not one
      * page — otherwise any background refresh would silently throw away every
      * page the user had loaded.
      */
@@ -1159,7 +1159,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly canPin = computed<boolean>(() => !!this.selectedId() && !this.isExcluded());
 
     /**
-     * Emoji reactions (#1334). `canReact` mirrors the composer/pin gate (any ACTIVE
+     * Emoji reactions. `canReact` mirrors the composer/pin gate (any ACTIVE
      * member, NOT an excluded read-only remnant). `reactionPalette` is the fixed
      * quick-react set; `reactionPickerFor` holds the id of the message whose react
      * palette is open (null = none), so only one palette shows at a time.
@@ -1169,7 +1169,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly canReact = computed<boolean>(() => !!this.selectedId() && !this.isExcluded());
 
     /**
-     * Thread bucketed into per-day groups for the date-separator render (#1033),
+     * Thread bucketed into per-day groups for the date-separator render,
      * resolved in the user's tz. Recomputes whenever {@link messages} changes;
      * the bubbles within a group show time only (the date lives on the chip).
      */
@@ -1178,7 +1178,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     /**
-     * Lazy "load earlier" paging (#1033): the thread opens on its NEWEST page
+     * Lazy "load earlier" paging: the thread opens on its NEWEST page
      * and prepends older pages as the user scrolls to the top. `hasMoreOlder`
      * gates the scroll trigger; `loadingOlder` guards re-entry while a page is
      * in flight. (Before this, the head read capped a long thread at its OLDEST
@@ -1193,7 +1193,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      *  content + undo history + cursor). */
     readonly composerKey   = signal('0');
 
-    // ── @-mentions ─────────────────────────────────────────────────────────
+    // -- @-mentions ---------------------------------------------------------
     /** The `@…` autocomplete popover is showing. */
     readonly mentionMenuOpen = signal(false);
     /** The raw text typed after `@` (for filtering + know how many chars to replace). */
@@ -1201,7 +1201,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /** Keyboard-highlighted candidate index in {@link mentionCandidates}. */
     readonly mentionActiveIndex = signal(0);
     /**
-     * Drafted `@`-mentions this composer picked, keyed by user id → display name.
+     * Drafted `@`-mentions this composer picked, keyed by user id -> display name.
      * On send, only the ones whose `@name` still appears in the body are sent
      * (so deleting a mention token un-mentions it). Cleared on send / switch.
      */
@@ -1218,9 +1218,9 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private mentionSearchTimer: ReturnType<typeof setTimeout> | null = null;
     private mentionSearchSub: { unsubscribe(): void } | null = null;
 
-    // ── #-channel references ───────────────────────────────────────────────
+    // -- #-channel references -----------------------------------------------
 
-    /** The `#…` channel typeahead is open (#2114). */
+    /** The `#…` channel typeahead is open. */
     readonly channelMenuOpen = signal(false);
     /** Text typed after `#`, before the caret (may be ''). */
     readonly channelQuery = signal('');
@@ -1340,7 +1340,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly showMembers   = signal(false);
     /**
      * Owner's "Share chat history" choice when adding a member (G2.1). Default
-     * ON → the joiner sees the full pre-join history; OFF → they see only
+     * ON -> the joiner sees the full pre-join history; OFF -> they see only
      * messages from the moment they join. Enforced server-side per participant.
      */
     readonly shareHistoryOnAdd = signal(true);
@@ -1351,7 +1351,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /** At least one file is mid-upload (gates Send + the attach button). */
     readonly uploading     = signal(false);
 
-    /** A small curated palette for the composer emoji picker (#1011). */
+    /** A small curated palette for the composer emoji picker. */
     readonly EMOJIS: readonly string[] = [
         '😀', '😄', '😁', '😊', '🙂', '😉', '😍', '😘', '😎', '🤩',
         '🤔', '😴', '😢', '😭', '😡', '🥳', '😱', '🤯', '🙃', '😬',
@@ -1363,11 +1363,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private enterHandler?: (ev: KeyboardEvent) => void;
 
     /**
-     * Slow RECONCILE poll — realtime (#1010) is the primary update path; this is
+     * Slow RECONCILE poll — realtime is the primary update path; this is
      * the FALLBACK for when no realtime/WS engine is connected (e.g. Centrifugo
      * isn't installed, or the Messenger worker draining its publish queue is
      * down). The poll TICK still runs on a timer, but {@link poll} no-ops while
-     * the WebSocket is connected (#1041) — so it's a true fallback, not a
+     * the WebSocket is connected — so it's a true fallback, not a
      * parallel path. Both feed the same dedupe-by-id merge, so they never
      * double-insert.
      */
@@ -1376,21 +1376,21 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private lastSeq = 0;
 
     /**
-     * Coalesces realtime room nudges into ONE catch-up fetch (#1041). A burst of
+     * Coalesces realtime room nudges into ONE catch-up fetch. A burst of
      * `message.posted` nudges (e.g. Centrifugo replaying history on reconnect, or
      * several messages landing at once) pings this; the debounced subscriber pulls
      * everything past `lastSeq` in a single request instead of one fetch per nudge.
      */
     private readonly roomCatchUp$ = new Subject<void>();
 
-    /** "X is typing…" indicator (#1016): the other participant's name, or null. */
+    /** "X is typing…" indicator: the other participant's name, or null. */
     readonly typingName = signal<string | null>(null);
     private typingTimer: ReturnType<typeof setTimeout> | null = null;
     /** Throttle outgoing typing signals to at most one per 3s while composing. */
     private lastTypingSentAt = 0;
 
     /**
-     * Optimistic per-conversation read cursor (#1017): `convId → seq we've
+     * Optimistic per-conversation read cursor: `convId -> seq we've
      * locally marked read`. Overrides the server `lastReadSeq` so opening a
      * conversation clears its unread badge instantly (before the list refetches).
      */
@@ -1407,7 +1407,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * participant id. Seeded on open from their `lastReadSeq` and advanced by
      * each `read` nudge.
      *
-     * ⚠️ Per-PEER, not a single number (#2112). The high-water below is the
+     *  Per-PEER, not a single number. The high-water below is the
      * MINIMUM across peers — "read by everyone" — but a `read` nudge names ONE
      * participant, so folding it into a scalar with `max()` made any single
      * member's cursor speak for the whole group: one person opening a 20-member
@@ -1418,14 +1418,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly peerReadSeqs = signal<ReadonlyMap<string, number>>(new Map());
 
     /**
-     * Read-receipt high-water (#1018): the lowest read cursor across the OTHER
+     * Read-receipt high-water: the lowest read cursor across the OTHER
      * participants of the OPEN conversation. My sent messages with `seq <=` this
      * are "Read" by everyone; newer ones are "Sent".
      */
     readonly readReceiptSeq = computed<number>(() => readByEveryoneSeq(this.peerReadSeqs()));
 
     /**
-     * My self-set presence status (#1019) — drives the status control's dot + the
+     * My self-set presence status — drives the status control's dot + the
      * dot others see on my avatar. Derived from my participant on list load (so a
      * reload reflects the persisted value) and set optimistically on pick. `null`
      * = no status set ("Set status").
@@ -1434,12 +1434,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly showStatusMenu = signal(false);
 
     /**
-     * Connection-derived ONLINE set (#1023) — the rfc4122 ids of counterparts
+     * Connection-derived ONLINE set — the rfc4122 ids of counterparts
      * currently holding a live realtime connection. Distinct from the self-set
      * {@link myStatus}/`presenceStatus`: this is "actually here right now".
      * {@link effectiveStatus} overlays the self-set away/busy on top.
      *
-     * PUSHED since #2122: the shared `presence.chat` channel reports join/leave,
+     * PUSHED: the shared `presence.chat` channel reports join/leave,
      * so this is whatever {@link ChatPresenceLiveService} last saw. The polled
      * set below is the fallback for a client whose socket is down.
      */
@@ -1454,7 +1454,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private readonly PRESENCE_POLL_MS = 20_000;
 
-    /** The presence options offered by the status control (value → label + dot color). */
+    /** The presence options offered by the status control (value -> label + dot color). */
     readonly STATUSES: ReadonlyArray<{ value: string; label: string; color: string }> = [
         { value: 'online',  label: 'Online',         color: '#22c55e' },
         { value: 'away',    label: 'Away',           color: '#f59e0b' },
@@ -1464,7 +1464,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * The statuses a user can MANUALLY pick — `away` is intentionally excluded
-     * (#1324): it is AUTO-only (the idle timer sets it; any real activity clears
+     *: it is AUTO-only (the idle timer sets it; any real activity clears
      * it). Keeping it out of the menu removes the ambiguity that made a reloaded
      * `away` stick — there was no way to tell an auto-away from a manual one, so
      * the revert-on-activity never fired after a page reload.
@@ -1489,7 +1489,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly convQuery = signal('');
 
     /**
-     * The conversation list narrowed by {@link convQuery} (empty query → the
+     * The conversation list narrowed by {@link convQuery} (empty query -> the
      * full list) and sorted most-recently-active first — the inbox convention,
      * keyed on {@link ChatConversationDto.lastMessageAt} (falling back to
      * `updatedAt` for a conversation with no messages yet). The `watchUser`
@@ -1548,7 +1548,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /** True while a call is ringing / connected — disables the header call button. */
     readonly callActive = computed<boolean>(() => this.rtcCall.activeCall() !== null);
 
-    /** Place an audio or video call into the open conversation (Track B — the backend rings the roster). */
+    /** Place an audio or video call into the open conversation— the backend rings the roster). */
     startCall(mediaKind: RtcMediaKind = 'audio'): void {
         const conversationId = this.selectedId();
         if (conversationId === null) {
@@ -1564,7 +1564,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     readonly isExcluded = computed<boolean>(() => this.selected()?.viewerState === 'excluded');
 
-    /** I am the group's Owner → I can add/remove members (G2). */
+    /** I am the group's Owner -> I can add/remove members (G2). */
     readonly iAmOwner = computed<boolean>(() => {
         const me = this.meId;
         if (!me) {
@@ -1585,7 +1585,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     constructor() {
-        // Deep-link (#1012/#1029): arm the `?c=<id>` preselect on every distinct
+        // Deep-link: arm the `?c=<id>` preselect on every distinct
         // value and apply it once the list contains it. As an OBSERVABLE (not a
         // one-shot snapshot) so clicking "open full" on a conversation while
         // already on `/messages` switches the open thread — Angular reuses the
@@ -1601,7 +1601,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.applyPreselect();
             });
 
-        // Realtime (#1010): (re)subscribe to the selected conversation's
+        // Realtime: (re)subscribe to the selected conversation's
         // `chat.room.{id}` channel whenever the selection changes — switchMap
         // tears down the prior subscription, takeUntilDestroyed the whole chain.
         // Realtime degrades silently (the slow reconcile poll covers an outage).
@@ -1615,14 +1615,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 error: () => { /* realtime down — the reconcile poll + initial read cover it */ },
             });
 
-        // Debounced room catch-up (#1041): a burst of `message.posted` nudges
+        // Debounced room catch-up: a burst of `message.posted` nudges
         // collapses into ONE `listMessages` cursor pull (afterSeq=lastSeq), instead
         // of one fetch per nudge — bounds the request rate regardless of nudge volume.
         this.roomCatchUp$
             .pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.catchUp());
 
-        // Realtime (re)connect catch-up (#1041): when the WS engine comes up — first
+        // Realtime (re)connect catch-up: when the WS engine comes up — first
         // connect OR a reconnect after an outage during which the fallback poll was
         // the only path — pull anything we missed once, so a gap can't linger if no
         // further nudge arrives. No-op when nothing's selected (catchUp guards it).
@@ -1630,7 +1630,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             .pipe(distinctUntilChanged(), filter(connected => connected), takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.catchUp());
 
-        // Background inbox activity (#1021): subscribe to my per-user channel for
+        // Background inbox activity: subscribe to my per-user channel for
         // the whole session (independent of the open conversation) so the
         // conversation LIST's unread badges + presence dots update live even for
         // conversations I'm NOT currently viewing. Debounced so a burst of
@@ -1645,15 +1645,15 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 });
         }
 
-        // Online presence FALLBACK (#1023, #2122). The live answer arrives pushed
+        // Online presence FALLBACK. The live answer arrives pushed
         // on the shared `presence.chat` channel; this queries
         // `GET /chat/presence` for the counterparts the list shows, and ONLY while
         // push is unavailable — a client whose socket is down, or one that
         // subscribed but could not read the initial roster.
         //
-        // ⚠️ Both gates matter. `presenceLive.live()` is the #2106 rule (poll is
+        //  Both gates matter. `presenceLive.live()` is the rule (poll is
         // the no-realtime fallback, never a parallel path); `visibilityState` is
-        // the #2107 rule (a backgrounded tab has no dot to update, and each tick
+        // the rule (a backgrounded tab has no dot to update, and each tick
         // costs the server a Centrifugo round trip). Before push existed, the
         // first gate could not be applied at all — nothing published presence —
         // which is what made a left-open tab the most expensive idle client in
@@ -1681,7 +1681,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     ngOnInit(): void {
         this.reloadList();
         // The channel list is what a `#handle` in an already-received message
-        // resolves against (#2114), so it has to be here before the first render
+        // resolves against, so it has to be here before the first render
         // — not only once someone opens the browse panel. One small read, cached
         // in the signal the panel and the typeahead already share.
         this.loadChannels();
@@ -1716,7 +1716,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         if (nudge.type === 'reaction') {
-            // Reactions (#1334): a message's reactions changed — reconcile the
+            // Reactions: a message's reactions changed — reconcile the
             // affected message's chips (a reaction doesn't bump seq, so the
             // seq-cursor catch-up below wouldn't touch it).
             this.reconcileReactions(id);
@@ -1725,7 +1725,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (nudge.seq <= this.lastSeq) {
             return;
         }
-        // Coalesce into one debounced catch-up (#1041) rather than fetching per nudge.
+        // Coalesce into one debounced catch-up rather than fetching per nudge.
         this.roomCatchUp$.next();
         // Threads T2: a reply lives in a thread, not the main timeline — if a
         // thread panel is open, refresh it so others' replies appear live.
@@ -1736,7 +1736,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `typing` nudge arrived (#1016) — show "X is typing…" (mapping the
+     * A `typing` nudge arrived — show "X is typing…" (mapping the
      * participantId to a name we already hold) and auto-clear after a short
      * idle. Our own typing echo is ignored. A fresh nudge resets the timer.
      */
@@ -1753,7 +1753,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `read` nudge arrived (#1018) — another participant advanced their read
+     * A `read` nudge arrived — another participant advanced their read
      * cursor. Bump the receipt high-water (monotonic) so my sent messages up to
      * that seq flip to "Read". My own read echo is ignored (a receipt tracks
      * OTHERS reading MY messages, not me reading theirs).
@@ -1766,7 +1766,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `presence` nudge arrived (#1020) — a user changed their status. Flip the
+     * A `presence` nudge arrived — a user changed their status. Flip the
      * colored dot on their avatar everywhere they appear (header / bubbles / list
      * rows) by updating their `presenceStatus` in the conversations signal. My
      * own status is already reflected via the set-status control, but keep it in
@@ -1808,13 +1808,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Enter-to-send: intercept a bare Enter in the composer during the
         // CAPTURE phase, before ProseMirror's own keymap (bound on the inner
         // contenteditable) can split the paragraph. Shift+Enter and IME
-        // composition fall through to the editor → soft newline / candidate
+        // composition fall through to the editor -> soft newline / candidate
         // commit. Bound once on the stable composer wrapper; the editor
         // re-mounts inside it without needing re-binding.
         this.enterHandler = (ev: KeyboardEvent) => {
             // The #-channel popover takes the same priority as the @ one — only
             // one of the two can be open, since their triggers are different
-            // characters at the caret (#2114).
+            // characters at the caret.
             const chans = this.channelCandidates();
             if (this.channelMenuOpen() && chans.length && !ev.isComposing) {
                 if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -1900,32 +1900,32 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return text !== '';
     }
 
-    /** A conversation's display label — shared with the quick panel (#2126). */
+    /** A conversation's display label — shared with the quick panel. */
     counterpartName(c: ChatConversationDto | null): string {
         return conversationLabel(c, this.meId);
     }
 
     /**
-     * Unread message count for a conversation (#1017): `lastSeq` minus my read
+     * Unread message count for a conversation: `lastSeq` minus my read
      * cursor (the larger of the server `lastReadSeq` and any optimistic local
      * override set on open). 0 when caught up.
      */
     unreadCount(c: ChatConversationDto | null): number {
-        // Rule shared with the quick panel (#2126); the optimistic override is
+        // Rule shared with the quick panel; the optimistic override is
         // page-only state, so it is passed in rather than assumed.
         return unreadFor(c, this.meId, c === null ? 0 : (this.readSeqOverride()[c.id] ?? 0));
     }
 
     /**
      * Mark a conversation read up to `seq` — optimistically clear its unread
-     * badge (local override) then persist the cursor server-side (#1017).
+     * badge (local override) then persist the cursor server-side.
      */
     private markConversationRead(convId: string, seq: number): void {
         if (seq <= 0) {
             return;
         }
         this.readSeqOverride.update(m => advanceReadOverride(m, convId, seq));
-        // Send the seq we are actually claiming (#2115). It was computed here
+        // Send the seq we are actually claiming. It was computed here
         // for the optimistic override and then thrown away, so the server marked
         // read up to ITS `lastSeq` — including messages this client had not
         // received, whose senders were then told "Read".
@@ -1936,11 +1936,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * Avatar for a conversation row / thread header — the FIRST other
      * participant (1:1 DMs have exactly one; a future group thread shows the
      * first, which is good enough for the roster glyph). Colored-initials
-     * fallback from `displayName` — no backend avatar URL needed (#1013).
+     * fallback from `displayName` — no backend avatar URL needed.
      */
     rowAvatar(c: ChatConversationDto | null): ChatAvatarUser {
         const me = this.meId;
-        // Self-notes (#1333): show MY own avatar — there is no "other" participant.
+        // Self-notes: show MY own avatar — there is no "other" participant.
         if (c?.kind === 'self_notes') {
             const mine = (c.participants ?? []).find(p => p.userId === me);
             return avatarUserFor(mine?.displayName ?? null, mine?.userId ?? c.id ?? null, mine?.avatarUrl);
@@ -1967,7 +1967,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * This message begins a consecutive same-sender run — so it shows the avatar
      * (incoming) and, in a group/channel, the sender name; the rest of the run
      * collapses under it. `prev` is the message rendered just above WITHIN the
-     * same day-group (null at a day boundary → always starts a run).
+     * same day-group (null at a day boundary -> always starts a run).
      */
     startsRun(m: ChatMessageDto, prev: ChatMessageDto | null): boolean {
         return !prev || prev.senderParticipantId !== m.senderParticipantId;
@@ -1992,13 +1992,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The dot a user gets — the #1019 self-set status OVER the #1022/#1023
+     * The dot a user gets — the self-set status OVER the /
      * connection-derived online layer:
-     *  - self-set `away`/`busy` → ALWAYS shown (a deliberate declaration; visible
+     *  - self-set `away`/`busy` -> ALWAYS shown (a deliberate declaration; visible
      *    even when the connection-presence layer is unavailable, e.g. Centrifugo
      *    presence off — so "who is away/busy" is legible regardless of ops state);
-     *  - self-set `offline` ("appear offline") → no dot;
-     *  - otherwise → green `online` only while the user holds a live realtime socket.
+     *  - self-set `offline` ("appear offline") -> no dot;
+     *  - otherwise -> green `online` only while the user holds a live realtime socket.
      */
     private effectiveStatus(userId: string | null | undefined, manual: string | null | undefined): string | null {
         return presenceDot(userId, manual, this.presenceOnline());
@@ -2030,7 +2030,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.showStatusMenu() && !target.closest('.msg__status')) {
             this.showStatusMenu.set(false);
         }
-        // Reactions (#1334): dismiss the open quick-react palette on any click
+        // Reactions: dismiss the open quick-react palette on any click
         // outside its wrap. The React toggle button AND the palette both live in
         // `.msg__react-wrap`, so the opening click and the emoji picks (whose own
         // handlers run first, as they bubble before this document listener) don't
@@ -2050,7 +2050,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showStatusMenu.update(v => !v);
     }
 
-    /** Set my presence status: optimistic local update + persist (#1019). */
+    /** Set my presence status: optimistic local update + persist. */
     pickStatus(status: string): void {
         this.showStatusMenu.set(false);
         // A manual pick supersedes any auto-away; re-arm so idle-away can re-engage
@@ -2079,7 +2079,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.armIdleTimer();
     }
 
-    // ── Auto-away idle tracking ─────────────────────────────────────────────
+    // -- Auto-away idle tracking ---------------------------------------------
     // Activity anywhere (pointer/keyboard/wheel/touch, or the tab regaining
     // focus) re-arms an idle timer; on expiry we flip an available status to
     // `away`. It NEVER overrides a manual busy/offline/away — only the
@@ -2169,7 +2169,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    // ── Resizable composer ──────────────────────────────────────────────────
+    // -- Resizable composer --------------------------------------------------
 
     onGripDown(ev: PointerEvent): void {
         this.resizeStartY = ev.clientY;
@@ -2185,7 +2185,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!this.resizing()) {
             return;
         }
-        // Drag UP (clientY decreases) → taller composer.
+        // Drag UP (clientY decreases) -> taller composer.
         this.composerH.set(this.clampComposerH(this.resizeStartH + (this.resizeStartY - ev.clientY)));
     }
 
@@ -2204,7 +2204,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return Math.min(this.COMPOSER_MAX_H, Math.max(this.COMPOSER_MIN_H, Math.round(h)));
     }
 
-    // ── localStorage helpers (per-device UI prefs) ──────────────────────────
+    // -- localStorage helpers (per-device UI prefs) --------------------------
 
     private readStoredNumber(key: string, fallback: number): number {
         try {
@@ -2282,7 +2282,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Insert an emoji into the composer at the caret (#1011). The `<coolms-editor>`
+     * Insert an emoji into the composer at the caret. The `<coolms-editor>`
      * is a black box with no imperative insert API, so we reach the one
      * contenteditable it mounts, focus it, and use `execCommand('insertText')` —
      * ProseMirror observes the resulting input event and emits `contentChange`,
@@ -2309,7 +2309,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
     }
 
-    // ── @-mentions ─────────────────────────────────────────────────────────
+    // -- @-mentions ---------------------------------------------------------
 
     /** Does message `m` @-mention the CURRENT user? Drives the bubble highlight. */
     mentionsMe(m: ChatMessageDto): boolean {
@@ -2363,7 +2363,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The `#…` half of the same trick (#2114) — a channel handle being typed
+     * The `#…` half of the same trick — a channel handle being typed
      * right at the caret opens the channel typeahead.
      *
      * Handles are lowercase kebab-case, so the pattern is narrow on purpose: a
@@ -2430,7 +2430,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             // A bare `@` searches the DIRECTORY for nothing — there is no query to
             // send — but the menu still opens, and it is not empty: `mentionCandidates`
             // lists this conversation's own members, which is who you almost always
-            // mean. Before #2106 this path left the menu blank, so `@` looked broken
+            // mean. Before this path left the menu blank, so `@` looked broken
             // until you typed a letter, which is exactly what was reported.
             this.mentionDirectory.set([]);
             return;
@@ -2503,7 +2503,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.composerKey.update(k => String(Number(k) + 1));
     }
 
-    /** Owner accepts the "add {name}?" prompt → pull the mentioned user into the group. */
+    /** Owner accepts the "add {name}?" prompt -> pull the mentioned user into the group. */
     confirmAddMention(): void {
         const prompt = this.mentionAddPrompt();
         const id = this.selectedId();
@@ -2556,7 +2556,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!refs.length) {
             return html;
         }
-        // The server sanitiser encodes `@` as a numeric entity (e.g. `&#64;`) in the
+        // The server sanitiser encodes `@` as a numeric entity (e.g. `&;`) in the
         // stored HTML body, so a literal-`@` regex never matches. Decode the `@`
         // entities back before matching — `@` is safe punctuation, so this doesn't
         // weaken the already-sanitised markup. (A label may itself contain `@`, e.g.
@@ -2575,9 +2575,9 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Turn `#handle` into a clickable channel reference (#2114).
+     * Turn `#handle` into a clickable channel reference.
      *
-     * ⚠️ Only handles this client has actually RESOLVED are wrapped. A `#word`
+     *  Only handles this client has actually RESOLVED are wrapped. A `#word`
      * that matches no channel stays plain text — a reference that looks live and
      * goes nowhere is worse than one that was never offered. It also means the
      * injected markup is built from a slug taken from the channel LIST, never
@@ -2607,7 +2607,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.conversations().length === 0) {
             this.loadingList.set(true);
         }
-        // Re-read what is CURRENTLY on screen, not just the first page (#2120):
+        // Re-read what is CURRENTLY on screen, not just the first page:
         // a refresh that dropped back to one page would erase every "Load more"
         // the user had clicked — and this runs on a live nudge, mid-scroll.
         const want = refreshWindow(this.CONV_PAGE, this.conversations().length);
@@ -2622,7 +2622,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /** Append the next page of inbox rows (#2120) — the rules live in `inbox-paging.util`. */
+    /** Append the next page of inbox rows — the rules live in `inbox-paging.util`. */
     loadMoreConversations(): void {
         if (this.loadingMoreConversations() || !this.hasMoreConversations()) {
             return;
@@ -2650,7 +2650,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Honor a pending `?c=<conversationId>` deep-link (the topbar quick-panel
-     * #1012/#1029) once the conversation list contains it — open that thread.
+     * /) once the conversation list contains it — open that thread.
      * Re-runs after each list load and on every `?c=` change (see the ctor),
      * so the deep-link works both on first arrival and while already on the page.
      */
@@ -2660,7 +2660,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         if (!this.conversations().some(c => c.id === id)) {
-            // ⚠️ Since the inbox is PAGED (#2120), "not in the list" no longer
+            //  Since the inbox is PAGED, "not in the list" no longer
             // means "not loaded yet" — a deep-link to an older conversation may
             // sit pages down and no amount of re-listing will surface it. Fetch
             // that ONE row and drop it in. A 404 is the honest answer for a
@@ -2735,7 +2735,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadPinned(id);
         this.startPolling();
         // Marking read happens once the messages ARRIVE ({@link applyMessages}) —
-        // not here (#2115). At this point `lastSeq` is 0 and the only seq to hand
+        // not here. At this point `lastSeq` is 0 and the only seq to hand
         // is the conversation row's, which is the SERVER's high-water: claiming
         // it would mark messages this client has not fetched, and tell their
         // senders "Read". An EXCLUDED (read-only) viewer is skipped there too —
@@ -2743,7 +2743,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // mark-read anyway.
         const opened = this.selected();
         // Seed the read-receipt cursors from the peers' persisted values so a
-        // re-opened thread shows "Read" without waiting for a fresh nudge (#1018).
+        // re-opened thread shows "Read" without waiting for a fresh nudge.
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
     }
 
@@ -2864,7 +2864,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Open the current user's "message yourself" NOTES conversation (#1333) from
+     * Open the current user's "message yourself" NOTES conversation from
      * the "New" composer — idempotent server-side ({@link MessagesService.openSelfNotes}),
      * so it either reuses the existing notes room or mints it. Drops it into the
      * inbox, selects it, and closes the composer.
@@ -2900,7 +2900,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.channelName.set('');
     }
 
-    // ── Public channels browse (Chat-channels arc CH2) ──────────────────────
+    // -- Public channels browse (Chat-channels arc CH2) ----------------------
 
     /** Toggle the public-channel browse panel; loads the list on open. */
     toggleChannels(): void {
@@ -2952,12 +2952,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `#handle` in a rendered message was clicked (#2114).
+     * A `#handle` in a rendered message was clicked.
      *
      * Delegated from the bubble because the reference lives inside sanitised
      * `[innerHTML]`, where there is no Angular binding to attach to.
      *
-     * ⚠️ The handle is read from the element's TEXT, not from a `data-` attribute:
+     *  The handle is read from the element's TEXT, not from a `data-` attribute:
      * Angular's HTML sanitizer keeps `class` but STRIPS `data-*`, so the obvious
      * `data-chan="…"` arrives as null and every click silently does nothing. The
      * text is the slug anyway — {@see linkifyChannelRefs} writes both from the
@@ -2989,7 +2989,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.showNew.set(false);
     }
 
-    // ── Group members panel (G2) ────────────────────────────────────────────
+    // -- Group members panel (G2) --------------------------------------------
 
     toggleMembers(): void {
         this.showMembers.update(v => !v);
@@ -3018,7 +3018,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /** Owner removes a member (204 → refetch the conversation to refresh the panel). */
+    /** Owner removes a member (204 -> refetch the conversation to refresh the panel). */
     removeGroupMember(userId: string | null): void {
         const id = this.selectedId();
         if (!id || !userId) {
@@ -3032,7 +3032,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /** A member leaves the group themselves → drop it from the inbox + deselect. */
+    /** A member leaves the group themselves -> drop it from the inbox + deselect. */
     leaveGroup(): void {
         const id = this.selectedId();
         const me = this.meId;
@@ -3058,7 +3058,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.conversations.update(list => list.map(c => (c.id === conv.id ? conv : c)));
     }
 
-    // ── Conversation-row context menu (membership semantics) ────────────────
+    // -- Conversation-row context menu (membership semantics) ----------------
 
     /** Open the right-click menu on a conversation row (anchored at the cursor). */
     onRowContextMenu(event: MouseEvent, conv: ChatConversationDto): void {
@@ -3091,7 +3091,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * Mark a conversation read from the context menu (clears its unread badge).
      *
-     * This one DOES claim the server's `lastSeq` (#2115), and should: the user
+     * This one DOES claim the server's `lastSeq`, and should: the user
      * explicitly asked for the badge gone without opening the conversation, so
      * "I have read everything in it" is precisely what they mean. Everywhere
      * else the claim is what this client actually received.
@@ -3102,7 +3102,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Toggle MUTE from the context menu (#1332) — optimistic: patch `viewerMuted`
+     * Toggle MUTE from the context menu — optimistic: patch `viewerMuted`
      * so the row dims + the global badge drops immediately, then POST/DELETE the
      * mute endpoint; revert the flag on error. Only offered for an ACTIVE member
      * (the backend 403s a left/excluded participant).
@@ -3156,7 +3156,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Composer content changed — keep the model in sync AND emit a throttled
-     * typing signal (#1016) so the other participant sees "X is typing…". We
+     * typing signal so the other participant sees "X is typing…". We
      * only signal when there's real text (not on a placeholder/clear), and at
      * most once per 3s (the server nudge is ephemeral; the indicator self-clears
      * after ~4s of silence on the receiver).
@@ -3210,7 +3210,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    // ── Threads T2: the thread side-panel ──────────────────────────────────
+    // -- Threads T2: the thread side-panel ----------------------------------
 
     /** Open the thread panel scoped to a (top-level) message + load its replies. */
     openThread(root: ChatMessageDto): void {
@@ -3297,7 +3297,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }, 0);
     }
 
-    // ── Pinning ─────────────────────────────────────────────────────────────
+    // -- Pinning -------------------------------------------------------------
 
     /** Load the open conversation's pinned messages into the pinned bar. */
     private loadPinned(conversationId: string): void {
@@ -3332,7 +3332,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    // ── Reactions (#1334) ────────────────────────────────────────────────────
+    // -- Reactions ----------------------------------------------------
 
     /**
      * A message's reactions aggregated into per-emoji chips: `{emoji, count, mine}`
@@ -3366,7 +3366,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Toggle the current user's `emoji` reaction on a message (#1334). Optimistically
+     * Toggle the current user's `emoji` reaction on a message. Optimistically
      * adds/removes `{emoji, me}` in the in-memory message + calls the API; the server's
      * `reaction` room nudge reconciles every viewer (incl. this one). Reverts on error.
      */
@@ -3442,7 +3442,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         setTimeout(() => el.classList.remove('msg__line--flash'), 1400);
     }
 
-    /** File picker change → upload each file, appending successes to `pending`. */
+    /** File picker change -> upload each file, appending successes to `pending`. */
     onFilesPicked(ev: Event): void {
         const input = ev.target as HTMLInputElement;
         const files = Array.from(input.files ?? []);
@@ -3493,7 +3493,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * If a system notice is an RTC "recording available" notice (ADR-145 G8g #1375),
+     * If a system notice is an RTC "recording available" notice ( G8g ),
      * return the call id parsed from the `rtc:call:<uuid>:rec:ready` clientId the ingest
      * stamps; else null. Drives the "Download recording" affordance on the timeline notice.
      */
@@ -3545,7 +3545,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadingThread.set(true);
         this.hasMoreOlder.set(false);
         // Open on the NEWEST page (not the head), so a long thread shows recent
-        // messages immediately; older pages load on scroll-up (#1033).
+        // messages immediately; older pages load on scroll-up.
         this.api.listLatest(id, this.PAGE).subscribe({
             next: list => {
                 this.applyMessages(list);
@@ -3557,8 +3557,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Scroll-driven lazy load (#1033): near the top + more to fetch + not already
-     * loading → pull the previous page and prepend it, preserving the viewport
+     * Scroll-driven lazy load: near the top + more to fetch + not already
+     * loading -> pull the previous page and prepend it, preserving the viewport
      * anchor so the message under the cursor stays put.
      */
     onThreadScroll(): void {
@@ -3600,7 +3600,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Reconcile-poll tick (#1041) — a NO-OP while the realtime WS engine is
+     * Reconcile-poll tick — a NO-OP while the realtime WS engine is
      * connected (room nudges are the live path then); only does the catch-up
      * fetch when push is unavailable, so polling is a true fallback rather than
      * a parallel path. The timer keeps ticking cheaply; the work is gated.
@@ -3617,7 +3617,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * (afterSeq cursor) and merge it. Shared by the debounced realtime
      * {@link roomCatchUp$}, the WS-(re)connect catch-up, and the no-WS fallback
      * {@link poll} — so every "fetch newer messages" path funnels through one
-     * dedupe-by-id merge (#1041). No-op when nothing is selected.
+     * dedupe-by-id merge. No-op when nothing is selected.
      */
     private catchUp(): void {
         const id = this.selectedId();
@@ -3634,7 +3634,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * Merge incoming messages into the thread (dedupe by id, re-sort by seq),
      * advancing `lastSeq`. Returns how many were NEW — the pure state update,
      * with no scroll/read side-effects (so a backward "load earlier" page can
-     * reuse it without yanking the viewport to the bottom). #1033
+     * reuse it without yanking the viewport to the bottom).
      */
     private mergeMessages(incoming: ChatMessageDto[]): number {
         if (!incoming.length) {
@@ -3657,8 +3657,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         this.scrollSoon();
-        // The conversation is open + on-screen → what just ARRIVED counts as read
-        // (#2115: `this.lastSeq` is what we hold, not what the server has). An
+        // The conversation is open + on-screen -> what just ARRIVED counts as read
+        // (: `this.lastSeq` is what we hold, not what the server has). An
         // excluded viewer is read-only; the server refuses their mark-read, so
         // do not ask.
         const open = this.selectedId();

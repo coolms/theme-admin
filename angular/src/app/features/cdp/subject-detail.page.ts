@@ -28,7 +28,7 @@ interface EventBreakdownRow {
 }
 
 /**
- * Track E Phase 3 (CDP core, #1150) — Subject profile detail
+ *Phase 3 (CDP core, ) — Subject profile detail
  * (`/admin/cdp/subjects/:key`).
  *
  * Read-only view of one CDP subject: identity (kind + stitched userRef),
@@ -194,7 +194,7 @@ export class SubjectDetailPageComponent implements OnInit {
     private readonly maxCount = computed(() =>
         this.breakdown().reduce((max, r) => Math.max(max, r.count), 0));
 
-    /** Declared in the `analytics:subject-detail` layout (ADR-127), not here. */
+    /** Declared in the `analytics:subject-detail` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );

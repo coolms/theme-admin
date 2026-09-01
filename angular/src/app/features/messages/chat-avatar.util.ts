@@ -1,5 +1,5 @@
 /**
- * Avatar helpers for the internal Messages surface (ledger #1013).
+ * Avatar helpers for the internal Messages surface.
  *
  * `<app-user-avatar>` renders a colored-initials circle when no `avatarUrl` is
  * present, so chat can show avatars with ZERO backend plumbing — built from the
@@ -9,7 +9,7 @@
 
 /** The shape `<app-user-avatar [user]>` consumes (photo, else initials + color). */
 export interface ChatAvatarUser {
-    /** A real uploaded photo URL — the component prefers it over initials (#1015). */
+    /** A real uploaded photo URL — the component prefers it over initials. */
     readonly avatarUrl: string | null;
     readonly firstName: string | null;
     readonly identifier: string;

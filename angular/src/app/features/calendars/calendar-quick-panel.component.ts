@@ -36,8 +36,8 @@ interface DayBucket {
 const LOOKAHEAD_DAYS = 14;
 
 /**
- * M1.2.f.4 — Calendar quick panel rendered in the global right-side
- * drawer. Opened from the topbar calendar icon (#423-era component
+ * — Calendar quick panel rendered in the global right-side
+ * drawer. Opened from the topbar calendar icon (-era component
  * `CalendarQuickAccessComponent` now opens this instead of navigating).
  *
  * Layout, top-down:
@@ -139,7 +139,7 @@ const LOOKAHEAD_DAYS = 14;
             gap: 4px;
             border: 0;
             background: transparent;
-            /* ⚠️ TEXT, so it takes the ink tier. The raw accent measured 2.03
+            /*  TEXT, so it takes the ink tier. The raw accent measured 2.03
                on --cms-surface in light theme -- below even the 3:1 that
                applies to glyphs. --cms-accent-text is 7.20 light / 9.59 dark.
                No literal fallback: unlike --cms-accent this token differs
@@ -430,7 +430,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     formatTime(item: CalendarItemDto): string {
         if (item.allDay) return 'All day';
         try {
-            // Task #433 — honour user's chosen timezone + 12/24h preference
+            // Task — honour user's chosen timezone + 12/24h preference
             // for the event-time hint in the quick panel.
             const opts: Intl.DateTimeFormatOptions = {
                 hour:   'numeric',

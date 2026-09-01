@@ -2,7 +2,7 @@ import { mentionsUser } from './mentions.util';
 import { MentionRef } from './messages.types';
 
 /**
- * "Does this message mention me" (#2124) — the predicate that decides which
+ * "Does this message mention me" — the predicate that decides which
  * bubble gets the accent. Untested until the accent existed to be wrong about.
  */
 describe('mentionsUser', () => {
@@ -36,7 +36,7 @@ describe('mentionsUser', () => {
     });
 
     it('matches on the USER ID and never on the label', () => {
-        // ⚠️ A mention snapshots the display name as typed: two people called
+        //  A mention snapshots the display name as typed: two people called
         // "Alex" share a label, and a renamed user keeps their old one. Matching
         // by label would highlight the wrong person's messages.
         expect(mentionsUser(msg({ userId: 'user-other', label: 'Me' }), me)).toBe(false);

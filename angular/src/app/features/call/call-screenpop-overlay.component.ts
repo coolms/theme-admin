@@ -45,7 +45,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
  * a small, non-intrusive card in the corner without leaving whatever page
  * they're on. Driven by the M9.c `calls.broadcast` firehose
  * ({@link CallLiveEventsService}) — each state transition
- * (ringing → answered → on_hold → ended) upserts a card keyed by call id;
+ * (ringing -> answered -> on_hold -> ended) upserts a card keyed by call id;
  * once a call settles (someone picks up, or it ends) its auto-dismiss
  * clock starts and it fades after the user-configured window (or waits for
  * a manual close). Clicking a card opens the call record.
@@ -55,7 +55,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
  * WebRTC-SIP softphone (a later slice). The `broadcast` channel is
  * `ROLE_CALL`-gated, so a user without the role simply never sees a pop
  * (the subscription 403s and gives up quietly). Whether it shows at all,
- * and how long settled cards linger, is set on the Profile → Calls tab
+ * and how long settled cards linger, is set on the Profile -> Calls tab
  * ({@link CallOverlayPreferencesService}).
  */
 @Component({

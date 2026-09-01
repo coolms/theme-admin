@@ -59,7 +59,7 @@ export interface ModuleSettingsBlockDto {
      * recomposed in this file with a spread while each PHP consumer recomposed
      * it with a type guard, and the two disagreed for a key saved as `null`:
      * cleared on screen, still-the-default on the server. One merge, one answer
-     * (ADR-165).
+     *.
      */
     readonly effective: Record<string, unknown>;
     /**
@@ -70,7 +70,7 @@ export interface ModuleSettingsBlockDto {
      * `effective` already ignores a saved value for a pinned key, so an editable
      * control would take an edit, report a save, and change nothing. The server
      * refuses a write carrying one, so these must also be kept OUT of the
-     * payload (ADR-165).
+     * payload.
      */
     readonly locked: Record<string, string>;
     /**
@@ -84,7 +84,7 @@ export interface ModuleSettingsBlockDto {
     /**
      * Which site these values are for, or null for the platform-wide view.
      *
-     * ⚠️ At a site scope `data` is what THAT SITE overrode and `effective` is
+     *  At a site scope `data` is what THAT SITE overrode and `effective` is
      * what it runs on. The screen needs both: without the difference an operator
      * cannot tell a value they set here from one they are inheriting, and would
      * reset a site expecting the platform value to change.

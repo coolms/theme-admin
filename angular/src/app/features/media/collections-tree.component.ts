@@ -221,8 +221,8 @@ export class CollectionsTreeComponent implements OnInit {
      * Depth-first flattened view of the collections tree.
      *
      * Padding formula: 8 + visualDepth × 16.
-     *   depth=1 → 24px  (collection items)
-     *   depth=2 → 40px  (sub-collections)
+     *   depth=1 -> 24px  (collection items)
+     *   depth=2 -> 40px  (sub-collections)
      *
      * "All media" root uses --item-indent: 8px with NO leading spacer, so its
      * folder icon sits at 8px.  Collection items at 24px have a 16px expand-btn

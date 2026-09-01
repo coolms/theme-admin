@@ -263,23 +263,23 @@ export class CockpitService {
      * shared ErrorHandlerService on the consumer page.
      */
 
-    /** POST /cockpit/instances/{id}/cancel — kill running tokens, → cancelled. */
+    /** POST /cockpit/instances/{id}/cancel — kill running tokens, -> cancelled. */
     cancel(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'cancel');
     }
 
-    /** POST /cockpit/instances/{id}/suspend — running → suspended. */
+    /** POST /cockpit/instances/{id}/suspend — running -> suspended. */
     suspend(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'suspend');
     }
 
-    /** POST /cockpit/instances/{id}/resume — suspended → running. */
+    /** POST /cockpit/instances/{id}/resume — suspended -> running. */
     resume(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'resume');
     }
 
     /**
-     * POST /cockpit/instances/{id}/retry — failed → running (M4.f). Un-fails
+     * POST /cockpit/instances/{id}/retry — failed -> running (M4.f). Un-fails
      * the instance, re-activates the token parked at the failed service task,
      * and re-drives the engine; on a repeat handler failure it lands Failed
      * again. Retrying a non-failed instance surfaces as a 409.

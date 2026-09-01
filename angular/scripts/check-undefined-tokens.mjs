@@ -2,7 +2,7 @@
 // Guard against `var(--cms-*)` referencing a token that does not exist.
 //
 // This class has now bitten four times: --cms-primary and --cms-surface-muted
-// (#1043), --cms-canvas (#2022), and 44 more (#2023). It is worth a permanent
+//, --cms-canvas, and 44 more. It is worth a permanent
 // check because it is INVISIBLE in review — CSS does not warn, the build does
 // not fail, and the page usually looks almost right.
 //
@@ -21,7 +21,7 @@
 //   baseline that may only shrink.
 //
 // Scans .ts, .scss AND .html: the image editor is styled in .scss, and a
-// .ts-only sweep wrongly reported --cms-canvas-bg as dead (#2022).
+// .ts-only sweep wrongly reported --cms-canvas-bg as dead.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -30,10 +30,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
 
 /** Referenced-but-undefined tokens that still carry a fallback. LOWER ONLY. */
-// 28 → 27 (#2030): --cms-primary-soft went with a deleted kit shadow.
-// 27 → 26 (#2031): --cms-input-bg was referenced by two components and defined
+// 28 -> 27: --cms-primary-soft went with a deleted kit shadow.
+// 27 -> 26: --cms-input-bg was referenced by two components and defined
 //                  by nobody; dark mode forced it to be named for real.
-// 26 → 25 (#2032): another name that existed only as a fallback got defined.
+// 26 -> 25: another name that existed only as a fallback got defined.
 const WITH_FALLBACK_BASELINE = 25;
 
 const defined = new Set();

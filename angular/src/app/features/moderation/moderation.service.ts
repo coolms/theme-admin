@@ -43,7 +43,7 @@ export class ModerationService {
 
     /**
      * One PAGE of the moderation queue — newest-first, server-filtered and
-     * sorted (#1724).
+     * sorted.
      *
      * Replaces the old `listPending()`, which fetched the whole queue for a
      * client-mode grid. The endpoint capped that at 200 rows, so the browser was

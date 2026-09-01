@@ -37,7 +37,7 @@ import {
 const PAGE_SIZE = 50;
 
 /**
- * C.3 (ADR-143) — the Contacts admin list page (/admin/contacts).
+ * C.3 — the Contacts admin list page (/admin/contacts).
  *
  * `<cms-list-page>` shell + `<coolms-datagrid gridId="contact:contacts">` in
  * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and on every
@@ -48,7 +48,7 @@ const PAGE_SIZE = 50;
  * and the grid filtered in memory. That read was the CAPPED typeahead port
  * (`listVisible(q, 100)`, clamped at 100 by the repository), so past the 100th
  * contact the directory silently omitted people and the filter row searched
- * only the loaded slice. Ledger #1655.
+ * only the loaded slice..
  *
  * The `visibility` column is the "My / Shared" filter. Create/Edit open the
  * `ContactFormDialogComponent` modal; on a non-null close we re-load via the

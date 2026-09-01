@@ -31,7 +31,7 @@ import { SendNotificationDialogComponent } from '../notification/send-notificati
 import { CentrifugoPublishDialogComponent } from './centrifugo-publish-dialog.component';
 
 /**
- * ADR-099 Phase 1.5 sub-phase 1.5b -- the dashboard at
+ * Phase 1.5 sub-phase 1.5b -- the dashboard at
  * `/centrifugo` (rendered under the SPA's `/admin/` base-href).
  * Three independent panels: node info,
  * backend-declared namespaces, currently active channels (with
@@ -308,7 +308,7 @@ export class CentrifugoDashboardComponent implements OnInit {
      * verify save -> Centrifugo push -> bell badge -> drawer render
      * in one click without triggering a real Document generation.
      */
-    /** Declared in the `centrifugo:dashboard` layout (ADR-127), not here. */
+    /** Declared in the `centrifugo:dashboard` layout, not here. */
     protected readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );

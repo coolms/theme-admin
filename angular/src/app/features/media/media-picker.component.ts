@@ -431,7 +431,7 @@ type InsertMode = 'widget' | 'plain';
     styles: [`
         :host { display: block; }
 
-        /* ── Trigger chips ── */
+        /* -- Trigger chips -- */
         .media-picker-chip {
             display: inline-flex;
             align-items: center;
@@ -460,7 +460,7 @@ type InsertMode = 'widget' | 'plain';
         }
         .media-picker-chip__close { font-size: .55rem; }
 
-        /* ── Outer dropdown panel: fixed dimensions, smart-positioning friendly */
+        /* -- Outer dropdown panel: fixed dimensions, smart-positioning friendly */
         .media-picker-panel {
             display: flex;
             flex-direction: column;
@@ -484,7 +484,7 @@ type InsertMode = 'widget' | 'plain';
             }
         }
 
-        /* ── Inner body: column flex; modal mode keeps a sensible floor ── */
+        /* -- Inner body: column flex; modal mode keeps a sensible floor -- */
         .media-picker-body {
             display: flex;
             flex-direction: column;
@@ -493,7 +493,7 @@ type InsertMode = 'widget' | 'plain';
         }
         .media-picker-body--modal { min-height: 520px; }
 
-        /* ── Tabs ── */
+        /* -- Tabs -- */
         .media-picker-tabs {
             display: flex;
             border-bottom: 1px solid var(--cms-border);
@@ -522,7 +522,7 @@ type InsertMode = 'widget' | 'plain';
             font-weight: 600;
         }
 
-        /* ── Toolbar (breadcrumb + search) ── */
+        /* -- Toolbar (breadcrumb + search) -- */
         .media-picker-toolbar {
             padding: 8px;
             border-bottom: 1px solid var(--cms-border);
@@ -612,7 +612,7 @@ type InsertMode = 'widget' | 'plain';
             user-select: none;
         }
 
-        /* ── Grid wrapper: fills available space, prevents collapse ── */
+        /* -- Grid wrapper: fills available space, prevents collapse -- */
         .media-picker-grid-wrapper {
             flex: 1;
             min-height: 200px;
@@ -620,7 +620,7 @@ type InsertMode = 'widget' | 'plain';
             padding: 8px;
         }
 
-        /* ── Empty / loading states: centered, occupies space ── */
+        /* -- Empty / loading states: centered, occupies space -- */
         .media-picker-empty {
             min-height: 180px;
             display: flex;
@@ -644,7 +644,7 @@ type InsertMode = 'widget' | 'plain';
             margin: 0;
         }
 
-        /* ── Recent strip ── */
+        /* -- Recent strip -- */
         .media-picker-recent {
             margin-bottom: 8px;
             padding-bottom: 8px;
@@ -665,7 +665,7 @@ type InsertMode = 'widget' | 'plain';
             padding-bottom: 4px;
         }
 
-        /* ── Asset / folder grid ── */
+        /* -- Asset / folder grid -- */
         .media-picker-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -675,7 +675,7 @@ type InsertMode = 'widget' | 'plain';
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         }
 
-        /* ── Cards (assets + folders + recent chips) ── */
+        /* -- Cards (assets + folders + recent chips) -- */
         .media-picker-card {
             display: block;
             padding: 4px;
@@ -737,7 +737,7 @@ type InsertMode = 'widget' | 'plain';
             text-overflow: ellipsis;
         }
 
-        /* ── Upload tab ── */
+        /* -- Upload tab -- */
         .media-picker-upload {
             padding: 12px;
             flex: 1;
@@ -804,7 +804,7 @@ type InsertMode = 'widget' | 'plain';
         /* Style hint for disabled options (browsers vary on native styling). */
         .media-picker-upload__option--locked { color: var(--cms-text-muted); }
 
-        /* ── Upload progress ── */
+        /* -- Upload progress -- */
         .media-picker-progress { display: flex; flex-direction: column; gap: 4px; }
         .media-picker-progress__row {
             display: flex;
@@ -836,7 +836,7 @@ type InsertMode = 'widget' | 'plain';
             margin: 4px 0 0;
         }
 
-        /* ── Footer (Open browser / Cancel / Confirm) ── */
+        /* -- Footer (Open browser / Cancel / Confirm) -- */
         .media-picker-footer {
             padding: 8px 12px;
             border-top: 1px solid var(--cms-border);
@@ -848,7 +848,7 @@ type InsertMode = 'widget' | 'plain';
             flex-shrink: 0;
         }
 
-        /* ── 'Insert as' toggle (embedded mode only) ── */
+        /* -- 'Insert as' toggle (embedded mode only) -- */
         .media-picker-insert-mode {
             display: inline-flex;
             align-items: center;
@@ -870,7 +870,7 @@ type InsertMode = 'widget' | 'plain';
             }
         }
 
-        /* ── Hover preview popup ── */
+        /* -- Hover preview popup -- */
         .media-picker-hover {
             background: var(--cms-surface);
             border: 1px solid var(--cms-border);
@@ -963,7 +963,7 @@ export class MediaPickerComponent implements OnDestroy {
     private readonly destroyRef = inject(DestroyRef);
     private readonly store      = inject(Store);
 
-    // ── Library state ────────────────────────────────────────────────────────
+    // -- Library state --------------------------------------------------------
     readonly dropdownOpen = signal(false);
     readonly zone         = signal<MediaPickerZone>('shared');
     readonly activeTab    = signal<ActiveTab>('library');
@@ -1042,7 +1042,7 @@ export class MediaPickerComponent implements OnDestroy {
         } catch { /* ignore */ }
     }
 
-    // ── Options-derived signals ──────────────────────────────────────────────
+    // -- Options-derived signals ----------------------------------------------
     readonly bindTarget       = computed(() => this.options().bindTarget ?? 'asset');
     readonly assetSelectable  = computed(() => this.bindTarget() !== 'collection');
     readonly folderSelectable = computed(() => this.bindTarget() === 'collection' || this.bindTarget() === 'either');
@@ -1171,7 +1171,7 @@ export class MediaPickerComponent implements OnDestroy {
         return this.triggerRef?.nativeElement.offsetWidth ?? 0;
     }
 
-    // ── Dropdown / modal lifecycle ──────────────────────────────────────────
+    // -- Dropdown / modal lifecycle ------------------------------------------
 
     toggleDropdown(): void {
         if (this.disabled()) return;
@@ -1232,7 +1232,7 @@ export class MediaPickerComponent implements OnDestroy {
         else { this.applyEmit(emit); this.closeDropdown(); }
     }
 
-    // ── Tabs / zones / navigation ───────────────────────────────────────────
+    // -- Tabs / zones / navigation -------------------------------------------
 
     setLibraryZone(z: MediaPickerZone): void {
         this.activeTab.set('library');
@@ -1262,7 +1262,7 @@ export class MediaPickerComponent implements OnDestroy {
         this.searchSubject.next(v);
     }
 
-    // ── Selection ────────────────────────────────────────────────────────────
+    // -- Selection ------------------------------------------------------------
 
     onAssetClick(a: MediaAssetDto): void {
         if (!this.assetSelectable()) return;
@@ -1308,7 +1308,7 @@ export class MediaPickerComponent implements OnDestroy {
 
     reload(): void { this.loadCurrentLevel(); }
 
-    // ── Hover preview ───────────────────────────────────────────────────────
+    // -- Hover preview -------------------------------------------------------
 
     onAssetHover(event: MouseEvent, a: MediaAssetDto): void {
         if (!(this.options().hoverPreview ?? false)) return;
@@ -1330,7 +1330,7 @@ export class MediaPickerComponent implements OnDestroy {
         this.hoverOriginRef = null;
     }
 
-    // ── Upload ──────────────────────────────────────────────────────────────
+    // -- Upload --------------------------------------------------------------
 
     onUploadDestChange(path: string): void { this.uploadDest.set(path); }
 
@@ -1423,7 +1423,7 @@ export class MediaPickerComponent implements OnDestroy {
         return a === '*' ? '' : a;
     }
 
-    // ── Create collection (Gallery-mode helper) ───────────────────────────
+    // -- Create collection (Gallery-mode helper) ---------------------------
 
     openCreateCollectionForm(): void {
         this.creatingCollection.set(true);
@@ -1465,7 +1465,7 @@ export class MediaPickerComponent implements OnDestroy {
                 error: (err: { error?: { detail?: string }; message?: string; status?: number }) => {
                     this.creatingInFlight.set(false);
                     const detail = err?.error?.detail ?? err?.message ?? 'Failed to create collection.';
-                    // 409 → already exists; surface a friendlier hint without
+                    // 409 -> already exists; surface a friendlier hint without
                     // hiding the server's detail message for other errors.
                     this.createCollectionError.set(
                         err?.status === 409 ? `Collection already exists: ${detail}` : detail,
@@ -1474,7 +1474,7 @@ export class MediaPickerComponent implements OnDestroy {
             });
     }
 
-    // ── Display helpers ──────────────────────────────────────────────────────
+    // -- Display helpers ------------------------------------------------------
 
     chipUrl(s: MediaPickerSelection): string | null {
         return this.resolveUrl(s.thumbUrl, s.origUrl, s.presetUrls);
@@ -1496,7 +1496,7 @@ export class MediaPickerComponent implements OnDestroy {
         return d === 'original' ? (original ?? thumb) : (thumb ?? original);
     }
 
-    // ── Internals ────────────────────────────────────────────────────────────
+    // -- Internals ------------------------------------------------------------
 
     private toEmit(picks: PendingPick[]): MediaPickerEmit {
         if (picks.length === 0) return null;

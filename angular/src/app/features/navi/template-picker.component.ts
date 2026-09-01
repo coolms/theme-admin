@@ -12,8 +12,8 @@ import { ApiService, ThemeTemplateDto } from '../../api/api.service';
 
 /**
  * Free-text template path input enhanced with native `<datalist>` suggestions
- * drawn from the resolved theme's `templates/` directory (Task #312 D1, restored
- * #923). Bound directly to the NaviNode form's `template` FormControl.
+ * drawn from the resolved theme's `templates/` directory (Task D1, restored
+ * ). Bound directly to the NaviNode form's `template` FormControl.
  *
  * Deliberately a free-text input (NOT a select): a node may point at a custom
  * template that isn't listed yet, so the datalist only *suggests* — it never

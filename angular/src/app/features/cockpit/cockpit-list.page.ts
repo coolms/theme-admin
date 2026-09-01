@@ -62,7 +62,7 @@ interface CockpitRow {
  * config YAML — so it matches Forms / Calendars / Definitions exactly (sortable
  * columns, per-column filter row incl. the state dropdown, column-visibility).
  *
- * `loadingMode: lazy` (ledger #1659): the grid emits `(loadMore)` on mount and
+ * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and
  * on every filter/sort/page change, and this page turns that into ONE server
  * request. It used to be `client` — one perPage=200 block filtered and sorted
  * in the browser — so past 200 live instances the filter row searched a subset
@@ -221,7 +221,7 @@ export class CockpitListPageComponent implements OnInit {
 
     /**
      * Maps the grid's structured column filters to the endpoint's named query
-     * params. Like the Definitions catalog (#1654) and unlike the RQL-native
+     * params. Like the Definitions catalog and unlike the RQL-native
      * endpoints, this provider takes named params — it reads a projected view
      * built by `CockpitQueryService`, not a plain Doctrine entity.
      *
@@ -272,7 +272,7 @@ export class CockpitListPageComponent implements OnInit {
     /**
      * M4.e — client-side CSV export of the LOADED instance rows.
      *
-     * With lazy paging (#1659) "loaded" is what the operator has scrolled
+     * With lazy paging "loaded" is what the operator has scrolled
      * through, not the whole filtered set — so when it covers less than the
      * server's total we SAY SO rather than hand over a silently partial file.
      * Exporting the full set would need the export to page the endpoint

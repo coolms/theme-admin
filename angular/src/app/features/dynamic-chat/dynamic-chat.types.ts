@@ -1,25 +1,25 @@
 /**
- * DynamicChat agent panel — shared DTOs (ledger #995).
+ * DynamicChat agent panel — shared DTOs.
  *
  * The agent surface composes TWO backend modules:
  *  - DynamicChat owns discovery/join (`GET/POST /dynamic-chat/agent/conversations*`)
- *    → {@link AgentConversationDto}.
- *  - Chat owns the message read/write (`GET/POST /chat/messages`) →
+ *    -> {@link AgentConversationDto}.
+ *  - Chat owns the message read/write (`GET/POST /chat/messages`) ->
  *    {@link ChatMessageDto}; realtime nudges arrive on `chat.room.{id}`
- *    → {@link RoomNudge}.
+ *    -> {@link RoomNudge}.
  *
  * Field names mirror the backend resources verbatim
  * (`DynamicChatAgentConversationResource`, `ChatMessageResource`) so the JSON
  * deserialises straight onto these interfaces.
  */
 
-/** A staff agent already handling a conversation (ledger #1026). */
+/** A staff agent already handling a conversation. */
 export interface QueueAgentDto {
     readonly userId: string;
     readonly displayName: string | null;
-    /** Public avatar URL for a real photo (null → render colored initials). */
+    /** Public avatar URL for a real photo (null -> render colored initials). */
     readonly avatarUrl?: string | null;
-    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null → no dot). */
+    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null -> no dot). */
     readonly presenceStatus?: string | null;
 }
 
@@ -40,19 +40,19 @@ export interface AgentConversationDto {
     /** The agent's participant id — populated only by the join response. */
     readonly agentParticipantId?: string | null;
     /**
-     * The staff agents who have JOINED this conversation (#1026) — so the queue
+     * The staff agents who have JOINED this conversation — so the queue
      * shows who is already handling a visitor and a second agent doesn't
      * double-answer. Empty / absent for an unclaimed visitor.
      */
     readonly agents?: readonly QueueAgentDto[];
     /**
-     * TRUE iff the CURRENT agent has claimed this conversation (#1028) — i.e.
+     * TRUE iff the CURRENT agent has claimed this conversation — i.e.
      * they are among {@link agents}. Drives the "Mine" queue tab + the Release
      * button.
      */
     readonly assignedToMe?: boolean;
     /**
-     * Triage status (#1028): `'new'` (the visitor sent the latest message and
+     * Triage status: `'new'` (the visitor sent the latest message and
      * is waiting) or `'answered'` (an agent replied last). Drives the per-row
      * status badge; independent of who claimed it.
      */
@@ -61,7 +61,7 @@ export interface AgentConversationDto {
 
 /**
  * A file attached to a message (mirrors the backend `ChatAttachmentResource` /
- * the `attachments` element of `ChatMessageResource`, ledger #998–#1000).
+ * the `attachments` element of `ChatMessageResource`,–).
  *
  * `vfsNodeId` is the durable reference; the bytes are fetched (authenticated)
  * from `GET /chat/attachments/{vfsNodeId}`. `kind` (`image` | `file`) is the

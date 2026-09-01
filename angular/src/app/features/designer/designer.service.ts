@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
 /**
- * Shape of the M3.2.h `POST /decisions/{key}/deploy` response.
+ * Shape of the `POST /decisions/{key}/deploy` response.
  *
  * Mirrors the `DecisionDraftController::deploy()` JSON body. The
  * `version` field is the just-minted version number (1-based); the
@@ -20,10 +20,10 @@ export interface DecisionDeployResult {
 }
 
 /**
- * M3.5.e — shape of `GET / PUT /api/v1/state-machines/{key}/draft`
+ * — shape of `GET / PUT /api/v1/state-machines/{key}/draft`
  * ({@see \App\StateMachine\Infrastructure\ApiPlatform\Resource\StateMachineDraftResource}).
  * `body` is the editor's model JSON string; the page seeds the editor via
- * `JSON.parse(body)` → `StateMachineEditor.load()`. A fresh key returns a
+ * `JSON.parse(body)` -> `StateMachineEditor.load()`. A fresh key returns a
  * blank starter model, so opening a new key mounts an empty machine.
  */
 export interface StateMachineDraftPayload {
@@ -32,7 +32,7 @@ export interface StateMachineDraftPayload {
     readonly latestVersion: number;
 }
 
-/** M3.5.e — shape of `POST /api/v1/state-machines/{key}/deploy`. */
+/** — shape of `POST /api/v1/state-machines/{key}/deploy`. */
 export interface StateMachineDeployResult {
     readonly key: string;
     readonly version: number;
@@ -41,7 +41,7 @@ export interface StateMachineDeployResult {
 }
 
 /**
- * M3.2.h FE -- thin HTTP client for the
+ * FE -- thin HTTP client for the
  * `@coolms/designer`-backed DMN admin page.
  *
  * **Three operations, all keyed by definition key:**
@@ -101,14 +101,14 @@ export class DesignerService {
         return `${this.apiBase}/decisions/${encodeURIComponent(key)}/draft`;
     }
 
-    /* ──────────────────── M3.3.h.2 BPMN-Lite endpoints ──────────────────── */
+    /* -------------------- BPMN-Lite endpoints -------------------- */
 
     /**
      * GET the current BPMN-Lite draft body for a workflow definition
      * keyed by `key`. The page seeds the editor via
      * `bpmnLiteJsonToModel(result.body)` -> `editor.load(model)`.
      *
-     * Backend returns the M3.3.h.1 `WorkflowDraftResource` shape:
+     * Backend returns the `WorkflowDraftResource` shape:
      * `{definitionKey, body, lastModifiedAt}`. The page uses
      * `body` to seed; `lastModifiedAt` for the "saved at" indicator.
      */
@@ -133,7 +133,7 @@ export class DesignerService {
 
     /**
      * GET an immutable deployed version's BPMN-Lite body for a workflow
-     * definition. M3.3.m polish-bundle (F-1) read-only viewer seam.
+     * definition. polish-bundle (F-1) read-only viewer seam.
      *
      * Distinct from {@link getWorkflowDraft}: this endpoint returns the
      * BYTES PINNED AT DEPLOY TIME, not the latest draft body. The
@@ -141,7 +141,7 @@ export class DesignerService {
      * the bytes are immutable; the editor mounts them in viewer mode
      * with no save / deploy / mutation surface.
      *
-     * Backend returns the M3.3.m.F `WorkflowVersionResource` shape:
+     * Backend returns the `WorkflowVersionResource` shape:
      * `{definitionKey, version, body, deployedAt}`. The viewer page
      * surfaces `deployedAt` in the header as "Deployed {ts}".
      */
@@ -161,7 +161,7 @@ export class DesignerService {
      * precede deploy -- the deployer reads VFS bytes, not request
      * body.
      *
-     * Returns the M3.3.h.1 `WorkflowDeployResource` shape with the
+     * Returns the `WorkflowDeployResource` shape with the
      * just-minted version row's id + monotonic version + deployedAt
      * timestamp.
      */
@@ -172,11 +172,11 @@ export class DesignerService {
         );
     }
 
-    /* ──────────────────── M3.5.e State Machine endpoints ──────────────────── */
+    /* -------------------- State Machine endpoints -------------------- */
 
     /**
      * GET the current State Machine draft for a definition keyed by `key`.
-     * The page seeds the editor via `JSON.parse(result.body)` →
+     * The page seeds the editor via `JSON.parse(result.body)` ->
      * `StateMachineEditor.load(model)`. A new key returns a blank model.
      */
     getStateMachineDraft(key: string): Observable<StateMachineDraftPayload> {
@@ -264,14 +264,14 @@ export class DesignerService {
         return `${this.apiBase}/workflows/${encodeURIComponent(key)}/draft`;
     }
 
-    /* ──────────────────── M3.3.i XRefs catalogs ──────────────────── */
+    /* -------------------- XRefs catalogs -------------------- */
 
     /**
      * GET the workflow service-task handler catalog. Feeds the
      * BPMN-Lite property panel's `serviceTask.implementation`
-     * autocomplete via the M3.2.e XRefs scope `'workflow.handlers'`.
+     * autocomplete via the XRefs scope `'workflow.handlers'`.
      *
-     * Hits the M3.3.i `/api/v1/workflow/handlers` endpoint. Returns a
+     * Hits the `/api/v1/workflow/handlers` endpoint. Returns a
      * JSON-LD Hydra collection -- the page slices `member` (the
      * canonical Hydra key for the row array). Empty catalog returns
      * `{ member: [] }` rather than 404.
@@ -285,12 +285,12 @@ export class DesignerService {
     /**
      * GET the FormModule definition catalog. Feeds the BPMN-Lite
      * property panel's `userTask.formKey` autocomplete via the
-     * M3.2.e XRefs scope `'workflow.forms'`.
+     * XRefs scope `'workflow.forms'`.
      *
-     * Hits the existing M3.0 `/api/v1/forms` endpoint
+     * Hits the existing `/api/v1/forms` endpoint
      * (FormDefinitionResource). The wrapper just lifts the entries
      * into XRefItem shape; no per-form metadata is consulted at
-     * M3.3.i (the form id IS the picker value).
+     * (the form id IS the picker value).
      */
     listForms(): Observable<HydraCollection<FormDefinitionEntry>> {
         return this.http.get<HydraCollection<FormDefinitionEntry>>(
@@ -300,7 +300,7 @@ export class DesignerService {
 }
 
 /**
- * Minimal JSON-LD Hydra collection envelope. The M3.3.i page only
+ * Minimal JSON-LD Hydra collection envelope. The page only
  * reads `member`; the rest of the Hydra metadata
  * (`@context`, `totalItems`, `view`) is irrelevant to the picker
  * population path.
@@ -312,7 +312,7 @@ export interface HydraCollection<T> {
 /**
  * Shape of one row in `GET /api/v1/workflow/handlers`. Mirrors the
  * backend `WorkflowHandlerResource`. Optional `description` + `fqcn`
- * are reserved for a richer label affordance the M3.3.i schema
+ * are reserved for a richer label affordance the schema
  * doesn't yet surface.
  */
 export interface WorkflowHandlerEntry {
@@ -333,7 +333,7 @@ export interface FormDefinitionEntry {
 }
 
 /**
- * Shape of the M3.3.h.1 `GET / PUT /api/v1/workflows/{key}/draft`
+ * Shape of the `GET / PUT /api/v1/workflows/{key}/draft`
  * responses. Mirrors the backend `WorkflowDraftResource`.
  */
 export interface WorkflowDraftPayload {
@@ -363,7 +363,7 @@ export interface WorkflowDraftPayload {
 }
 
 /**
- * Shape of the M3.3.h.1 `POST /api/v1/workflows/{key}/deploy`
+ * Shape of the `POST /api/v1/workflows/{key}/deploy`
  * response. Mirrors the backend `WorkflowDeployResource`. The
  * `version` field is the just-minted version number (1-based); the
  * wrapper surfaces it in a toast so the editor confirms the deploy
@@ -378,7 +378,7 @@ export interface WorkflowDeployResult {
 }
 
 /**
- * Shape of the M3.3.m polish-bundle (F-1)
+ * Shape of the polish-bundle (F-1)
  * `GET /api/v1/workflows/{key}/versions/{version}` response. Mirrors
  * the backend `WorkflowVersionResource`. The viewer surfaces
  * `deployedAt` in the header chrome and mounts `body` via the same

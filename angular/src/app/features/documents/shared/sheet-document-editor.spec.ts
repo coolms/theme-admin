@@ -4,10 +4,10 @@ import { SHEET_DOCUMENT_MIME } from './sheet-document.constants';
 /**
  * Why the `.dsheet` editor registration in `app.config.ts` must be EXACT.
  *
- * A native spreadsheet template (ADR-155) is opened by the Documents library
+ * A native spreadsheet template is opened by the Documents library
  * through `FileEditorRegistry`; with no entry for its mime the operator gets
  * "No editor is registered for this template format" on a template the backend
- * can otherwise mint, fill and render (#1987).
+ * can otherwise mint, fill and render.
  *
  * ## What this spec does NOT cover, and why
  *

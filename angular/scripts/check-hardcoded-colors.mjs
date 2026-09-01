@@ -2,7 +2,7 @@
 // Ratchet on hard-coded colours in the admin SPA.
 //
 // The admin is themed through `--cms-*` custom properties, which is what lets a
-// system setting or a per-user preference re-colour it at runtime (#2013 proved
+// system setting or a per-user preference re-colour it at runtime (proved
 // that end to end: overriding the tokens on `:root` re-themes the running app).
 // A colour written as a literal escapes that entirely — it keeps its value when
 // the theme changes, so a themed admin comes out half-themed.
@@ -26,35 +26,35 @@ const SRC = join(ROOT, 'src');
  * change added hard-coded colour, and the fix is to use the token that carries
  * the MEANING you want — not the one that happens to hold the same value. Those
  * differ: `#9ca3af` is both `--cms-text-muted` and `--cms-btn-hover-border`, and
- * picking by value couples muted text to button borders (#2013).
+ * picking by value couples muted text to button borders.
  */
 // History worth keeping, because one of these drops was NOT progress:
-//   634 → 290  real removals (#2014–#2025)
-//   290 → 273  a COUNTING fix (#2026), no literals removed — the gap pattern
+//   634 -> 290  real removals (–)
+//   290 -> 273  a COUNTING fix, no literals removed — the gap pattern
 //              had been double-counting inside JS object literals
-//   273 → 247  real removals (#2027, the near-white grey consolidation)
-//   247 → 219  real removals (#2028, the text-body and danger-text tail)
-//   219 → 218  a literal that lived inside a DEAD rule (#2029)
-//   218 → 213  literals inside components that were re-declaring the KIT's own
-//              classes (#2030) — deleting the shadow deleted the literal
-//   213 → 211  literals dark mode EXPOSED (#2031) — a media tile and its thumb
+//   273 -> 247  real removals (, the near-white grey consolidation)
+//   247 -> 219  real removals (, the text-body and danger-text tail)
+//   219 -> 218  a literal that lived inside a DEAD rule
+//   218 -> 213  literals inside components that were re-declaring the KIT's own
+//              classes — deleting the shadow deleted the literal
+//   213 -> 211  literals dark mode EXPOSED — a media tile and its thumb
 //              that stayed light while everything around them flipped. Dark
 //              mode is the sharpest ratchet there is: it does not count
 //              literals, it shows you the ones that MATTER.
-//   211 → 211  UNCHANGED but no longer the same measurement (#2032): the scan
+//   211 -> 211  UNCHANGED but no longer the same measurement: the scan
 //              now covers styles.scss outside its :root blocks, which exposed
 //              10 literals in the kit's own component rules. All 10 were
 //              removed in the same pass, so the number held while the scope
 //              widened. Do not read this as "nothing happened".
-//   211 → 210  the document editor's desk grey, found by opening an actual
-//              document in dark mode (#2036). The literal was never the
+//   211 -> 210  the document editor's desk grey, found by opening an actual
+//              document in dark mode. The literal was never the
 //              defect — the THEMED token next to it was.
-//   210 → 205  the tag input, still wholly on Bootstrap's palette down to a
-//              BLUE focus ring, found by opening the email composer (#2038)
-//   205 → 204  the image-map editor's active-tool border, found by opening the
-//              regions editor in dark mode (#2042)
-//   204 → 193  status-tinted chip PAIRS mapped to the family that means the
-//              same thing (#2043). Only where value AND meaning agreed —
+//   210 -> 205  the tag input, still wholly on Bootstrap's palette down to a
+//              BLUE focus ring, found by opening the email composer
+//   205 -> 204  the image-map editor's active-tool border, found by opening the
+//              regions editor in dark mode
+//   204 -> 193  status-tinted chip PAIRS mapped to the family that means the
+//              same thing. Only where value AND meaning agreed —
 //              `--dynamic` / `--key` share the amber value but label a KIND,
 //              not a state, so they stay literal rather than be filed under
 //              warning for looking like it.
@@ -66,7 +66,7 @@ const BASELINE = 193;
  *
  * Found by re-theming the running admin and noticing the datagrid's Yes badge
  * did not follow: it is `class="badge bg-success"`, which contains no literal
- * yet pins the element to BOOTSTRAP's palette (#198754) (#2018).
+ * yet pins the element to BOOTSTRAP's palette (#198754).
  *
  * Two shapes, both counted, because both mean "this colour does not come from
  * the kit" — but they are FIXED DIFFERENTLY, so read the offender before acting:
@@ -75,26 +75,26 @@ const BASELINE = 193;
  *    `text-muted`. Fix by using the kit class (`.cms-badge--success`).
  *  - **Local re-definition**: a component styling `.btn-primary { … }` in its
  *    own scoped block, shadowing Bootstrap's name with a private copy. That is
- *    the same fault as the toggle trapped in the datagrid (#2011) — a kit
+ *    the same fault as the toggle trapped in the datagrid — a kit
  *    control re-implemented per component. Fix by using `.cms-btn
  *    cms-btn-primary` in the markup and deleting the local rule.
  *
  * Counted separately from the hex total so it is visible WHICH debt moved.
  */
-// 238 → 198 (#2029): forty of these were never template usages at all but DEAD
+// 238 -> 198: forty of these were never template usages at all but DEAD
 // `.btn-primary` / `.btn-danger` SELECTORS — components re-styling Bootstrap's
 // names in scoped CSS whose markup had already migrated to `.cms-btn`. Deleting
-// the dead rules removed them. That is why #2019 insisted the two shapes be
+// the dead rules removed them. That is why insisted the two shapes be
 // read before being acted on: a third of this count was not what it looked like.
-// 198 → 188 (#2030): the last eleven `btn btn-primary` / `btn-outline-secondary`
+// 198 -> 188: the last eleven `btn btn-primary` / `btn-outline-secondary`
 // call sites moved to the kit, including the LOGIN button — the first screen in
 // the product, and it was rendering Bootstrap blue against an amber brand.
-// 188 → 187: excluding `placeholder` values, which are prose about classes.
+// 188 -> 187: excluding `placeholder` values, which are prose about classes.
 const BOOTSTRAP_BASELINE = 187;
 
 /**
  * Bootstrap colour classes that are DELIBERATELY still in the markup because a
- * bridge rule re-points them at `--cms-*` tokens (#2020, completed in #2030).
+ * bridge rule re-points them at `--cms-*` tokens (, completed in ).
  *
  * The count above cannot express the thing that actually matters. It treats a
  * bridged `.text-muted` and an unbridged `.text-white` as one unit of debt, so
@@ -114,7 +114,7 @@ const BOOTSTRAP_BASELINE = 187;
  */
 const BRIDGED_VIA_BS_VARIABLE = {
     // `.text-muted` reads --bs-secondary-color, which :root re-points. 105 sites
-    // ride on this one line, which is why #2020 preferred it to a migration.
+    // ride on this one line, which is why preferred it to a migration.
     'text-muted': '--bs-secondary-color',
     'text-body': '--bs-body-color',
     'border-primary': '--bs-border-color',
@@ -122,7 +122,7 @@ const BRIDGED_VIA_BS_VARIABLE = {
 };
 
 // Only a hex inside a colour DECLARATION counts. A bare `#[0-9a-f]{3,8}` matches
-// `#1709` — a ledger reference — and this codebase's comments are full of them;
+// `` — areference — and this codebase's comments are full of them;
 // counting those produced a "worst offenders" list of task IDs.
 //
 // KNOWN GAP, stated rather than hidden: `rgb()` / `rgba()` literals are NOT
@@ -137,7 +137,7 @@ const PROPS = [
     'fill', 'stroke', 'box-shadow', 'outline', 'caret-color',
 ].join('|');
 // `[^;{}\n]` — the NEWLINE exclusion is load-bearing, and was added after the
-// same omission broke a codemod (#2025). A CSS declaration ends at a semicolon,
+// same omission broke a codemod. A CSS declaration ends at a semicolon,
 // so `[^;{}]*` is right for CSS — but these files also contain JavaScript object
 // literals, which end at COMMAS. There, the gap runs on across lines, picks up
 // hexes belonging to LATER properties, and counts them again when those
@@ -167,7 +167,7 @@ const BOOTSTRAP_UTILS = /(?<!-)(?<!cms-)\b(bg|text|border|btn|btn-outline|alert|
  * everything below them — styles.scss also holds the kit's component rules, and
  * three literals hid there for the entire arc, including `.form-group label`
  * at the value of --cms-text-body. Dark mode found that one at 1.53:1 in a
- * dialog because no counter was ever looking (#2032).
+ * dialog because no counter was ever looking.
  *
  * Lines are replaced rather than removed so reported line numbers stay true.
  */
@@ -197,7 +197,7 @@ for (const file of walk(SRC)) {
         for (const hex of value.match(HEX) ?? []) {
             // A literal inside `var(--token, #fallback)` is NOT hard-coding: the
             // token is being used, and the literal is a deliberate safety net for
-            // when it is undefined. Rewriting those was the mistake #2013 caught.
+            // when it is undefined. Rewriting those was the mistake caught.
             const before = value.slice(0, value.indexOf(hex));
             if (/var\([^()]*$/.test(before)) continue;
 

@@ -18,7 +18,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
 /**
  * M9.g Slice B — the dial pad, opened in the right drawer by the topbar
  * `CallDialQuickAccessComponent`. Type or tap a number, hit Call, and the
- * backend rings YOUR device (the `sipEndpoint` from Profile → Calls) then
+ * backend rings YOUR device (the `sipEndpoint` from Profile -> Calls) then
  * bridges it out to the number — click-to-dial over the existing
  * `POST /call/originate` (M9.e.2). The resulting call soon pops on the
  * incoming-call overlay + lands in Call history.

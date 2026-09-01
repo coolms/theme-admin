@@ -171,7 +171,7 @@ export class GroupsListComponent implements OnInit {
     }
 
     /**
-     * Edit which groups this one hands its role out to (#1726).
+     * Edit which groups this one hands its role out to.
      *
      * Reloads the grid on save even though no visible column changes: the row's
      * `grantsGroupIds` is stale afterwards, and a later action reading it would

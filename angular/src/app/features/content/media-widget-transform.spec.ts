@@ -41,7 +41,7 @@ describe('dtmplToHtml — single vs gallery disambiguation', () => {
 /**
  * Single-asset string params (alt/class/caption) must be BACKTICK-delimited.
  * The DTMPL tag lexer's only string delimiter is the backtick; a double-quoted
- * value throws "Unexpected character" → HTTP 500 at SSR. These specs pin the
+ * value throws "Unexpected character" -> HTTP 500 at SSR. These specs pin the
  * delimiter, the raw (decoded) storage, and the save/reload round-trip.
  *
  * Note on JS: the dtmpl strings below carry literal backticks, so they are

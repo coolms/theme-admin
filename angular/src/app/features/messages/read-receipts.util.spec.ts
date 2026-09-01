@@ -2,8 +2,8 @@ import { advancePeerCursor, peerReadCursors, readByEveryoneSeq, ReadReceiptParti
 
 /**
  * The read-receipt rule: a tick flips to "Read" only once EVERY peer has read
- * that far (#1018) — including after a live `read` nudge, which is where it
- * used to break (#2112).
+ * that far — including after a live `read` nudge, which is where it
+ * used to break.
  */
 describe('read receipts', () => {
     const me = 'user-me';
@@ -65,7 +65,7 @@ describe('read receipts', () => {
         });
 
         it('does NOT let one peer read for the whole group', () => {
-            // THE #2112 regression: `b` still trails, so my messages above seq 1
+            // THE regression: `b` still trails, so my messages above seq 1
             // are not "Read" just because `a` opened the channel.
             const cursors = advancePeerCursor(peerReadCursors([peer('a', 1), peer('b', 1)], me), 'a', 42);
 

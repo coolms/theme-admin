@@ -23,7 +23,7 @@ export interface ContentFieldDescriptorDto {
     readonly widget?: FieldWidgetDescriptorDto;
 }
 
-/** A labelled group of fields (e.g. "SEO", "Blog") — ADR-129 field set. */
+/** A labelled group of fields (e.g. "SEO", "Blog") — field set. */
 export interface ContentFieldPanelDto {
     readonly group: string;
     readonly label: string;
@@ -40,10 +40,10 @@ export interface ContentFieldPanelsDto {
 }
 
 /**
- * Data layer for the module-contributed content field panels (ADR-129, W1.c/d).
+ * Data layer for the module-contributed content field panels (, W1.c/d).
  *
- *  - `fetch(path)` → the panels + current values that apply to the node.
- *  - `save(path, extras)` → merge-patch the node's extras (same generic VFS
+ *  - `fetch(path)` -> the panels + current values that apply to the node.
+ *  - `save(path, extras)` -> merge-patch the node's extras (same generic VFS
  *    write the page editor uses for variant metadata).
  */
 @Injectable({ providedIn: 'root' })

@@ -1,6 +1,6 @@
 /**
  * Connection-presence bookkeeping for the shared `presence.chat` channel
- * (#2122) — who is online, derived from Centrifugo's own join/leave pushes
+ * — who is online, derived from Centrifugo's own join/leave pushes
  * instead of a 20-second poll.
  *
  * The unit of presence Centrifugo reports is a CLIENT (one connection), not a
@@ -19,7 +19,7 @@ export interface PresenceClient {
     readonly user: string;
 }
 
-/** clientId → userId. */
+/** clientId -> userId. */
 export type PresenceClients = ReadonlyMap<string, string>;
 
 export const NO_PRESENCE: PresenceClients = new Map<string, string>();
@@ -54,7 +54,7 @@ export function withPresenceClient(current: PresenceClients, client: PresenceCli
 /**
  * A `leave` push: forget ONE connection.
  *
- * ⚠️ The user stays online until their LAST client leaves — that is what makes
+ *  The user stays online until their LAST client leaves — that is what makes
  * a second tab, or a reconnect that briefly overlaps the old connection, not
  * flicker the dot.
  */

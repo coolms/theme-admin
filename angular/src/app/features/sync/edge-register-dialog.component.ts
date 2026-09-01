@@ -21,7 +21,7 @@ export interface EdgeRegisterDialogData {
 const ALL_TIERS = ['config', 'content', 'runtime'] as const;
 
 /**
- * Register / edit a sync edge (ADR-150 B.3.2) — the modal counterpart of
+ * Register / edit a sync edge ( B.3.2) — the modal counterpart of
  * `coolms:sync:edge:register`.
  *
  * The backend upsert is DECLARED-STATE-WINS, so this dialog always submits the

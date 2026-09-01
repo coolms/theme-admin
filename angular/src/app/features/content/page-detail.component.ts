@@ -6,7 +6,7 @@ import { PageSpaceStateService } from './page-space-state.service';
 import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
 
 /**
- * Properties panel for the Pages explorer (#1711).
+ * Properties panel for the Pages explorer.
  *
  * Pages was the only one of the three explorers with no `content.panel.right`,
  * so everything a page IS beyond its name — where it lives, what renders it,
@@ -67,7 +67,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
                         <dt>Path</dt>
                         <dd class="pd__mono">{{ p.vfsPath ?? '—' }}</dd>
 
-                        <!-- The URL IS the filename (#1707). Worth stating
+                        <!-- The URL IS the filename. Worth stating
                              outright: it is what makes the .html suffix
                              meaningful, and this is where someone checks it
                              before renaming. -->
@@ -165,7 +165,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
                             <i class="bi bi-pencil"></i>
                             <span>Open editor</span>
                         </button>
-                        <!-- #1715 — the panel is read-only, so the one thing
+                        <!-- — the panel is read-only, so the one thing
                              it can offer for the metadata it does NOT show is
                              the door to where that is authored. -->
                         <button type="button" class="cms-btn cms-btn-sm" (click)="onMetadata()">
@@ -336,7 +336,7 @@ export class PageDetailComponent {
      * The URL this page is served at.
      *
      * Derived by stripping the space's content root from the VFS path — the
-     * URL MIRRORS the filename, extension and all (#1707), so there is nothing
+     * URL MIRRORS the filename, extension and all, so there is nothing
      * to compute beyond the prefix. Null for a personal-space page, which has
      * no site root and therefore no public URL at all until it is placed.
      */
@@ -396,7 +396,7 @@ export class PageDetailComponent {
         this.state.actionRequested$.next('edit');
     }
 
-    /** Same channel, same reason: the listing owns the dialog (#1715). */
+    /** Same channel, same reason: the listing owns the dialog. */
     protected onMetadata(): void {
         this.state.actionRequested$.next('metadata');
     }

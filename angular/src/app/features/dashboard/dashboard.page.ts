@@ -16,7 +16,7 @@ import { AppConfigState, CmsLoaderComponent, ConfigService, NaviGraphService, ty
 import { CmsListPageComponent, LayoutActionsService, TabStripComponent, type TabStripItem, type ToolbarAction } from '@coolms/ui-angular';
 import { WidgetPickerDialogComponent } from './widget-picker.dialog';
 
-/** One catalogue entry, as `GET /dashboard/widgets` returns it (#2087). */
+/** One catalogue entry, as `GET /dashboard/widgets` returns it. */
 interface DashboardWidget {
     readonly id: string;
     readonly label: string;
@@ -36,7 +36,7 @@ interface DashboardWidget {
      */
     readonly columns: number;
     readonly group?: string;
-    /** Hidden by the saved layout: keeps its position, is not drawn (#2096). */
+    /** Hidden by the saved layout: keeps its position, is not drawn. */
     readonly hidden?: boolean;
     /** What the LAYOUT said about the width — absent when it said nothing. */
     readonly explicitColumns?: number;
@@ -59,7 +59,7 @@ interface Card {
     /**
      * What the layout STATED, or null when it stated nothing.
      *
-     * ⚠️ Not the same as `columns`, and conflating them is a one-way door: a
+     *  Not the same as `columns`, and conflating them is a one-way door: a
      * save re-submits every card, so sending the effective width for a card
      * nobody touched would freeze the module's own default into the layout
      * forever. Only a deliberate resize sets this.
@@ -74,8 +74,8 @@ const GRID_COLUMNS = 12;
 const MIN_COLUMNS = 1;
 
 /**
- * `/admin/dashboard` — the widgets installed modules offer (#2087), arranged
- * (#2096).
+ * `/admin/dashboard` — the widgets installed modules offer, arranged
+ *.
  *
  * ## What this page knows, and what it deliberately does not
  *
@@ -322,7 +322,7 @@ const MIN_COLUMNS = 1;
             .dashboard__card { grid-column: span 12; }
         }
 
-        /* ⚠️ user-select is the fix for "I dragged the card and then nothing
+        /*  user-select is the fix for "I dragged the card and then nothing
            worked" (#2101). Pressing on a card's text and moving SELECTS it, and
            the browser then offers that selection as a NATIVE drag — which
            competes with the CDK drag, swallows clicks until it ends, and lands
@@ -367,7 +367,7 @@ const MIN_COLUMNS = 1;
         .dashboard__grip:hover,
         .dashboard__toggle:hover { color: var(--cms-text); background: var(--cms-hover, rgba(127,127,127,.15)); }
 
-        /* A 4px BAR inside a 16px TARGET (#2101). The bar is what you see; the
+        /* A 4px BAR inside a 16px TARGET. The bar is what you see; the
            span is what you have to hit, and 4px is not something a person
            reliably hits with a trackpad — it was not reliably hittable in
            testing either, which is how the difference got noticed. The extra
@@ -525,7 +525,7 @@ export class DashboardPageComponent {
 
     /**
      * Which actions the header offers is declared in the `core:dashboard`
-     * layout (ADR-127): Arrange while viewing, Save / Cancel / Reset while
+     * layout: Arrange while viewing, Save / Cancel / Reset while
      * arranging, all three greying out mid-save. The page says WHICH MODE it
      * is in and stops there.
      */
@@ -559,7 +559,7 @@ export class DashboardPageComponent {
         }
     }
 
-    // ── arranging ──────────────────────────────────────────────────────────
+    // -- arranging ----------------------------------------------------------
 
     private startEditing(): void {
         this.saveError.set(null);
@@ -608,7 +608,7 @@ export class DashboardPageComponent {
             });
     }
 
-    // ── dropping a menu item ───────────────────────────────────────────────
+    // -- dropping a menu item -----------------------------------------------
 
     protected onDragOver(event: DragEvent): void {
         if (!this.editing() || !this.carriesLink(event)) return;
@@ -622,7 +622,7 @@ export class DashboardPageComponent {
     /**
      * Is this drag a LINK, or something else entirely?
      *
-     * ⚠️ Not a nicety (#2101). Dragging a card used to select its text, and the
+     *  Not a nicety. Dragging a card used to select its text, and the
      * browser then offers that selection as a native drag — which this grid
      * accepted, highlighted itself for, and answered with "That menu item does
      * not belong to a module offering widgets" for a drag that was never a menu
@@ -636,9 +636,9 @@ export class DashboardPageComponent {
     }
 
     /**
-     * A sidebar item dropped on the grid adds that module's widgets (#2098).
+     * A sidebar item dropped on the grid adds that module's widgets.
      *
-     * The chain is href → navi node → `meta.module` → widgets. It needs the
+     * The chain is href -> navi node -> `meta.module` -> widgets. It needs the
      * middle step because a route tells you nothing about ownership:
      * `/cdp-segments` and `/call/wallboard` belong to `cdp` and `call`, and no
      * amount of string-slicing gets there reliably. The navi node knows,
@@ -800,7 +800,7 @@ export class DashboardPageComponent {
         this.cards.set(this.cards().map(existing => existing.id === card.id ? card : existing));
     }
 
-    // ── persistence ────────────────────────────────────────────────────────
+    // -- persistence --------------------------------------------------------
 
     private async save(): Promise<void> {
         this.saving.set(true);
@@ -850,7 +850,7 @@ export class DashboardPageComponent {
         return 'string' === typeof detail && '' !== detail ? detail : fallback;
     }
 
-    // ── loading ────────────────────────────────────────────────────────────
+    // -- loading ------------------------------------------------------------
 
     private apiBase(): string {
         return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
@@ -922,7 +922,7 @@ export class DashboardPageComponent {
     /**
      * Walk a dot-path, returning null rather than guessing at anything odd.
      *
-     * ⚠️ `undefined` as well as `null`, and that was a real bug (#2088). A
+     *  `undefined` as well as `null`, and that was a real bug. A
      * nullable PHP property is OMITTED from the JSON rather than sent as null,
      * so `displayPath` arrives here as `undefined` — which a strict
      * `null === path` misses, so `undefined.split()` threw, the caller's catch
@@ -944,7 +944,7 @@ export class DashboardPageComponent {
 
     private fetch<T>(url: string): Promise<T> {
         // Plain JSON, not ld+json: Hydra rewrites a map's keys, which would
-        // reshape the very response a dot-path is walking (ADR-157).
+        // reshape the very response a dot-path is walking.
         return new Promise<T>((resolve, reject) => {
             this.http.get<T>(url, { headers: { Accept: 'application/json' } })
                 .subscribe({ next: resolve, error: reject });

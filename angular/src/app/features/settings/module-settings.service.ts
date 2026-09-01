@@ -34,7 +34,7 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
     // same two sources with a per-key type guard. The two disagreed for a key
     // saved as `null`: this file called it cleared, the server went on using the
     // shipped value, and the screen confidently described a configuration that
-    // was not running. Taken from the server now (ADR-165).
+    // was not running. Taken from the server now.
     //
     // A wire without `effective` therefore yields an EMPTY map, deliberately.
     // Recomposing it as a fallback would restore the divergence for exactly the
@@ -50,7 +50,7 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
         // was before per-site overrides existed and what most of them stay.
         siteScopable: true === wire.siteScopable,
         scope: orNull(wire.scope),
-        // ⚠️ **The wire never sends `null` — it sends NOTHING.** API Platform
+        //  **The wire never sends `null` — it sends NOTHING.** API Platform
         // defaults `skip_null_values` to true, so every null property is omitted
         // from the JSON and arrives here as `undefined`, while the DTO promises
         // `string | null`. A reader written to that promise with an explicit
@@ -178,7 +178,7 @@ export class ModuleSettingsService {
     /**
      * Drop what is saved so the layer beneath applies again.
      *
-     * ⚠️ With a `site` that means the PLATFORM's values, not the module's
+     *  With a `site` that means the PLATFORM's values, not the module's
      * defaults — a site sits on top of the platform row, and dropping the site's
      * override reveals what was underneath rather than what shipped.
      */

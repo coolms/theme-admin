@@ -16,7 +16,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
  *
  * The toolbar holds only action buttons; the FQCN + type-badge breadcrumb
  * lives as a sticky band at the top of the detail panel — see
- * DomainExplorerDetailComponent (#257, mirroring #246/#247).
+ * DomainExplorerDetailComponent (, mirroring /).
  */
 @Component({
     selector: 'app-dynamic-entities-page',

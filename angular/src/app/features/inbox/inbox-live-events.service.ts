@@ -9,7 +9,7 @@ import { InboxLiveEvent } from './inbox.types';
  * per-user channel `inbox.{userIdRfc4122}`. Mirror of
  * `CalendarLiveEventsService`.
  *
- * **Transport seam (follow-up).** Today this injects
+ * **Transport seam (a follow-up).** Today this injects
  * `CentrifugoClientService` directly because that's the only realtime
  * client wired on the FE. The backend already publishes through the
  * `RealtimeBusInterface` abstraction, so swapping to Mercure (or any

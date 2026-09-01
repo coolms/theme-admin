@@ -8,14 +8,14 @@ import { FolderContentComponent } from './folder-content.component';
 import { InstancesBrowserComponent } from './instances-browser.component';
 
 /**
- * F.14c-3 + Phase A.1a — main-panel router.
+ * F.14c-3 +.1a — main-panel router.
  *
  * Despite the legacy `DocumentGrid` slot key (kept because the backend
  * layout YAML still references it), this component dispatches by
  * `state.rightPanelMode()`:
  *
- *   `properties`  → folder content tile/list view of templates
- *   `instances`   → full-width instances file zone for the selected
+ *   `properties`  -> folder content tile/list view of templates
+ *   `instances`   -> full-width instances file zone for the selected
  *                    template; the right detail slot collapses via
  *                    ExplorerLayout's `openOnSelect` gate (the page
  *                    reports `activeItem: null` in instances mode)
@@ -62,14 +62,14 @@ import { InstancesBrowserComponent } from './instances-browser.component';
             overflow: hidden;
         }
         /*
-         * Flex context for whichever child is showing (#1760).
+         * Flex context for whichever child is showing.
          *
          * The child rule below used to force display:block + height:100%,
          * which OUT-SPECIFIED the child's own :host{display:flex} — an
          * element selector plus a class beats :host — so cms-folder-content
          * was laid out as a block no matter what it asked for, and the
          * DataGrid inside it fell back to content height: a card ending
-         * mid-pane with dead white beneath. Same defect #1712 fixed on Pages,
+         * mid-pane with dead white beneath. Same defect fixed on Pages,
          * one level further up.
          *
          * Children now PARTICIPATE in the flex column instead of being
@@ -92,7 +92,7 @@ export class DocumentGridComponent {
     protected readonly state = inject(DocumentPageStateService);
 
     /**
-     * #1683 — `.templates` is shown under its friendly name so the
+     * — `.templates` is shown under its friendly name so the
      * breadcrumb reads `Root / Documents / Templates`. The directory
      * itself keeps its real name: it is the security gate
      * `TemplateRootResolver` matches on, not a naming convention.
@@ -106,14 +106,14 @@ export class DocumentGridComponent {
     protected readonly showInstances = computed(() => this.state.browseView() !== 'templates');
 
     /**
-     * #1683 — the breadcrumb used to render `state.currentPath()` in
+     * — the breadcrumb used to render `state.currentPath()` in
      * every mode, which made it claim `/docs` while the pane below
      * listed what actually lives in `/docs/.templates`. Now it states
      * the real location:
      *
-     *   templates listing → `<space>/.templates`        → `… / Documents / Templates`
-     *   space documents   → `<space>`                   → `… / Documents`
-     *   one template's instances → the TEMPLATE's path  → `… / Documents / Templates / <template>`
+     *   templates listing -> `<space>/.templates`        -> `… / Documents / Templates`
+     *   space documents   -> `<space>`                   -> `… / Documents`
+     *   one template's instances -> the TEMPLATE's path  -> `… / Documents / Templates / <template>`
      *
      * The instances chain is a REAL path, not a decoration: a template
      * IS a Node under `<space>/.templates/`, so the server resolves
@@ -125,7 +125,7 @@ export class DocumentGridComponent {
     protected readonly breadcrumbPath = computed(() => {
         const path = this.state.currentPath().replace(/\/+$/, '');
         // Anchored to the SPACE root, not `currentPath` — templates live
-        // at one root per space, so a subfolder has none (#1684).
+        // at one root per space, so a subfolder has none.
         const templatesDir = `${this.spaceRoot().replace(/\/+$/, '')}/${TEMPLATES_DIR}`;
 
         switch (this.state.browseView()) {

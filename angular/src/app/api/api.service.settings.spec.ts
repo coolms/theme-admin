@@ -16,7 +16,7 @@ import { ApiService } from './api.service';
  * `updateSettings()` did not, and nothing noticed: the PATCH persisted
  * correctly and only the in-memory echo was mangled, which stays invisible
  * until a caller READS a field off it. The per-user accent colour was the first
- * feature to do that, and it silently did nothing (#2033).
+ * feature to do that, and it silently did nothing.
  *
  * These pin the header on both, because the bug is a missing header and a test
  * that only checked the parsed body would pass against the broken version.

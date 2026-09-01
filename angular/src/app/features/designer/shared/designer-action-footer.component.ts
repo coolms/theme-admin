@@ -15,7 +15,7 @@ import { DateTimePipe } from '@coolms/ui-angular';
  *  - **Left (status):** an optional connect-mode hint, the "Saved {ts}"
  *    indicator, a projected `<ng-content>` slot for surface extras (e.g.
  *    BPMN's "Forked from module" chip + Revert), and the deploy badge
- *    (`deployedVersion > 0` → green "Deployed vN"; else the muted
+ *    (`deployedVersion > 0` -> green "Deployed vN"; else the muted
  *    `draftLabel`). This is the content that used to live in the now-retired
  *    standalone `designer-status-bar` strip.
  *  - **Right (actions):** Cancel (modal-only), Save (secondary), Deploy
@@ -111,7 +111,7 @@ import { DateTimePipe } from '@coolms/ui-angular';
     `],
 })
 export class DesignerActionFooterComponent {
-    // ─── actions ──────────────────────────────────────────────────────────
+    // --- actions ----------------------------------------------------------
     readonly saveLabel = input<string>('Save');
     readonly deployLabel = input<string>('Deploy');
     readonly cancelLabel = input<string>('Cancel');
@@ -122,15 +122,15 @@ export class DesignerActionFooterComponent {
     /** Cancel is modal-only (closes the dialog); routed pages leave it off. */
     readonly showCancel = input<boolean>(false);
 
-    // ─── status (folded in from the retired designer-status-bar) ──────────
+    // --- status (folded in from the retired designer-status-bar) ----------
     /**
      * Raw ISO "saved at" instant; null hides the indicator. Rendered via the
-     * pref-aware `appDateTime` pipe (#1035) so it honours the user's tz +
-     * 12h/24h + date-format pref (today → time, older → date + time) — the
+     * pref-aware `appDateTime` pipe so it honours the user's tz +
+     * 12h/24h + date-format pref (today -> time, older -> date + time) — the
      * same seam every other surface uses. (Was a pre-formatted locale string.)
      */
     readonly savedAt = input<string | null>(null);
-    /** Latest deployed version; > 0 → "Deployed vN", else the draft badge. */
+    /** Latest deployed version; > 0 -> "Deployed vN", else the draft badge. */
     readonly deployedVersion = input<number | null>(null);
     /** Muted badge text shown when not deployed. */
     readonly draftLabel = input<string>('Draft · not deployed');

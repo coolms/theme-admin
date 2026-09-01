@@ -2,10 +2,10 @@
 // Guard on the two ways an inline `styles`/`template` block silently stops
 // being what it looks like.
 //
-// ── 1. A BACKTICK inside the literal ─────────────────────────────────────────
+// -- 1. A BACKTICK inside the literal -----------------------------------------
 // Component styles live in a template literal, so a backtick written in a CSS
 // comment — the natural way to quote a class name in prose — ENDS the literal.
-// The CSS after it is parsed as TypeScript, where `#2030` becomes a private
+// The CSS after it is parsed as TypeScript, where `` becomes a private
 // identifier and `--cms-btn` becomes a double negation, and the error surfaces
 // far away as "Failed to resolve styles at position 0 to a string".
 //
@@ -14,7 +14,7 @@
 // and reopened around the wrong text. Only the parse tells the truth, so this
 // asks TypeScript rather than a regex.
 //
-// ── 2. A `//` COMMENT inside the literal ─────────────────────────────────────
+// -- 2. A `//` COMMENT inside the literal -------------------------------------
 // This project sets no `inlineStyleLanguage`, so Angular parses inline styles
 // as plain CSS, where `//` is not a comment. Use /* */.
 //

@@ -8,7 +8,7 @@ import { HydraCollection } from '../../api/api.service';
 import { SegmentDto, SegmentRuleCheckDto, SegmentWriteDto, SubjectDto } from './cdp.types';
 
 /**
- * Track E Phase 3 (CDP core, #1150) — admin API client for the Customer Data
+ *Phase 3 (CDP core, ) — admin API client for the Customer Data
  * Platform surfaces.
  *
  * Feature-local (not on the shared ApiService), mirroring {@link
@@ -32,7 +32,7 @@ export class CdpService {
         return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
     }
 
-    // ── Segments ──────────────────────────────────────────────────────────────
+    // -- Segments --------------------------------------------------------------
 
     listSegments(): Observable<SegmentDto[]> {
         return this.http
@@ -69,10 +69,10 @@ export class CdpService {
         return this.http.post<SegmentRuleCheckDto>(`${this.apiBase}/analytics/segments/validate`, { rule });
     }
 
-    // ── Subjects ──────────────────────────────────────────────────────────────
+    // -- Subjects --------------------------------------------------------------
 
     /**
-     * One SERVER page of subjects (ledger #1662). Filters travel as repeated
+     * One SERVER page of subjects. Filters travel as repeated
      * `filter=` RQL terms — the endpoint is RQL-native, so the grid's
      * `columnFilters` go through verbatim, including the Segments multi-select
      * (`segments in [...]`), which the provider lifts out and turns into a JSON

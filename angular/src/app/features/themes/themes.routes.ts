@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * Themes Explorer routes (#1747).
+ * Themes Explorer routes.
  *
  * `/admin/themes` — installed themes, which one is active, which sites each
  * serves, and the templates it overrides.

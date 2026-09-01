@@ -141,16 +141,16 @@ export interface CockpitHistoryEventDto {
     id: string;
     type: string;
     /**
-     * #1096 — server-derived human one-liner for the timeline ("Compensated 2
+     * — server-derived human one-liner for the timeline ("Compensated 2
      * activities", "Error caught at svc.pay (code PAYMENT_DECLINED)"). The
      * backend `HistoryEventDescriber` produces it from the stable code + payload
-     * so every client renders identically; empty/absent → fall back to `type`.
+     * so every client renders identically; empty/absent -> fall back to `type`.
      */
     summary?: string;
     /**
-     * #1096 / #1108 — grouping bucket for colour-coding the timeline marker +
+     * / — grouping bucket for colour-coding the timeline marker +
      * badge: `process` | `token` | `compensation` | `task` | `timer` |
-     * `message` | `external-task` (and any future bucket → muted fallback).
+     * `message` | `external-task` (and any future bucket -> muted fallback).
      */
     category?: string;
     tokenId: string | null;
@@ -237,7 +237,7 @@ export interface CockpitDefinitionStatDto {
  */
 export interface CockpitReportDto {
     total: number;
-    /** State value → count, zero-filled for every state. */
+    /** State value -> count, zero-filled for every state. */
     stateCounts: Record<string, number>;
     throughput: CockpitThroughputDto;
     definitions: CockpitDefinitionStatDto[];
@@ -255,7 +255,7 @@ export interface CockpitReportDto {
  */
 export interface CockpitTaskMetricsDto {
     total: number;
-    /** Task state value → count, zero-filled for every state. */
+    /** Task state value -> count, zero-filled for every state. */
     stateCounts: Record<string, number>;
     /** `pending` + `assigned`: the live work queue. */
     openTotal: number;

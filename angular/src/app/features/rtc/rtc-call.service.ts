@@ -24,14 +24,14 @@ export interface ActiveCall {
     readonly endReason: string | null;
     readonly connectedAtMs: number | null;
     /**
-     * Which media plane this call uses once connected (ADR-144 hybrid): `mesh` for
+     * Which media plane this call uses once connected ( hybrid): `mesh` for
      * 1:1 (the P2P {@link RtcMediaController}), `sfu` for a group of 3+ (the
      * {@link RtcSfuMediaController}); null until media starts. The overlay reads
      * this to render the 1:1 stage vs the group tile grid.
      */
     readonly topology: 'mesh' | 'sfu' | null;
     /**
-     * Whether the group call's media room is being recorded (ADR-145 G8c) — the
+     * Whether the group call's media room is being recorded ( G8c) — the
      * notify-by-default `● REC` consent indicator. Mirrors the server's
      * `recordingActive`; reconciled from every REST read + refreshed on a
      * while-connected state nudge (a peer toggling it).
@@ -40,7 +40,7 @@ export interface ActiveCall {
 }
 
 /**
- * The call-CONTROL orchestrator (Track B, Slice 4a) — the single owner of "is
+ * The call-CONTROL orchestrator, Slice 4a) — the single owner of "is
  * there a call, and what's its state". It:
  *
  *  - subscribes to `rtc.user.{myId}` for the whole session so an INCOMING call
@@ -145,10 +145,10 @@ export class RtcCallService {
     }
 
     /**
-     * Start recording the connected GROUP call's media room (ADR-145 G8c) — the
+     * Start recording the connected GROUP call's media room ( G8c) — the
      * notify-by-default consent surface's control. Group-only (recording rides the
      * SFU); a no-op unless connected + SFU + not already recording. A recorder that
-     * isn't deployed answers 503 → a toast, so the button degrades cleanly.
+     * isn't deployed answers 503 -> a toast, so the button degrades cleanly.
      */
     startRecording(): void {
         const call = this._activeCall();
@@ -174,10 +174,10 @@ export class RtcCallService {
     }
 
     /**
-     * Fetch a FINISHED group-call recording as a Bearer-authorised blob (ADR-145
+     * Fetch a FINISHED group-call recording as a Bearer-authorised blob (
      * G8f/G8g). Thin passthrough to {@link RtcService}; the caller (the Messages
      * timeline) triggers the browser save. Surfaced from the `:rec:ready` timeline
-     * notice the ingest posts once the artifact lands (#1375). Any active call is
+     * notice the ingest posts once the artifact lands. Any active call is
      * irrelevant — this reads a past call's recording by id.
      */
     downloadRecording(callId: string): Observable<Blob> {
@@ -262,7 +262,7 @@ export class RtcCallService {
 
     /**
      * Start the media plane for a now-connected call, choosing the topology
-     * (ADR-144 hybrid): 3+ active participants → the SFU group controller, else
+     * ( hybrid): 3+ active participants -> the SFU group controller, else
      * the 1:1 P2P mesh. The roster comes from a fresh `GET /rtc/calls/{id}` read
      * (state nudges carry only the lifecycle, not the count); on error we fall back
      * to the mesh so a two-party call is never blocked by a failed read.

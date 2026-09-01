@@ -1,5 +1,5 @@
 /**
- * `#channel` references in the internal Messages surface (ledger #2114).
+ * `#channel` references in the internal Messages surface.
  *
  * A channel carries a stable HANDLE (`qa-public-channel`), derived from its name
  * once and never re-derived, so a reference in an old message keeps resolving
@@ -58,12 +58,12 @@ export function matchChannels<T extends ChannelRef>(channels: readonly T[], quer
  * Wrap every RESOLVABLE `#handle` in a message body with the reference span the
  * page's delegated click handler picks up.
  *
- * ⚠️ A handle that matches no known channel is left as plain text. A reference
+ *  A handle that matches no known channel is left as plain text. A reference
  * that looks live and goes nowhere is worse than one that was never offered —
  * and it keeps the injected markup built entirely from the channel LIST, never
  * from message content, so nothing an author writes reaches the DOM this way.
  *
- * ⚠️ No `data-` attribute carries the handle: Angular's HTML sanitizer keeps
+ *  No `data-` attribute carries the handle: Angular's HTML sanitizer keeps
  * `class` but STRIPS `data-*`, so the obvious `data-chan="…"` arrives as null
  * and every click silently does nothing. The handle is the element's own text.
  */

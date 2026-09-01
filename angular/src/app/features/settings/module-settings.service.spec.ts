@@ -256,7 +256,7 @@ describe('ModuleSettingsService', () => {
     });
 
     it('turns a field the server OMITTED into null, not undefined', () => {
-        // ⚠️ **The wire never sends `null` — it sends nothing.** API Platform
+        //  **The wire never sends `null` — it sends nothing.** API Platform
         // defaults `skip_null_values` to true, so a null property is dropped from
         // the JSON entirely while the DTO still promises `string | null`. A
         // consumer written to that promise with an explicit `null !== x` test

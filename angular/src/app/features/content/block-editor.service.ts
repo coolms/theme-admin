@@ -34,12 +34,12 @@ export interface LandingBlocksDto {
 }
 
 /**
- * Data layer for the W5.d landing-page block editor (ADR-130).
+ * Data layer for the W5.d landing-page block editor.
  *
- *  - `fetch(path)` → the block-type catalog + the page's current sections +
+ *  - `fetch(path)` -> the block-type catalog + the page's current sections +
  *    its `contentType` (the same path-aware `/content/landing-blocks` the
  *    palette uses, instance mode).
- *  - `save(path, blocks)` → merge-patch the page Package's `extras.blocks`
+ *  - `save(path, blocks)` -> merge-patch the page Package's `extras.blocks`
  *    (the same generic VFS write the page editor uses for variant metadata and
  *    the content field panels). The renderer reads `extras.blocks` live, so no
  *    republish is needed for the change to show on the public site.

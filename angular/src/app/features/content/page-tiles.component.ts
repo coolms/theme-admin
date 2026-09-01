@@ -13,7 +13,7 @@ import {
 import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
 
 /**
- * Tile view of one folder in the Pages explorer (ADR-153, #1694).
+ * Tile view of one folder in the Pages explorer.
  *
  * The reason this component exists at all: the DataGrid is a TABLE. It renders
  * cells, and `ogImage` is not a cell — the whole point of a share image is that
@@ -88,7 +88,7 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
                             @if (isFolder(item)) {
                                 <div class="page-tile__meta">Folder</div>
                             } @else if (item.contentType) {
-                                <!-- #1696 — the kind is only meaningful if you can
+                                <!-- — the kind is only meaningful if you can
                                      see it afterwards; a picker whose result is
                                      invisible is a picker nobody trusts. -->
                                 <div class="page-tile__meta page-tile__meta--type">
@@ -111,7 +111,7 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
                             }
 
                             @if (item.placements?.length) {
-                                <!-- #1698 — WHERE the page appears, which is a
+                                <!-- — WHERE the page appears, which is a
                                      different fact from which locale is live.
                                      Shown because placement is derived from
                                      links: nothing else on the row would reveal
@@ -138,7 +138,7 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
             padding: var(--cms-content-padding);
         }
 
-        /* The three non-table renderings (#1709) are ONE tile under three
+        /* The three non-table renderings are ONE tile under three
            layouts, not three components: they differ in how much room each
            item gets and therefore how much detail survives, which is a
            dimension question. Splitting them would have triplicated the
@@ -299,7 +299,7 @@ export class PageTilesComponent {
     readonly selectedId = input<string | null>(null);
 
     /**
-     * Which of the three non-table renderings to draw (#1709).
+     * Which of the three non-table renderings to draw.
      *
      * `details` never reaches here — that mode is the DataGrid, and the host
      * swaps components rather than passing it down. The input is typed as the
@@ -310,9 +310,9 @@ export class PageTilesComponent {
     readonly layout = input<ExplorerViewMode>('large');
 
     /**
-     * Configured page kinds, passed in rather than fetched here (#1696).
+     * Configured page kinds, passed in rather than fetched here.
      *
-     * The tile only needs `key → label`, and the list already travels with the
+     * The tile only needs `key -> label`, and the list already travels with the
      * page load; fetching it again from a presentational component would put a
      * second request behind every view toggle for data that cannot change
      * between them.

@@ -27,7 +27,7 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Sibling-of-#472 — Schedules admin list page (/admin/schedules).
+ * Sibling — Schedules admin list page (/admin/schedules).
  *
  * Server-side paginated. The DataGrid emits `(loadMore)` on its mount
  * + on every sort / filter change; this page calls

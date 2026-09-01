@@ -30,7 +30,7 @@ export interface ContextSchemaVariable {
     readonly filters: string[];
     readonly loopAlias: string | null;
     /**
-     * Phase 2 (ADR-094) entity reference marker. When set, the
+     * Phase 2 entity reference marker. When set, the
      * Generate dialog renders `<cms-entity-picker>` instead of a
      * plain text input; the persisted value is the entity id, and
      * the backend's render-time `EntityHydratingContributor` swaps
@@ -120,7 +120,7 @@ export interface DocumentTemplate {
     /**
      * VFS path of the backing Node. Needed to open the template through the
      * shared `FileEditorRegistry`, which takes a `VfsNodeDto` — and there is
-     * no by-id node endpoint, `GET /vfs/files` is keyed by path (#1676).
+     * no by-id node endpoint, `GET /vfs/files` is keyed by path.
      */
     readonly path: string | null;
     readonly createdAt: string | null;
@@ -150,14 +150,14 @@ export interface DocumentFolder {
  * derived 1-to-1 from `ContextSchemaVariable.path`; `label` is left
  * `null` because the F.13a schema extractor doesn't carry one yet.
  * When F.9's Form Builder lands the input form keeps the same
- * `(variables, initialValue) → submit(nested JSON)` contract — only
+ * `(variables, initialValue) -> submit(nested JSON)` contract — only
  * the source of `FormVariableInput[]` swaps.
  */
 export interface FormVariableInput {
     readonly path: string;
     readonly label: string | null;
     /**
-     * Phase 2 (ADR-094) — propagated from
+     * Phase 2 — propagated from
      * `ContextSchemaVariable.entityType`. When non-null, the form
      * renders `<cms-entity-picker>` for this variable. The picker
      * emits an entity id (string) for single refs or a list of ids
@@ -183,7 +183,7 @@ export interface ContextVariableGroup {
 
 /**
  * F.14c-2 — option in the dialog's output-format `<select>`. Sourced
- * from a small per-format mapping today (`word → docx | pdf`); a
+ * from a small per-format mapping today (`word -> docx | pdf`); a
  * future backend `format-info` field can supersede it without
  * touching the dialog.
  */

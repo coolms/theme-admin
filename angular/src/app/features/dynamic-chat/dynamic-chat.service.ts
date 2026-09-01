@@ -6,7 +6,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { AgentConversationDto, ChatAttachmentDto, ChatMessageDto } from './dynamic-chat.types';
 
 /**
- * DynamicChat agent panel — thin API client (ledger #995).
+ * DynamicChat agent panel — thin API client.
  *
  * Standalone per-feature service (the precedent set by `InboxService` /
  * `CalendarLiveEventsService`), not bolted onto the large platform
@@ -60,7 +60,7 @@ export class DynamicChatService {
 
     /**
      * POST /dynamic-chat/agent/conversations/{id}/release — un-claim (leave) a
-     * conversation so it returns to the Unassigned queue (#1028). Body-less →
+     * conversation so it returns to the Unassigned queue. Body-less ->
      * 204; the panel refetches the queue afterward. Idempotent.
      */
     release(conversationId: string): Observable<void> {
@@ -92,7 +92,7 @@ export class DynamicChatService {
      *
      * `attachments` carry the descriptors returned by {@link uploadAttachment};
      * only the durable fields are sent — the server re-derives `kind` from the
-     * mime type (ledger #998).
+     * mime type.
      */
     postMessage(
         conversationId: string,
@@ -115,7 +115,7 @@ export class DynamicChatService {
     /**
      * POST /chat/attachments — upload a file to the uploader's private VFS home
      * (multipart). Returns the descriptor to attach to a message. The server
-     * gates the format + size (422 on a disallowed type, ledger #999).
+     * gates the format + size (422 on a disallowed type,.
      */
     uploadAttachment(file: File): Observable<ChatAttachmentDto> {
         const form = new FormData();
@@ -127,7 +127,7 @@ export class DynamicChatService {
 
     /**
      * GET /chat/attachments/{id} — fetch the attachment bytes (authenticated,
-     * participation-gated, ledger #1000). Returned as a Blob so the caller can
+     * participation-gated,. Returned as a Blob so the caller can
      * build an object URL for an `<img>` thumbnail or a download. An `<img src>`
      * can't carry the Bearer token, so images are loaded through this fetch.
      */

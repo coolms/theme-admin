@@ -27,7 +27,7 @@ import {
 
 /**
  * M8.a.4 — thin API client for the Email mailbox client, over the backend
- * read/send/reply/folders/seen resources (ledger #1239–#1245). Standalone
+ * read/send/reply/folders/seen resources–). Standalone
  * per-feature service, like {@link MessagesService}.
  *
  * `Accept: application/json` on collection reads forces the BARE array (not a
@@ -53,20 +53,20 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailMailboxDto>(raw)));
     }
 
-    /** GET /email/mailboxes/{id} — one mailbox with its full connection settings (#1239). */
+    /** GET /email/mailboxes/{id} — one mailbox with its full connection settings. */
     getMailbox(id: string): Observable<EmailMailboxDto> {
         return this.http.get<EmailMailboxDto>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}`, {
             headers: this.jsonHeaders,
         });
     }
 
-    /** POST /email/mailboxes — create a mailbox connection (#1239). */
+    /** POST /email/mailboxes — create a mailbox connection. */
     createMailbox(request: MailboxWriteRequest): Observable<EmailMailboxDto> {
         return this.http.post<EmailMailboxDto>(`${this.apiBase}/email/mailboxes`, request);
     }
 
     /**
-     * PATCH /email/mailboxes/{id} — update a mailbox (#1239). API Platform's Patch
+     * PATCH /email/mailboxes/{id} — update a mailbox. API Platform's Patch
      * op REQUIRES the `application/merge-patch+json` content type (else 415); only
      * the fields present in the body are applied.
      */
@@ -78,14 +78,14 @@ export class EmailService {
         );
     }
 
-    /** DELETE /email/mailboxes/{id} — remove a mailbox connection (#1239). */
+    /** DELETE /email/mailboxes/{id} — remove a mailbox connection. */
     deleteMailbox(id: string): Observable<unknown> {
         return this.http.delete<unknown>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}`);
     }
 
     /**
      * POST /email/mailboxes/{id}/authorize — begin the OAuth connect flow for a
-     * pending OAuth mailbox (M8.f.2d #1267). Returns the provider consent URL; the
+     * pending OAuth mailbox (M8.f.2d ). Returns the provider consent URL; the
      * caller redirects the browser there. Empty body (the mailbox is the `{id}`).
      */
     authorizeMailbox(id: string): Observable<MailboxConnectResultDto> {
@@ -95,7 +95,7 @@ export class EmailService {
         );
     }
 
-    /** GET /email/oauth/providers — the registered OAuth mail providers for the picker (#1270). */
+    /** GET /email/oauth/providers — the registered OAuth mail providers for the picker. */
     listOAuthProviders(): Observable<EmailOAuthProviderDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/oauth/providers`, { headers: this.jsonHeaders })
@@ -104,8 +104,8 @@ export class EmailService {
 
     /**
      * GET /definitions?module=workflow — every DEPLOYED workflow definition, for the
-     * mailbox editor's inbound-workflow picker (#1258). Reuses the cross-module
-     * Definition-catalog endpoint (ledger #674–#679, ROLE_ADMIN) rather than a bespoke
+     * mailbox editor's inbound-workflow picker. Reuses the cross-module
+     * Definition-catalog endpoint–, ROLE_ADMIN) rather than a bespoke
      * route, and maps each row to a `{key,label}` option: `key` is the `definitionKey`
      * the backend starts on a new-conversation email, `label` is `displayName (key)`.
      * `unwrap` tolerates the Hydra envelope or a bare array; rows without a key are dropped.
@@ -124,7 +124,7 @@ export class EmailService {
             })));
     }
 
-    /** GET /email/mailboxes/{id}/folders — per-folder total + unread counts (#1245). */
+    /** GET /email/mailboxes/{id}/folders — per-folder total + unread counts. */
     listFolders(mailboxId: string): Observable<EmailFolderDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`, {
@@ -133,7 +133,7 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailFolderDto>(raw)));
     }
 
-    /** GET /email/messages/{id}/thread — the message's conversation, oldest-sent first (#1307). */
+    /** GET /email/messages/{id}/thread — the message's conversation, oldest-sent first. */
     listThread(messageId: string): Observable<EmailMessageDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/thread`, {
@@ -142,7 +142,7 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailMessageDto>(raw)));
     }
 
-    /** GET /email/mailboxes/{id}/messages?folder=&page= — newest-sent first, page size 50 (#1241). */
+    /** GET /email/mailboxes/{id}/messages?folder=&page= — newest-sent first, page size 50. */
     listMessages(mailboxId: string, folder: string, page = 1): Observable<EmailMessageDto[]> {
         const params = new HttpParams().set('folder', folder).set('page', String(page));
         return this.http
@@ -154,7 +154,7 @@ export class EmailService {
     }
 
     /**
-     * GET /email/search — full-text search across stored messages (#1260). Scoped by
+     * GET /email/search — full-text search across stored messages. Scoped by
      * the optional `mailboxId`/`folder`/`seen` filters; offset-paginated (server page
      * size 20). The bare-array read (`Accept: application/json`) carries no total, so
      * the caller pages by "a full page came back" like {@link listMessages}.
@@ -175,7 +175,7 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailSearchHitDto>(raw)));
     }
 
-    /** GET /email/messages/{id} — one message with its raw RFC-822 body (#1241 detail). */
+    /** GET /email/messages/{id} — one message with its raw RFC-822 body (detail). */
     getMessage(messageId: string): Observable<EmailMessageDetailDto> {
         return this.http.get<EmailMessageDetailDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}`,
@@ -183,7 +183,7 @@ export class EmailService {
         );
     }
 
-    /** GET /email/messages/{id}/attachments — attachment metadata parsed from the stored `.eml` (#1299). */
+    /** GET /email/messages/{id}/attachments — attachment metadata parsed from the stored `.eml`. */
     listAttachments(messageId: string): Observable<EmailAttachmentDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/attachments`, {
@@ -193,7 +193,7 @@ export class EmailService {
     }
 
     /**
-     * GET /email/messages/{id}/attachments/{index}/download as a Blob (#1299). Bearer-only —
+     * GET /email/messages/{id}/attachments/{index}/download as a Blob. Bearer-only —
      * a plain `<a href>` can't carry the token, so the caller hands the browser an object URL.
      */
     fetchAttachment(messageId: string, index: number): Observable<Blob> {
@@ -203,7 +203,7 @@ export class EmailService {
         );
     }
 
-    /** POST /email/messages/{id}/attachments/{index}/save — copy an attachment into the user's VFS home (#1299). */
+    /** POST /email/messages/{id}/attachments/{index}/save — copy an attachment into the user's VFS home. */
     saveAttachment(messageId: string, index: number): Observable<EmailAttachmentSaveResultDto> {
         return this.http.post<EmailAttachmentSaveResultDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/attachments/${index}/save`,
@@ -211,7 +211,7 @@ export class EmailService {
         );
     }
 
-    /** POST /email/messages/{id}/seen — mark read/unread (#1245). */
+    /** POST /email/messages/{id}/seen — mark read/unread. */
     markSeen(messageId: string, seen = true): Observable<unknown> {
         return this.http.post<unknown>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/seen`,
@@ -219,7 +219,7 @@ export class EmailService {
         );
     }
 
-    /** POST /email/messages/{id}/flag — flag/star or unflag a message (#1302). */
+    /** POST /email/messages/{id}/flag — flag/star or unflag a message. */
     markFlagged(messageId: string, flagged = true): Observable<unknown> {
         return this.http.post<unknown>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/flag`,
@@ -228,7 +228,7 @@ export class EmailService {
     }
 
     /**
-     * POST /email/messages/{id}/move — move a message to another folder (#1303).
+     * POST /email/messages/{id}/move — move a message to another folder.
      * PROPAGATES to the remote IMAP server; on success the message leaves its
      * current folder (re-homed under a new UID by the server).
      */
@@ -240,7 +240,7 @@ export class EmailService {
     }
 
     /**
-     * POST /email/messages/{id}/delete — Gmail-style delete (#1304): by default a
+     * POST /email/messages/{id}/delete — Gmail-style delete: by default a
      * normal message is moved to Trash (recoverable) and one already in Trash is
      * purged; `permanent: true` forces a permanent delete from ANY folder (the
      * "Delete permanently" prompt choice). PROPAGATES to the remote IMAP server;
@@ -253,7 +253,7 @@ export class EmailService {
         );
     }
 
-    /** POST /email/mailboxes/{id}/send — send a new message through the mailbox's SMTP (#1242). */
+    /** POST /email/mailboxes/{id}/send — send a new message through the mailbox's SMTP. */
     send(mailboxId: string, request: OutgoingEmailRequest): Observable<EmailSendResultDto> {
         return this.http.post<EmailSendResultDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/send`,
@@ -261,7 +261,7 @@ export class EmailService {
         );
     }
 
-    /** POST /email/messages/{id}/reply — reply to a stored message, threaded (#1244). */
+    /** POST /email/messages/{id}/reply — reply to a stored message, threaded. */
     reply(messageId: string, request: OutgoingEmailRequest): Observable<EmailSendResultDto> {
         return this.http.post<EmailSendResultDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/reply`,
@@ -271,10 +271,10 @@ export class EmailService {
 
     /**
      * POST /email/mailboxes/{id}/import — import a `.eml`/`.mbox` file's text into the
-     * mailbox (#1263). The file is read client-side and sent as the `content` string,
+     * mailbox. The file is read client-side and sent as the `content` string,
      * mirroring the module's other JSON action-POSTs; `mbox: true` bulk-splits an mbox
      * archive, else it's a single `.eml`. Imported mail is searchable but does NOT
-     * trigger inbound workflows (the backend flags it, #1262).
+     * trigger inbound workflows (the backend flags it, ).
      */
     importMail(mailboxId: string, content: string, folder: string, mbox: boolean): Observable<EmailImportResultDto> {
         return this.http.post<EmailImportResultDto>(
@@ -283,7 +283,7 @@ export class EmailService {
         );
     }
 
-    /** GET /email/mailboxes/{mailboxId}/delegations — the mailbox's delegates, MANAGE-gated (#1425). */
+    /** GET /email/mailboxes/{mailboxId}/delegations — the mailbox's delegates, MANAGE-gated. */
     listDelegations(mailboxId: string): Observable<MailboxDelegationDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/delegations`, {
@@ -292,7 +292,7 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<MailboxDelegationDto>(raw)));
     }
 
-    /** POST /email/mailboxes/{mailboxId}/delegations — grant a delegate read + send-as; notifies the owner (#1425). */
+    /** POST /email/mailboxes/{mailboxId}/delegations — grant a delegate read + send-as; notifies the owner. */
     grantDelegation(mailboxId: string, request: CreateDelegationRequest): Observable<MailboxDelegationDto> {
         return this.http.post<MailboxDelegationDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/delegations`,
@@ -300,7 +300,7 @@ export class EmailService {
         );
     }
 
-    /** DELETE /email/mailboxes/{mailboxId}/delegations/{id} — revoke a delegate (#1425). */
+    /** DELETE /email/mailboxes/{mailboxId}/delegations/{id} — revoke a delegate. */
     revokeDelegation(mailboxId: string, id: string): Observable<unknown> {
         return this.http.delete<unknown>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/delegations/${encodeURIComponent(id)}`,

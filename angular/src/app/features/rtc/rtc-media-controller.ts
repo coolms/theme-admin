@@ -18,7 +18,7 @@ export type RtcCallRole = 'caller' | 'callee';
 const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 /**
- * The MEDIA plane (Track B, Slice 4b audio · Slice 4d video) — the real WebRTC
+ * The MEDIA plane, Slice 4b audio · Slice 4d video) — the real WebRTC
  * behind the seam {@link RtcCallService} drives. On connect it acquires local
  * capture (mic always; a camera track too when the call's `mediaKind` is
  * `video`), builds a 1:1 {@link RTCPeerConnection}, and negotiates via the
@@ -79,7 +79,7 @@ export class RtcMediaController {
     /** True while this peer is sharing its screen (drives the overlay stage + button state). */
     readonly screenSharing: Signal<boolean> = this._screenSharing.asReadonly();
 
-    /** Begin the media session for a now-connected call: capture → peer connection → negotiate. */
+    /** Begin the media session for a now-connected call: capture -> peer connection -> negotiate. */
     async start(callId: string, role: RtcCallRole, mediaKind: RtcMediaKind): Promise<void> {
         if (this.pc !== null) {
             return; // already running

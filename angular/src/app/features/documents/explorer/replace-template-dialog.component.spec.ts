@@ -19,7 +19,7 @@ import { type DocumentTemplate } from '../shared/document-explorer.types';
  * Two properties matter, and the second is the subtle one:
  *
  *   1. The accepted extension follows the template's FORMAT.
- *   2. It is the IMPORTED half of ADR-084's source axis and never the native
+ *   2. It is the IMPORTED half of's source axis and never the native
  *      one. `format-info` advertises both (`['.docx', '.dtmpl']`), but every
  *      provider's `replaceSource()` runs the bytes through `validateUpload()`,
  *      which opens them as an Office file. Offering `.dtmpl` would filter the

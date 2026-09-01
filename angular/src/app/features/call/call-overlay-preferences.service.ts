@@ -53,7 +53,7 @@ export class CallOverlayPreferencesService {
     private readonly loaded$ = new ReplaySubject<CallOverlayPrefs>(1);
     private loadOnce$?: Observable<CallOverlayPrefs>;
 
-    // ── Public signals (read-only) ────────────────────────────────────────────
+    // -- Public signals (read-only) --------------------------------------------
     readonly prefs              = this._prefs.asReadonly();
     readonly overlayEnabled     = computed(() => this._prefs().overlayEnabled);
     readonly autoDismissSeconds = computed(() => this._prefs().autoDismissSeconds);
@@ -102,7 +102,7 @@ export class CallOverlayPreferencesService {
         this.loadOnce$ = undefined;
     }
 
-    // ── Internals ─────────────────────────────────────────────────────────────
+    // -- Internals -------------------------------------------------------------
 
     private merge(overrides: Partial<CallOverlayPrefs>): CallOverlayPrefs {
         return {

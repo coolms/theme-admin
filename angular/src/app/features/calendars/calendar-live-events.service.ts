@@ -28,7 +28,7 @@ export class CalendarLiveEventsService {
      * `calendarId` is the calendar's UUID (rfc4122), matching the
      * backend `CalendarChannelNameBuilder::itemsChannel()` output.
      * The channel survives a slug rename and avoids a DB hop in
-     * the backend listener — see ADR-093 notes on UUID-keyed
+     * the backend listener — notes on UUID-keyed
      * channels.
      */
     watchItems(calendarId: string): Observable<void> {

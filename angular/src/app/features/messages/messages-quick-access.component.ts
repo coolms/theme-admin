@@ -10,14 +10,14 @@ import { MessagesLiveEventsService } from './messages-live-events.service';
 import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
 
 /**
- * Internal Messages quick-access icon for the admin topbar (ledger #1012).
+ * Internal Messages quick-access icon for the admin topbar.
  * Opens {@link MessagesQuickPanelComponent} in the global right drawer — a
- * from-anywhere chat launcher. As of #1027 this is the PRIMARY entry (Messages
+ * from-anywhere chat launcher. As of this is the PRIMARY entry (Messages
  * no longer has a left-sidebar item); the icon carries a live unread-count
  * badge so you see new messages from anywhere without opening anything.
  *
  * The badge is reactive to auth (re-subscribes when the user hydrates), live
- * via the per-user `chat.user.{uid}` channel ([#1021]), and backed by a 30s
+ * via the per-user `chat.user.{uid}` channel ([]), and backed by a 30s
  * poll so your own reads (which don't push) clear it too. Best-effort — a
  * failed fetch leaves the last count rather than flashing to zero.
  *
@@ -60,14 +60,14 @@ export class MessagesQuickAccessComponent {
 
     readonly signedIn = computed<boolean>(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
-    /** Total unread across all of the current user's conversations (#1027). */
+    /** Total unread across all of the current user's conversations. */
     readonly unread = signal<number>(0);
 
     /** How often the badge re-polls (catches the user's own reads, which don't push). */
     private static readonly POLL_MS = 30_000;
 
     constructor() {
-        // Join the shared presence channel (#2122) — from HERE, the topbar, and
+        // Join the shared presence channel — from HERE, the topbar, and
         // not from the Messages page. Being subscribed is what makes you appear
         // online to everyone else, and "online" has to keep meaning "has the
         // admin shell open", not "is looking at Messages right now": started on
@@ -81,7 +81,7 @@ export class MessagesQuickAccessComponent {
             .subscribe(meId => (meId === null ? this.presence.stop() : this.presence.start()));
 
         // Re-derive the badge whenever the signed-in user changes; for a signed-in
-        // user, recompute on a poll tick OR a live `chat.user.{uid}` nudge ([#1021]).
+        // user, recompute on a poll tick OR a live `chat.user.{uid}` nudge ([]).
         this.store.select(AuthState.currentUser)
             .pipe(
                 map(user => user?.id ?? null),
@@ -95,7 +95,7 @@ export class MessagesQuickAccessComponent {
                         // may already be up, and a gated first tick would leave the
                         // badge empty until someone messaged you.
                         of(0),
-                        // ⚠️ Then poll ONLY while realtime is down (#2106). This
+                        //  Then poll ONLY while realtime is down. This
                         // used to tick every 30s regardless, so a connected client
                         // still re-fetched the whole inbox — and `listConversations`
                         // is the unpaged endpoint that runs two queries per
@@ -106,7 +106,7 @@ export class MessagesQuickAccessComponent {
                             .pipe(filter(() => !this.live.isConnected())),
                         this.live.watchUser(meId).pipe(catchError(() => EMPTY)),
                     ).pipe(
-                        // ⚠️ ONE number, not the whole inbox (#2118). This used to
+                        //  ONE number, not the whole inbox. This used to
                         // call `listConversations()` — every conversation, with
                         // its participants enriched from the identity directory
                         // and a last-message preview each — to subtract two

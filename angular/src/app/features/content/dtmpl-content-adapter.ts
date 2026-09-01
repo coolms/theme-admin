@@ -47,7 +47,7 @@ import {
 export class DtmplContentAdapter implements ContentAdapter {
     private readonly mediaSvc = inject(MediaService);
 
-    /** uuid → { mime, presetUrls } cache shared across adapter calls. */
+    /** uuid -> { mime, presetUrls } cache shared across adapter calls. */
     private readonly cache = new Map<string, { mime: string; urls: Record<string, string> }>();
 
     /**

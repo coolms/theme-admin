@@ -1,10 +1,10 @@
 /**
- * Internal Messages (admin user↔user chat) — shared DTOs (ledger #1007).
+ * Internal Messages (admin user↔user chat) — shared DTOs.
  *
  * The page consumes the generic Chat conversation + message API (M7.d):
- *  - `GET /chat/conversations` / `POST /chat/conversations {withUserId}` →
+ *  - `GET /chat/conversations` / `POST /chat/conversations {withUserId}` ->
  *    {@link ChatConversationDto} (carries enriched {@link ConversationParticipantDto}s).
- *  - `GET/POST /chat/messages` → {@link ChatMessageDto}.
+ *  - `GET/POST /chat/messages` -> {@link ChatMessageDto}.
  *
  * Field names mirror the backend `ChatConversationResource` /
  * `ChatMessageResource` verbatim so the JSON deserialises straight on.
@@ -17,11 +17,11 @@ export interface ConversationParticipantDto {
     /** The identity user behind a human participant (null for anonymous). */
     readonly userId: string | null;
     readonly displayName: string | null;
-    /** Public avatar URL for a real photo (null → render colored initials). #1015 */
+    /** Public avatar URL for a real photo (null -> render colored initials). */
     readonly avatarUrl?: string | null;
-    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null → no dot). #1019 */
+    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null -> no dot). */
     readonly presenceStatus?: string | null;
-    /** This participant's read cursor (#1017). For the VIEWER's own unread, prefer `viewerUnread` (#2119). */
+    /** This participant's read cursor. For the VIEWER's own unread, prefer `viewerUnread`. */
     readonly lastReadSeq?: number;
     /** `human` | `anonymous` | `bot` | … */
     readonly kind: string;
@@ -38,7 +38,7 @@ export interface ChatChannelDto {
     readonly id: string;
     readonly title: string | null;
     /**
-     * The handle `#qa-public-channel` cites (#2114) — derived from the name when
+     * The handle `#qa-public-channel` cites — derived from the name when
      * the channel is opened and never changed, so an old reference keeps
      * resolving. Null for a channel whose name yields nothing sluggable; it is
      * browsable and joinable, just not `#`-citable.
@@ -88,7 +88,7 @@ export interface ChatConversationDto {
      */
     readonly viewerParticipantId?: string | null;
     /**
-     * Whether the CURRENT viewer has MUTED this conversation (#1332). A muted
+     * Whether the CURRENT viewer has MUTED this conversation. A muted
      * conversation still delivers messages but is silenced: it's excluded from
      * the global unread badge and its row is dimmed. Toggled via
      * {@link MessagesService.mute}/{@link MessagesService.unmute}. Absent when not
@@ -96,9 +96,9 @@ export interface ChatConversationDto {
      */
     readonly viewerMuted?: boolean;
     /**
-     * The VIEWER's own read cursor (#2111).
+     * The VIEWER's own read cursor.
      *
-     * ⚠️ Prefer this over looking yourself up in `participants` — an EXCLUDED
+     *  Prefer this over looking yourself up in `participants` — an EXCLUDED
      * viewer is deliberately absent from that roster, so the lookup returned
      * nothing, the cursor fell back to 0, and the badge showed the whole
      * conversation as unread with no way to clear it.
@@ -106,20 +106,20 @@ export interface ChatConversationDto {
     readonly viewerLastReadSeq?: number;
     /**
      * The VIEWER's unread count for this conversation, computed server-side
-     * (#2119).
+     *.
      *
-     * ⚠️ Prefer this over `lastSeq - viewerLastReadSeq`. That form knows nothing
+     *  Prefer this over `lastSeq - viewerLastReadSeq`. That form knows nothing
      * about the history CEILING an owner-excluded member has: their cursor
      * freezes at removal while the others keep talking, so the subtraction
      * climbed forever over messages they are forbidden to read and (rightly)
-     * cannot mark read. The topbar total is computed server-side too (#2118), so
+     * cannot mark read. The topbar total is computed server-side too, so
      * deriving the row differently is how the two come to disagree on screen.
      */
     readonly viewerUnread?: number;
 }
 
 /**
- * A file attached to a message (ledger #1009). The shape is identical on the
+ * A file attached to a message. The shape is identical on the
  * upload response (`POST /chat/attachments`), on the message write payload, and
  * on the message read — `kind` is derived server-side from `mimeType` and is
  * absent on the write payload (sent-but-ignored is harmless).
@@ -151,7 +151,7 @@ export interface ChatMessageDto {
     /** Files attached to this message (empty/absent when none). */
     readonly attachments?: readonly ChatAttachmentDto[];
     /**
-     * Threads T1 (#1325). The top-level ROOT message this is a reply to; null/absent
+     * Threads T1. The top-level ROOT message this is a reply to; null/absent
      * for a top-level message. The main timeline shows only top-level messages;
      * replies are read via the thread panel (`listThread`).
      */
@@ -172,7 +172,7 @@ export interface ChatMessageDto {
      */
     readonly mentions?: readonly MentionRef[];
     /**
-     * Emoji reactions on this message (#1334): the stored `{emoji, userId}` set.
+     * Emoji reactions on this message: the stored `{emoji, userId}` set.
      * The page aggregates it into per-emoji chips (count + a "you reacted"
      * highlight). Toggled via {@link MessagesService.reactToMessage}; empty/absent
      * when no one has reacted.
@@ -186,7 +186,7 @@ export interface MentionRef {
     readonly label: string;
 }
 
-/** One emoji reaction (#1334): a short emoji grapheme + the user who reacted with it. */
+/** One emoji reaction: a short emoji grapheme + the user who reacted with it. */
 export interface ReactionRef {
     readonly emoji: string;
     readonly userId: string;

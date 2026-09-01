@@ -7,14 +7,14 @@
  * On load:  `dtmplToHtml()` does the inverse, rebuilding a minimal marker div
  *           that the node's `parseHTML` rehydrates into the chip.
  *
- * ⚠️ **Positional id, not a named param.** `ImageMapWidgetRenderer` reads the
+ *  **Positional id, not a named param.** `ImageMapWidgetRenderer` reads the
  * slug from the tag's SECOND `:` segment (`$params['_id']`). It does also
  * accept `slug=`, and prefers it when both are given — but emitting the named
  * form would diverge from the document widget for no gain, so this follows the
  * positional convention. The slug is BACKTICK-quoted so a dashed or dotted slug
  * tokenizes cleanly.
  *
- * ⚠️ **`date` / `now` / `class` round-trip even though the picker never sets
+ *  **`date` / `now` / `class` round-trip even though the picker never sets
  * them.** They are the renderer's documented parameters, so a hand-written tag
  * can carry them; a transform that knew only the slug would quietly delete an
  * author's `now=true` the first time they opened the page and pressed Save.
@@ -74,7 +74,7 @@ function unwrapLiteral(s: string): string {
     return t;
 }
 
-/** Editor HTML → stored dtmpl. */
+/** Editor HTML -> stored dtmpl. */
 export function htmlToDtmpl(html: string): string {
     return html.replace(MAP_MARKER_RE, marker => {
         const slug = matchAttr(marker, 'data-slug');
@@ -95,7 +95,7 @@ export function htmlToDtmpl(html: string): string {
     });
 }
 
-/** Stored dtmpl → editor HTML. */
+/** Stored dtmpl -> editor HTML. */
 export function dtmplToHtml(content: string): string {
     return content.replace(MAP_WIDGET_TAG_RE, (_full, rawSlug: string, rawParams?: string) => {
         const slug = unwrapLiteral(rawSlug);

@@ -18,7 +18,7 @@ import { ApiService } from '../../api/api.service';
 export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' | 'failed';
 
 /**
- * M9.g Slice C.3 (ADR-148) — the in-browser softphone.
+ * M9.g Slice C.3 — the in-browser softphone.
  *
  * Makes the browser a real SIP endpoint: it REGISTERs to Asterisk `res_pjsip`
  * over a secure WebSocket (the descriptor from `GET /call/webphone/config` — C.1

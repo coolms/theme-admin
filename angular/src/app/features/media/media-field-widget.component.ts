@@ -9,7 +9,7 @@ import { MediaAssetDto } from './media.types';
  * The `image` field widget (registered by the Media module via the field-widget
  * registry, see {@link import('../../../../../src/Media/Infrastructure/Field/MediaFieldWidgetProvider.php')}):
  * a field declared `type: image` renders a thumbnail preview of the current
- * value plus the Media Library picker (inline mode → a "Choose…" trigger that
+ * value plus the Media Library picker (inline mode -> a "Choose…" trigger that
  * opens the library browser), instead of a plain URL text box.
  *
  * The stored value is the picked asset's **public URL** (a string), resolved

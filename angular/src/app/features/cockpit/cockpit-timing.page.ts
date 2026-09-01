@@ -207,7 +207,7 @@ export class CockpitTimingPageComponent implements OnInit {
 
     /**
      * Header actions (back to the report + reload) — declared in the
-     * `cockpit:timing` layout config (ADR-127), not hardcoded.
+     * `cockpit:timing` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),

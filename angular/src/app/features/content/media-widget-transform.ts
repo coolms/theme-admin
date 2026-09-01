@@ -42,7 +42,7 @@ function matchAttr(html: string, name: string): string | null {
  *
  * The DTMPL tag lexer's only string delimiter is the backtick (Lexer::scanTag);
  * a double-quoted param value falls through to the else-branch and throws
- * "Unexpected character" → HTTP 500 at SSR render. So string params are
+ * "Unexpected character" -> HTTP 500 at SSR render. So string params are
  * backtick-delimited, and the lexer's only in-string escape is `\``
  * (Lexer::scanString). We therefore escape only literal backticks; every other
  * character — including double quotes, `&`, `<`, `}` — is safe verbatim. The
@@ -148,17 +148,17 @@ function buildSingleAssetTag(imgHtml: string): string | null {
 
 /**
  * Convert editor HTML into stored dtmpl. Three replacements run, in order:
- *   1. Figure-wrapped markers `<figure><img data-widget="media">…<figcaption>` →
+ *   1. Figure-wrapped markers `<figure><img data-widget="media">…<figcaption>` ->
  *      ``{widget:media:UUID … caption=`…`}``. Runs first so its inner img isn't
  *      separately consumed by the bare-img pass.
- *   2. Bare markers `<img data-widget="media">` → `{widget:media:UUID …}`.
- *   3. Gallery placeholder divs `<div data-widget="media-gallery">` →
+ *   2. Bare markers `<img data-widget="media">` -> `{widget:media:UUID …}`.
+ *   3. Gallery placeholder divs `<div data-widget="media-gallery">` ->
  *      `{widget:media:<collection-uuid> type=… [cols=… limit=… depth=…]}`. Only
  *      unquoted, lex-safe params are emitted; the display name is dropped.
  *
  * String-valued single-asset params (alt/class/caption) are BACKTICK-delimited
  * — the tag lexer's only string delimiter; a double-quoted value throws
- * "Unexpected character" → HTTP 500 at SSR. The gallery branch carries no
+ * "Unexpected character" -> HTTP 500 at SSR. The gallery branch carries no
  * string params, so it stays fully unquoted. Unmarked elements (raw paste from
  * source mode) pass through.
  */
@@ -194,7 +194,7 @@ export function htmlToDtmpl(html: string): string {
         // "Unexpected character" at SSR render time. So the collection display
         // name is NOT stored in the tag — it lives only on the in-editor node,
         // and the card falls back to a generic label after reload. (A future
-        // uuid→name resolve-on-load can restore the label without a stored param.)
+        // uuid->name resolve-on-load can restore the label without a stored param.)
         const params: string[] = [`type=${type}`];
         if (cols  && cols  !== '') params.push(`cols=${cols}`);
         if (limit && limit !== '') params.push(`limit=${limit}`);
@@ -256,7 +256,7 @@ export function dtmplToHtml(
 
         const img = `<img data-widget="media" data-kind="${kind}" data-uuid="${escapeAttr(uuid)}" data-size="${escapeAttr(size)}" src="${escapeAttr(previewUrl)}" loading="lazy"${altAttr}${clsAttr}${widthAttr}${heightAttr}>`;
 
-        // Caption present → wrap in <figure>+<figcaption> so parseHTML's figure
+        // Caption present -> wrap in <figure>+<figcaption> so parseHTML's figure
         // rule re-hydrates the node with the caption attribute on load.
         const caption = params['caption'];
         if (caption && caption !== '') {
@@ -269,7 +269,7 @@ export function dtmplToHtml(
 /**
  * Build the editor placeholder `<div data-widget="media-gallery">` for a
  * collection-mode tag. Mirrors the MediaGalleryWidget node's renderHTML so the
- * source→visual round-trip is stable before Tiptap re-runs the node renderer.
+ * source->visual round-trip is stable before Tiptap re-runs the node renderer.
  * `name` (if present) is the display label; the backend ignores it.
  */
 function buildGalleryDiv(collectionId: string, params: Record<string, string>): string {
@@ -280,7 +280,7 @@ function buildGalleryDiv(collectionId: string, params: Record<string, string>): 
     const depth = params['depth'] ?? '';
 
     // Build the human-readable summary the placeholder div shows. Mirrors the
-    // renderHTML logic on the node so source→visual round-trip is visually
+    // renderHTML logic on the node so source->visual round-trip is visually
     // stable even before Tiptap re-runs the node's renderer.
     const summaryParts: string[] = [type];
     if (cols)  summaryParts.push(`${cols} cols`);

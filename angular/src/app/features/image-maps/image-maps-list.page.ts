@@ -27,7 +27,7 @@ import type { ImageMapDto } from './image-map.types';
 
 /**
  * ImageMap list page (`/admin/image-maps`) — the spatial-substrate admin
- * (ledger #1521–#1525 backend). `loadingMode: client`: maps are few, so the
+ *–backend). `loadingMode: client`: maps are few, so the
  * page loads the whole catalogue via `GET /image-maps` and feeds the grid
  * through [externalData]; create/edit run in a modal dialog (the platform's
  * BE-config-datagrid + modal-editor convention). Region authoring is a later
@@ -116,7 +116,7 @@ export class ImageMapsListPageComponent implements OnInit {
     private toRow(m: ImageMapDto): Record<string, unknown> {
         return {
             // the grid keys row selection on `id` (empty-string key when
-            // missing breaks the selection → toolbar `_selected` chain)
+            // missing breaks the selection -> toolbar `_selected` chain)
             id:            m.id,
             slug:          m.slug,
             title:         m.title,

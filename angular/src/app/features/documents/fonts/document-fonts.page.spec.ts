@@ -7,7 +7,7 @@ import { DocumentFontService } from './document-font.service';
 /**
  * The installed-fonts admin surface — the two decisions worth testing.
  *
- * ⚠️ The SERVICE, not the page component. Rendering the page pulls
+ *  The SERVICE, not the page component. Rendering the page pulls
  * `<coolms-datagrid>`, which wants a config endpoint, a store snapshot and a
  * toolbar tree; a spec that stubbed all three would be testing the stubs. What
  * this file asserts is what the page cannot get wrong quietly: the shape of the
@@ -34,7 +34,7 @@ describe('installed document fonts', () => {
     afterEach(() => http.verify());
 
     it('uploads the file and NOTHING else', () => {
-        // ⚠️ The whole point of the surface. The family and the face are read
+        //  The whole point of the surface. The family and the face are read
         // from the font's own tables on the server; a form field naming either
         // would be the client stating something the bytes could contradict.
         api.install(new File([new Uint8Array([0, 1, 0, 0])], 'Brandish.ttf')).subscribe();

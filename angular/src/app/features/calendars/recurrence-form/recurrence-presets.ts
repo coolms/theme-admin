@@ -208,7 +208,7 @@ export function summariseRecurrence(spec: string | null): string {
     return tail.length > 0 ? `${head}; ${tail.join(', ')}` : head;
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// -- helpers -----------------------------------------------------------------
 
 function dtstartWeekdayName(d: Date): string {
     const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

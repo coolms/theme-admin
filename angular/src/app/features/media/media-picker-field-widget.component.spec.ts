@@ -38,7 +38,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
         });
     });
 
-    // ── options: every key of the blob is optional ───────────────────────────
+    // -- options: every key of the blob is optional ---------------------------
 
     it('falls back to uuid/thumb/any when the backend sent no widget options', () => {
         mount({});
@@ -82,7 +82,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
         });
     });
 
-    // ── cardinality: the one key the FIELD contributes ───────────────────────
+    // -- cardinality: the one key the FIELD contributes -----------------------
 
     it('takes cardinality from the config, defaulting to one', () => {
         mount({});
@@ -92,7 +92,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
         expect(widget.cardinality()).toBe('many');
     });
 
-    // ── value narrowing ──────────────────────────────────────────────────────
+    // -- value narrowing ------------------------------------------------------
 
     it('narrows the bound value to what the picker accepts', () => {
         mount({}, '');
@@ -107,7 +107,7 @@ describe('MediaPickerFieldWidgetComponent', () => {
             .toEqual(['uuid-1', 'uuid-2']);
     });
 
-    // ── the encoding the backend depends on ──────────────────────────────────
+    // -- the encoding the backend depends on ----------------------------------
 
     it('stores a scalar pick unchanged', () => {
         mount();

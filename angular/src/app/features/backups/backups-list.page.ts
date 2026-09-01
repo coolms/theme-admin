@@ -24,7 +24,7 @@ import { BackupCreateDialogComponent } from './backup-create-dialog.component';
 import { RestorePreviewDialogComponent } from './restore-preview-dialog.component';
 
 /**
- * Backup admin page (/admin/backups, ADR-149 #1478).
+ * Backup admin page (/admin/backups, ).
  *
  * The read/create surface over the per-module backup seam: the on-disk bundles
  * under `var/backups/` (name, when, tiers, module + record counts, size), a
@@ -34,7 +34,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
  * The whole surface is gated server-side by the `root:backup 0o770` VFS node
  * (backup-group members only).
  *
- * **Platform list shell** (ledger #1656): `<cms-list-page>` +
+ * **Platform list shell**: `<cms-list-page>` +
  * `<coolms-datagrid gridId="backup:bundles">` + the
  * `navi.toolbar.backup.bundles` toolbar tree. It previously hand-rolled a
  * `<table>` with ~90 lines of its own CSS and a hard-coded `headerActions`
@@ -43,7 +43,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
  * navigation.
  *
  * `loadingMode: client` is deliberate and correct here, unlike the grids fixed
- * in #1654/#1655: bundles are operator-created files returned in full by the
+ * in /: bundles are operator-created files returned in full by the
  * endpoint, so there is nothing to paginate and no filter that could search a
  * subset.
  */
@@ -106,7 +106,7 @@ export class BackupsListPageComponent implements OnInit {
             id:        b.name,
             name:      b.name,
             createdAt: b.createdAt,
-            // string[] → a readable cell; the grid renders scalar values.
+            // string[] -> a readable cell; the grid renders scalar values.
             tiers:     b.tiers.join(', '),
             modules:   b.contributors.length,
             records:   b.records,
@@ -189,7 +189,7 @@ export class BackupsListPageComponent implements OnInit {
     }
 }
 
-/** Bytes → a compact human size (matches the CLI's feel, not exact SI). */
+/** Bytes -> a compact human size (matches the CLI's feel, not exact SI). */
 function formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     const units = ['KB', 'MB', 'GB', 'TB'];

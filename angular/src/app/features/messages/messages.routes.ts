@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * Internal Messages routes (`/admin/messages`, ledger #1007).
+ * Internal Messages routes (`/admin/messages`,.
  *
  * Single lazy two-pane page (conversation list ↔ thread + composer).
  * `fullHeight` lets the admin layout hand the page the full content height

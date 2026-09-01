@@ -67,9 +67,9 @@ const HOLIDAY_OFF_COLOR     = '#fef3c7'; // light yellow — non-working holiday
 const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation day
 
 /**
- * M1.2.f.1 — Calendar Events grid (FullCalendar wrapper, redesigned).
+ * — Calendar Events grid (FullCalendar wrapper, redesigned).
  *
- * Differences vs the #423 (M1.2.f) version:
+ * Differences vs the () version:
  *  - Holiday rules are projected as **background events** behind the
  *    main grid (per visible year — cached). Non-working = light yellow,
  *    working compensation = light green. Read-only (no drag/click).
@@ -94,7 +94,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             }
         </div>
 
-        <!-- #531 — right-click context menu. Positioned at the viewport
+        <!-- — right-click context menu. Positioned at the viewport
              coordinates we captured from the contextmenu event. Clipped
              to the viewport in (left, top) so the menu doesn't render
              off-screen near the bottom/right edges. -->
@@ -104,7 +104,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
                  [style.top.px]="clampMenuY(menu.y)"
                  (click)="$event.stopPropagation()">
 
-                <!-- #537 — Duplicate clones the event as a brand new
+                <!-- — Duplicate clones the event as a brand new
                      standalone row starting one day later. Always
                      visible because cloning never depends on the
                      event's current status. -->
@@ -114,7 +114,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
                     <span>Duplicate (+1 day)</span>
                 </button>
 
-                <!-- #537 — Status quick-set: only the two statuses the
+                <!-- — Status quick-set: only the two statuses the
                      event is NOT currently in are shown. Single click
                      patches the canonical row; no scope prompt because
                      status changes apply to the whole series. -->
@@ -151,7 +151,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         }
     `,
     styles: [`
-        /* ── FullCalendar 7 palette, bound to the admin's tokens ──────────
+        /* -- FullCalendar 7 palette, bound to the admin's tokens ----------
            v7 ships no appearance and HASHES its class names, so custom
            properties are the only styling API. Binding them to --cms-*
            gives us both themes from one definition -- those tokens already
@@ -192,7 +192,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             --fc-classic-event:               var(--cms-accent);
             --fc-classic-event-contrast:      var(--cms-accent-fg, #1a1a1a);
 
-            /* ⚠️ The toolbar buttons. These were NEVER set, which is why the
+            /*  The toolbar buttons. These were NEVER set, which is why the
                card carried a .fc .fc-button-primary rule -- a v6 selector
                that matches nothing in v7. The variables are the API; the
                selector never was. */
@@ -209,7 +209,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             display: flex;
             flex-direction: column;
             min-height: 0;
-            /* Task #458 — clip the second scrollbar that surfaced when the
+            /* Task — clip the second scrollbar that surfaced when the
                nested FC time-grid scroller + the host container scroller
                both produced overflow due to sub-pixel rounding. The FC's
                internal scroller is the authoritative one for the timeGrid
@@ -219,7 +219,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         .fc-root {
             flex: 1;
             min-height: 0;
-            /* Task #463 — no left/right padding. The 4px gutter
+            /* Task — no left/right padding. The 4px gutter
                previously here surfaced as an empty strip beyond
                "Sun 31/05" once the scrollbar was hidden in #461/#462.
                Edge-to-edge grid reads cleaner anyway. */
@@ -228,11 +228,11 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
                scrollable region is FC's own time-grid body. */
             overflow: hidden;
         }
-        /* ⚠️ v7 HASHES its class names, so .fc does not exist. Font and
+        /*  v7 HASHES its class names, so .fc does not exist. Font and
            size are set on our own wrapper and inherit down; the height comes
            from the flex column above. */
         .fc-host { font-family: inherit; font-size: .85rem; }
-        /* Task #461 + #462 -- hide every native scrollbar inside FC's
+        /* Task + -- hide every native scrollbar inside FC's
            internal scrollers. FC v6 forces overflow-y: scroll on every
            region of its scrollgrid (header, all-day row, time-grid
            body) for alignment math; browsers (especially Windows
@@ -242,7 +242,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
            scrollbar pseudo (plus the Firefox scrollbar-width:none)
            silences them all. The grid itself is still scrollable via
            wheel / touch / keyboard. */
-        /* ⚠️ .fc-scroller is a v6 name and matches nothing. Every v7 class
+        /*  .fc-scroller is a v6 name and matches nothing. Every v7 class
            IS still prefixed fc- before its hash, so an attribute-substring
            selector reaches them: this is the one selector shape that survives
            the rename. The buttons and the event cursor moved to the variables
@@ -277,7 +277,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         :host ::ng-deep .fc-ev-tentative { opacity: .75; font-style: italic; }
 
         /* Holiday backgrounds — pin the text down so it's visible. */
-        /* ⚠️ .fc-event-title is a v6 name. .fc-ev-holiday-bg is OURS --
+        /*  .fc-event-title is a v6 name. .fc-ev-holiday-bg is OURS --
            passed through eventClassNames() -- so it still applies, and the
            text styling goes on it directly. */
         :host ::ng-deep .fc-ev-holiday-bg {
@@ -296,7 +296,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             font-size: .85rem;
         }
 
-        /* #531 — right-click context menu. Floats above FC at the
+        /* — right-click context menu. Floats above FC at the
            mouse coords; small inventory (single Delete action for
            v1). Position is fixed because we capture viewport coords
            (clientX/Y); the parent FC root is the visual anchor but
@@ -326,7 +326,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         .cmenu__item:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
         .cmenu__item--danger { color: var(--cms-danger, #dc2626); }
         .cmenu__item--danger:hover { background: var(--cms-danger-light, #fef2f2); }
-        /* #537 — thin divider between cmenu action groups (Duplicate
+        /* — thin divider between cmenu action groups (Duplicate
            / Status / Delete). 1px line that respects the 4px outer
            padding so it touches both edges visually. */
         .cmenu__sep {
@@ -361,13 +361,13 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * earlier code used `activeStart` for both the title and mini-cal
      * sync; the result was the title and mini-cal lagging one month
      * behind the displayed grid for any month whose 1st isn't a Monday
-     * (or Sunday on US-start weeks). See task #454.
+     * (or Sunday on US-start weeks). See task .
      *
      * `viewType` lets the parent re-sync its Month / Week / Day toggle
      * when FullCalendar's internal view changes via nav-link clicks
      * (e.g. clicking a weekday header in Week view jumps to Day view).
      * Before this was wired, the toolbar pill stayed stuck on the
-     * previous view, leaving the user no way back. See task #456.
+     * previous view, leaving the user no way back. See task .
      *
      * `start` / `end` retain `view.activeStart` / `view.activeEnd`
      * semantics for any consumer that needs the actual rendered range
@@ -391,7 +391,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     private readonly destroyRef = inject(DestroyRef);
 
     /**
-     * #531 — Right-click context menu on calendar events. NULL when
+     * — Right-click context menu on calendar events. NULL when
      * closed; otherwise carries the viewport coordinates to position
      * the popover at, plus the FullCalendar event the user opened it
      * on (we need its id, title, seriesId, etc. for the delete flow).
@@ -406,7 +406,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         occurrenceInstant: string | null;
         title: string;
         recurrence: string | null;
-        // #537 — snapshot of fields needed for the new actions.
+        // — snapshot of fields needed for the new actions.
         // `status` filters which "Mark as …" entries we render so the
         // user doesn't get a button to switch to the status they're
         // already in. The remaining fields are inputs for Duplicate:
@@ -435,7 +435,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     private readonly pendingHolidayYears = new Set<string>();
 
     constructor() {
-        // [#441 follow-up] — userPrefs are signals, so an effect() lets us
+        // [follow-up] — userPrefs are signals, so an effect() lets us
         // re-build the FC instance whenever the user saves a new value on
         // the Profile -> Calendar tab (or the initial /auth/me/settings
         // load lands after this component was constructed with stale
@@ -503,7 +503,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 ? { weekday: 'short', day: 'numeric', month: 'numeric' }
                 : { weekday: 'short', month: 'numeric', day: 'numeric' };
         const monthHeaderFormat: FormatterInput = { weekday: 'short' };
-        // [#441 follow-up x3] — FullCalendar's OBJECT-based slot header
+        // [follow-up x3] — FullCalendar's OBJECT-based slot header
         // format is partially merged with the plugin's per-view defaults,
         // and the
         // merge silently drops `hour: '2-digit'` + `meridiem` overrides
@@ -515,7 +515,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             if (is24h) {
                 return `${pad2(hour)}:${pad2(minute)}`;
             }
-            // 12h: 12 → 12, 13–23 → 1–11, 0 → 12. Minute always 2-digit.
+            // 12h: 12 -> 12, 13–23 -> 1–11, 0 -> 12. Minute always 2-digit.
             const h12   = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
             const ampm  = hour < 12 ? 'AM' : 'PM';
             return `${h12}:${pad2(minute)} ${ampm}`;
@@ -560,15 +560,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     ngAfterViewInit(): void {
-        // Task #433 — prefer the user's chosen TZ over the calendar's TZ
+        // Task — prefer the user's chosen TZ over the calendar's TZ
         // (per-calendar TZ remains a fallback for shared/team calendars
         // that explicitly bind their own region). Same logic for
         // weekStart -> firstDay (0 = Sun, 1 = Mon).
         //
-        // Task #434 bug 2 follow-up — after prefs resolve, snap the
+        // Task bug 2 follow-up — after prefs resolve, snap the
         // grid back to today so a TZ change between init and load
         // never leaves the user on the wrong month.
-        // [#441 follow-up x4] — use refresh() instead of ensureLoaded()
+        // [follow-up x4] — use refresh() instead of ensureLoaded()
         // here so the Calendar grid always reads the most recent
         // server-side prefs, not whatever the in-memory `_prefs` cache
         // happens to hold. This closes the gap left by the original
@@ -606,14 +606,14 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * component-input-driven `initialView()` + "now".
      */
     private constructFcInstance(preserveView?: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay', preserveDate?: Date): void {
-        // Task #434 bug 2 — explicit initialDate. Without this,
+        // Task bug 2 — explicit initialDate. Without this,
         // FullCalendar's default `new Date()` evaluation timing is
         // ambiguous (it varies by view + TZ), and on slow page loads
         // the user occasionally landed on the prior month.
         const initialDate = preserveDate ?? new Date();
         const initialView = preserveView ?? this.initialView();
 
-        // Tasks #459/#460 + [#441 follow-up] — pref-driven format opts
+        // Tasks /+ [follow-up] — pref-driven format opts
         // come from a shared helper.
         const opts = this.buildFcFormatOptions();
 
@@ -625,11 +625,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             headerToolbar:  false,
             timeZone:       opts.effectiveTz,
             firstDay:       opts.firstDay,
-            // Task #459 — user-pref-driven locale + time formats.
+            // Task — user-pref-driven locale + time formats.
             locale:         opts.fcLocale,
             slotHeaderFormat: opts.slotHeaderFormat,
             eventTimeFormat: opts.eventTimeFormat,
-            // Task #460 — per-view dayHeaderFormat. Month view shows
+            // Task — per-view dayHeaderFormat. Month view shows
             // weekday only because each column spans many dates;
             // Week/Day views show weekday + the column's date.
             views: {
@@ -637,7 +637,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 timeGridWeek: { dayHeaderFormat: opts.timeGridHeaderFormat },
                 timeGridDay:  { dayHeaderFormat: opts.timeGridHeaderFormat },
             },
-            // Task #460 — `expandRows: true` makes the time grid fill
+            // Task — `expandRows: true` makes the time grid fill
             // the host container, eliminating the small triangle
             // scroll-compensation arrows FC otherwise rendered along
             // the right edge of Week/Day views.
@@ -647,7 +647,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             selectMirror:   true,
             nowIndicator:   true,
             navLinks:       true,
-            // Task #456 — explicit Day-view destination for nav-link
+            // Task — explicit Day-view destination for nav-link
             // clicks. Without this, FC falls back to `dayGridDay`
             // (Month-grid style, no hour axis) which rendered as a
             // single empty cell — not what the user expects when
@@ -659,7 +659,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             eventResizableFromStart: true,
             events: (info, success, failure) =>
                 this.loadEvents(info.start, info.end, success, failure),
-            // #531 — close the cmenu whenever any FC interaction
+            // — close the cmenu whenever any FC interaction
             // fires. FC's `select` consumes the underlying mouseup so
             // the document:click HostListener doesn't fire reliably
             // when the user clicks a date cell to open the New-event
@@ -669,7 +669,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             eventDrop:    arg => { this.cmenu.set(null); this.onEventDrop(arg); },
             eventResize:  arg => { this.cmenu.set(null); this.onEventResize(arg); },
             datesSet:     arg => this.onDatesSet(arg),
-            // #531 — attach a `contextmenu` listener to every event
+            // — attach a `contextmenu` listener to every event
             // DOM node so right-click pops our cmenu. We can't use
             // FC's `eventClick` for this — it doesn't fire on
             // right-click. Holidays + background events are excluded
@@ -821,15 +821,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             start:           item.start,
             end:             item.end ?? undefined,
             allDay:          item.allDay,
-            // ⚠️ FullCalendar 7 renamed this. `backgroundColor` / `borderColor`
+            //  FullCalendar 7 renamed this. `backgroundColor` / `borderColor`
             // appear in ZERO files of the installed package -- v7 reads
             // `color` and emits it as --fc-event-color. Setting the old names
             // is why a chosen colour never reached the chip.
             color:           item.color ?? undefined,
             classNames:      this.eventClassNames(item),
             // Phase 2 — recurring items are now drag/resize-enabled.
-            // On drop we prompt for scope ("only this" → POST exception;
-            // "all events" → PATCH the canonical row).
+            // On drop we prompt for scope ("only this" -> POST exception;
+            // "all events" -> PATCH the canonical row).
             editable:        true,
             durationEditable: true,
             startEditable:   true,
@@ -913,7 +913,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * #531 — Open the right-click context menu at the captured mouse
+     * — Open the right-click context menu at the captured mouse
      * coordinates. We snapshot all the per-event data the menu actions
      * need (canonicalId, seriesId, etc.) into the signal so the menu's
      * action handlers don't need a fresh EventApi reference (which can
@@ -932,7 +932,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             occurrenceInstant,
             title: event.title || 'Event',
             recurrence,
-            // #537 — Duplicate + Status quick-set inputs. We pull from
+            // — Duplicate + Status quick-set inputs. We pull from
             // both the FC EventApi (start/end/allDay) and our
             // extendedProps (status/type/description/etc.) so the
             // menu actions don't need to fetch the canonical row
@@ -976,7 +976,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     clampMenuY(y: number): number {
-        // #537 — menu can now show up to 5 items (Duplicate + 2
+        // — menu can now show up to 5 items (Duplicate + 2
         // status quick-sets + Delete + 2 separators). Pad the clamp
         // so the menu doesn't get cut off near the viewport bottom.
         const menuHeight = 220;
@@ -984,7 +984,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * #537 — Duplicate action. Clones the event as a brand-new
+     * — Duplicate action. Clones the event as a brand-new
      * standalone (non-recurring) row starting one day later at the
      * same time-of-day. For recurring occurrences we duplicate THIS
      * occurrence's projected times — not the canonical row — because
@@ -1042,7 +1042,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * #537 — Status quick-set. PATCHes the canonical row's status.
+     * — Status quick-set. PATCHes the canonical row's status.
      * No scope prompt because status changes naturally apply to the
      * whole series — there's no concept of "this occurrence is
      * tentative but the rest are confirmed" in our model. (If a user
@@ -1067,7 +1067,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * #531 — Delete action from the cmenu. Mirrors the editor's
+     * — Delete action from the cmenu. Mirrors the editor's
      * onDelete flow without opening the editor dialog:
      *   - Recurring occurrence -> scope prompt -> skip / delete-
      *     following / canonical delete
@@ -1360,7 +1360,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     private onDatesSet(arg: DatesSetInfo): void {
-        // Task #456 — narrow FC's `string` view name to our typed union.
+        // Task — narrow FC's `string` view name to our typed union.
         // Anything outside the supported trio falls back to Month so the
         // toolbar pill never enters an undefined state (defensive — FC
         // shouldn't emit anything else given our plugin set).

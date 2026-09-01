@@ -68,12 +68,12 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
 ];
 
 /**
- * M1.2.f.1 — Calendar settings slide-over panel content.
+ * — Calendar settings slide-over panel content.
  *
  * Rendered inside the global right-side drawer via DrawerService.
  * Single panel, four tabs: Settings, Working Hours, Holiday Rules,
  * Shares — each section corresponds to one of the 4 cards from the
- * previous (#423) layout, now consolidated so the main viewport is
+ * previous layout, now consolidated so the main viewport is
  * dedicated to the calendar grid itself.
  *
  * Inputs:
@@ -142,7 +142,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
                         </label>
                         <label class="field">
                             <span class="field__label">Parent calendar</span>
-                            <!-- Task #440 — lazy-select with debounced search.
+                            <!-- Task — lazy-select with debounced search.
                                  Uses static options (parent already preloaded
                                  the list); future ships with thousands of
                                  calendars can switch to apiUrl mode without
@@ -497,7 +497,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
         return this.allCalendars().filter(c => c.id !== me.id);
     });
 
-    /** Task #440 — option projection consumed by `<app-lazy-select>`. */
+    /** Task — option projection consumed by `<app-lazy-select>`. */
     readonly parentCalendarOptions = computed<readonly LazySelectOption[]>(() =>
         this.otherCalendars()
             .filter(c => !!c.id)
@@ -538,7 +538,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
 
     private hydrate(cal: CalendarDto): void {
         this.settingsLabel    = cal.label ?? '';
-        // Task #434 — Pre-select existing calendar's TZ when editing,
+        // Task — Pre-select existing calendar's TZ when editing,
         // fall back to userPrefs.tz (then UTC) for newly-minted rows
         // where the entity hasn't been hydrated yet.
         this.settingsTz       = cal.tz ?? this.userPrefs.tz() ?? 'UTC';

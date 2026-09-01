@@ -10,12 +10,12 @@ import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service
 import { DynamicChatQuickPanelComponent } from './dynamic-chat-quick-panel.component';
 
 /**
- * DynamicChat agent-queue quick-access icon for the admin topbar (ledger #1029,
+ * DynamicChat agent-queue quick-access icon for the admin topbar,
  * Slice C of the ambient-chat redesign). Opens {@link DynamicChatQuickPanelComponent}
  * in the global right drawer — a from-anywhere visitor-queue launcher. As of
- * #1029 this is the PRIMARY entry (Dynamic Chat no longer has a left-sidebar
+ * this is the PRIMARY entry (Dynamic Chat no longer has a left-sidebar
  * item); the icon carries a live **new-count badge** = the number of
- * conversations whose [#1028] triage status is `new` (a visitor is waiting for a
+ * conversations whose [] triage status is `new` (a visitor is waiting for a
  * reply), so a manager sees "someone needs answering" from anywhere.
  *
  * The queue has no realtime channel (the agent page already polls it), so the
@@ -60,11 +60,11 @@ export class DynamicChatQuickAccessComponent {
 
     readonly signedIn = computed<boolean>(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
-    /** Conversations whose triage status is `new` — a visitor is waiting (#1028). */
+    /** Conversations whose triage status is `new` — a visitor is waiting. */
     readonly newCount = signal<number>(0);
 
     /**
-     * Fallback poll cadence (#1042). Realtime is the primary path now: the badge
+     * Fallback poll cadence. Realtime is the primary path now: the badge
      * refetches on a `queue.changed` nudge while the WS is connected; this timer
      * only fires when push is UNavailable (gated on `isConnected`), so it's a true
      * no-WS fallback rather than a parallel 20s poll on every admin page.
@@ -84,19 +84,19 @@ export class DynamicChatQuickAccessComponent {
                     }
                     // Refetch on: a realtime queue nudge (primary), each WS
                     // (re)connect (close any gap), OR a fallback timer tick — but
-                    // only while the WS is DISCONNECTED (#1042).
+                    // only while the WS is DISCONNECTED.
                     return merge(
                         timer(0, DynamicChatQuickAccessComponent.POLL_MS)
                             .pipe(filter(() => !this.live.isConnected())),
                         this.live.watchQueue().pipe(catchError(() => EMPTY)),
                         this.connected$.pipe(distinctUntilChanged(), filter(connected => connected)),
                     ).pipe(
-                        // ⚠️ The fallback tick and the connect signal both fire at
+                        //  The fallback tick and the connect signal both fire at
                         // cold load, so `switchMap` aborts the first request and
                         // DevTools shows a cancelled `agent/conversations`. Left
                         // deliberately — see the note in `dynamic-chat.page.ts`:
                         // coalescing them was measured and delays the queue's
-                        // first paint by more than the cancellation costs (#2123).
+                        // first paint by more than the cancellation costs.
                         switchMap(() => this.api.listQueue().pipe(
                             map(list => countNewConversations(list)),
                             catchError(() => EMPTY), // keep the last count on a transient failure

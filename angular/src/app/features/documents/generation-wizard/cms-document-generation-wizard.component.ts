@@ -179,7 +179,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
         this.template.contextSchema?.variables ?? [],
     );
 
-    // ─── Wizard state ──────────────────────────────────────────────────
+    // --- Wizard state --------------------------------------------------
     protected readonly currentStepId = signal<string>('mode');
     protected readonly mode = signal<WizardMode>('single');
 
@@ -195,7 +195,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
     /**
      * Output format defaults to the template's preferred output.
      *
-     * Passed through as the template declares it (#1777). This used to coerce
+     * Passed through as the template declares it. This used to coerce
      * anything that was not `pdf` into `docx`, which was invisible while Word
      * was the only format and actively wrong once a second one existed: a
      * spreadsheet template declares `xlsx`, the wizard would have asked for
@@ -225,7 +225,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
                 hidden: !isFilter,
                 canProceed: () => {
                     // An empty RQL used to pass here, commented as "backend
-                    // generates for all users". It does not (#1757):
+                    // generates for all users". It does not:
                     // `FilterAudienceMaterializer` throws
                     // "Filter-mode audience criteria must contain a non-empty
                     // `rql` query string". So the wizard walked the operator to
@@ -348,7 +348,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
         if (mode === 'filter') {
             // `rql` + `entityType` are the keys `FilterAudienceMaterializer`
             // actually reads. This used to send the filter under `rqlFilter`
-            // and omit `entityType` entirely (#1670), so EVERY Filter-mode
+            // and omit `entityType` entirely, so EVERY Filter-mode
             // generation died on "Filter-mode audience criteria must contain
             // a non-empty `entityType`" — the mode had never completed once.
             // Only the preview call worked, which is why the wizard looked

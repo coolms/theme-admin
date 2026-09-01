@@ -47,7 +47,7 @@ export class NaviTreeFormComponent {
             : new CreateNaviTree({
                 // Slug is now optional on POST -- backend auto-derives
                 // `navi.public.{section.slug}` when siteSectionId is set
-                // (task #312 Deliverable 3). Empty-string slugs would still
+                // (Deliverable 3). Empty-string slugs would still
                 // 400, so coerce blanks to undefined before sending.
                 slug: NaviTreeFormComponent.optional(value['slug']),
                 label: value['label'] as string,

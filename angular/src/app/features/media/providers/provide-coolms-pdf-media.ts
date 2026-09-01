@@ -9,7 +9,7 @@ import {
 import { MediaService } from '../media.service';
 
 /**
- * Fills `CMS_PDF_IMAGE_PICKER` (#2438) so the PDF viewer's image tool opens the Media
+ * Fills `CMS_PDF_IMAGE_PICKER` so the PDF viewer's image tool opens the Media
  * Library instead of the browser's file dialog. Same dialog the editor's
  * "Insert media" action uses, so the two flows look and behave alike.
  *
@@ -71,7 +71,7 @@ export class MediaPdfImagePicker implements CmsPdfImagePicker {
      * themselves. Reading it here through HttpClient runs `authInterceptor`
      * and hands pdf.js a data URL that needs no credentials at all.
      *
-     * ⚠️ Same-origin only. `authInterceptor` attaches the Bearer token to
+     *  Same-origin only. `authInterceptor` attaches the Bearer token to
      * EVERY url it is handed (it exempts only /auth/login and /auth/refresh),
      * so routing a foreign host through HttpClient would post our access token
      * to it. A remote image stays a plain URL for pdf.js to fetch anonymously.

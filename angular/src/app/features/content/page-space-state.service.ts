@@ -10,7 +10,7 @@ import { PageDto, PageTypeDto } from './page.types';
  * Main-pane rendering.
  *
  * Was a Pages-local `'list' | 'grid'` copied from Documents; now the SHARED
- * {@link ExplorerViewMode} (#1709), because copying a vocabulary between two
+ * {@link ExplorerViewMode}, because copying a vocabulary between two
  * modules is how three explorers ended up with three names for one control.
  * The set of modes Pages offers is declared in `content:pages-list` YAML.
  */
@@ -19,7 +19,7 @@ export type PageViewMode = ExplorerViewMode;
 /**
  * Shared state between the Pages explorer's two slot components — the space
  * accordion in `content.panel.left` and the tree grid in `content.main`
- * (ADR-153, #1693).
+ *.
  *
  * They are siblings assembled by `ExplorerLayout` from the layout YAML, so
  * they cannot talk directly; this is the seam, exactly as
@@ -50,7 +50,7 @@ export class PageSpaceStateService {
      *
      * The KEY is the wire value, never the path: the backend resolves it
      * through the registry, so a client that sent a path could name a
-     * directory it was never offered (#1693).
+     * directory it was never offered.
      */
     readonly spaceKey = signal<string>('');
 
@@ -69,7 +69,7 @@ export class PageSpaceStateService {
      *
      * Null is meaningful rather than missing: a page in a personal space
      * belongs to no site, so placement has no destination to default to and
-     * the UI has to ask (#1592).
+     * the UI has to ask.
      */
     readonly siteSlug = signal<string | null>(null);
 
@@ -77,7 +77,7 @@ export class PageSpaceStateService {
      * The selected page, or null.
      *
      * Lives here because the TOOLBAR is rendered by the host page and the
-     * PROPERTIES PANEL is a third slot (#1711), while the selection belongs to
+     * PROPERTIES PANEL is a third slot, while the selection belongs to
      * the listing in `content.main` — siblings that cannot see each other.
      *
      * It was a bare `hasSelection` boolean while the toolbar predicate was the
@@ -92,7 +92,7 @@ export class PageSpaceStateService {
     readonly hasSelection = computed(() => null !== this.selectedPage());
 
     /**
-     * Whether the properties panel is showing (#1711).
+     * Whether the properties panel is showing.
      *
      * SEPARATE from the selection, and the separation is load-bearing: the
      * layout gates the panel on `activeItem`, so closing it by clearing the
@@ -100,7 +100,7 @@ export class PageSpaceStateService {
      * lost its row actions — the close button silently deselecting behind the
      * user's back.
      *
-     * Starts CLOSED and opens only on the explicit Properties action (#1712).
+     * Starts CLOSED and opens only on the explicit Properties action.
      * It used to open on selection, which put a 340px panel in front of the
      * listing on every single click — and single-click is the first half of
      * the double-click that opens the editor, so the pane jittered under the
@@ -110,9 +110,9 @@ export class PageSpaceStateService {
     readonly panelOpen = signal(false);
 
     /**
-     * Configured page kinds (#1696), published by the listing that loads them.
+     * Configured page kinds, published by the listing that loads them.
      *
-     * Shared rather than fetched per consumer: the tiles need `key → label`
+     * Shared rather than fetched per consumer: the tiles need `key -> label`
      * and so does the properties panel, and the catalogue cannot change
      * between them. A panel with its own fetch would put a request behind
      * every row click for a constant.
@@ -120,7 +120,7 @@ export class PageSpaceStateService {
     readonly pageTypes = signal<readonly PageTypeDto[]>([]);
 
     /**
-     * Which rendering the main pane uses (#1694).
+     * Which rendering the main pane uses.
      *
      * Set by the switcher the HOST renders and obeyed by the sibling slot that
      * draws the items — the same seam the folder cursor uses.
@@ -133,7 +133,7 @@ export class PageSpaceStateService {
 
     /**
      * The folder both views are showing, as the chain walked down from the
-     * space root — the empty trail IS the root (#1706).
+     * space root — the empty trail IS the root.
      *
      * A TRAIL rather than a bare path because the backend lists children by
      * Node id (`?parent=`), so walking back up needs each ancestor's id, and
@@ -142,7 +142,7 @@ export class PageSpaceStateService {
      * It lives HERE, not in the grid, because the folder tree in the left panel
      * and the listing in the main pane are sibling slots: the panel sets the
      * cursor, the listing obeys it, and neither can see the other. It was
-     * private to the listing while the grid was its own navigator (#1694) —
+     * private to the listing while the grid was its own navigator —
      * moving it out is what lets navigation leave the grid entirely.
      */
     readonly trail = signal<ReadonlyArray<{ id: string; path: string }>>([]);
@@ -207,11 +207,11 @@ export class PageSpaceStateService {
     readonly actionRequested$ = new Subject<string>();
 
     /**
-     * An action aimed at a SPECIFIC section (#1717), not at the cursor.
+     * An action aimed at a SPECIFIC section, not at the cursor.
      *
      * Separate from `actionRequested$` because the target is the point: section
      * properties opens on the folder that was right-clicked, and the folder
-     * menu deliberately does not move the cursor ([#1713]) — so the path has to
+     * menu deliberately does not move the cursor ([]) — so the path has to
      * travel with the request rather than be read from shared state afterwards.
      */
     readonly sectionActionRequested$ = new Subject<{
@@ -221,7 +221,7 @@ export class PageSpaceStateService {
     }>();
 
     /**
-     * The Pages toolbar tree, loaded once here (#1712).
+     * The Pages toolbar tree, loaded once here.
      *
      * Lives in shared state because THREE slots need it and none can see the
      * others: the toolbar renders it, the folder tree opens a folder menu from
@@ -241,7 +241,7 @@ export class PageSpaceStateService {
                 .subscribe(nodes => this.toolbarNodes.set(nodes));
         }
 
-        // #1712 — remember which space was open. Pages was the only explorer
+        // — remember which space was open. Pages was the only explorer
         // that did not, so every reload dropped you back into Personal even if
         // you had spent the session in a site.
         //

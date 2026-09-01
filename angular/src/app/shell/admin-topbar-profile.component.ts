@@ -14,8 +14,8 @@ import { UserAvatarComponent } from '@coolms/ui-angular';
  * Shows the current user's avatar + email. On click opens a dropdown
  * panel listing all action nodes (sign out, profile link, etc.).
  * Nodes are sorted by sortOrder ASC. Click handling is data-driven:
- *   - meta.target === 'action.logout' → dispatch Logout
- *   - otherwise → router.navigate to meta.routerLink ?? '/admin' + node.path
+ *   - meta.target === 'action.logout' -> dispatch Logout
+ *   - otherwise -> router.navigate to meta.routerLink ?? '/admin' + node.path
  * Closes on outside click via HostListener.
  */
 @Component({
@@ -120,8 +120,8 @@ export class AdminTopbarProfileComponent implements OnInit {
      * Data-driven click handler for topbar dropdown nodes.
      *
      * Routing logic based on meta.target:
-     *   'action.logout' → dispatch Logout + navigate to /login
-     *   (default)       → router.navigate to meta.routerLink ?? '/admin' + node.path
+     *   'action.logout' -> dispatch Logout + navigate to /login
+     *   (default)       -> router.navigate to meta.routerLink ?? '/admin' + node.path
      */
     onNodeClick(node: NaviGraphNode, event: Event): void {
         event.preventDefault();

@@ -23,7 +23,7 @@ declare module '@tiptap/core' {
 /**
  * Block-level atom mirroring a `{widget:document:<template-slug>}` dtmpl tag.
  *
- * ⚠️ **This embeds a GENERATE button, not a file.** The published page renders a
+ *  **This embeds a GENERATE button, not a file.** The published page renders a
  * "Generate {template}" control; the reader clicks it and a document is produced
  * for them on demand. That is why the picker behind it lists TEMPLATES rather
  * than browsing the VFS — attaching an existing PDF is a different feature

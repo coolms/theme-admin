@@ -62,7 +62,7 @@ describe('DocumentAggregatorService upload', () => {
     });
 
     /**
-     * ⚠️ The stage where a trailing parameter goes missing.
+     *  The stage where a trailing parameter goes missing.
      *
      * `target` travels dialog -> service -> FormData -> processor -> provider,
      * and a value that silently stops arriving at any hop lands the operator's

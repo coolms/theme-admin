@@ -6,15 +6,15 @@ import { DocumentPageStateService } from './document-page-state.service';
 import { InstanceDetailComponent } from './instance-detail.component';
 
 /**
- * F.14c-1 + Phase A.1b — right-panel detail dispatcher.
+ * F.14c-1 +.1b — right-panel detail dispatcher.
  *
  * Branches by the page's right-panel mode:
  *
- *   `properties` + template selected → dispatch via `ComponentRegistry`
+ *   `properties` + template selected -> dispatch via `ComponentRegistry`
  *     keyed by `'document-detail-{format}'` (`WordDetailComponent` for
  *     Word; future formats register their own under the same scheme).
  *
- *   `instances` + instance selected → mount `InstanceDetailComponent`
+ *   `instances` + instance selected -> mount `InstanceDetailComponent`
  *     directly. Instance metadata is uniform across formats, so no
  *     per-format split is needed today; if a future format wants
  *     instance-detail extensions it can wrap or replace this branch.
@@ -97,7 +97,7 @@ export class DocumentDetailComponent {
     protected readonly panelNode = this.state.panelNode;
 
     protected onClose(): void {
-        // Phase D hotfix #4: panel header close X is one of four panel
+        // hotfix #4: panel header close X is one of four panel
         // close affordances (close X, mode-properties toggle, ESC,
         // background click). Selection is left untouched — closing the
         // panel doesn't deselect the entity.

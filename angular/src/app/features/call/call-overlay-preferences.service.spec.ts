@@ -6,7 +6,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
 
 /**
  * Companion to `user-calendar-preferences.service.spec.ts` for the call side of
- * the #2033 fallout, and the sharper of the two: the screen-pop overlay is
+ * the fallout, and the sharper of the two: the screen-pop overlay is
  * mounted once by the admin shell and refreshes only in its own ngOnInit, so
  * nothing re-fetches these values after boot. A save that failed to land in
  * this cache stayed un-landed for the whole session.

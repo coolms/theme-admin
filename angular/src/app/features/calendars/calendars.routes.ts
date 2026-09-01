@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * M1.2.c — Calendar admin routes.
+ * — Calendar admin routes.
  * `/admin/calendars`         — list page
  * `/admin/calendars/:slug`   — detail page (settings + working hours + holiday rules + preview)
  */

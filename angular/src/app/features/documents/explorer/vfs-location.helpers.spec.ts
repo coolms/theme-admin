@@ -34,7 +34,7 @@ describe('formatLocation', () => {
     });
 
     it('handles a personal-zone root file', () => {
-        // /home/abc/file.pdf → drop file → /home/abc → collapse → ~ → trailing slash → ~/
+        // /home/abc/file.pdf -> drop file -> /home/abc -> collapse -> ~ -> trailing slash -> ~/
         expect(formatLocation('/home/abc-123/file.pdf')).toBe('~/');
     });
 });

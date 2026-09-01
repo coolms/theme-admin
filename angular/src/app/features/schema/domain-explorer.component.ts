@@ -15,7 +15,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
  * The toolbar holds only action buttons; the FQCN + alias + type-badge
  * breadcrumb now lives as a sticky band at the top of the detail panel
  * (see DomainExplorerDetailComponent) — same pattern as VFS / Media /
- * Documents explorers (#246/#247).
+ * Documents explorers.
  *
  * Context-menu overlays live HERE (page level) so they are rendered above
  * any overflow:hidden ancestor inside the explorer panel.
@@ -32,7 +32,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
     template: `
         <app-explorer-layout layoutId="dynamic_entity:domain-explorer">
 
-            <!-- ── Toolbar ──────────────────────────────────────────────── -->
+            <!-- -- Toolbar ------------------------------------------------ -->
             <app-page-toolbar
                 treeSlug="navi.toolbar.domain_explorer"
                 [context]="state.context()"

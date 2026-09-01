@@ -37,7 +37,7 @@ const ENDED_LINGER_MS = 6_000;
  *
  * A realtime board of in-progress calls, driven by the M9.c `calls.broadcast`
  * Centrifugo firehose ({@link CallLiveEventsService}). Each state transition
- * (ringing → answered → on_hold → ended) upserts a card, keyed by call id;
+ * (ringing -> answered -> on_hold -> ended) upserts a card, keyed by call id;
  * ended calls linger briefly (with their final duration) then age out. The
  * board is seeded on load from the recent non-terminal CallRecords so it isn't
  * empty until the next transition. Clicking a card drills into the call detail

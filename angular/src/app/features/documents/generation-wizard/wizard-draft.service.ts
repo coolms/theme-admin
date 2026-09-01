@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 /**
- * Phase X-2.6a — localStorage draft persistence for the document-
+ *-2.6a — localStorage draft persistence for the document-
  * generation wizard.
  *
  * Stored value is version-tagged and time-stamped. On restore we

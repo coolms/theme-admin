@@ -20,7 +20,7 @@ export interface NaviNodeFormData {
  * is declared in that form (so its FormControl + validators exist) but NOT laid
  * out there — instead it renders here, projected into the dynamic-form's content
  * slot, as a theme-scoped {@link TemplatePickerComponent}. The picker needs the
- * tree's resolved theme (tree → section → themeSlug), which only this dialog can
+ * tree's resolved theme (tree -> section -> themeSlug), which only this dialog can
  * resolve; it's shown only when a theme resolves (a public nav node that renders
  * a page), so admin nav trees — which map to no theme — get no template field.
  */

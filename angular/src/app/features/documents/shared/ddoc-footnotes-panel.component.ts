@@ -29,14 +29,14 @@ export interface FootnoteRow {
  * problem in draft view and answers it the same way — a notes pane. So this is
  * the affordance an author already knows, not an invention.
  *
- * ## ⚠️ The number is the POSITION, the id is the KEY
+ * ##  The number is the POSITION, the id is the KEY
  *
  * Every reader prints a footnote's position, so the panel leads with that and
  * shows the stored id only where the two differ — which is exactly when an
  * author would otherwise be confused by a marker that says one thing and a page
- * that says another. #2295 has the measurement.
+ * that says another. has the measurement.
  *
- * ## ⚠️ An orphan is shown, never swept up
+ * ##  An orphan is shown, never swept up
  *
  * A note whose reference an author deleted keeps its body: the editing seam
  * drops nothing for being unreferenced, because a client that failed to
@@ -237,11 +237,11 @@ export class DdocFootnotesPanelComponent {
     /**
      * The note's text, for the chip.
      *
-     * ⚠️ Parsed, never stripped with a regex: the body is HTML, and a pattern
+     *  Parsed, never stripped with a regex: the body is HTML, and a pattern
      * that mangled an entity or an attribute containing `>` would put markup in
      * front of the author.
      *
-     * ⚠️ And through `DOMParser`, not a detached `div.innerHTML`. A detached
+     *  And through `DOMParser`, not a detached `div.innerHTML`. A detached
      * div is not inert — an `<img>` assigned into one still loads, so an
      * `onerror` in a `.ddoc` from somewhere else would run while we were only
      * trying to read the text. `DOMParser` builds a document that loads nothing

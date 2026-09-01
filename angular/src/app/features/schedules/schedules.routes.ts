@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * M1.3 — Scheduler admin routes.
+ * — Scheduler admin routes.
  * `/admin/schedules`         — list page
  * `/admin/schedules/:slug`   — detail page (settings + trigger editor + calendar + payload + history)
  */

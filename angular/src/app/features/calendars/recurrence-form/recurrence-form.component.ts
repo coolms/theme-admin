@@ -628,7 +628,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
         }
     }
 
-    // ── State mutations + serialise + emit ──────────────────────────────────
+    // -- State mutations + serialise + emit ----------------------------------
 
     private emit(): void {
         const spec = serializeRecurrence(this.state());
@@ -807,7 +807,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
         this.emit();
     }
 
-    // ── Exclusion list ──────────────────────────────────────────────────────
+    // -- Exclusion list ------------------------------------------------------
 
     addExclude(): void {
         const d = this.excludeDraft();
@@ -832,7 +832,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
         this.emit();
     }
 
-    /** Exclude-date chips + occurrence-preview — pref-aware (tz + date-format), #1037. */
+    /** Exclude-date chips + occurrence-preview — pref-aware (tz + date-format), . */
     formatLocalDate(iso: string): string {
         return this.dtf.date(iso);
     }

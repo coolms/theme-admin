@@ -7,7 +7,7 @@
  * On load:  `dtmplToHtml()` does the inverse, rebuilding a minimal marker div
  *           that the node's `parseHTML` rehydrates into the chip.
  *
- * ⚠️ **Positional id, not a named param.** `DocumentWidgetRenderer` reads the
+ *  **Positional id, not a named param.** `DocumentWidgetRenderer` reads the
  * template slug from the tag's SECOND `:` segment (`$params['_id']`) — unlike
  * the form widget, which uses `formId=`. Emitting `{widget:document slug=…}`
  * would parse cleanly and render nothing, because `_id` would be empty.
@@ -69,7 +69,7 @@ function unwrapLiteral(s: string): string {
     return t;
 }
 
-/** Editor HTML → stored dtmpl. */
+/** Editor HTML -> stored dtmpl. */
 export function htmlToDtmpl(html: string): string {
     return html.replace(DOC_MARKER_RE, marker => {
         const slug = matchAttr(marker, 'data-slug');
@@ -88,7 +88,7 @@ export function htmlToDtmpl(html: string): string {
     });
 }
 
-/** Stored dtmpl → editor HTML. */
+/** Stored dtmpl -> editor HTML. */
 export function dtmplToHtml(content: string): string {
     return content.replace(DOC_WIDGET_TAG_RE, (_full, rawSlug: string, rawParams?: string) => {
         const slug = unwrapLiteral(rawSlug);

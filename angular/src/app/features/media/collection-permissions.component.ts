@@ -341,7 +341,7 @@ export class CollectionPermissionsComponent implements OnInit {
         this.othersAccess.set(preset.othersAccess as 'r' | '');
         // Secret is owner-only (0o700) — no group access at all.
         // Save the current group first so it can be restored when switching back to a
-        // group-aware preset (e.g. Secret → Private → Members).
+        // group-aware preset (e.g. Secret -> Private -> Members).
         if (preset.key === 'secret') {
             if (this.selectedGroup()) this.lastGroup.set(this.selectedGroup());
             this.selectedGroup.set('');

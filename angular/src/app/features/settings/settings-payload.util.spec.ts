@@ -48,7 +48,7 @@ describe('withoutPinnedKeys', () => {
 /**
  * Where a save response belongs.
  *
- * ⚠️ Written after the bug, not before it. Saving a TTL of 60 for one site made
+ *  Written after the bug, not before it. Saving a TTL of 60 for one site made
  * the PLATFORM view read 60 on the real screen, because the scoped response was
  * written into the platform-wide list. The stored file proved the platform was
  * untouched — so the data was right and the screen was lying, which is the

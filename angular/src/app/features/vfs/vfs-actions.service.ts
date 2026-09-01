@@ -125,7 +125,7 @@ export class VfsActionsService {
     }
 
     /**
-     * The kinds installed modules can create, fetched once (#2056).
+     * The kinds installed modules can create, fetched once.
      *
      * Cached as the PROMISE, not the result: New File can be clicked twice
      * before the first response lands, and caching the result would fire a

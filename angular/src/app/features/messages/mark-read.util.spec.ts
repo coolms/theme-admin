@@ -2,7 +2,7 @@ import { advanceReadOverride, mayMarkRead, ReadOverrides } from './mark-read.uti
 import { ChatConversationDto } from './messages.types';
 
 /**
- * Mark-read rules (#2127) — shared after the page and the quick panel were found
+ * Mark-read rules — shared after the page and the quick panel were found
  * to disagree about both of them.
  */
 describe('mark read', () => {
@@ -15,7 +15,7 @@ describe('mark read', () => {
         });
 
         it('refuses seq 0 — claiming nothing is how a client claims EVERYTHING', () => {
-            // #2115: the seq is the client's high-water. Zero means "I have
+            // : the seq is the client's high-water. Zero means "I have
             // received nothing", and sending it invited the server to use its own
             // lastSeq instead.
             expect(mayMarkRead(conv(), 0)).toBe(false);
@@ -23,8 +23,8 @@ describe('mark read', () => {
         });
 
         it('refuses an owner-EXCLUDED viewer', () => {
-            // ⚠️ The drift. They are read-only up to a frozen ceiling, the server
-            // refuses the call, and #2111 hides the control — so the quick panel
+            //  The drift. They are read-only up to a frozen ceiling, the server
+            // refuses the call, and hides the control — so the quick panel
             // was issuing a request that existed only to be rejected.
             expect(mayMarkRead(conv({ viewerState: 'excluded' }), 5)).toBe(false);
         });
@@ -37,12 +37,12 @@ describe('mark read', () => {
         });
 
         it('allows it when the conversation ROW is missing entirely', () => {
-            // ⚠️ Deliberate, and the same rule one test up: a row we do not have
+            //  Deliberate, and the same rule one test up: a row we do not have
             // is not a row that says "excluded". Since the inbox is paged
-            // (#2120), a deep-linked conversation can be open while its row has
+            //, a deep-linked conversation can be open while its row has
             // not loaded — refusing here would leave those messages permanently
             // unread. The seq being claimed is still the CLIENT's own high-water,
-            // so nothing is over-claimed (#2115).
+            // so nothing is over-claimed.
             expect(mayMarkRead(null, 5)).toBe(true);
             expect(mayMarkRead(undefined, 5)).toBe(true);
         });
@@ -58,7 +58,7 @@ describe('mark read', () => {
         });
 
         it('MOVES FORWARD ONLY, so a slower surface cannot undo a faster one', () => {
-            // ⚠️ Two surfaces mark the same conversation read; the responses can
+            //  Two surfaces mark the same conversation read; the responses can
             // land in either order.
             const at9: ReadOverrides = { c1: 9 };
             expect(advanceReadOverride(at9, 'c1', 3)).toEqual({ c1: 9 });

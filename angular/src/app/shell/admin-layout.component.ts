@@ -46,7 +46,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
             flex-shrink: 0;
             background: var(--cms-sidebar-bg);
             /*
-             * ⚠️ The bar painted its background dark and never said what
+             *  The bar painted its background dark and never said what
              * colour text is, so it inherited --cms-text -- near-black -- from
              * body. 21 children overrode it to white and 19 inherited the
              * near-black; the site selector uses color: inherit and came out
@@ -204,7 +204,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
             min-height: 0;
             display: flex;
             flex-direction: column;
-            /* AUTO, not hidden (#2072). Pages that manage their own inner
+            /* AUTO, not hidden. Pages that manage their own inner
                scroller — the explorers, the editors — bound themselves to this
                box and never overflow it, so they see no change: auto only
                produces a scrollbar when there is something to scroll. A page
@@ -392,7 +392,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <!-- Global context menu — rendered last so it always floats above toast and drawers -->
         <coolms-context-menu />
 
-        <!-- Global WebRTC call overlay (Track B) — incoming ring + in-call bar, above every route -->
+        <!-- Global WebRTC call overlay — incoming ring + in-call bar, above every route -->
         <app-rtc-call-overlay />
 
         <!-- Global telephony (PBX) incoming-call screen-pop (M9.g) — a non-intrusive
@@ -575,7 +575,7 @@ export class AdminLayoutComponent implements OnInit {
         // The stored `preferences.theme` has existed since the profile
         // Preferences tab shipped (light / dark / system default) and nothing
         // ever applied it. Loading it here — the authenticated shell — is what
-        // turns dark mode on (#2031). Failure is non-fatal by design: the
+        // turns dark mode on. Failure is non-fatal by design: the
         // service keeps the cached-or-OS value rather than forcing light.
         this.theme.ensureLoaded().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
 
@@ -694,7 +694,7 @@ export class AdminLayoutComponent implements OnInit {
         const nodePath = '/' + (node.meta['route'] ?? node.path).toString().replace(/^\//, '');
 
         // A child route may declare data.activeNav to nominate which sidebar
-        // item should be highlighted (e.g. dynamic-records → /system/entities).
+        // item should be highlighted (e.g. dynamic-records -> /system/entities).
         const override = this.activeNavOverride();
         if (override) {
             const overridePath = '/' + override.replace(/^\//, '');

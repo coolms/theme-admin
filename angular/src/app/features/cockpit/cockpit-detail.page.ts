@@ -54,10 +54,10 @@ import type {
  *
  * Mirrors the schedule-detail three-state shell (loading | error-with-back |
  * detail). M4.c adds state-gated steering actions to the header:
- *   - running   → Suspend, Set variable, Cancel
- *   - suspended → Resume, Set variable, Cancel
- *   - failed    → Retry (M4.f)
- *   - terminal (completed / cancelled) → read-only (no actions)
+ *   - running   -> Suspend, Set variable, Cancel
+ *   - suspended -> Resume, Set variable, Cancel
+ *   - failed    -> Retry (M4.f)
+ *   - terminal (completed / cancelled) -> read-only (no actions)
  * Cancel confirms first (destructive); every successful action re-fetches the
  * detail (so the state badge + tokens + history + variables refresh) and
  * toasts. Drill-in is from the list page row / toolbar Open.
@@ -355,7 +355,7 @@ import type {
             border-radius: 50%; background: var(--cms-accent, #F5A623);
             border: 2px solid var(--cms-surface, #fff);
         }
-        /* #1096 — tint the marker by the event's category bucket. */
+        /* — tint the marker by the event's category bucket. */
         .timeline__marker--info    { background: var(--cms-info-text, #1e40af); }
         .timeline__marker--success { background: var(--cms-success-text, #166534); }
         .timeline__marker--warning { background: var(--cms-warning-text, #92400e); }
@@ -363,7 +363,7 @@ import type {
         .timeline__marker--muted   { background: var(--cms-text-secondary, #6b7280); }
         .timeline__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
         .timeline__summary { font-weight: 600; }
-        /* #1096 — raw stable code, kept as a secondary debug line under the summary. */
+        /* — raw stable code, kept as a secondary debug line under the summary. */
         .timeline__code { color: var(--cms-text-muted, #848b96); font-size: .72rem; margin-top: 1px; }
         .timeline__time { color: var(--cms-text-muted, #848b96); font-size: .78rem; margin-left: auto; }
         .timeline__payload {
@@ -403,7 +403,7 @@ export class CockpitDetailPageComponent implements OnInit {
 
     /**
      * Header actions = navigation only (back to the cockpit list) — declared in
-     * the `cockpit:instance-detail` layout config (ADR-127), not hardcoded.
+     * the `cockpit:instance-detail` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
@@ -422,8 +422,8 @@ export class CockpitDetailPageComponent implements OnInit {
      * knowing what "suspended-multiversion" was supposed to mean.
      *
      * The YAML's footer order produces the correct per-state order once
-     * filtered: running → Suspend/Set-var/Cancel, suspended →
-     * Resume/[Migrate]/Set-var/Cancel, failed → Retry.
+     * filtered: running -> Suspend/Set-var/Cancel, suspended ->
+     * Resume/[Migrate]/Set-var/Cancel, failed -> Retry.
      */
     protected readonly steeringActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.footerActions, this.actionContext()),
@@ -563,7 +563,7 @@ export class CockpitDetailPageComponent implements OnInit {
         });
     }
 
-    /** Human label for the header / title: name → key → short id. */
+    /** Human label for the header / title: name -> key -> short id. */
     definitionLabel(i: CockpitInstanceDetailDto): string {
         return i.definitionName ?? i.definitionKey ?? i.id.slice(0, 8);
     }
@@ -633,7 +633,7 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * #1096 — the timeline's primary line: the server-derived human `summary`
+     * — the timeline's primary line: the server-derived human `summary`
      * (from `HistoryEventDescriber`), falling back to the raw stable `type`
      * code when an older payload or a serialization quirk omits it.
      */
@@ -642,14 +642,14 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * #1096 / #1108 — maps the server `category` bucket onto a badge/marker
-     * colour variant. The four #1108 buckets each take a colour distinct from
+     * / — maps the server `category` bucket onto a badge/marker
+     * colour variant. The four buckets each take a colour distinct from
      * the others so a task/timer/message/external-task event is recognisable at
      * a glance:
-     *   - `process`, `task`           → info    (blue)   lifecycle / work
-     *   - `token`, `message`          → success (green)  flow / messaging
-     *   - `compensation`, `timer`     → warning (amber)  rollback / time-based
-     *   - `external-task`             → danger  (red)    parked external work
+     *   - `process`, `task`           -> info    (blue)   lifecycle / work
+     *   - `token`, `message`          -> success (green)  flow / messaging
+     *   - `compensation`, `timer`     -> warning (amber)  rollback / time-based
+     *   - `external-task`             -> danger  (red)    parked external work
      * Anything unknown falls through to muted. Drives both the category badge
      * (`badge--*`) and the marker tint (`timeline__marker--*`) — one mapping for
      * both.

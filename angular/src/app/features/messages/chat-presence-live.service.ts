@@ -12,7 +12,7 @@ import {
 } from './chat-presence.util';
 
 /**
- * Who is online, PUSHED (#2122).
+ * Who is online, PUSHED.
  *
  * Every admin client subscribes to the one shared `presence.chat` channel and
  * stays on it; being subscribed is what makes you visible, and Centrifugo's own
@@ -25,7 +25,7 @@ import {
  *
  * `GET /chat/presence?userIds=…` on a 20-second timer, per visible tab, each
  * call costing the server a round trip to Centrifugo. It was the one poll that
- * could not be gated on the socket (#2106/#2107) because nothing pushed it —
+ * could not be gated on the socket because nothing pushed it —
  * which made a left-open tab the most expensive idle client in the product. It
  * survives as the FALLBACK for exactly the case that argument was really about:
  * the socket being down. See the callers' `isConnected()` gate.
@@ -45,7 +45,7 @@ import {
 export class ChatPresenceLiveService {
     private readonly client = inject(CentrifugoClientService);
 
-    /** clientId → userId for everyone currently on the channel. */
+    /** clientId -> userId for everyone currently on the channel. */
     private readonly clients = signal<PresenceClients>(NO_PRESENCE);
 
     /** The distinct users currently connected — one entry per person, not per tab. */

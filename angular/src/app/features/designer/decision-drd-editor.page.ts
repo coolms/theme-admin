@@ -40,10 +40,10 @@ import { DesignerI18nService } from './designer-i18n.service';
  * Hosts the vanilla-TS {@link DmnDrdEditor} (from
  * `@coolms/designer/dmn-drd`) inside the shared editor shell, wired to
  * the decision VFS draft via {@link DesignerService} (`getDraft` /
- * `saveDraft`, the same `/decisions/{key}/draft` XML endpoint the M3.2
+ * `saveDraft`, the same `/decisions/{key}/draft` XML endpoint the
  * table editor uses).
  *
- * Mirrors the M3.3 BPMN-Lite + M3.5 state-machine editor chrome: the
+ * Mirrors the BPMN-Lite + state-machine editor chrome: the
  * shell toolbar carries Undo-Redo / Fit-Zoom / Connect + this page's
  * create-tools (Decision / InputData / Delete / Auto-arrange, mounted into
  * the toolbar creation group via {@link paletteHost}); the primary
@@ -152,7 +152,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
      * Unsaved-work flag, PUBLIC so `unsavedChangesGuard` can read it off the
      * route component. Driven by the COMMAND STACK: `load()` emits a change
      * but pushes no command, so subscribing to the editor would mark a
-     * freshly opened draft dirty before the user touched it (#2489).
+     * freshly opened draft dirty before the user touched it.
      */
     readonly dirty = signal(false);
 
@@ -231,7 +231,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
             sidebar.setCollapsed(true);
         }
 
-        // Connect-mode advances on node selection (the editor's click →
+        // Connect-mode advances on node selection (the editor's click ->
         // selection drives it); the property panel + auto-collapse share
         // the same selection stream harmlessly.
         this.offConnect = this.drdEditor.selection.onChange((target) =>
@@ -242,7 +242,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         await this.loadDraft(key);
     }
 
-    // ─── load / save ──────────────────────────────────────────────────────
+    // --- load / save ------------------------------------------------------
 
     private async loadDraft(key: string): Promise<void> {
         if (this.drdEditor === undefined) return;
@@ -310,7 +310,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
-    // ─── interactive authoring ────────────────────────────────────────────
+    // --- interactive authoring --------------------------------------------
 
     /**
      * Append the DRD create-tools to the shell toolbar's creation group

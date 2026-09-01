@@ -4,17 +4,17 @@ import { map, Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
 /**
- * Data layer for the Markdown import/export round-trip (Track B #1).
+ * Data layer for the Markdown import/export round-trip.
  *
- *  - `toHtml`        → `POST /content/markdown/to-html` — converts pasted/imported
+ *  - `toHtml`        -> `POST /content/markdown/to-html` — converts pasted/imported
  *                      Markdown to editor HTML through the SAME server-side
  *                      hardened converter the create-from-Markdown path uses
  *                      (raw HTML + unsafe links stripped at the source). The FE
  *                      deliberately runs no client-side Markdown parser, so the
  *                      one security boundary lives on the server.
- *  - `exportPage`    → `GET /content/pages/export` — reads a page variant's HTML
+ *  - `exportPage`    -> `GET /content/pages/export` — reads a page variant's HTML
  *                      body and returns it as Markdown plus a suggested filename.
- *  - `downloadMarkdown` → client-side Blob download (the admin is a Bearer SPA,
+ *  - `downloadMarkdown` -> client-side Blob download (the admin is a Bearer SPA,
  *                      so the auth'd JSON is fetched first, then turned into a
  *                      file here rather than via a plain `<a download>`).
  */
@@ -27,7 +27,7 @@ export class MarkdownService {
         return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
     }
 
-    /** Convert Markdown → safe editor HTML. Empty in → empty out. */
+    /** Convert Markdown -> safe editor HTML. Empty in -> empty out. */
     toHtml(markdown: string): Observable<string> {
         return this.http.post<{ html?: string }>(
             `${this.apiBase}/content/markdown/to-html`,
@@ -37,7 +37,7 @@ export class MarkdownService {
     }
 
     /**
-     * Export a page variant body as Markdown. `locale` omitted → the backend
+     * Export a page variant body as Markdown. `locale` omitted -> the backend
      * exports the first authored variant. Returns the Markdown plus a suggested
      * `.md` filename.
      */

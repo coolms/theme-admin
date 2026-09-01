@@ -4,7 +4,7 @@ import { UserAvatarComponent } from '@coolms/ui-angular';
 import { EditorPeer } from './editor-collab.service';
 
 /**
- * Live presence strip for the page editor (Track B #8): the avatars of
+ * Live presence strip for the page editor: the avatars of
  * other users currently in this document. Presentational only — fed the
  * deduped peer list from {@see EditorCollabService}; renders nothing when
  * nobody else is here. Avatars overlap; past `maxInline` they fold into a

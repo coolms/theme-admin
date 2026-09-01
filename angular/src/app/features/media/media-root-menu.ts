@@ -2,7 +2,7 @@ import { ContextMenuItem } from '@coolms/ui-angular';
 
 /**
  * What a media ROOT offers on right-click — the tree's "All media" row and,
- * since #1786, every SPACE row in the accordion.
+ *, every SPACE row in the accordion.
  *
  * ## Why this is not the toolbar node set
  *

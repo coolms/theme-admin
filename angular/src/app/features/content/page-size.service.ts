@@ -21,7 +21,7 @@ export interface PageSizeDto {
 }
 
 /**
- * Data layer for the per-document page-size control (Track B — page-size /
+ * Data layer for the per-document page-size control— page-size /
  * docx-width). Mirrors {@link BlockEditorService}: read via the path-aware
  * `/content/page-size`, save via a generic VFS merge-patch on the Package's
  * `extras.pageSize` / `extras.pageWidth`. The SSR + DOCX renderers read those

@@ -23,7 +23,7 @@ export interface ImageMapPick {
  *
  * Colours come from `--cms-*` throughout: this dialog is new code, and the
  * older pickers it is modelled on are part of the hard-coded stock the theming
- * arc is still working down (#2040).
+ * arc is still working down.
  */
 @Component({
     selector: 'app-image-map-picker',

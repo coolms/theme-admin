@@ -25,7 +25,7 @@ import { FormService } from './form.service';
 import type { FormDefinitionDto } from './form.types';
 
 /**
- * Form Builder list page (`/admin/forms`, Track D.3).
+ * Form Builder list page (`/admin/forms`,.3).
  *
  * Lists every registered form (`GET /forms`) as a DataGrid; each row carries
  * the read-only `source` discriminator (shipped / db / file) so the operator

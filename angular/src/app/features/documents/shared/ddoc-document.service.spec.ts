@@ -44,7 +44,7 @@ describe('the ddoc section join and split', () => {
     /**
      * Why the registration in `app.config.ts` must be EXACT.
      *
-     * ⚠️ This spec cannot assert that the registration HAPPENS: importing
+     *  This spec cannot assert that the registration HAPPENS: importing
      * `app.config` for its side effects pulls the whole application graph into
      * the karma build and takes the entire suite from passing to zero executed
      * (see `sheet-document-editor.spec.ts`, which learned it the hard way).
@@ -72,7 +72,7 @@ describe('the ddoc section join and split', () => {
     });
 
     /**
-     * ⚠️ The serializer writes the marker with an empty VALUE, which is not
+     *  The serializer writes the marker with an empty VALUE, which is not
      * the literal the join emits. A split that matched only the literal would
      * silently stop splitting the moment the content had been through the
      * editor — which is every save.
@@ -102,7 +102,7 @@ describe('the ddoc section join and split', () => {
     });
 
     /**
-     * ⚠️ The paper goes on EVERY section or none. The control edits the whole
+     *  The paper goes on EVERY section or none. The control edits the whole
      * document, so applying it to the first alone would leave an author reading
      * a status bar that describes a page the rest of the document is not on.
      */
@@ -144,7 +144,7 @@ describe('the ddoc section join and split', () => {
         });
 
         /**
-         * ⚠️ OOXML reserves -1 and 0 for the separator notes, so a marker
+         *  OOXML reserves -1 and 0 for the separator notes, so a marker
          * naming either points at a horizontal rule rather than a note. The
          * panel must not offer one as something to edit.
          */
@@ -199,7 +199,7 @@ describe('the ddoc section join and split', () => {
         });
 
         /**
-         * ⚠️ Compared on the TWIPS, never on `preset`. Two sections can both be
+         *  Compared on the TWIPS, never on `preset`. Two sections can both be
          * off-catalog — `preset: null` on each — and still be different paper,
          * and calling that agreement is exactly the case an author would be
          * misled by.

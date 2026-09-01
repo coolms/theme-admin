@@ -1,7 +1,7 @@
 import { emptyInboxPage, firstInboxPage, Identified, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 
 /**
- * Inbox paging (#2120) — the rules that let a capped conversation list stay
+ * Inbox paging — the rules that let a capped conversation list stay
  * honest: no row rendered twice, no row stranded, and no state where the
  * "Load more" button is lit but cannot make progress.
  */
@@ -53,7 +53,7 @@ describe('inbox paging', () => {
         });
 
         it('advances the offset by the RAW page length, so a deduped page still makes progress', () => {
-            // ⚠️ The load-bearing one. Deriving the next offset from the rows HELD
+            //  The load-bearing one. Deriving the next offset from the rows HELD
             // would leave a page that was entirely duplicates re-requesting itself
             // forever, with the button still lit.
             const first = firstInboxPage(rows('a', 'b'), 2);

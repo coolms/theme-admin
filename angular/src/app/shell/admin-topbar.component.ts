@@ -84,16 +84,16 @@ interface Breadcrumb {
                     &gt;_
                 </button>
 
-                <!-- Personal calendar quick-access (M1.2.f) -->
+                <!-- Personal calendar quick-access () -->
                 <app-calendar-quick-access />
 
                 <!-- Email mailbox quick-access -->
                 <app-email-quick-access />
 
-                <!-- Internal messages quick-access (#1012) -->
+                <!-- Internal messages quick-access -->
                 <app-messages-quick-access />
 
-                <!-- DynamicChat agent-queue quick-access (#1029) -->
+                <!-- DynamicChat agent-queue quick-access -->
                 <app-dynamic-chat-quick-access />
 
                 <!-- Click-to-dial pad (M9.g Slice B) -->
@@ -157,7 +157,7 @@ export class AdminTopbarComponent implements OnInit {
 
         if (routeBreadcrumb) {
             // Variant B: the active route declares an explicit intermediate crumb.
-            // Build: Home → [breadcrumb.label] → [current page title]
+            // Build: Home -> [breadcrumb.label] -> [current page title]
             // The last crumb label is replaced by PageTitleService once async
             // data (schema.label etc.) has loaded.
             const lastSeg = currentPath.split('/').filter(Boolean).at(-1) ?? '';

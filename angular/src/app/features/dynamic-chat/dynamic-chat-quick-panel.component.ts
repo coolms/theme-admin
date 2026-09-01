@@ -13,11 +13,11 @@ import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service
 import { AgentConversationDto, QueueAgentDto } from './dynamic-chat.types';
 
 /**
- * DynamicChat quick-panel (ledger #1029, Slice C) — the right-drawer content for
+ * DynamicChat quick-panel, Slice C) — the right-drawer content for
  * the topbar agent-queue launcher ({@link DynamicChatQuickAccessComponent}),
- * mirroring the Messages quick-panel pattern ([#1012]). A compact PREVIEW of the
+ * mirroring the Messages quick-panel pattern ([]). A compact PREVIEW of the
  * visitor queue, **New-first** (the ones waiting for a reply on top), each row
- * showing the [#1028] triage status, an unclaimed hint, and the [#1026] handling-
+ * showing the [] triage status, an unclaimed hint, and the [] handling-
  * agent avatars so a manager sees at a glance "who needs answering / who's on it".
  *
  * Tapping a row jumps to the full agent workspace at `/dynamic-chat?c=<id>`
@@ -145,7 +145,7 @@ export class DynamicChatQuickPanelComponent implements OnInit {
     private static readonly MAX_AGENTS = 2;
 
     ngOnInit(): void {
-        // Realtime-first while the drawer is open (#1042): an initial load on open
+        // Realtime-first while the drawer is open: an initial load on open
         // (`startWith`), then refetch on a `queue.changed` nudge, or on a fallback
         // timer tick that fires only while the WS is DISCONNECTED (so the open-only
         // poll is a true no-WS fallback, not a parallel 15s poll).

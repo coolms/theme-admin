@@ -15,7 +15,7 @@ import { ProfilePageComponent } from './profile-page.component';
  *
  * This file exists because it could not. `ProfilePageComponent` imports
  * `DynamicFormComponent`, whose rich-text field pulls `@coolms/editor-angular`
- * → `@coolms/document-engine`; the engine's `index.ts` uses ESM-correct
+ * -> `@coolms/document-engine`; the engine's `index.ts` uses ESM-correct
  * `'./layout/page-layout.js'` specifiers against `.ts` sources, and the old
  * `@angular-devkit/build-angular:karma` builder was webpack with no
  * `resolve.extensionAlias`, so it could not follow them. Importing this page
@@ -24,7 +24,7 @@ import { ProfilePageComponent } from './profile-page.component';
  * `test` target now runs `@angular/build:karma`, which shares the `build`
  * target's esbuild resolution, so the two agree by construction.
  *
- * `profile-settings-echo.spec.ts` covers the same #2033 fallout from the
+ * `profile-settings-echo.spec.ts` covers the same fallout from the
  * OUTSIDE: it drives the real ApiService and the real preference services, but
  * where the page's handlers merge the echo it has to REPLICATE those lines by
  * hand. A hand-copied line proves nothing about the line it copies — delete
@@ -215,7 +215,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         document.documentElement.style.removeProperty('--cms-accent');
     });
 
-    // ── The builder itself ───────────────────────────────────────────────────
+    // -- The builder itself ---------------------------------------------------
 
     /**
      * The pin on the change that made this file possible. `paginateFlow` is the
@@ -237,7 +237,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(fixture.nativeElement.textContent).toContain('Dmitry Popov');
     });
 
-    // ── ngOnInit seeding ─────────────────────────────────────────────────────
+    // -- ngOnInit seeding -----------------------------------------------------
 
     it('seeds the calendar and call prefs from the load response', () => {
         // Both services are shared with widgets mounted elsewhere in the shell,
@@ -246,7 +246,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(callPrefs.sipEndpoint()).toBe('PJSIP/1001');
     });
 
-    // ── saveCalendarPrefs ────────────────────────────────────────────────────
+    // -- saveCalendarPrefs ----------------------------------------------------
 
     const CALENDAR_SAVED = {
         tz:                  'Europe/Berlin',
@@ -330,7 +330,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(page.savingCalendar()).toBeFalse();
     });
 
-    // ── saveCallSettings ─────────────────────────────────────────────────────
+    // -- saveCallSettings -----------------------------------------------------
 
     const CALL_SAVED = {
         overlayEnabled:     false,
@@ -353,7 +353,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         expect(page.savingCall()).toBeFalse();
     });
 
-    // ── saveSection, driven through the real DynamicForm ─────────────────────
+    // -- saveSection, driven through the real DynamicForm ---------------------
 
     /** Open Preferences and answer the form-definition fetch it triggers. */
     function openPreferencesTab(): DynamicFormComponent {
@@ -381,7 +381,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         const form = openPreferencesTab();
         form.formGroup().patchValue({ theme: 'dark', accentColor: '#3366ff' });
 
-        // The real chain from here: submit() → `submitted` → saveSection().
+        // The real chain from here: submit() -> `submitted` -> saveSection().
         form.submit();
         expect(form.saving()).withContext('form spinner during the request').toBeTrue();
 
@@ -389,7 +389,7 @@ describe('ProfilePageComponent — save handlers over a real render (#2033/#2034
         TestBed.flushEffects();
         fixture.detectChanges();
 
-        // The original #2033 report. Both reads take a NAMED field off the
+        // The original report. Both reads take a NAMED field off the
         // echo, so under a keyless Hydra bag both got `undefined` and were
         // dropped by the services' own guards: the save worked, and the admin
         // stayed the colour it already was until the next reload.

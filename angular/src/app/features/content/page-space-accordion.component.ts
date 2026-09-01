@@ -18,13 +18,13 @@ import { PageFoldersTreeComponent } from './page-folders-tree.component';
 import { PageSpaceStateService } from './page-space-state.service';
 
 /**
- * Pages left-pane space selector (ADR-153, #1693) — the fourth consumer of
+ * Pages left-pane space selector — the fourth consumer of
  * {@link SpaceSelectionStore}.
  *
  * Personal (`/home/{uuid}/pages`) and one entry per active site, rooted at the
  * SECTION ROOT so the site's page tree is the space.
  *
- * It projects the FOLDER TREE (#1706). The original comment here said the
+ * It projects the FOLDER TREE. The original comment here said the
  * opposite — that a tree belonged in `content.main` because the grid rendered
  * its own, and a second one would give "two trees disagreeing about where they
  * are". The disagreement was real; the conclusion was backwards. The grid is
@@ -74,7 +74,7 @@ export class PageSpaceAccordionComponent implements OnInit {
         // Publish the resolved space into shared state, which is what the grid
         // reloads from. Reads the store's NULLABLE root and bails while it is
         // null: substituting a default here would pin every reload to the
-        // first space before the spaces response lands (#1588).
+        // first space before the spaces response lands.
         effect(() => {
             const root = this.store.activeRootPath();
             const key = this.store.activeKey();
@@ -98,7 +98,7 @@ export class PageSpaceAccordionComponent implements OnInit {
     }
 
     /**
-     * Right-click a SPACE (#1759) — Pages bound `spaceChange` and nothing
+     * Right-click a SPACE — Pages bound `spaceChange` and nothing
      * else, so the space rows were the one part of the explorer with no menu
      * at all. The accordion has emitted `spaceContextMenu` since it shipped;
      * only Documents ever listened.
@@ -115,7 +115,7 @@ export class PageSpaceAccordionComponent implements OnInit {
      * "New Page" would create the page in whichever space you happened to be
      * in — silently, in a different site.
      *
-     * ⚠️ So the switch stays, but it moved to ACTION time (#2394). Switching as
+     *  So the switch stays, but it moved to ACTION time. Switching as
      * the menu OPENED meant a right-click navigated, and dismissing the menu
      * left the operator in another space having chosen nothing.
      */
@@ -135,7 +135,7 @@ export class PageSpaceAccordionComponent implements OnInit {
             { _kind: 'folder', _selected: false, _surface: 'context' },
             action => {
                 // `open-folder` on a space IS the switch -- and since the
-                // menu no longer performs one on the way open (#2394), this is
+                // menu no longer performs one on the way open, this is
                 // where it happens. Re-emitting the action would ask the tree
                 // to select a folder that is the space root and has no node of
                 // its own, so the switch is the whole of it.
@@ -147,7 +147,7 @@ export class PageSpaceAccordionComponent implements OnInit {
                     return;
                 }
                 // Section properties need the target path — for a space that
-                // is its root, not the folder cursor (#1717's contract).
+                // is its root, not the folder cursor ('s contract).
                 if ('section-properties' === action) {
                     this.state.sectionActionRequested$.next({
                         action,
@@ -157,7 +157,7 @@ export class PageSpaceAccordionComponent implements OnInit {
 
                     return;
                 }
-                // ⚠️ At ACTION time, not at open time. These read the
+                //  At ACTION time, not at open time. These read the
                 // ACTIVE space, so "New page" on another space's row would
                 // create the page in a different site -- silently. Switching
                 // when the action is CHOSEN keeps that right without making a

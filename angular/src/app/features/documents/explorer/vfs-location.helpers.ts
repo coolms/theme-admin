@@ -1,5 +1,5 @@
 /**
- * Phase A.1a — pure helpers shared by the instances browser. The
+ *.1a — pure helpers shared by the instances browser. The
  * file zone displays per-instance Location and Filename derived from
  * the entity's `vfsPath`; both transforms live here so the UI never
  * does string-mangling inline.
@@ -10,11 +10,11 @@
  * (`/home/{userId}`) collapsed to `~`. Always trailing-slashed for
  * visual clarity in the Location column.
  *
- *   /docs/contract.pdf                 → /docs/
- *   /docs/contracts/2026/Q1/nda.docx   → /docs/contracts/2026/Q1/
- *   /home/abc-123/docs/inbox/inv.pdf   → ~/docs/inbox/
- *   /file.pdf                          → /
- *   ''                                 → /
+ *   /docs/contract.pdf                 -> /docs/
+ *   /docs/contracts/2026/Q1/nda.docx   -> /docs/contracts/2026/Q1/
+ *   /home/abc-123/docs/inbox/inv.pdf   -> ~/docs/inbox/
+ *   /file.pdf                          -> /
+ *   ''                                 -> /
  */
 export function formatLocation(vfsPath: string | null | undefined): string {
     if (!vfsPath) {
@@ -46,7 +46,7 @@ export function filenameOf(vfsPath: string | null | undefined, fallback: string)
 }
 
 /**
- * Phase A.1b — human-readable byte size for the instance properties
+ *.1b — human-readable byte size for the instance properties
  * panel. Returns `'—'` for null/undefined/0 (the entity doesn't expose
  * size today; pending rows have nothing to measure either). Decimal
  * formatting matches Media's status-bar convention (1 KB = 1024 B).

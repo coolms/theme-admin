@@ -37,7 +37,7 @@ interface SubjectRow {
 }
 
 /**
- * Track E Phase 3 (CDP core, #1150) — Subject profile explorer
+ *Phase 3 (CDP core, ) — Subject profile explorer
  * (`/admin/cdp/subjects`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the
@@ -46,7 +46,7 @@ interface SubjectRow {
  * read-only (a Subject is derived from the event stream, never hand-edited); row
  * Open drills into {@link ../cdp/subject-detail.page.SubjectDetailPageComponent}.
  *
- * `loadingMode: lazy` (ledger #1662): the grid emits `(loadMore)` on mount and on
+ * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and on
  * every filter/sort/page change, and this page turns that into ONE server
  * request. It used to be `client` — the page fetched EVERY subject (one row per
  * visitor) and the grid filtered that in the browser.

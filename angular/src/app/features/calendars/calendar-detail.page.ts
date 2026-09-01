@@ -34,18 +34,18 @@ import { MiniCalendarComponent } from './mini-calendar.component';
 type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
 
 /**
- * M1.2.f.1 — Calendar Detail admin page, redesigned (/admin/calendars/:slug).
+ * — Calendar Detail admin page, redesigned (/admin/calendars/:slug).
  *
  * Layout (top-down):
  *  - cms-page-header: icon · title · slug chip (projected into the
- *    `header-meta` slot — see [#441 follow-up]) · gear ⚙ · delete
+ *    `header-meta` slot — see [follow-up]) · gear ⚙ · delete
  *  - Two-column body:
  *      LEFT  (240px): mini month calendar + (future) calendar list
  *      RIGHT (flex):  FC toolbar row + main grid (full height)
  *  - Settings, working hours, holiday rules, shares are accessed via
  *    the global right drawer (slide-over) — gear button opens it.
  *
- * This replaces the #423 four-card grid (events / settings / hours /
+ * This replaces the four-card grid (events / settings / hours /
  * holiday rules / preview), which crammed too much onto a single page
  * and made the events grid feel like an afterthought.
  *
@@ -142,7 +142,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
 
                     <!-- RIGHT: toolbar + grid -->
                     <main class="main">
-                        <!-- Task #462 — view-switcher moved to the right
+                        <!-- Task — view-switcher moved to the right
                              alongside "New event". When it sat between
                              the title and the actions, every prev/next
                              tick jittered the switcher left and right
@@ -218,7 +218,7 @@ type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
                     [actions]="footerActions()"
                     (actionClick)="onFooterAction($event)" />
 
-                <!-- M1.2.h.1b — hidden input backing the footer's "Import .ics"
+                <!-- — hidden input backing the footer's "Import .ics"
                      action; the footer button calls icsInput.click(). -->
                 <input #icsInput type="file" accept=".ics,text/calendar" hidden
                        (change)="onIcsFileChosen($event)" />
@@ -410,7 +410,7 @@ export class CalendarDetailPageComponent implements OnInit {
     readonly canEdit = computed<boolean>(() => this.isOwner() || this.isAdmin());
     readonly canManageShares = computed<boolean>(() => this.isOwner() || this.isAdmin());
 
-    /** Task #434 item 3 — true when this calendar is a user's seeded
+    /** True when this calendar is a user's seeded
      *  default personal calendar. The delete button is disabled with
      *  an explanatory tooltip in that case (backend also enforces). */
     readonly isDefaultPersonal = computed<boolean>(() =>
@@ -441,7 +441,7 @@ export class CalendarDetailPageComponent implements OnInit {
      * Used to drive the toolbar title + mini-cal "selected day" sync.
      * **NOT** `view.activeStart` — that's the first cell of the rendered
      * grid (often a previous-month tail date), which made every label
-     * read one month behind the displayed grid. See task #454.
+     * read one month behind the displayed grid. See task .
      */
     readonly activeDate     = signal<Date | null>(null);
     readonly activeMonthLabel = signal<string>('');
@@ -456,7 +456,7 @@ export class CalendarDetailPageComponent implements OnInit {
     @ViewChild('eventsCard')
     private eventsCard?: CalendarEventsCardComponent;
 
-    /** M1.2.h.1b — hidden file input backing the "Import .ics" footer action. */
+    /** — hidden file input backing the "Import .ics" footer action. */
     @ViewChild('icsInput')
     private icsInput?: ElementRef<HTMLInputElement>;
 
@@ -465,13 +465,13 @@ export class CalendarDetailPageComponent implements OnInit {
 
     private currentSlug: string | null = null;
 
-    /** In-page settings panel state (M1.2.f.4) — not a global drawer. */
+    /** In-page settings panel state () — not a global drawer. */
     readonly isSettingsPanelOpen = signal<boolean>(false);
     readonly settingsTab = signal<'settings' | 'hours' | 'rules' | 'shares'>('settings');
 
     /**
      * Fixed-footer actions — declared in the `calendar:detail` layout config
-     * (ADR-127), not hardcoded. The static descriptors (Settings / Delete)
+     *, not hardcoded. The static descriptors (Settings / Delete)
      * come from config; the `delete` action's disabled flag + tooltip are
      * applied here from runtime state (default-personal calendars can't be
      * removed) — the config-declares / FE-evaluates split, per web:section-detail.
@@ -588,7 +588,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
 
     /**
-     * M1.2.h.1b — download this calendar as `.ics`. Fetched through
+     * — download this calendar as `.ics`. Fetched through
      * HttpClient (Bearer-authenticated) into a Blob, then handed to the
      * browser as a `{slug}.ics` download via a transient object URL.
      */
@@ -611,7 +611,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
 
     /**
-     * M1.2.h.1b — read the chosen `.ics` file and POST it to the import
+     * — read the chosen `.ics` file and POST it to the import
      * endpoint, then surface the summary + refresh the events grid. The
      * input is reset so re-selecting the same file fires `change` again.
      */
@@ -667,7 +667,7 @@ export class CalendarDetailPageComponent implements OnInit {
         });
     }
 
-    // ── Toolbar nav ──────────────────────────────────────────────────────────
+    // -- Toolbar nav ----------------------------------------------------------
     navPrev():  void { this.eventsCard?.prev(); }
     navNext():  void { this.eventsCard?.next(); }
     navToday(): void { this.eventsCard?.today(); }
@@ -677,7 +677,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
     openNewEvent(): void { this.eventsCard?.openNewEventModal(); }
 
-    // ── Mini-cal interactions ────────────────────────────────────────────────
+    // -- Mini-cal interactions ------------------------------------------------
     onMiniDateSelect(d: Date): void {
         this.eventsCard?.gotoDate(d);
     }
@@ -695,23 +695,23 @@ export class CalendarDetailPageComponent implements OnInit {
         currentEnd:   Date;
         viewType:     FcViewName;
     }): void {
-        // Task #454 — use `currentStart` (first day of the displayed
+        // Task — use `currentStart` (first day of the displayed
         // period), NOT `activeStart` (first cell of the rendered grid,
         // which is often the previous month's tail). See the JSDoc on
         // `viewRangeChanged` in calendar-events-card.component.ts.
         const cs = range.currentStart;
 
-        // Task #456 — sync the Month/Week/Day toggle whenever FC's view
+        // Task — sync the Month/Week/Day toggle whenever FC's view
         // changes internally (e.g. clicking a weekday header in Week
         // view jumps to Day view via navLinks). Without this, the pill
         // stayed stuck on whatever the user previously chose, even
         // though the grid had moved on.
         this.currentView.set(range.viewType);
 
-        // Task #456 — title format adapts to the displayed view:
-        //  - Month view → "May 2026"
-        //  - Week view  → "May 25 – 31, 2026" (or month-crossing range)
-        //  - Day view   → "Saturday, May 30, 2026"
+        // Task — title format adapts to the displayed view:
+        //  - Month view -> "May 2026"
+        //  - Week view  -> "May 25 – 31, 2026" (or month-crossing range)
+        //  - Day view   -> "Saturday, May 30, 2026"
         // Without this, every view showed just the month + year, which
         // was useless context in Day view (the user couldn't tell
         // which day they were looking at).

@@ -49,13 +49,13 @@ interface MailboxFormModel {
     password: string;
     enabled: boolean;
     inboundWorkflowKey: string;
-    /** M8.f (#1267): `password` uses the password field; `oauth` connects via Google. */
+    /** M8.f: `password` uses the password field; `oauth` connects via Google. */
     authMethod: MailboxAuthMethod;
     /** OAuth provider key when `authMethod` is `oauth` (only `google` today). */
     oauthProvider: string;
 }
 
-/** A saved compose/reply draft (#1308) — the composer's restorable state. */
+/** A saved compose/reply draft — the composer's restorable state. */
 interface ComposeDraft {
     /** C.4.b: recipient chips. Pre-C.4.b drafts stored `to` as a comma-string — coerced on load. */
     to: string[];
@@ -69,16 +69,16 @@ interface ComposeDraft {
 
 /**
  * M8.a.4 — the Email mailbox client (`/admin/email`). A three-pane reader over
- * the M8.a read/send/reply/folders/seen APIs (ledger #1239–#1245):
+ * the M8.a read/send/reply/folders/seen APIs–):
  *
  *  - LEFT rail: the mailbox picker + folder list (each folder shows its unread
  *    count, `GET /email/mailboxes/{id}/folders`).
  *  - MIDDLE: the selected folder's messages, newest-sent first, offset-paginated
- *    ("Load more"). Unread rows are bold; opening one marks it read (#1245).
+ *    ("Load more"). Unread rows are bold; opening one marks it read.
  *  - RIGHT: the opened message — headers + snippet + a collapsible raw RFC-822
  *    source (the backend stores the raw `.eml`; MIME body extraction is a future
  *    refinement). "Reply" + a top-bar "Compose" open an inline composer that
- *    posts through the mailbox's own SMTP (send #1242 / reply-in-thread #1244).
+ *    posts through the mailbox's own SMTP (send / reply-in-thread ).
  *
  * Read-only-friendly: with no mailboxes configured (the common dev state) the
  * body degrades to an empty state rather than erroring. Monolithic single
@@ -1019,7 +1019,7 @@ interface ComposeDraft {
         .mbx__compose-hint { color: var(--cms-text-muted); font-size: .75rem; margin: 0; }
         .mbx__compose-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--cms-border); }
 
-        /* Composer dock (#1309): floats bottom-right, does NOT block the mailbox, and
+        /* Composer dock: floats bottom-right, does NOT block the mailbox, and
          * collapses to just its header bar when minimized (body + foot hidden, form kept). */
         .mbx__dock { position: fixed; right: 24px; bottom: 0; z-index: 50; }
         .mbx__compose--dock {
@@ -1137,7 +1137,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Attachments (backlog slice 6b) parsed on demand from the OPEN message's `.eml`
-     * (#1299). Fetched only when the detail reports `hasAttachments`, guarded by the
+     *. Fetched only when the detail reports `hasAttachments`, guarded by the
      * same {@link openSeq} so a slow fetch for a previous message can't populate.
      * `savingAttachment` holds the index currently being copied to the user's files.
      */
@@ -1146,7 +1146,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly savingAttachment = signal<number | null>(null);
 
     /**
-     * The open message's conversation thread (#1307), oldest-sent first. Fetched on
+     * The open message's conversation thread, oldest-sent first. Fetched on
      * open (guarded by {@link openSeq}); the "Conversation" strip renders only when
      * it holds more than one message.
      */
@@ -1156,12 +1156,12 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeMode = signal<'compose' | 'reply'>('compose');
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
-    /** Dock minimized state (#1309): the window collapses to just its header bar,
+    /** Dock minimized state: the window collapses to just its header bar,
      *  keeping the form (and its draft) alive so it restores exactly as left. */
     readonly composeMinimized = signal<boolean>(false);
 
     /**
-     * Draft autosave (#1308). While the composer is open, edits are debounced-saved
+     * Draft autosave. While the composer is open, edits are debounced-saved
      * to a per-(mailbox, compose|reply-target) localStorage draft (via
      * {@link DraftStoreService}); reopening the composer restores it, sending or
      * discarding clears it. `draftSaved` drives the "Draft saved" footer indicator.
@@ -1179,7 +1179,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
     private page = 1;
     /**
-     * Monotonic request guards (#1289). Each async load captures `++seq` and
+     * Monotonic request guards. Each async load captures `++seq` and
      * ignores its own response if `seq` is no longer the latest — so a slower
      * in-flight request that resolves after a newer one (rapid message clicks,
      * folder switch mid-"Load more") can't clobber the current view/list.
@@ -1238,7 +1238,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly recipientQuery$ = new Subject<string>();
     /**
      * Rich-text compose (backlog slice 2). `true` renders the platform
-     * `<coolms-editor>` (standard profile → bold/italic/link/lists/quote) and
+     * `<coolms-editor>` (standard profile -> bold/italic/link/lists/quote) and
      * sends an HTML body; `false` keeps the legacy plain `<textarea>`. Sticky
      * across composes (a user's choice persists); defaults to rich.
      */
@@ -1251,7 +1251,7 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly composeKey = signal<string>('0');
 
-    // M8.d search (#1261): when active, the middle pane shows mailbox-wide search
+    // M8.d search: when active, the middle pane shows mailbox-wide search
     // hits instead of the current folder's messages.
     private static readonly SEARCH_PAGE_SIZE = 20;
     readonly searchActive = signal<boolean>(false);
@@ -1262,7 +1262,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private searchPage = 1;
     private searchSeq = 0;
 
-    // M8.e import (#1263): upload a .eml/.mbox file into the current folder.
+    // M8.e import: upload a .eml/.mbox file into the current folder.
     readonly importing = signal<boolean>(false);
 
     readonly mailboxEditorOpen = signal<boolean>(false);
@@ -1278,14 +1278,14 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly securityOptions: MailboxSecurity[] = ['none', 'ssl', 'starttls'];
     mbForm: MailboxFormModel = EmailMailboxPageComponent.blankMailboxForm();
 
-    // M8.f OAuth connect (#1267): the edited mailbox's connection state + an
+    // M8.f OAuth connect: the edited mailbox's connection state + an
     // in-flight "Connect with …" redirect.
     readonly connecting = signal<boolean>(false);
     readonly editingOauthConnected = signal<boolean>(false);
     /** After returning from the provider's consent, select this mailbox once the list loads. */
     private pendingSelectId: string | null = null;
 
-    // M8.h OAuth provider picker (#1270): the registered providers (backend-driven,
+    // M8.h OAuth provider picker: the registered providers (backend-driven,
     // so a new one appears with no FE change) + their editable IMAP/SMTP presets.
     readonly oauthProviders = signal<EmailOAuthProviderDto[]>([{ key: 'google', label: 'Google' }]);
     private static readonly PROVIDER_PRESETS: Partial<Record<string, { imapHost: string; smtpHost: string; smtpPort: number; smtpSecurity: MailboxSecurity }>> = {
@@ -1293,7 +1293,7 @@ export class EmailMailboxPageComponent implements OnInit {
         microsoft: { imapHost: 'outlook.office365.com', smtpHost: 'smtp.office365.com', smtpPort: 587, smtpSecurity: 'starttls' },
     };
 
-    /** Deployed workflow definitions offered by the inbound-workflow picker (#1258). */
+    /** Deployed workflow definitions offered by the inbound-workflow picker. */
     readonly inboundWorkflowOptions = signal<InboundWorkflowOption[]>([]);
 
     ngOnInit(): void {
@@ -1341,7 +1341,7 @@ export class EmailMailboxPageComponent implements OnInit {
             error: () => this.inboundWorkflowOptions.set([]),
         });
 
-        // The OAuth provider picker (#1270). Non-fatal: on failure the editor keeps
+        // The OAuth provider picker. Non-fatal: on failure the editor keeps
         // its default single "Google" option.
         this.email.listOAuthProviders().subscribe({
             next: list => {
@@ -1429,7 +1429,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Open a search hit (#1261) — same detail path as a folder message. */
+    /** Open a search hit — same detail path as a folder message. */
     openSearchHit(hit: EmailSearchHitDto): void {
         this.openById(hit.id, hit.seen ?? true, hit.folder ?? this.selectedFolder());
     }
@@ -1465,7 +1465,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Fetch the open message's conversation thread (#1307), guarded by {@link openSeq}
+     * Fetch the open message's conversation thread, guarded by {@link openSeq}
      * so a slow response for a previously-opened message can't populate the strip.
      * Best-effort: a failure just leaves the strip hidden (a single message never
      * shows it anyway).
@@ -1488,7 +1488,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Run a full-text search across the selected mailbox (#1261, M8.d). */
+    /** Run a full-text search across the selected mailbox (, M8.d). */
     runSearch(): void {
         const q = this.searchQuery.trim();
         const mailboxId = this.selectedMailboxId();
@@ -1798,7 +1798,7 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** Copy one attachment into the user's VFS home ("Save to my files", #1299). */
+    /** Copy one attachment into the user's VFS home ("Save to my files", ). */
     saveAttachmentToFiles(att: EmailAttachmentDto): void {
         const msg = this.selectedMessage();
         if (!msg || this.savingAttachment() !== null) {
@@ -1996,7 +1996,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Import a picked `.eml`/`.mbox` file into the selected mailbox's current folder
-     * (#1263). Reads the file text client-side and posts it as JSON; `.mbox` extension
+     *. Reads the file text client-side and posts it as JSON; `.mbox` extension
      * bulk-splits an archive, else a single `.eml`. Refreshes the folder counts + list
      * on success. Resets the input so the same file can be re-picked.
      */
@@ -2065,7 +2065,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeOpen.set(true);
     }
 
-    /** Toggle the composer dock between full-size and its collapsed header bar (#1309).
+    /** Toggle the composer dock between full-size and its collapsed header bar.
      *  The form stays mounted (its draft + editor state survive), so it restores as left. */
     toggleMinimize(): void {
         this.composeMinimized.update(v => !v);
@@ -2497,7 +2497,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.mbForm.smtpSecurity = preset.smtpSecurity;
     }
 
-    /** Human label for a provider key (from the fetched list, else ucfirst; '' → 'OAuth'). */
+    /** Human label for a provider key (from the fetched list, else ucfirst; '' -> 'OAuth'). */
     providerLabel(key: string): string {
         const found = this.oauthProviders().find(p => p.key === key);
         if (found?.label !== undefined && found.label !== '') {
@@ -2510,7 +2510,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Begin the OAuth connect for the edited mailbox (M8.f.2d #1267): fetch the consent
+     * Begin the OAuth connect for the edited mailbox (M8.f.2d ): fetch the consent
      * URL and hand the browser off to Google. On return, `/email/oauth/callback` bounces
      * back to `/admin/email?oauth=connected` (handled by {@link consumeOAuthReturn}).
      */
@@ -2539,7 +2539,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Handle a redirect back from Google's consent (`?oauth=connected|error&mailbox=`,
-     * M8.f.2d #1267): toast the outcome, remember which mailbox to select, and strip the
+     * M8.f.2d ): toast the outcome, remember which mailbox to select, and strip the
      * query so a page refresh doesn't re-toast.
      */
     private consumeOAuthReturn(): void {
@@ -2558,7 +2558,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Options for the inbound-workflow `<select>` (#1258): the deployed workflows,
+     * Options for the inbound-workflow `<select>`: the deployed workflows,
      * plus — if the mailbox already stores a key that is NOT among them (a workflow
      * since undeployed, or one set via the API/console) — a synthetic leading option
      * so the current value stays selected and visible rather than being silently blanked.
@@ -2762,7 +2762,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.email.markSeen(messageId, seen).subscribe({
             next: () => {
                 this.messages.set(this.messages().map(x => (x.id === messageId ? { ...x, seen } : x)));
-                // Reflect the flag in any matching search hit too (#1261).
+                // Reflect the flag in any matching search hit too.
                 this.searchResults.set(this.searchResults().map(x => (x.id === messageId ? { ...x, seen } : x)));
                 const sel = this.selectedMessage();
                 if (sel && sel.id === messageId) {

@@ -16,7 +16,7 @@ import { ContentFieldDescriptorDto, ContentFieldPanelDto, ContentFieldPanelsServ
 import { FieldWidgetHostComponent, FieldWidgetRegistry, ToastService } from '@coolms/ui-angular';
 
 /**
- * Renders the module-contributed field-set panels (ADR-129, W1.d) that apply to
+ * Renders the module-contributed field-set panels (, W1.d) that apply to
  * one content node and saves edits to its `extras`.
  *
  * Self-contained: given a node `path`, it fetches `/content/field-panels?path=`,

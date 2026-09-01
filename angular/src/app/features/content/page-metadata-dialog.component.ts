@@ -17,7 +17,7 @@ export interface PageMetadataDialogData {
 
 /**
  * Per-locale metadata for a page — meta tags, Open Graph, canonical, robots
- * (#1715).
+ *.
  *
  * ## Why this hosts a component instead of a form
  *
@@ -49,7 +49,7 @@ export interface PageMetadataDialogData {
     imports: [ContentFieldPanelsComponent],
     template: `
         <div class="cms-dialog pmd">
-            <!-- The house header: icon, plain text, close button (#1716).
+            <!-- The house header: icon, plain text, close button.
                  It was an h2 carrying cms-dialog-title — a class defined
                  NOWHERE, so the heading fell back to the browser's 2em default
                  while cms-dialog-header (1rem / 600) already styles its own
@@ -183,7 +183,7 @@ export class PageMetadataDialogComponent {
      *
      * Derived from the page path rather than carried on the DTO: a variant is
      * a `{locale}.dtmpl` child of the page Package, which is the naming
-     * contract the whole content model is built on (ADR-153), and
+     * contract the whole content model is built on, and
      * `PageVariantSummaryDto` deliberately stays a summary.
      */
     protected readonly variantPath = computed<string>(() => {

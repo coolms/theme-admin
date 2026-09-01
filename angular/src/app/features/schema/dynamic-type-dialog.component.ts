@@ -19,7 +19,7 @@ export interface DynamicTypeDialogData {
     type?:        DynamicEntityTypeDto;
     runtimeTypes: DynamicEntityTypeDto[];
     /**
-     * Map of slug → entity short class name for PHP-registered entity aliases.
+     * Map of slug -> entity short class name for PHP-registered entity aliases.
      * Derived from DomainModuleGroup entities (isDynamic + dynamicAlias).
      * Used to show an inline error when the user picks a reserved slug.
      */

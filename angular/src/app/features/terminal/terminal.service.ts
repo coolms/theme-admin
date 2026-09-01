@@ -21,7 +21,7 @@ export class TerminalService {
      * If the refresh also fails the user is logged out.
      */
     /**
-     * @param cwd the shell's working directory (#1728). The terminal is
+     * @param cwd the shell's working directory. The terminal is
      *            stateless server-side, so the location travels with each
      *            command — which is also why two tabs behave as two shells.
      */

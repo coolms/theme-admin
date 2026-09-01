@@ -19,7 +19,7 @@ export type {
     CentrifugoConnectionTokenDto, CentrifugoSubscriptionTokenDto,
 };
 
-// ─── Auth DTOs ────────────────────────────────────────────────────────────────
+// --- Auth DTOs ----------------------------------------------------------------
 
 
 export interface ProfileSection {
@@ -29,7 +29,7 @@ export interface ProfileSection {
     readonly formId:  string;
 }
 
-// ─── SiteSection DTOs ────────────────────────────────────────────────────────
+// --- SiteSection DTOs --------------------------------------------------------
 
 export interface SiteSectionDto {
     '@id':       string;
@@ -61,7 +61,7 @@ export interface UpdateSectionDto {
     feStack?:        string;
     matchPriority?:  number;
     /**
-     * THE authoritative theme binding (#1752). A section naming a theme resolves
+     * THE authoritative theme binding. A section naming a theme resolves
      * to it directly via `ThemeSubscriber`'s fast-path, so this — not the Themes
      * page's Activate — decides a site's theme. `null` clears it, falling back to
      * whichever theme is active; `undefined` leaves it unchanged (merge-patch).
@@ -83,7 +83,7 @@ export interface SectionApplyResultDto {
     readonly dryRun:        boolean;
 }
 
-// ─── Web / Site composition DTOs (Phase I Layer 3a/3b/3c) ────────────────────
+// --- Web / Site composition DTOs ( Layer 3a/3b/3c) --------------------
 //
 // These mirror the backend `SiteResource` + `SiteMemberCollectionResource`
 // shapes (see `src/Web/Infrastructure/ApiPlatform/Resource/`). The Site
@@ -150,7 +150,7 @@ export interface SiteMemberDto {
     readonly isEditor: boolean;
 }
 
-// ─── Routing Inspector DTOs (Phase I Layer 3b/3d.2) ──────────────────────────
+// --- Routing Inspector DTOs ( Layer 3b/3d.2) --------------------------
 //
 // Mirrors `App\Web\Domain\ValueObject\RoutingTrace` (and its child VOs
 // `RoutingStep` + `RoutingTarget`). Endpoint:
@@ -212,7 +212,7 @@ export interface RoutingTraceDto {
     readonly target:    RoutingTargetDto | null;
 }
 
-// ─── NaviTree / NaviNode DTOs ────────────────────────────────────────────────
+// --- NaviTree / NaviNode DTOs ------------------------------------------------
 
 export interface NaviTreeDto {
     '@id':     string;
@@ -221,7 +221,7 @@ export interface NaviTreeDto {
     label:     string;
     isActive:  boolean;
     /**
-     * Owning SiteSection's UUID for `navi.public.*` trees (task #312).
+     * Owning SiteSection's UUID for `navi.public.*` trees.
      * NULL for admin / toolbar / context trees.
      */
     siteSectionId?:    string | null;
@@ -240,7 +240,7 @@ export interface CreateNaviTreeDto {
     label: string;
     /**
      * Optional. When provided, the new tree is anchored to that SiteSection
-     * via NaviTree::$siteSectionId (task #312, Phase I Layer 1). Backend
+     * via NaviTree::$siteSectionId (Layer 1). Backend
      * validates the section exists -- 422 if not.
      */
     siteSectionId?: string;
@@ -292,7 +292,7 @@ export interface UpdateNaviNodeDto {
     sortOrder?:        number;
 }
 
-// ─── Theme template DTOs (Navi-node picker, task #312 Deliverable 1) ─────────
+// --- Theme template DTOs (Navi-node picker, Deliverable 1) ---------
 
 export interface ThemeTemplateDto {
     /** Relative path under the theme's `templates/`, e.g. `pages/home.html.dtmpl`. */
@@ -303,7 +303,7 @@ export interface ThemeTemplateDto {
     label:     string;
 }
 
-// ─── Identity user/group DTOs ─────────────────────────────────────────────────
+// --- Identity user/group DTOs -------------------------------------------------
 
 export interface IdentityGroupDto {
     id:          string;
@@ -314,7 +314,7 @@ export interface IdentityGroupDto {
     description: string | null;
     memberCount: number;
     /**
-     * Groups whose roles are granted by holding THIS group's role (#1726) — one
+     * Groups whose roles are granted by holding THIS group's role — one
      * hop, the stored edges, not the transitive closure the security hierarchy
      * computes.
      *
@@ -372,7 +372,7 @@ export interface UpdateGroupDto {
     description?: string | null;
 }
 
-// ─── VFS Node DTOs ───────────────────────────────────────────────────────────
+// --- VFS Node DTOs -----------------------------------------------------------
 
 export interface NodeDto {
     '@id':         string;
@@ -414,7 +414,7 @@ export interface ChownDto {
     gid:  string;
 }
 
-// ─── DocumentGeneration DTOs ─────────────────────────────────────────────────
+// --- DocumentGeneration DTOs -------------------------------------------------
 
 /**
  * `GET /document/generations/preview-audience` — who an RQL filter selects.
@@ -439,7 +439,7 @@ export interface CreateDocumentGenerationPayload {
     templateId:       string;
     /**
      * The template's own output format — `docx`, `pdf`, `xlsx`, … Widened from
-     * a `'docx' | 'pdf'` union in #1777: the union was accurate only while Word
+     * a `'docx' | 'pdf'` union in : the union was accurate only while Word
      * was the sole format module, and it forced the wizard to coerce a
      * spreadsheet template's `xlsx` into `docx`.
      */
@@ -516,11 +516,11 @@ export interface ListDocumentInstancesOptions {
     limit?:        number;
 }
 
-// ─── Calendar DTOs (M1.2.c) ──────────────────────────────────────────────────
+// --- Calendar DTOs () --------------------------------------------------
 //
 // Mirror the backend `Calendar` / `HolidayRule` / `CalendarHolidayPreview`
 // Resources at `src/Calendar/Infrastructure/ApiPlatform/Resource/`. The
-// admin Calendar pages (#372) are the only consumers today.
+// admin Calendar pages are the only consumers today.
 
 /** One weekday entry inside `workingHours`. ISO weekday code MO..SU. */
 export interface WeekdayHoursDto {
@@ -530,7 +530,7 @@ export interface WeekdayHoursDto {
 }
 
 /** Snapshot of a Calendar entity for the list / detail / form. */
-/** M1.2.h.1b — summary returned by `POST /api/v1/calendar/{slug}/import`. */
+/** — summary returned by `POST /api/v1/calendar/{slug}/import`. */
 export interface CalendarImportResultDto {
     readonly imported: number;
     readonly skipped:  number;
@@ -545,13 +545,13 @@ export interface CalendarDto {
     readonly workingHours?:  ReadonlyArray<WeekdayHoursDto>;
     readonly parentId?:      string | null;
     readonly ownerId?:       string | null;
-    /** Task #434 Partial-7 — human-friendly owner label resolved by
+    /** Human-friendly owner label resolved by
      *  the backend list provider (firstName + lastName, falls back to
      *  username, then shortened UUID). Null on Get endpoints. */
     readonly ownerLabel?:    string | null;
-    /** Task #434 item 6 — `owned | shared | admin | null`. */
+    /** Owner role: `owned | shared | admin | null`. */
     readonly currentUserAccess?: 'owned' | 'shared' | 'admin' | null;
-    /** Task #434 item 3 — true when the calendar is the user's seeded
+    /** True when the calendar is the user's seeded
      *  default personal calendar (`personal-{ownerId}`); the FE
      *  disables the delete button when this is true. */
     readonly isDefaultPersonal?: boolean;
@@ -592,7 +592,7 @@ export interface HolidayPreviewItemDto {
     readonly isWorking:  boolean;
 }
 
-/** M1.3 — Scheduler trigger kind code, lowercase enum. */
+/** — Scheduler trigger kind code, lowercase enum. */
 export type TriggerKindCode = 'cron' | 'rrule';
 
 /** Snapshot of a Schedule for list / detail / form. */
@@ -608,9 +608,9 @@ export interface ScheduleDto {
     readonly enabled?:      boolean;
     readonly calendarId?:   string | null;
     /**
-     * Sibling-of-#472 — display slug for the backing calendar, set
+     * Sibling — display slug for the backing calendar, set
      * server-side by ListSchedulesProvider so the FE doesn't need a
-     * separate `/calendar` round-trip to resolve calendarId → slug.
+     * separate `/calendar` round-trip to resolve calendarId -> slug.
      */
     readonly calendarSlug?: string | null;
     readonly ownerId?:      string | null;
@@ -673,7 +673,7 @@ export interface DefinitionCatalogDto {
     readonly retiredAt?:            string | null;
 }
 
-// ─── Translation catalogues (F5.c admin editor) ──────────────────
+// --- Translation catalogues (F5.c admin editor) ------------------
 // Mirror backend `TranslationCatalogueResource`.
 // `id` is the composite `{domain}:{locale}` slug used in URI paths.
 
@@ -705,7 +705,7 @@ export interface CalendarHolidayPreviewDto {
     readonly items: ReadonlyArray<HolidayPreviewItemDto>;
 }
 
-// ─── CalendarItem / Share DTOs (M1.2.d / M1.2.e / M1.2.e.2 / M1.2.f) ──────────
+// --- CalendarItem / Share DTOs ( / / /) ----------
 //
 // Mirror the backend `CalendarItemResource`, `EventAttendeeResource`,
 // `CalendarItemRsvpResource`, and `CalendarShareResource` at
@@ -773,7 +773,7 @@ export interface CalendarItemDto {
      */
     readonly parentItemId?:   string | null;
     /**
-     * M1.2.g — non-working-day policy. Controls what the expander
+     * — non-working-day policy. Controls what the expander
      * does when a recurring occurrence lands on a holiday or other
      * non-working day of the host calendar:
      *   - `off` (default) — yield every iterator candidate.
@@ -784,7 +784,7 @@ export interface CalendarItemDto {
     readonly nwdPolicy?:      NonWorkingDayPolicy | null;
 }
 
-/** {@see NonWorkingDayPolicy} on the backend. M1.2.g. */
+/** {@see NonWorkingDayPolicy} on the backend.. */
 export type NonWorkingDayPolicy = 'off' | 'skip' | 'shift_forward';
 
 export interface CreateCalendarItemDto {
@@ -980,7 +980,7 @@ export interface ListCalendarItemsOptions {
     readonly type?:         CalendarItemTypeCode;
 }
 
-// ─── Service ─────────────────────────────────────────────────────────────────
+// --- Service -----------------------------------------------------------------
 
 /** Read-only snapshot of a tracked telephony call (M9.a.4) for the admin call-history list. */
 export interface CallRecordDto {
@@ -1043,7 +1043,7 @@ export interface CallIceServersDto {
     readonly ttlSeconds: number;
 }
 
-/** One MCP tool + its governance gate (`GET /api/mcp/tools`, ADR-147 #1399). */
+/** One MCP tool + its governance gate (`GET /api/mcp/tools`, ). */
 export interface McpToolGovernanceDto {
     readonly name: string;
     readonly title: string;
@@ -1082,9 +1082,9 @@ export class ApiService {
         return m;
     }
 
-    // ── Auth ────────────────────────────────────────────────────────────────
+    // -- Auth ----------------------------------------------------------------
 
-    // ── Identity: implemented in core, kept here as the app's one API surface ──
+    // -- Identity: implemented in core, kept here as the app's one API surface --
     // Core owns the session, so these live in `IdentityApiClient`. Delegating
     // rather than re-pointing every caller keeps `api.login(...)` meaning what
     // it always meant.
@@ -1150,13 +1150,13 @@ export class ApiService {
         // It failed silently because every caller merges the result into a
         // cache — the calendar and call preference services included — so the
         // save persisted correctly on the server and only the in-memory echo was
-        // wrong, which looks like nothing until something READS it (#2033).
+        // wrong, which looks like nothing until something READS it.
         return this.http.patch<Record<string, unknown>>(url, data, {
             headers: { ...this.patchHeaders.headers, Accept: 'application/json' },
         });
     }
 
-    // ── Sections ────────────────────────────────────────────────────────────
+    // -- Sections ------------------------------------------------------------
 
     getSections(): Observable<SiteSectionDto[]> {
         return this.http
@@ -1193,7 +1193,7 @@ export class ApiService {
         });
     }
 
-    // ── Web / Sites composition (Phase I Layer 3a/3b/3c) ────────────────────
+    // -- Web / Sites composition ( Layer 3a/3b/3c) --------------------
     //
     // The Web module endpoints live under `/api/v1/web/sites`. There is no
     // dedicated manifest section for them (the URL prefix is stable and
@@ -1248,7 +1248,7 @@ export class ApiService {
 
     /**
      * GET /api/v1/web/routing/inspect?host=&path= -- Routing Inspector
-     * (Phase I Layer 3b backend, 3d.2 FE). Admin-only; surfaces the
+     * ( Layer 3b backend, 3d.2 FE). Admin-only; surfaces the
      * SSR pipeline trace for an arbitrary (host, path) pair so admins
      * can debug "why did /foo render template X" without booting a
      * browser session against that host.
@@ -1264,7 +1264,7 @@ export class ApiService {
         return this.http.get<RoutingTraceDto>(url, { params });
     }
 
-    // ── Calendars (M1.2.c) ──────────────────────────────────────────────────
+    // -- Calendars () --------------------------------------------------
 
     listCalendars(): Observable<CalendarDto[]> {
         const url = `${this.manifest.apiBase}/calendar`;
@@ -1274,7 +1274,7 @@ export class ApiService {
     }
 
     /**
-     * #472 — paged variant for the admin Calendars list. Round-trips
+     * — paged variant for the admin Calendars list. Round-trips
      * RQL filters + sort to the server so we never load 100k+ rows
      * into the browser. The lazy-mode DataGrid emits page/sort/filter
      * on every `loadMore`; the page calls into this method and feeds
@@ -1342,7 +1342,7 @@ export class ApiService {
     }
 
     /**
-     * M1.2.h.1b — download a calendar as an RFC 5545 `.ics`. Goes through
+     * — download a calendar as an RFC 5545 `.ics`. Goes through
      * HttpClient (not a bare `<a href>`) so the Bearer interceptor attaches
      * the token; the caller turns the Blob into a download.
      */
@@ -1351,7 +1351,7 @@ export class ApiService {
         return this.http.get(url, { responseType: 'blob' as const });
     }
 
-    /** M1.2.h.1b — upload an `.ics` document (raw body) into a calendar. */
+    /** — upload an `.ics` document (raw body) into a calendar. */
     importCalendarIcs(slug: string, ics: string): Observable<CalendarImportResultDto> {
         const url = `${this.manifest.apiBase}/calendar/${encodeURIComponent(slug)}/import`;
         return this.http.post<CalendarImportResultDto>(url, ics, {
@@ -1396,7 +1396,7 @@ export class ApiService {
         return this.http.get<CalendarHolidayPreviewDto>(url, { params });
     }
 
-    // ── Calendar Items (M1.2.d / M1.2.e) ────────────────────────────────────
+    // -- Calendar Items ( /) ------------------------------------
     //
     // The range query (`from`/`to`) is the FullCalendar event source. Backend
     // expands recurring items within the requested window via
@@ -1439,7 +1439,7 @@ export class ApiService {
         return this.http.delete<void>(url);
     }
 
-    // ── Per-occurrence overrides (Phase 2) ──────────────────────────────────
+    // -- Per-occurrence overrides (Phase 2) ----------------------------------
     //
     // When the user edits / deletes / drags one occurrence of a recurring
     // event AND picks the "only this event" scope, we route to these two
@@ -1490,7 +1490,7 @@ export class ApiService {
         return this.http.post<CalendarItemDeleteFollowingResponse>(url, { recurrenceInstant });
     }
 
-    // ── Recurrence preview (M1.1 / shared) ──────────────────────────────────
+    // -- Recurrence preview ( / shared) ----------------------------------
     //
     // Pure computation endpoint over the canonical RecurrenceIterator. The
     // calendar event editor's structured recurrence form calls this on
@@ -1503,7 +1503,7 @@ export class ApiService {
         return this.http.post<RecurrencePreviewResponse>(url, req);
     }
 
-    // ── Event Attendees / RSVP (M1.2.d) ─────────────────────────────────────
+    // -- Event Attendees / RSVP () -------------------------------------
 
     listEventAttendees(itemId: string): Observable<EventAttendeeDto[]> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(itemId)}/attendees`;
@@ -1542,7 +1542,7 @@ export class ApiService {
         return this.http.post<CalendarItemRsvpDto>(url, { status });
     }
 
-    // ── Calendar Shares (M1.2.e.2) ──────────────────────────────────────────
+    // -- Calendar Shares () ------------------------------------------
 
     listCalendarShares(calendarSlug: string): Observable<CalendarShareDto[]> {
         const url = `${this.manifest.apiBase}/calendar/${encodeURIComponent(calendarSlug)}/shares`;
@@ -1573,7 +1573,7 @@ export class ApiService {
         return this.http.delete<void>(url);
     }
 
-    // ── Scheduled handler catalog ──────────────────────────────────────────
+    // -- Scheduled handler catalog ------------------------------------------
 
     /**
      * Returns every #[ScheduledHandler]-decorated class registered with
@@ -1595,7 +1595,7 @@ export class ApiService {
             .pipe(map(r => r['member']));
     }
 
-    // ── Schedules (M1.3) ───────────────────────────────────────────────────
+    // -- Schedules () ---------------------------------------------------
 
     listSchedules(): Observable<ScheduleDto[]> {
         const url = `${this.manifest.apiBase}/schedules`;
@@ -1605,7 +1605,7 @@ export class ApiService {
     }
 
     /**
-     * Sibling-of-#472 — paged variant for the admin Schedules list.
+     * Sibling — paged variant for the admin Schedules list.
      * Round-trips RQL filters + sort to the server so we never load
      * 100k+ rows. Mirror of {@see ApiService.listCalendarsPage}.
      */
@@ -1734,7 +1734,7 @@ export class ApiService {
     }
 
     /**
-     * MCP tool-governance audit (ADR-147 `GET /api/mcp/tools`, ROLE_ADMIN) — the
+     * MCP tool-governance audit ( `GET /api/mcp/tools`, ROLE_ADMIN) — the
      * full inventory of tools external AI agents can call + the gate on each.
      * The endpoint is UNVERSIONED (`/api/mcp/…`, like `/api/doc`), so it hangs off
      * the `/api` base, not the `/api/v1` apiBase.
@@ -1769,7 +1769,7 @@ export class ApiService {
         return this.http.post<ScheduleTriggerNowDto>(url, {});
     }
 
-    // ── Navi Trees ──────────────────────────────────────────────────────────
+    // -- Navi Trees ----------------------------------------------------------
 
     getNaviTrees(params: { filters?: string[]; sort?: string } = {}): Observable<NaviTreeDto[]> {
         let httpParams = new HttpParams();
@@ -1799,7 +1799,7 @@ export class ApiService {
         return this.http.delete<void>(url);
     }
 
-    // ── Theme templates (Navi-node picker, task #312 Deliverable 1) ─────────
+    // -- Theme templates (Navi-node picker, Deliverable 1) ---------
 
     /**
      * GET /api/v1/themes/{slug}/templates — flat listing of `.dtmpl` files
@@ -1818,7 +1818,7 @@ export class ApiService {
             .pipe(map(r => r['member']));
     }
 
-    // ── Navi Nodes ──────────────────────────────────────────────────────────
+    // -- Navi Nodes ----------------------------------------------------------
 
     /**
      * Tree datagrid Ship B -- NaviNode list endpoint now accepts a `parentId`
@@ -1870,7 +1870,7 @@ export class ApiService {
         return this.http.patch<void>(this.manifest.navi!.nodesReorder, { items }, this.patchHeaders);
     }
 
-    // ── Identity Users ──────────────────────────────────────────────────────
+    // -- Identity Users ------------------------------------------------------
 
     /**
      * List users using RQL query params.
@@ -1911,7 +1911,7 @@ export class ApiService {
     /**
      * Preview the audience an RQL filter selects — count plus a sample.
      *
-     * Replaces `countUsers()` (#1757), which asked `GET /auth/users` for
+     * Replaces `countUsers()`, which asked `GET /auth/users` for
      * `totalItems`. That endpoint returns a BARE ARRAY, so the read was
      * `undefined` on every call, for every filter, since the wizard shipped.
      * The recipients step's `canProceed` is `count > 0`, and `undefined > 0`
@@ -1955,7 +1955,7 @@ export class ApiService {
         return this.http.post<void>(url, { groups: groupIds });
     }
 
-    // ── Identity Groups ─────────────────────────────────────────────────────
+    // -- Identity Groups -----------------------------------------------------
 
     listGroups(params: { search?: string; limit?: number; filters?: string[]; sort?: string } = {}): Observable<IdentityGroupDto[]> {
         let httpParams = new HttpParams();
@@ -1994,7 +1994,7 @@ export class ApiService {
 
     /**
      * Replace the groups whose roles are granted by holding THIS group's role
-     * (#1726) — the role-inheritance edges behind `DynamicRoleHierarchy`.
+     * — the role-inheritance edges behind `DynamicRoleHierarchy`.
      *
      * An edge means "holding the parent's role also grants the child's", so this
      * is the most privilege-bearing write in the admin. The server refuses a
@@ -2019,7 +2019,7 @@ export class ApiService {
             .pipe(map(r => r['member']));
     }
 
-    // ── VFS ─────────────────────────────────────────────────────────────────
+    // -- VFS -----------------------------------------------------------------
 
     statNode(path: string): Observable<NodeDto> {
         const url = this.manifest.apiBase + '/vfs/files';
@@ -2061,7 +2061,7 @@ export class ApiService {
      * of `title` and carrying `title` as its display name.
      *
      * Slugging server-side is the point: the platform slugger applies
-     * national transliteration rule sets (`Счета` → `scheta`, `Größe` →
+     * national transliteration rule sets (`Счета` -> `scheta`, `Größe` ->
      * `groesse`), which no client-side ASCII fold can do — it can only
      * drop the characters and report failure.
      */
@@ -2090,7 +2090,7 @@ export class ApiService {
         return this.http.post<NodeDto>(url, form);
     }
 
-    // ── DocumentGeneration ──────────────────────────────────────────────────
+    // -- DocumentGeneration --------------------------------------------------
 
     createDocumentGeneration(
         payload: CreateDocumentGenerationPayload,
@@ -2137,7 +2137,7 @@ export class ApiService {
     }
 
     /**
-     * ADR-099 sub-phase 2b -- exchange the user's auth session for a
+     * sub-phase 2b -- exchange the user's auth session for a
      * short-lived Centrifugo connection token signed with the
      * backend's HMAC secret. Returned shape carries `token` (the JWT
      * to hand to centrifuge-js), `expiresAt` (Unix seconds) for
@@ -2306,7 +2306,7 @@ export class ApiService {
         );
     }
 
-    // ─── F5.c: Translation catalogues admin ──────────────────────
+    // --- F5.c: Translation catalogues admin ----------------------
     //
     // The four endpoints are NOT paginated -- the platform has a
     // small fixed set of (domain × locale) pairs (today: one entry,

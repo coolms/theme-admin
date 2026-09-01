@@ -10,10 +10,10 @@ import type {
 } from './image-map.types';
 
 /**
- * CRUD client for the ImageMap API (`/api/v1/image-maps`, #1523–#1525).
+ * CRUD client for the ImageMap API (`/api/v1/image-maps`, –).
  * Collection reads unwrap the Hydra `member` envelope; writes use the
  * platform content-types (POST `application/ld+json`, PATCH
- * `application/merge-patch+json` — the #1039 415 footgun).
+ * `application/merge-patch+json` — the 415 footgun).
  */
 @Injectable({ providedIn: 'root' })
 export class ImageMapService {

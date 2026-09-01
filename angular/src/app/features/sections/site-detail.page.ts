@@ -34,7 +34,7 @@ import { SectionFormComponent } from './section-form.component';
 import { LoadSections } from './section.actions';
 
 /**
- * Phase I Layer 3d.1 — Site Detail admin page (ADR-117).
+ * Layer 3d.1 — Site Detail admin page.
  *
  * Routed at `/admin/sections/:slug`. Read-mostly composition view that
  * surfaces the four pieces a SiteSection ties together (Settings,
@@ -481,7 +481,7 @@ export class SiteDetailPageComponent implements OnInit {
 
     /**
      * Navigation actions for the cms-page-header bar — declared in the
-     * `web:section-detail` layout config (ADR-127), not hardcoded here.
+     * `web:section-detail` layout config, not hardcoded here.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),

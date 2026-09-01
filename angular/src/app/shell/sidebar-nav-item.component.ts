@@ -237,7 +237,7 @@ export class SidebarNavItemComponent {
 
     private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // ─── structure ───────────────────────────────────────────────────────
+    // --- structure -------------------------------------------------------
 
     hasChildren(): boolean {
         return (this.node().children?.length ?? 0) > 0;
@@ -261,7 +261,7 @@ export class SidebarNavItemComponent {
         return !this.collapsedInline() || this.hasActiveDescendant();
     }
 
-    /** Flyout children — the collapsed icon rail (L1) or any deeper level (L2→L3). */
+    /** Flyout children — the collapsed icon rail (L1) or any deeper level (L2->L3). */
     usesFlyout(): boolean {
         if (!this.hasChildren()) return false;
         return (this.collapsed() && this.depth() === 0) || (!this.collapsed() && this.depth() >= 1);
@@ -281,7 +281,7 @@ export class SidebarNavItemComponent {
         return 14 + this.depth() * 14;
     }
 
-    // ─── node helpers (mirror AdminLayoutComponent) ──────────────────────
+    // --- node helpers (mirror AdminLayoutComponent) ----------------------
 
     nodeIcon(): string {
         return String(this.node().meta?.['icon'] ?? '');
@@ -322,7 +322,7 @@ export class SidebarNavItemComponent {
         this.specialClick.emit(this.node());
     }
 
-    // ─── inline expand ───────────────────────────────────────────────────
+    // --- inline expand ---------------------------------------------------
 
     toggleInline(event: MouseEvent): void {
         event.preventDefault();
@@ -330,7 +330,7 @@ export class SidebarNavItemComponent {
         this.sidebarState.toggleItem(this.node().id);
     }
 
-    // ─── flyout open / close ─────────────────────────────────────────────
+    // --- flyout open / close ---------------------------------------------
 
     onEnter(): void {
         if (!this.usesFlyout()) return;

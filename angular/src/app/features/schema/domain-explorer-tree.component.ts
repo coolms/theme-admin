@@ -87,7 +87,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
 
                 @if (showDynamicTypes()) {
 
-                <!-- ── DYNAMIC TYPES ─────────────────────────────────────── -->
+                <!-- -- DYNAMIC TYPES --------------------------------------- -->
                 @if (showEntities()) {
                     <div class="de-section-header de-section-header--dynamic"
                          (click)="st.runtimeExpanded.set(!st.runtimeExpanded())">
@@ -157,7 +157,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
             overflow: hidden;
         }
 
-        /* ── Filter bar ─────────────────────────────────────────────────── */
+        /* -- Filter bar --------------------------------------------------- */
         .de-filter-bar {
             display: flex;
             align-items: center;
@@ -186,7 +186,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         }
         .de-filter-bar__clear:hover { color: var(--cms-text); }
 
-        /* ── Module list ────────────────────────────────────────────────── */
+        /* -- Module list -------------------------------------------------- */
         .de-loading {
             display: flex;
             align-items: center;

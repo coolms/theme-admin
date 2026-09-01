@@ -1,7 +1,7 @@
 import { dtmplToHtml, htmlToDtmpl } from './image-map-widget-transform';
 
 /**
- * The `{widget:imagemap:<slug>}` ↔ marker-div transform (#2040).
+ * The `{widget:imagemap:<slug>}` ↔ marker-div transform.
  *
  * The interesting cases are not the happy path — they are the ones that lose
  * an author's work quietly: a parameter the picker never sets, a slug shape

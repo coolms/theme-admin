@@ -109,7 +109,7 @@ function rowsToOctal(rows: [PermRow, PermRow, PermRow], special = 0): string {
 
             <div class="octal-preview">Octal: <code>{{ octalMode() }}</code></div>
 
-            <!-- Special bits ─────────────────────────────────────── -->
+            <!-- Special bits --------------------------------------- -->
             <hr class="dlg-sep">
             @if (data.isDirectory) {
                 <label class="chk-row" (click)="setgid.set(!setgid())">

@@ -542,7 +542,7 @@ export class SettingsHubPageComponent implements OnInit {
     /** Bumped to force the form to rebuild from the stored values. */
     readonly formKey = signal(0);
 
-    // ⚠️ Declared ABOVE the signals that read it. Field initialisers run in
+    //  Declared ABOVE the signals that read it. Field initialisers run in
     // source order, so a `toSignal(this.store…)` above this line compiles and
     // then reads undefined at runtime — TS2729 catches it, which is the only
     // reason it is not a boot-time mystery.
@@ -551,7 +551,7 @@ export class SettingsHubPageComponent implements OnInit {
     /**
      * Which LAYER is being edited. The SITE is not chosen here.
      *
-     * ⚠️ This screen used to carry its own list of sites, which put a second site
+     *  This screen used to carry its own list of sites, which put a second site
      * picker on a page that already had one in the header — and the header's is
      * the platform's answer to "which site am I working on", stamped onto every
      * API call as `X-CoolMS-Section`. Two controls for one question is the
@@ -582,7 +582,7 @@ export class SettingsHubPageComponent implements OnInit {
     /**
      * The scope to address the API with: a site id, or null for the platform.
      *
-     * ⚠️ A plain signal, SET in {@link chooseScope} -- not a computed over
+     *  A plain signal, SET in {@link chooseScope} -- not a computed over
      * `scopeMode` and `activeSite`. As a computed it fed `selected()`, which the
      * template reads, and clicking the site button FROZE the renderer. The exact
      * cycle was not worth chasing: a settings screen that hangs the admin is not
@@ -851,7 +851,7 @@ export class SettingsHubPageComponent implements OnInit {
         }
 
         const site = this.selectedSite();
-        // ⚠️ Different promise per scope. A site sits ON TOP of the platform
+        //  Different promise per scope. A site sits ON TOP of the platform
         // row, so dropping its overrides reveals the platform's values, not the
         // module's shipped ones -- and an operator told "defaults apply again"
         // would expect the wrong outcome.
@@ -888,7 +888,7 @@ export class SettingsHubPageComponent implements OnInit {
     /**
      * Switch which LAYER the form is editing. The site comes from the header.
      *
-     * ⚠️ **The form is rebuilt when the values ARRIVE, not when the layer is
+     *  **The form is rebuilt when the values ARRIVE, not when the layer is
      * chosen.** `DynamicFormComponent` patches its initial value once, at
      * definition load, so a rebuild triggered here — before the scoped fetch
      * returns — patches the PLATFORM's values and then never re-reads. On the
@@ -910,7 +910,7 @@ export class SettingsHubPageComponent implements OnInit {
         }
     }
 
-    // ⚠️ There is deliberately NO effect watching the header's site here.
+    //  There is deliberately NO effect watching the header's site here.
     // The first attempt at one wrote `scopeMode` while also reading it, and the
     // renderer FROZE -- a settings screen that hangs the admin is a far worse
     // trade than a stale label. If the header's site changes while this screen is

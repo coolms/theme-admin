@@ -181,7 +181,7 @@ export class UsersListComponent implements OnInit {
      * `grid.refresh_required` (typically after a bulk operation)
      * forces a full reload from the first page via the DataGrid's
      * `reload()` method. `row.created` stays ignored in Phase 2:
-     * lazy-load admins scroll to see new rows; see ADR-102 for
+     * lazy-load admins scroll to see new rows for
      * the deferred-refinement rationale.
      */
     onLiveEvent(event: DataGridChangeEvent): void {
@@ -192,7 +192,7 @@ export class UsersListComponent implements OnInit {
         if (event.type === 'row.created') {
             // Phase 2 first ship: ignored. Future refinement may
             // optionally prepend if the active sort matches and
-            // the top of the list is loaded -- see ADR-102.
+            // the top of the list is loaded --.
             return;
         }
         if (event.entityId === null) {

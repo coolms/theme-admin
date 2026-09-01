@@ -38,7 +38,7 @@ export interface RegisterEdgeRequest {
 }
 
 /**
- * Sync fleet API client (ADR-150 B.3.2).
+ * Sync fleet API client ( B.3.2).
  *
  * Talks to the `sync_fleet`-gated `/api/v1/sync/fleet` surface — the operator
  * counterpart of `coolms:sync:edge:{register,list,remove}`. Feature-local

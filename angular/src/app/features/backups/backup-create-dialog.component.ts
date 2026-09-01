@@ -13,7 +13,7 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 import { BackupService, CreateBackupResult } from './backup.service';
 
 /**
- * "Create backup" dialog (ADR-149, #1478).
+ * "Create backup" dialog.
  *
  * Picks which data tiers to export into a new bundle, then POSTs to the backup
  * admin API. The create runs synchronously server-side, so the primary is

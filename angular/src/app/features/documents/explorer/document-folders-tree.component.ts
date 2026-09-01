@@ -27,14 +27,14 @@ import { transformVfsToTree, type VfsTreeNode } from './vfs-tree.helpers';
  *
  * Two top-level roots:
  *
- *   SHARED        →  /docs
- *   MY DOCUMENTS  →  /home/{currentUser.id}/docs   (may 404 if the
+ *   SHARED        ->  /docs
+ *   MY DOCUMENTS  ->  /home/{currentUser.id}/docs   (may 404 if the
  *                   user has never had a personal documents folder
  *                   provisioned — surfaces the inline "No documents
  *                   folder yet." message rather than a broken row)
  *
- * Click a row → the page's main panel switches to the folder-content
- * view for that path. Click the chevron → lazily fetches children
+ * Click a row -> the page's main panel switches to the folder-content
+ * view for that path. Click the chevron -> lazily fetches children
  * via `listDirectory()` and renders them indented one level deeper.
  *
  * The `.templates/` discriminator is filtered out by
@@ -297,7 +297,7 @@ export class DocumentFoldersTreeComponent implements OnInit {
         effect(() => {
             if (!this.embedded()) return;
             const path = this.rootPath();
-            // #1684 — also re-run when a folder is created. The root PATH
+            // — also re-run when a folder is created. The root PATH
             // is unchanged by a new child appearing under it, so without
             // this the tree kept showing the pre-create listing while the
             // folder chips already had the new one.
@@ -356,7 +356,7 @@ export class DocumentFoldersTreeComponent implements OnInit {
                 if (action === 'upload-here') {
                     this.state.uploadToFolderRequested$.next(path);
                 }
-                // #1684 — creates UNDER the right-clicked folder, which is
+                // — creates UNDER the right-clicked folder, which is
                 // why it carries the path rather than reading currentPath.
                 if (action === 'new-folder-here') {
                     this.state.newFolderInRequested$.next(path);

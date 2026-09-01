@@ -21,12 +21,12 @@ export interface GroupRoleGrantsDialogData {
 }
 
 /**
- * Role grants for one group (#1726) — which OTHER groups' roles are handed out
+ * Role grants for one group — which OTHER groups' roles are handed out
  * by holding this one's.
  *
  * ## Why the wording is laboured
  *
- * The stored edge is `parent → child` and the security hierarchy walks it as
+ * The stored edge is `parent -> child` and the security hierarchy walks it as
  * "holding the parent's role also grants the child's". Said as "inherits" it
  * reads in both directions depending on who is speaking, and getting it
  * backwards here would hand out privileges rather than withhold them. So the

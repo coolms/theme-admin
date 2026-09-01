@@ -13,7 +13,7 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 import { LazySelectComponent, ModalComponent } from '@coolms/ui-angular';
 
 /**
- * #465 — Create-calendar modal dialog (replaces the inline create panel).
+ * — Create-calendar modal dialog (replaces the inline create panel).
  *
  * Opened from CalendarsListComponent's `create` toolbar action. Slug + label
  * are required, timezone defaults to UTC. On success the dialog closes with

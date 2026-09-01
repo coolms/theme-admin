@@ -9,7 +9,7 @@ import {
 import { ChatConversationDto } from './messages.types';
 
 /**
- * How a conversation row is projected (#2126).
+ * How a conversation row is projected.
  *
  * Three of these rules had DRIFTED between the page and the quick panel before
  * they were shared. Each drift gets a test naming what the two used to disagree
@@ -32,7 +32,7 @@ describe('conversation row', () => {
         });
 
         it('names a self-notes room "Notes"', () => {
-            // ⚠️ DRIFT #1. Self-notes has no title and no other participants, so
+            //  DRIFT #1. Self-notes has no title and no other participants, so
             // without this branch it falls through to "Conversation" — which is
             // what the quick panel showed while the page said "Notes".
             expect(conversationLabel(conv({ kind: 'self_notes' }), me)).toBe('Notes');
@@ -67,12 +67,12 @@ describe('conversation row', () => {
 
     describe('unreadFor', () => {
         it('takes the SERVER number when there is one', () => {
-            // #2119 — only the server knows an excluded viewer's history ceiling.
+            // — only the server knows an excluded viewer's history ceiling.
             expect(unreadFor(conv({ viewerUnread: 3, lastSeq: 99, viewerLastReadSeq: 0 }), me)).toBe(3);
         });
 
         it('prefers the viewer cursor over the roster lookup', () => {
-            // #2111 — an EXCLUDED viewer is absent from `participants`, so the
+            // — an EXCLUDED viewer is absent from `participants`, so the
             // roster lookup yielded 0 and showed everything as unread forever.
             expect(unreadFor(conv({ lastSeq: 10, viewerLastReadSeq: 7, participants: [] }), me)).toBe(3);
         });
@@ -143,7 +143,7 @@ describe('conversation row', () => {
         });
 
         it('reports busy/away EVEN WHEN the connection layer says nothing', () => {
-            // ⚠️ DRIFT #2, and the behavioural one. The quick panel required a
+            //  DRIFT #2, and the behavioural one. The quick panel required a
             // live connection first, so someone who set Busy and closed their tab
             // showed a busy dot on the page and NO dot in the panel. Connection
             // presence can be unavailable for operational reasons; "who is

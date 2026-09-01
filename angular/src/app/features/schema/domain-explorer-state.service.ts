@@ -52,16 +52,16 @@ export class DomainExplorerStateService {
     private readonly http       = inject(HttpClient);
     private readonly prefs      = inject(UserPreferencesService);
 
-    // ── Lazy-tree constants ───────────────────────────────────────────────────
+    // -- Lazy-tree constants ---------------------------------------------------
     private readonly ROOT_KEY   = 'root';
     /** Track which parent keys have already been fetched to avoid duplicate requests. */
     private readonly loadedIds  = new Set<string>();
     /** Feed filterText changes into this to trigger debounced server-side search. */
     private readonly searchText$ = new Subject<string>();
 
-    // ── Signals ───────────────────────────────────────────────────────────────
+    // -- Signals ---------------------------------------------------------------
     readonly modules           = signal<DomainModuleGroup[]>([]);
-    /** Map of parentId → direct children. 'root' key holds root-level types. */
+    /** Map of parentId -> direct children. 'root' key holds root-level types. */
     readonly childrenMap       = signal<Map<string, DynamicEntityTypeDto[]>>(new Map());
     /** Set of type IDs that are currently expanded in the tree. */
     readonly expandedIds       = signal<Set<string>>(new Set());
@@ -82,7 +82,7 @@ export class DomainExplorerStateService {
     readonly showEntities      = signal<boolean>(true);
     readonly viewMode          = signal<'structure' | 'records'>('structure');
 
-    // ── NaviGraph-driven toolbar ──────────────────────────────────────────────
+    // -- NaviGraph-driven toolbar ----------------------------------------------
     /** Flat resolved nodes from navi.toolbar.domain_explorer, loaded once on init. */
     readonly domainToolbarNodes = signal<NaviGraphNode[]>([]);
 
@@ -102,7 +102,7 @@ export class DomainExplorerStateService {
     /** Currently highlighted record row in the embedded datagrid (records mode). */
     readonly selectedRecord = signal<Record<string, unknown> | null>(null);
 
-    // ── Static-entity record list (loaded on demand) ──────────────────────────
+    // -- Static-entity record list (loaded on demand) --------------------------
     /** Paginated row data fetched from the static entity's collection endpoint. */
     readonly entityRecordsData    = signal<DataGridData | null>(null);
     /** True while the static-entity record list is being fetched. */
@@ -125,7 +125,7 @@ export class DomainExplorerStateService {
         return null;
     });
 
-    // ── Computed ──────────────────────────────────────────────────────────────
+    // -- Computed --------------------------------------------------------------
     readonly filteredModules = computed(() => {
         const q = this.filterText().toLowerCase().trim();
         if (!q) return this.modules();
@@ -223,8 +223,8 @@ export class DomainExplorerStateService {
     /**
      * Derived footer string for the Domain Explorer status bar.
      *
-     * viewMode 'structure' → "N fields"
-     * viewMode 'records'   → "N of M records" (or "N records" when all loaded)
+     * viewMode 'structure' -> "N fields"
+     * viewMode 'records'   -> "N of M records" (or "N records" when all loaded)
      *
      * Returns null for runtime-dynamic entities in records view (they populate
      * entityRecordsData from a different code path) so the last-written footer
@@ -250,10 +250,10 @@ export class DomainExplorerStateService {
         return `${count} field${count === 1 ? '' : 's'}`;
     });
 
-    // ── Bootstrap ─────────────────────────────────────────────────────────────
+    // -- Bootstrap -------------------------------------------------------------
 
     constructor() {
-        // ── Restore persisted view mode ───────────────────────────────────────
+        // -- Restore persisted view mode ---------------------------------------
         // Must run before any effects so the signal starts at the saved value.
         const savedPage = this.prefs.getPageState<{ viewMode?: string }>('domainExplorer');
         if (savedPage?.viewMode === 'records' || savedPage?.viewMode === 'structure') {
@@ -364,10 +364,10 @@ export class DomainExplorerStateService {
             isDynamic:      rt ? true : Boolean(entity?.isDynamic),
             dynamicOrigin:  rt ? 'runtime' : (entity?.dynamicOrigin ?? null),
             // hasRecordsView: true when the entity/type can display a records list.
-            //   runtime type (rt)                            → always true (DynamicRecordListComponent)
-            //   entity.isDynamic = true, origin = 'runtime'  → true (DynamicRecordListComponent via dynamicAlias)
-            //   entity.isDynamic = true, origin = 'managed'  → false ('managed' types live in Entities section)
-            //   entity.isDynamic = false                     → true only when recordsUrl is set
+            //   runtime type (rt)                            -> always true (DynamicRecordListComponent)
+            //   entity.isDynamic = true, origin = 'runtime'  -> true (DynamicRecordListComponent via dynamicAlias)
+            //   entity.isDynamic = true, origin = 'managed'  -> false ('managed' types live in Entities section)
+            //   entity.isDynamic = false                     -> true only when recordsUrl is set
             hasRecordsView: rt ? true
                 : (entity?.isDynamic === true && entity?.dynamicOrigin === 'runtime')
                     || Boolean(entity?.recordsUrl),
@@ -378,7 +378,7 @@ export class DomainExplorerStateService {
         };
     }
 
-    // ── Global context menu (delegates to ContextMenuService) ─────────────────
+    // -- Global context menu (delegates to ContextMenuService) -----------------
 
     /** Right-click on a dynamic type row — opens the context menu without navigating.
      *  Builds context for the hovered type WITHOUT touching any signals, so the current
@@ -685,7 +685,7 @@ export class DomainExplorerStateService {
                     const f = this.allFields().find(f => f.name === name);
                     if (f?.id) this.deleteFieldDefinition(f.id);
                 } else {
-                    // File override: delete via API → FileFieldOverrideStorage.delete()
+                    // File override: delete via API -> FileFieldOverrideStorage.delete()
                     const entity = this.activeEntity();
                     if (!entity) break;
                     const alias = entity.entityAlias ?? entity.dynamicAlias ?? entity.className;
@@ -809,7 +809,7 @@ export class DomainExplorerStateService {
      * Called after an override/create operation that may change a domain entity's field list.
      *
      * For dynamic entities, also reloads the active schema so that the field datagrid
-     * (which reads allFields() → activeSchema().fields) reflects the saved overrides
+     * (which reads allFields() -> activeSchema().fields) reflects the saved overrides
      * (isRequired, label, sortOrder, etc.) without requiring a full page reload.
      */
     reloadActiveEntity(): void {
@@ -849,8 +849,8 @@ export class DomainExplorerStateService {
      * Persists sortOrder for all fields in the reorder payload in a single round-trip.
      *
      * Buckets the payload into two groups:
-     *  • Fields with an existing FieldDefinition id  → single PATCH via reorderFields()
-     *  • Fields without a FieldDefinition (new)       → parallel POSTs via forkJoin(createField())
+     *  - Fields with an existing FieldDefinition id  -> single PATCH via reorderFields()
+     *  - Fields without a FieldDefinition (new)       -> parallel POSTs via forkJoin(createField())
      *
      * reloadActiveEntity() is called exactly once after all requests complete.
      */
@@ -869,7 +869,7 @@ export class DomainExplorerStateService {
             if (schemaField?.id) {
                 toReorder.push({ id: schemaField.id, sortOrder });
             } else if (schemaField) {
-                // Schema entry exists but no DB row → create minimal sortOrder override
+                // Schema entry exists but no DB row -> create minimal sortOrder override
                 toCreate.push({ name, sortOrder, type: schemaField.type, label: schemaField.label });
             } else {
                 // Pure entity field (Path B) — no schema entry at all
@@ -922,7 +922,7 @@ export class DomainExplorerStateService {
 
         const alias = entity.entityAlias ?? entity.dynamicAlias ?? entity.className;
 
-        // ── Path A: field is in the loaded schema (dynamic entity / entity with schema) ─
+        // -- Path A: field is in the loaded schema (dynamic entity / entity with schema) -
         const schemaField = this.allFields().find(f => f.name === fieldName);
         if (schemaField) {
             // Note: do NOT gate on schemaField.locked here.
@@ -958,7 +958,7 @@ export class DomainExplorerStateService {
             return;
         }
 
-        // ── Path B: no schema loaded (pure static entity, isDynamic = false) ─────────
+        // -- Path B: no schema loaded (pure static entity, isDynamic = false) ---------
         // Fall back to EntityFieldMetadata from the domain list.
         const entityField = entity.fields.find(f => f.name === fieldName);
         if (!entityField) return;
@@ -977,7 +977,7 @@ export class DomainExplorerStateService {
             });
     }
 
-    // ── Navigation ────────────────────────────────────────────────────────────
+    // -- Navigation ------------------------------------------------------------
     toggleModule(module: string): void {
         this.activeModule.set(this.activeModule() === module ? null : module);
     }
@@ -1003,10 +1003,10 @@ export class DomainExplorerStateService {
         }
 
         // hasRecordsView mirrors the logic in buildUnifiedContext():
-        //   runtime dynamic entity  → true (DynamicRecordListComponent)
-        //   managed dynamic entity  → false (no records list; schema editor only)
-        //   static entity + URL     → true (entityRecordsData grid)
-        //   static entity, no URL   → false
+        //   runtime dynamic entity  -> true (DynamicRecordListComponent)
+        //   managed dynamic entity  -> false (no records list; schema editor only)
+        //   static entity + URL     -> true (entityRecordsData grid)
+        //   static entity, no URL   -> false
         const hasRecordsView = (entity.isDynamic && entity.dynamicOrigin === 'runtime')
             || Boolean(entity.recordsUrl);
         if (changed && !hasRecordsView) {
@@ -1042,7 +1042,7 @@ export class DomainExplorerStateService {
         }
     }
 
-    // ── Type management ───────────────────────────────────────────────────────
+    // -- Type management -------------------------------------------------------
     openCreateType(): void {
         const phpEntitySlugs: Record<string, string> = {};
         for (const group of this.modules()) {
@@ -1123,7 +1123,7 @@ export class DomainExplorerStateService {
             });
     }
 
-    // ── Field management ──────────────────────────────────────────────────────
+    // -- Field management ------------------------------------------------------
     openAddField(): void {
         const alias = this.activeRuntimeType()?.slug ?? this.activeEntity()?.dynamicAlias;
         if (!alias) return;
@@ -1225,12 +1225,12 @@ export class DomainExplorerStateService {
             });
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // -- Private helpers -------------------------------------------------------
 
     /**
      * Build the full ancestor path for a type, joined with backslash.
      * Uses name if available, falls back to slug.
-     * Example: root "Product" → child "Catalog" → "Product\Catalog"
+     * Example: root "Product" -> child "Catalog" -> "Product\Catalog"
      */
     private buildTypePath(type: DynamicEntityTypeDto): string {
         const types = this.runtimeTypes();
@@ -1309,8 +1309,8 @@ export class DomainExplorerStateService {
     /**
      * Fetches a paginated page of records for a static entity.
      *
-     * offset=0 + reset=true  → initial / refresh load (replace existing data).
-     * offset>0 + reset=false → infinite-scroll next page (append to existing data).
+     * offset=0 + reset=true  -> initial / refresh load (replace existing data).
+     * offset>0 + reset=false -> infinite-scroll next page (append to existing data).
      *
      * Passes page / itemsPerPage to the API Platform collection endpoint.
      * Stores hasMore=true when more items remain beyond the current page so the
@@ -1326,7 +1326,7 @@ export class DomainExplorerStateService {
         if (!entity.recordsUrl) return;
         // Guard against appending beyond the known total — happens when the
         // datagrid sentinel fires spuriously after a re-render cycle.  Without
-        // this, page 1 gets re-fetched and concatenated → duplicate rows.
+        // this, page 1 gets re-fetched and concatenated -> duplicate rows.
         if (!reset) {
             const current = this.entityRecordsData();
             if (current && !current.hasMore) return;

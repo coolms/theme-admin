@@ -82,14 +82,14 @@ type RailTab = string;
     template: `
         <div class="page-editor" [class.page-editor--fullscreen]="fullscreen()" [class.page-editor--landing]="landingMode()">
 
-            <!-- ── Header ──────────────────────────────────────────────── -->
+            <!-- -- Header ------------------------------------------------ -->
             <div class="page-editor__header">
                 <span class="page-editor__title">
                     <i class="bi bi-file-earmark-text"></i>
                     {{ page()?.vfsPath ?? page()?.slug ?? '…' }}
                 </span>
                 <div class="page-editor__header-actions">
-                    <!-- ── Live presence (Track B #8) ───────────────────────── -->
+                    <!-- -- Live presence ------------------------- -->
                     <!-- Other users currently in this variant's doc channel.
                          Self-hides when nobody else is here; only populated when
                          collab is active (write permission on the variant). -->
@@ -104,7 +104,7 @@ type RailTab = string;
                 </div>
             </div>
 
-            <!-- ── Peer-saved banner (Track B #8) ──────────────────────── -->
+            <!-- -- Peer-saved banner ------------------------ -->
             <!-- Non-blocking strip shown when a *different* user saves this
                  variant. Reload pulls the fresh body from the variant endpoint;
                  own saves are suppressed by the collab service. -->
@@ -125,7 +125,7 @@ type RailTab = string;
                 </div>
             }
 
-            <!-- ── Locale tabs ─────────────────────────────────────────── -->
+            <!-- -- Locale tabs ------------------------------------------- -->
             <div class="page-editor__tabs">
                 <div class="page-editor__tab-list">
                     @for (v of variants(); track v.locale) {
@@ -172,7 +172,7 @@ type RailTab = string;
                             {{ statusLabel(v.status) }}
                         </span>
 
-                        <!-- ── Editorial review actions (W6.a) ─────────────── -->
+                        <!-- -- Editorial review actions (W6.a) --------------- -->
                         <!-- W6.c: only collections that opt into review show
                              "Submit for review"; elsewhere the author publishes
                              directly via the Publish button. -->
@@ -226,7 +226,7 @@ type RailTab = string;
             </div>
 
             @if (activeVariant(); as variant) {
-                <!-- ── Changes-requested callout (W6.c) ──────────────────── -->
+                <!-- -- Changes-requested callout (W6.c) -------------------- -->
                 <!-- Surfaces the reviewer's note to the author so the
                      request-changes round-trip is actionable, not just a badge. -->
                 @if (variant.status === 'changes_requested') {
@@ -243,7 +243,7 @@ type RailTab = string;
                     </div>
                 }
 
-                <!-- ── Title field ─────────────────────────────────────── -->
+                <!-- -- Title field --------------------------------------- -->
                 <div class="page-editor__title-row">
                     <label class="page-editor__title-label">Title</label>
                     <input class="page-editor__title-input"
@@ -253,7 +253,7 @@ type RailTab = string;
                            placeholder="Page title…" />
                 </div>
 
-                <!-- ── Slug (advanced, #1618) ──────────────────────────────
+                <!-- -- Slug (advanced, ) ------------------------------
                      The slug is the page/article URL segment (the Package
                      filename). It FREEZES on first publish (slugLocked); a
                      rename then changes the live URL, so it is force-gated
@@ -283,7 +283,7 @@ type RailTab = string;
                             {{ renaming() ? 'Renaming…' : 'Rename' }}
                         </button>
 
-                        <!-- Page type (#1697) — sits with the slug because both
+                        <!-- Page type — sits with the slug because both
                              are properties of the PACKAGE, not of a variant, and
                              both need an explicit target to write to. Applies on
                              change: unlike a rename it alters no URL and is
@@ -303,7 +303,7 @@ type RailTab = string;
                     </div>
                 }
 
-                <!-- ── Editor body + right side-rail ───────────────────── -->
+                <!-- -- Editor body + right side-rail --------------------- -->
                 <div class="page-editor__main">
                     <div class="page-editor__body">
                         <!-- Landing pages render their blocks, not the prose body —
@@ -328,7 +328,7 @@ type RailTab = string;
                         }
                     </div>
 
-                    <!-- ── Side-rail: History / Meta / Schedule / Fields ───── -->
+                    <!-- -- Side-rail: History / Meta / Schedule / Fields ----- -->
                     <!-- Consolidates the former expand-below panels into one
                          right-docked, tabbed surface. The vertical icon strip is
                          always visible; the panel opens to the left of it. -->
@@ -420,7 +420,7 @@ type RailTab = string;
                             }
                         }
 
-                        <!-- ── Fields panel (persistent) ─────────────────────────
+                        <!-- -- Fields panel (persistent) -------------------------
                              Kept mounted whenever the collection contributes a
                              field set, and merely hidden ([hidden]) when its tab
                              isn't open — so unsaved field edits survive switching
@@ -462,7 +462,7 @@ type RailTab = string;
                     </aside>
                 </div>
 
-                <!-- ── Footer ──────────────────────────────────────────── -->
+                <!-- -- Footer -------------------------------------------- -->
                 <div class="page-editor__footer">
                     <!-- Landing pages: a quiet section count fills the footer's
                          otherwise-empty left (replaces the old block-editor header
@@ -571,7 +571,7 @@ type RailTab = string;
         .page-editor__review-note-body strong { display: block; margin-bottom: 2px; }
         .page-editor__review-note-body p { margin: 0; color: var(--cms-text-muted); white-space: pre-line; }
 
-        /* Peer-saved banner (Track B #8) */
+        /* Peer-saved banner */
         .page-editor__peer-saved {
             display: flex; align-items: center; gap: 10px;
             padding: 8px 16px;
@@ -766,7 +766,7 @@ export class PageEditorComponent implements OnInit {
      */
     readonly landingMode   = signal(false);
 
-    /** Configured page kinds for the Type picker (#1697). */
+    /** Configured page kinds for the Type picker. */
     readonly pageTypes = signal<PageTypeDto[]>([]);
 
     /** The Type picker's displayed value — see {@see seedLandingMode}. */
@@ -792,10 +792,10 @@ export class PageEditorComponent implements OnInit {
     /** True once a Schedule field has been touched since load/save (single-Save gate). */
     readonly scheduleDirty = signal(false);
 
-    // ── Page size / content width (Track B — Layout panel) ─────────────────────
+    // -- Page size / content width— Layout panel) ---------------------
     /** The preset catalog from `GET /content/page-size` (A4 / Letter / … / Custom). */
     readonly pageSizeOptions = signal<readonly PageSizeOption[]>([]);
-    /** The page's selected preset (`''` = unset → default container). */
+    /** The page's selected preset (`''` = unset -> default container). */
     readonly pageSizeValue = signal('');
     /** The custom pixel width (only used when `pageSizeValue() === 'custom'`). */
     readonly pageWidthValue = signal<number | null>(null);
@@ -868,7 +868,7 @@ export class PageEditorComponent implements OnInit {
     );
 
     constructor() {
-        // Fetch the contributed panels whenever the page (→ its path) resolves.
+        // Fetch the contributed panels whenever the page (-> its path) resolves.
         // load is async — no signal is written synchronously here, so this
         // never feeds back on itself.
         effect(() => {
@@ -934,7 +934,7 @@ export class PageEditorComponent implements OnInit {
         });
     }
 
-    // ── Page size handlers (Layout panel) ──────────────────────────────────────
+    // -- Page size handlers (Layout panel) --------------------------------------
     onPageSizeChange(value: string): void {
         this.pageSizeValue.set(value);
         if (value !== 'custom') this.pageWidthValue.set(null);
@@ -953,7 +953,7 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * The page's Package node path — the target for **post-level** (locale-
-     * invariant) module field sets (ADR-129, e.g. the Blog set: author /
+     * invariant) module field sets (, e.g. the Blog set: author /
      * publish date / categories / tags). The `<app-content-field-panels>`
      * instance bound to it renders nothing for plain pages and lights up for
      * posts in a collection that opts into a field set.
@@ -972,7 +972,7 @@ export class PageEditorComponent implements OnInit {
     });
 
     /**
-     * Per-variant-path write-permission cache (Track B #8). The collab
+     * Per-variant-path write-permission cache. The collab
      * affordances (presence + the peer-saved banner) are edit features, so
      * they're gated on the same `canWrite` notion the revision log exposes —
      * fetched once per path via {@see FileHistoryService.log} and reused.
@@ -1004,7 +1004,7 @@ export class PageEditorComponent implements OnInit {
 
     readonly titleValue = signal('');
 
-    /** Editable slug ([#1618]); seeded from the page's current slug on load. */
+    /** Editable slug ([]); seeded from the page's current slug on load. */
     readonly slugInput = signal('');
     /** In-flight guard for the rename request. */
     readonly renaming = signal(false);
@@ -1022,7 +1022,7 @@ export class PageEditorComponent implements OnInit {
     private readonly seoValues = signal<Record<string, unknown>>({});
 
     /**
-     * Per-locale meta cache: locale → { title, seo }. The live `titleValue()` +
+     * Per-locale meta cache: locale -> { title, seo }. The live `titleValue()` +
      * `seoValues()` signals above reflect only the *active* tab and get clobbered
      * on tab switch (activateTab re-seeds them from the next locale), so without
      * this a meta edit on a non-active locale would be lost — both visually
@@ -1035,7 +1035,7 @@ export class PageEditorComponent implements OnInit {
     /** Per-SEO-field change callbacks, cached so a field's `valueChange` keeps a stable identity. */
     private readonly seoChangeFns = new Map<string, (value: unknown) => void>();
 
-    /** Per-locale body content cache: locale → dtmpl storage string.
+    /** Per-locale body content cache: locale -> dtmpl storage string.
      *  Signal-backed so async cache fills propagate through the
      *  `activeContent` computed and reach the bridge's `[content]` input.
      *  A plain Map would not trigger recomputation when `.set()` runs
@@ -1062,7 +1062,7 @@ export class PageEditorComponent implements OnInit {
     readonly editorMountKey = computed(() => `${this.activeTab()}#${this.editorReloadNonce()}`);
 
     ngOnInit(): void {
-        // #1697 — the kinds this installation offers, for the Type picker.
+        // — the kinds this installation offers, for the Type picker.
         // Failure leaves the list empty: the picker then shows "Default" plus
         // whatever the page already is, which is a degraded control rather
         // than a broken editor.
@@ -1129,7 +1129,7 @@ export class PageEditorComponent implements OnInit {
     }
 
     /**
-     * Apply a page-type change (#1697).
+     * Apply a page-type change.
      *
      * Re-seeds `landingMode` from the server's answer rather than from the
      * picked value: switching to or from `landing` swaps the whole canvas
@@ -1176,7 +1176,7 @@ export class PageEditorComponent implements OnInit {
         return this.pageTypes().find(t => t.key === key)?.label ?? key;
     }
 
-    // ── Variants ───────────────────────────────────────────────────────────────
+    // -- Variants ---------------------------------------------------------------
 
     private loadVariants(page: PageDto): void {
         this.pageSvc.listVariants(page)
@@ -1261,7 +1261,7 @@ export class PageEditorComponent implements OnInit {
         this.markDirty();
     }
 
-    // ── Dirty tracking ────────────────────────────────────────────────────────
+    // -- Dirty tracking --------------------------------------------------------
 
     private markDirty(): void {
         const locale = this.activeTab();
@@ -1280,7 +1280,7 @@ export class PageEditorComponent implements OnInit {
     }
 
     /**
-     * Rename the slug ([#1618]) — the URL segment / Package filename. Guarded by
+     * Rename the slug ([]) — the URL segment / Package filename. Guarded by
      * {@link canRename}. A published (frozen) slug requires an explicit
      * confirmation because it changes the LIVE url (and, for a published
      * article, needs re-publishing to its surfaces); the confirm's `force` is
@@ -1389,7 +1389,7 @@ export class PageEditorComponent implements OnInit {
         }));
     }
 
-    // ── Add variant ───────────────────────────────────────────────────────────
+    // -- Add variant -----------------------------------------------------------
 
     startAddVariant(): void {
         this.addingVariant.set(true);
@@ -1424,7 +1424,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // ── Save ──────────────────────────────────────────────────────────────────
+    // -- Save ------------------------------------------------------------------
 
     /**
      * Body + per-variant meta (title column + metaTitle/metaDesc extras) for a
@@ -1525,11 +1525,11 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // ── Markdown export (Track B #1) ────────────────────────────────────────────
+    // -- Markdown export --------------------------------------------
 
     /**
      * Download the active locale's body as a `.md` file. Reads the **saved**
-     * variant body server-side (the same hardened HTML→Markdown converter the
+     * variant body server-side (the same hardened HTML->Markdown converter the
      * round-trip test covers) — so if the locale has unsaved edits we flag that
      * the export reflects the last save, then proceed.
      */
@@ -1560,7 +1560,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // ── Editorial review (W6.a) ────────────────────────────────────────────────
+    // -- Editorial review (W6.a) ------------------------------------------------
 
     /** Humanize the review status for the badge ("in review", "changes requested"). */
     statusLabel(status: string): string {
@@ -1657,7 +1657,7 @@ export class PageEditorComponent implements OnInit {
         );
     }
 
-    // ── Scheduled publish/unpublish (W6.d) ──────────────────────────────────────
+    // -- Scheduled publish/unpublish (W6.d) --------------------------------------
 
     /**
      * Open the given side-rail panel, or collapse it if it's already open.
@@ -1727,7 +1727,7 @@ export class PageEditorComponent implements OnInit {
      *    second wrote back its own stale copy of the others' keys and the toast
      *    still said "Saved". They are therefore run STRICTLY SEQUENTIAL via
      *    `concat`, each starting only once the previous has committed — the
-     *    same fix [#1771] applied to the Edit Template dialog, and the reason
+     *    same fix [] applied to the Edit Template dialog, and the reason
      *    the section-properties dialog dropped its `forkJoin`. Disjoint KEYS
      *    are not disjoint WRITES when the storage is one JSON document.
      *  - `ops` — body/meta and schedule, which target the per-locale variant
@@ -1792,7 +1792,7 @@ export class PageEditorComponent implements OnInit {
             }
         }
 
-        // Page size → the Package's extras.pageSize / pageWidth (Track B Layout).
+        // Page size -> the Package's extras.pageSize / pageWidthLayout).
         // Same node, same column as the two panels above — hence `nodeOps`.
         if (this.pageSizeDirty() && p?.vfsPath) {
             nodeOps.push(this.pageSizeSvc.save(p.vfsPath, this.pageSizeValue() || null, this.pageWidthValue()));
@@ -1826,7 +1826,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    /** ISO-8601 → `YYYY-MM-DDTHH:mm` in the browser's local zone (input value). */
+    /** ISO-8601 -> `YYYY-MM-DDTHH:mm` in the browser's local zone (input value). */
     private isoToLocalInput(iso?: string): string {
         if (!iso) return '';
         const d = new Date(iso);
@@ -1835,14 +1835,14 @@ export class PageEditorComponent implements OnInit {
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
-    /** Local `datetime-local` value → absolute ISO-8601 (with offset), or null. */
+    /** Local `datetime-local` value -> absolute ISO-8601 (with offset), or null. */
     private localInputToIso(local: string): string | null {
         if (!local) return null;
         const d = new Date(local); // parsed in the browser's local zone
         return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }
 
-    // ── Revision history (W6.3) ─────────────────────────────────────────────────
+    // -- Revision history (W6.3) -------------------------------------------------
 
     /**
      * A revision was restored: the backend wrote the old body forward as the new
@@ -1857,7 +1857,7 @@ export class PageEditorComponent implements OnInit {
      * Refetch the active locale's body from the variant endpoint, remount the
      * bridge, and clear the dirty flag — the server copy is now the saved state.
      * Mirrors the cache-miss path in `activateTab`; shared by revision-restore
-     * and the peer-saved reload (Track B #8).
+     * and the peer-saved reload.
      */
     private reloadActiveVariant(): void {
         const p = this.page();
@@ -1889,7 +1889,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // ── Collaborative presence + peer-save (Track B #8) ─────────────────────────
+    // -- Collaborative presence + peer-save -------------------------
 
     /**
      * Repoint the collab service at the active variant's doc channel. Collab is
@@ -1940,7 +1940,7 @@ export class PageEditorComponent implements OnInit {
         this.reloadActiveVariant();
     }
 
-    // ── Close ─────────────────────────────────────────────────────────────────
+    // -- Close -----------------------------------------------------------------
 
     tryClose(): void {
         const dirtyLocales = Array.from(this.dirtyLocales());

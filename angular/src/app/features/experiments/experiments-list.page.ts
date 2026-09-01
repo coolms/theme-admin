@@ -20,7 +20,7 @@ import { ExperimentDto, ExperimentResult, ExperimentsService } from './experimen
 import { ExperimentFormDialogComponent } from './experiment-form-dialog.component';
 
 /**
- * W8 — Experiments admin page (/admin/experiments, #786).
+ * W8 — Experiments admin page (/admin/experiments, ).
  *
  * The read/control surface over the W8 A/B experiment store. Each experiment is
  * a card: its status, exposure + conversion totals, and a per-variant
@@ -316,7 +316,7 @@ export class ExperimentsListComponent implements OnInit {
     });
 
     /**
-     * A list page, so its actions are a NaviGraph tree (ADR-034) rather than an
+     * A list page, so its actions are a NaviGraph tree rather than an
      * array here; `cms-list-page` loads the tree and bridges its header-slot
      * nodes into the page header.
      */

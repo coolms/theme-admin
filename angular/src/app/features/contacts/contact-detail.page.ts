@@ -23,7 +23,7 @@ import {
 import { type ContactDto, ContactsService } from './contacts.service';
 import { type LeadChannel, type LeadDto, type LeadStatus, LeadsService } from '../leads/leads.service';
 
-/** Channel value → human label (mirrors the backend `LeadChannel::label()`). */
+/** Channel value -> human label (mirrors the backend `LeadChannel::label()`). */
 const CHANNEL_LABELS: Record<LeadChannel, string> = {
     web_form:     'Web form',
     dynamic_chat: 'Chat',
@@ -43,7 +43,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
  * convergence centrepiece: one Person, every touch-point.
  *
  * Reads `GET /contacts/{id}` (existing) for the person and `GET
- * /leads?contactId={id}` (#1339) for the leads. The leads read is best-effort —
+ * /leads?contactId={id}` for the leads. The leads read is best-effort —
  * a failure just hides the section rather than erroring the whole page.
  */
 @Component({
@@ -296,7 +296,7 @@ export class ContactDetailComponent implements OnInit {
     });
 
     /** Read-only page — Back only (edit/link live on the list's modal + toolbar). */
-    /** Declared in the `contact:detail` layout (ADR-127), not here. */
+    /** Declared in the `contact:detail` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
     );

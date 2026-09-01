@@ -333,7 +333,7 @@ export class CockpitReportPageComponent implements OnInit {
 
     /**
      * Header actions (back to the cockpit + reload) — declared in the
-     * `cockpit:report` layout config (ADR-127), not hardcoded.
+     * `cockpit:report` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),

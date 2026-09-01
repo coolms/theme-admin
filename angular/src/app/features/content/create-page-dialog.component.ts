@@ -29,7 +29,7 @@ import { AppConfigState } from '@coolms/core-angular';
             </div>
             <div class="cms-dialog-body" style="display: flex; flex-direction: column; gap: 12px;">
                 @if (dialogData?.spaceLabel) {
-                    <!-- #1699 — say WHERE. "New Page" used to always mean the
+                    <!-- — say WHERE. "New Page" used to always mean the
                          site, whatever space you were looking at. -->
                     <div class="cms-field-hint">
                         Creating in <strong>{{ dialogData?.spaceLabel }}</strong>.
@@ -49,7 +49,7 @@ import { AppConfigState } from '@coolms/core-angular';
                 </div>
                 <div>
                     <label class="cms-label">Page type</label>
-                    <!-- #1696 — options come from content.page_types, never a
+                    <!-- — options come from content.page_types, never a
                          hardcoded list: the create endpoint validates against the
                          same config, so a client-side list would eventually offer
                          a choice the server 422s. -->
@@ -86,7 +86,7 @@ import { AppConfigState } from '@coolms/core-angular';
                            placeholder="e.g. /about.html (auto-derived from slug)" />
                 </div>
 
-                <!-- ── Start from Markdown (optional, Track B #1) ──────────── -->
+                <!-- -- Start from Markdown (optional, ------------ -->
                 @if (contentType !== 'landing') {
                     <div>
                         <button type="button" class="cms-btn cms-btn-sm"
@@ -137,7 +137,7 @@ export class CreatePageDialogComponent {
     private readonly http      = inject(HttpClient);
 
     /**
-     * The space to create in, handed down by the explorer (#1699).
+     * The space to create in, handed down by the explorer.
      *
      * Optional so any other caller keeps the previous behaviour (path derived
      * from the SiteSection); the explorer always supplies it, because "New
@@ -151,14 +151,14 @@ export class CreatePageDialogComponent {
     slug    = '';
     /**
      * Human page title. Sent to the backend, which DERIVES the slug from it
-     * via the Core i18n slugger when `slug` is blank ([#1611]/[#1616]) and
+     * via the Core i18n slugger when `slug` is blank ([]/[]) and
      * stamps it on the initial variant's `Node.title`. Either title or slug
      * must be present to enable Create.
      */
     title   = '';
     vfsPath = '';
     /**
-     * Page-level content type (W5.f, ADR-153).
+     * Page-level content type (W5.f,).
      *
      * `''` means "send nothing", which is NOT the same as picking `page`:
      * empty lets the enclosing content collection stamp its own type (a page
@@ -168,7 +168,7 @@ export class CreatePageDialogComponent {
      */
     contentType = '';
 
-    /** Configured page kinds, loaded from `content.page_types` (#1696). */
+    /** Configured page kinds, loaded from `content.page_types`. */
     readonly pageTypes = signal<PageTypeDto[]>([]);
 
     /**
@@ -182,7 +182,7 @@ export class CreatePageDialogComponent {
         return this.pageTypes().find(t => t.key === this.contentType)?.template ?? '';
     }
     /**
-     * Optional Markdown to seed the new page's body (Track B #1). When non-empty
+     * Optional Markdown to seed the new page's body. When non-empty
      * it's posted as `markdown`; the backend converts it to safe HTML. Hidden
      * for landing pages (they render `extras.blocks`, not a body).
      */
@@ -252,7 +252,7 @@ export class CreatePageDialogComponent {
                     }
                     this.siteLocales.set(rows);
 
-                    // ⚠️ Re-pick if what was chosen a moment ago is not on this
+                    //  Re-pick if what was chosen a moment ago is not on this
                     // site's list. The constructor defaults before the fetch
                     // returns, so leaving it would submit a locale the backend
                     // is about to refuse -- an error the operator never chose.
@@ -263,7 +263,7 @@ export class CreatePageDialogComponent {
                 error: () => { /* keep the manifest list */ },
             });
 
-        // #1696 — the kinds this installation offers. Failure leaves the list
+        // — the kinds this installation offers. Failure leaves the list
         // empty, which degrades to the "Default" option alone rather than
         // blocking page creation on a config read.
         this.pageSvc.listPageTypes()
@@ -286,7 +286,7 @@ export class CreatePageDialogComponent {
             slug,
             title: title || undefined,
             // An explicit path still wins server-side; the space only roots the
-            // DERIVED one (#1699).
+            // DERIVED one.
             space: this.dialogData?.space || undefined,
             vfsPath: this.vfsPath.trim() || undefined,
             locale: this.locale || undefined,

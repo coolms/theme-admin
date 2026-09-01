@@ -70,7 +70,7 @@ export class PageService {
         } else if (opts?.parentId !== undefined && opts.parentId !== null && opts.parentId !== '') {
             params = params.set('parent', opts.parentId);
         }
-        // #1693 — space scope. Sent alongside `parent` too, not just on the
+        // — space scope. Sent alongside `parent` too, not just on the
         // root listing: the backend confines the parent to the space, so
         // dropping it here would let a stale parent id walk out of the space
         // the user has selected.
@@ -84,7 +84,7 @@ export class PageService {
     }
 
     /**
-     * The page kinds this installation offers (ADR-153 step (b), #1696).
+     * The page kinds this installation offers ( step (b), ).
      *
      * Read from the manifest rather than a literal path, and NOT hardcoded on
      * the client: which kinds exist is deployment config (`content.page_types`),
@@ -106,7 +106,7 @@ export class PageService {
     }
 
     /**
-     * The page spaces this user can see (#1698).
+     * The page spaces this user can see.
      *
      * The explorer's accordion loads these through `SpaceSelectionStore`; this
      * is the same endpoint for callers that need the list WITHOUT the store's
@@ -125,11 +125,11 @@ export class PageService {
     }
 
     /**
-     * The surfaces a page can be placed on (#1698).
+     * The surfaces a page can be placed on.
      *
      * Deliberately the `/content/pages/surfaces` route rather than the article
      * one: same catalogue, but the Pages UI must not depend on an endpoint
-     * ADR-153 (d) is going to retire.
+     * (d) is going to retire.
      */
     listSurfaces(): Observable<PageSurfaceDto[]> {
         const url = `${this.apiBase}/content/pages/surfaces`;
@@ -140,11 +140,11 @@ export class PageService {
     }
 
     /**
-     * Link a page into a surface, or remove that link (#1698).
+     * Link a page into a surface, or remove that link.
      *
      * `place` is the DISTRIBUTION verb — where else the page appears. It is not
      * `publishVariant`, which is the LIFECYCLE verb deciding which locale is
-     * live. Naming them apart here is the whole point of ADR-153's split.
+     * live. Naming them apart here is the whole point of's split.
      */
     placePage(vfsPath: string, siteSlug: string, surface: string): Observable<unknown> {
         return this.http.post(`${this.apiBase}/content/pages/place`, { vfsPath, siteSlug, surface });
@@ -155,7 +155,7 @@ export class PageService {
     }
 
     /**
-     * Change an existing page's kind (#1697).
+     * Change an existing page's kind.
      *
      * `contentType: ''` CLEARS the stamp — the backend unsets the extra rather
      * than storing an empty string, returning the page to "no explicit kind"
@@ -203,13 +203,13 @@ export class PageService {
         /**
          * Human page title. When `slug` is empty the backend DERIVES the slug
          * (= the Package filename, = the URL segment) from this via the Core
-         * i18n slugger ([#1611]); an explicit `slug` still wins. Also stamped
+         * i18n slugger ([]); an explicit `slug` still wins. Also stamped
          * onto the initial variant's `Node.title` (the value the grid + SSR
          * show). Either `title` or `slug` must yield a non-empty slug (422).
          */
         title?: string;
         /**
-         * Authoring space key to create IN (#1699) — `personal`,
+         * Authoring space key to create IN — `personal`,
          * `site:default`. Roots the derived path at that space instead of at a
          * SiteSection, which is the only way the personal space is reachable
          * without the caller knowing its own user UUID. An explicit `vfsPath`
@@ -235,7 +235,7 @@ export class PageService {
         contentType?: string;
         /**
          * Optional Markdown to seed the new page's initial-variant body
-         * (Track B #1 — "New page from Markdown"). The backend converts it to
+         * — "New page from Markdown"). The backend converts it to
          * safe HTML via the same hardened converter the editor's paste path
          * uses (raw HTML + unsafe links stripped, since bodies render
          * unsanitised), capped at 256 KB (422 over-limit). Omitted/empty keeps
@@ -250,7 +250,7 @@ export class PageService {
     }
 
     /**
-     * Renames a page's/article's slug ([#1618]) — changes the Package directory
+     * Renames a page's/article's slug ([]) — changes the Package directory
      * name AND its `extras.slug` in one atomic backend op. `vfsPath` names the
      * current Package; `slug` is the new URL segment; `force` bypasses the
      * publish freeze (`slugLocked`) — a rename of a published page is refused

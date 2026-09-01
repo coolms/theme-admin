@@ -25,13 +25,13 @@ import type { CockpitTokenDto } from './cockpit.types';
  * M4.h — read-only BPMN-Lite diagram with a live token overlay, embedded
  * in the cockpit instance-detail page.
  *
- * Reuses the M3.3 BpmnLite designer's read-only viewer (`createEditor` with
+ * Reuses the BpmnLite designer's read-only viewer (`createEditor` with
  * `readOnly`/`hideToolbar`/`hideSidebar`) to paint the deployed process body,
  * then highlights the elements where execution tokens currently sit by
  * adding CSS classes onto the rendered `<g data-element-id="…">` nodes:
- *   - **active**  token → green glow
- *   - **waiting** token → amber glow
- *   - the **failed** element (from the M4.f failure capture) → red glow
+ *   - **active**  token -> green glow
+ *   - **waiting** token -> amber glow
+ *   - the **failed** element (from the M4.f failure capture) -> red glow
  *
  * The body is auto-laid-out on load (engine-authored bodies carry no diagram
  * coordinates), so the operator always gets a readable left-to-right diagram

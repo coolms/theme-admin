@@ -45,7 +45,7 @@ export class RtcService {
         return this.action(callId, 'hangup');
     }
 
-    /** POST /rtc/calls/{id}/recording/start — begin recording the group call's media room (ADR-145). 503s when no recorder is deployed. */
+    /** POST /rtc/calls/{id}/recording/start — begin recording the group call's media room. 503s when no recorder is deployed. */
     startRecording(callId: string): Observable<RtcCallDto> {
         return this.recording(callId, 'start');
     }
@@ -67,7 +67,7 @@ export class RtcService {
 
     /**
      * GET /rtc/calls/{id}/media-token — the SFU join credentials for a GROUP call
-     * (ADR-144 Slice G2); 503s when no SFU is deployed. Only an active participant
+     * ( Slice G2); 503s when no SFU is deployed. Only an active participant
      * of the call may fetch it.
      */
     getMediaToken(callId: string): Observable<RtcMediaTokenDto> {
@@ -76,9 +76,9 @@ export class RtcService {
 
     /**
      * GET /rtc/calls/{id}/recording — stream the finished group-call recording as a
-     * Bearer-authorised blob (ADR-145 G8f; the interceptor attaches the token, a plain
+     * Bearer-authorised blob ( G8f; the interceptor attaches the token, a plain
      * `<a href>` can't). Only a PARTICIPANT of the call may fetch it; a missing /
-     * non-participant / not-recorded call all → the same opaque 404. The caller triggers
+     * non-participant / not-recorded call all -> the same opaque 404. The caller triggers
      * the browser download from the blob.
      */
     downloadRecording(callId: string): Observable<Blob> {

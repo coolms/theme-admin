@@ -35,7 +35,7 @@ import {
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 
 /**
- * M1.3 — Schedule Detail admin page (/admin/schedules/:slug).
+ * — Schedule Detail admin page (/admin/schedules/:slug).
  *
  * Cards: Settings, Trigger, Calendar, Handler/Payload, History.
  * Header actions: Trigger Now, Delete.
@@ -361,7 +361,7 @@ export class ScheduleDetailPageComponent implements OnInit {
 
     /**
      * Navigation actions for the cms-page-header bar — declared in the
-     * `scheduler:schedule-detail` layout config (ADR-127), not hardcoded.
+     * `scheduler:schedule-detail` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),
@@ -382,7 +382,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         _triggering: this.triggering(),
     }));
 
-    /** cms-page-header dispatcher (navigation). `back` → schedules list. */
+    /** cms-page-header dispatcher (navigation). `back` -> schedules list. */
     onAction(actionId: string): void {
         if (actionId === 'back') {
             void this.router.navigate(['/schedules']);

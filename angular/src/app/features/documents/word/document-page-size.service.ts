@@ -8,7 +8,7 @@ export interface DocumentPageSizeOption {
     readonly label: string;
 }
 
-/** Paper dimensions as CSS lengths, orientation already applied (#1771). */
+/** Paper dimensions as CSS lengths, orientation already applied. */
 export interface DocumentSheetGeometry {
     readonly width: string;
     readonly height: string;
@@ -22,7 +22,7 @@ export interface DocumentPageSizeDto {
     readonly pageSize?: string | null;
     /** The template Node's VFS path — the target of the merge-patch save. */
     readonly path?: string | null;
-    /** Portrait / landscape, a separate axis from the size (#1765). */
+    /** Portrait / landscape, a separate axis from the size. */
     readonly orientationOptions?: readonly DocumentPageSizeOption[];
     readonly pageOrientation?: string | null;
     /**
@@ -34,7 +34,7 @@ export interface DocumentPageSizeDto {
 }
 
 /**
- * Data layer for the document-builder page-size control (Track B — page-size /
+ * Data layer for the document-builder page-size control— page-size /
  * docx-width). Mirrors {@link PageSizeService} on the content side: read the
  * DOCX preset catalog + the template's current size via the path-aware
  * `/document/page-size`, save via a generic VFS merge-patch on the template

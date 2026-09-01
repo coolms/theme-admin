@@ -26,7 +26,7 @@ export const routes: Routes = [
         canActivate: [authGuard],
         children: [
             // `/admin` lands on the dashboard now, which is what it was asked
-            // for (#2087). It redirected to `sections` only because there was
+            // for. It redirected to `sections` only because there was
             // no dashboard to land on.
             { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
             {
@@ -40,7 +40,7 @@ export const routes: Routes = [
                 loadChildren: () =>
                     import('./features/sections/sections.routes').then(m => m.SECTION_ROUTES),
             },
-            // M1.2.c — Calendar admin (list + detail with working hours,
+            // — Calendar admin (list + detail with working hours,
             // holiday rules, and year preview).
             {
                 path: 'calendars',
@@ -48,7 +48,7 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // M1.3 — Scheduler admin (list + detail with cron/RRule editor,
+            // — Scheduler admin (list + detail with cron/RRule editor,
             // calendar attachment, payload editor, trigger-now CTA).
             {
                 path: 'schedules',
@@ -104,7 +104,7 @@ export const routes: Routes = [
                     import('./features/leads/leads.routes').then(m => m.LEADS_ROUTES),
                 data: { activeNav: '/leads' },
             },
-            // C.3 (ADR-143) — Contacts: the generic Person directory / address
+            // C.3 — Contacts: the generic Person directory / address
             // book (/admin/contacts). cms-list-page + coolms-datagrid (client
             // mode) + a create/edit modal, over the C.2 /contacts CRUD API.
             {
@@ -118,7 +118,7 @@ export const routes: Routes = [
             // Joins a conversation, reads history via the generic Chat
             // cursor read, replies via POST /chat/messages, live over
             // chat.room.{id}. Sibling of the leads queue (same lead-source
-            // family). Backend shipped in ledger #994.
+            // family). Backend shipped in.
             {
                 path: 'dynamic-chat',
                 loadChildren: () =>
@@ -127,8 +127,8 @@ export const routes: Routes = [
             },
             // M7 — Internal Messages: user↔user DM/chat over the Chat engine.
             // Two-pane conversation list ↔ thread; "New" opens a 1:1 via
-            // POST /chat/conversations {withUserId} (#1006). Backend complete
-            // (DM open + rich-text body + attachments); FE shell in ledger #1007.
+            // POST /chat/conversations {withUserId}. Backend complete
+            // (DM open + rich-text body + attachments); FE shell in.
             {
                 path: 'messages',
                 loadChildren: () =>
@@ -137,7 +137,7 @@ export const routes: Routes = [
             },
             // M8.a.4 — Email mailbox client: a three-pane reader (mailbox rail /
             // message list / detail + composer) over the M8.a read/send/reply/
-            // folders/seen APIs (#1239–#1245). Full-height like the Messages
+            // folders/seen APIs (–). Full-height like the Messages
             // two-pane. ROLE_ADMIN server-side on every endpoint.
             {
                 path: 'email',
@@ -154,14 +154,14 @@ export const routes: Routes = [
                 data: { activeNav: '/newsletter' },
             },
             // W8 — Analytics dashboard: the "Top pages" leaderboard over the
-            // consent-gated page-view ledger (#780), backed by AnalyticsService.
+            // consent-gated page-view, backed by AnalyticsService.
             {
                 path: 'analytics',
                 loadChildren: () =>
                     import('./features/analytics/analytics.routes').then(m => m.ANALYTICS_ROUTES),
                 data: { activeNav: '/analytics' },
             },
-            // Track E Phase 3 (CDP core) — Customer Data Platform admin: the
+            //Phase 3 (CDP core) — Customer Data Platform admin: the
             // audience Segment builder (EL rules, linted live) + the Subject
             // profile explorer, over /analytics/segments + /analytics/subjects.
             // Sibling of the analytics dashboard (same event substrate).
@@ -172,7 +172,7 @@ export const routes: Routes = [
                 data: { activeNav: '/cdp' },
             },
             // W8 — Experiments: the A/B experiment list + per-variant results
-            // surface with Start/Stop controls (#786), backed by
+            // surface with Start/Stop controls, backed by
             // ExperimentsService. Sibling of the analytics dashboard.
             {
                 path: 'experiments',
@@ -180,7 +180,7 @@ export const routes: Routes = [
                     import('./features/experiments/experiments.routes').then(m => m.EXPERIMENT_ROUTES),
                 data: { activeNav: '/experiments' },
             },
-            // Themes Explorer (#1747) — which theme skins each site and what it
+            // Themes Explorer — which theme skins each site and what it
             // overrides. The Theme endpoints predated any admin UI, so the only
             // way to see or change the active theme was the DB or the CLI.
             {
@@ -213,9 +213,9 @@ export const routes: Routes = [
                     import('./features/connector/connector.routes').then(m => m.CONNECTOR_ROUTES),
                 data: { activeNav: '/webhooks' },
             },
-            // Track D.3 -- Form Builder admin: list of every registered form
+            //.3 -- Form Builder admin: list of every registered form
             // (GET /forms) + a builder over <app-ordered-builder>. Authoring a
-            // shipped form mints a DB override (Track D.2 chained writer);
+            // shipped form mints a DB override.2 chained writer);
             // user-created forms land file-when-writable else DB. Closes the
             // workflow loop -- a non-developer can define the form a User Task
             // renders.
@@ -225,7 +225,7 @@ export const routes: Routes = [
                     import('./features/forms/forms.routes').then(m => m.FORM_ROUTES),
                 data: { activeNav: '/forms' },
             },
-            // ImageMap admin (#1521-#1525 backend): list + modal create/edit of
+            // ImageMap admin (-backend): list + modal create/edit of
             // spatial maps (floor plans / seat maps). Region authoring comes
             // later (Fabric.js surface over the Image Editor).
             {
@@ -245,9 +245,9 @@ export const routes: Routes = [
                     import('./features/translations/translations.routes').then(m => m.TRANSLATION_ROUTES),
                 data: { activeNav: '/i18n/translations' },
             },
-            // M3.2.h -- LCAP/BPM designer feature. Vertical-slice scope: only
+            // -- LCAP/BPM designer feature. Vertical-slice scope: only
             // the DMN decision-table editor (`/admin/designer/dmn/:key`) is
-            // wired today; BPMN-Lite (M3.3) and state-machine (M3.5) add
+            // wired today; BPMN-Lite () and state-machine () add
             // sibling sub-routes inside `designer.routes.ts`. The lazy load
             // shape mirrors every other feature module.
             {
@@ -273,7 +273,7 @@ export const routes: Routes = [
                 loadChildren: () =>
                     import('./features/content/content.routes').then(m => m.CONTENT_ROUTES),
             },
-            // #809 follow-up — Categories admin: manage the `categories`
+            // follow-up — Categories admin: manage the `categories`
             // taxonomy tree (add / rename / move / delete), backed by the
             // Taxonomy REST API. Sits in the Content sidebar section.
             {
@@ -299,7 +299,7 @@ export const routes: Routes = [
                         .then(m => m.DocumentFontsPageComponent),
                 data: { activeNav: '/admin/content/document-fonts' },
             },
-            // Phase X-2.6c -- generation list + detail.
+            //-2.6c -- generation list + detail.
             {
                 path: 'documents/generations',
                 loadComponent: () =>
@@ -314,7 +314,7 @@ export const routes: Routes = [
                         .then(m => m.DocumentGenerationDetailPageComponent),
                 data: { activeNav: '/documents/generations' },
             },
-            // ADR-099 Phase 1.5 sub-phase 1.5b -- Centrifugo admin
+            // Phase 1.5 sub-phase 1.5b -- Centrifugo admin
             // dashboard. Three pages: list (info / namespaces / channels),
             // per-channel detail, debug publish. ROLE_ADMIN is enforced
             // server-side by API Platform `security:` expressions on
@@ -332,7 +332,7 @@ export const routes: Routes = [
                         .then(m => m.CentrifugoDashboardComponent),
                 data: { activeNav: '/centrifugo' },
             },
-            // ADR-147 — MCP tool-governance audit. Read-only operator view
+            // — MCP tool-governance audit. Read-only operator view
             // over GET /api/mcp/tools (ROLE_ADMIN, McpToolCatalogController):
             // the full inventory of tools external AI agents can invoke via
             // POST /api/mcp/rpc plus the authorization gate on each. Sits in
@@ -374,7 +374,7 @@ export const routes: Routes = [
                     import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
                 data: { activeNav: '/settings' },
             },
-            // ADR-149 (#1478) — Backup admin page. List on-disk backup bundles,
+            // — Backup admin page. List on-disk backup bundles,
             // create a new one, and DRY-RUN a restore preview. Sits in the
             // /admin/--system ops section. The three /api/v1/backup*
             // endpoints are gated server-side by the root:backup 0o770 VFS node
@@ -386,7 +386,7 @@ export const routes: Routes = [
                         .then(m => m.BackupsListPageComponent),
                 data: { activeNav: '/backups' },
             },
-            // ADR-150 B.3.2 — Sync fleet admin page. Register/edit/remove edge
+            // B.3.2 — Sync fleet admin page. Register/edit/remove edge
             // nodes, see health/cursor/principal/scope, trigger a fleet nudge.
             // Gated server-side by the NESTED root:sync_fleet 0o770 VFS node
             // (a different group from the machine-facing sync node, so an edge
@@ -400,9 +400,9 @@ export const routes: Routes = [
             },
             // Routing Inspector admin page -- read-only debug tool that
             // traces the SSR pipeline for a (host, path) pair. Backed by
-            // GET /api/v1/web/routing/inspect (Phase I Layer 3b, #318).
+            // GET /api/v1/web/routing/inspect ( Layer 3b, ).
             //
-            // ADR-127 reference adopter: page chrome + section ordering
+            // reference adopter: page chrome + section ordering
             // come from `config/modules/web/layout/routing-inspector.yaml`,
             // rendered by cms-inspector-layout. The three slot components
             // (RoutingInspectorForm / Outcome / Steps) are registered

@@ -22,7 +22,7 @@ export interface TemplateSourceData {
 }
 
 /**
- * Read-only source view for one theme template (#1755).
+ * Read-only source view for one theme template.
  *
  * ## Why not reuse `CodeEditorComponent`
  *

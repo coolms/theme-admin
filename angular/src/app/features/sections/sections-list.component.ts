@@ -179,7 +179,7 @@ export class SectionsListComponent implements OnInit {
     }
 
     /**
-     * Phase I Layer 3d.1 — navigates to the Site Detail page
+     * Layer 3d.1 — navigates to the Site Detail page
      * (`/admin/sections/:slug`). Read-only composition view; edit
      * settings + delete site live on the detail page itself.
      */

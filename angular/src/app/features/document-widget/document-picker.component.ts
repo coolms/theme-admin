@@ -24,14 +24,14 @@ export interface DocumentPickerResult {
 }
 
 /**
- * Picks a document TEMPLATE for the `{widget:document:<slug>}` embed (#1739).
+ * Picks a document TEMPLATE for the `{widget:document:<slug>}` embed.
  *
- * ⚠️ Not a file browser. The widget renders a "Generate document" BUTTON — the
+ *  Not a file browser. The widget renders a "Generate document" BUTTON — the
  * reader clicks it and a document is produced for them on demand — so what has
  * to be chosen is a template, not a path. Attaching an existing file is
  * `<cms-file-picker>`; these are different features that share a noun.
  *
- * ⚠️ **Surfaces `publiclyAccessible`.** `DocumentWidgetRenderer` gates a
+ *  **Surfaces `publiclyAccessible`.** `DocumentWidgetRenderer` gates a
  * non-public template behind an authenticated SSR visitor, so embedding one on
  * a public page renders NOTHING for anonymous readers. That is correct
  * behaviour and completely invisible to the author unless the picker says so —

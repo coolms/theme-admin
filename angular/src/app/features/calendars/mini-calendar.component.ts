@@ -22,7 +22,7 @@ interface MiniCell {
 }
 
 /**
- * M1.2.f.1 — Tiny month-view calendar for the Calendar Detail sidebar.
+ * — Tiny month-view calendar for the Calendar Detail sidebar.
  *
  * Renders a 6x7 month grid (always 42 cells so layout never reflows
  * between months). Pure presentation — emits `dateSelect` when a cell
@@ -181,7 +181,7 @@ export class MiniCalendarComponent {
 
     /**
      * Weekday header labels — re-orderable based on the user's week-start
-     * preference (Task #433). Monday = ISO default; Sunday = US.
+     * preference (Task ). Monday = ISO default; Sunday = US.
      */
     readonly weekdayLabels = computed<readonly string[]>(() =>
         this.userPrefs.weekStart() === 'sunday'
@@ -238,7 +238,7 @@ export class MiniCalendarComponent {
         const selKey = this.dateKey(this.selectedDate());
 
         const firstOfMonth = new Date(year, month, 1);
-        // Task #433 — shift so the grid's column 0 lines up with the user's
+        // Task — shift so the grid's column 0 lines up with the user's
         // chosen week-start day. Monday-start: 0 = Monday (ISO). Sunday-start
         // (US convention): 0 = Sunday (native JS getDay() == 0).
         const sundayStart = this.userPrefs.weekStart() === 'sunday';

@@ -133,7 +133,7 @@ const CHANNEL_MAX_LENGTH = 200;
             justify-content: flex-end;
             margin-top: .25rem;
         }
-        /* Kit shadows removed (#2030) — this copy re-stated the kit almost
+        /* Kit shadows removed — this copy re-stated the kit almost
            verbatim, except color: #1a1a1a where the kit reads
            --cms-accent-fg (the same value, but a token that can move). */
     `],

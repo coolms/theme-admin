@@ -21,13 +21,13 @@ export class MediaPageStateService {
 
     private readonly prefs = inject(UserPreferencesService);
 
-    // ── Navigation & selection ────────────────────────────────────────────────
+    // -- Navigation & selection ------------------------------------------------
 
     readonly currentDir  = signal('/media');
 
     /**
      * Root of the ACTIVE space — the floor the path bar will not go above
-     * (#1762). Media was the only explorer passing no `navigableFrom`, so its
+     *. Media was the only explorer passing no `navigableFrom`, so its
      * typed-path input could leave the space entirely while the accordion
      * beside it still claimed Shared. Not persisted: it is derived from
      * whichever space is selected, and `SpaceSelectionStore` resolves that on
@@ -41,7 +41,7 @@ export class MediaPageStateService {
     readonly activeCollection = signal<{ path: string; name: string } | null>(null);
     readonly viewMode    = signal<MediaViewMode>('medium');
 
-    // ── API-loaded state (populated by MediaLibraryPage) ─────────────────────
+    // -- API-loaded state (populated by MediaLibraryPage) ---------------------
 
     readonly assets       = signal<MediaAssetDto[]>([]);
     readonly totalItems   = signal(0);
@@ -64,7 +64,7 @@ export class MediaPageStateService {
         return this.toolbarNodes().find((n) => n.meta?.['action'] === action) ?? null;
     });
 
-    // ── Actions (page subscribes and makes API / dialog calls) ────────────────
+    // -- Actions (page subscribes and makes API / dialog calls) ----------------
 
     /** Toolbar or grid drop-zone triggers a file-input click. */
     readonly uploadRequested$            = new Subject<void>();
@@ -110,7 +110,7 @@ export class MediaPageStateService {
         const saved = this.prefs.getPageState<{ lastDir?: string; viewMode?: string }>('media');
         if (saved?.lastDir)  this.currentDir.set(saved.lastDir);
 
-        // #1709 — a preference written before the shared vocabulary can say
+        // — a preference written before the shared vocabulary can say
         // `list`, which is now the name of nothing. It meant the wide row, so
         // it becomes `content`; anything else unrecognised falls back to the
         // default rather than restoring a mode the grid cannot draw.

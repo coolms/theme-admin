@@ -31,7 +31,7 @@ import {
     type DdocPayload,
     type DdocSectionEdit,
 } from '../features/documents/shared/ddoc-document.service';
-// Cross-layer import (shared/ ← features/), same shape as DtmplContentAdapter
+// Cross-layer import (shared/ <- features/), same shape as DtmplContentAdapter
 // below: the paper of a document template is the Document module's fact, and
 // this dialog is the one editor that mounts on those templates.
 import {
@@ -41,7 +41,7 @@ import {
 } from '../features/documents/word/document-page-size.service';
 import { DocumentPreviewService } from '../features/documents/word/document-preview.service';
 import { PdfViewerComponent } from '@coolms/pdf-angular';
-// Cross-layer import (shared/ ← features/). DtmplContentAdapter is the only
+// Cross-layer import (shared/ <- features/). DtmplContentAdapter is the only
 // piece of the Content module we consume; it has no other content-module
 // dependencies and is `providedIn: 'root'` so the cycle is graph-clean.
 // TODO: hoist DtmplContentAdapter to shared/ once Document module also uses it.
@@ -194,7 +194,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
                      shows it: it describes the document rather than acting on
                      it, so it does not belong among the toolbar's verbs. Only
                      for documents and templates — a page has no paper. -->
-                <!-- ⚠️ A .ddoc carries its paper INSIDE the file, which is the
+                <!--  A .ddoc carries its paper INSIDE the file, which is the
                      whole reason the format exists, so the controls that patch
                      a Node's extras have nothing to act on here. These write
                      the FILE instead, on the next save, and every option they
@@ -320,7 +320,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
             min-height: 0;
         }
         /*
-         * Split layout (#1768): TOOLBAR SPANS THE FULL WIDTH, and only the
+         * Split layout: TOOLBAR SPANS THE FULL WIDTH, and only the
          * writing area shares the row with the preview.
          *
          * Confining the toolbar to the left half wrapped it onto three rows
@@ -370,7 +370,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
         }
         /*
          * The editor's own wrapper and its two parts, reached with ng-deep
-         * because they belong to the editor component (#1768).
+         * because they belong to the editor component.
          *
          * The wrapper carries the editor's white card — background, 1px
          * border, 6px radius. display:contents drops all three, so the card
@@ -392,7 +392,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
             flex: 1; display: flex; align-items: center; justify-content: center;
             color: var(--cms-text-muted); font-size: .875rem;
         }
-        /* Document-preview pane states (#1773). The error is a BANNER, not a
+        /* Document-preview pane states. The error is a BANNER, not a
          * toast: it belongs to a load, and it must sit next to the stale render
          * it is explaining rather than float away after a few seconds. */
         .dtmpl-editor-dialog__preview-idle,
@@ -407,7 +407,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
         .dtmpl-editor-dialog__pane--preview cms-pdf-viewer {
             flex: 1; min-height: 0; display: block;
         }
-        /* Page setup, status-bar style (#1780). Sits between the status text
+        /* Page setup, status-bar style. Sits between the status text
          * and the action buttons; the auto right margin keeps it left-aligned
          * next to the status rather than drifting toward Save.
          * NO BACKTICKS IN HERE: this is a JS template literal. */
@@ -452,14 +452,14 @@ export class DtmplEditorDialogComponent {
     readonly node = this.data.node;
 
     /** Current editor content (HTML, post-adapter). The adapter handles the
-     *  dtmpl→HTML projection on input and HTML→dtmpl on save. */
+     *  dtmpl->HTML projection on input and HTML->dtmpl on save. */
     readonly editorContent = signal<string>('');
     readonly dirty         = signal(false);
     readonly saving        = signal(false);
     readonly loading       = signal(true);
     readonly fullscreen    = signal(false);
 
-    /** Split live preview (#1767) — off by default; it costs a fetch and a frame. */
+    /** Split live preview — off by default; it costs a fetch and a frame. */
     readonly preview = signal(false);
 
     /** Theme stylesheets + content width for the preview frame. */
@@ -482,7 +482,7 @@ export class DtmplEditorDialogComponent {
     );
 
     /**
-     * Editor profile (#1770, extended in #1774).
+     * Editor profile (, extended in ).
      *
      * One dialog serves every `.dtmpl` in the VFS — it is registered against
      * the MIME type, not against a caller — so it has to work out for itself
@@ -491,7 +491,7 @@ export class DtmplEditorDialogComponent {
      *
      *   - a template always lives under its space's `.templates/`, which is a
      *     path the Document module owns and an admin-gated one;
-     *   - an authored document (#1774) can be filed in any folder the operator
+     *   - an authored document can be filed in any folder the operator
      *     makes, so path proves nothing — it carries an explicit `extras`
      *     marker stamped at creation instead.
      *
@@ -502,16 +502,16 @@ export class DtmplEditorDialogComponent {
     readonly profileName = computed<string>(() => {
         const isTemplate = (this.node.path ?? '').includes('/.templates/');
         // `extras` is absent on plenty of nodes and the flag is absent on every
-        // node predating #1774 — read it as "true only when truly present".
+        // node predating — read it as "true only when truly present".
         const isAuthoredDocument = true === this.node.extras?.['documentNative'];
 
         // A `.ddoc` needs no marker and no path convention: its MIME says it is
-        // a paged document, which is the point of giving it one (ADR-159).
+        // a paged document, which is the point of giving it one.
         return isTemplate || isAuthoredDocument || this.isDdoc() ? 'document-builder' : 'admin';
     });
 
     /**
-     * Native document source, not a DTMPL fragment (#2290).
+     * Native document source, not a DTMPL fragment.
      *
      * The dialog is registered against both mimes because everything around
      * the content — the paged canvas, the split preview, the download, the
@@ -537,7 +537,7 @@ export class DtmplEditorDialogComponent {
     /**
      * What the author may choose from, twips included.
      *
-     * ⚠️ The only source of a measurement in this component. Every handler
+     *  The only source of a measurement in this component. Every handler
      * below looks a row up and copies its numbers; none of them works out what
      * A4 is, or what rotating it does — that table lives once, on the server
      * (`PageSizeResolver`), and a second copy here is the drift the `.ddoc`
@@ -561,7 +561,7 @@ export class DtmplEditorDialogComponent {
     /**
      * Whether a save should carry the paper at all.
      *
-     * ⚠️ Absent means "unchanged" to the server's merge, so a save that only
+     *  Absent means "unchanged" to the server's merge, so a save that only
      * touched the text must leave `page` out — that is what lets somebody
      * else's paper edit survive it.
      */
@@ -587,7 +587,7 @@ export class DtmplEditorDialogComponent {
     /**
      * What a save should say about the notes — only what the author touched.
      *
-     * ⚠️ Absent means unchanged to the merge, so sending every note back would
+     *  Absent means unchanged to the merge, so sending every note back would
      * overwrite somebody else's edit to a note this author never opened.
      * `null` against an id DELETES it, the same gesture a header variant uses,
      * because `''` is a real empty note and the two must not be one thing.
@@ -610,7 +610,7 @@ export class DtmplEditorDialogComponent {
     });
 
     /**
-     * The template's paper, or null for "no sheets" (#1771). Null is the right
+     * The template's paper, or null for "no sheets". Null is the right
      * default for everything that is not a document template — an HTML page has
      * no pages — and also for a template that opted into no page size, since
      * the renderer then uses PHPWord's own default and drawing A4 would be a
@@ -619,7 +619,7 @@ export class DtmplEditorDialogComponent {
     readonly sheet = signal<PageGeometry | null>(null);
 
     /**
-     * The paper controls (#1780). #1776 defaulted a new document to A4 and left
+     * The paper controls. defaulted a new document to A4 and left
      * no way to change it: templates have the Edit Template dialog, documents
      * had nothing at all. These drive the same `extras.pageSize` /
      * `pageOrientation` the renderer reads, so changing them here changes the
@@ -634,7 +634,7 @@ export class DtmplEditorDialogComponent {
     readonly paperSaving = signal(false);
 
     /**
-     * Which preview this file deserves (#1773).
+     * Which preview this file deserves.
      *
      * A document template becomes a .docx, so showing it inside the site's
      * stylesheets would answer a question nobody asked — the theme styles a web
@@ -660,7 +660,7 @@ export class DtmplEditorDialogComponent {
     private readonly docFeed$ = new Subject<string>();
 
     constructor() {
-        // beforeunload half of the guard (#2484): the per-dialog confirm
+        // beforeunload half of the guard: the per-dialog confirm
         // cannot see a tab close or a reload. Disposed with the component, so
         // a closed editor stops voting.
         this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
@@ -669,7 +669,7 @@ export class DtmplEditorDialogComponent {
         this.wireDocumentPreview();
 
         // Fetch the theme context once, the first time the preview is opened —
-        // an editor nobody previews should not pay for it (#1767). The service
+        // an editor nobody previews should not pay for it. The service
         // caches, so reopening is free. Document templates never take this
         // path: their preview is the PDF, and the theme has nothing to say
         // about it.
@@ -693,14 +693,14 @@ export class DtmplEditorDialogComponent {
             }
         });
 
-        // Debounce the editor → frame feed.
+        // Debounce the editor -> frame feed.
         this.previewFeed$
             .pipe(debounceTime(400), takeUntilDestroyed(this.destroyRef))
             .subscribe(html => this.previewHtml.set(html));
     }
 
     /**
-     * Editor content -> rendered PDF, for document templates only (#1773).
+     * Editor content -> rendered PDF, for document templates only.
      *
      * **Debounced far harder than the web preview (400ms).** That one rewrites
      * an iframe locally; this one composes a .docx and puts it through
@@ -745,7 +745,7 @@ export class DtmplEditorDialogComponent {
     }
 
     /**
-     * Render and save the document as a file (#1774).
+     * Render and save the document as a file.
      *
      * Sends the CURRENT editor content, so what downloads is what is on screen
      * — unsaved edits included. That is the useful behaviour for an authored
@@ -809,7 +809,7 @@ export class DtmplEditorDialogComponent {
     private loadSheet(): void {
         // A `.ddoc` states its own paper and `loadDdoc()` has already applied
         // it. Asking the Node-extras endpoint would answer with the folder's
-        // idea of the paper, which is the arrangement ADR-159 replaced.
+        // idea of the paper, which is the arrangement replaced.
         if (this.isDdoc() || 'document-builder' !== this.profileName()) {
             return;
         }
@@ -834,7 +834,7 @@ export class DtmplEditorDialogComponent {
     }
 
     /**
-     * Persist the paper and re-read the geometry (#1780).
+     * Persist the paper and re-read the geometry.
      *
      * Both keys go in ONE patch even though only one select moved: they are two
      * halves of the same paper, and a patch carrying one clears the other —
@@ -905,7 +905,7 @@ export class DtmplEditorDialogComponent {
 
     /** Seed the paper controls and the canvas from a freshly read document. */
     private seedDdocPaper(payload: DdocPayload): void {
-        // ⚠️ Guarded even though the compiler says it need not be: indexing an
+        //  Guarded even though the compiler says it need not be: indexing an
         // array yields the element type here, so TypeScript believes a section
         // is always there. The server refuses a document with no sections, so
         // this is belt and braces — but the belt is what turns a malformed
@@ -929,12 +929,12 @@ export class DtmplEditorDialogComponent {
     /**
      * The canvas's sheet, from the paper the document states.
      *
-     * ⚠️ Twips to millimetres is arithmetic on the document's own numbers —
+     *  Twips to millimetres is arithmetic on the document's own numbers —
      * 1440 to the inch — not a second copy of `PageSizeResolver`'s table of
      * presets. Re-deriving THAT here is what would make the canvas and the
      * .docx disagree.
      *
-     * The margins go with it since #2293: the canvas used to write on a fixed
+     * The margins go with it: the canvas used to write on a fixed
      * 20mm frame whatever the file said, so a document with one-inch margins
      * paginated on screen against a writing width the .docx does not give it.
      */
@@ -1076,7 +1076,7 @@ export class DtmplEditorDialogComponent {
     /**
      * Delete a note.
      *
-     * ⚠️ The MARKERS stay. Removing them would mean rewriting the body the
+     *  The MARKERS stay. Removing them would mean rewriting the body the
      * author is editing from under their caret, and a marker whose note has
      * gone is not broken — the server hands it an empty note back, which is
      * something an author can see and fill in.
@@ -1122,7 +1122,7 @@ export class DtmplEditorDialogComponent {
         // `toStorage()` will run on save to turn it back into dtmpl.
         this.editorContent.set(html);
         // Same HTML feeds whichever preview this file gets — the theme frame
-        // (#1767) or the rendered PDF (#1773). Only the open one is fed: a
+        // or the rendered PDF. Only the open one is fed: a
         // closed pane should not be costing a Gotenberg conversion per pause.
         if (this.preview()) {
             if (this.documentPreview()) {
@@ -1199,7 +1199,7 @@ export class DtmplEditorDialogComponent {
     }
 
     /**
-     * ⚠️ Was an unconditional close. The footer rendered "unsaved changes"
+     *  Was an unconditional close. The footer rendered "unsaved changes"
      * and Cancel threw them away without asking -- the flag was shown to the
      * user and ignored by the code that discarded the work.
      *
