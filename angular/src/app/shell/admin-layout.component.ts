@@ -45,6 +45,15 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
             height: 56px;
             flex-shrink: 0;
             background: var(--cms-sidebar-bg);
+            /*
+             * ⚠️ The bar painted its background dark and never said what
+             * colour text is, so it inherited --cms-text -- near-black -- from
+             * body. 21 children overrode it to white and 19 inherited the
+             * near-black; the site selector uses color: inherit and came out
+             * at ~1.1:1. The bar is always dark in both themes, so its ink is
+             * the sidebar's, not the page's.
+             */
+            color: var(--cms-sidebar-text);
             border-bottom: 1px solid rgba(255,255,255,.08);
             z-index: 100;
         }
@@ -262,7 +271,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
             width: 22px; height: 22px;
             border: none; background: transparent;
             color: var(--cms-text-muted); cursor: pointer;
-            border-radius: 4px;
+            border-radius: var(--cms-radius-sm, 4px);
             display: flex; align-items: center; justify-content: center;
             font-size: .75rem; padding: 0;
             transition: background .1s, color .1s;
