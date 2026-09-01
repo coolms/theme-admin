@@ -71,6 +71,9 @@ jobs:
       - name: Lint sources
         run: find src -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
 
+      - name: Run tests
+        run: vendor/bin/phpunit
+
   boundary:
     name: No application code
     runs-on: ubuntu-latest
