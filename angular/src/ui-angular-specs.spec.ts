@@ -19,6 +19,7 @@
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
 import '../../../ui-angular/src/datagrid/datagrid-keyboard-overlay.spec';
 import '../../../ui-angular/src/datagrid/datagrid-range-filters.spec';
+import '../../../ui-angular/src/dynamic-form/dynamic-form-readonly-fields.spec';
 import '../../../ui-angular/src/dynamic-form/fields/relation-field.component.spec';
 import '../../../ui-angular/src/dynamic-form/fields/select-field.component.spec';
 import '../../../ui-angular/src/ui/dialog/input-dialog.component.spec';
