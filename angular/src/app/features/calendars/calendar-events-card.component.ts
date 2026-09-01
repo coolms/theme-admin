@@ -153,10 +153,10 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
     styles: [`
         /* ── FullCalendar 7 palette, bound to the admin's tokens ──────────
            v7 ships no appearance and HASHES its class names, so custom
-           properties are the only styling API. Binding them to \`--cms-*\`
+           properties are the only styling API. Binding them to --cms-*
            gives us both themes from one definition -- those tokens already
-           flip under \`:root[data-theme='dark']\`. (FC's own palette.css keys
-           off \`[data-color-scheme]\`, which this admin never sets, so it would
+           flip under :root[data-theme='dark']. (FC's own palette.css keys
+           off [data-color-scheme], which this admin never sets, so it would
            have been stuck in light mode.)
 
            Borders are deliberately one step softer than FC's defaults: a month
@@ -176,14 +176,32 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             --fc-classic-strong:              var(--cms-surface-alt, transparent);
 
             --fc-classic-primary:             var(--cms-accent);
-            --fc-classic-primary-foreground:  var(--cms-accent-fg, #fff);
+            --fc-classic-primary-foreground:  var(--cms-accent-fg, #1a1a1a);
 
             /* Today / selection tints, and the current-time line. Without
                these the palette variables are undefined and today loses its
                highlight entirely. */
             --fc-classic-today:               color-mix(in srgb, var(--cms-accent) 10%, transparent);
             --fc-classic-highlight:           color-mix(in srgb, var(--cms-accent) 22%, transparent);
-            --fc-classic-now:                 var(--cms-danger, #ef4444);
+            --fc-classic-now:                 var(--cms-danger, #dc2626);
+
+            /* The default event colour, for items with no colour of their own.
+               The theme wires these into its eventColor / eventContrastColor
+               options (themes/classic/global.js), so this is what an uncoloured
+               chip gets -- previously FC's own slate blue. */
+            --fc-classic-event:               var(--cms-accent);
+            --fc-classic-event-contrast:      var(--cms-accent-fg, #1a1a1a);
+
+            /* ⚠️ The toolbar buttons. These were NEVER set, which is why the
+               card carried a .fc .fc-button-primary rule -- a v6 selector
+               that matches nothing in v7. The variables are the API; the
+               selector never was. */
+            --fc-classic-button:              var(--cms-btn-bg);
+            --fc-classic-button-border:       var(--cms-btn-border);
+            --fc-classic-button-foreground:   var(--cms-btn-text);
+            --fc-classic-button-strong:       var(--cms-accent);
+            --fc-classic-button-strong-border: var(--cms-accent);
+            --fc-classic-button-outline:      var(--cms-accent-light, #FEF7E6);
         }
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .fc-host {
@@ -210,11 +228,10 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
                scrollable region is FC's own time-grid body. */
             overflow: hidden;
         }
-        :host ::ng-deep .fc {
-            font-family: inherit;
-            font-size: .85rem;
-            height: 100%;
-        }
+        /* ⚠️ v7 HASHES its class names, so .fc does not exist. Font and
+           size are set on our own wrapper and inherit down; the height comes
+           from the flex column above. */
+        .fc-host { font-family: inherit; font-size: .85rem; }
         /* Task #461 + #462 -- hide every native scrollbar inside FC's
            internal scrollers. FC v6 forces overflow-y: scroll on every
            region of its scrollgrid (header, all-day row, time-grid
@@ -225,26 +242,20 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
            scrollbar pseudo (plus the Firefox scrollbar-width:none)
            silences them all. The grid itself is still scrollable via
            wheel / touch / keyboard. */
-        :host ::ng-deep .fc-scroller { scrollbar-width: none; }
-        :host ::ng-deep .fc-scroller::-webkit-scrollbar {
+        /* ⚠️ .fc-scroller is a v6 name and matches nothing. Every v7 class
+           IS still prefixed fc- before its hash, so an attribute-substring
+           selector reaches them: this is the one selector shape that survives
+           the rename. The buttons and the event cursor moved to the variables
+           above -- there is no selector to write for those any more. */
+        :host ::ng-deep [class*='fc-'] { scrollbar-width: none; }
+        :host ::ng-deep [class*='fc-']::-webkit-scrollbar {
             width: 0; height: 0; display: none;
         }
-        :host ::ng-deep .fc-scroller::-webkit-scrollbar-button,
-        :host ::ng-deep .fc-scroller::-webkit-scrollbar-track,
-        :host ::ng-deep .fc-scroller::-webkit-scrollbar-thumb,
-        :host ::ng-deep .fc-scroller::-webkit-scrollbar-corner {
+        :host ::ng-deep [class*='fc-']::-webkit-scrollbar-button,
+        :host ::ng-deep [class*='fc-']::-webkit-scrollbar-track,
+        :host ::ng-deep [class*='fc-']::-webkit-scrollbar-thumb,
+        :host ::ng-deep [class*='fc-']::-webkit-scrollbar-corner {
             display: none;
-        }
-        :host ::ng-deep .fc-toolbar-title { font-size: 1.05rem; }
-        :host ::ng-deep .fc .fc-button-primary {
-            background: var(--cms-accent, #2563eb);
-            border-color: var(--cms-accent, #2563eb);
-        }
-        :host ::ng-deep .fc .fc-button-primary:hover {
-            filter: brightness(.95);
-        }
-        :host ::ng-deep .fc .fc-event {
-            cursor: pointer;
         }
         /* Visual cue for recurring rows — diagonal stripes overlay. */
         :host ::ng-deep .fc-ev-recurring {
@@ -266,7 +277,10 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         :host ::ng-deep .fc-ev-tentative { opacity: .75; font-style: italic; }
 
         /* Holiday backgrounds — pin the text down so it's visible. */
-        :host ::ng-deep .fc-ev-holiday-bg .fc-event-title {
+        /* ⚠️ .fc-event-title is a v6 name. .fc-ev-holiday-bg is OURS --
+           passed through eventClassNames() -- so it still applies, and the
+           text styling goes on it directly. */
+        :host ::ng-deep .fc-ev-holiday-bg {
             color: var(--cms-warning-text);
             font-size: .7rem;
             font-weight: 600;
@@ -276,7 +290,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         }
 
         .error {
-            color: var(--cms-danger, #b91c1c);
+            color: var(--cms-danger, #dc2626);
             padding: 8px 16px;
             margin: 0;
             font-size: .85rem;
@@ -303,15 +317,15 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             width: 100%;
             padding: 8px 10px;
             border: none; background: transparent;
-            color: var(--cms-text, #1f2937);
+            color: var(--cms-text, #111827);
             font-size: .8125rem;
             text-align: left;
             cursor: pointer;
             border-radius: var(--cms-radius-sm, 4px);
         }
         .cmenu__item:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
-        .cmenu__item--danger { color: var(--cms-danger, #b91c1c); }
-        .cmenu__item--danger:hover { background: var(--cms-danger-light, #fee2e2); }
+        .cmenu__item--danger { color: var(--cms-danger, #dc2626); }
+        .cmenu__item--danger:hover { background: var(--cms-danger-light, #fef2f2); }
         /* #537 — thin divider between cmenu action groups (Duplicate
            / Status / Delete). 1px line that respects the 4px outer
            padding so it touches both edges visually. */
@@ -790,7 +804,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             start:           h.date,
             allDay:          true,
             display:         'background',
-            backgroundColor: color,
+            color:           color,
             classNames:      ['fc-ev-holiday-bg', h.isWorking ? 'fc-ev-holiday-working' : 'fc-ev-holiday-off'],
             // Holidays are read-only; the editor key is the ruleId, not
             // a calendar item.
@@ -807,8 +821,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             start:           item.start,
             end:             item.end ?? undefined,
             allDay:          item.allDay,
-            backgroundColor: item.color ?? undefined,
-            borderColor:     item.color ?? undefined,
+            // ⚠️ FullCalendar 7 renamed this. `backgroundColor` / `borderColor`
+            // appear in ZERO files of the installed package -- v7 reads
+            // `color` and emits it as --fc-event-color. Setting the old names
+            // is why a chosen colour never reached the chip.
+            color:           item.color ?? undefined,
             classNames:      this.eventClassNames(item),
             // Phase 2 — recurring items are now drag/resize-enabled.
             // On drop we prompt for scope ("only this" → POST exception;
