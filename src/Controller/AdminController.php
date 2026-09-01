@@ -20,7 +20,7 @@ use const DIRECTORY_SEPARATOR;
  * to a real file inside the build output is served with its content type; every
  * other path returns index.html so Angular Router handles it client-side.
  *
- * ⚠️ This used to gate on an extension ALLOWLIST -- js, mjs, css, map, json,
+ * This used to gate on an extension ALLOWLIST -- js, mjs, css, map, json,
  * ico, png, svg, webp, woff, woff2, ttf, eot, txt -- and the list went stale
  * the moment the build started shipping anything else. MEASURED when that was
  * found: the build ships 13 extensions and the list named 8, so 411 of 648
@@ -49,7 +49,7 @@ final class AdminController
      * actually emits -- the mime map is the one keep-list left in this class,
      * and a keep-list that nothing measures is the bug above all over again.
      *
-     * ⚠️ wasm MUST be application/wasm. WebAssembly.instantiateStreaming
+     * wasm MUST be application/wasm. WebAssembly.instantiateStreaming
      * REFUSES any other type, so an octet-stream fallback there is a silent
      * decoder failure rather than a slightly wrong header.
      *
@@ -114,6 +114,24 @@ final class AdminController
             );
         }
 
+        // A path that LOOKS like a build asset and did not resolve is a
+        // missing asset, not a client-side route. Answering it with the shell
+        // returns 200 and 60KB of HTML under the content type the browser
+        // asked for, so a stale index.html requesting a chunk that no longer
+        // exists surfaces as `Unexpected token '=>'` in a file that was never
+        // JavaScript -- a syntax error pointing at a line that does not exist.
+        //
+        // An Angular route never carries a file extension; every build asset
+        // does. That is the whole test, and it needs no list to stay current
+        // beyond the mime map this class already has to keep.
+        if ('' !== $path && isset(self::MIME_TYPES[$this->extension($path)])) {
+            return new Response(
+                'Not found in the admin build output.',
+                Response::HTTP_NOT_FOUND,
+                ['Content-Type' => 'text/plain; charset=UTF-8'],
+            );
+        }
+
         // All other requests -> Angular shell.
         $indexPath = $this->buildDir . '/index.html';
 
@@ -168,6 +186,16 @@ final class AdminController
         }
 
         return str_starts_with($candidate, $root . DIRECTORY_SEPARATOR) ? $candidate : null;
+    }
+
+    /**
+     * Lower-cased extension of a path, or '' when it has none.
+     *
+     * A client-side route has none, which is what separates it from an asset.
+     */
+    private function extension(string $path): string
+    {
+        return strtolower(pathinfo($path, PATHINFO_EXTENSION));
     }
 
     private function mimeType(string $path): string
