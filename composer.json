@@ -9,8 +9,9 @@
         }
     ],
     "require": {
-        "php": ">=8.5",
         "coolms/core": "^2.0",
+        "php": ">=8.5",
+        "symfony/config": "^8.0",
         "symfony/dependency-injection": "^8.0",
         "symfony/http-foundation": "^8.0",
         "symfony/http-kernel": "^8.0",
