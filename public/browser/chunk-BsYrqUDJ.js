@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";function r(o){return o.length===0?{consumed:[]}:o.length===1?{consumed:o,posParams:{module:o[0]}}:o.length===2?{consumed:o,posParams:{module:o[0],block:o[1]}}:null}var n=[{matcher:r,loadComponent:()=>import(`./chunk-FOgvTQTM.js`).then(o=>o.SettingsHubPageComponent)}];export{n as SETTINGS_ROUTES};

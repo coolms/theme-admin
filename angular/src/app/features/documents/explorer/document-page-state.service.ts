@@ -14,8 +14,7 @@ import { type DocumentFolder, type DocumentTemplate } from '../shared/document-e
  * Shape only — whether it EXISTS and whether this user may read it are async
  * questions the constructor cannot ask. This rejects the values that are wrong
  * on their face: a previous build's empty string, a relative fragment, or a
- * traversal. Anything that gets past here and still fails to resolve is handled
- * by `forgetLastPath()`.
+ * traversal.
  */
 function isRestorablePath(value: unknown): boolean {
     return typeof value === 'string'
@@ -114,8 +113,16 @@ export class DocumentPageStateService {
         // a worse consequence, and it was restored raw.
         //
         // Shape only, here. Existence and permission are not knowable
-        // synchronously in a constructor; `forgetLastPath()` is what the view
-        // calls once it learns the restored path does not resolve.
+        // synchronously in a constructor. A restored path belonging to a space
+        // that is gone or no longer enabled is un-stuck later, by the effect in
+        // `DocumentSpaceAccordionComponent`: once the active space resolves, a
+        // path that is neither the root nor below it becomes `selectFolder(root)`.
+        //
+        // ⚠️ What nothing yet covers is a path INSIDE the active root that has
+        // since been deleted or had its permissions changed. `loadFolder()` in
+        // `folder-content.component.ts` swallows both with
+        // `catchError(() => of([]))`, so that case renders as an empty folder
+        // rather than a failure anything could react to.
         const lastPath = saved?.lastPath;
         if (isRestorablePath(lastPath)) {
             this.currentPath.set(lastPath as string);
@@ -416,22 +423,6 @@ export class DocumentPageStateService {
      * panel. Selecting a template (`selectedId.set(...)`) doesn't
      * touch the path — it overlays the detail view.
      */
-    /**
-     * Forget the remembered location and go back to the space root.
-     *
-     * ⚠️ Called when the restored path turns out not to resolve — deleted,
-     * permissions changed, or its space no longer enabled. Without it the
-     * failure is reproduced on every visit, because the path is persisted on
-     * every change and the bad value is simply written back.
-     *
-     * Falling back to the root is deliberately not the same as clearing the
-     * stored key: the user still lands somewhere usable, and the effect that
-     * persists `currentPath` records the root, which is what un-sticks it.
-     */
-    forgetLastPath(root: string): void {
-        this.currentPath.set(root);
-    }
-
     selectFolder(path: string): void {
         this.currentPath.set(path);
         this.selectedId.set(null);
