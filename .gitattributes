@@ -1,0 +1,17 @@
+# What a PHP consumer of `coolms/theme-admin` receives.
+#
+# Composer serves a git archive, so anything tracked and not excluded here
+# is downloaded by every application that installs this package. The Angular
+# sources are 502 of the 516 tracked files and 13.25 of the 13.70 MB, and a
+# PHP application can do nothing with them: building the admin needs Node, an
+# Angular toolchain and roughly 837 MB of node_modules. They belong in the
+# repository and not in the package.
+#
+# ⚠️ `export-ignore` affects the ARCHIVE ONLY. Everything below stays in git,
+# stays in CI, and stays in a clone. Nothing is being deleted.
+angular/          export-ignore
+tests/            export-ignore
+phpunit.xml.dist  export-ignore
+.github/          export-ignore
+package-lock.json export-ignore
+.gitattributes    export-ignore

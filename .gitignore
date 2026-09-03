@@ -18,3 +18,11 @@
 
 # phpunit's per-run cache
 .phpunit.result.cache
+
+# GENERATED, not authored. A prebuild step used to write here:
+#   a copy of the document engine's assets/fonts directory
+# before every build, so these 24 files are a copy of what
+# @coolms/document-engine already ships -- byte for byte, verified.
+# They were tracked here for a while, which meant a PHP consumer
+# downloaded 7.71 MB of fonts that the engine owns.
+angular/public/assets/document-fonts/
