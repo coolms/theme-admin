@@ -31,6 +31,7 @@ import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angula
 import { Store } from '@ngxs/store';
 
 import { SectionState } from '../sections/section.state';
+import { SiteSelectorComponent } from '../sections/site-selector/site-selector.component';
 import { ModuleSettingsService } from './module-settings.service';
 import { ModuleSettingsBlockDto } from './module-settings.types';
 import { adoptSavedBlock, withoutPinnedKeys } from './settings-payload.util';
@@ -78,6 +79,7 @@ const PREFS_KEY = 'settings';
         DynamicFormComponent,
         LoadingComponent,
         ErrorBannerComponent,
+        SiteSelectorComponent,
     ],
     template: `
         <div class="settings">
@@ -179,12 +181,17 @@ const PREFS_KEY = 'settings';
                                          the choice on a platform-wide block would
                                          invite a save the server refuses.
 
-                                         WHICH site comes from the header's Site
-                                         Selector, not from a second list here.
-                                         This control picks the LAYER; that one
-                                         picks the site, as it already does
-                                         everywhere else in the admin. -->
+                                         ⚠️ THE SITE PICKER LIVES HERE NOW. It used to
+                                         sit in the global top bar, on every screen,
+                                         and a sweep of 75 API collections found no
+                                         screen whose contents it changed. This is the
+                                         one place the choice decides something -- these
+                                         settings really are per-site -- so it is shown
+                                         where it acts. Still two controls for two
+                                         questions, not one asked twice: this picks the
+                                         LAYER, that picks the site. -->
                                     <div class="settings__scope-bar">
+                                        <app-site-selector [alwaysShow]="true" />
                                     @if (activeSite(); as site) {
                                         <div class="settings__scope">
                                             <span id="scope-label">Applies to</span>
@@ -202,7 +209,7 @@ const PREFS_KEY = 'settings';
                                     } @else {
                                         <p class="settings__note">
                                             Editing the values every site uses. To set them for one site, pick that
-                                            site in the header first.
+                                            site above first.
                                         </p>
                                     }
                                     @if ('site' === scopeMode() && activeSite()) {
@@ -552,22 +559,23 @@ export class SettingsHubPageComponent implements OnInit {
      * Which LAYER is being edited. The SITE is not chosen here.
      *
      *  This screen used to carry its own list of sites, which put a second site
-     * picker on a page that already had one in the header — and the header's is
-     * the platform's answer to "which site am I working on", stamped onto every
-     * API call as `X-CoolMS-Section`. Two controls for one question is the
-     * question asked twice.
+     * picker on a page that already had one in the global header. Two controls
+     * for one question is the question asked twice, so that list went.
      *
-     * What the header CANNOT express is the platform itself: its empty option is
-     * `(host-derived)`, meaning "infer the site from the host", which is not the
-     * same as "the values every site shares". That distinction is the only thing
-     * this control exists for.
+     * ⚠️ THE HEADER'S PICKER HAS SINCE COME HERE, and this is still not the
+     * second control it looks like. Measured: the picker changed the contents of
+     * ZERO of 75 API collections, and the Pages screen overrides it on create
+     * with its own space -- these settings are the one place the choice decides
+     * anything, so it is rendered here rather than on every screen. It picks the
+     * SITE. This picks the LAYER, which the site picker cannot express: its
+     * empty option means "no site chosen", not "the values every site shares".
      */
     readonly scopeMode = signal<'platform' | 'site'>('platform');
 
     /** Every section the operator can see, from the same state the header uses. */
     private readonly sections = toSignal(this.store.select(SectionState.sections), { initialValue: [] });
 
-    /** The header's current site, or null when it is host-derived. */
+    /** The picked site, or null when none is chosen (the backend resolves from the host). */
     readonly activeSite = toSignal(this.store.select(SectionState.currentSection), { initialValue: null });
 
     /**

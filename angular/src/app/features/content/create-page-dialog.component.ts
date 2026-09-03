@@ -240,8 +240,26 @@ export class CreatePageDialogComponent {
         // The site's own set, which narrows the list above once it arrives. A
         // failure leaves the manifest list in place rather than blocking
         // creation on a config read.
+        // ⚠️ ASK FOR THE DESTINATION SITE'S LOCALES, NOT THE HEADER'S. This
+        // option source resolves from `_coolms_section`, which the section
+        // interceptor stamps from the site picker -- while the page itself is
+        // created into `space`, which OVERRIDES that section on the backend
+        // (probed: header coolms-docs + space site:coolms-site lands the page
+        // in coolms-site). So the two could disagree, and the dialog would
+        // offer a locale the site it is about to write to does not publish.
+        // The header set here wins over the interceptor, by its own contract.
+        //
+        // A non-site space (personal) has no site, and the platform-wide list
+        // is the right answer there; no override is sent, so the interceptor's
+        // stamp applies -- normally none, since the picker now lives on the
+        // settings screen and defaults to no site chosen.
+        const spaceSlug = (this.dialogData?.space ?? '').startsWith('site:')
+            ? (this.dialogData?.space ?? '').slice('site:'.length)
+            : null;
+
         this.http.get<{ member?: { value: string; label: string }[] }>(
             '/api/v1/options/i18n.site_enabled_locales',
+            spaceSlug ? { headers: { 'X-CoolMS-Section': spaceSlug } } : {},
         )
             .pipe(takeUntilDestroyed())
             .subscribe({

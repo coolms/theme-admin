@@ -279,7 +279,11 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
             border-radius: var(--cms-radius-sm);
             border: 1px solid var(--cms-border);
             color: var(--cms-text-muted);
-            background: var(--cms-surface-2);
+            /* Was --cms-surface-2, which the theme deliberately leaves
+               undefined -- so this chip had no fill at all in either theme.
+               --cms-surface-muted is the role every "muted surface" synonym
+               in styles.scss already aliases to. */
+            background: var(--cms-surface-muted);
         }
 
         .pd__variant-title {

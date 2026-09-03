@@ -52,6 +52,13 @@ export interface CreateSectionDto {
     matchHost?:      string;
     matchPathPrefix?: string;
     matchPriority?:  number;
+    /**
+     * ⚠️ Was missing here while `UpdateSectionDto` had it, so a site created
+     * from the admin was born with NO theme binding and had to be edited
+     * immediately to get one. `CreateSiteSectionProcessor` has always read
+     * `themeSlug` off the resource -- the omission was only on this side.
+     */
+    themeSlug?:      string | null;
 }
 
 export interface UpdateSectionDto {
@@ -78,6 +85,15 @@ export interface SectionApplyResultDto {
     readonly updated:       ReadonlyArray<string>;
     readonly unchanged:     ReadonlyArray<string>;
     readonly skipped:       ReadonlyArray<string>;
+    /**
+     * ⚠️ Vhosts DELETED because no section owns them any more. The backend
+     * computed this all along and the API resource dropped it, so the admin's
+     * Apply could delete a server block and report only what it wrote -- the
+     * one outcome an operator cannot infer from the section list.
+     */
+    readonly removed?:      ReadonlyArray<string>;
+    /** Why each skip happened, keyed by slug. "skipped" alone reads as a failure. */
+    readonly skippedReasons?: Readonly<Record<string, string>>;
     readonly outputDir:     string;
     readonly reloadCommand: string;
     readonly dryRun:        boolean;

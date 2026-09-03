@@ -54,7 +54,7 @@ describe('SiteSelectorComponent', () => {
         store.reset({ ...store.snapshot(), sections: { sections, currentSectionSlug: null, loading: false, error: null } });
         fixture.detectChanges();
         const options = fixture.nativeElement.querySelectorAll('option');
- // host-derived + 2 sections
+ // the empty option + 2 sections
         expect(options.length).toBe(3);
         expect(options[1].textContent).toContain('Default');
         expect(options[2].textContent).toContain('Marketing');
@@ -91,7 +91,7 @@ describe('SiteSelectorComponent', () => {
         expect(select.value).toBe('marketing');
  // selectedIndex is what the operator actually reads: -1 or 0 both mean
  // the box disagrees with the store, and 0 is the misleading one because
- // it names the host-derived option as though it had been chosen.
+ // it names the empty option as though it had been chosen.
         expect(select.selectedIndex).toBe(2);
     });
 
