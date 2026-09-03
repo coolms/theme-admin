@@ -8,6 +8,22 @@ import { AppConfigState, UserPreferencesService, NaviGraphService, NaviGraphNode
 import { ExplorerViewMode, toExplorerViewMode } from '@coolms/ui-angular';
 import { type DocumentFolder, type DocumentTemplate } from '../shared/document-explorer.types';
 
+/**
+ * Is a persisted path worth restoring at all?
+ *
+ * Shape only — whether it EXISTS and whether this user may read it are async
+ * questions the constructor cannot ask. This rejects the values that are wrong
+ * on their face: a previous build's empty string, a relative fragment, or a
+ * traversal. Anything that gets past here and still fails to resolve is handled
+ * by `forgetLastPath()`.
+ */
+function isRestorablePath(value: unknown): boolean {
+    return typeof value === 'string'
+        && value.startsWith('/')
+        && !value.includes('..')
+        && value.trim().length > 1;
+}
+
 export interface OpenInstanceRequest {
     readonly template: DocumentTemplate;
     readonly instance: DocumentInstance;
@@ -84,8 +100,25 @@ export class DocumentPageStateService {
             viewMode?: string;
             instancesViewMode?: string;
         }>('documents');
-        if (saved?.lastPath) {
-            this.currentPath.set(saved.lastPath);
+        // ⚠️ VALIDATED, because a restored location that no longer works is
+        // STICKY. The path is persisted on every change, so one navigation to a
+        // folder that has since been deleted, had its permissions changed, or
+        // belonged to a space that is no longer enabled is written back on the
+        // next visit and again on the one after. The section becomes
+        // permanently unusable and nothing tells the user why.
+        //
+        // ⚠️ The argument for this is already in this file, applied to the
+        // lesser field: `toExplorerViewMode` below exists so "an unrecognised
+        // mode must fall back to the default instead of restoring one the view
+        // cannot draw". A path the explorer cannot open is the same problem with
+        // a worse consequence, and it was restored raw.
+        //
+        // Shape only, here. Existence and permission are not knowable
+        // synchronously in a constructor; `forgetLastPath()` is what the view
+        // calls once it learns the restored path does not resolve.
+        const lastPath = saved?.lastPath;
+        if (isRestorablePath(lastPath)) {
+            this.currentPath.set(lastPath as string);
         }
 
         // — Documents was the only explorer that forgot its view mode:
@@ -383,6 +416,22 @@ export class DocumentPageStateService {
      * panel. Selecting a template (`selectedId.set(...)`) doesn't
      * touch the path — it overlays the detail view.
      */
+    /**
+     * Forget the remembered location and go back to the space root.
+     *
+     * ⚠️ Called when the restored path turns out not to resolve — deleted,
+     * permissions changed, or its space no longer enabled. Without it the
+     * failure is reproduced on every visit, because the path is persisted on
+     * every change and the bad value is simply written back.
+     *
+     * Falling back to the root is deliberately not the same as clearing the
+     * stored key: the user still lands somewhere usable, and the effect that
+     * persists `currentPath` records the root, which is what un-sticks it.
+     */
+    forgetLastPath(root: string): void {
+        this.currentPath.set(root);
+    }
+
     selectFolder(path: string): void {
         this.currentPath.set(path);
         this.selectedId.set(null);
