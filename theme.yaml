@@ -1,8 +1,8 @@
 slug: coolms-admin
 name: CoolMS Admin SPA
-version: 1.0.0
+version: 2.0.0-alpha2
 author: CoolMS Team
-description: Angular 19 administration panel for CoolMS 2.0
+description: Angular administration panel for CoolMS 2.0
 feStack: spa
 spaFramework: angular
 license: MIT
