@@ -1,10 +1,22 @@
 /vendor/
 /composer.lock
 
-# ⚠️ The DEPLOYED admin. `angular.json` sets outputPath to `../public`, so this
-# whole directory is what `npm run build` writes -- 42M of it -- and
-# `http://localhost:8080/admin/` serves it directly. Generated, not authored.
-/public/
+# ⚠️ `/public/` IS TRACKED, deliberately. It is the built admin, and it
+# is what a PHP application installs -- there is no Angular toolchain on
+# the other side of `composer require`, so the artefact has to be in the
+# package. 21.03 MB, 650 files, rewritten on every release.
+#
+# That cost was accepted with its eyes open. The alternatives were: make
+# the 14 @coolms/* dependencies real, which is blocked on a package that
+# is deliberately private and on export subpaths that are not published;
+# or build it in CI, which is this same commit made by a machine and is
+# where it should end up. Neither removes the need for the bytes.
+#
+# Before the first commit the artefact was 39.36 MB. It is 21.03 because
+# the pdf.js variants no browser in this baseline can reach were pinned
+# out (-10.65) and the document fonts moved to the package that owns them
+# (-7.68). Both were done FIRST, on purpose: git does not forget, and the
+# first commit fixes whatever is in it.
 
 # 837M, and a symlink target for six sibling packages.
 /angular/node_modules/
