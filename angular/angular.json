@@ -37,9 +37,39 @@
                 "output": "/assets/pdfjs/"
               },
               {
+                // ⚠️ BROWSER-SUPPORT DECISION, 2026-09-04. Do not widen this
+                // back to the whole directory without re-reading it.
+                //
+                // The viewer ships four builds of each of its viewer, worker
+                // and sandbox: modern, modern-minified, es5 and es5-minified.
+                // Copying the directory wholesale shipped all of them -- 14 MB
+                // of which a browser fetches at most 2.9 MB -- because nothing
+                // here selected one and the library default decided.
+                //
+                // What actually loads:
+                //   pdfDefaultOptions._internalFilenameSuffix is ".min", and
+                //   the library marks it "don't modify this". So the
+                //   NON-minified twins can never be the file that is fetched.
+                //
+                //   needsES5 is (_isIE11 || /Edge\/\d./ user agent || no
+                //   ReadableStream). This app targets ES2022 and browserslist
+                //   resolves to chrome 109+, firefox 140+, edge 149+,
+                //   ios_saf 26.4+ -- none of which is IE11, none of which
+                //   lacks ReadableStream, and Chromium Edge sends "Edg/" not
+                //   "Edge/". So the es5 branch is unreachable from a browser
+                //   that can run this admin at all.
+                //
+                // If the baseline ever grows a browser that needs es5, this
+                // ignore list is what has to change, and the admin will fail
+                // by 404 on the worker rather than quietly.
                 "glob": "**/*",
                 "input": "node_modules/ngx-extended-pdf-viewer/assets/",
-                "output": "/assets/"
+                "output": "/assets/",
+                "ignore": [
+                  "**/viewer-*[0-9].mjs",
+                  "**/pdf.worker-*[0-9].mjs",
+                  "**/pdf.sandbox-*[0-9].mjs"
+                ]
               }
             ],
             "styles": [
