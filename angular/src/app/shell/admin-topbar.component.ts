@@ -12,7 +12,6 @@ import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynami
 import { CallDialQuickAccessComponent } from '../features/call/call-dial-quick-access.component';
 import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { PageTitleService } from '@coolms/ui-angular';
-import { SiteSelectorComponent } from '../features/sections/site-selector/site-selector.component';
 
 interface Breadcrumb {
     path: string;
@@ -27,7 +26,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent, SiteSelectorComponent],
+    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -72,8 +71,20 @@ interface Breadcrumb {
             <!-- Right actions: site selector + terminal toggle + drawer toggle + profile -->
             <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
 
-                <!-- Site selector (H7) -- hidden when only a single section exists -->
-                <app-site-selector />
+                <!-- ⚠️ NO SITE SELECTOR HERE, AND THE MEASUREMENT SAYS WHY.
+                     It sat in this bar on every screen, including Users,
+                     Groups, Definitions and Email, where the data is global.
+
+                     Swept: 75 of the API's collection endpoints, fetched once
+                     under every section. ZERO changed content -- the header
+                     filters nothing, anywhere. Its one documented job was to
+                     decide where a new page lands, and the Pages screen took
+                     that away on purpose: openCreateDialog() passes the
+                     explorer's own space key, which overrides the header (probed:
+                     header coolms-docs + space site:coolms-site -> the page
+                     lands in coolms-site). The one screen where the choice
+                     still decides something is Settings, which is where the
+                     control now lives. -->
 
                 <!-- Terminal toggle -->
                 <button type="button"

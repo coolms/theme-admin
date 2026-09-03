@@ -24,6 +24,7 @@ import {
     ToastService,
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
+import { SiteWizardComponent } from './site-wizard.component';
 import { ApplyNginxChanges } from './section.actions';
 
 @Component({
@@ -202,19 +203,48 @@ export class SectionsListComponent implements OnInit {
                     this.toast.success('Applied nginx changes.');
                     return;
                 }
-                const changed = result.created.length + result.updated.length;
-                const summary = 0 === changed
+                // A REMOVAL IS A CHANGE. It used to be invisible here --
+                // the response did not carry it, and the count only added up
+                // what was written -- so a run that deleted a server block
+                // reported "No nginx changes" while nginx still held it until
+                // a reload nobody was told to run.
+                const removed = result.removed?.length ?? 0;
+                const written = result.created.length + result.updated.length;
+                const parts: string[] = [];
+                if (written > 0) parts.push(`wrote ${written}`);
+                if (removed > 0) parts.push(`removed ${removed}`);
+                const summary = 0 === parts.length
                     ? 'No nginx changes — all configs already up to date.'
-                    : `Applied ${changed} section${1 === changed ? '' : 's'}. Run: ${result.reloadCommand}`;
+                    : `Applied: ${parts.join(', ')}. Run: ${result.reloadCommand}`;
                 this.toast.success(summary, 'nginx vhost generator');
+                // A skip with no reason reads as a failure. The backend states
+                // one per slug; showing it turns "skipped: coolms-docs" into
+                // "served by its host's vhost", which is the correct answer.
+                const reasons = result.skippedReasons ?? {};
+                const explained = Object.entries(reasons);
+                if (explained.length > 0) {
+                    this.toast.info(
+                        explained.map(([slug, why]) => `${slug}: ${why}`).join(' · '),
+                        'No vhost of their own',
+                    );
+                }
             },
             error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
         });
     }
 
+    /**
+     * Add site -- the wizard, not the flat form.
+     *
+     * Creating a site touches a slug, an address, a precedence number, a stack,
+     * a theme and an nginx vhost, and the flat form asked for the first four
+     * with no order and skipped the last two entirely. The wizard dispatches the
+     * SAME actions this page already used, so it is a face on the operation
+     * rather than a second one; {@link SectionFormComponent} stays for edit,
+     * where the operator already knows what they are changing.
+     */
     private openCreate(): void {
-        this.dialog.open(SectionFormComponent, {
-            data: null,
+        this.dialog.open(SiteWizardComponent, {
             backdropClass: 'cdk-overlay-dark-backdrop',
         }).closed
             .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))

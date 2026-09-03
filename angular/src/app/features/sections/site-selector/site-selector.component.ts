@@ -15,12 +15,20 @@ import { SiteSectionDto } from '../../../api/api.service';
  * to user preferences; downstream the section interceptor stamps every
  * `/api/v1/*` request with `X-CoolMS-Section: <slug>`.
  *
- * Scope, stated so the control is not read as more than it is: the header
- * decides which site a NEWLY CREATED page or collection lands in, and nothing
- * else -- see the interceptor for the count. The empty option means
- * "(host-derived)", i.e. infer the site from the request host; it does NOT
- * mean "all sites", which is why the settings screen carries its own
- * platform/this-site layer toggle instead of reusing this list.
+ * ⚠️ SCOPE, MEASURED RATHER THAN CLAIMED, BECAUSE THIS DOCBLOCK USED TO CLAIM
+ * MORE THAN THE CONTROL DID. It said the header "decides which site a NEWLY
+ * CREATED page or collection lands in". A sweep of 75 API collection endpoints
+ * under every section found ZERO whose contents change, so it filters nothing;
+ * and the Pages screen sends the explorer's `space` on create, which overrides
+ * the header outright -- probed, with the page landing in the space's site and
+ * not the header's.
+ *
+ * What is left is Settings, where module settings really are per-site, and the
+ * locale list the New Page dialog offers. So the control renders on the
+ * settings screen and nowhere else; the empty option means "no site chosen",
+ * i.e. let the backend resolve from the request host. It does NOT mean "all
+ * sites", which is what the settings screen's own platform/this-site layer
+ * toggle is for.
  *
  * The component is hidden by default when only a single section exists
  * (single-tenant dev): the dropdown adds visual noise with no decision to
@@ -67,13 +75,13 @@ import { SiteSectionDto } from '../../../api/api.service';
                      discards an assignment naming no option and falls back to
                      the first one, and the binding never fires again because
                      the bound value has not itself changed. The box then read
-                     host-derived while a section was current -- and was
+                     no site chosen while a section was current -- and was
                      stamping X-CoolMS-Section with it. An option binding runs
                      inside the option's own view, after it exists. -->
                 <select class="site-selector-select"
                         (change)="onSelect($event)"
                         aria-label="Active site">
-                    <option value="" [selected]="null === currentSlug()">(host-derived)</option>
+                    <option value="" [selected]="null === currentSlug()">No site chosen</option>
                     @for (s of sections(); track s.slug) {
                         <option [value]="s.slug ?? ''" [selected]="s.slug === currentSlug()">{{ s.label }}</option>
                     }
