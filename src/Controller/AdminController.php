@@ -85,7 +85,11 @@ final class AdminController
         'xml' => 'application/xml',
     ];
 
+    /** Everything under this prefix comes from coolms/document-engine. */
+    private const string FONTS_PREFIX = 'assets/document-fonts/';
+
     private readonly string $buildDir;
+    private readonly string $fontsDir;
 
     /**
      * @param string|null $buildDir Overrides the build output location.
@@ -93,11 +97,21 @@ final class AdminController
      *                              production changes; a test passes a fixture
      *                              instead of requiring `ng build` to have run.
      */
-    public function __construct(?string $buildDir = null)
+    public function __construct(?string $buildDir = null, ?string $fontsDir = null)
     {
         // packages/theme-admin/public/browser/  -- Angular build output.
         // __DIR__ = .../src/Controller  ->  dirname(2) = package root.
         $this->buildDir = $buildDir ?? dirname(__DIR__, 2) . '/public/browser';
+
+        // ⚠️ The vendored document fonts are NOT in the build. They are 7.68 MB
+        // that never change, and putting them in the admin artefact would mean
+        // rewriting them on every release beside 121 rehashed bundles. They ship
+        // once, in coolms/document-engine, and are served from there.
+        //
+        // dirname(__DIR__, 3) is the directory holding this package, which is
+        // `vendor/coolms` in an installation and `packages` in the development
+        // tree -- the same expression finds the sibling in both layouts.
+        $this->fontsDir = $fontsDir ?? dirname(__DIR__, 3) . '/document-engine/assets/fonts';
     }
 
     public function __invoke(string $path = ''): Response
@@ -181,7 +195,26 @@ final class AdminController
      */
     private function resolve(string $path): ?string
     {
-        $root = realpath($this->buildDir);
+        // The font prefix is served from the package that owns the files. The
+        // URL is unchanged, so nothing on the client had to learn a new one.
+        if (str_starts_with($path, self::FONTS_PREFIX)) {
+            return $this->resolveIn($this->fontsDir, substr($path, strlen(self::FONTS_PREFIX)));
+        }
+
+        return $this->resolveIn($this->buildDir, $path);
+    }
+
+    /**
+     * Absolute path of a real file inside $dir, or null.
+     *
+     * realpath() resolves `..` and symlinks BEFORE the prefix comparison, which
+     * is what makes the comparison a containment check rather than a string
+     * test on attacker-supplied text. Both roots get the same treatment: a
+     * second root is a second place to escape from.
+     */
+    private function resolveIn(string $dir, string $path): ?string
+    {
+        $root = realpath($dir);
         if (false === $root) {
             return null;
         }

@@ -12,8 +12,7 @@
     "lint:colors": "node scripts/check-hardcoded-colors.mjs",
     "lint:tokens": "node scripts/check-undefined-tokens.mjs",
     "lint:styles": "node scripts/check-inline-styles.mjs",
-    "lint:specs": "node scripts/check-package-specs.mjs",
-    "prebuild": "node -e \"require('node:fs').cpSync('../../document-engine/assets/fonts','public/assets/document-fonts',{recursive:true})\""
+    "lint:specs": "node scripts/check-package-specs.mjs"
   },
   "dependencies": {
     "@angular/animations": "^22.1.3",
