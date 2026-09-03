@@ -60,6 +60,15 @@ jobs:
           composer config minimum-stability dev
           composer config prefer-stable true
 
+      # ⚠️ CI ONLY, and it must stay that way. The published manifest names
+      # the package and nothing else -- a `repositories` entry in
+      # composer.json would be inherited by every consumer, who would then
+      # be fetching a peer from a URL they never chose. The moment
+      # coolms/document-engine is submitted to Packagist this line stops
+      # mattering and should be deleted.
+      - name: Resolve the peer that is not on Packagist yet
+        run: composer config repositories.document-engine vcs https://github.com/coolms/document-engine
+
       - name: Install dependencies
         run: |
           if [ "${{ matrix.deps }}" = 'lowest' ]; then
