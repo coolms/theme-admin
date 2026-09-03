@@ -5,6 +5,57 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
+## 2.0.0-alpha4 - 2026-09-04
+
+### Added
+
+**The built admin is in the package.** Until now installing this gave you a
+bundle, a route, and nothing to serve: the artefact was gitignored, so it
+was in no archive Composer could fetch, and building it needs Node and
+roughly 837 MB of `node_modules` -- not something a PHP project does on
+`composer install`.
+
+21.03 MB, 650 files, under `public/browser/`. `AdminController` serves it
+for every `/admin/**` path, as it always has.
+
+⚠️ **The cost is permanent and worth stating.** 121 bundle names are
+content-hashed, so every release rewrites all of them, and git does not
+forget. Reversing this later means rewriting history or living with the
+objects. It was taken as the least bad of three: making the 14 `@coolms/*`
+dependencies real is blocked on a package that is deliberately private and
+on export subpaths that are not published, and building in CI is this same
+commit made by a machine.
+
+### Changed
+
+**The archive stopped carrying what a PHP consumer cannot use.** The Angular
+sources were 502 of 516 tracked files and 13.25 of 13.70 MB; they stay in the
+repository and leave the archive. Without that, this release would have
+shipped both the sources and the build.
+
+**The vendored document fonts moved to the package that owns them.** They
+now come from `coolms/document-fonts`, a new requirement, and
+`AdminController` serves `assets/document-fonts/` from there. The URL is
+unchanged, so nothing on the client had to learn a new one, and the
+containment check that guards the build directory guards the font directory
+too. The 24 files in this package had been generated output that was
+committed -- byte for byte what the engine already shipped.
+
+**The pdf.js viewer is pinned to one build.** It ships four builds each of
+its viewer, worker and sandbox; nothing here selected one, so all of them
+were copied. `_internalFilenameSuffix` is `.min` and the library marks it
+internal, so the non-minified twins can never be fetched; and `needsES5`
+wants IE11, a legacy `Edge/` agent or a browser without `ReadableStream`,
+none of which is in a baseline of ES2022 with chrome 109+, firefox 140+ and
+ios_saf 26.4+.
+
+Together those are the difference between a 39.36 MB artefact and a 21.03 MB
+one, and both were done BEFORE the first commit of it, because git keeps
+whatever the first commit contains.
+
+### Fixed
+
+- `theme.yaml` described the panel as Angular 19 against a tree on 22.
 ## 2.0.0-alpha3 - 2026-09-03
 
 ### Fixed
