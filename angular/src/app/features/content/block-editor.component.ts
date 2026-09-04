@@ -27,9 +27,10 @@ import {
     OrderedPaletteEntry,
     OrderedSaveFn,
 } from '@coolms/ui-angular';
+import { ProcessCaptureComponent } from './process-capture.component';
 
 /**
- * Landing-page section builder (, W5.d) — the admin authoring surface
+ * Landing-page section builder — the admin authoring surface
  * for `extras.blocks`.
  *
  * Self-contained and self-hiding: given a page `path`, it fetches
@@ -58,7 +59,7 @@ import {
     selector: 'app-block-editor',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, OrderedBuilderComponent],
+    imports: [FormsModule, OrderedBuilderComponent, ProcessCaptureComponent],
     template: `
         @if (isLanding()) {
             <app-ordered-builder
@@ -109,6 +110,13 @@ import {
                                         </button>
                                     </div>
                                 }
+                            </div>
+                        } @else if (field.editor === 'process-capture') {
+                            <div class="blk__field">
+                                <label class="cms-label">{{ humanize(field.name) }}</label>
+                                <app-process-capture
+                                    [block]="block"
+                                    (fieldsChange)="setFields(i, $event)" />
                             </div>
                         } @else if (field.kind === 'textarea') {
                             <div class="blk__field">
@@ -293,6 +301,19 @@ export class BlockEditorComponent {
 
     setField(i: number, name: string, value: string): void {
         this.blocks.update(bs => bs.map((b, idx) => idx === i ? { ...b, [name]: value } : b));
+        this.markDirty();
+    }
+
+    /**
+     * Several fields of one block, in ONE update.
+     *
+     * A capture writes the diagram, the version it came from and the date
+     * together -- they are one fact. Setting them with three `setField` calls
+     * would leave two intermediate states where the snapshot and its provenance
+     * disagree, and would mark the builder dirty three times.
+     */
+    setFields(i: number, patch: Record<string, string>): void {
+        this.blocks.update(bs => bs.map((b, idx) => idx === i ? { ...b, ...patch } : b));
         this.markDirty();
     }
 
