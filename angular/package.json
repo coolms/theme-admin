@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "ng serve --port 4200 --proxy-config proxy.conf.json",
+    "prebuild": "node ../../../tools/check-template-backticks.mjs",
     "build": "ng build --output-path=../public --base-href=/admin/",
     "watch": "ng build --watch --output-path=../public --base-href=/admin/",
     "test": "ng test --watch=false",
