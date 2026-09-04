@@ -40,7 +40,7 @@ export interface ContentFieldPanelsDto {
 }
 
 /**
- * Data layer for the module-contributed content field panels (, W1.c/d).
+ * Data layer for the module-contributed content field panels.
  *
  *  - `fetch(path)` -> the panels + current values that apply to the node.
  *  - `save(path, extras)` -> merge-patch the node's extras (same generic VFS

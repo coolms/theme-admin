@@ -135,7 +135,7 @@ export class DocumentPageStateService {
         // `toExplorerViewMode` rather than a cast: the stored value is
         // whatever a previous build wrote, and an unrecognised mode must fall
         // back to the default instead of restoring one the view cannot draw.
-        // No `list` remap here (the shape Media carries from ) — this key
+        // No `list` remap here — this key
         // has never been written before, so there is no legacy value to
         // translate.
         const restoredView = toExplorerViewMode(saved?.viewMode);

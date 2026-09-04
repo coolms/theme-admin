@@ -23,7 +23,7 @@ export interface EmailMailboxDto {
     /** Workflow-definition key started on a new-conversation inbound email. */
     inboundWorkflowKey?: string | null;
     hasCredential?: boolean;
-    /** How the mailbox authenticates: `password` (default) or `oauth` (, ). */
+    /** How the mailbox authenticates: `password` (default) or `oauth`. */
     authMethod?: string;
     /** OAuth provider key (e.g. `google`) when `authMethod` is `oauth`; null otherwise. */
     oauthProvider?: string | null;

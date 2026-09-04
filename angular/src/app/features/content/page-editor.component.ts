@@ -172,8 +172,8 @@ type RailTab = string;
                             {{ statusLabel(v.status) }}
                         </span>
 
-                        <!-- -- Editorial review actions (W6.a) --------------- -->
-                        <!-- W6.c: only collections that opt into review show
+                        <!-- -- Editorial review actions ---------------------- -->
+                        <!-- Only collections that opt into review show
                              "Submit for review"; elsewhere the author publishes
                              directly via the Publish button. -->
                         @if ((v.status === 'draft' || v.status === 'changes_requested') && page()?.requiresReview) {
@@ -226,7 +226,7 @@ type RailTab = string;
             </div>
 
             @if (activeVariant(); as variant) {
-                <!-- -- Changes-requested callout (W6.c) -------------------- -->
+                <!-- -- Changes-requested callout --------------------------- -->
                 <!-- Surfaces the reviewer's note to the author so the
                      request-changes round-trip is actionable, not just a badge. -->
                 @if (variant.status === 'changes_requested') {
@@ -554,7 +554,7 @@ type RailTab = string;
         .page-editor__add-tab { padding: 4px 8px; }
         .page-editor__tab-actions { display: flex; align-items: center; gap: 8px; }
 
-        /* Changes-requested callout (W6.c) */
+        /* Changes-requested callout */
         .page-editor__review-note {
             display: flex; align-items: flex-start; gap: 10px;
             margin: 10px 16px 0;
@@ -584,7 +584,7 @@ type RailTab = string;
         .page-editor__peer-saved > i { color: var(--cms-accent); }
         .page-editor__peer-saved-msg { flex: 1; }
 
-        /* Scheduled publish/unpublish actions (W6.d) */
+        /* Scheduled publish/unpublish actions */
         .page-editor__schedule-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
         /* Title row */
@@ -738,7 +738,7 @@ export class PageEditorComponent implements OnInit {
     readonly exporting     = signal(false);
     readonly fullscreen    = signal(false);
     readonly addingVariant = signal(false);
-    /** W6.d scheduled publish/unpublish inputs (datetime-local
+    /** Scheduled publish/unpublish inputs (datetime-local
      *  `YYYY-MM-DDTHH:mm` local strings; converted to/from ISO). */
     readonly publishAtInput  = signal('');
     readonly unpublishAtInput = signal('');
@@ -953,7 +953,7 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * The page's Package node path — the target for **post-level** (locale-
-     * invariant) module field sets (, e.g. the Blog set: author /
+     * invariant) module field sets (e.g. the Blog set: author /
      * publish date / categories / tags). The `<app-content-field-panels>`
      * instance bound to it renders nothing for plain pages and lights up for
      * posts in a collection that opts into a field set.
@@ -962,7 +962,7 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * The active variant's VFS file path — `{page.vfsPath}/{locale}.dtmpl` —
-     * the per-variant target for the W6.3 file-history panel. Empty until a
+     * the per-variant target for the file-history panel. Empty until a
      * page + locale are resolved (the panel is gated on it being non-empty).
      */
     readonly activeVariantPath = computed(() => {
@@ -1560,7 +1560,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // -- Editorial review (W6.a) ------------------------------------------------
+    // -- Editorial review -------------------------------------------------------
 
     /** Humanize the review status for the badge ("in review", "changes requested"). */
     statusLabel(status: string): string {
@@ -1657,7 +1657,7 @@ export class PageEditorComponent implements OnInit {
         );
     }
 
-    // -- Scheduled publish/unpublish (W6.d) --------------------------------------
+    // -- Scheduled publish/unpublish ---------------------------------------------
 
     /**
      * Open the given side-rail panel, or collapse it if it's already open.
@@ -1842,7 +1842,7 @@ export class PageEditorComponent implements OnInit {
         return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }
 
-    // -- Revision history (W6.3) -------------------------------------------------
+    // -- Revision history --------------------------------------------------------
 
     /**
      * A revision was restored: the backend wrote the old body forward as the new

@@ -333,7 +333,7 @@ export class MessagesQuickPanelComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.refreshList());
 
-        // Realtime (re)connect catch-up (, mirroring the page): when the
+        // Realtime (re)connect catch-up (mirroring the page): when the
         // transport comes up — first connect, or a reconnect after the outage the
         // poll above covered — pull the open thread's missed messages once and
         // re-read the list, so a gap can't linger until the next nudge.

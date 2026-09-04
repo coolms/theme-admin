@@ -482,7 +482,7 @@ export class DtmplEditorDialogComponent {
     );
 
     /**
-     * Editor profile (, extended in ).
+     * Editor profile.
      *
      * One dialog serves every `.dtmpl` in the VFS — it is registered against
      * the MIME type, not against a caller — so it has to work out for itself

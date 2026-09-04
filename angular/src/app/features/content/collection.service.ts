@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
-/** Payload for `POST /api/v1/content/collections` (, W5.g). */
+/** Payload for `POST /api/v1/content/collections`. */
 export interface CreateCollectionRequest {
     readonly slug: string;
     readonly label?: string;
@@ -15,7 +15,7 @@ export interface CreateCollectionRequest {
     /** Module field-set group ids the collection opts into (e.g. ['seo','blog']). */
     readonly fieldSets?: readonly string[];
     readonly requiresReview?: boolean;
-    /** Opt-in to the persistent-sidebar docs reading layout (W4.a). */
+    /** Opt-in to the persistent-sidebar docs reading layout. */
     readonly sidebarNav?: boolean;
 }
 
@@ -107,7 +107,7 @@ export interface SetCollectionSettingsRequest {
 }
 
 /**
- * Data layer for content collections (, W5.g). A collection is a
+ * Data layer for content collections. A collection is a
  * declared directory Node under the site's content root whose `extras` tell
  * the platform how its child posts behave (post content-type, templates,
  * field sets, sidebar). Mints one via the Content-owned create endpoint; the
