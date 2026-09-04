@@ -8,7 +8,18 @@ export interface BlockFieldSchemaDto {
     readonly name: string;
     /** 'text' | 'textarea' | 'url' | 'group'. */
     readonly kind: string;
-    /** Typed sub-fields when `kind === 'group'` (W5.e); empty otherwise. */
+    /**
+     * Optional control HINT from the backend, e.g. 'process-capture'.
+     *
+     * Never required: `kind` still governs storage and validation, so a hint
+     * this admin does not recognise falls through to the control `kind`
+     * implies. That is what lets a module contribute a block type with a
+     * richer editor WITHOUT this file naming the block type -- an admin that
+     * hardcoded 'process_diagram' would be a hardcoded consumer beside an
+     * extensible registry, which is the defect the hint exists to avoid.
+     */
+    readonly editor?: string | null;
+    /** Typed sub-fields when `kind === 'group'`; empty otherwise. */
     readonly itemFields: readonly BlockFieldSchemaDto[];
 }
 
@@ -34,7 +45,7 @@ export interface LandingBlocksDto {
 }
 
 /**
- * Data layer for the W5.d landing-page block editor.
+ * Data layer for the landing-page block editor.
  *
  *  - `fetch(path)` -> the block-type catalog + the page's current sections +
  *    its `contentType` (the same path-aware `/content/landing-blocks` the
