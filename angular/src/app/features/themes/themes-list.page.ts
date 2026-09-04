@@ -85,18 +85,41 @@ interface TemplateGroup {
                                     <h3>{{ t.manifest.name || t.manifest.slug }}</h3>
                                     <code class="theme__slug">{{ t.manifest.slug }}</code>
                                 </div>
+                                <!--
+                                  ⚠️ "Default", not "Active". 'isActive' is consulted ONLY
+                                  when a section names no theme of its own — see the note on
+                                  'Serves' below — so it describes the fallback, while
+                                  "Active" reads as "this is the one in use". On an install
+                                  where every section names its own theme, "Active" was
+                                  actively misleading: the theme it labelled might render
+                                  nothing at all. 'Serves' and 'Fallback for' already state
+                                  the truth accurately, so the badge only had to stop
+                                  contradicting them.
+                                -->
                                 <div class="theme__badges">
                                     @if (t.isActive) {
-                                        <span class="badge badge--ok">Active</span>
+                                        <span class="badge badge--ok"
+                                              title="Sections naming no theme of their own get this one">Default</span>
                                     }
                                     @if (t.isPublished) {
                                         <span class="badge">Published</span>
                                     }
+                                    <!--
+                                      ⚠️ This said "Fallback" for ANY site theme with no
+                                      sections, 'isActive' or not — but a theme that no
+                                      section names and that is not the default is the
+                                      fallback for nothing; it renders nowhere. It also
+                                      collided with the 'Fallback for' row below, which
+                                      means something else. Both fixed: the condition now
+                                      excludes the default, and the label says what is
+                                      actually true of what remains.
+                                    -->
                                     @if (!isSiteTheme(t)) {
                                         <span class="badge badge--muted"
                                               [title]="'feStack: ' + (t.manifest.feStack ?? 'unknown')">Not a site theme</span>
-                                    } @else if (t.sections.length === 0) {
-                                        <span class="badge badge--muted" title="Serves any site without its own theme">Fallback</span>
+                                    } @else if (t.sections.length === 0 && !t.isActive) {
+                                        <span class="badge badge--muted"
+                                              title="No section names this theme and it is not the default — nothing renders with it">Unused</span>
                                     }
                                 </div>
                             </header>
