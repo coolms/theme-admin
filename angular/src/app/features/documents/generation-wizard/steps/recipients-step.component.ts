@@ -6,7 +6,7 @@ import { Subject, Subscription, debounceTime, switchMap, of, catchError } from '
 
 import { CmsFilterBuilderComponent } from '@coolms/ui-angular';
 import { ApiService, type AudiencePreviewDto } from '../../../../api/api.service';
-import { USER_ENTITY_FQCN } from './mode-step.component';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /**
  * X-2.6b step 2 (Filter mode only) -- pick the recipient cohort.
@@ -149,6 +149,7 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
     `],
 })
 export class CmsWizardRecipientsStepComponent implements OnDestroy {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     private readonly api = inject(ApiService);
 
     /** Two-way bound RQL body (e.g., `filter=isActive eq true`). */
@@ -182,7 +183,7 @@ export class CmsWizardRecipientsStepComponent implements OnDestroy {
                         return of<AudiencePreviewDto | null>(null);
                     }
                     this.loading.set(true);
-                    return this.api.previewDocumentAudience(USER_ENTITY_FQCN, rql).pipe(
+                    return this.api.previewDocumentAudience(this.recipientEntity.value(), rql).pipe(
                         catchError(() => {
                             this.error.set(true);
                             this.loading.set(false);

@@ -1,11 +1,11 @@
 import {
-    ChangeDetectionStrategy, Component, computed, effect, input, model, signal,
+    ChangeDetectionStrategy, Component, inject, computed, effect, input, model, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CmsDirectoryPickerComponent, CmsDtmplTokenInputComponent } from '@coolms/ui-angular';
 import { type ContextSchemaVariable } from '../../shared/document-explorer.types';
-import { USER_ENTITY_FQCN } from './mode-step.component';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /** Location preset bound to the basePath radio group. */
 type LocationKind = 'inbox' | 'shared' | 'custom';
@@ -231,6 +231,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
     `],
 })
 export class CmsWizardOutputStepComponent {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     protected readonly sharedPath = SHARED_FOLDER_PATH;
 
     /** Context-schema variables -- drives token discovery. */
@@ -257,7 +258,7 @@ export class CmsWizardOutputStepComponent {
      */
     protected readonly recipientAlias = computed<string | null>(() => {
         for (const v of this.variables()) {
-            if (v.entityType === USER_ENTITY_FQCN) {
+            if (this.recipientEntity.matches(v.entityType)) {
                 return v.path;
             }
         }

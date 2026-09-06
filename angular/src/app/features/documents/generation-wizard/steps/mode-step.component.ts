@@ -1,21 +1,12 @@
 import {
-    ChangeDetectionStrategy, Component, computed, input, model,
+    ChangeDetectionStrategy, Component, computed, inject, input, model,
 } from '@angular/core';
 
 import { type ContextSchemaVariable } from '../../shared/document-explorer.types';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /** Wizard generation modes. CSV mode is reserved for X-3. */
 export type WizardMode = 'single' | 'filter';
-
-/** FQCN of the canonical recipient entity (`@user` alias). */
-/**
- * The only entity Filter mode can materialise an audience from
- * (`FilterAudienceMaterializer` rejects anything else). Exported so the
- * wizard host can stamp it into `audienceCriteria.entityType` and the
- * Output step can find the template's recipient alias by type rather than
- * by a guessed name.
- */
-export const USER_ENTITY_FQCN = 'App\\Identity\\Domain\\Entity\\User';
 
 /**
  * X-2.6b step 1 -- pick how recipients are selected.
@@ -143,6 +134,7 @@ export const USER_ENTITY_FQCN = 'App\\Identity\\Domain\\Entity\\User';
     `],
 })
 export class CmsWizardModeStepComponent {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     /** Two-way bound mode. Defaults to `'single'` so the user can
      *  always advance even on schemas without recipient refs. */
     readonly mode = model<WizardMode>('single');
@@ -157,7 +149,7 @@ export class CmsWizardModeStepComponent {
      */
     protected readonly filterAvailable = computed<boolean>(() => {
         for (const v of this.variables()) {
-            if (v.entityType === USER_ENTITY_FQCN) {
+            if (this.recipientEntity.matches(v.entityType)) {
                 return true;
             }
         }

@@ -1,5 +1,5 @@
 import {
-    ChangeDetectionStrategy, Component, computed, input, model,
+    ChangeDetectionStrategy, Component, inject, computed, input, model,
 } from '@angular/core';
 
 import { CmsEntityPickerComponent } from '@coolms/ui-angular';
@@ -7,9 +7,7 @@ import { type ContextSchemaVariable, type FormVariableInput } from '../../shared
 import { ContextInputFormComponent } from '../../explorer/context-input-form.component';
 import type { ContextFormValue } from '../../explorer/context-form.helpers';
 import type { WizardMode } from './mode-step.component';
-
-/** FQCN of the canonical recipient entity (`@user` alias). */
-const USER_ENTITY_FQCN = 'App\\Identity\\Domain\\Entity\\User';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /**
  * X-2.6b step 3 -- per-document audience (entity bindings + plain
@@ -117,6 +115,7 @@ const USER_ENTITY_FQCN = 'App\\Identity\\Domain\\Entity\\User';
     `],
 })
 export class CmsWizardAudienceStepComponent {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     /** Context-schema variables from the parent template. */
     readonly variables = input<readonly ContextSchemaVariable[]>([]);
 
@@ -141,7 +140,7 @@ export class CmsWizardAudienceStepComponent {
             if (!v.entityType) {
                 continue;
             }
-            if (isFilter && v.entityType === USER_ENTITY_FQCN) {
+            if (isFilter && this.recipientEntity.matches(v.entityType)) {
                 continue;
             }
             out.push(v);

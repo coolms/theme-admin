@@ -20,13 +20,13 @@ import {
 import { WizardDraftService } from './wizard-draft.service';
 import {
     CmsWizardModeStepComponent,
-    USER_ENTITY_FQCN,
     type WizardMode,
 } from './steps/mode-step.component';
 import { CmsWizardRecipientsStepComponent } from './steps/recipients-step.component';
 import { CmsWizardAudienceStepComponent } from './steps/audience-step.component';
 import { CmsWizardOutputStepComponent } from './steps/output-step.component';
 import { CmsWizardReviewStepComponent } from './steps/review-step.component';
+import { FilterAudienceEntity } from './filter-audience-entity';
 
 /** Data the CDK dialog opener passes through `DIALOG_DATA`. */
 export interface CmsDocumentGenerationWizardData {
@@ -166,6 +166,7 @@ export interface CmsDocumentGenerationWizardResult {
     ],
 })
 export class CmsDocumentGenerationWizardComponent implements OnInit {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     private readonly draft = inject(WizardDraftService);
     private readonly api = inject(ApiService);
     private readonly toast = inject(ToastService);
@@ -354,7 +355,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
             // Only the preview call worked, which is why the wizard looked
             // healthy right up to Submit.
             audienceCriteria['rql'] = this.recipientsRql();
-            audienceCriteria['entityType'] = USER_ENTITY_FQCN;
+            audienceCriteria['entityType'] = this.recipientEntity.value();
         }
 
         return {
