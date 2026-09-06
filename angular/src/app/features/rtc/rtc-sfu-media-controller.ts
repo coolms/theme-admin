@@ -21,18 +21,18 @@ interface Tile {
 }
 
 /**
- * The GROUP media plane (,group calling) — the SFU counterpart of
+ * The GROUP media plane (,group calling) -- the SFU counterpart of
  * the 1:1 {@link RtcMediaController} P2P mesh. For a call with 3+ participants the
  * {@link RtcCallService} orchestrator drives THIS controller instead: it fetches
  * the LiveKit join credentials from `GET /rtc/calls/{id}/media-token` (the
  * G2 endpoint) and connects to the SFU, where each client sends ONE uplink and the
- * server forwards the others — so group video scales where a mesh cannot.
+ * server forwards the others -- so group video scales where a mesh cannot.
  *
  * The `Call` aggregate stays the authority: the backend mints the join token ONLY
  * for an active participant (room = the call id), so the SFU never authorises on
  * its own; if no SFU is deployed the token endpoint 503s and {@link start} surfaces
  * an unavailable toast rather than a broken call. LiveKit handles its own signalling
- * over its WebSocket, so — unlike the mesh — there is no SDP/ICE `handleSignal` here.
+ * over its WebSocket, so -- unlike the mesh -- there is no SDP/ICE `handleSignal` here.
  *
  * `livekit-client` is loaded via a dynamic `import()` inside {@link start}, so the
  * SDK is code-split out of the main bundle (only fetched when a group call actually
@@ -44,7 +44,7 @@ interface Tile {
  *
  * Tiles are PARTICIPANT-driven, not track-driven: a tile appears the moment a remote
  * party joins (seeded from `room.remoteParticipants` at connect + `ParticipantConnected`
- * after), so a participant whose camera is off still shows as an avatar tile — their
+ * after), so a participant whose camera is off still shows as an avatar tile -- their
  * video simply fills in when they enable it. Their audio always plays through a
  * detached `<audio>` element regardless of the tile's render.
  */
@@ -181,7 +181,7 @@ export class RtcSfuMediaController {
         if (track.mediaStreamTrack.kind === 'video') {
             const tile = this.tiles.get(participant.identity);
             if (tile !== undefined) {
-                // Keep the tile (the party is still here) — just drop the video -> avatar.
+                // Keep the tile (the party is still here) -- just drop the video -> avatar.
                 tile.videoStream = null;
                 this.publishTiles();
             }

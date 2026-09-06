@@ -1,6 +1,6 @@
 /**
  * Wire DTOs for the ImageMap admin section (`/api/v1/image-maps`,
- * –). Geometry travels NORMALIZED 0..1 exactly as stored; the
+ * -). Geometry travels NORMALIZED 0..1 exactly as stored; the
  * server-rendered overlay lives at `GET /image-maps/{slug}/overlay.svg`.
  */
 
@@ -64,7 +64,7 @@ export interface CreateRegionRequest {
 
 /**
  * PATCH /image-maps/{slug}/regions/{code} body (merge-patch). Geometry moves
- * AS A UNIT — `shape` + `points` together or the backend 400s; the subject
+ * AS A UNIT -- `shape` + `points` together or the backend 400s; the subject
  * soft ref re-binds with BOTH fields and clears via an explicit empty-string
  * `subjectType`.
  */

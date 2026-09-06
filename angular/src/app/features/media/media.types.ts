@@ -5,7 +5,7 @@ export type MediaMimeCategory = 'image' | 'video' | 'audio' | 'document' | 'othe
 /**
  * Media's rendering is now the SHARED explorer vocabulary.
  *
- * Was `'large' | 'medium' | 'small' | 'list'`. Only the last name changed —
+ * Was `'large' | 'medium' | 'small' | 'list'`. Only the last name changed --
  * that mode is a wide row with a thumbnail, a name and a detail line, which is
  * `content` everywhere else; `list` was Media's word for it while Pages used
  * the same word for the table. Stored preferences carrying the old value are
@@ -41,10 +41,10 @@ export interface MediaAssetDto {
     title:            string | null;
     /** Description / caption resolved for the requested locale (same model as title). */
     description:      string | null;
-    /** Alt text — a READ-ONLY derived alias of {@link title} (kept so renderers /
+    /** Alt text -- a READ-ONLY derived alias of {@link title} (kept so renderers /
      *  picker pre-fill that read `alt` keep working). Write via `title`. */
     alt:              string | null;
-    /** Caption — a READ-ONLY derived alias of {@link description}. Write via `description`. */
+    /** Caption -- a READ-ONLY derived alias of {@link description}. Write via `description`. */
     caption:          string | null;
     taxonomy:         string[];
     tags:             string[];

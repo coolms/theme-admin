@@ -1,5 +1,5 @@
 /**
- * Internal Messages (admin user↔user chat) — shared DTOs.
+ * Internal Messages (admin user<->user chat) -- shared DTOs.
  *
  * The page consumes the generic Chat conversation + message API:
  *  - `GET /chat/conversations` / `POST /chat/conversations {withUserId}` ->
@@ -12,33 +12,33 @@
 
 /** One active participant of a conversation (enriched by the backend factory). */
 export interface ConversationParticipantDto {
-    /** Matches a message's `senderParticipantId` — so we can mark "my" messages. */
+    /** Matches a message's `senderParticipantId` -- so we can mark "my" messages. */
     readonly participantId: string;
     /** The identity user behind a human participant (null for anonymous). */
     readonly userId: string | null;
     readonly displayName: string | null;
     /** Public avatar URL for a real photo (null -> render colored initials). */
     readonly avatarUrl?: string | null;
-    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null -> no dot). */
+    /** Self-set presence status -- `online`|`away`|`busy`|`offline` (null -> no dot). */
     readonly presenceStatus?: string | null;
     /** This participant's read cursor. For the VIEWER's own unread, prefer `viewerUnread`. */
     readonly lastReadSeq?: number;
-    /** `human` | `anonymous` | `bot` | … */
+    /** `human` | `anonymous` | `bot` | ... */
     readonly kind: string;
-    /** `owner` | `member` | … */
+    /** `owner` | `member` | ... */
     readonly role: string;
 }
 
 /**
  * A public channel row from the discovery list (`GET /chat/channels`,
- * Chat-channels arc). Lean by design — a browse list only needs the name +
+ * Chat-channels arc). Lean by design -- a browse list only needs the name +
  * whether the caller has already joined (Join vs Open).
  */
 export interface ChatChannelDto {
     readonly id: string;
     readonly title: string | null;
     /**
-     * The handle `#qa-public-channel` cites — derived from the name when
+     * The handle `#qa-public-channel` cites -- derived from the name when
      * the channel is opened and never changed, so an old reference keeps
      * resolving. Null for a channel whose name yields nothing sluggable; it is
      * browsable and joinable, just not `#`-citable.
@@ -56,20 +56,20 @@ export interface ChatConversationDto {
     readonly kind: string;
     readonly title: string | null;
     readonly status: string;
-    /** `private` (default) | `public` — a public GROUP is a channel (Chat-channels arc). */
+    /** `private` (default) | `public` -- a public GROUP is a channel (Chat-channels arc). */
     readonly visibility?: string;
     /** Per-conversation seq high-water mark (last message seq). */
     readonly lastSeq: number | null;
     readonly updatedAt: string | null;
     /**
-     * One-line plain-text preview of the most recent top-level message — the
+     * One-line plain-text preview of the most recent top-level message -- the
      * inbox row's second line (HTML flattened, whitespace collapsed, clipped
      * server-side). `'Message deleted'` for a tombstoned last message,
      * `📎 <filename>` for an attachment-only one; null when the conversation
      * has no messages yet.
      */
     readonly lastMessagePreview?: string | null;
-    /** ISO timestamp of that most-recent message — the row's shown time + the most-recent-first sort key; null when none. */
+    /** ISO timestamp of that most-recent message -- the row's shown time + the most-recent-first sort key; null when none. */
     readonly lastMessageAt?: string | null;
     /** Whether the CURRENT viewer sent that most-recent message (the row prefixes "You: "); null when not resolved / no messages. */
     readonly lastMessageMine?: boolean | null;
@@ -77,12 +77,12 @@ export interface ChatConversationDto {
     /**
      * The CURRENT viewer's membership state (membership/history semantics):
      * `'active'` (a normal member) or `'excluded'` (removed by the owner but
-     * keeping read-only history — the FE shows a read-only banner + hides the
+     * keeping read-only history -- the FE shows a read-only banner + hides the
      * composer). Absent when not resolved.
      */
     readonly viewerState?: string | null;
     /**
-     * The current viewer's own participant id — surfaced so the FE can mark "my"
+     * The current viewer's own participant id -- surfaced so the FE can mark "my"
      * messages even when the viewer is NOT in the active {@link participants}
      * roster (an excluded member isn't). Absent when not resolved.
      */
@@ -98,7 +98,7 @@ export interface ChatConversationDto {
     /**
      * The VIEWER's own read cursor.
      *
-     *  Prefer this over looking yourself up in `participants` — an EXCLUDED
+     *  Prefer this over looking yourself up in `participants` -- an EXCLUDED
      * viewer is deliberately absent from that roster, so the lookup returned
      * nothing, the cursor fell back to 0, and the badge showed the whole
      * conversation as unread with no way to clear it.
@@ -121,11 +121,11 @@ export interface ChatConversationDto {
 /**
  * A file attached to a message. The shape is identical on the
  * upload response (`POST /chat/attachments`), on the message write payload, and
- * on the message read — `kind` is derived server-side from `mimeType` and is
+ * on the message read -- `kind` is derived server-side from `mimeType` and is
  * absent on the write payload (sent-but-ignored is harmless).
  */
 export interface ChatAttachmentDto {
-    /** The VFS node id — also the download path segment: `/chat/attachments/{vfsNodeId}`. */
+    /** The VFS node id -- also the download path segment: `/chat/attachments/{vfsNodeId}`. */
     readonly vfsNodeId: string;
     readonly filename: string;
     readonly mimeType: string;

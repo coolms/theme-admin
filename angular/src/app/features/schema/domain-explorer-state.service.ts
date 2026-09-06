@@ -34,7 +34,7 @@ export interface TypeTreeNode {
 
 /**
  * Scoped state service for DomainExplorerComponent.
- * Provided in DomainExplorerComponent.providers — destroyed with the host.
+ * Provided in DomainExplorerComponent.providers -- destroyed with the host.
  * Injected by DomainExplorerTreeComponent and DomainExplorerDetailComponent
  * via the slot component injector chain.
  */
@@ -67,7 +67,7 @@ export class DomainExplorerStateService {
     readonly expandedIds       = signal<Set<string>>(new Set());
     /**
      * Non-null while a server-side search is active (filterText is set).
-     * null means "no search active" — show the lazy tree instead.
+     * null means "no search active" -- show the lazy tree instead.
      */
     readonly searchResults     = signal<DynamicEntityTypeDto[] | null>(null);
     readonly loading           = signal(true);
@@ -118,7 +118,7 @@ export class DomainExplorerStateService {
         const entity = this.activeEntity();
         const mode   = this.viewMode();
         // Fire for any entity that has an explicit recordsUrl, except 'runtime' dynamic
-        // entities — those use DynamicRecordListComponent which manages its own loading.
+        // entities -- those use DynamicRecordListComponent which manages its own loading.
         if (entity?.recordsUrl && entity.dynamicOrigin !== 'runtime' && mode === 'records') {
             return `${entity.className}::${entity.recordsUrl}`;
         }
@@ -142,7 +142,7 @@ export class DomainExplorerStateService {
 
     /**
      * Flat union of all currently-loaded types across the entire tree.
-     * Computed from childrenMap — used for breadcrumb path-building, availableTypes, etc.
+     * Computed from childrenMap -- used for breadcrumb path-building, availableTypes, etc.
      */
     readonly runtimeTypes = computed((): DynamicEntityTypeDto[] => {
         const all: DynamicEntityTypeDto[] = [];
@@ -153,7 +153,7 @@ export class DomainExplorerStateService {
     });
 
     readonly filteredRuntimeTypes = computed(() => {
-        // managed entries are hidden from the DYNAMIC TYPES sidebar —
+        // managed entries are hidden from the DYNAMIC TYPES sidebar --
         // they appear under ENTITIES instead.
         const nonPhp = this.runtimeTypes().filter(t => t.origin !== 'managed');
         const q = this.filterText().toLowerCase().trim();
@@ -176,7 +176,7 @@ export class DomainExplorerStateService {
         if (q) {
             const results = this.searchResults();
             if (results === null) {
-                // Debounce in progress — show nothing until the response arrives
+                // Debounce in progress -- show nothing until the response arrives
                 return [];
             }
             return results
@@ -283,7 +283,7 @@ export class DomainExplorerStateService {
         });
 
         // Persist view mode to user preferences (server-synced with 2 s debounce
-        // inside UserPreferencesService — no need for an extra debounce here).
+        // inside UserPreferencesService -- no need for an extra debounce here).
         effect(() => {
             const mode = this.viewMode();
             untracked(() => this.prefs.setPageState('domainExplorer', { viewMode: mode }));
@@ -291,7 +291,7 @@ export class DomainExplorerStateService {
 
         // Load records for static (non-dynamic) entities with a recordsUrl when records
         // mode is active.  Dynamic entities (isDynamic=true) use DynamicRecordListComponent
-        // which manages its own data loading — this effect must not fire for them.
+        // which manages its own data loading -- this effect must not fire for them.
         //
         // We track recordsLoadKey() (a memoised string) instead of activeEntity()
         // directly.  activeEntity() is mutated when loadEntityFields() appends fields,
@@ -309,7 +309,7 @@ export class DomainExplorerStateService {
         });
 
         // Reset field/record selection whenever the active runtime type changes.
-        // viewMode is intentionally NOT reset here — it persists via preferences.
+        // viewMode is intentionally NOT reset here -- it persists via preferences.
         effect(() => {
             this.activeRuntimeType(); // track
             untracked(() => {
@@ -318,7 +318,7 @@ export class DomainExplorerStateService {
             });
         });
 
-        // Reactive footer sink — single source of truth for the Domain Explorer
+        // Reactive footer sink -- single source of truth for the Domain Explorer
         // status bar.  Replaces scattered `this.footer?.set(...)` calls that
         // could leak stale "N fields" text into records view.
         effect(() => {
@@ -380,7 +380,7 @@ export class DomainExplorerStateService {
 
     // -- Global context menu (delegates to ContextMenuService) -----------------
 
-    /** Right-click on a dynamic type row — opens the context menu without navigating.
+    /** Right-click on a dynamic type row -- opens the context menu without navigating.
      *  Builds context for the hovered type WITHOUT touching any signals, so the current
      *  content area (viewMode / selectedField / selectedRecord) is untouched.
      *  The full selectRuntimeType() fires only when the user actually picks an action. */
@@ -397,7 +397,7 @@ export class DomainExplorerStateService {
         );
     }
 
-    /** Right-click on a domain entity row — opens the context menu without navigating.
+    /** Right-click on a domain entity row -- opens the context menu without navigating.
      *  Builds context for the hovered entity WITHOUT touching any signals, so the current
      *  content area (viewMode / selectedField / selectedRecord) is untouched. */
     openEntityCtxMenu(event: MouseEvent, entity: DomainEntityItem): void {
@@ -410,7 +410,7 @@ export class DomainExplorerStateService {
         );
     }
 
-    /** Right-click on a field row — selects the field and opens the context menu. */
+    /** Right-click on a field row -- selects the field and opens the context menu. */
     openFieldCtxMenu(
         event: MouseEvent,
         field: Record<string, unknown>,
@@ -425,7 +425,7 @@ export class DomainExplorerStateService {
         );
     }
 
-    /** Right-click on a record row — selects the record and opens the context menu.
+    /** Right-click on a record row -- selects the record and opens the context menu.
      *  Builds a unified context with `_selection: 'record'` so contributor showWhen
      *  conditions for record-scoped actions (Edit Record, Delete Record) match. */
     openRecordCtxMenu(
@@ -442,7 +442,7 @@ export class DomainExplorerStateService {
         );
     }
 
-    /** Right-click on a blank area — opens the context menu.
+    /** Right-click on a blank area -- opens the context menu.
      *  When inside a type or entity view, preserves that context (so "Add field"
      *  and view-toggle items still appear). Falls back to 'background' only when
      *  no type/entity is active (e.g. the left-panel empty area). */
@@ -672,7 +672,7 @@ export class DomainExplorerStateService {
             }
             case 'DeResetField': {
                 const name = String(this.selectedField()?.['name'] ?? '');
-                // Read kind from the selected row — populated in both fieldGridData
+                // Read kind from the selected row -- populated in both fieldGridData
                 // (type context) and entityFieldGridData (entity context), so this
                 // works even when allFields() is empty.
                 const kind = this.selectedField()?.['hasOverride'] as string | null | undefined;
@@ -719,7 +719,7 @@ export class DomainExplorerStateService {
                     break;
                 }
 
-                // Static entity field path — allFields() is empty when activeRuntimeType is null.
+                // Static entity field path -- allFields() is empty when activeRuntimeType is null.
                 // Build a minimal FieldSchemaItem from EntityFieldMetadata so the override form
                 // receives enough data to pre-fill name/type/label.
                 const entity = this.activeEntity();
@@ -801,7 +801,7 @@ export class DomainExplorerStateService {
         this.activeEntity.set(null);
         this.activeSchema.set(null);
         this.footer?.set({ count: '' });
-        // toolbarBreadcrumb + context are computed — clear automatically via the signals above
+        // toolbarBreadcrumb + context are computed -- clear automatically via the signals above
     }
 
     /**
@@ -824,7 +824,7 @@ export class DomainExplorerStateService {
                     .find(e => e.className === entity.className);
                 if (updated) {
                     // Preserve the currently loaded fields until the detail fetch
-                    // completes — the list endpoint returns fields: null.
+                    // completes -- the list endpoint returns fields: null.
                     this.activeEntity.set({ ...updated, fields: entity.fields });
                     // Dynamic entities display their fields through activeSchema (not
                     // entity.fields).  listDomain() does not carry per-field override data,
@@ -833,7 +833,7 @@ export class DomainExplorerStateService {
                     if (updated.isDynamic && updated.dynamicAlias) {
                         this.loadSchema(updated.dynamicAlias);
                     }
-                    // Reload entity fields — hasOverride / overrideAction may have changed.
+                    // Reload entity fields -- hasOverride / overrideAction may have changed.
                     this.loadEntityFields(updated);
                 }
             });
@@ -872,7 +872,7 @@ export class DomainExplorerStateService {
                 // Schema entry exists but no DB row -> create minimal sortOrder override
                 toCreate.push({ name, sortOrder, type: schemaField.type, label: schemaField.label });
             } else {
-                // Pure entity field (Path B) — no schema entry at all
+                // Pure entity field (Path B) -- no schema entry at all
                 const entityField = entity.fields.find(f => f.name === name);
                 if (entityField) {
                     toCreate.push({
@@ -908,13 +908,13 @@ export class DomainExplorerStateService {
      *
      * Two paths:
      *  1. Field already has a FieldDefinition (schemaField.id non-null):
-     *     PATCH the reorder endpoint — only sortOrder is touched, all other override
+     *     PATCH the reorder endpoint -- only sortOrder is touched, all other override
      *     data (isRequired, apiConfig, etc.) is preserved.
      *  2. No FieldDefinition yet (native entity column with no prior override):
      *     POST createField to create a minimal sortOrder-only override.
      *
      * The `source === 'entity'` check that previously blocked native PHP columns
-     * has been removed — reordering those columns is exactly the purpose of this method.
+     * has been removed -- reordering those columns is exactly the purpose of this method.
      */
     createSortOrderOverride(fieldName: string, sortOrder: number): void {
         const entity = this.activeEntity();
@@ -927,12 +927,12 @@ export class DomainExplorerStateService {
         if (schemaField) {
             // Note: do NOT gate on schemaField.locked here.
             // The `locked` flag means "no edit/delete via Schema Editor", but
-            // sortOrder is a display-only override that should always be allowed —
+            // sortOrder is a display-only override that should always be allowed --
             // that is the entire point of drag-to-reorder for entity/module fields.
 
             if (schemaField.id) {
                 // Existing FieldDefinition: use the dedicated reorder endpoint so only
-                // sortOrder is patched — other override fields are not overwritten.
+                // sortOrder is patched -- other override fields are not overwritten.
                 this.schemaSvc.reorderFields([{ id: schemaField.id, sortOrder }])
                     .pipe(takeUntilDestroyed(this.destroyRef))
                     .subscribe({
@@ -1029,7 +1029,7 @@ export class DomainExplorerStateService {
         this.activeSchema.set(null);
         this.activeSchema.set({ alias: type.slug, label: type.label, fields: type.fields });
 
-        // viewMode is preserved from user preferences — no reset here.
+        // viewMode is preserved from user preferences -- no reset here.
 
         this.footer?.set({
             count: `${type.recordCount} record${type.recordCount === 1 ? '' : 's'}`,
@@ -1301,7 +1301,7 @@ export class DomainExplorerStateService {
         columnFilters: ReadonlyArray<string>;
     }): void {
         const entity = this.activeEntity();
-        // 'runtime' dynamic entities use DynamicRecordListComponent — skip here.
+        // 'runtime' dynamic entities use DynamicRecordListComponent -- skip here.
         if (!entity?.recordsUrl || entity.dynamicOrigin === 'runtime') return;
         this.loadEntityRecords(entity, event.offset, event.reset, event.sort, event.columnFilters);
     }
@@ -1324,7 +1324,7 @@ export class DomainExplorerStateService {
         columnFilters: ReadonlyArray<string> = [],
     ): void {
         if (!entity.recordsUrl) return;
-        // Guard against appending beyond the known total — happens when the
+        // Guard against appending beyond the known total -- happens when the
         // datagrid sentinel fires spuriously after a re-render cycle.  Without
         // this, page 1 gets re-fetched and concatenated -> duplicate rows.
         if (!reset) {
@@ -1450,7 +1450,7 @@ export class DomainExplorerStateService {
                         // to this same type).  In entity-view context selectEntity()
                         // sets activeRuntimeType to null and it must remain null so
                         // fieldGridConfig() correctly computes isEntityView = true and
-                        // sets reorderRoute = null — without this guard loadSchema
+                        // sets reorderRoute = null -- without this guard loadSchema
                         // would clobber the null and cause the DataGrid to use the
                         // UUID-based PATCH path, which silently drops all reorder
                         // events because entity field IDs are non-UUID strings.
@@ -1469,7 +1469,7 @@ export class DomainExplorerStateService {
                 .subscribe({
                     next: type => {
                         if (!type) {
-                            // Managed entity not yet registered as a dynamic type —
+                            // Managed entity not yet registered as a dynamic type --
                             // show entity.fields as-is without schema overlay.
                             this.schemaLoading.set(false);
                             return;
@@ -1522,7 +1522,7 @@ export class DomainExplorerStateService {
             ?? this.runtimeTypes().find(t => t.slug === type.parentAlias)?.id;
 
         if (!parentId) {
-            // Parent not loaded yet — re-fetch root so the tree is at least coherent
+            // Parent not loaded yet -- re-fetch root so the tree is at least coherent
             this.fetchChildren(this.ROOT_KEY);
             return;
         }

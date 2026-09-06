@@ -67,17 +67,17 @@ const HOLIDAY_OFF_COLOR     = '#fef3c7'; // light yellow — non-working holiday
 const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation day
 
 /**
- * — Calendar Events grid (FullCalendar wrapper, redesigned).
+ * -- Calendar Events grid (FullCalendar wrapper, redesigned).
  *
  * Differences vs the () version:
  *  - Holiday rules are projected as **background events** behind the
- *    main grid (per visible year — cached). Non-working = light yellow,
+ *    main grid (per visible year -- cached). Non-working = light yellow,
  *    working compensation = light green. Read-only (no drag/click).
  *  - **Drag-to-reschedule** + **resize** are enabled for non-recurring
  *    events (PATCH start/end). Recurring rows render with a subtle
  *    stripe pattern + are non-editable; tap-through still opens the
  *    editor for full-row mutations.
- *  - Toolbar buttons live in the page header now — the card body is
+ *  - Toolbar buttons live in the page header now -- the card body is
  *    purely the grid (no card chrome at all).
  *  - `datesSet` exposed via `viewRangeChanged` so the parent (mini-cal,
  *    title) can stay in sync with the FullCalendar cursor.
@@ -350,12 +350,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     eventsChanged = output<void>();
 
     /**
-     * Emitted on every datesSet — parent uses this to track the
+     * Emitted on every datesSet -- parent uses this to track the
      * displayed period so the sidebar mini-cal + toolbar title stay
      * in sync with the grid.
      *
      * `currentStart` is the **first day of the displayed period** (e.g.
-     * May 1 for a Month view showing May 2026) — NOT `view.activeStart`,
+     * May 1 for a Month view showing May 2026) -- NOT `view.activeStart`,
      * which is the first cell of the rendered grid (often a previous-
      * month tail date like April 27 that fills the first row). The
      * earlier code used `activeStart` for both the title and mini-cal
@@ -391,7 +391,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     private readonly destroyRef = inject(DestroyRef);
 
     /**
-     * — Right-click context menu on calendar events. NULL when
+     * -- Right-click context menu on calendar events. NULL when
      * closed; otherwise carries the viewport coordinates to position
      * the popover at, plus the FullCalendar event the user opened it
      * on (we need its id, title, seriesId, etc. for the delete flow).
@@ -406,8 +406,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         occurrenceInstant: string | null;
         title: string;
         recurrence: string | null;
-        // — snapshot of fields needed for the new actions.
-        // `status` filters which "Mark as …" entries we render so the
+        // -- snapshot of fields needed for the new actions.
+        // `status` filters which "Mark as ..." entries we render so the
         // user doesn't get a button to switch to the status they're
         // already in. The remaining fields are inputs for Duplicate:
         // FC's EventApi gives us start/end/allDay; the rest ride on
@@ -435,7 +435,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     private readonly pendingHolidayYears = new Set<string>();
 
     constructor() {
-        // [follow-up] — userPrefs are signals, so an effect() lets us
+        // [follow-up] -- userPrefs are signals, so an effect() lets us
         // re-build the FC instance whenever the user saves a new value on
         // the Profile -> Calendar tab (or the initial /auth/me/settings
         // load lands after this component was constructed with stale
@@ -446,7 +446,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // SPA was fully refreshed.
         //
         // We initially tried `fc.setOption(...)` per option, but FC v6
-        // does not reliably re-render the slot-label DOM in response —
+        // does not reliably re-render the slot-label DOM in response --
         // the option is updated internally but the rendered axis keeps
         // the old format. Destroy + rebuild is the only reliable path,
         // and only fires when the user touches Profile prefs (rare),
@@ -454,7 +454,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         //
         // Registered in the constructor (injection context) and guarded
         // against the pre-build window by the `if (!this.fc)` short-
-        // circuit — the initial run happens before ngAfterViewInit
+        // circuit -- the initial run happens before ngAfterViewInit
         // builds FC, so the first invocation is always a no-op.
         effect(() => {
             // Read the signals up-front so the effect's dependency graph
@@ -470,7 +470,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             this.fc.destroy();
             this.fc = null;
             this.constructFcInstance(preserveView, preserveDate);
-            // Suppress the unused-locals warning — the reads above are
+            // Suppress the unused-locals warning -- the reads above are
             // semantically meaningful for signal tracking.
             void tf; void df; void fd; void tz;
         });
@@ -503,7 +503,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 ? { weekday: 'short', day: 'numeric', month: 'numeric' }
                 : { weekday: 'short', month: 'numeric', day: 'numeric' };
         const monthHeaderFormat: FormatterInput = { weekday: 'short' };
-        // [follow-up x3] — FullCalendar's OBJECT-based slot header
+        // [follow-up x3] -- FullCalendar's OBJECT-based slot header
         // format is partially merged with the plugin's per-view defaults,
         // and the
         // merge silently drops `hour: '2-digit'` + `meridiem` overrides
@@ -515,7 +515,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             if (is24h) {
                 return `${pad2(hour)}:${pad2(minute)}`;
             }
-            // 12h: 12 -> 12, 13–23 -> 1–11, 0 -> 12. Minute always 2-digit.
+            // 12h: 12 -> 12, 13-23 -> 1-11, 0 -> 12. Minute always 2-digit.
             const h12   = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
             const ampm  = hour < 12 ? 'AM' : 'PM';
             return `${h12}:${pad2(minute)} ${ampm}`;
@@ -539,15 +539,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     ngOnInit(): void {
-        // Reset cache on calendar swap — `ngOnInit` only fires once
+        // Reset cache on calendar swap -- `ngOnInit` only fires once
         // for a given route, so this is precautionary for hot reload.
         this.holidayCache.clear();
 
-        // Calendar realtime ship — subscribe to the items channel for
+        // Calendar realtime ship -- subscribe to the items channel for
         // this calendar so concurrent edits from other tabs / users
         // re-trigger a FullCalendar refetch. The backend
         // `CalendarItemChangeDispatcher` collapses multi-row flushes
-        // into a single ping per calendar so we don't refetch 10×
+        // into a single ping per calendar so we don't refetch 10x
         // for a 10-item batch create. The publication payload is a
         // thin "something changed" marker; we ignore it and just
         // refetch.
@@ -560,15 +560,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     ngAfterViewInit(): void {
-        // Task — prefer the user's chosen TZ over the calendar's TZ
+        // Task -- prefer the user's chosen TZ over the calendar's TZ
         // (per-calendar TZ remains a fallback for shared/team calendars
         // that explicitly bind their own region). Same logic for
         // weekStart -> firstDay (0 = Sun, 1 = Mon).
         //
-        // Task bug 2 follow-up — after prefs resolve, snap the
+        // Task bug 2 follow-up -- after prefs resolve, snap the
         // grid back to today so a TZ change between init and load
         // never leaves the user on the wrong month.
-        // [follow-up x4] — use refresh() instead of ensureLoaded()
+        // [follow-up x4] -- use refresh() instead of ensureLoaded()
         // here so the Calendar grid always reads the most recent
         // server-side prefs, not whatever the in-memory `_prefs` cache
         // happens to hold. This closes the gap left by the original
@@ -594,7 +594,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * can tear down + rebuild on prefs change without duplicating the
      * config. The effect uses rebuild rather than `setOption()` because
      * FullCalendar's `setOption('slotHeaderFormat', ...)` does not reliably
-     * re-render the time-axis labels — the option is updated internally
+     * re-render the time-axis labels -- the option is updated internally
      * but the rendered DOM keeps the old format until the calendar
      * re-renders for some other reason. Destroy + rebuild always works
      * and only fires on rare user actions (saving Profile -> Calendar
@@ -606,14 +606,14 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * component-input-driven `initialView()` + "now".
      */
     private constructFcInstance(preserveView?: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay', preserveDate?: Date): void {
-        // Task bug 2 — explicit initialDate. Without this,
+        // Task bug 2 -- explicit initialDate. Without this,
         // FullCalendar's default `new Date()` evaluation timing is
         // ambiguous (it varies by view + TZ), and on slow page loads
         // the user occasionally landed on the prior month.
         const initialDate = preserveDate ?? new Date();
         const initialView = preserveView ?? this.initialView();
 
-        // Tasks /+ [follow-up] — pref-driven format opts
+        // Tasks /+ [follow-up] -- pref-driven format opts
         // come from a shared helper.
         const opts = this.buildFcFormatOptions();
 
@@ -621,15 +621,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             plugins:        [dayGridPlugin, timeGridPlugin, interactionPlugin, classicTheme],
             initialView:    initialView,
             initialDate:    initialDate,
-            // Header is owned by the page toolbar — turn FC's own off.
+            // Header is owned by the page toolbar -- turn FC's own off.
             headerToolbar:  false,
             timeZone:       opts.effectiveTz,
             firstDay:       opts.firstDay,
-            // Task — user-pref-driven locale + time formats.
+            // Task -- user-pref-driven locale + time formats.
             locale:         opts.fcLocale,
             slotHeaderFormat: opts.slotHeaderFormat,
             eventTimeFormat: opts.eventTimeFormat,
-            // Task — per-view dayHeaderFormat. Month view shows
+            // Task -- per-view dayHeaderFormat. Month view shows
             // weekday only because each column spans many dates;
             // Week/Day views show weekday + the column's date.
             views: {
@@ -637,7 +637,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 timeGridWeek: { dayHeaderFormat: opts.timeGridHeaderFormat },
                 timeGridDay:  { dayHeaderFormat: opts.timeGridHeaderFormat },
             },
-            // Task — `expandRows: true` makes the time grid fill
+            // Task -- `expandRows: true` makes the time grid fill
             // the host container, eliminating the small triangle
             // scroll-compensation arrows FC otherwise rendered along
             // the right edge of Week/Day views.
@@ -647,10 +647,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             selectMirror:   true,
             nowIndicator:   true,
             navLinks:       true,
-            // Task — explicit Day-view destination for nav-link
+            // Task -- explicit Day-view destination for nav-link
             // clicks. Without this, FC falls back to `dayGridDay`
             // (Month-grid style, no hour axis) which rendered as a
-            // single empty cell — not what the user expects when
+            // single empty cell -- not what the user expects when
             // clicking a weekday header.
             navLinkDayClick: 'timeGridDay',
             weekNumbers:    false,
@@ -659,7 +659,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             eventResizableFromStart: true,
             events: (info, success, failure) =>
                 this.loadEvents(info.start, info.end, success, failure),
-            // — close the cmenu whenever any FC interaction
+            // -- close the cmenu whenever any FC interaction
             // fires. FC's `select` consumes the underlying mouseup so
             // the document:click HostListener doesn't fire reliably
             // when the user clicks a date cell to open the New-event
@@ -669,9 +669,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             eventDrop:    arg => { this.cmenu.set(null); this.onEventDrop(arg); },
             eventResize:  arg => { this.cmenu.set(null); this.onEventResize(arg); },
             datesSet:     arg => this.onDatesSet(arg),
-            // — attach a `contextmenu` listener to every event
+            // -- attach a `contextmenu` listener to every event
             // DOM node so right-click pops our cmenu. We can't use
-            // FC's `eventClick` for this — it doesn't fire on
+            // FC's `eventClick` for this -- it doesn't fire on
             // right-click. Holidays + background events are excluded
             // (no delete semantics).
             eventDidMount: info => {
@@ -691,7 +691,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.fc = null;
     }
 
-    /** Public refetch — triggered by parent after Save Settings (tz changed),
+    /** Public refetch -- triggered by parent after Save Settings (tz changed),
      *  or after holiday rules are added / removed (background events
      *  need re-render). */
     refresh(): void {
@@ -699,7 +699,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.fc?.refetchEvents();
     }
 
-    /** Programmatic navigation — parent (mini-cal click, toolbar arrow). */
+    /** Programmatic navigation -- parent (mini-cal click, toolbar arrow). */
     gotoDate(d: Date): void { this.fc?.gotoDate(d); }
     prev(): void  { this.fc?.prev(); }
     next(): void  { this.fc?.next(); }
@@ -776,7 +776,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     resolve(items);
                 },
                 error: () => {
-                    // Don't surface preview errors — events still render.
+                    // Don't surface preview errors -- events still render.
                     this.holidayCache.set(key, []);
                     this.pendingHolidayYears.delete(key);
                     resolve([]);
@@ -827,7 +827,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // is why a chosen colour never reached the chip.
             color:           item.color ?? undefined,
             classNames:      this.eventClassNames(item),
-            // Phase 2 — recurring items are now drag/resize-enabled.
+            // Phase 2 -- recurring items are now drag/resize-enabled.
             // On drop we prompt for scope ("only this" -> POST exception;
             // "all events" -> PATCH the canonical row).
             editable:        true,
@@ -843,7 +843,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 originalItemId: item.originalItemId,
                 type:           item.type,
                 recurrence:     item.recurrence,
-                // Phase 2 — flat occurrence projections strip
+                // Phase 2 -- flat occurrence projections strip
                 // `recurrence` server-side to prevent FE re-expansion,
                 // so the "is recurring?" check keys off `seriesId`
                 // instead. Non-null = part of a series (base + all
@@ -879,18 +879,18 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     private onEventClick(arg: EventClickInfo): void {
-        // Skip holiday backgrounds — they don't open the editor.
+        // Skip holiday backgrounds -- they don't open the editor.
         if (arg.event.extendedProps['kind'] === 'holiday') return;
 
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
-        // Phase 2 — when the clicked event is an occurrence of a
+        // Phase 2 -- when the clicked event is an occurrence of a
         // recurring series, capture its instant so the editor can
         // route save/delete through the override endpoints (with a
         // scope prompt) instead of patching the canonical row.
         // `recurrence` is intentionally null on flat occurrence
         // projections (server strips it to prevent FE re-expansion),
-        // so we key off `seriesId` instead — it's non-null for both
+        // so we key off `seriesId` instead -- it's non-null for both
         // base occurrences and overrides.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         const occurrenceInstant = seriesId
@@ -913,7 +913,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * — Open the right-click context menu at the captured mouse
+     * -- Open the right-click context menu at the captured mouse
      * coordinates. We snapshot all the per-event data the menu actions
      * need (canonicalId, seriesId, etc.) into the signal so the menu's
      * action handlers don't need a fresh EventApi reference (which can
@@ -932,7 +932,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             occurrenceInstant,
             title: event.title || 'Event',
             recurrence,
-            // — Duplicate + Status quick-set inputs. We pull from
+            // -- Duplicate + Status quick-set inputs. We pull from
             // both the FC EventApi (start/end/allDay) and our
             // extendedProps (status/type/description/etc.) so the
             // menu actions don't need to fetch the canonical row
@@ -951,7 +951,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     /**
      * Close the cmenu on outside-click. We use document:click rather
      * than a backdrop element so the menu doesn't intercept clicks on
-     * other events / cells — those should still be active. The menu's
+     * other events / cells -- those should still be active. The menu's
      * own click is `$event.stopPropagation()`ed in the template, so
      * clicks INSIDE the menu don't reach this handler.
      */
@@ -976,7 +976,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     clampMenuY(y: number): number {
-        // — menu can now show up to 5 items (Duplicate + 2
+        // -- menu can now show up to 5 items (Duplicate + 2
         // status quick-sets + Delete + 2 separators). Pad the clamp
         // so the menu doesn't get cut off near the viewport bottom.
         const menuHeight = 220;
@@ -984,10 +984,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * — Duplicate action. Clones the event as a brand-new
+     * -- Duplicate action. Clones the event as a brand-new
      * standalone (non-recurring) row starting one day later at the
      * same time-of-day. For recurring occurrences we duplicate THIS
-     * occurrence's projected times — not the canonical row — because
+     * occurrence's projected times -- not the canonical row -- because
      * the user clicked on a specific instance and that's the unit
      * they expect to be cloned. The new row is always non-recurring;
      * if the user wants to repeat-ify it, they can open the editor.
@@ -1025,7 +1025,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             description: menu.description,
             location:    menu.location,
             color:       menu.color,
-            // Intentionally no `recurrence` — duplicates are single-
+            // Intentionally no `recurrence` -- duplicates are single-
             // instance rows regardless of the source event's shape.
         };
 
@@ -1042,9 +1042,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * — Status quick-set. PATCHes the canonical row's status.
+     * -- Status quick-set. PATCHes the canonical row's status.
      * No scope prompt because status changes naturally apply to the
-     * whole series — there's no concept of "this occurrence is
+     * whole series -- there's no concept of "this occurrence is
      * tentative but the rest are confirmed" in our model. (If a user
      * wants per-occurrence status, that's a Phase 2 override edit via
      * the editor dialog, not this quick-set.)
@@ -1067,7 +1067,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * — Delete action from the cmenu. Mirrors the editor's
+     * -- Delete action from the cmenu. Mirrors the editor's
      * onDelete flow without opening the editor dialog:
      *   - Recurring occurrence -> scope prompt -> skip / delete-
      *     following / canonical delete
@@ -1081,7 +1081,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.cmenu.set(null);
 
         if (menu.occurrenceInstant) {
-            // Recurring occurrence — scope prompt.
+            // Recurring occurrence -- scope prompt.
             this.promptScope({ intent: 'delete', itemTitle: menu.title }).then(scope => {
                 if (scope === undefined) return;
                 if (scope === 'this') {
@@ -1095,7 +1095,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             return;
         }
 
-        // Non-recurring (or canonical click) — plain confirm.
+        // Non-recurring (or canonical click) -- plain confirm.
         const isRecurring = !!menu.recurrence;
         this.confirmSvc.open({
             title:        `Delete "${menu.title}"?`,
@@ -1134,7 +1134,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
 
     private deleteCanonical(canonicalId: string, isRecurring: boolean): void {
         // Recurring "all events" delete still needs an explicit
-        // confirm — bypassing the editor's confirm dialog from a
+        // confirm -- bypassing the editor's confirm dialog from a
         // right-click would be too easy a footgun.
         this.confirmSvc.open({
             title:        'Delete entire series?',
@@ -1179,9 +1179,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // for FC's row placement on the next refetch.
         const newAllDay = arg.event.allDay;
 
-        // Phase 2 — recurring items prompt for scope ("only this" vs
+        // Phase 2 -- recurring items prompt for scope ("only this" vs
         // "all events"). The recurrenceInstant is the PRE-drag start
-        // time — FullCalendar exposes it via arg.oldEvent. Detection
+        // time -- FullCalendar exposes it via arg.oldEvent. Detection
         // keys off `seriesId` (non-null = part of a series); see
         // `toFcEvent` for why `recurrence` can't be used here.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
@@ -1223,10 +1223,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             arg.revert();
             return;
         }
-        // Same allDay-sync as onEventDrop — see that handler for why.
+        // Same allDay-sync as onEventDrop -- see that handler for why.
         const newAllDay = arg.event.allDay;
 
-        // Phase 2 — recurring items resize prompts for scope too.
+        // Phase 2 -- recurring items resize prompts for scope too.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         if (seriesId) {
             const instant = arg.oldEvent.start?.toISOString();
@@ -1252,12 +1252,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * Phase 2 — POST /exception for an "only this" drag/resize.
+     * Phase 2 -- POST /exception for an "only this" drag/resize.
      * Persists a per-occurrence override row at the new times; the
      * series rule is untouched, and the iterator-merged occurrence
      * stream picks up the override on the next refetch.
      *
-     * Refetch + emit — FC's optimistic update happens to land at the
+     * Refetch + emit -- FC's optimistic update happens to land at the
      * right spot for this path (the override IS at the dragged time),
      * but a refetch keeps us aligned with backend state on race
      * conditions (e.g. server snapped to a different minute, or a
@@ -1288,11 +1288,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * Phase 3 — POST /split on a "this and following" drag/resize.
+     * Phase 3 -- POST /split on a "this and following" drag/resize.
      * The server trims the base's RRULE at `recurrenceInstant` and
      * creates a NEW base item starting at `newStart`. Both halves
      * share the original `seriesId`. FC's optimistic update only
-     * moved ONE event — the new base produces N occurrences, so we
+     * moved ONE event -- the new base produces N occurrences, so we
      * MUST `refetchEvents()` to get the corrected stream from the
      * backend. `eventsChanged` is still emitted for any external
      * listeners (e.g. the topbar quick-panel).
@@ -1322,10 +1322,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * Existing path — PATCH the canonical row. Used for non-recurring
+     * Existing path -- PATCH the canonical row. Used for non-recurring
      * items and "all events" scope on recurring drag/resize.
      *
-     * Refetch + emit — for non-recurring items FC's optimistic update
+     * Refetch + emit -- for non-recurring items FC's optimistic update
      * is already correct; for "all events" on a recurring item the
      * whole series shifts so we MUST refetch to re-render the entire
      * occurrence stream.
@@ -1360,9 +1360,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     private onDatesSet(arg: DatesSetInfo): void {
-        // Task — narrow FC's `string` view name to our typed union.
+        // Task -- narrow FC's `string` view name to our typed union.
         // Anything outside the supported trio falls back to Month so the
-        // toolbar pill never enters an undefined state (defensive — FC
+        // toolbar pill never enters an undefined state (defensive -- FC
         // shouldn't emit anything else given our plugin set).
         const viewType: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' =
             arg.view.type === 'timeGridWeek'
@@ -1374,7 +1374,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.viewRangeChanged.emit({
             start:        arg.start,
             end:          arg.end,
-            // First day of the displayed period — see the JSDoc on
+            // First day of the displayed period -- see the JSDoc on
             // `viewRangeChanged` above for why this is currentStart
             // and not activeStart.
             currentStart: arg.view.currentStart,

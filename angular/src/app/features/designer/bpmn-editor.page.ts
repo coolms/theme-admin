@@ -339,7 +339,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * `version` switches the page into **read-only viewer mode**: when
      * non-null the page loads the pinned bytes of `v{N}` via
      * {@link DesignerService.getWorkflowVersion} (instead of the editable
-     * draft) and mounts the editor display-only — no palette, no
+     * draft) and mounts the editor display-only -- no palette, no
      * move-controller, keyboard `readOnly`, and Save/Deploy/Connect/Hand
      * withheld from the shell toolbar (their `createEditor` callbacks are
      * omitted, so the buttons never render). This is the mode the File
@@ -353,7 +353,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * The version the page ACTUALLY mounted at: the `version` input, or
      * `?version=N` on the routed page.
      *
-     * The template must bind to THIS, never the raw input — the
+     * The template must bind to THIS, never the raw input -- the
      * contributor "View read-only" path supplies the version via query
      * param, and binding `version()` left Save/Deploy on screen in a
      * viewer that had already disabled every canvas interaction.
@@ -418,7 +418,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * **Embedded (modal): stays in the modal.** It asks the host to
      * re-render this page in viewer mode; the host swaps template
      * branches, so Angular destroys and recreates the component and
-     * `ngAfterViewInit` runs again with a version — the mode decision
+     * `ngAfterViewInit` runs again with a version -- the mode decision
      * stays in ONE place instead of being duplicated into a re-init
      * path. The previous `location.assign()` reloaded the entire SPA to
      * accomplish a panel swap, which also destroyed the dialog the user
@@ -516,7 +516,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         // right-aligned, undo/redo + zoom + palette + mode-toggle
         // buttons left-aligned) + canvas + sidebar. The page's chrome
         // is intentionally identical to the modal dialog's editor
-        // chrome — only the host (route vs. CDK dialog) differs.
+        // chrome -- only the host (route vs. CDK dialog) differs.
         // `onFit`, `onToggleConnect`, `onToggleHand` mirror the dialog
         // wiring (F-6 / F-7.4): Connect + Hand + Fit live in the shell
         // action bar so the page stays canvas-maximum without an
@@ -525,7 +525,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         this.shellEditor = createEditor(this.hostRef.nativeElement, {
             t: this.i18n.translate,
             surface: 'bpmn-lite',
-            // Save / Deploy are NOT wired into the shell toolbar — they
+            // Save / Deploy are NOT wired into the shell toolbar -- they
             // live in the page footer (Image-Editor chrome). Fit is wired
             // in both modes (a read-only viewer benefits from re-fit too).
             // Connect / Hand are editor-only: omitting their callbacks in
@@ -609,7 +609,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             editor: this.bpmnEditor,
         });
 
-        //-7.1 — drag-to-move on existing canvas elements.
+        //-7.1 -- drag-to-move on existing canvas elements.
         // The isConnectActive / isPanActive gates flip OFF the move
         // gesture whenever ConnectMode or PanMode is active, keeping
         // the three pointer paths (connect / pan / move) mutually
@@ -624,13 +624,13 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                 isPanActive: () => this.panActive(),
             });
 
-            // Hover connect-handle — the always-on, Camunda-style
+            // Hover connect-handle -- the always-on, Camunda-style
             // connect affordance. Hovering an element surfaces a small
             // arrow puck at its right edge; dragging it to a target
             // draws a sequence flow, no modal toggle needed. Suppressed
             // while the hand-tool owns the canvas or the modal Connect
             // mode is armed (a redundant second connect path). Grabbing
-            // the element BODY still moves it — the handle is a distinct
+            // the element BODY still moves it -- the handle is a distinct
             // target, so move + connect never collide.
             this.connectHandle = new ConnectHandleController({
                 editor: this.bpmnEditor,
@@ -639,7 +639,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             });
         }
 
-        //-4 / F-5 — keyboard shortcuts (Delete to remove
+        //-4 / F-5 -- keyboard shortcuts (Delete to remove
         // selection; arrow-key pan + +/-/0 zoom hotkeys). Mirrors
         // the dialog wiring with `readOnly: false` because the
         // standalone page is always in editor mode.
@@ -738,7 +738,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                     viewVersion: shippedVersion,
                 });
             } else {
-                // Banner ONLY — see the note in `loadVersion`. The inline
+                // Banner ONLY -- see the note in `loadVersion`. The inline
                 // banner is the durable surface AND carries Retry; a
                 // duplicate toast just says the same thing twice.
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
@@ -752,7 +752,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * Viewer-mode load (slice-3 unification, was the bespoke
      * `bpmn-editor-dialog`'s viewer path). Fetches the pinned bytes of a
      * deployed `v{N}` via {@link DesignerService.getWorkflowVersion} and
-     * seeds the editor read-only. No contributor / fork / revert logic —
+     * seeds the editor read-only. No contributor / fork / revert logic --
      * a deployed version is immutable by construction. The "Deployed vN"
      * badge is surfaced by stamping `latestVersion`.
      */
@@ -773,7 +773,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             /**
              * Banner ONLY, no toast. `ErrorBannerComponent` was built
              * "instead of a blank panel + a transient toast that scrolls
-             * away" — emitting both showed the same sentence twice and
+             * away" -- emitting both showed the same sentence twice and
              * was what the designer's error UI got flagged for. Toasts
              * stay for ACTIONS the user just triggered (Save / Deploy /
              * Fork), where there is no inline surface to carry them.
@@ -817,7 +817,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * UI-polish — retry handler for the shared `<app-error-banner>` shown
+     * UI-polish -- retry handler for the shared `<app-error-banner>` shown
      * on a failed initial load. Re-runs the correct load path (the pinned
      * version in viewer mode, else the editable draft). No-op until the
      * definition key is known (the malformed-route case).
@@ -825,7 +825,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     protected retryLoad(): void {
         const key = this.definitionKey;
         if (key === '') return;
-        // Effective, not the raw input — a `?version=` viewer must retry
+        // Effective, not the raw input -- a `?version=` viewer must retry
         // the VERSION load, not fall through to the draft (which 409s for
         // a contributor-source definition and would re-show the banner).
         const v = this.effectiveVersion();
@@ -1021,7 +1021,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     /**
      * Toggle the connect mode. First click constructs the
      * controller + enters; subsequent clicks toggle enter/exit.
-     *-4 — mutually exclusive with PanMode: entering Connect
+     *-4 -- mutually exclusive with PanMode: entering Connect
      * forces Pan to exit, so the three pointer paths (connect / pan /
      * move) stay mutually exclusive without the controllers having
      * to know about each other.
@@ -1043,7 +1043,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     *-4 / F-6 — toggle the hand-tool (pan) mode. Mirrors
+     *-4 / F-6 -- toggle the hand-tool (pan) mode. Mirrors
      * {@link toggleConnect} but for {@link PanMode}: lazy-mount on
      * first toggle, mutually exclusive with Connect, surfaces in the
      * action-bar Toolbar via the `bi-hand-index` button.
@@ -1067,7 +1067,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         this.syncToolbarModeButtons();
     }
 
-    /** Internal — exit Connect mode if active. Used by the mode-exclusivity guards. */
+    /** Internal -- exit Connect mode if active. Used by the mode-exclusivity guards. */
     private exitConnect(): void {
         if (this.connect !== undefined && this.connect.active) {
             this.connect.exit();
@@ -1075,7 +1075,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
-    /** Internal — exit Pan mode if active. Used by the mode-exclusivity guards. */
+    /** Internal -- exit Pan mode if active. Used by the mode-exclusivity guards. */
     private exitPan(): void {
         if (this.pan !== undefined && this.pan.active) {
             this.pan.exit();
@@ -1084,7 +1084,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     *-6 — push the page's mode-active signals through to the
+     *-6 -- push the page's mode-active signals through to the
      * shell Toolbar so the action-bar Connect + Hand buttons show
      * their pressed state. Called from every mode-toggle path
      * (toggleConnect / togglePan / onEscape).
@@ -1095,14 +1095,14 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     *-7.4 — fit the loaded model into the canvas viewport
+     *-7.4 -- fit the loaded model into the canvas viewport
      * with a 10% padding margin. Mirrors the dialog implementation:
      * computes the model's element bounding box + reads the canvas
      * SVG's DOM dimensions, then asks the viewport to atomically set
      * zoom + pan so the bbox is centred. No-op when the model has
      * no elements (empty scaffolds open at identity zoom) OR when
      * the canvas hasn't received its layout yet
-     * (`getBoundingClientRect()` returning 0×0). Called from the
+     * (`getBoundingClientRect()` returning 0x0). Called from the
      * `onFit` shell callback + once after `loadDraft`/`loadBody`.
      */
     private fitToContent(): void {

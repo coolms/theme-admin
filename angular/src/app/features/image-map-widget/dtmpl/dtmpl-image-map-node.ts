@@ -2,12 +2,12 @@ import { Node, mergeAttributes } from '@tiptap/core';
 
 /** Attributes carried by an `imageMapWidget` node. */
 export interface ImageMapWidgetAttrs {
-    /** Map slug — the `_id` segment of `{widget:imagemap:<slug>}`. */
+    /** Map slug -- the `_id` segment of `{widget:imagemap:<slug>}`. */
     readonly slug: string;
     /** Human map title, for the editor chip only; never stored. */
     readonly name?: string | null;
     /**
-     * `date=` / `now=` / `class=` are NOT set by the picker — they are carried
+     * `date=` / `now=` / `class=` are NOT set by the picker -- they are carried
      * so that a tag someone wrote by hand survives a trip through the editor.
      * Without them, opening such a page and pressing Save would silently drop
      * the author's live-status flag.
@@ -34,7 +34,7 @@ declare module '@tiptap/core' {
  * and because rendering it in-editor would need the same auth-gated overlay
  * endpoint a public page deliberately cannot reach.
  *
- * In-editor: `<div data-widget="imagemap" data-slug="…">` styled as a chip.
+ * In-editor: `<div data-widget="imagemap" data-slug="...">` styled as a chip.
  * On save:   `htmlToDtmpl()` swaps the marker div for the dtmpl tag.
  * On load:   `dtmplToHtml()` rebuilds the marker, which `parseHTML` rehydrates.
  */
@@ -84,7 +84,7 @@ export const ImageMapWidget = Node.create({
         const attrs = node.attrs as ImageMapWidgetAttrs;
         const label = attrs.name || attrs.slug || 'image map';
         // Surfaced on the chip because a live-status map is uncacheable on the
-        // public page — worth seeing at a glance while authoring.
+        // public page -- worth seeing at a glance while authoring.
         const status = attrs.now ? ' · live status' : attrs.date ? ` · ${attrs.date}` : '';
         const dataAttrs: Record<string, string> = {
             'data-widget': 'imagemap',

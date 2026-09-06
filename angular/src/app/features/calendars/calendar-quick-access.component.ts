@@ -4,10 +4,10 @@ import { DrawerService, UserCalendarPreferencesService } from '@coolms/ui-angula
 import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
 
 /**
- * / / Task — Personal calendar quick-access icon
+ * / / Task -- Personal calendar quick-access icon
  * button for the admin topbar. Opens the `CalendarQuickPanelComponent`
  * in the global right drawer (mini-cal + upcoming events). The button
- * no longer navigates directly to the full Calendar Detail page — the
+ * no longer navigates directly to the full Calendar Detail page -- the
  * drawer panel offers an "Open full" link for that.
  *
  * Slug resolution (Task ): the slug now comes from
@@ -17,7 +17,7 @@ import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
  * when the user has not explicitly chosen a different default.
  *
  * Hidden when no user is in scope (e.g., login-page render before
- * AuthState hydrates) — the prefs service returns `null` for the slug
+ * AuthState hydrates) -- the prefs service returns `null` for the slug
  * in that case.
  *
  * Styling mirrors the notification bell (rounded pill, white-on-dark)
@@ -50,7 +50,7 @@ export class CalendarQuickAccessComponent implements OnInit {
     readonly slug = computed<string | null>(() => this.userPrefs.defaultCalendarSlug());
 
     ngOnInit(): void {
-        // Kick off the prefs load if no consumer has yet — this avoids the
+        // Kick off the prefs load if no consumer has yet -- this avoids the
         // topbar reading "Personal" before the saved default lands.
         this.userPrefs.ensureLoaded().subscribe({ error: () => { /* defaults take over */ } });
     }

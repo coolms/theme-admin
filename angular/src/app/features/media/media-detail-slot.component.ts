@@ -9,7 +9,7 @@ import { MediaAssetDto } from './media.types';
  * Slot adapter that mounts the right-panel Properties content inside the shared
  * `<cms-right-panel>` chrome. Hosts EITHER the asset Properties panel (when an
  * asset is active) OR the collection Properties panel (when a collection is
- * active) — both drive the same panel region; `state.panelNode()` picks the
+ * active) -- both drive the same panel region; `state.panelNode()` picks the
  * matching header (icon + title) for each.
  *
  * Registered as 'MediaDetail' in ComponentRegistry. ExplorerLayout shows the

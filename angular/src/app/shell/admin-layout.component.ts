@@ -19,15 +19,15 @@ import { CallScreenpopOverlayComponent } from '../features/call/call-screenpop-o
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 
 /**
- * Root admin shell — three-zone layout: topbar / sidebar / main / right drawer.
+ * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
  * Terminal panel slides in from the bottom on demand (Ctrl+` or >_ button).
  *
  * Sidebar navigation is fully driven by the navi.admin NaviGraph tree.
- * Drawer content is controlled by DrawerService — any component can open it.
+ * Drawer content is controlled by DrawerService -- any component can open it.
  *
  * NOTE: Intentionally uses Default CD (no OnPush).
  * Routed child components use store.select().subscribe() with plain property
- * assignment — they rely on zone-triggered top-down CD traversal. An OnPush
+ * assignment -- they rely on zone-triggered top-down CD traversal. An OnPush
  * shell would block that traversal when not dirty, freezing the main area.
  */
 @Component({
@@ -574,7 +574,7 @@ export class AdminLayoutComponent implements OnInit {
     ngOnInit(): void {
         // The stored `preferences.theme` has existed since the profile
         // Preferences tab shipped (light / dark / system default) and nothing
-        // ever applied it. Loading it here — the authenticated shell — is what
+        // ever applied it. Loading it here -- the authenticated shell -- is what
         // turns dark mode on. Failure is non-fatal by design: the
         // service keeps the cached-or-OS value rather than forcing light.
         this.theme.ensureLoaded().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
@@ -643,7 +643,7 @@ export class AdminLayoutComponent implements OnInit {
         return String(node.meta?.['icon'] ?? '');
     }
 
-    /** Regular route nav items — use RouterLink for proper zone/CD integration. */
+    /** Regular route nav items -- use RouterLink for proper zone/CD integration. */
     routerLinkFor(node: NaviGraphNode): string {
         // meta.route (PHP/YAML convention) or meta.routerLink (typed field) take priority.
         const fromMeta = node.meta['route'] ?? node.meta['routerLink'];
@@ -652,7 +652,7 @@ export class AdminLayoutComponent implements OnInit {
             return s.startsWith('/') ? s : '/' + s;
         }
         // Fallback to node.path. The app is served under base-href /admin/, but
-        // Angular router paths must NOT include that prefix — strip it.
+        // Angular router paths must NOT include that prefix -- strip it.
         return node.path.replace(/^\/admin/, '') || '/';
     }
 

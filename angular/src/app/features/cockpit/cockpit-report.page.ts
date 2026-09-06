@@ -36,7 +36,7 @@ interface StateTile {
  * Process Cockpit aggregate report (`/admin/cockpit/report`).
  *
  * The read-side complement to steering: an operator dashboard over
- * `GET /api/v1/cockpit/report` (ROLE_ADMIN) — platform-wide instance counts
+ * `GET /api/v1/cockpit/report` (ROLE_ADMIN) -- platform-wide instance counts
  * by lifecycle state (KPI tiles), rolling throughput windows (24h / 7d /
  * 30d started vs completed), and a per-definition state breakdown table
  * (busiest first; each row drills into the filtered instance list).
@@ -332,7 +332,7 @@ export class CockpitReportPageComponent implements OnInit {
     readonly error   = signal<string | null>(null);
 
     /**
-     * Header actions (back to the cockpit + reload) — declared in the
+     * Header actions (back to the cockpit + reload) -- declared in the
      * `cockpit:report` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
@@ -384,7 +384,7 @@ export class CockpitReportPageComponent implements OnInit {
     }
 
     /**
-     *+ — fetch the per-definition report as CSV from
+     *+ -- fetch the per-definition report as CSV from
      * `GET /cockpit/reports/export?kind=definitions` and download it
      * client-side (the JSON-envelope download pattern: the Bearer-authed SPA
      * can't do a raw `<a download>`, so the backend hands back the CSV body
@@ -425,9 +425,9 @@ export class CockpitReportPageComponent implements OnInit {
         return d.definitionName ?? d.definitionKey ?? d.definitionId.slice(0, 8);
     }
 
-    /** Human-readable mean duration: "—" / "45s" / "12m 30s" / "3h 5m" / "2d 4h". */
+    /** Human-readable mean duration: "--" / "45s" / "12m 30s" / "3h 5m" / "2d 4h". */
     formatDuration(seconds: number | null | undefined): string {
-        // `== null` catches both null and undefined — API Platform omits null
+        // `== null` catches both null and undefined -- API Platform omits null
         // properties, so an absent avg arrives as undefined, not null.
         if (seconds == null || seconds < 0) return '—';
         if (seconds < 60) return `${seconds}s`;
@@ -460,7 +460,7 @@ export class CockpitReportPageComponent implements OnInit {
             });
 
         // Task health loads independently: a failure here just hides the
-        // section — it must never block or error the process report above.
+        // section -- it must never block or error the process report above.
         this.cockpit
             .getTaskMetrics()
             .pipe(takeUntilDestroyed(this.destroyRef))

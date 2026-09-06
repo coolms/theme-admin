@@ -38,14 +38,14 @@ interface ChoiceRow { label: string; value: string; }
  * Page Builder's `BlockModel`) so it flows cleanly through the
  * `<app-ordered-builder>` two-way `elements` model in both directions; props
  * are read through the typed getters below. Keys:
- *   name / type / label / required / help / placeholder  — surfaced inspector fields
- *   choices         — ChoiceRow[] (static options; only for `hasOptions` types)
+ *   name / type / label / required / help / placeholder  -- surfaced inspector fields
+ *   choices         -- ChoiceRow[] (static options; only for `hasOptions` types)
  *   dsType/dsClass/dsRoute/dsBindValue/dsBindLabel/dsMultiple/dsWidget
- *                   — FB-1 data-source editor state for select fields; serialised
+ *                   -- FB-1 data-source editor state for select fields; serialised
  *                     to the canonical `options.dataSource` (static/enum/api)
- *   _extraOptions   — Symfony options we don't surface (passed through verbatim)
- *   _extraConstraints — validator constraints we don't surface (passed through)
- *   _extraEntry     — top-level field-entry keys we don't surface, e.g.
+ *   _extraOptions   -- Symfony options we don't surface (passed through verbatim)
+ *   _extraConstraints -- validator constraints we don't surface (passed through)
+ *   _extraEntry     -- top-level field-entry keys we don't surface, e.g.
  *                     `mapping` (passed through verbatim; FB-0 replace save
  *                     no longer backfills them, so they must round-trip here)
  */
@@ -55,8 +55,8 @@ type FieldModel = Record<string, unknown>;
  * Form Builder page (`/admin/forms/new`, `/admin/forms/:id`,.3).
  *
  * The second consumer of the generic {@link OrderedBuilderComponent} substrate
- * (the first is the landing Page Builder). The ordered-list machinery — type
- * palette (click / drag to place), reorder, move ↑/↓, remove — lives in the
+ * (the first is the landing Page Builder). The ordered-list machinery -- type
+ * palette (click / drag to place), reorder, move ^/v, remove -- lives in the
  * substrate; this page owns the form-field *catalogue* (palette = the
  * `/form-field-types` endpoint), the per-field inspector (a projected
  * `<ng-template>`: name, label, type, required, help, placeholder, choices),
@@ -494,11 +494,11 @@ export class FormBuilderPageComponent implements OnInit {
     readonly currentId = signal('');
     /** Create-mode Form ID input value. */
     readonly formId = signal('');
-    /** Where the loaded form lives (shipped / db / file) — drives the subtitle. */
+    /** Where the loaded form lives (shipped / db / file) -- drives the subtitle. */
     readonly source = signal<string | null>(null);
     /**
      * The loaded form's top-level options + data_class, carried through
-     * load->save UNCHANGED (the builder doesn't surface them yet — FB-3 will edit
+     * load->save UNCHANGED (the builder doesn't surface them yet -- FB-3 will edit
      * `formOptions.layout`). FB-0's replace save sends the FULL definition, so
      * these MUST round-trip or a replace would wipe a form's options/dataClass.
      */
@@ -538,7 +538,7 @@ export class FormBuilderPageComponent implements OnInit {
         return placed;
     });
 
-    /** Fields NOT yet placed in the layout — the tray + "+ field" picker source. */
+    /** Fields NOT yet placed in the layout -- the tray + "+ field" picker source. */
     readonly unplacedFields = computed<string[]>(() => {
         const placed = this.placedAliases();
         return this.fieldNames().filter(n => !placed.has(n));
@@ -659,7 +659,7 @@ export class FormBuilderPageComponent implements OnInit {
                 this.markSaved();
             },
             error: (e: unknown) => {
-                // A 404 means the form was deleted (or the URL is stale) — don't sit
+                // A 404 means the form was deleted (or the URL is stale) -- don't sit
                 // in a broken edit state with an empty builder + a "not found"
                 // preview; bounce back to the list.
                 if (this.isNotFound(e)) {
@@ -696,7 +696,7 @@ export class FormBuilderPageComponent implements OnInit {
         const req$ = create
             ? this.forms.createForm({ id, fields: fieldsMap, formOptions: this.buildFormOptions() })
             // FB-0: edit always REPLACES (replace: true) with the FULL definition
-            // — the builder holds the complete form, so this is the only path
+            // -- the builder holds the complete form, so this is the only path
             // where a deleted field / reordering actually persists. formOptions +
             // dataClass round-trip unchanged (untouched until FB-3 layout).
             : this.forms.updateForm(id, {
@@ -834,10 +834,10 @@ export class FormBuilderPageComponent implements OnInit {
     /**
      * Type-select options for a field: the catalogue PLUS the field's own
      * current type when the catalogue doesn't offer it (e.g. `relation`,
-     * `optionsEditor`, `subform`, `localizedText` — types a real shipped form
+     * `optionsEditor`, `subform`, `localizedText` -- types a real shipped form
      * uses but the builder palette doesn't surface). Without this the select
      * renders blank for such a field and SAVING would serialise an empty
-     * `type` — corrupting it. Keeping the current value preserves it verbatim.
+     * `type` -- corrupting it. Keeping the current value preserves it verbatim.
      */
     typeOptionsFor(field: FieldModel): Array<{ type: string; label: string }> {
         const opts = this.types().map(t => ({ type: t.type, label: t.label }));
@@ -921,7 +921,7 @@ export class FormBuilderPageComponent implements OnInit {
 
     // -- FB-2: relation / sub-form inspectors ---------------------------------
     // relation -> options.relation {cardinality, maxItems?, targetFormId?, dataSource}
-    //   (the dataSource reuses the ds* editor above — a field is either select
+    //   (the dataSource reuses the ds* editor above -- a field is either select
     //    OR relation, so the shared fields never collide).
     // subform  -> options.subForm {formId, relation, maxItems?}.
 
@@ -939,7 +939,7 @@ export class FormBuilderPageComponent implements OnInit {
     setSubRelation(i: number, v: string): void { this.patch(i, { subRelation: v }); }
     setSubMaxItems(i: number, v: string): void { this.patch(i, { subMaxItems: v }); }
 
-    // -- (De)serialisation: working model ↔ wire FormFieldEntry ---------------
+    // -- (De)serialisation: working model <-> wire FormFieldEntry ---------------
 
     private serializeAll(): FormFieldsMap {
         const out: Record<string, FormFieldEntry> = {};
@@ -1067,7 +1067,7 @@ export class FormBuilderPageComponent implements OnInit {
         const subObj = (opts['subForm'] && typeof opts['subForm'] === 'object' && !Array.isArray(opts['subForm']))
             ? (opts['subForm'] as Record<string, unknown>) : {};
 
-        // FB-1/FB-2 data-source — for a relation it lives at `options.relation.dataSource`;
+        // FB-1/FB-2 data-source -- for a relation it lives at `options.relation.dataSource`;
         // for a select at `options.dataSource` (else legacy `enumClass`/`choices`).
         const dsSource = isRelation ? relObj['dataSource'] : opts['dataSource'];
         const ds = (dsSource && typeof dsSource === 'object' && !Array.isArray(dsSource))

@@ -41,8 +41,8 @@ export interface InboxTaskDto {
     readonly formKey:              string | null;
     /**
      * Omnichannel convergence: a compact "context card" projected server-side
-     * from the owning process's variables (allow-listed `{label, value}` pairs —
-     * name / email / phone / source / form …). Lets the agent see WHO a
+     * from the owning process's variables (allow-listed `{label, value}` pairs --
+     * name / email / phone / source / form ...). Lets the agent see WHO a
      * lead-triage task is about + WHICH channel it came from, right in the inbox.
      * Empty when the process carries none of the allow-listed variables.
      */

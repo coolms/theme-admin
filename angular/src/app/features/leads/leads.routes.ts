@@ -2,8 +2,8 @@ import { type Routes } from '@angular/router';
 
 /**
  * Lead inbox admin routes.
- * `/admin/leads`     — the lead triage queue (New / Handled / Spam).
- * `/admin/leads/:id` — one lead's detail view (omnichannel convergence, ).
+ * `/admin/leads`     -- the lead triage queue (New / Handled / Spam).
+ * `/admin/leads/:id` -- one lead's detail view (omnichannel convergence, ).
  */
 export const LEADS_ROUTES: Routes = [
     {

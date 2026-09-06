@@ -1,13 +1,13 @@
 import { computed, Injectable, signal, Signal } from '@angular/core';
 import { VfsNodeDto } from '@coolms/ui-angular';
 
-/** Matches any RFC 4122 UUID (v1–v8). */
+/** Matches any RFC 4122 UUID (v1-v8). */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Resolves /home/{uuid} directory names to human-readable display labels.
  *
- * When the VFS backend lists /home, each child node carries a `uname` field —
+ * When the VFS backend lists /home, each child node carries a `uname` field --
  * the owning user's primary identifier (e.g. their email address or username).
  * This service collects those uuid -> uname mappings as nodes are loaded and
  * surfaces them as reactive signals so the breadcrumb, tree, and file-grid
@@ -26,7 +26,7 @@ export class VfsHomeLabelService {
     /**
      * Scans a directory listing and registers any /home/{uuid} directories.
      *
-     * Safe to call for every directory load — non-home nodes are silently
+     * Safe to call for every directory load -- non-home nodes are silently
      * ignored so callers do not need to filter beforehand.
      */
     register(nodes: VfsNodeDto[]): void {
@@ -58,7 +58,7 @@ export class VfsHomeLabelService {
 
     /**
      * Returns `true` when path-`segment[index]` is a UUID that follows a
-     * `home` segment — i.e. the breadcrumb slot that should show a username.
+     * `home` segment -- i.e. the breadcrumb slot that should show a username.
      *
      * @param segments  Path split by '/' with empty strings removed.
      * @param index     Index of the segment being evaluated.

@@ -5,7 +5,7 @@ import { DocumentPageStateService } from '../explorer/document-page-state.servic
 import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/document-explorer.types';
 
 /**
- * F.14c-1 — Word-specific detail panel. Surfaces the template's
+ * F.14c-1 -- Word-specific detail panel. Surfaces the template's
  * metadata + the F.13a extracted DTMPL schema. The cross-format
  * `DocumentDetailComponent` dispatches to this component via
  * `ComponentRegistry` keyed by `'document-detail-word'`; future
@@ -19,7 +19,7 @@ import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/
  * that emits an alert (real flow in the next sub-phase).
  *
  * Receives the template via the `@Input` projected through
- * `NgComponentOutlet`'s `inputs` map — the dispatcher passes the
+ * `NgComponentOutlet`'s `inputs` map -- the dispatcher passes the
  * currently-selected template; this component never reads the
  * page-state service directly so it's reusable from any context
  * (e.g. a future "show this template inline somewhere" surface).

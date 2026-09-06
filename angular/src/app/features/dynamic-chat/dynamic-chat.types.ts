@@ -1,5 +1,5 @@
 /**
- * DynamicChat agent panel — shared DTOs.
+ * DynamicChat agent panel -- shared DTOs.
  *
  * The agent surface composes TWO backend modules:
  *  - DynamicChat owns discovery/join (`GET/POST /dynamic-chat/agent/conversations*`)
@@ -19,7 +19,7 @@ export interface QueueAgentDto {
     readonly displayName: string | null;
     /** Public avatar URL for a real photo (null -> render colored initials). */
     readonly avatarUrl?: string | null;
-    /** Self-set presence status — `online`|`away`|`busy`|`offline` (null -> no dot). */
+    /** Self-set presence status -- `online`|`away`|`busy`|`offline` (null -> no dot). */
     readonly presenceStatus?: string | null;
 }
 
@@ -32,21 +32,21 @@ export interface AgentConversationDto {
     readonly status: string;
     /** Per-conversation seq high-water mark (last message seq). */
     readonly lastSeq: number | null;
-    /** Generic external-context link — for DynamicChat this is `'lead'`. */
+    /** Generic external-context link -- for DynamicChat this is `'lead'`. */
     readonly contextType: string | null;
     readonly contextId: string | null;
     readonly createdAt: string | null;
     readonly updatedAt: string | null;
-    /** The agent's participant id — populated only by the join response. */
+    /** The agent's participant id -- populated only by the join response. */
     readonly agentParticipantId?: string | null;
     /**
-     * The staff agents who have JOINED this conversation — so the queue
+     * The staff agents who have JOINED this conversation -- so the queue
      * shows who is already handling a visitor and a second agent doesn't
      * double-answer. Empty / absent for an unclaimed visitor.
      */
     readonly agents?: readonly QueueAgentDto[];
     /**
-     * TRUE iff the CURRENT agent has claimed this conversation — i.e.
+     * TRUE iff the CURRENT agent has claimed this conversation -- i.e.
      * they are among {@link agents}. Drives the "Mine" queue tab + the Release
      * button.
      */
@@ -61,7 +61,7 @@ export interface AgentConversationDto {
 
 /**
  * A file attached to a message (mirrors the backend `ChatAttachmentResource` /
- * the `attachments` element of `ChatMessageResource`,–).
+ * the `attachments` element of `ChatMessageResource`,-).
  *
  * `vfsNodeId` is the durable reference; the bytes are fetched (authenticated)
  * from `GET /chat/attachments/{vfsNodeId}`. `kind` (`image` | `file`) is the

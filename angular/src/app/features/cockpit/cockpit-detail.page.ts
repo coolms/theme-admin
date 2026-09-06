@@ -402,7 +402,7 @@ export class CockpitDetailPageComponent implements OnInit {
     readonly busy = signal(false);
 
     /**
-     * Header actions = navigation only (back to the cockpit list) — declared in
+     * Header actions = navigation only (back to the cockpit list) -- declared in
      * the `cockpit:instance-detail` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
@@ -480,7 +480,7 @@ export class CockpitDetailPageComponent implements OnInit {
         });
     }
 
-    /** Header action dispatch — routes the emitted action id. */
+    /** Header action dispatch -- routes the emitted action id. */
     onSteeringAction(actionId: string): void {
         if (actionId === 'back') { void this.router.navigate(['/cockpit']); return; }
         const inst = this.instance();
@@ -540,7 +540,7 @@ export class CockpitDetailPageComponent implements OnInit {
     /**
      * Runs a steering mutation under the {@link busy} guard, then re-fetches
      * the detail (so the state badge + tokens + history + variables all
-     * refresh) and toasts. The mutation's own returned row is ignored — the
+     * refresh) and toasts. The mutation's own returned row is ignored -- the
      * re-fetch is the authoritative refresh.
      */
     private run(action$: Observable<CockpitInstanceDto>, successMsg: string): void {
@@ -618,8 +618,8 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * Compact candidate-pool hint for the user-tasks table ("2 users · 1
-     * group", raw counts — no name resolution). "—" when the task carries no
+     * Compact candidate-pool hint for the user-tasks table ("2 users - 1
+     * group", raw counts -- no name resolution). "--" when the task carries no
      * candidate pool (e.g. a directly-assigned task).
      */
     candidateSummary(t: CockpitTaskDto): string {
@@ -633,7 +633,7 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * — the timeline's primary line: the server-derived human `summary`
+     * -- the timeline's primary line: the server-derived human `summary`
      * (from `HistoryEventDescriber`), falling back to the raw stable `type`
      * code when an older payload or a serialization quirk omits it.
      */
@@ -642,7 +642,7 @@ export class CockpitDetailPageComponent implements OnInit {
     }
 
     /**
-     * / — maps the server `category` bucket onto a badge/marker
+     * / -- maps the server `category` bucket onto a badge/marker
      * colour variant. The four buckets each take a colour distinct from
      * the others so a task/timer/message/external-task event is recognisable at
      * a glance:
@@ -651,7 +651,7 @@ export class CockpitDetailPageComponent implements OnInit {
      *   - `compensation`, `timer`     -> warning (amber)  rollback / time-based
      *   - `external-task`             -> danger  (red)    parked external work
      * Anything unknown falls through to muted. Drives both the category badge
-     * (`badge--*`) and the marker tint (`timeline__marker--*`) — one mapping for
+     * (`badge--*`) and the marker tint (`timeline__marker--*`) -- one mapping for
      * both.
      */
     categoryVariant(category: string | undefined): string {

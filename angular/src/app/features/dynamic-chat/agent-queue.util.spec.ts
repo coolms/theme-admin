@@ -1,7 +1,7 @@
 import { QueueEntry, countNewConversations, isNewInQueue, sortQueue } from './agent-queue.util';
 
 /**
- * The agent queue's count and order — the first specs the DynamicChat
+ * The agent queue's count and order -- the first specs the DynamicChat
  * feature has had.
  */
 describe('agent queue', () => {
@@ -44,7 +44,7 @@ describe('agent queue', () => {
                 { id: 'waiting', agentStatus: 'new', updatedAt: '2026-08-01T10:00:00Z' },
             ]);
 
- // Waiting wins even though it is much older — the queue is work to
+ // Waiting wins even though it is much older -- the queue is work to
  // pick up, not a activity feed.
             expect(sorted.map(e => e.id)).toEqual(['waiting', 'answered']);
         });

@@ -20,11 +20,11 @@ export interface RuleEditorDialogData {
 }
 
 /**
- *Phase 4 (CDP personalization, P4.admin.c) — create / edit modal for a
+ *Phase 4 (CDP personalization, P4.admin.c) -- create / edit modal for a
  * content-personalization rule.
  *
  * A plain platform modal (`app-modal` + `cms-btn`/`cms-btn-primary`), simpler than
- * the Segment editor — the three fields are low-cardinality tokens, not an EL rule,
+ * the Segment editor -- the three fields are low-cardinality tokens, not an EL rule,
  * so there is no live "validate" step. Closes with the saved {@link
  * PersonalizationRuleDto} on success, `null` on cancel.
  */

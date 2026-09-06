@@ -18,7 +18,7 @@ roughly 837 MB of `node_modules` -- not something a PHP project does on
 21.03 MB, 650 files, under `public/browser/`. `AdminController` serves it
 for every `/admin/**` path, as it always has.
 
-⚠️ **The cost is permanent and worth stating.** 121 bundle names are
+!! **The cost is permanent and worth stating.** 121 bundle names are
 content-hashed, so every release rewrites all of them, and git does not
 forget. Reversing this later means rewriting history or living with the
 objects. It was taken as the least bad of three: making the 14 `@coolms/*`
@@ -71,7 +71,7 @@ this package on its own produced:
 Interface "Symfony\Component\Config\Definition\ConfigurableInterface" not found
 ```
 
-⚠️ **Invisible in any application that installs `symfony/framework-bundle`**,
+!! **Invisible in any application that installs `symfony/framework-bundle`**,
 which pulls `symfony/config` in transitively -- which is every application
 this theme had ever been installed into. Found by resolving the package from
 its tag into an empty tree and then checking that every `use` statement in
@@ -103,7 +103,7 @@ in your root `composer.json`, then:
 composer require coolms/theme-admin:^2.0
 ```
 
-### ⚠️ Read this before installing: the built admin is NOT in this package
+### !! Read this before installing: the built admin is NOT in this package
 
 What you get is the Symfony side -- 4 PHP classes (bundle, extension,
 controller glue), `theme.yaml`, and **500 tracked files of Angular source**

@@ -21,7 +21,7 @@ import {
  *                     so the client-supplied `id` is allowed despite API
  *                     Platform's usual id-on-POST rejection).
  *   - update       -> `PATCH /forms/{id}` (merge-patch; routes through the
- *.2 chained writer — file-when-writable else DB,
+ *.2 chained writer -- file-when-writable else DB,
  *                     shipped-form edits always land as a DB override).
  *   - delete       -> `DELETE /forms/{id}` (drops the user override; a
  *                     pure-shipped form cannot be hard-deleted -> 422).

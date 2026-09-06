@@ -27,12 +27,12 @@ export type TriggerSpecDialogResult = string | undefined;
 /**
  * Sub-dialog wrapping &lt;app-cron-form&gt; or &lt;app-recurrence-form&gt;
  * depending on the schedule's trigger kind. Opened from
- * `ScheduleFormDialogComponent`'s "Configure…" button so the New Schedule
+ * `ScheduleFormDialogComponent`'s "Configure..." button so the New Schedule
  * modal can stay a compact single-column field stack instead of trying
  * to inline the rich structured form.
  *
  * Same shape pattern as `RecurrenceDialogComponent` (which handles the
- * Calendar event editor's preset -> Custom… flow). One dialog, two
+ * Calendar event editor's preset -> Custom... flow). One dialog, two
  * possible inner forms, picked by `data.kind`.
  */
 @Component({
@@ -77,7 +77,7 @@ export class TriggerSpecDialogComponent {
     /**
      * Fallback DTSTART when the caller didn't pass one (Schedule has no
      * DTSTART of its own). The recurrence form uses this only for
-     * preview labels — not for any persisted value.
+     * preview labels -- not for any persisted value.
      */
     readonly defaultAnchor = (() => {
         const d = new Date();

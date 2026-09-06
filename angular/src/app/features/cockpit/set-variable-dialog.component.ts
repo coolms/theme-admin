@@ -18,12 +18,12 @@ export interface SetVariableResult {
  * "Set variable" dialog for the Process Cockpit detail page.
  *
  * A minimal two-field form (variable name + value, both text inputs). The
- * value is sent as a plain string — the backend stores it on the instance's
+ * value is sent as a plain string -- the backend stores it on the instance's
  * variable map. Resolves the dialog with a {@link SetVariableResult} on
  * submit, or `null` on cancel.
  *
  * The actual API call (and its success/error toast + detail re-fetch) is the
- * caller's responsibility — mirrors how the platform's other small dialogs
+ * caller's responsibility -- mirrors how the platform's other small dialogs
  * keep the network side on the host page so the dialog stays a pure input
  * surface. An empty name is blocked inline (the backend also returns 400).
  */

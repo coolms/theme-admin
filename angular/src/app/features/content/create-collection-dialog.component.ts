@@ -10,7 +10,7 @@ import { CollectionService, CreateCollectionRequest } from './collection.service
 import { ToastService } from '@coolms/ui-angular';
 
 /**
- * Create a content collection — a declared directory (blog /
+ * Create a content collection -- a declared directory (blog /
  * docs space) under the site's content root. A "type" picker maps to a preset
  * payload so the operator doesn't have to know the underlying `collectionType`
  * / `postContentType` / `sidebarNav` declaration:

@@ -12,14 +12,14 @@ import { DynamicChatQuickPanelComponent } from './dynamic-chat-quick-panel.compo
 /**
  * DynamicChat agent-queue quick-access icon for the admin topbar,
  * of the ambient-chat redesign). Opens {@link DynamicChatQuickPanelComponent}
- * in the global right drawer — a from-anywhere visitor-queue launcher. As of
+ * in the global right drawer -- a from-anywhere visitor-queue launcher. As of
  * this is the PRIMARY entry (Dynamic Chat no longer has a left-sidebar
  * item); the icon carries a live **new-count badge** = the number of
  * conversations whose [] triage status is `new` (a visitor is waiting for a
  * reply), so a manager sees "someone needs answering" from anywhere.
  *
  * The queue has no realtime channel (the agent page already polls it), so the
- * badge is poll-driven on a fixed cadence. Best-effort — a failed fetch leaves
+ * badge is poll-driven on a fixed cadence. Best-effort -- a failed fetch leaves
  * the last count rather than flashing to zero. Hidden until a user is in scope.
  */
 @Component({
@@ -60,7 +60,7 @@ export class DynamicChatQuickAccessComponent {
 
     readonly signedIn = computed<boolean>(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
-    /** Conversations whose triage status is `new` — a visitor is waiting. */
+    /** Conversations whose triage status is `new` -- a visitor is waiting. */
     readonly newCount = signal<number>(0);
 
     /**
@@ -83,7 +83,7 @@ export class DynamicChatQuickAccessComponent {
                         return of(0);
                     }
                     // Refetch on: a realtime queue nudge (primary), each WS
-                    // (re)connect (close any gap), OR a fallback timer tick — but
+                    // (re)connect (close any gap), OR a fallback timer tick -- but
                     // only while the WS is DISCONNECTED.
                     return merge(
                         timer(0, DynamicChatQuickAccessComponent.POLL_MS)
@@ -94,7 +94,7 @@ export class DynamicChatQuickAccessComponent {
                         //  The fallback tick and the connect signal both fire at
                         // cold load, so `switchMap` aborts the first request and
                         // DevTools shows a cancelled `agent/conversations`. Left
-                        // deliberately — see the note in `dynamic-chat.page.ts`:
+                        // deliberately -- see the note in `dynamic-chat.page.ts`:
                         // coalescing them was measured and delays the queue's
                         // first paint by more than the cancellation costs.
                         switchMap(() => this.api.listQueue().pipe(

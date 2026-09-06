@@ -11,14 +11,14 @@ import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
 
 /**
  * Internal Messages quick-access icon for the admin topbar.
- * Opens {@link MessagesQuickPanelComponent} in the global right drawer — a
+ * Opens {@link MessagesQuickPanelComponent} in the global right drawer -- a
  * from-anywhere chat launcher. As of this is the PRIMARY entry (Messages
  * no longer has a left-sidebar item); the icon carries a live unread-count
  * badge so you see new messages from anywhere without opening anything.
  *
  * The badge is reactive to auth (re-subscribes when the user hydrates), live
  * via the per-user `chat.user.{uid}` channel ([]), and backed by a 30s
- * poll so your own reads (which don't push) clear it too. Best-effort — a
+ * poll so your own reads (which don't push) clear it too. Best-effort -- a
  * failed fetch leaves the last count rather than flashing to zero.
  *
  * Hidden until a user is in scope (the login-page render before AuthState
@@ -67,7 +67,7 @@ export class MessagesQuickAccessComponent {
     private static readonly POLL_MS = 30_000;
 
     constructor() {
-        // Join the shared presence channel — from HERE, the topbar, and
+        // Join the shared presence channel -- from HERE, the topbar, and
         // not from the Messages page. Being subscribed is what makes you appear
         // online to everyone else, and "online" has to keep meaning "has the
         // admin shell open", not "is looking at Messages right now": started on
@@ -91,13 +91,13 @@ export class MessagesQuickAccessComponent {
                         return of(0);
                     }
                     return merge(
-                        // Seed the badge once, unconditionally — at t=0 the socket
+                        // Seed the badge once, unconditionally -- at t=0 the socket
                         // may already be up, and a gated first tick would leave the
                         // badge empty until someone messaged you.
                         of(0),
                         //  Then poll ONLY while realtime is down. This
                         // used to tick every 30s regardless, so a connected client
-                        // still re-fetched the whole inbox — and `listConversations`
+                        // still re-fetched the whole inbox -- and `listConversations`
                         // is the unpaged endpoint that runs two queries per
                         // conversation. Polling is the FALLBACK for "no Centrifugo
                         // installed / worker down", which is exactly how the page's
@@ -107,9 +107,9 @@ export class MessagesQuickAccessComponent {
                         this.live.watchUser(meId).pipe(catchError(() => EMPTY)),
                     ).pipe(
                         //  ONE number, not the whole inbox. This used to
-                        // call `listConversations()` — every conversation, with
+                        // call `listConversations()` -- every conversation, with
                         // its participants enriched from the identity directory
-                        // and a last-message preview each — to subtract two
+                        // and a last-message preview each -- to subtract two
                         // integers per row and add them up. It is the most
                         // frequent reader of that endpoint, and it is also what
                         // kept the list unpaged: a badge that SUMS across the

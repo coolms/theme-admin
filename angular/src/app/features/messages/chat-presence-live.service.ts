@@ -17,15 +17,15 @@ import {
  * Every admin client subscribes to the one shared `presence.chat` channel and
  * stays on it; being subscribed is what makes you visible, and Centrifugo's own
  * `join`/`leave` pushes keep everyone else's view current. Nothing is ever
- * published here — the channel's membership IS the data. The initial roster (the
+ * published here -- the channel's membership IS the data. The initial roster (the
  * people already connected when this client arrived) comes from one `presence()`
  * read on subscribe, which is the only way to learn about them.
  *
  * ## What this replaced
  *
- * `GET /chat/presence?userIds=…` on a 20-second timer, per visible tab, each
+ * `GET /chat/presence?userIds=...` on a 20-second timer, per visible tab, each
  * call costing the server a round trip to Centrifugo. It was the one poll that
- * could not be gated on the socket because nothing pushed it —
+ * could not be gated on the socket because nothing pushed it --
  * which made a left-open tab the most expensive idle client in the product. It
  * survives as the FALLBACK for exactly the case that argument was really about:
  * the socket being down. See the callers' `isConnected()` gate.
@@ -34,7 +34,7 @@ import {
  *
  * "Online" means the same thing it did: this person has the admin shell open
  * somewhere. That holds because {@link start} is called from the always-mounted
- * topbar, not from the Messages page — presence must not blink off when someone
+ * topbar, not from the Messages page -- presence must not blink off when someone
  * navigates to Pages.
  *
  * Best-effort throughout: every failure path degrades to "nobody known to be
@@ -48,7 +48,7 @@ export class ChatPresenceLiveService {
     /** clientId -> userId for everyone currently on the channel. */
     private readonly clients = signal<PresenceClients>(NO_PRESENCE);
 
-    /** The distinct users currently connected — one entry per person, not per tab. */
+    /** The distinct users currently connected -- one entry per person, not per tab. */
     readonly online: Signal<ReadonlySet<string>> = computed(() => onlineUserIds(this.clients()));
 
     /**
@@ -63,7 +63,7 @@ export class ChatPresenceLiveService {
     private starting = false;
 
     /**
-     * Join the presence channel. Idempotent — the topbar calls it on sign-in and
+     * Join the presence channel. Idempotent -- the topbar calls it on sign-in and
      * it is safe to call again.
      */
     start(): void {
@@ -80,7 +80,7 @@ export class ChatPresenceLiveService {
                 sub.on('join', (ctx: JoinContext) => this.onJoin(ctx.info));
                 sub.on('leave', (ctx: LeaveContext) => this.onLeave(ctx.info.client));
                 // A reconnect re-fires `subscribed`, and the roster we hold is
-                // then stale by exactly the length of the outage — re-seed rather
+                // then stale by exactly the length of the outage -- re-seed rather
                 // than resume, or everyone who left while we were away stays lit.
                 sub.on('subscribed', () => this.seed(sub));
                 sub.on('unsubscribed', () => {
@@ -117,7 +117,7 @@ export class ChatPresenceLiveService {
             })
             .catch(() => {
                 // Presence momentarily unavailable. Stay NOT live so the REST
-                // fallback keeps answering — join/leave alone would report only
+                // fallback keeps answering -- join/leave alone would report only
                 // the people who arrive from now on, which reads as "everyone
                 // else went offline".
                 this._live.set(false);

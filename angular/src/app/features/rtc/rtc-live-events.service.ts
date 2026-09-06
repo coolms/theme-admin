@@ -6,12 +6,12 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
 import { RtcCallChannelNudge, RtcCallState, RtcIncomingCallNudge } from './rtc.types';
 
 /**
- * Rtc realtime subscriber (Slice 4a) — the same shape as
+ * Rtc realtime subscriber (Slice 4a) -- the same shape as
  * {@link MessagesLiveEventsService}, over the shared {@link CentrifugoClientService}:
  *
- *  - {@link watchUserRing} — `rtc.user.{myId}`, the per-session incoming-call
+ *  - {@link watchUserRing} -- `rtc.user.{myId}`, the per-session incoming-call
  *    RING channel (someone placed a call to me).
- *  - {@link watchCall} — `rtc.call.{id}`, the per-call channel carrying lifecycle
+ *  - {@link watchCall} -- `rtc.call.{id}`, the per-call channel carrying lifecycle
  *    `call.state` nudges + `call.signal` SDP/ICE relays (subscribed only while a
  *    call is active).
  *

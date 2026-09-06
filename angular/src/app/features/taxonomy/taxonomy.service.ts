@@ -8,7 +8,7 @@ import { HydraCollection } from '../../api/api.service';
 
 /**
  * One taxonomy node as serialized by the backend `TaxonomyNodeResource`
- * (`/api/v1/taxonomy/nodes`). `lft`/`rgt`/`level` are the nested-set columns —
+ * (`/api/v1/taxonomy/nodes`). `lft`/`rgt`/`level` are the nested-set columns --
  * the server orders the collection by `lft`, so the flat list is already in
  * depth-first order and the tree can be rebuilt from `parentId`.
  */
@@ -24,7 +24,7 @@ export interface TaxonomyNodeDto {
     readonly type:     string;
 }
 
-/** A taxonomy tree (`/api/v1/taxonomy/trees`) — the container categories live in. */
+/** A taxonomy tree (`/api/v1/taxonomy/trees`) -- the container categories live in. */
 export interface TaxonomyTreeDto {
     readonly id:    string;
     readonly label: string;
@@ -52,7 +52,7 @@ export interface UpdateTaxonomyNodeInput {
 }
 
 /**
- * Feature-local API client for the Taxonomy REST surface — small and
+ * Feature-local API client for the Taxonomy REST surface -- small and
  * self-contained (not on the shared ApiService), mirroring {@link LeadsService}.
  * Talks to `/taxonomy/{trees,nodes}` off the generic `manifest.apiBase`.
  */
@@ -74,7 +74,7 @@ export class TaxonomyService {
             .pipe(map(res => res.member ?? []));
     }
 
-    /** Resolve a tree by its machine code — its id is needed to create root nodes. */
+    /** Resolve a tree by its machine code -- its id is needed to create root nodes. */
     findTreeByCode(code: string): Observable<TaxonomyTreeDto | null> {
         return this.http
             .get<HydraCollection<TaxonomyTreeDto>>(`${this.apiBase}/taxonomy/trees`)

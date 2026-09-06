@@ -34,27 +34,27 @@ import { MiniCalendarComponent } from './mini-calendar.component';
 type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
 
 /**
- * — Calendar Detail admin page, redesigned (/admin/calendars/:slug).
+ * -- Calendar Detail admin page, redesigned (/admin/calendars/:slug).
  *
  * Layout (top-down):
- *  - cms-page-header: icon · title · slug chip (projected into the
- *    `header-meta` slot — see [follow-up]) · gear ⚙ · delete
+ *  - cms-page-header: icon - title - slug chip (projected into the
+ *    `header-meta` slot -- see [follow-up]) - gear ⚙ - delete
  *  - Two-column body:
  *      LEFT  (240px): mini month calendar + (future) calendar list
  *      RIGHT (flex):  FC toolbar row + main grid (full height)
  *  - Settings, working hours, holiday rules, shares are accessed via
- *    the global right drawer (slide-over) — gear button opens it.
+ *    the global right drawer (slide-over) -- gear button opens it.
  *
  * This replaces the four-card grid (events / settings / hours /
  * holiday rules / preview), which crammed too much onto a single page
  * and made the events grid feel like an afterthought.
  *
  * Honored constraints:
- *  - **No backend API changes** — color and holidayCalendarId fields
+ *  - **No backend API changes** -- color and holidayCalendarId fields
  *    deferred to a follow-up backend ship; the settings tab only
  *    exposes what the current `Calendar` resource supports.
- *  - **No DateTime preferences here** — also deferred (user profile).
- *  - **Single-calendar view** — multi-cal overlay still queued.
+ *  - **No DateTime preferences here** -- also deferred (user profile).
+ *  - **Single-calendar view** -- multi-cal overlay still queued.
  */
 @Component({
     selector: 'app-calendar-detail-page',
@@ -391,7 +391,7 @@ export class CalendarDetailPageComponent implements OnInit {
     /** Backend-defined page chrome (`calendar:detail` layout config). */
     readonly layout    = signal<LayoutConfig | null>(null);
 
-    /** Current user UUID — used for owner/edit gating. */
+    /** Current user UUID -- used for owner/edit gating. */
     readonly currentUserId = computed<string | null>(() => {
         const u = this.store.selectSnapshot(AuthState.currentUser);
         return u?.id ?? null;
@@ -439,7 +439,7 @@ export class CalendarDetailPageComponent implements OnInit {
      * First day of FullCalendar's displayed period (== `view.currentStart`).
      *
      * Used to drive the toolbar title + mini-cal "selected day" sync.
-     * **NOT** `view.activeStart` — that's the first cell of the rendered
+     * **NOT** `view.activeStart` -- that's the first cell of the rendered
      * grid (often a previous-month tail date), which made every label
      * read one month behind the displayed grid. See task .
      */
@@ -456,7 +456,7 @@ export class CalendarDetailPageComponent implements OnInit {
     @ViewChild('eventsCard')
     private eventsCard?: CalendarEventsCardComponent;
 
-    /** — hidden file input backing the "Import .ics" footer action. */
+    /** -- hidden file input backing the "Import .ics" footer action. */
     @ViewChild('icsInput')
     private icsInput?: ElementRef<HTMLInputElement>;
 
@@ -465,16 +465,16 @@ export class CalendarDetailPageComponent implements OnInit {
 
     private currentSlug: string | null = null;
 
-    /** In-page settings panel state () — not a global drawer. */
+    /** In-page settings panel state () -- not a global drawer. */
     readonly isSettingsPanelOpen = signal<boolean>(false);
     readonly settingsTab = signal<'settings' | 'hours' | 'rules' | 'shares'>('settings');
 
     /**
-     * Fixed-footer actions — declared in the `calendar:detail` layout config
+     * Fixed-footer actions -- declared in the `calendar:detail` layout config
      *, not hardcoded. The static descriptors (Settings / Delete)
      * come from config; the `delete` action's disabled flag + tooltip are
      * applied here from runtime state (default-personal calendars can't be
-     * removed) — the config-declares / FE-evaluates split, per web:section-detail.
+     * removed) -- the config-declares / FE-evaluates split, per web:section-detail.
      */
     readonly footerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.footerActions, this.actionContext()).map(action => {
@@ -588,7 +588,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
 
     /**
-     * — download this calendar as `.ics`. Fetched through
+     * -- download this calendar as `.ics`. Fetched through
      * HttpClient (Bearer-authenticated) into a Blob, then handed to the
      * browser as a `{slug}.ics` download via a transient object URL.
      */
@@ -611,7 +611,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
 
     /**
-     * — read the chosen `.ics` file and POST it to the import
+     * -- read the chosen `.ics` file and POST it to the import
      * endpoint, then surface the summary + refresh the events grid. The
      * input is reset so re-selecting the same file fires `change` again.
      */
@@ -637,7 +637,7 @@ export class CalendarDetailPageComponent implements OnInit {
         }).catch(() => this.toast.error('Could not read the selected file.'));
     }
 
-    /** Wired into the in-page settings side panel — bridges back so
+    /** Wired into the in-page settings side panel -- bridges back so
      *  the events grid + local calendar state refresh on mutation. */
     readonly onCalendarChangedFromPanel = (updated: CalendarDto): void => {
         this.calendar.set(updated);
@@ -695,22 +695,22 @@ export class CalendarDetailPageComponent implements OnInit {
         currentEnd:   Date;
         viewType:     FcViewName;
     }): void {
-        // Task — use `currentStart` (first day of the displayed
+        // Task -- use `currentStart` (first day of the displayed
         // period), NOT `activeStart` (first cell of the rendered grid,
         // which is often the previous month's tail). See the JSDoc on
         // `viewRangeChanged` in calendar-events-card.component.ts.
         const cs = range.currentStart;
 
-        // Task — sync the Month/Week/Day toggle whenever FC's view
+        // Task -- sync the Month/Week/Day toggle whenever FC's view
         // changes internally (e.g. clicking a weekday header in Week
         // view jumps to Day view via navLinks). Without this, the pill
         // stayed stuck on whatever the user previously chose, even
         // though the grid had moved on.
         this.currentView.set(range.viewType);
 
-        // Task — title format adapts to the displayed view:
+        // Task -- title format adapts to the displayed view:
         //  - Month view -> "May 2026"
-        //  - Week view  -> "May 25 – 31, 2026" (or month-crossing range)
+        //  - Week view  -> "May 25 - 31, 2026" (or month-crossing range)
         //  - Day view   -> "Saturday, May 30, 2026"
         // Without this, every view showed just the month + year, which
         // was useless context in Day view (the user couldn't tell
@@ -720,7 +720,7 @@ export class CalendarDetailPageComponent implements OnInit {
         // Sync the mini-cal's displayed month directly via setMonth() so
         // it always tracks the main grid. For Month view we deliberately
         // pass `null` as `activeDate` (== mini-cal's selectedDate) so the
-        // mini-cal's "today" border is the only highlight — having a
+        // mini-cal's "today" border is the only highlight -- having a
         // "selected" fill on the 1st of the month would be visually
         // misleading. For Week/Day views the focused day is meaningful
         // so we surface it.
@@ -733,7 +733,7 @@ export class CalendarDetailPageComponent implements OnInit {
     /**
      * Compose the toolbar title for the displayed view.
      * `currentEnd` is FullCalendar's exclusive end (e.g. for the week
-     * Mon May 25 – Sun May 31 it points at Mon Jun 1), so we always
+     * Mon May 25 - Sun May 31 it points at Mon Jun 1), so we always
      * subtract one day for the visible "to" date.
      */
     private formatTitle(view: FcViewName, start: Date, end: Date): string {
@@ -746,21 +746,21 @@ export class CalendarDetailPageComponent implements OnInit {
             });
         }
         if (view === 'timeGridWeek') {
-            // FC's currentEnd is exclusive — drop one day to get the
+            // FC's currentEnd is exclusive -- drop one day to get the
             // visible last day of the week.
             const lastVisible = new Date(end.getTime() - 24 * 60 * 60 * 1000);
             const sameMonth = start.getMonth() === lastVisible.getMonth()
                 && start.getFullYear() === lastVisible.getFullYear();
             if (sameMonth) {
-                // "May 25 – 31, 2026"
+                // "May 25 - 31, 2026"
                 const month = start.toLocaleString(undefined, { month: 'long' });
                 return `${month} ${start.getDate()} – ${lastVisible.getDate()}, ${start.getFullYear()}`;
             }
-            // Month-crossing or year-crossing — show both ends explicitly.
+            // Month-crossing or year-crossing -- show both ends explicitly.
             const fmt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
             return `${start.toLocaleString(undefined, fmt)} – ${lastVisible.toLocaleString(undefined, fmt)}`;
         }
-        // dayGridMonth — "May 2026"
+        // dayGridMonth -- "May 2026"
         return start.toLocaleString(undefined, { month: 'long', year: 'numeric' });
     }
 

@@ -2,7 +2,7 @@ import { ComponentRegistry } from '@coolms/core-angular';
 import { WordDetailComponent } from './word-detail.component';
 
 /**
- * F.14c-1 — registers Word-specific UI components in the global
+ * F.14c-1 -- registers Word-specific UI components in the global
  * `ComponentRegistry`. The cross-format `DocumentDetailComponent`
  * looks up `'document-detail-word'` via `NgComponentOutlet` to
  * dispatch tile clicks to the right format-specific panel; this

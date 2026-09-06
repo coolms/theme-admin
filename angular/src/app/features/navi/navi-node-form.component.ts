@@ -18,11 +18,11 @@ export interface NaviNodeFormData {
  * Create / edit a NaviNode. The core fields come from the YAML form
  * (`navi:navi_node`) rendered by `<app-dynamic-form>`. The `template` override
  * is declared in that form (so its FormControl + validators exist) but NOT laid
- * out there — instead it renders here, projected into the dynamic-form's content
+ * out there -- instead it renders here, projected into the dynamic-form's content
  * slot, as a theme-scoped {@link TemplatePickerComponent}. The picker needs the
  * tree's resolved theme (tree -> section -> themeSlug), which only this dialog can
  * resolve; it's shown only when a theme resolves (a public nav node that renders
- * a page), so admin nav trees — which map to no theme — get no template field.
+ * a page), so admin nav trees -- which map to no theme -- get no template field.
  */
 @Component({
     selector: 'app-navi-node-form',

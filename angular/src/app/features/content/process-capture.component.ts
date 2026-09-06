@@ -12,7 +12,7 @@ import {
     viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-// ⚠️ The PUBLIC entry only. An earlier version of this control reached for
+// !! The PUBLIC entry only. An earlier version of this control reached for
 // `@coolms/designer/bpmn-lite` -- which the package's own docblock puts outside
 // its stability contract, and which `package.json` does not export at all: it
 // resolves here through a tsconfig path mapping onto the package SOURCE, and
@@ -42,7 +42,7 @@ interface CatalogResponse {
 /**
  * The capture control for a `process_diagram` block.
  *
- * ⚠️ **It captures, it does not draw.** The diagram is rendered by
+ * !! **It captures, it does not draw.** The diagram is rendered by
  * `renderDiagram` from `@coolms/designer` -- the same package the BPMN designer
  * page draws with -- and the stored SVG is that render, serialized. Nothing
  * here lays out a diagram, because BPMN layout lives in the designer package
@@ -51,11 +51,11 @@ interface CatalogResponse {
  * that did not exist; capturing through the real renderer makes that impossible
  * by construction rather than by discipline.
  *
- * ⚠️ **Mounted `readOnly`.** This is a capture surface, not a second place to
+ * !! **Mounted `readOnly`.** This is a capture surface, not a second place to
  * edit a process: editing happens in the designer, where drafts, versions and
  * deployment live. A mutable canvas here would be a fork with no way to save.
  *
- * ⚠️ **Provenance is SHOWN, not merely stored.** The block records the version
+ * !! **Provenance is SHOWN, not merely stored.** The block records the version
  * it captured; the catalog says which version is deployed now. When they differ
  * the editor is told, in words, on the block they are looking at -- otherwise
  * `capturedVersion` is a field nobody reads and the page silently drifts from
@@ -171,7 +171,7 @@ export class ProcessCaptureComponent implements OnDestroy {
     });
 
     /**
-     * ⚠️ Compared as STRINGS, and only when both sides are known. `capturedVersion`
+     * !! Compared as STRINGS, and only when both sides are known. `capturedVersion`
      * is stored authored data, so a numeric compare would read an empty capture
      * as version 0 and call every un-captured block stale -- a warning about the
      * wrong thing, which is worse than no warning.
@@ -206,7 +206,7 @@ export class ProcessCaptureComponent implements OnDestroy {
     /**
      * Serialize what the designer drew.
      *
-     * ⚠️ The serialization itself lives in the designer package, not here. It
+     * !! The serialization itself lives in the designer package, not here. It
      * has to strip the pan/zoom transform (otherwise the capture records
      * wherever somebody left the scrollbar) and drop the canvas background
      * (chrome, not diagram) -- both of which mean knowing DOM class names that
@@ -270,7 +270,7 @@ export class ProcessCaptureComponent implements OnDestroy {
         this.http.get<VersionResponse>('/api/v1/workflows/' + encodeURIComponent(key) + '/versions/' + version).subscribe({
             next: res => {
                 this.busy.set(false);
-                // ⚠️ The endpoint returns a WRAPPER -- {definitionKey, version,
+                // !! The endpoint returns a WRAPPER -- {definitionKey, version,
                 // body, deployedAt, ...} -- and `body` is the BPMN-Lite wire
                 // JSON as a STRING. `bpmnLiteJsonToModel` takes that string, so
                 // it is passed through unparsed; handing the wrapper itself to

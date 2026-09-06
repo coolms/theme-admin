@@ -26,8 +26,8 @@ const OTHERS_BITS: PermBit[] = [
 /**
  * Inline permissions matrix.
  *
- * Input  — mode octal string (e.g. '0644', '2755')
- * Output — modeChange emits new octal string whenever a bit is toggled
+ * Input  -- mode octal string (e.g. '0644', '2755')
+ * Output -- modeChange emits new octal string whenever a bit is toggled
  *
  * Example:
  *   <app-permissions-editor [mode]="node.mode" (modeChange)="onModeChange($event)" />

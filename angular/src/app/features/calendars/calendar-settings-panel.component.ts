@@ -41,13 +41,13 @@ interface HoursInterval {
 /**
  * One weekday's working intervals. An EMPTY `intervals` array means the
  * day is non-working (closed). Several intervals model a split shift /
- * lunch break (e.g. Mon 09:00–12:00 + Mon 13:00–17:00).
+ * lunch break (e.g. Mon 09:00-12:00 + Mon 13:00-17:00).
  *
  * The backend `WorkingHours` VO already persists a flat
  * `{day,from,till}[]` wire list that round-trips repeated `day` entries,
  * so this maps 1:1 with NO reshaping loss. The previous editor keyed a
  * `Map` by `day` on load and pushed one row per weekday on save, silently
- * DROPPING every interval after the first — opening + re-saving a
+ * DROPPING every interval after the first -- opening + re-saving a
  * calendar that had a lunch break destroyed it. This grouped model fixes
  * that.
  */
@@ -68,19 +68,19 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
 ];
 
 /**
- * — Calendar settings slide-over panel content.
+ * -- Calendar settings slide-over panel content.
  *
  * Rendered inside the global right-side drawer via DrawerService.
  * Single panel, four tabs: Settings, Working Hours, Holiday Rules,
- * Shares — each section corresponds to one of the 4 cards from the
+ * Shares -- each section corresponds to one of the 4 cards from the
  * previous layout, now consolidated so the main viewport is
  * dedicated to the calendar grid itself.
  *
  * Inputs:
- *   - `calendar`      — current CalendarDto
- *   - `allCalendars`  — list for the parent dropdown
- *   - `canEdit`       — settings + working hours + rules require write access
- *   - `canManageShares` — shares tab requires owner / admin
+ *   - `calendar`      -- current CalendarDto
+ *   - `allCalendars`  -- list for the parent dropdown
+ *   - `canEdit`       -- settings + working hours + rules require write access
+ *   - `canManageShares` -- shares tab requires owner / admin
  *
  * Emits `calendarChanged` after any mutation so the parent can refresh
  * its local copy (e.g., refetch events when tz changes).
@@ -482,7 +482,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
     initialTab       = input<SettingsTab>('settings');
 
     /**
-     * Callback inputs (not Angular `output()` signals) — the panel is
+     * Callback inputs (not Angular `output()` signals) -- the panel is
      * rendered via `*ngComponentOutlet` with `inputs:`, which can't
      * subscribe to EventEmitters from outside. Plain function inputs
      * sidestep that limitation.
@@ -497,7 +497,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
         return this.allCalendars().filter(c => c.id !== me.id);
     });
 
-    /** Task — option projection consumed by `<app-lazy-select>`. */
+    /** Task -- option projection consumed by `<app-lazy-select>`. */
     readonly parentCalendarOptions = computed<readonly LazySelectOption[]>(() =>
         this.otherCalendars()
             .filter(c => !!c.id)
@@ -538,14 +538,14 @@ export class CalendarSettingsPanelComponent implements OnInit {
 
     private hydrate(cal: CalendarDto): void {
         this.settingsLabel    = cal.label ?? '';
-        // Task — Pre-select existing calendar's TZ when editing,
+        // Task -- Pre-select existing calendar's TZ when editing,
         // fall back to userPrefs.tz (then UTC) for newly-minted rows
         // where the entity hasn't been hydrated yet.
         this.settingsTz       = cal.tz ?? this.userPrefs.tz() ?? 'UTC';
         this.settingsParentId = cal.parentId ?? '';
 
         // Group ALL intervals per weekday (a day repeats in the flat wire
-        // list for split shifts) — the previous Map-by-day kept only the
+        // list for split shifts) -- the previous Map-by-day kept only the
         // last, silently dropping lunch breaks on load. Sort each day's
         // intervals chronologically for a stable display.
         const byDay = new Map<WeekdayHoursDto['day'], HoursInterval[]>();
@@ -591,7 +591,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
             groups.map(g => {
                 if (g.day !== day) return g;
                 // Default an additional interval to the afternoon so the
-                // canonical lunch-break split (09:00–12:00 + 13:00–17:00) is
+                // canonical lunch-break split (09:00-12:00 + 13:00-17:00) is
                 // one click; save-time validation guides the admin if it
                 // happens to overlap what's already there.
                 const seed = g.intervals.length > 0
@@ -617,7 +617,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
 
     /**
      * True when this interval wraps past midnight (`till < from`, e.g.
-     * 22:00–06:00 = ends the next morning). Mirrors the backend
+     * 22:00-06:00 = ends the next morning). Mirrors the backend
      * `WeekdayHours::crossesMidnight()`. Both fields must be set and
      * unequal; a zero-length `till === from` is not overnight (and is
      * rejected on save). HH:MM is zero-padded, so string `<` is the
@@ -669,8 +669,8 @@ export class CalendarSettingsPanelComponent implements OnInit {
             // is allowed but any true overlap is rejected. HH:MM is
             // zero-padded, so string comparison is the correct ordering.
             //
-            // `till < from` is an OVERNIGHT interval (e.g. 22:00–06:00) that
-            // wraps past midnight — its morning portion belongs to the NEXT
+            // `till < from` is an OVERNIGHT interval (e.g. 22:00-06:00) that
+            // wraps past midnight -- its morning portion belongs to the NEXT
             // calendar day (backend WeekdayHours::crossesMidnight). Only a
             // ZERO-length window (`till === from`) is rejected. Overnight
             // intervals opt out of the same-day overlap check: a weekday-only

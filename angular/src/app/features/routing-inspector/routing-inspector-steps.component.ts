@@ -301,7 +301,7 @@ export class RoutingInspectorStepsComponent {
         }
     }
 
-    /** Shortens a UUID to `abc12345…` for display; full UUID surfaces in the tooltip. */
+    /** Shortens a UUID to `abc12345...` for display; full UUID surfaces in the tooltip. */
     shortenId(id: string | null): string {
         if (id === null || id === '') return this.noneText;
         return id.length > 8 ? id.slice(0, 8) + '…' : id;

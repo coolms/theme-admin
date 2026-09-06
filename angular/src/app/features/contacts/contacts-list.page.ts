@@ -37,14 +37,14 @@ import {
 const PAGE_SIZE = 50;
 
 /**
- * C.3 — the Contacts admin list page (/admin/contacts).
+ * C.3 -- the Contacts admin list page (/admin/contacts).
  *
  * `<cms-list-page>` shell + `<coolms-datagrid gridId="contact:contacts">` in
  * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and on every
  * filter/sort/page change, and this page turns that into one server request.
  * Filtering, sorting and paging are ALL server-side.
  *
- * It used to be client-mode — one `list()` call fed the grid as `externalData`
+ * It used to be client-mode -- one `list()` call fed the grid as `externalData`
  * and the grid filtered in memory. That read was the CAPPED typeahead port
  * (`listVisible(q, 100)`, clamped at 100 by the repository), so past the 100th
  * contact the directory silently omitted people and the filter row searched
@@ -98,7 +98,7 @@ export class ContactsListComponent implements OnInit {
     readonly contacts    = signal<ContactDto[]>([]);
     readonly loading     = signal(true);
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
-    /** Server's count for the CURRENT filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
     readonly totalItems  = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded      = signal(false);
@@ -110,7 +110,7 @@ export class ContactsListComponent implements OnInit {
      * `_selected` gates Edit / Delete; `_canLink` / `_linked` gate the C.6
      * Link-user / Unlink-user actions (a contact is linked iff `userId` is set);
      * `_canConvert` gates the C.6.b Convert-to-user action (an unlinked contact
-     * that has an email — the invite needs an address).
+     * that has an email -- the invite needs an address).
      */
     readonly toolbarContext = computed((): Record<string, unknown> => {
         const c = this.selectedContact();
@@ -147,14 +147,14 @@ export class ContactsListComponent implements OnInit {
 
     /**
      * `totalItems` is the SERVER's count for the current filter, so it needs no
-     * client-side adjustment — the endpoint filters and pages now.
+     * client-side adjustment -- the endpoint filters and pages now.
      */
     readonly footerLabel = computed(() => {
         if (!this.loaded()) return '';
         const n = this.totalItems();
         // Say nothing at zero: the grid's own empty state now distinguishes
         // "No contacts yet" from "No matches", and the footer cannot tell the
-        // two apart — so a fixed "No contacts yet" here would contradict the
+        // two apart -- so a fixed "No contacts yet" here would contradict the
         // body the moment a filter is what emptied the list.
         if (n === 0) return '';
 
@@ -163,7 +163,7 @@ export class ContactsListComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('Contacts');
-        // No fetch here — the grid emits `(loadMore)` on mount, which is the
+        // No fetch here -- the grid emits `(loadMore)` on mount, which is the
         // single entry point. Fetching here too would race and double-load.
     }
 
@@ -248,7 +248,7 @@ export class ContactsListComponent implements OnInit {
 
     /**
      * Re-runs the current query from page 1, KEEPING the active filters and
-     * sort — the grid owns that state now, so it must drive the refetch. A
+     * sort -- the grid owns that state now, so it must drive the refetch. A
      * direct `api.list()` here would quietly discard the user's filter.
      */
     private load(): void {
@@ -286,7 +286,7 @@ export class ContactsListComponent implements OnInit {
         });
     }
 
-    /** C.6.a — open the user-picker dialog; on confirm associate + re-load. */
+    /** C.6.a -- open the user-picker dialog; on confirm associate + re-load. */
     private openLinkUser(c: ContactDto): void {
         const id = c.id;
         if (id === undefined || id === '') return;
@@ -310,7 +310,7 @@ export class ContactsListComponent implements OnInit {
     }
 
     /**
-     * C.6.b — confirm, then mint a NEW platform user from the contact (email +
+     * C.6.b -- confirm, then mint a NEW platform user from the contact (email +
      * phone become identifiers), link it, and send an activation invite.
      */
     private confirmConvertUser(c: ContactDto): void {
@@ -338,7 +338,7 @@ export class ContactsListComponent implements OnInit {
         });
     }
 
-    /** C.6.a — confirm, then clear the platform-user link + re-load. */
+    /** C.6.a -- confirm, then clear the platform-user link + re-load. */
     private confirmUnlinkUser(c: ContactDto): void {
         const id = c.id;
         if (id === undefined || id === '') return;

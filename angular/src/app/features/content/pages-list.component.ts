@@ -41,7 +41,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DataGridComponent, ExplorerToolbarRowComponent, PageTilesComponent],
-    // / — this is now the `content.main` SLOT of the Pages
+    // / -- this is now the `content.main` SLOT of the Pages
     // explorer, not a routed page. The shell it used to carry
     // (`<cms-list-page>`: title, toolbar, footer) comes from
     // `ExplorerLayout` + the host page instead, which is what makes room
@@ -119,7 +119,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
 })
 export class PagesListComponent implements OnInit {
     /**
-     * The tree grid — ABSENT in tile mode, where the template does not render
+     * The tree grid -- ABSENT in tile mode, where the template does not render
      * it. Typed optional for that reason: the old `!` assertion was a
      * promise the component can no longer keep, and every call site has to
      * cope with the gap rather than trust it away.
@@ -138,7 +138,7 @@ export class PagesListComponent implements OnInit {
     private readonly footer     = inject(PageFooterService);
 
     constructor() {
-        // — reload when the accordion picks a different space. The grid
+        // -- reload when the accordion picks a different space. The grid
         // drives its own loads through `(loadMore)`, which only fires on grid
         // events, so a space change would otherwise leave the previous
         // space's rows on screen under the new space's label.
@@ -157,10 +157,10 @@ export class PagesListComponent implements OnInit {
             });
         });
 
-        // — the DataGrid and the tiles load through different calls (the
+        // -- the DataGrid and the tiles load through different calls (the
         // grid's own paged request vs the current folder's children), so
         // crossing between them has to fetch. Switching between the three tile
-        // sizes does not — same rows, different CSS.
+        // sizes does not -- same rows, different CSS.
         effect(() => {
             const isDetails = 'details' === this.spaceState.viewMode();
             untracked(() => {
@@ -177,10 +177,10 @@ export class PagesListComponent implements OnInit {
             });
         });
 
-        // — follow the folder cursor. The tree in the left panel is a
+        // -- follow the folder cursor. The tree in the left panel is a
         // sibling slot: it sets the cursor and cannot call us, so the reload
         // has to be a reaction to the state rather than a call from whoever
-        // moved it. Skips the very first run — the space effect above performs
+        // moved it. Skips the very first run -- the space effect above performs
         // the initial load, and reacting to the cursor's own initial value
         // would double it.
         effect(() => {
@@ -200,12 +200,12 @@ export class PagesListComponent implements OnInit {
         });
 
         // Toolbar/header actions are rendered by the host page and performed
-        // here — the two are sibling slots and cannot see each other.
+        // here -- the two are sibling slots and cannot see each other.
         this.spaceState.actionRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(action => this.onToolbarAction(action));
 
-        // — the folder tree is a THIRD slot, and its section actions
+        // -- the folder tree is a THIRD slot, and its section actions
         // carry their own target rather than using the cursor.
         this.spaceState.sectionActionRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -225,7 +225,7 @@ export class PagesListComponent implements OnInit {
      *
      * List mode asks the GRID to reload rather than calling `listPages()`
      * alongside it. The grid is the only component that knows whether a sort
-     * or a column filter is active, and it issues its own load either way —
+     * or a column filter is active, and it issues its own load either way --
      * so fetching here in parallel meant two identical requests per space
      * change, with a filtered grid then overwritten by an unfiltered fetch.
      */
@@ -257,7 +257,7 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * Load the folder the tile cursor points at — the space root when the
+     * Load the folder the tile cursor points at -- the space root when the
      * trail is empty, else the directory the user drilled into.
      */
     private loadFolder(): void {
@@ -273,7 +273,7 @@ export class PagesListComponent implements OnInit {
             next: all => {
                 if (epoch !== this._loadEpoch) return;
                 // Directories are NAVIGATION, and navigation lives in the left
-                // panel now — listing them here too would put the same
+                // panel now -- listing them here too would put the same
                 // folder in two places and invite them to disagree.
                 const items = all.filter(p => 'directory' !== p.nodeType);
                 this.folderItems.set(items);
@@ -308,7 +308,7 @@ export class PagesListComponent implements OnInit {
         return '' === key ? null : key;
     }
 
-    /** Which rendering is on screen — owned by the shared state, set by the toolbar. */
+    /** Which rendering is on screen -- owned by the shared state, set by the toolbar. */
     protected readonly viewMode = this.spaceState.viewMode;
 
     /** VFS root of the active space; the breadcrumb's navigable floor. */
@@ -322,20 +322,20 @@ export class PagesListComponent implements OnInit {
      *
      * Now lives in the SHARED state: the properties panel is a sibling
      * slot that needs the same `key -> label` map, and this component is the
-     * one that loads it. Empty on failure rather than blocking the listing —
+     * one that loads it. Empty on failure rather than blocking the listing --
      * a missing catalogue costs a label, and `typeLabel()` falls back to the
      * raw key.
      */
     protected readonly pageTypes = this.spaceState.pageTypes;
 
     /**
-     * The folder cursor now lives in the SHARED state — the tree in the
+     * The folder cursor now lives in the SHARED state -- the tree in the
      * left panel sets it, this listing obeys it. It was private here while the
      * grid navigated itself.
      */
     protected readonly folderId = this.spaceState.folderId;
 
-    /** Absolute path of the folder on screen — what the breadcrumb renders. */
+    /** Absolute path of the folder on screen -- what the breadcrumb renders. */
     protected readonly folderPath = this.spaceState.folderPath;
 
     /** Selected row id, shared by both views so a toggle keeps the selection. */
@@ -354,7 +354,7 @@ export class PagesListComponent implements OnInit {
      * Whether the last rendering was the DataGrid, so the toggle effect can
      * tell a change from a mount.
      *
-     * A BOOLEAN, not the mode: only the details↔tiles crossing changes
+     * A BOOLEAN, not the mode: only the details<->tiles crossing changes
      * which call feeds the pane. `large`/`small`/`content` all read the same
      * `folderItems`, so treating them as distinct here would put a refetch
      * behind every thumbnail-size click.
@@ -380,7 +380,7 @@ export class PagesListComponent implements OnInit {
      */
     private readonly childIndex = new Map<string, PageDto>();
 
-    /** Resolve a page by node id — the folder on screen, else the lookup index. */
+    /** Resolve a page by node id -- the folder on screen, else the lookup index. */
     private findPage(id: string): PageDto | undefined {
         return this.folderItems().find(p => p.id === id) ?? this.childIndex.get(id);
     }
@@ -389,13 +389,13 @@ export class PagesListComponent implements OnInit {
      * Currently selected row (null when nothing is selected).
      *
      * Shared by BOTH views: the tile view writes the same signal, so toggling
-     * between them keeps the selection — and the toolbar's Edit/Delete keep
+     * between them keeps the selection -- and the toolbar's Edit/Delete keep
      * pointing at the same page rather than going dead on a toggle.
      */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     /**
-     * Grid rows — the SAME folder listing the tiles render.
+     * Grid rows -- the SAME folder listing the tiles render.
      *
      * The grid used to hold its own root collection and walk the tree itself,
      * which meant two components each believing they knew where the user was.
@@ -436,13 +436,13 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * The grid asking for data — a sort, a filter, or its own reload.
+     * The grid asking for data -- a sort, a filter, or its own reload.
      *
      * With the tree gone this is only ever "re-list what is on screen": the
      * FOLDER when no filter is active, or the bounded full-space search when
      * one is. The old expand-to-match machinery (fetch roots AND matches, hand
      * the matches to the grid, let it expand ancestor chains) went with the
-     * tree — a flat grid shows the matches themselves, which is what the old
+     * tree -- a flat grid shows the matches themselves, which is what the old
      * `!canExpand` fallback already did.
      */
     onLoadMore(event: {
@@ -454,7 +454,7 @@ export class PagesListComponent implements OnInit {
         // Everything is fetched in one request; skip append calls.
         if (!event.reset && event.offset > 0) return;
 
-        // — wait for a space before listing anything. The grid mounts and
+        // -- wait for a space before listing anything. The grid mounts and
         // fires its own initial load before the accordion has resolved the
         // spaces, so without this the first request goes out UNSCOPED (the
         // whole VFS root) and is then replaced a moment later by the scoped
@@ -502,7 +502,7 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * Double-click a grid row — the same meaning the tiles give it:
+     * Double-click a grid row -- the same meaning the tiles give it:
      * a folder is a destination, a page is a document.
      */
     onRowActivated(row: Record<string, unknown>): void {
@@ -514,13 +514,13 @@ export class PagesListComponent implements OnInit {
         this.selectedRow.set(row);
         // Publish for the two sibling slots that cannot see this component: the
         // host page's toolbar predicate and the properties panel
-        //. The DTO, not the grid row — the row is the FLATTENED shape
+        //. The DTO, not the grid row -- the row is the FLATTENED shape
         // the grid was handed (`placementSummary`, `variantCount`), and the
         // panel wants the real `placements` and `variants` arrays.
         const id = row?.['id'];
         const page = 'string' === typeof id ? this.findPage(id) ?? null : null;
         this.spaceState.selectedPage.set(page);
-        // Selecting does NOT open the panel — Properties does. A panel
+        // Selecting does NOT open the panel -- Properties does. A panel
         // that appeared on single click landed in the middle of the
         // double-click that opens the editor, so the pane jittered under the
         // gesture. Deselecting still closes it: a panel about nothing is not a
@@ -538,8 +538,8 @@ export class PagesListComponent implements OnInit {
     /**
      * Activating an item: a folder is a destination, a page is a document.
      *
-     * Folders no longer appear in either listing — the left panel owns
-     * them — so in practice this opens the editor. The folder branch stays
+     * Folders no longer appear in either listing -- the left panel owns
+     * them -- so in practice this opens the editor. The folder branch stays
      * because the cursor is shared and any future caller handing us a directory
      * should navigate rather than try to edit one.
      */
@@ -553,7 +553,7 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * Breadcrumb click. Only paths already on the trail can be targets —
+     * Breadcrumb click. Only paths already on the trail can be targets --
      * everything above the space root renders as static text
      * (`navigableFrom`), and the address bar is off, so a path we have no id
      * for cannot be reached. An unknown one is ignored rather than guessed.
@@ -566,7 +566,7 @@ export class PagesListComponent implements OnInit {
      * Right-click on empty space in the file zone.
      *
      * The zone had no menu at all, so creating a page meant reaching for the
-     * header button every time — the one gesture every file manager offers
+     * header button every time -- the one gesture every file manager offers
      * where you actually are.
      *
      * Bails on anything selectable so a right-click on a ROW or a TILE reaches
@@ -643,10 +643,10 @@ export class PagesListComponent implements OnInit {
 
     private openCreateDialog(): void {
         this.dialog.open(CreatePageDialogComponent, {
-            // — create INTO the space the explorer is showing. Without
+            // -- create INTO the space the explorer is showing. Without
             // it the backend derives the path from a SiteSection, so "New
             // Page" while Personal was selected silently created the page on
-            // the site instead — in a space the user was not even looking at.
+            // the site instead -- in a space the user was not even looking at.
             data: { space: this.activeSpace(), spaceLabel: this.spaceState.spaceLabel() },
             backdropClass: 'cdk-overlay-dark-backdrop',
         }).closed
@@ -671,7 +671,7 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * Section properties — feed, post defaults, distribution channels.
+     * Section properties -- feed, post defaults, distribution channels.
      *
      * This is the surface that gives the distribution config a door again:
      * it was a row action on a directory row, and took directory rows out
@@ -695,7 +695,7 @@ export class PagesListComponent implements OnInit {
     }
 
     /**
-     * Where this page appears — distribution, not publishing.
+     * Where this page appears -- distribution, not publishing.
      *
      * Guarded to Packages for the same reason editing is: a directory has no
      * Package to link into a surface, and offering the dialog on one would

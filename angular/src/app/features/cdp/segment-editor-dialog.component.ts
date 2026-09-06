@@ -27,14 +27,14 @@ export interface SegmentEditorDialogData {
 }
 
 /**
- *Phase 3 (CDP core, ; datagrid retrofit) — create / edit modal for
+ *Phase 3 (CDP core, ; datagrid retrofit) -- create / edit modal for
  * an audience Segment.
  *
  * A specialized modal (mirrors {@link
  * ../connector/webhook-form-dialog.component.WebhookFormDialogComponent}), NOT a
  * FormConfig form: the EL `rule` carries a bespoke live "Validate rule" action
  * (POSTs to `/analytics/segments/validate`, the same lint the save path
- * enforces) that the generic form pipeline can't host — the same specialized-
+ * enforces) that the generic form pipeline can't host -- the same specialized-
  * modal precedent as Newsletter Compose. Still platform-styled (`app-modal` +
  * `cms-btn`/`cms-btn-primary`), so it reads as a sibling of the other dialogs.
  *
@@ -186,7 +186,7 @@ export class SegmentEditorDialogComponent implements OnInit {
 
     /**
      * Populate the activation-journey dropdown with DEPLOYED workflow definitions
-     * (a workflow with no live version can't be started). Best-effort — a fetch
+     * (a workflow with no live version can't be started). Best-effort -- a fetch
      * failure just leaves the dropdown with "None". If the segment already names
      * a workflow that isn't in the deployed set (undeployed since, or set via the
      * API), it is preserved as its own option so saving doesn't silently drop it.

@@ -1,20 +1,20 @@
 /**
- * F.14c-2 — pure helpers for the variable-input form. Kept Angular-
+ * F.14c-2 -- pure helpers for the variable-input form. Kept Angular-
  * free so they can be unit-tested directly and so the future F.9 Form
  * Builder swap can reuse the same nested-JSON encoding.
  *
  * Three responsibilities:
- *   1. `setNestedValue` / `getNestedValue` — read & write into a
+ *   1. `setNestedValue` / `getNestedValue` -- read & write into a
  *      `Record<string, unknown>` along a dotted path. The shape mirrors
  *      DTMPL's variable resolution so the JSON the form
  *      submits is what the renderer evaluates against.
- *   2. `buildGroupTree` — fold a flat `[{path: 'customer.name'}, …]`
+ *   2. `buildGroupTree` -- fold a flat `[{path: 'customer.name'}, ...]`
  *      list into a recursive group tree the template walks for fieldset
  *      rendering.
  */
 import { type ContextVariableGroup, type FormVariableInput } from '../shared/document-explorer.types';
 
-/** Value the form holds in `formData` — same shape submitted to backend. */
+/** Value the form holds in `formData` -- same shape submitted to backend. */
 export type ContextFormValue = Record<string, unknown>;
 
 /**
@@ -114,7 +114,7 @@ function insertVariable(root: MutableGroup, variable: FormVariableInput): void {
         return;
     }
     let cursor = root;
-    // Walk every segment except the last — that one names the variable.
+    // Walk every segment except the last -- that one names the variable.
     for (let i = 0; i < segments.length - 1; i++) {
         const groupPath = segments.slice(0, i + 1).join('.');
         let child = cursor.children.get(groupPath);

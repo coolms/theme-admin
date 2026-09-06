@@ -10,7 +10,7 @@
  * form state) is intentionally lossy. When the form receives an input
  * string we cannot confidently round-trip (e.g. BYSETPOS, multiple
  * BYDAY ordinals, RDATE lines, RDATE-with-TZID), we drop into
- * `mode: 'raw'` — a textarea fallback that submits the user's literal
+ * `mode: 'raw'` -- a textarea fallback that submits the user's literal
  * spec unchanged. Phase 1 scope: cover Daily / Weekly+BYDAY /
  * Monthly+BYMONTHDAY / Monthly+BYDAY(+ordinal) / Yearly+BYMONTH+BYMONTHDAY
  * cleanly via the structured form; everything else uses the raw fallback.
@@ -121,7 +121,7 @@ export function buildDefaultState(dtstart: Date): RecurrenceFormState {
  * string. The backend parser (`RRuleParser::parseSpec`)
  * accepts whatever we emit here unchanged.
  *
- * Returns `null` for `mode: 'NONE'` — the caller treats null as "no
+ * Returns `null` for `mode: 'NONE'` -- the caller treats null as "no
  * recurrence sent".
  *
  * Note: UNTIL is emitted as a UTC `YYYYMMDDT235959Z` instant (end of
@@ -171,7 +171,7 @@ export function serializeRecurrence(s: RecurrenceFormState): string | null {
     return lines.join('\n');
 }
 
-/** ISO weekday (1=Mon … 7=Sun) -> our WeekdayCode. */
+/** ISO weekday (1=Mon ... 7=Sun) -> our WeekdayCode. */
 export function isoWeekdayOf(d: Date): WeekdayCode {
     const js = d.getDay(); // 0=Sun..6=Sat
     const map: WeekdayCode[] = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
@@ -283,7 +283,7 @@ export function parseRecurrence(spec: string, dtstart: Date): RecurrenceFormStat
     base.interval = interval;
     base.excludeDates = excludes;
 
-    // BYDAY handling — structured form supports two shapes:
+    // BYDAY handling -- structured form supports two shapes:
     //  WEEKLY: BYDAY is a list of plain weekdays (no ordinals).
     //  MONTHLY: BYDAY is a single `{ordinal}{weekday}` token.
     if (parts['BYDAY']) {

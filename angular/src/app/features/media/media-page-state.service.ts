@@ -11,7 +11,7 @@ import { NaviGraphNode, UserPreferencesService } from '@coolms/core-angular';
  * MediaStatusBar) can inject it without any prop-drilling.
  *
  * Slots read reactive state from signals.
- * Slots dispatch actions via subjects — the page subscribes and calls APIs.
+ * Slots dispatch actions via subjects -- the page subscribes and calls APIs.
  *
  * Session state (currentDir, viewMode) is automatically restored from
  * UserPreferencesService on construction and saved on every change.
@@ -26,7 +26,7 @@ export class MediaPageStateService {
     readonly currentDir  = signal('/media');
 
     /**
-     * Root of the ACTIVE space — the floor the path bar will not go above
+     * Root of the ACTIVE space -- the floor the path bar will not go above
      *. Media was the only explorer passing no `navigableFrom`, so its
      * typed-path input could leave the space entirely while the accordion
      * beside it still claimed Shared. Not persisted: it is derived from
@@ -37,7 +37,7 @@ export class MediaPageStateService {
     readonly selectedIds = signal<string[]>([]);
     readonly activeAsset = signal<MediaAssetDto | null>(null);
     /** The collection (directory) whose Properties panel is open, or null.
-     *  Mutually exclusive with activeAsset — the same right panel hosts both. */
+     *  Mutually exclusive with activeAsset -- the same right panel hosts both. */
     readonly activeCollection = signal<{ path: string; name: string } | null>(null);
     readonly viewMode    = signal<MediaViewMode>('medium');
 
@@ -53,7 +53,7 @@ export class MediaPageStateService {
 
     /**
      * NaviGraph node whose meta drives the right-panel header. Mirrors
-     * Document's `panelNode` — the panel chrome is then identical
+     * Document's `panelNode` -- the panel chrome is then identical
      * across modules even though body content differs.
      */
     readonly panelNode = computed<NaviGraphNode | null>(() => {
@@ -75,7 +75,7 @@ export class MediaPageStateService {
     /** Toolbar "New Collection" / "New Sub-collection". */
     readonly newCollectionRequested$     = new Subject<void>();
 
-    /** Toolbar "Rename" — passes the path to rename. */
+    /** Toolbar "Rename" -- passes the path to rename. */
     readonly renameCollectionRequested$  = new Subject<string>();
 
     /** Delete-collection from toolbar (passes collection path). */
@@ -99,10 +99,10 @@ export class MediaPageStateService {
     /** Image-editor open request from grid context-menu (Phase 1C). */
     readonly editImageRequested$         = new Subject<MediaAssetDto>();
 
-    /** Asset saved — page updates assets[] and activeAsset. */
+    /** Asset saved -- page updates assets[] and activeAsset. */
     readonly assetSaved$                 = new Subject<MediaAssetDto>();
 
-    /** Grid scroll sentinel intersects — page loads next page. */
+    /** Grid scroll sentinel intersects -- page loads next page. */
     readonly loadNextPageRequested$      = new Subject<void>();
 
     constructor() {
@@ -110,7 +110,7 @@ export class MediaPageStateService {
         const saved = this.prefs.getPageState<{ lastDir?: string; viewMode?: string }>('media');
         if (saved?.lastDir)  this.currentDir.set(saved.lastDir);
 
-        // — a preference written before the shared vocabulary can say
+        // -- a preference written before the shared vocabulary can say
         // `list`, which is now the name of nothing. It meant the wide row, so
         // it becomes `content`; anything else unrecognised falls back to the
         // default rather than restoring a mode the grid cannot draw.

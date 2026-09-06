@@ -36,13 +36,13 @@ interface DayBucket {
 const LOOKAHEAD_DAYS = 14;
 
 /**
- * — Calendar quick panel rendered in the global right-side
+ * -- Calendar quick panel rendered in the global right-side
  * drawer. Opened from the topbar calendar icon (-era component
  * `CalendarQuickAccessComponent` now opens this instead of navigating).
  *
  * Layout, top-down:
  *  - Header: title, open-full link, close button (drawer-owned)
- *  - Mini-calendar (reuses MiniCalendarComponent — same widget the
+ *  - Mini-calendar (reuses MiniCalendarComponent -- same widget the
  *    full Calendar Detail sidebar uses)
  *  - Upcoming events list, grouped by day for the next 14 days
  *  - Footer: "+ New event" CTA
@@ -250,7 +250,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     personalCalendarSlug = input.required<string>();
 
     /** Whether the current user can create events in this calendar. Defaults to true
-     *  (the personal calendar is always editable by its owner — the topbar wires
+     *  (the personal calendar is always editable by its owner -- the topbar wires
      *  this for the current user). The drawer renders this panel without knowing
      *  about the calendar's owner so we trust the caller. */
     canEdit = input<boolean>(true);
@@ -377,7 +377,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     }
 
     openNewEvent(): void {
-        // We need a calendarId — fetch it from the slug if we don't have
+        // We need a calendarId -- fetch it from the slug if we don't have
         // it cached. The simpler shortcut: every item we've loaded shares
         // it, so reuse the first one if any. Otherwise, fall back to a
         // GET-calendar call.
@@ -430,7 +430,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     formatTime(item: CalendarItemDto): string {
         if (item.allDay) return 'All day';
         try {
-            // Task — honour user's chosen timezone + 12/24h preference
+            // Task -- honour user's chosen timezone + 12/24h preference
             // for the event-time hint in the quick panel.
             const opts: Intl.DateTimeFormatOptions = {
                 hour:   'numeric',

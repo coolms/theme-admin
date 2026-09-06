@@ -11,7 +11,7 @@ import { CallDialPanelComponent } from './call-dial-panel.component';
  * pattern). Click-to-dial over the existing `POST /call/originate`.
  *
  * Shown to any signed-in user (mirrors the sibling quick-access buttons); the
- * real gate is server-side — the originate endpoint is VFS-gated to call
+ * real gate is server-side -- the originate endpoint is VFS-gated to call
  * operators, and the panel prompts for a device if none is set.
  */
 @Component({

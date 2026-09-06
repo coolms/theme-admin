@@ -62,7 +62,7 @@ export class FileHistoryService {
 
     /**
      * Restore a past revision by writing its body forward as the new current
-     * content (never destructive — the restore is itself recorded as a new
+     * content (never destructive -- the restore is itself recorded as a new
      * revision). Returns the refreshed log.
      */
     restore(path: string, revisionId: string): Observable<FileRevisionLog> {

@@ -32,18 +32,18 @@ const ROW_LIMIT = 20;
  * days), surfacing four consent-gated aggregate ledgers via
  * {@link AnalyticsService}:
  *
- *  0. **Event stream** — per-type totals over the genericstore
+ *  0. **Event stream** -- per-type totals over the genericstore
  *: the unified, consent-gated eventthe legacy
  *     page-view / search ledgers will eventually graduate onto. Lead card.
- *  1. **Top pages** — the page-view leaderboard: normalized path + count.
- *  2. **Top searches** — the most-run search terms: term + count.
- *  3. **Content gaps** — searches that returned nothing: the actionable
+ *  1. **Top pages** -- the page-view leaderboard: normalized path + count.
+ *  2. **Top searches** -- the most-run search terms: term + count.
+ *  3. **Content gaps** -- searches that returned nothing: the actionable
  *     "what to write next" list, styled distinctly (amber) to stand apart from
  *     the two traffic leaderboards.
  *
  * Every section is a proportional bar list; none has per-row actions (each row
  * is an immutable, anonymous aggregate count). The three loads run in parallel
- * and degrade independently — onefailing (e.g. a not-yet-migrated
+ * and degrade independently -- onefailing (e.g. a not-yet-migrated
  * search module) leaves the others working, with the failed section showing a
  * "couldn't load" note rather than blanking the page.
  *
@@ -357,13 +357,13 @@ export class AnalyticsPageComponent implements OnInit {
     readonly topQueries  = signal<SearchQueryStatDto[]>([]);
     readonly zeroQueries = signal<SearchQueryStatDto[]>([]);
 
-    // Per-section load flags — onefailing must not blank the others.
+    // Per-section load flags -- onefailing must not blank the others.
     readonly eventsError  = signal(false);
     readonly pagesError   = signal(false);
     readonly queriesError = signal(false);
     readonly zeroError    = signal(false);
 
-    /** Biggest count in each list — the 100%-width reference for that list's bars. */
+    /** Biggest count in each list -- the 100%-width reference for that list's bars. */
     readonly maxEventCount    = computed(() => this.peak(this.events(),      e => e.count));
     readonly maxViews         = computed(() => this.peak(this.pages(),       p => p.views));
     readonly maxQuerySearches = computed(() => this.peak(this.topQueries(),  q => q.searches));
@@ -406,7 +406,7 @@ export class AnalyticsPageComponent implements OnInit {
         this.load();
     }
 
-    /** Bar width as a percentage of the busiest row in its list (always ≥ a sliver). */
+    /** Bar width as a percentage of the busiest row in its list (always >= a sliver). */
     barWidth(value: number, max: number): number {
         return max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
     }

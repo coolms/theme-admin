@@ -15,7 +15,7 @@ export interface EditorPanelDto {
     /** Bootstrap-icon suffix (rendered as `bi bi-{icon}`). */
     readonly icon: string;
     readonly priority: number;
-    /** Coarse render kind (`metadata` | `schedule` | `history` | `fields` …). */
+    /** Coarse render kind (`metadata` | `schedule` | `history` | `fields` ...). */
     readonly kind: string;
 }
 
@@ -29,7 +29,7 @@ interface EditorPanelsResponse {
  * Data layer for the editor-panel contribution registry.
  *
  * The host (page editor's rail) asks "which panels apply to this node?" and
- * renders exactly what the installed modules contribute — so a panel like
+ * renders exactly what the installed modules contribute -- so a panel like
  * **Schedule** appears only when the Scheduler module is installed, with the
  * host never referencing that module. Low coupling: install/uninstall a module
  * and its editor surface appears/vanishes with zero host changes.

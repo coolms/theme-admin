@@ -4,7 +4,7 @@
  *
  * Note: the serializer OMITS null-valued properties, so `id` on the "current"
  * diff ref and the `oldNumber`/`newNumber` on insert/delete diff lines arrive
- * absent rather than null — every nullable field below is therefore optional.
+ * absent rather than null -- every nullable field below is therefore optional.
  */
 
 /** One row of the revision log. */
@@ -19,7 +19,7 @@ export interface FileRevisionView {
     readonly isCurrent:   boolean;
 }
 
-/** GET /vfs/files/revisions — newest-first log + the caller's restore gate. */
+/** GET /vfs/files/revisions -- newest-first log + the caller's restore gate. */
 export interface FileRevisionLog {
     readonly path:      string;
     readonly revisions: FileRevisionView[];
@@ -27,7 +27,7 @@ export interface FileRevisionLog {
     readonly canWrite:  boolean;
 }
 
-/** GET /vfs/files/revisions/content — one revision's stored body. */
+/** GET /vfs/files/revisions/content -- one revision's stored body. */
 export interface FileRevisionContent {
     readonly content:     string;
     readonly revisionId?: string | null;
@@ -52,7 +52,7 @@ export interface FileDiffLine {
     readonly content:    string;
 }
 
-/** GET /vfs/files/revisions/diff — line-level diff of two points in history. */
+/** GET /vfs/files/revisions/diff -- line-level diff of two points in history. */
 export interface FileRevisionDiff {
     readonly path:    string;
     readonly from:    FileRevisionRef | null;
@@ -74,7 +74,7 @@ export interface FileBlameLine {
     readonly createdAt:   string;
 }
 
-/** GET /vfs/files/revisions/blame — per-line attribution of the current content. */
+/** GET /vfs/files/revisions/blame -- per-line attribution of the current content. */
 export interface FileBlame {
     readonly path:  string;
     readonly lines: FileBlameLine[];

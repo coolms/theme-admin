@@ -14,7 +14,7 @@
  *
  * `key` is what gets stored as the Package's `contentType`; `template` is the
  * theme file it renders with, derived server-side by the same convention the
- * SSR resolver applies — shown so the choice has a visible consequence rather
+ * SSR resolver applies -- shown so the choice has a visible consequence rather
  * than being an opaque label.
  */
 export interface PageTypeDto {
@@ -35,8 +35,8 @@ export interface PageSurfaceDto {
 /**
  * One place a page currently appears ( step (c), ).
  *
- * DERIVED from the symlink that exists — there is no stored "published to"
- * flag — so this list is always what the VFS actually holds.
+ * DERIVED from the symlink that exists -- there is no stored "published to"
+ * flag -- so this list is always what the VFS actually holds.
  *
  * Distinct from a variant's `status`: *placed* is WHERE the page appears,
  * *published* is WHICH locale is live. A page can be one without the other.
@@ -106,7 +106,7 @@ export interface PageDto {
      */
     requiresReview?: boolean;
     /**
-     * The page's own content-type discriminator — the Container's
+     * The page's own content-type discriminator -- the Container's
      * `extras.contentType` (e.g. `'landing'`), the same node extra the block
      * editor and SSR template-resolver key on. Populated by the backend on
      * every Pages projection (a cheap extras read). Lets the editor decide the
@@ -116,7 +116,7 @@ export interface PageDto {
      */
     contentType?: string | null;
     /**
-     * True once the slug is FROZEN — the page/article has been published (a
+     * True once the slug is FROZEN -- the page/article has been published (a
      * variant went live, or the article was linked into a surface), so the
      * backend set its `extras.slugLocked` ([]). The editor uses it to warn
      * before a rename (renaming a frozen slug changes the live URL and needs the
@@ -125,7 +125,7 @@ export interface PageDto {
      */
     slugLocked?: boolean;
     /**
-     * Share image for the explorer tile — DERIVED by the backend from
+     * Share image for the explorer tile -- DERIVED by the backend from
      * the variants (published wins, else the first that has one), not a field
      * of its own on the Package.
      *
@@ -159,7 +159,7 @@ export interface PageVariantDto {
      * Editorial review audit, read from the variant Node's extras.
      * `reviewNote` is the reviewer's feedback shown to the author when the
      * variant is bounced back (`status === 'changes_requested'`); `reviewedAt`
-     * timestamps it. (`reviewedBy` is a user UUID today — name resolution is a
+     * timestamps it. (`reviewedBy` is a user UUID today -- name resolution is a
      * separate follow-up.)
      */
     reviewNote?: string;

@@ -2,7 +2,7 @@ import { mentionsUser } from './mentions.util';
 import { MentionRef } from './messages.types';
 
 /**
- * "Does this message mention me" — the predicate that decides which
+ * "Does this message mention me" -- the predicate that decides which
  * bubble gets the accent. Untested until the accent existed to be wrong about.
  */
 describe('mentionsUser', () => {
@@ -28,7 +28,7 @@ describe('mentionsUser', () => {
     });
 
  it('is false when there is no current user', () => {
- // Before auth hydrates, `meId` is null — every message would otherwise
+ // Before auth hydrates, `meId` is null -- every message would otherwise
  // have to be compared against nothing, and a loose `===` on two
  // undefineds would light up the whole thread.
         expect(mentionsUser(msg(ref(me)), null)).toBe(false);

@@ -140,7 +140,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         }
     }
 
-    /** Remember the directory across reloads — the shell-like part of a shell. */
+    /** Remember the directory across reloads -- the shell-like part of a shell. */
     private persistCwd(): void {
         this.prefs.setPageState(CWD_PREFS_KEY, { cwd: this.cwd });
     }
@@ -239,12 +239,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                     this.term.clear();
                     // Clear the BUFFER too, not just the screen. Without this the
                     // half-typed line survives invisibly and the next Enter runs
-                    // it — found while driving the terminal to verify .
+                    // it -- found while driving the terminal to verify .
                     this.currentLine = '';
                     this.writePrompt();
                     break;
                 }
-                // Not Ctrl+L — fall through to printable character handling
+                // Not Ctrl+L -- fall through to printable character handling
                 this.currentLine += key;
                 this.term.write(key);
                 break;
@@ -272,7 +272,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                     this.writePrompt();
                 } else if (event.cwd !== undefined) {
                     // `cd` succeeded. The server already validated the target
-                    // and normalised it, so this is the authoritative path —
+                    // and normalised it, so this is the authoritative path --
                     // the client never resolves `..` itself, or the two would
                     // drift the first time the rules disagreed.
                     this.cwd = event.cwd;
@@ -342,7 +342,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     /**
-     * `coolms:{where} >` — the working directory is in the prompt, which is the
+     * `coolms:{where} >` -- the working directory is in the prompt, which is the
      * whole point of having one.
      *
      * Home contracts to `~`, mirroring `TerminalPath::forPrompt()` on the

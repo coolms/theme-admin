@@ -16,7 +16,7 @@ import { BackupService, RestorePreviewResult } from './backup.service';
  * "Restore preview" dialog.
  *
  * A read-only dry run: on open it POSTs to `/core/backups/{name}/restore-preview`
- * (which writes NOTHING) and renders the plan — the per-module list of what
+ * (which writes NOTHING) and renders the plan -- the per-module list of what
  * `coolms:backup:restore` WOULD replay. There is deliberately no "apply" button:
  * applying a restore overwrites the live DB and stays on the CLI behind its
  * interactive confirmation. `{ name }` arrives via `DIALOG_DATA`.

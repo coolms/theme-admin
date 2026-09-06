@@ -23,10 +23,10 @@ interface PoppedCall {
     readonly fromNumber:      string | null;
     readonly toNumber:        string | null;
     readonly callerName:      string | null;
-    /** Who answered — a resolved name, or an "ext NNNN" fallback, or null. */
+    /** Who answered -- a resolved name, or an "ext NNNN" fallback, or null. */
     readonly answeredBy:      string | null;
     readonly startedAtMs:     number;
-    /** When the call first left `ringing` (answered/ended) — starts the auto-dismiss clock. */
+    /** When the call first left `ringing` (answered/ended) -- starts the auto-dismiss clock. */
     readonly settledAtMs:     number | null;
     readonly endedAtMs:       number | null;
     readonly durationSeconds: number | null;
@@ -44,14 +44,14 @@ const HARD_MAX_MS = 15 * 60 * 1000;
  * `RtcCallOverlayComponent`), so a manager mid-task sees a call arrive as
  * a small, non-intrusive card in the corner without leaving whatever page
  * they're on. Driven by the `calls.broadcast` firehose
- * ({@link CallLiveEventsService}) — each state transition
+ * ({@link CallLiveEventsService}) -- each state transition
  * (ringing -> answered -> on_hold -> ended) upserts a card keyed by call id;
  * once a call settles (someone picks up, or it ends) its auto-dismiss
  * clock starts and it fades after the user-configured window (or waits for
  * a manual close). Clicking a card opens the call record.
  *
  * Read-only awareness only: this is a screen-pop, not a softphone. There
- * is deliberately no "Answer" button — answering in the browser needs the
+ * is deliberately no "Answer" button -- answering in the browser needs the
  * WebRTC-SIP softphone (a later slice). The `broadcast` channel is
  * `ROLE_CALL`-gated, so a user without the role simply never sees a pop
  * (the subscription 403s and gives up quietly). Whether it shows at all,
@@ -204,12 +204,12 @@ export class CallScreenpopOverlayComponent {
     private readonly liveEvents = inject(CallLiveEventsService);
     private readonly prefs      = inject(CallOverlayPreferencesService);
     private readonly router     = inject(Router);
-    /** The in-browser softphone — drives the Answer/Hangup controls. */
+    /** The in-browser softphone -- drives the Answer/Hangup controls. */
     readonly webphone = inject(WebPhoneService);
 
     /** All popped calls, keyed by call id (pruned as they age out). */
     private readonly calls = signal<Map<string, PoppedCall>>(new Map());
-    /** Ticks every second — drives live duration + the auto-dismiss prune. */
+    /** Ticks every second -- drives live duration + the auto-dismiss prune. */
     private readonly nowMs = signal(Date.now());
 
     /** Cards to render: gated by the on/off preference, newest first, capped. */
@@ -226,7 +226,7 @@ export class CallScreenpopOverlayComponent {
         // Refresh the user's overlay prefs on mount (on/off + auto-dismiss
         // window). The shell remounts this overlay per login, so refresh()
         // (not the cached ensureLoaded) keeps it correct after a same-tab
-        // re-login — mirrors how calendar consumers re-sync on mount.
+        // re-login -- mirrors how calendar consumers re-sync on mount.
         this.prefs.refresh().pipe(takeUntilDestroyed()).subscribe();
 
         // Subscribe FIRST so a transition during any seed fetch isn't missed.
@@ -242,7 +242,7 @@ export class CallScreenpopOverlayComponent {
 
         // Boot the in-browser softphone. Idempotent + self-guarding:
         // it stays dormant unless the deployment has a WebRTC PBX configured AND
-        // this user has a provisioned credential — so it's a no-op everywhere else.
+        // this user has a provisioned credential -- so it's a no-op everywhere else.
         void this.webphone.start();
     }
 
@@ -308,7 +308,7 @@ export class CallScreenpopOverlayComponent {
         let changed = false;
         const next = new Map(current);
         for (const [id, c] of current) {
-            // Hard safety — never keep a card indefinitely.
+            // Hard safety -- never keep a card indefinitely.
             if (now - c.startedAtMs >= HARD_MAX_MS) {
                 next.delete(id);
                 changed = true;

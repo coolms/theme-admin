@@ -273,7 +273,7 @@ type ShareeKind = 'user' | 'group';
     `],
 })
 export class CalendarSharesCardComponent implements OnInit {
-    /** Calendar slug — used as the share endpoint path segment. */
+    /** Calendar slug -- used as the share endpoint path segment. */
     calendarSlug = input.required<string>();
 
     /** Whether current user can mutate shares (owner / admin). */
@@ -296,7 +296,7 @@ export class CalendarSharesCardComponent implements OnInit {
     readonly pickedId   = signal<string>('');
     readonly newRole    = signal<CalendarShareRoleCode>('viewer');
 
-    /** Picker URL — flips between Identity users + groups list endpoints. */
+    /** Picker URL -- flips between Identity users + groups list endpoints. */
     readonly pickerUrl = computed<string>(() => {
         const m = this.store.selectSnapshot(AppConfigState.manifest);
         if (!m) return '';

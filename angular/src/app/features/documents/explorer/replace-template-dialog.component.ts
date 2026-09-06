@@ -28,9 +28,9 @@ import {
 } from './template-source.helpers';
 
 /**
- * F.14c-3b — Replace template source file. Two-phase dialog:
- *   1. Selection — dropzone + click-to-browse, show file info on pick.
- *   2. Preview   — backend's classification (compatible / extended /
+ * F.14c-3b -- Replace template source file. Two-phase dialog:
+ *   1. Selection -- dropzone + click-to-browse, show file info on pick.
+ *   2. Preview   -- backend's classification (compatible / extended /
  *                  different) plus per-variable diff. User confirms via
  *                  the primary "Replace" button.
  *
@@ -42,7 +42,7 @@ import {
  * template is selected, so a hard-coded `.docx` accept made replacing a
  * spreadsheet or presentation source a fight with the file chooser under copy
  * that named the wrong application. The accepted extension comes from
- * `format-info` — narrowed to the IMPORTED half of the source axis, which is
+ * `format-info` -- narrowed to the IMPORTED half of the source axis, which is
  * the only half `replaceSource()` takes (see `importedSourceMime()`).
  */
 export interface ReplaceTemplateDialogData {
@@ -353,14 +353,14 @@ export class ReplaceTemplateDialogComponent {
     /**
      * This template's `format-info` entry, or null while unresolved. Seeded
      * from the service's cache (the Document Library loads the whole registry
-     * on mount) and otherwise fetched `?format=`-filtered — which is why it is
+     * on mount) and otherwise fetched `?format=`-filtered -- which is why it is
      * held HERE: a filtered payload deliberately never enters that shared
      * cache, so the grid behind the dialog keeps every format it knows.
      */
     private readonly formatEntry = signal<FormatDisplayInfo | null>(null);
 
     /**
-     * The mime a replacement must carry. Fixed for the dialog's lifetime —
+     * The mime a replacement must carry. Fixed for the dialog's lifetime --
      * `data.template` does not change while it is open.
      */
     private readonly importedMime = importedSourceMime(this.data.template);
@@ -379,7 +379,7 @@ export class ReplaceTemplateDialogComponent {
     protected readonly canPreview = computed(() => this.selectedFile() !== null);
 
     /**
-     * The imported extension, e.g. `.xlsx` for a spreadsheet template — the
+     * The imported extension, e.g. `.xlsx` for a spreadsheet template -- the
      * backend's answer where there is one, the local fallback map otherwise,
      * and `''` when neither knows the mime. Empty leaves the picker
      * unfiltered rather than filtered to a guess.
@@ -395,7 +395,7 @@ export class ReplaceTemplateDialogComponent {
     });
 
     /**
-     * The `accept` attribute — extension AND mime, as the hard-coded Word
+     * The `accept` attribute -- extension AND mime, as the hard-coded Word
      * value carried: a chooser matches either, and a `.docx` renamed by a
      * download that stripped its extension still has its type.
      */
@@ -415,9 +415,9 @@ export class ReplaceTemplateDialogComponent {
     );
 
     constructor() {
-        // The format's accept string and label. Cache first — the Document
+        // The format's accept string and label. Cache first -- the Document
         // Library has loaded the whole registry by the time any of its rows
-        // can be selected — and a `?format=`-filtered fetch only when it has
+        // can be selected -- and a `?format=`-filtered fetch only when it has
         // not (payload in flight, or its request failed and was swallowed).
         // Errors here are swallowed too: the fallback maps still name the
         // imported extension of every format that exists today.

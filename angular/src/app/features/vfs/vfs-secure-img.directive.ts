@@ -13,7 +13,7 @@ import { AuthState } from '@coolms/core-angular';
  * Loads a VFS image via HttpClient (with auth header) and sets the result as
  * an Object URL on the host <img> element.
  *
- * VFS images may be private — a plain <img src="..."> cannot attach an
+ * VFS images may be private -- a plain <img src="..."> cannot attach an
  * Authorization header, so we fetch the blob through Angular's HttpClient
  * (which passes through the auth interceptor) and hand the browser a local
  * Object URL instead.

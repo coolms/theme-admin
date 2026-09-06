@@ -31,7 +31,7 @@ import {
  * feeds the result envelope back via `[externalData]`. Columns, the coloured
  * status badge, and the lazy infinite-scroll are all driven by the backend
  * datagrid config `document:generations`
- * (config/modules/document/datagrids/document_generations.yaml) — mirrors
+ * (config/modules/document/datagrids/document_generations.yaml) -- mirrors
  * {@link SchedulesListComponent}. Row-click / the `open` action drill into the
  * detail page. No filters yet (the endpoint is a simple paged list); `createdAt`
  * is the one sortable column (the backend's natural order).
@@ -85,7 +85,7 @@ export class DocumentGenerationListPageComponent implements OnInit {
     /**
      * Flips `true` after the first `loadMore` response (success OR error).
      * Before that, `hasMore` is forced `true` so the lazy sentinel fires the
-     * initial fetch — empty rows + zero total would otherwise compute
+     * initial fetch -- empty rows + zero total would otherwise compute
      * `hasMore = false` and trap the page in "No data found" forever.
      */
     private readonly loaded = signal(false);

@@ -24,7 +24,7 @@ import { DocumentPageStateService } from './document-page-state.service';
 import { FormatInfoService } from './format-info.service';
 import { filterTemplatesForFolder } from './vfs-tree.helpers';
 
-/** DOCX MIME — the only template source format currently accepted. */
+/** DOCX MIME -- the only template source format currently accepted. */
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /**
@@ -407,7 +407,7 @@ export class FolderContentComponent implements OnDestroy {
 
     /**
      * Right-click inside the grid. The grid emits `rowSelected` before this,
-     * so the selected template is already the one under the cursor — which is
+     * so the selected template is already the one under the cursor -- which is
      * why this reads state rather than the event.
      */
     protected onGridRowContextMenu(event: MouseEvent): void {
@@ -428,7 +428,7 @@ export class FolderContentComponent implements OnDestroy {
     }
 
     /**
-     * E3 — `CmsItemInteractionsDirective.currentSelection` expects a
+     * E3 -- `CmsItemInteractionsDirective.currentSelection` expects a
      * readonly array. Document stores a single selected id; derive a
      * single-element array so right-click on the already-selected
      * tile skips re-emission.
@@ -443,8 +443,8 @@ export class FolderContentComponent implements OnDestroy {
     });
 
     /**
-     * E6 — gates the empty-area dropzone. Active when the right panel is
-     * NOT in instances mode ( §1: instances are generated,
+     * E6 -- gates the empty-area dropzone. Active when the right panel is
+     * NOT in instances mode ( section 1: instances are generated,
      * not uploaded). Accepts only DOCX so non-DOCX files are silently
      * filtered by the shared directive before reaching the handler.
      */
@@ -455,7 +455,7 @@ export class FolderContentComponent implements OnDestroy {
     }));
 
     /**
-     * E6 — emitted when DOCX files are dropped on the folder-content
+     * E6 -- emitted when DOCX files are dropped on the folder-content
      * host. The page-level handler reuses the existing upload service
      * path (same as toolbar Upload), so no duplicated logic lives here.
      */
@@ -468,7 +468,7 @@ export class FolderContentComponent implements OnDestroy {
 
     constructor() {
         effect(() => {
-            // — the SPACE root, not `currentPath`. Templates live at
+            // -- the SPACE root, not `currentPath`. Templates live at
             // one root per space (`TemplateRootResolver` recognises only
             // `<spaceRoot>/.templates`), and this component only ever
             // mounts for the templates view. Keying on `currentPath` meant
@@ -501,7 +501,7 @@ export class FolderContentComponent implements OnDestroy {
     }
 
     /**
-     * Phase E3 — bridge `CmsItemInteractionsDirective.selectionChanged`
+     * Phase E3 -- bridge `CmsItemInteractionsDirective.selectionChanged`
      * into the existing single-id selection model. Single-mode emits
      * `[template]`; we read the first element. Right-click skips
      * re-emission when the template is already selected (per the
@@ -539,7 +539,7 @@ export class FolderContentComponent implements OnDestroy {
      * Right-click on empty space in the file area.
      *
      * Bubbles up from the tiles/rows too, so bail when the event started on
-     * one — that item's own handler owns it and would otherwise be replaced
+     * one -- that item's own handler owns it and would otherwise be replaced
      * by the background menu. Same guard Media Library uses (`.media-tile`).
      *
      * `_kind: 'background'` is the discriminator the Document
@@ -549,7 +549,7 @@ export class FolderContentComponent implements OnDestroy {
     protected onBackgroundContextMenu(event: MouseEvent): void {
         const target = event.target as HTMLElement;
         // A Details-grid ROW joins the tile/row selectors, or the
-        // background menu would fire after — and replace — the template menu
+        // background menu would fire after -- and replace -- the template menu
         // the row handler just opened. The empty area BELOW the rows stays
         // background and still gets this menu.
         if (target.closest('.cms-folder-content__tile, .cms-folder-content__row, coolms-datagrid tbody tr')) {
@@ -611,7 +611,7 @@ export class FolderContentComponent implements OnDestroy {
     /**
      * Monotonic request token. `loadFolder` has never cancelled a
      * previous call, so two overlapping loads raced and whichever RESPONSE
-     * landed last won — including a stale one. It only became visible once
+     * landed last won -- including a stale one. It only became visible once
      * the effect could fire twice on mount (space root resolving after the
      * restored path), and it presented as an empty template listing over a
      * correct breadcrumb, with the right request in the network log.

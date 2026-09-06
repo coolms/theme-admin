@@ -30,8 +30,8 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
  *
  * Self-contained and path-addressed: bind `[path]` to the variant's VFS path
  * and listen to `(restored)` to reload the editor body. The restore gate
- * (`canWrite`) comes from the log response — the backend is the source of
- * truth — so the panel needs no permission input.
+ * (`canWrite`) comes from the log response -- the backend is the source of
+ * truth -- so the panel needs no permission input.
  */
 @Component({
     selector: 'app-file-history-panel',
@@ -413,7 +413,7 @@ export class FileHistoryPanelComponent {
                     next: log => {
                         this.restoring.set(false);
                         this.applyLog(log.revisions, log.canWrite);
-                        // Invalidate derived views — content changed.
+                        // Invalidate derived views -- content changed.
                         this.blame.set(null);
                         this.diff.set(null);
                         this.viewing.set('');

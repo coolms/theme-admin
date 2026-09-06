@@ -34,31 +34,31 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
  * with `true` once a campaign was queued (so the page can refresh), or
  * `false` on cancel.
  *
- * `confirmedCount` arrives via `DIALOG_DATA` — the page already tracks it
+ * `confirmedCount` arrives via `DIALOG_DATA` -- the page already tracks it
  * for the confirmed bucket.
  *
  * **Multi-locale.** The same `<app-locale-switcher>` the Editor and
  * the Media panels use drives a per-locale `{subject, body}` map; at send, each
  * recipient gets the language resolved for them, falling back to the platform
  * default. A locale only exists once something is typed into it, and a
- * half-written one is dropped rather than sent — advertising a language whose
+ * half-written one is dropped rather than sent -- advertising a language whose
  * readers would receive an empty email is worse than not offering it. The
  * switcher hides itself on a single-locale install, so nothing changes there.
  *
  * **The body is the rich `coolms-editor`**, on the `newsletter`
- * profile. That profile is narrower than `full` on purpose — it drops grid
+ * profile. That profile is narrower than `full` on purpose -- it drops grid
  * layouts, tables, code blocks, callouts and embeds, because those emit modern
  * CSS or scripted markup that Outlook ignores and no mail client executes, so
  * they would look broken in a way the author never sees while composing.
  *
  *  **This could not ship before the send path rendered dtmpl**. The
- * profile's media insert emits a `{widget:media:UUID …}` tag; while
+ * profile's media insert emits a `{widget:media:UUID ...}` tag; while
  * `SendCampaignEmailHandler` concatenated the body and sent it verbatim, every
  * inserted image would have arrived in the subscriber's inbox as that literal
  * tag. The editor and the "process before sending" work were one change, not two.
  *
  * There is no bespoke rich/plain toggle: the profile includes `meta:source`, so
- * raw-HTML editing lives in the editor's own toolbar — which is where the rest
+ * raw-HTML editing lives in the editor's own toolbar -- which is where the rest
  * of the admin puts it, and it preserves what the old textarea was for.
  */
 @Component({
@@ -217,7 +217,7 @@ export class NewsletterComposeDialogComponent {
 
     /**
      * Confirmed-recipient count, passed from the page. Now only the FALLBACK for
-     * {@link recipientCount} while the site list loads — the authoritative number
+     * {@link recipientCount} while the site list loads -- the authoritative number
      * is per-list.
      */
     readonly confirmedCount = inject<number>(DIALOG_DATA, { optional: true }) ?? 0;
@@ -237,7 +237,7 @@ export class NewsletterComposeDialogComponent {
                 if (biggest) this.site.set(biggest.slug);
             },
             // A failed load leaves one implicit target (the default list) and the
-            // page's own count — degraded, but composing still works.
+            // page's own count -- degraded, but composing still works.
             error: () => this.sites.set([]),
         });
     }
@@ -245,7 +245,7 @@ export class NewsletterComposeDialogComponent {
     readonly sending = signal(false);
 
     /**
-     * What has been written, per locale — the shape the API takes.
+     * What has been written, per locale -- the shape the API takes.
      *
      * A locale is absent until something is typed into it, so an admin who only
      * ever writes one language sends exactly one, and the resolver at send time
@@ -259,7 +259,7 @@ export class NewsletterComposeDialogComponent {
     /**
      * The fallback language, and the one that must be filled in.
      *
-     * Same derivation the page editor and media panels use — the tenant's
+     * Same derivation the page editor and media panels use -- the tenant's
      * configured default, not the browser's locale: which language a campaign
      * falls back to is a property of the install, not of who is composing.
      */
@@ -275,7 +275,7 @@ export class NewsletterComposeDialogComponent {
         () => (this.store.selectSnapshot(AppConfigState.manifest)?.supportedLocales ?? []).length > 1,
     );
 
-    /** Locales with real content — what the campaign will actually go out in. */
+    /** Locales with real content -- what the campaign will actually go out in. */
     readonly writtenLocales = computed(
         () => Object.keys(this.contents()).filter(loc => this.hasContent(loc)),
     );
@@ -324,7 +324,7 @@ export class NewsletterComposeDialogComponent {
         const loc = this.activeLocale();
         this.contents.update(all => {
             // A locale is created on first keystroke, so the other half starts
-            // empty rather than undefined — `hasContent()` then decides whether
+            // empty rather than undefined -- `hasContent()` then decides whether
             // the pair is worth sending.
             const existing = all[loc] as { subject: string; body: string } | undefined;
 
@@ -345,8 +345,8 @@ export class NewsletterComposeDialogComponent {
     /**
      * Send is gated on the DEFAULT locale, not on whichever tab is open.
      *
-     * The backend rejects a campaign whose default language was never written —
-     * it is the fallback every unwritten locale resolves to — so allowing Send
+     * The backend rejects a campaign whose default language was never written --
+     * it is the fallback every unwritten locale resolves to -- so allowing Send
      * after filling only, say, Ukrainian would produce a 422 that reads as a bug.
      */
     canSend(): boolean {
@@ -359,7 +359,7 @@ export class NewsletterComposeDialogComponent {
      * Previously the whole VFS tree was inlined here, which pushed the compose
      * form past the viewport and made it resize on every folder expansion. A
      * dismissed picker returns `undefined` and leaves the current selection
-     * alone — pressing Escape must not silently drop attachments already chosen.
+     * alone -- pressing Escape must not silently drop attachments already chosen.
      */
     browseAttachments(): void {
         this.dialog.open<string[] | undefined>(CmsFilePickerDialogComponent, {
@@ -381,13 +381,13 @@ export class NewsletterComposeDialogComponent {
         this.attachments.update(paths => paths.filter(p => p !== path));
     }
 
-    /** Last path segment — the chip shows a filename, the tooltip the full path. */
+    /** Last path segment -- the chip shows a filename, the tooltip the full path. */
     fileName(path: string): string {
         return path.slice(path.lastIndexOf('/') + 1) || path;
     }
 
     /**
-     * A rich editor is never literally empty — an untouched one still reports
+     * A rich editor is never literally empty -- an untouched one still reports
      * `<p></p>`, so a `.trim() !== ''` guard (which was enough for the old
      * textarea) would enable Send on a blank campaign. Strip tags and entities
      * and ask whether anything is actually left, treating an embedded image as
@@ -433,7 +433,7 @@ export class NewsletterComposeDialogComponent {
             message:      `This will email all ${count} confirmed subscriber${count === 1 ? '' : 's'}`
                 + (listName ? ` of ${listName}` : '')
                 // Naming the languages here is the last chance to notice that a
-                // translation was started and never finished — it gets silently
+                // translation was started and never finished -- it gets silently
                 // dropped, so the confirm step is where that must be visible.
                 + (this.multiLocale() ? ` in ${this.writtenLocales().map(l => l.toUpperCase()).join(', ')}` : '')
                 + '. This can’t be undone.',

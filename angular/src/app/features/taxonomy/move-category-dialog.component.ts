@@ -23,7 +23,7 @@ interface ParentOption {
 }
 
 /**
- * "Change parent" modal — the datagrid convention's replacement for the old
+ * "Change parent" modal -- the datagrid convention's replacement for the old
  * inline move `<select>`. Reparenting maps onto the taxonomy API as a plain
  * `PUT /taxonomy/nodes/{id}` with a changed `parentId` (the processor does the
  * nested-set move server-side). The picker EXCLUDES the node's own subtree so a
@@ -82,7 +82,7 @@ export class MoveCategoryDialogComponent {
         const opts: ParentOption[] = [{ id: '', label: '— Root (no parent) —' }];
         for (const n of [...this.data.nodes].sort((a, b) => a.lft - b.lft)) {
             // Nested-set: a node in [moving.lft, moving.rgt] is the node itself or
-            // a descendant — excluding it prevents creating a cycle.
+            // a descendant -- excluding it prevents creating a cycle.
             if (n.lft >= moving.lft && n.rgt <= moving.rgt) continue;
             opts.push({ id: n.id, label: '   '.repeat(Math.max(0, n.level)) + n.label });
         }

@@ -77,7 +77,7 @@ export class AdminTopbarProfileComponent implements OnInit {
     profileActions = signal<NaviGraphNode[]>([]);
     topbarUser     = signal<{ avatarUrl?: string | null; firstName?: string | null; identifier?: string } | null>(null);
 
-    /** Nodes sorted by sortOrder ASC — ready to render. */
+    /** Nodes sorted by sortOrder ASC -- ready to render. */
     readonly sortedProfileActions = computed(() =>
         [...this.profileActions()].sort((a, b) => a.sortOrder - b.sortOrder),
     );
@@ -93,7 +93,7 @@ export class AdminTopbarProfileComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        // Reactive — updates whenever PatchCurrentUser (or any other auth action) mutates the store
+        // Reactive -- updates whenever PatchCurrentUser (or any other auth action) mutates the store
         this.store.select(AuthState.currentUser)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(user => {

@@ -26,13 +26,13 @@ import {
 import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
 
 /**
- * — Calendars admin list page (/admin/calendars).
+ * -- Calendars admin list page (/admin/calendars).
  *
  * Server-side paginated. The DataGrid emits `(loadMore)` on its mount
  * + on every sort / filter change with `{offset, sort, columnFilters}`;
  * this page calls into {@link ApiService.listCalendarsPage} with the
  * mapped paging params and feeds the result envelope back via
- * `[externalData]`. No client-side filtering — the `currentUserAccess`
+ * `[externalData]`. No client-side filtering -- the `currentUserAccess`
  * "Show owned/shared/admin" picker is now a regular column filter in
  * the grid's filter row (driven by the YAML's `enumOptions`).
  *
@@ -93,7 +93,7 @@ export class CalendarsListComponent implements OnInit {
     /**
      * Flips to `true` after the first `loadMore` response (success OR
      * error). Before that, `hasMore` is forced `true` so the grid's
-     * lazy-mode sentinel kickoff fires the initial fetch — without
+     * lazy-mode sentinel kickoff fires the initial fetch -- without
      * this, an empty calendars signal + totalItems=0 would compute
      * `hasMore=false` from the very first render and the sentinel
      * would never trigger `onLoadMore`. Same effect as the original
@@ -198,7 +198,7 @@ export class CalendarsListComponent implements OnInit {
         const cal = this.calendars().find(c => c.id === (event.row['id'] as string));
         if (!cal) return;
         // `edit` was previously routed here too but the YAML now exposes
-        // only `open` — the detail page handles every edit inline.
+        // only `open` -- the detail page handles every edit inline.
         if (event.action === 'open')   this.openDetail(cal);
         if (event.action === 'delete') this.confirmDelete(cal);
     }

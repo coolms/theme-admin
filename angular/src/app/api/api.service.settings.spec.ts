@@ -10,7 +10,7 @@ import { ApiService } from './api.service';
  * A settings section is a MAP. API Platform's ld+json representation turns a
  * map into a Hydra Collection and puts the values in a `member` ARRAY with the
  * keys stripped, so `updated['theme']` reads `undefined` off a response that
- * looks perfectly successful — 200, right values, wrong shape.
+ * looks perfectly successful -- 200, right values, wrong shape.
  *
  * `getSettings()` has always forced `Accept: application/json` for this reason.
  * `updateSettings()` did not, and nothing noticed: the PATCH persisted
@@ -59,10 +59,10 @@ describe('ApiService settings content negotiation', () => {
 
         const req = http.expectOne('/api/v1/auth/me/settings/preferences');
         expect(req.request.method).toBe('PATCH');
- // Without this the response comes back as {"member":[…]} and every
+ // Without this the response comes back as {"member":[...]} and every
  // caller that reads a named field off it gets undefined.
         expect(req.request.headers.get('Accept')).toBe('application/json');
- // The merge-patch content type must survive alongside it — API Platform
+ // The merge-patch content type must survive alongside it -- API Platform
  // rejects the PATCH outright without it.
         expect(req.request.headers.get('Content-Type')).toBe('application/merge-patch+json');
         req.flush({});

@@ -11,7 +11,7 @@ import {
  * without booting an auth context. To keep it self-contained, the
  * component overrides EDITOR_MANIFEST_PROVIDER locally with a single
  * profile slice ("standard") containing the same 10 toolbar entries the
- * backend's BuiltInContributorsContributor emits — so we exercise the
+ * backend's BuiltInContributorsContributor emits -- so we exercise the
  * full toolbar render + Tiptap mount + handler dispatch pipeline against
  * known-good data, independent of auth state.
  *

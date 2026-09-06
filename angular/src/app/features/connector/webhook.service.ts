@@ -7,7 +7,7 @@ import { HydraCollection } from '../../api/api.service';
 import { WebhookSecretDto, WebhookTriggerDto } from './webhook.types';
 
 /**
- * FE — thin API client for the inbound-webhook admin CRUD
+ * FE -- thin API client for the inbound-webhook admin CRUD
  * (`/api/v1/connector/webhooks`).
  *
  * Standalone per-feature service (mirrors `CockpitService`): small + scoped, so
@@ -30,7 +30,7 @@ export class WebhookService {
         return manifest?.apiBase ?? '/api/v1';
     }
 
-    /** GET /connector/webhooks — full ordered list (small admin set). */
+    /** GET /connector/webhooks -- full ordered list (small admin set). */
     list(): Observable<WebhookTriggerDto[]> {
         return this.http
             .get<HydraCollection<WebhookTriggerDto>>(`${this.apiBase}/connector/webhooks`, {
@@ -39,12 +39,12 @@ export class WebhookService {
             .pipe(map(r => r['member'] ?? []));
     }
 
-    /** POST /connector/webhooks — create; the response reveals the minted secret once. */
+    /** POST /connector/webhooks -- create; the response reveals the minted secret once. */
     create(dto: Partial<WebhookTriggerDto>): Observable<WebhookTriggerDto> {
         return this.http.post<WebhookTriggerDto>(`${this.apiBase}/connector/webhooks`, dto);
     }
 
-    /** PATCH /connector/webhooks/{slug} — partial update (merge-patch). */
+    /** PATCH /connector/webhooks/{slug} -- partial update (merge-patch). */
     update(slug: string, patch: Partial<WebhookTriggerDto>): Observable<WebhookTriggerDto> {
         return this.http.patch<WebhookTriggerDto>(
             `${this.apiBase}/connector/webhooks/${encodeURIComponent(slug)}`,
@@ -58,7 +58,7 @@ export class WebhookService {
         return this.http.delete<void>(`${this.apiBase}/connector/webhooks/${encodeURIComponent(slug)}`);
     }
 
-    /** POST /connector/webhooks/{slug}/rotate-secret — mints + returns a fresh secret once. */
+    /** POST /connector/webhooks/{slug}/rotate-secret -- mints + returns a fresh secret once. */
     rotateSecret(slug: string): Observable<WebhookSecretDto> {
         return this.http.post<WebhookSecretDto>(
             `${this.apiBase}/connector/webhooks/${encodeURIComponent(slug)}/rotate-secret`,

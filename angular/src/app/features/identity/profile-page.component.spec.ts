@@ -11,7 +11,7 @@ import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfilePageComponent } from './profile-page.component';
 
 /**
- * My Profile — the three save handlers, RUN.
+ * My Profile -- the three save handlers, RUN.
  *
  * This file exists because it could not. `ProfilePageComponent` imports
  * `DynamicFormComponent`, whose rich-text field pulls `@coolms/editor-angular`
@@ -19,7 +19,7 @@ import { ProfilePageComponent } from './profile-page.component';
  * `'./layout/page-layout.js'` specifiers against `.ts` sources, and the old
  * `@angular-devkit/build-angular:karma` builder was webpack with no
  * `resolve.extensionAlias`, so it could not follow them. Importing this page
- * from any spec killed the WHOLE suite at build time — ~40 "Can't resolve
+ * from any spec killed the WHOLE suite at build time -- ~40 "Can't resolve
  * './layout/x.js'" errors, "Found 1 load error", zero specs executed. The
  * `test` target now runs `@angular/build:karma`, which shares the `build`
  * target's esbuild resolution, so the two agree by construction.
@@ -27,7 +27,7 @@ import { ProfilePageComponent } from './profile-page.component';
  * `profile-settings-echo.spec.ts` covers the same fallout from the
  * OUTSIDE: it drives the real ApiService and the real preference services, but
  * where the page's handlers merge the echo it has to REPLICATE those lines by
- * hand. A hand-copied line proves nothing about the line it copies — delete
+ * hand. A hand-copied line proves nothing about the line it copies -- delete
  * `this.calPrefs.update(updated)` from `saveCalendarPrefs` and that spec stays
  * green while every calendar widget on screen silently keeps the pre-save
  * timezone. This file closes that gap: it renders the real page and lets the
@@ -36,7 +36,7 @@ import { ProfilePageComponent } from './profile-page.component';
  * The fake backend models API Platform's content negotiation rather than
  * hardcoding a good response, so these stay regression tests: a section is a
  * MAP, and ld+json renders a map as a Hydra Collection with the KEYS STRIPPED.
- * The spec never picks the good shape — the `Accept` header the code sends does.
+ * The spec never picks the good shape -- the `Accept` header the code sends does.
  */
 describe('ProfilePageComponent — save handlers over a real render', () => {
     const THEME_CACHE_KEY  = 'coolms_theme';
@@ -72,7 +72,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         { section: 'preferences', label: 'Preferences', icon: 'sliders',  formId: 'identity:user_preferences' },
     ];
 
-    /** What GET /auth/me/settings serves — i.e. what the user had on load. */
+    /** What GET /auth/me/settings serves -- i.e. what the user had on load. */
     const SETTINGS_ON_LOAD = {
         calendar: {
             tz:                  'UTC',
@@ -116,7 +116,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
     };
 
     /**
-     * A two-field render definition for the generic Preferences tab — the two
+     * A two-field render definition for the generic Preferences tab -- the two
      * fields `saveSection` actually reads off the echo. Plain `text` controls:
      * the widget is not what is under test, the handler is.
      */
@@ -147,7 +147,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
     /**
      * API Platform's content negotiation for a settings section, modelled.
      * A request that did not ask for plain JSON gets the Hydra shape, keys and
-     * all — which is to say, no keys.
+     * all -- which is to say, no keys.
      */
     function flushSection(req: TestRequest, body: Record<string, unknown>): void {
         if ('application/json' === req.request.headers.get('Accept')) {
@@ -186,7 +186,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
  // manifest (ApiService, FormRenderService, ThemeService) and
  // `AuthState.currentUser` (the calendar prefs' personal-calendar
  // fallback). The manifest object carries no `id`, so that
- // fallback resolves to null — nothing here leans on it.
+ // fallback resolves to null -- nothing here leans on it.
                 { provide: Store, useValue: { selectSnapshot: () => MANIFEST } },
             ],
         });
@@ -199,7 +199,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         fixture = TestBed.createComponent(ProfilePageComponent);
         page    = fixture.componentInstance;
 
- // ngOnInit's forkJoin — the page renders nothing until all three land.
+ // ngOnInit's forkJoin -- the page renders nothing until all three land.
         fixture.detectChanges();
         http.expectOne(ME_URL).flush(USER);
         http.expectOne(SECTIONS_URL).flush({ member: SECTIONS });
@@ -220,7 +220,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
     /**
      * The pin on the change that made this file possible. `paginateFlow` is the
      * export webpack named when it gave up ("export 'paginateFlow' was not
-     * found in '@coolms/document-engine' (module has no exports)") — under the
+     * found in '@coolms/document-engine' (module has no exports)") -- under the
      * old builder the engine resolved to an empty module, so every symbol was
      * undefined and the bundle never linked. Should `test` ever drift back to a
      * resolver that cannot follow the engine's `./x.js` specifiers to its `.ts`
@@ -299,7 +299,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         openTab('calendar');
         http.expectOne(CALENDAR_LIST_URL).flush({ member: [] });
  // The tab's timezone picker is a lazy-select over the
- // `calendar.timezones` OptionSource — rows keyed by `value`, not `id`.
+ // `calendar.timezones` OptionSource -- rows keyed by `value`, not `id`.
         http.expectOne(r => r.url === TIMEZONE_OPTIONS_URL).flush({
             member: [
                 { value: 'UTC',           label: 'UTC',    group: 'Other'  },
@@ -398,9 +398,9 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         expect(theme.userAccent()).toBe('#3366ff');
         expect(document.documentElement.style.getPropertyValue('--cms-accent')).toBe('#3366ff');
 
- // `settingsForm()?.resetSaving()` — a viewChild call that was
+ // `settingsForm()?.resetSaving()` -- a viewChild call that was
  // unreachable from a spec until this file could exist. Miss it and the
- // button says "Saving…" forever after a successful save.
+ // button says "Saving..." forever after a successful save.
         expect(form.saving()).toBeFalse();
         expect(page.settings()['preferences']).toEqual({
             theme: 'dark', accentColor: '#3366ff', locale: 'en', pageSize: 20,

@@ -5,7 +5,7 @@ import { EditorPeer } from './editor-collab.service';
 
 /**
  * Live presence strip for the page editor: the avatars of
- * other users currently in this document. Presentational only — fed the
+ * other users currently in this document. Presentational only -- fed the
  * deduped peer list from {@see EditorCollabService}; renders nothing when
  * nobody else is here. Avatars overlap; past `maxInline` they fold into a
  * "+N" chip (the locale-switcher overflow idiom). Names surface via native

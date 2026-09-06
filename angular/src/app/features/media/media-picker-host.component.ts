@@ -109,8 +109,8 @@ export type MediaPickerHostResult =
 /**
  * Hosts MediaPickerComponent inside a CDK Dialog and adapts its emit to the
  * shape the editor's "insert media" command expects: either a single asset
- * (uuid+size+kind+previewUrl), a plain HTML5 snippet, or — when the Gallery
- * tab is active — a `{collectionId, name, galleryType, cols, limit, depth}`
+ * (uuid+size+kind+previewUrl), a plain HTML5 snippet, or -- when the Gallery
+ * tab is active -- a `{collectionId, name, galleryType, cols, limit, depth}`
  * payload (the collection path is resolved to its Node UUID) routed to the
  * MediaGalleryWidget Tiptap node.
  *
@@ -417,12 +417,12 @@ export class MediaPickerHostComponent {
     @ViewChild(MediaPickerComponent) picker?: MediaPickerComponent;
     /**
      * Once the user types in Width or Height, the auto-fill effect stops
-     * overwriting them — even if a different asset is later selected. The
+     * overwriting them -- even if a different asset is later selected. The
      * flag is local to this dialog instance, so closing + reopening the
      * picker resets it (each open starts with a clean auto-fill state).
      */
     private userTouchedDimensions = false;
-    /** Last asset whose dimensions we filled in — gates re-fill so the same
+    /** Last asset whose dimensions we filled in -- gates re-fill so the same
      *  pick doesn't loop, but a *different* pick still flows through. */
     private lastAutoFilledAssetId: string | null = null;
 
@@ -452,7 +452,7 @@ export class MediaPickerHostComponent {
                 bindValue:  'path',
                 accept:     '*',
                 // Gallery selection is folder-only; recently-used / hover
-                // preview are noisy here — keep them off for clarity.
+                // preview are noisy here -- keep them off for clarity.
                 recentlyUsed: false,
                 hoverPreview: false,
             };
@@ -500,7 +500,7 @@ export class MediaPickerHostComponent {
             const first = pending[0];
             if (!first || first.kind !== 'asset') return;
 
-            // Same asset still pending — already filled, skip.
+            // Same asset still pending -- already filled, skip.
             if (this.lastAutoFilledAssetId === first.value) return;
 
             const asset = picker.assets().find(a => a.id === first.value);

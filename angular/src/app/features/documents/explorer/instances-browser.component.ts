@@ -33,12 +33,12 @@ import { filenameOf, formatLocation } from './vfs-location.helpers';
 import { filterTreeDirectories } from './vfs-tree.helpers';
 
 /**
- *.1a — instances file zone.
+ *.1a -- instances file zone.
  *
  * Mounts in the main slot when `state.rightPanelMode === 'instances'`,
  * spans the full middle+right area (the right detail panel collapses
  * via `pageContext.activeItem === null`). Filter UI lives in the page
- * toolbar's `[toolbar-filters]` projection — this component reads
+ * toolbar's `[toolbar-filters]` projection -- this component reads
  * `state.instanceFilters()` directly.
  *
  * Two view modes (driven by `state.instancesViewMode()`):
@@ -494,7 +494,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     readonly template = input.required<DocumentTemplate | null>();
 
     /**
-     * — when set, this browser lists everything produced at or
+     * -- when set, this browser lists everything produced at or
      * below one VFS root instead of everything produced by one
      * template, and `template()` is ignored. See `scope()`.
      */
@@ -502,7 +502,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
     /**
      * The single question this view is answering. Every fetch, guard
-     * and poll reads THIS rather than `template()` — the two scopes
+     * and poll reads THIS rather than `template()` -- the two scopes
      * differ only in the filter predicate, so keeping one code path
      * means the open / download / regenerate / delete behaviour fixed
      * in and can't fork between them.
@@ -528,7 +528,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Direct child directories of the scoped folder, for the chip strip
-     *. Sourced from the VFS rather than the instances endpoint —
+     *. Sourced from the VFS rather than the instances endpoint --
      * a folder is not a document, and an empty one still has to be
      * reachable. `filterTreeDirectories` also drops `.templates`, which
      * gets its own chip and is a security gate, not a subfolder.
@@ -561,7 +561,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
      * has to be the SAME derivation the tiles use or the two views would
      * disagree about what a file is called.
      *
-     * `totalItems` is the server's count, not the loaded length — the footer
+     * `totalItems` is the server's count, not the loaded length -- the footer
      * and the grid both read it, and reporting the window as the total would
      * claim a partly-loaded list is complete.
      */
@@ -592,7 +592,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     private readonly cancel$ = new Subject<void>();
 
     constructor() {
-        // — subfolder chips follow the scoped folder. Kept separate
+        // -- subfolder chips follow the scoped folder. Kept separate
         // from the instance fetch: filters and sort must not change which
         // folders exist.
         effect(() => {
@@ -628,7 +628,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
             void f;
         });
 
-        // Polling tick — runs only while there's at least one pending
+        // Polling tick -- runs only while there's at least one pending
         // row. TODO(centrifugo): replace this poll with a per-template
         // subscription channel once the real-time bridge lands.
         interval(3000)
@@ -739,7 +739,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Right-click inside the grid. The grid emits `rowSelected` first, so the
-     * instance under the cursor is already selected — which is why this reads
+     * instance under the cursor is already selected -- which is why this reads
      * state rather than the event.
      */
     protected onGridRowContextMenu(event: MouseEvent): void {
@@ -750,7 +750,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * The grid hands back the FLATTENED row it was given, not the DTO — the
+     * The grid hands back the FLATTENED row it was given, not the DTO -- the
      * handlers downstream want the instance, so map back by id.
      */
     private instanceFor(row: Record<string, unknown>): DocumentInstance | undefined {
@@ -762,7 +762,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * — leave the space-scoped Documents view for the template
+     * -- leave the space-scoped Documents view for the template
      * listing at the same path. Single click, because this is folder
      * NAVIGATION (same gesture as the folders tree), not selection of
      * an item that a second click would open.
@@ -771,7 +771,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
      * Unlike the templates zone, this accepts ANY file type: "not all
      * the uploaded docs are templates" is the whole point of the
      * Documents view, so restricting to DOCX here would recreate the
-     * gap. Disabled outside the space scope — a template's
+     * gap. Disabled outside the space scope -- a template's
      * instances view is a projection, not a folder.
      */
     protected readonly dropzoneConfig = computed<CmsDropzoneConfig>(() => ({
@@ -789,14 +789,14 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     /**
      * Right-click on empty space in the documents zone. Mirrors
      * `folder-content`'s background menu, which this view simply never
-     * had — the file zone offered no menu at all.
+     * had -- the file zone offered no menu at all.
      */
     protected onBackgroundContextMenu(event: MouseEvent): void {
         if (null === this.pathScope()) {
             return;
         }
         // A Details-grid ROW is not background: without this the
-        // background menu fires after — and replaces — the instance menu the
+        // background menu fires after -- and replaces -- the instance menu the
         // row handler just opened. The empty area below the rows still is.
         if ((event.target as HTMLElement).closest('coolms-datagrid tbody tr')) {
             return;
@@ -824,7 +824,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * — navigate into a subfolder. `selectFolder` moves
+     * -- navigate into a subfolder. `selectFolder` moves
      * `currentPath`, and the page's rescope effect re-points the space
      * scope at it, so the listing and the breadcrumb follow together.
      */
@@ -841,7 +841,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Phase E3 — `CmsItemInteractionsDirective.currentSelection`
+     * Phase E3 -- `CmsItemInteractionsDirective.currentSelection`
      * input. Document holds a single focused instance; derive a
      * single-element array so right-click on the already-selected
      * card skips re-emission.
@@ -852,7 +852,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     });
 
     /**
-     * Phase E3 — bridge directive emission into single-instance state.
+     * Phase E3 -- bridge directive emission into single-instance state.
      */
     protected onSelectionChanged(event: CmsSelectionChange<DocumentInstance>): void {
         const item = event.selection[0];
@@ -869,7 +869,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
         // hotfix #4: double-click -> primary action (View).
         // Pending / failed instances are no-op (the page handler's
         // `case 'view-instance'` checks `generatedFileId`).
-        // — `uploaded` opens too: what makes a row viewable is
+        // -- `uploaded` opens too: what makes a row viewable is
         // bytes on disk, not who wrote them.
         if (!this.isReadable(instance) || !instance.generatedFileId) {
             return;
@@ -893,7 +893,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
         );
     }
 
-    /** Has bytes on disk — the precondition for View and Download. */
+    /** Has bytes on disk -- the precondition for View and Download. */
     protected isReadable(instance: DocumentInstance): boolean {
         return instance.status === 'rendered' || instance.status === 'uploaded';
     }

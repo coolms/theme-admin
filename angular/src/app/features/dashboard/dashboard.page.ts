@@ -29,7 +29,7 @@ interface DashboardWidget {
     readonly displayPath?: string;
     readonly kind: string;
     /**
-     * TWELFTHS of the dashboard grid, 1-12 — the one field here that must be
+     * TWELFTHS of the dashboard grid, 1-12 -- the one field here that must be
      * interpreted rather than displayed. The backend's `DashboardWidget::
      * COLUMNS_MAX` is the whole contract: render a different number of columns
      * and every card comes out the wrong width.
@@ -38,7 +38,7 @@ interface DashboardWidget {
     readonly group?: string;
     /** Hidden by the saved layout: keeps its position, is not drawn. */
     readonly hidden?: boolean;
-    /** What the LAYOUT said about the width — absent when it said nothing. */
+    /** What the LAYOUT said about the width -- absent when it said nothing. */
     readonly explicitColumns?: number;
 }
 
@@ -54,7 +54,7 @@ interface Card {
     readonly group?: string;
     display: string | null;
     failed: boolean;
-    /** The width in force — what gets drawn. */
+    /** The width in force -- what gets drawn. */
     columns: number;
     /**
      * What the layout STATED, or null when it stated nothing.
@@ -74,7 +74,7 @@ const GRID_COLUMNS = 12;
 const MIN_COLUMNS = 1;
 
 /**
- * `/admin/dashboard` — the widgets installed modules offer, arranged
+ * `/admin/dashboard` -- the widgets installed modules offer, arranged
  *.
  *
  * ## What this page knows, and what it deliberately does not
@@ -87,13 +87,13 @@ const MIN_COLUMNS = 1;
  *
  * ## Arranging is a MODE, not a separate screen
  *
- * The same cards, in the same grid, at the same sizes — with handles. An
+ * The same cards, in the same grid, at the same sizes -- with handles. An
  * editor that re-rendered the dashboard as a list of boxes would be showing
  * something other than the thing being arranged, and every width judgement
  * would be made against a layout nobody will ever see.
  *
  * Nothing is saved until Save. Entering the mode snapshots the cards, Cancel
- * restores the snapshot, and Save PUTs the whole arrangement and then RELOADS —
+ * restores the snapshot, and Save PUTs the whole arrangement and then RELOADS --
  * because the server decides more than the client sent: widgets nobody
  * mentioned are appended, and a colleague's placements for cards this viewer
  * cannot see are preserved.
@@ -518,7 +518,7 @@ export class DashboardPageComponent {
         return name.charAt(0).toUpperCase() + name.slice(1).replace(/[-_]/g, ' ');
     }
 
-    /** Hidden cards are drawn only while arranging — otherwise hidden means hidden. */
+    /** Hidden cards are drawn only while arranging -- otherwise hidden means hidden. */
     protected readonly shown = computed(() =>
         this.editing() ? this.cards() : this.cards().filter(card => !card.hidden),
     );
@@ -601,7 +601,7 @@ export class DashboardPageComponent {
                 const card = 'string' === typeof id ? this.current(id) : undefined;
                 if (card) {
                     // Back where it was, not appended. A hidden card REMEMBERS
-                    // its position — that is what makes hide/show a toggle
+                    // its position -- that is what makes hide/show a toggle
                     // rather than a re-drag, and adding one is the same act.
                     this.show({ ...card, hidden: false });
                 }
@@ -613,7 +613,7 @@ export class DashboardPageComponent {
     protected onDragOver(event: DragEvent): void {
         if (!this.editing() || !this.carriesLink(event)) return;
 
-        // Without preventDefault the browser refuses the drop entirely — the
+        // Without preventDefault the browser refuses the drop entirely -- the
         // default for most elements is "not a drop target".
         event.preventDefault();
         this.dropTarget.set(true);
@@ -623,7 +623,7 @@ export class DashboardPageComponent {
      * Is this drag a LINK, or something else entirely?
      *
      *  Not a nicety. Dragging a card used to select its text, and the
-     * browser then offers that selection as a native drag — which this grid
+     * browser then offers that selection as a native drag -- which this grid
      * accepted, highlighted itself for, and answered with "That menu item does
      * not belong to a module offering widgets" for a drag that was never a menu
      * item. Chrome puts `text/uri-list` on an anchor drag and only `text/plain`
@@ -672,7 +672,7 @@ export class DashboardPageComponent {
             // One candidate is not a choice; asking would be ceremony.
             this.show({ ...missing[0], hidden: false });
         } else {
-            // Several — which is exactly the case the picker was built for.
+            // Several -- which is exactly the case the picker was built for.
             this.openPicker(missing);
         }
     }
@@ -729,7 +729,7 @@ export class DashboardPageComponent {
      *
      * A hidden card's endpoint is never called, so one being shown has no
      * figure yet. Without this it would sit at an em-dash until Save reloaded
-     * the page — which reads as "this widget is broken" at exactly the moment
+     * the page -- which reads as "this widget is broken" at exactly the moment
      * someone is deciding whether to keep it.
      */
     private show(card: Card): void {
@@ -755,7 +755,7 @@ export class DashboardPageComponent {
      * Resize by dragging the card's right edge, snapping to whole twelfths.
      *
      * The snap needs the width of one column ON THIS PANE, which only the live
-     * grid can answer — it is a fraction of whatever the container query left
+     * grid can answer -- it is a fraction of whatever the container query left
      * it. Twelve tracks and eleven gaps make one track-plus-gap exactly
      * `(width + gap) / 12`, so the pointer's travel converts to columns by a
      * single division. Rounding rather than truncating so the card follows the
@@ -782,7 +782,7 @@ export class DashboardPageComponent {
             if (columns !== this.current(card.id)?.columns) {
                 // Both, and that is the point: `columns` is what gets drawn,
                 // `explicitColumns` is what gets SAVED. A resize is the only
-                // thing that may set the second — see the note on the Card type.
+                // thing that may set the second -- see the note on the Card type.
                 this.replace({ ...card, columns, explicitColumns: columns });
             }
         };
@@ -897,7 +897,7 @@ export class DashboardPageComponent {
             failed: false,
         };
 
-        // A hidden card is not drawn, so its endpoint is not called — a card
+        // A hidden card is not drawn, so its endpoint is not called -- a card
         // someone removed should not go on costing a request per page load.
         // It gains its value the moment it is shown again.
         return card.hidden ? card : { ...card, ...await this.resolve(card) };
@@ -924,7 +924,7 @@ export class DashboardPageComponent {
      *
      *  `undefined` as well as `null`, and that was a real bug. A
      * nullable PHP property is OMITTED from the JSON rather than sent as null,
-     * so `displayPath` arrives here as `undefined` — which a strict
+     * so `displayPath` arrives here as `undefined` -- which a strict
      * `null === path` misses, so `undefined.split()` threw, the caller's catch
      * treated it as a failed FETCH, and the widget drew a dash while its
      * endpoint was answering perfectly. The absent key is the normal case, not

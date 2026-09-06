@@ -60,7 +60,7 @@ export interface RestorePreviewResult {
  * Backup admin API client.
  *
  * Talks to the superuser/backup-group-gated `/api/v1/backup` surface off
- * the generic `manifest.apiBase` — feature-local (not on the shared ApiService),
+ * the generic `manifest.apiBase` -- feature-local (not on the shared ApiService),
  * mirroring ExperimentsService / NewsletterService. The three ops are the safe,
  * non-destructive ones: list the on-disk bundles, create a new one, and dry-run
  * (preview) what a restore WOULD replay. Download / upload / apply-restore are
@@ -90,7 +90,7 @@ export class BackupService {
         return this.http.post<CreateBackupResult>(`${this.apiBase}/backup`, { tier, only });
     }
 
-    /** Dry-run a restore of the named bundle — writes nothing, returns the plan. */
+    /** Dry-run a restore of the named bundle -- writes nothing, returns the plan. */
     restorePreview(name: string, only = ''): Observable<RestorePreviewResult> {
         return this.http.post<RestorePreviewResult>(
             `${this.apiBase}/backup/${encodeURIComponent(name)}/restore-preview`,

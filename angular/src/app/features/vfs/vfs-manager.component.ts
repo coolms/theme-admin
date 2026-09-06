@@ -123,7 +123,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
     isActive              = signal(false);
 
     /**
-     * Context passed to ExplorerLayout — drives right panel
+     * Context passed to ExplorerLayout -- drives right panel
      * visibility. Right-panel decoupling: panel mounts only when
      * `panelOpen` is true AND an item is active (something to show).
      * Selection alone no longer opens the panel.
@@ -259,7 +259,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             case 'VfsNewFile':     void this.vfsActions.newFile();              break;
             case 'VfsPaste':       void this.clipboard.paste(currentPath);      break;
 
-            // -- Upload — forwarded to VfsFilesSlotComponent via state subject -
+            // -- Upload -- forwarded to VfsFilesSlotComponent via state subject -
             case 'upload':         this.state.uploadRequested$.next();          break;
 
             // -- Node actions: single-node ops ---------------------------------
@@ -284,7 +284,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             case 'view-grid':      this.state.setViewMode('grid');              break;
             case 'view-list':      this.state.setViewMode('list');              break;
 
-            // -- Delegate remaining NaviGraph actions (VfsDownload, VfsChmod, VfsChown …)
+            // -- Delegate remaining NaviGraph actions (VfsDownload, VfsChmod, VfsChown ...)
             default: {
                 const node = this.toolbarNodes().find(n => n.meta['action'] === action);
                 if (node && target) void this.vfsActions.execute(node, target);
@@ -329,14 +329,14 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         // A `?path=` query param (e.g. the Site detail "Browse files" deep-link)
-        // wins over the restored last path — open the explorer at that folder.
+        // wins over the restored last path -- open the explorer at that folder.
         const saved     = this.prefs.getPageState<{ lastPath?: string; viewMode?: VfsViewMode }>('vfs');
         const queryPath = this.route.snapshot.queryParamMap.get('path');
         const startPath = (queryPath !== null && queryPath !== '') ? queryPath : (saved?.lastPath ?? '/');
 
         // `?select=` names a FILE inside `?path=` to land on. The
         // list endpoint only accepts directories, so a caller that knows a
-        // file — a notification announcing a generated document — splits it
+        // file -- a notification announcing a generated document -- splits it
         // into folder + name rather than passing the file path itself.
         const select = this.route.snapshot.queryParamMap.get('select');
         if (select !== null && select !== '') {

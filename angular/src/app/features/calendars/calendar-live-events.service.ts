@@ -4,14 +4,14 @@ import { Observable } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 /**
- * Calendar realtime ship — typed wrapper over `CentrifugoClientService`
+ * Calendar realtime ship -- typed wrapper over `CentrifugoClientService`
  * for the `calendar.items.{calendarUuid}` channel. Mirror of
  * `DataGridLiveEventsService`: the FullCalendar `events-card` and
  * the topbar quick-panel subscribe per mount and call
  * `fc.refetchEvents()` whenever a publication arrives.
  *
  * The returned Observable disconnects the centrifuge subscription
- * when the last RxJS subscriber goes away — same pattern as the
+ * when the last RxJS subscriber goes away -- same pattern as the
  * sibling DataGrid stream. Payload shape mirrors the backend
  * `CalendarLivePublisher` (`{type: 'check'}`); the FE doesn't read
  * it, the arrival itself is the signal.
@@ -28,7 +28,7 @@ export class CalendarLiveEventsService {
      * `calendarId` is the calendar's UUID (rfc4122), matching the
      * backend `CalendarChannelNameBuilder::itemsChannel()` output.
      * The channel survives a slug rename and avoids a DB hop in
-     * the backend listener — notes on UUID-keyed
+     * the backend listener -- notes on UUID-keyed
      * channels.
      */
     watchItems(calendarId: string): Observable<void> {

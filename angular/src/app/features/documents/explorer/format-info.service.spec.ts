@@ -5,7 +5,7 @@ import { FormatInfoService } from './format-info.service';
 import { type FormatDisplayInfo } from '../shared/format-info.types';
 
 /**
- * `nativeAuthoringFormats()` — the list behind the "New Template" format
+ * `nativeAuthoringFormats()` -- the list behind the "New Template" format
  * choice.
  *
  * It is a FILTER over what the backend advertises, never a literal pair, so
@@ -83,7 +83,7 @@ describe('FormatInfoService', () => {
     });
 
     /**
-     * `extensionForMime()` — how the Document Library names a template's
+     * `extensionForMime()` -- how the Document Library names a template's
      * source download.
      *
      * Each format publishes its mimes and extensions in the same order, so
@@ -146,7 +146,7 @@ describe('FormatInfoService', () => {
  it('returns null when a format advertises a mime with no extension', () => {
  // A short `extensions` list means the pairing does not hold for
  // that entry. Answering with SOME extension would be worse than
- // answering with none — the caller's fallback is at least honest
+ // answering with none -- the caller's fallback is at least honest
  // about being a guess.
             load([{ format: 'word', mimeTypes: [DOCX, DTMPL], extensions: ['.docx'] }]);
 
@@ -155,7 +155,7 @@ describe('FormatInfoService', () => {
     });
 
     /**
-     * `loadFormatInfo('word')` — the `?format=` narrowing the Replace dialog
+     * `loadFormatInfo('word')` -- the `?format=` narrowing the Replace dialog
      * asks for, since it already knows the format it is replacing.
      *
      * The cache is SHARED and root-scoped: the document grid reads an icon, a
@@ -199,7 +199,7 @@ describe('FormatInfoService', () => {
             loadFiltered('word', [WORD]);
 
  // The grid behind the dialog still knows every format it did
- // before — including the one nobody asked about.
+ // before -- including the one nobody asked about.
             expect(svc.getAllFormats().map(f => f.format)).toEqual(['word', 'spreadsheet']);
             expect(svc.label('spreadsheet')).toBe('Spreadsheet');
             expect(svc.extensionForMime(XLSX_MIME)).toBe('.xlsx');

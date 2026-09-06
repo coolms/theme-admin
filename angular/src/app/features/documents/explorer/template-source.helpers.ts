@@ -2,7 +2,7 @@
  * Pure helpers for naming a template's SOURCE file.
  *
  * A template's source is whatever bytes back its Node, and that is NOT one
- * shape per format — it is one per point on's source axis:
+ * shape per format -- it is one per point on's source axis:
  *
  *   word        imported -> .docx      native -> .dtmpl
  *   spreadsheet imported -> .xlsx      native -> .dsheet
@@ -12,7 +12,7 @@
  * `format-info` payload has not arrived (it loads async on page mount and
  * its errors are swallowed) or advertises nothing for the mime in hand. The
  * live answer comes from that endpoint, where each format module spells its
- * own mimes and extensions — see `FormatInfoService.extensionForMime()`.
+ * own mimes and extensions -- see `FormatInfoService.extensionForMime()`.
  * That ordering is what keeps a future format from having to be added here.
  */
 
@@ -56,7 +56,7 @@ const IMPORTED_SOURCE_MIMES: Readonly<Record<string, string | undefined>> = Obje
 
 /**
  * Native (authored) source mime per format key. `presentation` is absent on
- * purpose — its provider returns no native source mime, so there is nothing
+ * purpose -- its provider returns no native source mime, so there is nothing
  * to author and nothing to name.
  */
 const NATIVE_SOURCE_MIMES: Readonly<Record<string, string | undefined>> = Object.freeze({
@@ -65,7 +65,7 @@ const NATIVE_SOURCE_MIMES: Readonly<Record<string, string | undefined>> = Object
 });
 
 /**
- * Defensive fallback when `sourceMimeType` is empty on the row — it is the
+ * Defensive fallback when `sourceMimeType` is empty on the row -- it is the
  * Node's mime and is only ever null when the Node carries none.
  *
  * `native` is a parameter rather than an assumption: this used to answer
@@ -81,7 +81,7 @@ export function inferTemplateSourceMime(format: string, native: boolean): string
 /**
  * Extension (leading dot) for a source mime. `advertised` is the backend's
  * answer and always wins; the local map covers the payload-missing case.
- * Returns `''` when neither knows the mime — a bare name beats a name that
+ * Returns `''` when neither knows the mime -- a bare name beats a name that
  * claims to be something it isn't.
  */
 export function extensionForSourceMime(mime: string, advertised: string | null): string {
@@ -93,13 +93,13 @@ export function extensionForSourceMime(mime: string, advertised: string | null):
  * index pairing `DocumentFormatProviderInterface` states: `extensions[i]`
  * names `mimeTypes[i]`.
  *
- * Pure and list-taking so the one implementation serves both callers —
+ * Pure and list-taking so the one implementation serves both callers --
  * `FormatInfoService.extensionForMime()` passes the whole cached registry,
  * while the Replace dialog passes the single entry it fetched for its own
  * format (a filtered load deliberately does not enter the shared cache).
  *
  * `null` when no entry advertises the mime, or when the entry's `extensions`
- * list is too short for the pairing to hold — callers fall back to their own
+ * list is too short for the pairing to hold -- callers fall back to their own
  * defaults rather than take SOME extension.
  */
 export function extensionForMimeIn(formats: readonly FormatDisplayInfo[], mime: string): string | null {
@@ -117,24 +117,24 @@ export function extensionForMimeIn(formats: readonly FormatDisplayInfo[], mime: 
     return null;
 }
 
-/** The source-axis fields alone — narrow so specs can fake a row. */
+/** The source-axis fields alone -- narrow so specs can fake a row. */
 export type TemplateSourceAxis = Pick<DocumentTemplate, 'format' | 'native' | 'sourceMimeType'>;
 
 /**
- * The IMPORTED (Office) source mime for a template — the only source
+ * The IMPORTED (Office) source mime for a template -- the only source
  * `replaceSource()` will take.
  *
  * Every provider gates a replacement on `validateUpload()`, and every
  * `validateUpload()` opens the bytes as an Office file (`DocxTextExtractor`,
  * `XlsxTemplate::open()`, `PptxTemplate::open()`). So the NATIVE half of
- *'s source axis — `.dtmpl`, `.dsheet` — is not replaceable source even
+ *'s source axis -- `.dtmpl`, `.dsheet` -- is not replaceable source even
  * though `format-info` advertises it beside the imported half. A picker
  * offering a format's whole extension list would hand the operator a file the
  * backend refuses.
  *
  * The row answers first: an imported template's own `sourceMimeType` IS the
  * imported mime, so the common case consults no map at all. Only a NATIVE
- * template — whose source mime is the other half — falls through to the
+ * template -- whose source mime is the other half -- falls through to the
  * per-format fallback, and `null` (a format nothing here has heard of) leaves
  * the picker unfiltered rather than filtered to a guess.
  */
@@ -146,7 +146,7 @@ export function importedSourceMime(template: TemplateSourceAxis): string | null 
     return inferTemplateSourceMime(template.format, false);
 }
 
-/** The fields a filename is built from — narrow so specs can fake a row. */
+/** The fields a filename is built from -- narrow so specs can fake a row. */
 export type TemplateSourceIdentity = Pick<
     DocumentTemplate,
     'slug' | 'format' | 'native' | 'sourceMimeType'

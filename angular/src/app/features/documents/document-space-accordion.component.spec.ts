@@ -17,12 +17,12 @@ import { DocumentPageStateService } from './explorer/document-page-state.service
  * backend these arrive as empty strings that are present.
  *
  * Every call site therefore guards on FALSINESS rather than on `undefined`,
- * and there is a comment at the type declaration saying so. ⚠️ A comment
+ * and there is a comment at the type declaration saying so. !! A comment
  * cannot fail. This is what fails when somebody rewrites the guard as
  * `url === undefined`, which reads as more precise, passes review, and turns
  * an empty string into a POST to `''`.
  *
- * ⚠️ Mutation-proved, and the first mutation was the WRONG one. Adding
+ * !! Mutation-proved, and the first mutation was the WRONG one. Adding
  * `?? '/api/v1/document/spaces/available'` -- the rewrite that looks most
  * dangerous -- changed nothing, because `'' ?? x` is `''` and the falsiness
  * guard still caught it. Only when the three guards were changed to test for
@@ -30,12 +30,12 @@ import { DocumentPageStateService } from './explorer/document-page-state.service
  * test written against the plausible-sounding mutation rather than the
  * measured one would have been green in both directions.
  *
- * ⚠️ The second case is the denominator. A test that only asserts "no request
+ * !! The second case is the denominator. A test that only asserts "no request
  * was made" passes just as well when the component is broken, when the harness
  * never wired the http client, or when the method under test was renamed. The
  * pair is the evidence: silent on empty, and calling on present.
  *
- * ⚠️ MUTATE ONE GUARD AT A TIME. Mutating all three together proved only that
+ * !! MUTATE ONE GUARD AT A TIME. Mutating all three together proved only that
  * AT LEAST ONE was pinned, and the suite went red on the other two while
  * `loadAvailable()` -- reachable only through `openPicker()`, which the spec
  * did not call -- was covered by nothing. A red suite under a multi-site
@@ -105,7 +105,7 @@ describe('DocumentSpaceAccordionComponent — an absent manifest url is empty, n
 
         component.enable('coolms-site');
 
-        // ⚠️ openPicker() is the only caller of the third guard, and without
+        // !! openPicker() is the only caller of the third guard, and without
         // this line that guard is unpinned: mutating it alone leaves the whole
         // spec green while the component fires GET '' the moment a user opens
         // the picker on a half-configured backend.

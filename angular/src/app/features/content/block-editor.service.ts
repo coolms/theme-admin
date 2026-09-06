@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
-/** One field of a {@link BlockTypeSchemaDto} — kind drives the editor widget. */
+/** One field of a {@link BlockTypeSchemaDto} -- kind drives the editor widget. */
 export interface BlockFieldSchemaDto {
     readonly name: string;
     /** 'text' | 'textarea' | 'url' | 'group'. */

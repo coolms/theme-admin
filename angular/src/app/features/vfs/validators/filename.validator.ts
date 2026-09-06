@@ -4,7 +4,7 @@ const INVALID_CHARS = /[<>:"/\\|?*\x00-\x1f]/;
 
 /**
  * Validate a raw filename string.
- * Returns an error message or null — usable both in dialog validators and reactive forms.
+ * Returns an error message or null -- usable both in dialog validators and reactive forms.
  */
 export function validateFilename(val: string): string | null {
     if (!val) return null;

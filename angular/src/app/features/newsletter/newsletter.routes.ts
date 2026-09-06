@@ -2,7 +2,7 @@ import { type Routes } from '@angular/router';
 
 /**
  * Newsletter admin routes.
- * `/admin/newsletter` — the subscriber list + campaign compose page.
+ * `/admin/newsletter` -- the subscriber list + campaign compose page.
  */
 export const NEWSLETTER_ROUTES: Routes = [
     {

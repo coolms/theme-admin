@@ -30,7 +30,7 @@ interface StatusTab {
     readonly icon:  string;
 }
 
-/** Rows per lazy page — matches the grid YAML's `dataSource.pageSize`. */
+/** Rows per lazy page -- matches the grid YAML's `dataSource.pageSize`. */
 const PAGE_SIZE = 50;
 
 /**
@@ -45,11 +45,11 @@ const PAGE_SIZE = 50;
  * Cockpit. The grid's rich cells surface the submitter (avatar + email), the
  * originating form + page (badge + link), the message (clamped snippet) and the
  * status (coloured badge); per-row triage actions (Handle / Spam / Reopen) live
- * in the right-click context menu, gated by each row's `status` (house style —
+ * in the right-click context menu, gated by each row's `status` (house style --
  * `showActionColumn: false`). Plain-text fields are auto-escaped by Angular
- * interpolation — no XSS sink.
+ * interpolation -- no XSS sink.
  *
- * **`loadingMode: lazy`.** It used to be `client` — one request per
+ * **`loadingMode: lazy`.** It used to be `client` -- one request per
  * tab, whole bucket, filtered in the browser. But the endpoint capped that at
  * 200 rows, so the queue silently omitted leads past the cap AND every filter
  * searched a truncated window while presenting itself as the complete answer.
@@ -109,17 +109,17 @@ export class LeadsListComponent implements OnInit {
     readonly status  = signal<LeadStatus>('new');
     readonly leads   = signal<LeadDto[]>([]);
     readonly loading = signal(true);
-    /** Server's count for the CURRENT bucket + filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT bucket + filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded = signal(false);
 
     /** Guards against out-of-order responses; see {@link onLoadMore}. */
     private loadEpoch = 0;
-    /** Ids with an in-flight transition — blocks double-submit. */
+    /** Ids with an in-flight transition -- blocks double-submit. */
     private readonly busyIds = signal<ReadonlySet<string>>(new Set());
 
-    /** Selected grid row — drives the toolbar's selection-gated triage actions (navi showWhen). */
+    /** Selected grid row -- drives the toolbar's selection-gated triage actions (navi showWhen). */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     /**
@@ -158,7 +158,7 @@ export class LeadsListComponent implements OnInit {
     });
 
     /**
-     * Footer row-count strip (bottom-left) — the count lives here, not the
+     * Footer row-count strip (bottom-left) -- the count lives here, not the
      * header. It is the SERVER's count for the bucket + active filter, so it no
      * longer silently means "rows I happened to load".
      */
@@ -168,7 +168,7 @@ export class LeadsListComponent implements OnInit {
         const bucket = this.status();
         // Say nothing at zero: the grid's own empty state distinguishes "nothing
         // in this queue" from "no matches", and the footer cannot tell the two
-        // apart — a fixed message here would contradict the body the moment a
+        // apart -- a fixed message here would contradict the body the moment a
         // filter is what emptied the list.
         if (n === 0) return '';
 
@@ -177,14 +177,14 @@ export class LeadsListComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('Leads');
-        // No fetch here — the grid emits `(loadMore)` on mount, which is the
+        // No fetch here -- the grid emits `(loadMore)` on mount, which is the
         // single entry point. Fetching here too would race and double-load.
     }
 
     /**
      * The one place leads are fetched. Fired on mount, on every filter/sort
-     * change (`reset`, offset 0), when the lazy sentinel scrolls in, and — via
-     * `grid.reload()` — on a tab switch or a manual refresh.
+     * change (`reset`, offset 0), when the lazy sentinel scrolls in, and -- via
+     * `grid.reload()` -- on a tab switch or a manual refresh.
      *
      * `columnFilters` is passed VERBATIM: the endpoint is RQL-native and its
      * allowlist is derived from the same `lead:list` YAML that renders the
@@ -253,7 +253,7 @@ export class LeadsListComponent implements OnInit {
      *
      * Goes through `grid.reload()` rather than calling the API directly, so the
      * grid re-emits `(loadMore)` carrying its CURRENT filters and sort. Fetching
-     * here instead would quietly drop them — the page does not own that state.
+     * here instead would quietly drop them -- the page does not own that state.
      */
     private load(): void {
         this.loading.set(true);
@@ -300,7 +300,7 @@ export class LeadsListComponent implements OnInit {
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
-                // The lead left the current bucket — drop it from this view AND
+                // The lead left the current bucket -- drop it from this view AND
                 // from the server's count, or the footer would keep claiming a
                 // row the queue no longer holds. Cheaper and less jarring than a
                 // full reload, which would discard the loaded window.

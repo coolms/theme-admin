@@ -8,7 +8,7 @@ import { HydraCollection } from '../../api/api.service';
 import { PersonalizationRuleDto, PersonalizationRuleWriteDto } from './personalization-rules.types';
 
 /**
- *Phase 4 (CDP personalization, P4.admin.c) — admin API client for the
+ *Phase 4 (CDP personalization, P4.admin.c) -- admin API client for the
  * content-personalization rule store.
  *
  * Feature-local (not on the shared ApiService), mirroring {@link ./cdp.service}:
@@ -22,7 +22,7 @@ export class PersonalizationRulesService {
     private readonly http  = inject(HttpClient);
     private readonly store = inject(Store);
 
-    // API-Platform PATCH ops require merge-patch (else 415) — see ApiService.patchHeaders.
+    // API-Platform PATCH ops require merge-patch (else 415) -- see ApiService.patchHeaders.
     private readonly patchHeaders = { headers: { 'Content-Type': 'application/merge-patch+json' } };
 
     private get apiBase(): string {
@@ -36,7 +36,7 @@ export class PersonalizationRulesService {
     /**
      * Every rule (enabled and disabled) in `sortOrder` order. The admin HTTP layer
      * content-negotiates to JSON-LD, so API Platform returns a Hydra collection
-     * ({@link HydraCollection} with `member`), not a bare array — normalise both
+     * ({@link HydraCollection} with `member`), not a bare array -- normalise both
      * shapes (mirrors {@link ./cdp.service}'s `.member` unwrap).
      */
     listRules(): Observable<PersonalizationRuleDto[]> {

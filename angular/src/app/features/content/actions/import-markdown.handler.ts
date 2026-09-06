@@ -5,7 +5,7 @@ import type { EditorActionContext, EditorActionHandler } from '@coolms/editor-an
 import { MarkdownImportDialogComponent } from '../markdown-import-dialog.component';
 
 /**
- * Handles `content.importMarkdown` — opens {@link MarkdownImportDialogComponent}
+ * Handles `content.importMarkdown` -- opens {@link MarkdownImportDialogComponent}
  * (paste / load a `.md` file), which converts the Markdown to safe HTML
  * server-side, then inserts the returned HTML at the cursor.
  *

@@ -21,7 +21,7 @@ import { DmnTableEditor, DmnXmlParseError } from '@coolms/designer/dmn-table';
 /**
  * Is this the recoverable "decision has no rules yet" shape?
  *
- * Branches on the TYPED code, never the message text — the wording is
+ * Branches on the TYPED code, never the message text -- the wording is
  * a UI detail and would silently stop matching if it were reworded.
  */
 function isMissingDecisionTable(err: unknown): boolean {
@@ -192,7 +192,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
     readonly isLoading     = signal<boolean>(true);
     readonly loadError     = signal<string | null>(null);
     /**
-     * True when the body parsed but carries no decision table — a DRD
+     * True when the body parsed but carries no decision table -- a DRD
      * document rather than a broken one. Rendered as a purposeful
      * empty state, not an error.
      */
@@ -216,7 +216,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         // + body + (hidden) canvas, and we mount the DMN table editor
         // into `editor.body` next.
         // Save / Deploy live in the page footer (Image-Editor chrome), not
-        // the shell toolbar — DMN-table has no connect/fit, so the toolbar
+        // the shell toolbar -- DMN-table has no connect/fit, so the toolbar
         // is undo/redo/zoom only. `hideSidebar` because the decision-table
         // editor has no property panel (it mounts a spreadsheet into the
         // body); without this the shell renders an empty expanded sidebar.
@@ -257,7 +257,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
             }
         } catch (err) {
             /**
-             * A decision with NO `<decisionTable>` is not corruption —
+             * A decision with NO `<decisionTable>` is not corruption --
              * it is a decision node in a requirements diagram that has
              * no rules yet, which is exactly what the DRD editor
              * authors. Showing the parser's message in a red banner told
@@ -269,7 +269,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
             if (isNewDecisionBody(err)) {
                 /**
                  * A FRESH decision key. Its draft is stored as an empty
-                 * `<definitions/>` stub, which has no `<decision>` — so
+                 * `<definitions/>` stub, which has no `<decision>` -- so
                  * every newly created decision used to open with a red
                  * "parse error" banner over a perfectly usable blank
                  * table. Nothing is wrong: start blank and let the
@@ -279,7 +279,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
             } else if (isMissingDecisionTable(err)) {
                 this.noDecisionTable.set(true);
             } else {
-                // Banner ONLY — no toast. `ErrorBannerComponent` exists
+                // Banner ONLY -- no toast. `ErrorBannerComponent` exists
                 // precisely "instead of a blank panel + a transient toast
                 // that scrolls away"; firing both showed the author the
                 // same sentence twice, once in a place they cannot
@@ -291,7 +291,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
-    /** UI-polish — retry the initial draft load from the shared error banner. */
+    /** UI-polish -- retry the initial draft load from the shared error banner. */
     protected retryLoad(): void {
         if (this.decisionKey === '') return;
         void this.loadDraft();

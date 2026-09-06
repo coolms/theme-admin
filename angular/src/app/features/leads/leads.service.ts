@@ -48,7 +48,7 @@ export interface LeadDto {
  * Talks to the lead endpoints (`GET /leads?status=`,
  * `POST /leads/{id}/handle|spam|reopen`) off the generic `manifest.apiBase`,
  * so no module-specific manifest entry is needed. Feature-local (not on the
- * shared ApiService) — the lead surface is small and self-contained. Mirrors
+ * shared ApiService) -- the lead surface is small and self-contained. Mirrors
  * the ModerationService.
  */
 @Injectable({ providedIn: 'root' })
@@ -63,7 +63,7 @@ export class LeadsService {
     }
 
     /**
-     * One PAGE of a lead bucket — newest-first, server-filtered and sorted
+     * One PAGE of a lead bucket -- newest-first, server-filtered and sorted
      *.
      *
      * Replaces the old `list()`, which fetched a whole bucket in one request for
@@ -72,7 +72,7 @@ export class LeadsService {
      *
      * `status` is the tab SCOPE and `filters` are the grid's column filters:
      * they compose, narrowing within the selected bucket. Filters go through
-     * VERBATIM — the endpoint is RQL-native and its allowlist comes from the
+     * VERBATIM -- the endpoint is RQL-native and its allowlist comes from the
      * same `lead:list` YAML that renders the filter row.
      */
     listPage(opts: {
@@ -97,7 +97,7 @@ export class LeadsService {
             .pipe(map(res => ({ items: res.member ?? [], totalItems: res.totalItems ?? 0 })));
     }
 
-    /** One lead by id — the admin detail view (`GET /leads/{id}`; 404 if absent). */
+    /** One lead by id -- the admin detail view (`GET /leads/{id}`; 404 if absent). */
     get(id: string): Observable<LeadDto> {
         return this.http.get<LeadDto>(`${this.apiBase}/leads/${encodeURIComponent(id)}`);
     }

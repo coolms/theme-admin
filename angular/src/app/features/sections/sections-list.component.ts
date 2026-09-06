@@ -180,7 +180,7 @@ export class SectionsListComponent implements OnInit {
     }
 
     /**
-     * Layer 3d.1 — navigates to the Site Detail page
+     * Layer 3d.1 -- navigates to the Site Detail page
      * (`/admin/sections/:slug`). Read-only composition view; edit
      * settings + delete site live on the detail page itself.
      */
@@ -190,7 +190,7 @@ export class SectionsListComponent implements OnInit {
     }
 
     /**
-     * H9 — Apply CTA. Dispatches the NgXS action which calls
+     * H9 -- Apply CTA. Dispatches the NgXS action which calls
      * `POST /api/v1/sections/_apply`. Renders the result as a sticky toast
      * showing the reload command the operator must run (nginx is NOT
      * auto-reloaded -- safest contract for multi-host setups).

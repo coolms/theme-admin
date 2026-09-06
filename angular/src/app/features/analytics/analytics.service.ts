@@ -11,7 +11,7 @@ import { HydraCollection } from '../../api/api.service';
  *
  * Mirrors the backend `PageView` read serialization group (`pageview:read`):
  * a normalized request `path` plus its aggregate view `count`. The backend
- * stores no personal data — these rows are a `GROUP BY path COUNT(*)` over the
+ * stores no personal data -- these rows are a `GROUP BY path COUNT(*)` over the
  * window, so there is nothing else to surface.
  */
 export interface TopPageDto {
@@ -25,7 +25,7 @@ export interface TopPageDto {
  * Mirrors the backend `SearchQueryStat` read group (`search_stat:read`): a
  * normalized search `term` plus its aggregate `searches` count over the window.
  * Used for both the "top queries" leaderboard and the "zero-result queries"
- * content-gap list — the two share this shape, differing only in which
+ * content-gap list -- the two share this shape, differing only in which
  * aggregate the backend runs.
  */
 export interface SearchQueryStatDto {
@@ -34,12 +34,12 @@ export interface SearchQueryStatDto {
 }
 
 /**
- *— one event-stream summary row.
+ *-- one event-stream summary row.
  *
  * Mirrors the backend `AnalyticsEventSummary` collection
  * (`GET /analytics/events/summary?days=`): an event `type` (lowercase dotted,
  * e.g. `pageview` / `lead.submit`) plus its total `count` over the window,
- * busiest-type first. Counts only — the generic store is privacy-safe by
+ * busiest-type first. Counts only -- the generic store is privacy-safe by
  * construction (no IP / UA / durable identity).
  */
 export interface EventSummaryDto {
@@ -56,7 +56,7 @@ export interface EventSummaryDto {
  *  - the search-query log (`GET /search/analytics/{top-queries,
  *    zero-result-queries}?days=&limit=`, ).
  *
- * Feature-local (not on the shared ApiService) — the analytics surface is small
+ * Feature-local (not on the shared ApiService) -- the analytics surface is small
  * and self-contained. Mirrors the ModerationService / LeadsService.
  */
 @Injectable({ providedIn: 'root' })
@@ -102,7 +102,7 @@ export class AnalyticsService {
     }
 
     /**
-     * Search terms whose searches returned nothing over the last `days` — the
+     * Search terms whose searches returned nothing over the last `days` -- the
      * actionable content-gap signal ("what to write next"), busiest-first.
      */
     zeroResultQueries(days: number, limit: number): Observable<SearchQueryStatDto[]> {
@@ -116,7 +116,7 @@ export class AnalyticsService {
     /**
      * Per-type totals over the genericevent stream for
      * the last `days`, busiest-type first (server-ordered). The backend clamps
-     * `days` to 1..365 (default 30); there is no `limit` — the type set is small
+     * `days` to 1..365 (default 30); there is no `limit` -- the type set is small
      * and bounded, so the whole window is returned.
      */
     eventSummary(days: number): Observable<EventSummaryDto[]> {

@@ -28,7 +28,7 @@ export interface PendingCommentDto {
  * Talks to the comment endpoints (`GET /moderation/comments`,
  * `POST /comments/{id}/approve|reject`) off the generic `manifest.apiBase`,
  * so no module-specific manifest entry is needed. Feature-local (not on the
- * shared ApiService) — the moderation surface is small and self-contained.
+ * shared ApiService) -- the moderation surface is small and self-contained.
  */
 @Injectable({ providedIn: 'root' })
 export class ModerationService {
@@ -42,16 +42,16 @@ export class ModerationService {
     }
 
     /**
-     * One PAGE of the moderation queue — newest-first, server-filtered and
+     * One PAGE of the moderation queue -- newest-first, server-filtered and
      * sorted.
      *
      * Replaces the old `listPending()`, which fetched the whole queue for a
      * client-mode grid. The endpoint capped that at 200 rows, so the browser was
-     * filtering a truncated backlog and calling it complete — harmless on a
+     * filtering a truncated backlog and calling it complete -- harmless on a
      * drained queue, and broken during exactly the spam flood a moderator needs
      * it for.
      *
-     * `filters` go through VERBATIM — the endpoint is RQL-native and its
+     * `filters` go through VERBATIM -- the endpoint is RQL-native and its
      * allowlist comes from the same `comment:moderation` YAML that renders the
      * filter row.
      */

@@ -22,7 +22,7 @@ export type MediaPickerBindValue = 'uuid' | 'path';
  */
 export type MediaPickerDisplay = 'thumb' | 'original' | `preset:${string}`;
 
-/** Library zone tab — shared library vs the current user's private folder. */
+/** Library zone tab -- shared library vs the current user's private folder. */
 export type MediaPickerZone = 'shared' | 'private';
 
 /**
@@ -87,7 +87,7 @@ export interface MediaPickerSelection {
  * receiving backend resource MUST JSON-decode the field on save and dispatch
  * on `payload.kind` to resolve either an asset (uuid|path) or a collection
  * path. Plain-string emits (the 'asset' / 'collection' modes) need no
- * decoding — they survive standard form serialisation as-is.
+ * decoding -- they survive standard form serialisation as-is.
  */
 export type MediaPickerEmit =
     | string

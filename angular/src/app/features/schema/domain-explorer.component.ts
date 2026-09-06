@@ -10,11 +10,11 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
  * Host shell for the Domain Explorer feature.
  *
  * Title and icon are declared in domain-explorer.yaml and rendered by
- * ExplorerLayoutComponent's YAML-driven header — no manual projection needed.
+ * ExplorerLayoutComponent's YAML-driven header -- no manual projection needed.
  *
  * The toolbar holds only action buttons; the FQCN + alias + type-badge
  * breadcrumb now lives as a sticky band at the top of the detail panel
- * (see DomainExplorerDetailComponent) — same pattern as VFS / Media /
+ * (see DomainExplorerDetailComponent) -- same pattern as VFS / Media /
  * Documents explorers.
  *
  * Context-menu overlays live HERE (page level) so they are rendered above

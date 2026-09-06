@@ -28,7 +28,7 @@ import { EdgeRegisterDialogComponent } from './edge-register-dialog.component';
  * The operator view over the controller->edge mesh: every registered edge with
  * its health, feed cursor, principal binding, and selective-sync scope, plus
  * register/edit (modal), remove, and a fleet-wide "Nudge" trigger. The whole
- * surface is gated server-side by the NESTED `root:sync_fleet 0o770` VFS node —
+ * surface is gated server-side by the NESTED `root:sync_fleet 0o770` VFS node --
  * a different group from the machine-facing `sync` node, so an edge's own
  * credential can never reach this page's API.
  */
@@ -221,7 +221,7 @@ export class SyncFleetListPageComponent implements OnInit {
     remove(edge: SyncEdgeDto): void {
         // Removal releases the edge's cursor from the change-feed's prune floor:
         // unlike "disabled" (paused, still pinning retention), a removed edge's
-        // undelivered changes become prunable — hence the explicit warning.
+        // undelivered changes become prunable -- hence the explicit warning.
         const sure = window.confirm(
             `Remove edge "${edge.slug}"?\n\nThis releases its position in the change feed — `
             + 'if the edge comes back later it must re-bootstrap from a full snapshot. '

@@ -30,7 +30,7 @@ import {
  * Installed document fonts (/admin/content/document-fonts, ).
  *
  * The operator surface over the font store: what is installed, install another,
- * remove one. The families the platform SHIPS are not here and cannot be — they
+ * remove one. The families the platform SHIPS are not here and cannot be -- they
  * are built into the renderer's image, and an install may not shadow one of
  * them (the editor would measure the upload and the renderer would print the
  * image's copy).
@@ -39,7 +39,7 @@ import {
  *
  * A file, and nothing else. The family and the face are read from the font's
  * own tables on the server, so four uploads assemble one family without anybody
- * typing "bold" — and a field naming the family would be stating something the
+ * typing "bold" -- and a field naming the family would be stating something the
  * bytes could contradict. What it turned out to be is REPORTED back in the
  * toast.
  *
@@ -249,7 +249,7 @@ export class DocumentFontsPageComponent implements OnInit {
         const input = event.target as HTMLInputElement;
         const file = input.files?.[0];
         // Cleared either way, so choosing the SAME file twice fires `change`
-        // again — which is exactly what re-uploading a corrected face is.
+        // again -- which is exactly what re-uploading a corrected face is.
         input.value = '';
         if (!file) return;
 

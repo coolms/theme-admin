@@ -1,13 +1,13 @@
 import { ChatConversationDto, ConversationParticipantDto } from './messages.types';
 
 /**
- * How a conversation ROW is projected for display — its label, its
+ * How a conversation ROW is projected for display -- its label, its
  * unread count, its preview line, its sort key and its presence dot.
  *
  * Every one of these was written twice: once in the Messages page, once in the
  * topbar quick panel. Three had already drifted apart by the time they were
  * pulled together here, each in a way nobody would notice from either side
- * alone — which is the same failure the read-receipt and paging rules produced
+ * alone -- which is the same failure the read-receipt and paging rules produced
  * before they were shared.
  */
 
@@ -20,7 +20,7 @@ type Viewer = string | null;
  *
  *  A self-notes room has no title and no other participants, so without its
  * own branch it falls all the way through to "Conversation". That is what the
- * quick panel showed while the page showed "Notes" — the same room named two
+ * quick panel showed while the page showed "Notes" -- the same room named two
  * different things in one app.
  */
 export function conversationLabel(conversation: ChatConversationDto | null, meId: Viewer): string {
@@ -46,10 +46,10 @@ export function conversationLabel(conversation: ChatConversationDto | null, meId
  *
  * The order of these three sources is the whole rule, and each step was a bug
  * once:
- *  - the SERVER's `viewerUnread` wins — it is the only party that knows
+ *  - the SERVER's `viewerUnread` wins -- it is the only party that knows
  *    an owner-excluded viewer's history CEILING, past which unread must stop
  *    accruing;
- *  - `viewerLastReadSeq` before the roster lookup — an excluded viewer
+ *  - `viewerLastReadSeq` before the roster lookup -- an excluded viewer
  *    is deliberately absent from `participants`, so the lookup silently yielded
  *    0 and showed their whole history as unread, permanently;
  *  - `optimisticReadSeq` is the local override while a mark-read is in flight,
@@ -86,7 +86,7 @@ export function rowPreview(conversation: ChatConversationDto): string {
 }
 
 /**
- * Epoch-ms of a row's last activity — the inbox's most-recent-first sort key.
+ * Epoch-ms of a row's last activity -- the inbox's most-recent-first sort key.
  * Falls back to `updatedAt` for a conversation with no messages yet, and to 0
  * when neither parses, so an unreadable date sorts last instead of throwing the
  * comparator.
@@ -106,7 +106,7 @@ export function lastActivityTs(conversation: ChatConversationDto): number {
  * nothing.** That is deliberate: connection presence can be unavailable for
  * operational reasons (Centrifugo down, presence disabled), and "who is
  * away/busy" should stay legible regardless. The quick panel's copy had it the
- * other way round — it required a live connection first — so a user who set
+ * other way round -- it required a live connection first -- so a user who set
  * Busy and closed their tab showed a busy dot on the page and NO dot in the
  * panel.
  *
@@ -128,7 +128,7 @@ export function presenceDot(
     return userId !== null && userId !== undefined && onlineUserIds.has(userId) ? 'online' : null;
 }
 
-/** The first participant who is not the viewer — the row's "counterpart". */
+/** The first participant who is not the viewer -- the row's "counterpart". */
 export function counterpartOf(
     conversation: ChatConversationDto | null,
     meId: Viewer,

@@ -20,13 +20,13 @@ import { CallOverlayPrefs, CallOverlayPreferencesService } from '../call/call-ov
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfileCallTabComponent } from './profile-call-tab.component';
 
-/** Marker key the Calendar contributor emits for `formId` — matches
+/** Marker key the Calendar contributor emits for `formId` -- matches
  *  CalendarPreferencesContributor::getFormId() on the backend. The FE
  *  uses it to route the section to the bespoke component instead of
  *  the generic DynamicFormComponent. */
 const CALENDAR_FORM_ID = 'calendar:user_preferences';
 
-/** Marker key the Call contributor emits for `formId` — matches
+/** Marker key the Call contributor emits for `formId` -- matches
  *  CallSettingsContributor::getFormId() on the backend. Routes the
  *  section to the bespoke ProfileCallTabComponent (incoming-call
  *  overlay on/off + auto-dismiss seconds). */
@@ -404,9 +404,9 @@ export class ProfilePageComponent implements OnInit {
 
     readonly PALETTE = ['#E8834A','#4A90E8','#7B6BE8','#4AC4A0','#E84A6B','#4ACA5A','#E8C44A','#9B59B6'];
 
-    /** Sentinel marker — see {@link CALENDAR_FORM_ID} at the top of this file. */
+    /** Sentinel marker -- see {@link CALENDAR_FORM_ID} at the top of this file. */
     readonly CALENDAR_FORM_ID = CALENDAR_FORM_ID;
-    /** Sentinel marker — see {@link CALL_FORM_ID} at the top of this file. */
+    /** Sentinel marker -- see {@link CALL_FORM_ID} at the top of this file. */
     readonly CALL_FORM_ID = CALL_FORM_ID;
 
     readonly user           = signal<IdentityUserDto | null>(null);
@@ -451,7 +451,7 @@ export class ProfilePageComponent implements OnInit {
                 this.lastName  = user.lastName  ?? '';
                 this.sections.set(sections);
                 this.settings.set(settings);
-                // Task — seed the calendar preferences service from the
+                // Task -- seed the calendar preferences service from the
                 // freshly-loaded /auth/me/settings response so downstream
                 // calendar consumers (FullCalendar config, MiniCalendar,
                 // topbar QuickAccess) pick up user TZ / first-day / default
@@ -547,7 +547,7 @@ export class ProfilePageComponent implements OnInit {
     // -- Dynamic section settings ----------------------------------------------
 
     /**
-     * Task — submit handler for the bespoke Calendar tab. Mirrors
+     * Task -- submit handler for the bespoke Calendar tab. Mirrors
      * `saveSection` (same PATCH endpoint) but also pushes the merged
      * values into `UserCalendarPreferencesService` so the topbar
      * quick-access, mini-cal, FullCalendar config, event editor, and
@@ -556,7 +556,7 @@ export class ProfilePageComponent implements OnInit {
     saveCalendarPrefs(section: string, data: CalendarPrefs): void {
         this.savingCalendar.set(true);
         // The API service strips `null` from PATCH bodies by stringify
-        // serialisation — explicit null is fine here, the backend processor
+        // serialisation -- explicit null is fine here, the backend processor
         // accepts it via the array_merge into `extras['settings'][section]`.
         this.api.updateSettings(section, data as unknown as Record<string, unknown>)
             .pipe(takeUntilDestroyed(this.destroyRef))

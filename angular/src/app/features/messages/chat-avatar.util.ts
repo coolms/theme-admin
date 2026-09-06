@@ -2,14 +2,14 @@
  * Avatar helpers for the internal Messages surface.
  *
  * `<app-user-avatar>` renders a colored-initials circle when no `avatarUrl` is
- * present, so chat can show avatars with ZERO backend plumbing — built from the
+ * present, so chat can show avatars with ZERO backend plumbing -- built from the
  * `displayName` we already have per participant. Real uploaded-photo avatars
  * (an `avatarUrl` per participant from the backend) are a clean follow-up.
  */
 
 /** The shape `<app-user-avatar [user]>` consumes (photo, else initials + color). */
 export interface ChatAvatarUser {
-    /** A real uploaded photo URL — the component prefers it over initials. */
+    /** A real uploaded photo URL -- the component prefers it over initials. */
     readonly avatarUrl: string | null;
     readonly firstName: string | null;
     readonly identifier: string;
@@ -17,7 +17,7 @@ export interface ChatAvatarUser {
 }
 
 /**
- * Deterministic, pleasant avatar color from a stable seed (uid or name) — so
+ * Deterministic, pleasant avatar color from a stable seed (uid or name) -- so
  * the same person always gets the same hue across the list, header, bubbles,
  * and the topbar quick-panel. A fixed S/L keeps every colour legible behind
  * the white initial.

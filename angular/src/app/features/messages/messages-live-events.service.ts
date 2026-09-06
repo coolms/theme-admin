@@ -6,7 +6,7 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
 /**
  * A body-less realtime nudge published on a conversation's `chat.room.{id}`
  * channel when a message is posted. The payload deliberately
- * carries no body — the page refetches the new message(s) via the REST cursor
+ * carries no body -- the page refetches the new message(s) via the REST cursor
  * (`GET /chat/messages?afterSeq=`), which re-enforces the read ACLs.
  */
 export interface ChatMessagePostedNudge {
@@ -17,7 +17,7 @@ export interface ChatMessagePostedNudge {
 }
 
 /**
- * An EPHEMERAL "X is typing…" nudge — nothing persisted, no `seq`.
+ * An EPHEMERAL "X is typing..." nudge -- nothing persisted, no `seq`.
  * Carries only the typist's `participantId`; the page maps it to a name from the
  * participants it already holds, shows the hint, and auto-clears it on idle.
  */
@@ -28,7 +28,7 @@ export interface ChatTypingNudge {
 }
 
 /**
- * A READ-RECEIPT nudge — a participant advanced their read cursor
+ * A READ-RECEIPT nudge -- a participant advanced their read cursor
  * to `seq`. Carries the reader's `participantId` + their new read high-water so a
  * peer can flip the messages it sent (up to `seq`) to "Read" without a reload.
  * The durable cursor lives on the Participant row server-side; this is the live
@@ -42,7 +42,7 @@ export interface ChatReadNudge {
 }
 
 /**
- * A PRESENCE nudge — a participant changed their self-set status
+ * A PRESENCE nudge -- a participant changed their self-set status
  * (online/away/busy/offline). Keyed by `userId` (presence is a per-USER
  * attribute that spans every conversation) so the page can flip the colored dot
  * on that person's avatar everywhere they appear, without a reload. Ephemeral;
@@ -56,7 +56,7 @@ export interface ChatPresenceNudge {
 }
 
 /**
- * A PIN nudge (pinning) — the conversation's set of pinned messages changed (a
+ * A PIN nudge (pinning) -- the conversation's set of pinned messages changed (a
  * message was pinned or unpinned). Body-less (just the `conversationId`); the
  * page re-fetches the pinned-messages bar via `GET /chat/messages?pinned=1`. The
  * pinned-list REST read is the source of truth, so dropping it only delays the
@@ -68,7 +68,7 @@ export interface ChatPinNudge {
 }
 
 /**
- * A REACTION nudge — a message's emoji reactions changed (someone reacted
+ * A REACTION nudge -- a message's emoji reactions changed (someone reacted
  * or un-reacted). Body-less (just the `conversationId`); the page reconciles the
  * affected message's reaction chips by re-reading the current window. The message
  * REST read is the source of truth, so dropping it only delays the chips until the
@@ -101,7 +101,7 @@ export interface ChatInboxNudge {
 }
 
 /**
- * Internal Messages realtime — subscribes to a conversation's
+ * Internal Messages realtime -- subscribes to a conversation's
  * `chat.room.{conversationId}` Centrifugo channel and emits each `message.posted`
  * nudge. Mirrors the per-feature live-events-service convention
  * (`VfsLiveEventsService`, `InboxLiveEventsService`, `DynamicChatLiveEventsService`):
@@ -121,7 +121,7 @@ export class MessagesLiveEventsService {
      * Reactive WebSocket connection state (passthrough to
      * {@link CentrifugoClientService.isConnected}): `true` only while the
      * Centrifugo push transport is connected. Lets a consumer SUSPEND its
-     * polling fallback while push is healthy — polling is the no-realtime
+     * polling fallback while push is healthy -- polling is the no-realtime
      * fallback, not a parallel path.
      */
     readonly isConnected: Signal<boolean> = this.client.isConnected;
@@ -133,7 +133,7 @@ export class MessagesLiveEventsService {
 
     /**
      * Subscribe to MY per-user inbox channel for the whole session,
-     * independent of which conversation is open — emits an `inbox.activity` nudge
+     * independent of which conversation is open -- emits an `inbox.activity` nudge
      * whenever a new message lands in any of my conversations. Gated server-side
      * to SELF by `ChatUserChannelPolicyVoter`.
      */
@@ -142,7 +142,7 @@ export class MessagesLiveEventsService {
     }
 
     /**
-     * Generic Centrifugo channel observer — connects, subscribes, emits each
+     * Generic Centrifugo channel observer -- connects, subscribes, emits each
      * publication the `parse` callback recognises, and tears the subscription
      * down on unsubscribe. Shared by {@link watchRoom} + {@link watchUser}.
      */

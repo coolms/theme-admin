@@ -9,11 +9,11 @@ import { MediaAssetDto } from './media.types';
  * The `image` field widget (registered by the Media module via the field-widget
  * registry, see {@link import('../../../../../src/Media/Infrastructure/Field/MediaFieldWidgetProvider.php')}):
  * a field declared `type: image` renders a thumbnail preview of the current
- * value plus the Media Library picker (inline mode -> a "Choose…" trigger that
+ * value plus the Media Library picker (inline mode -> a "Choose..." trigger that
  * opens the library browser), instead of a plain URL text box.
  *
  * The stored value is the picked asset's **public URL** (a string), resolved
- * from the selected asset's `originalUrl` — so server-side consumers (the SEO
+ * from the selected asset's `originalUrl` -- so server-side consumers (the SEO
  * head's `<meta property="og:image">`) use it directly with no UUID lookup.
  * Because the value is a URL (not the picker's uuid/path space), the picker is
  * driven as a pure selection trigger (`[value]="null"`) and this widget renders

@@ -1,5 +1,5 @@
 /**
- * F.14c-1 — wire-shape types shared across the Document Explorer
+ * F.14c-1 -- wire-shape types shared across the Document Explorer
  * (cross-format) and per-format modules (Word today, future
  * Spreadsheet/Presentation/Markdown). Migrated from the F.13b
  * `document-library.types.ts` and extended with the F.14a/b
@@ -39,12 +39,12 @@ export interface ContextSchemaVariable {
      */
     readonly entityType?: string | null;
     /**
-     * Phase 2 — when `true` the picker accepts multiple entities
+     * Phase 2 -- when `true` the picker accepts multiple entities
      * and the persisted value is a list of ids.
      */
     readonly collection?: boolean;
     /**
-     * Phase 2 — optional allow-list passed to the backend resolver
+     * Phase 2 -- optional allow-list passed to the backend resolver
      * to constrain which fields the hydrated projection exposes.
      * `null` / absent uses the resolver's default field set.
      */
@@ -77,7 +77,7 @@ export interface ContextSchema {
  * future SpreadsheetTemplate, etc.) projects to this shape via the
  * F.14a/b polymorphic provider read. The `format` field
  * discriminates so the explorer can dispatch to the right
- * format-specific detail component (Word, Spreadsheet, …) without a
+ * format-specific detail component (Word, Spreadsheet, ...) without a
  * hardcoded switch.
  */
 export interface DocumentTemplate {
@@ -119,7 +119,7 @@ export interface DocumentTemplate {
     readonly publiclyAccessible: boolean;
     /**
      * VFS path of the backing Node. Needed to open the template through the
-     * shared `FileEditorRegistry`, which takes a `VfsNodeDto` — and there is
+     * shared `FileEditorRegistry`, which takes a `VfsNodeDto` -- and there is
      * no by-id node endpoint, `GET /vfs/files` is keyed by path.
      */
     readonly path: string | null;
@@ -129,7 +129,7 @@ export interface DocumentTemplate {
      * What an uploaded workbook lost becoming an editable CoolMS document.
      *
      * Present only on a template created by converting an upload, and absent
-     * — not empty — otherwise, so "was never converted" and "converted and
+     * -- not empty -- otherwise, so "was never converted" and "converted and
      * lost nothing" read the same, which they are. The list is the POINT of
      * that choice: the operator traded fidelity for editability and needs to
      * know what it cost.
@@ -146,18 +146,18 @@ export interface DocumentFolder {
 }
 
 /**
- * F.14c-2 — minimal variable shape the input form consumes. Today
+ * F.14c-2 -- minimal variable shape the input form consumes. Today
  * derived 1-to-1 from `ContextSchemaVariable.path`; `label` is left
  * `null` because the F.13a schema extractor doesn't carry one yet.
  * When F.9's Form Builder lands the input form keeps the same
- * `(variables, initialValue) -> submit(nested JSON)` contract — only
+ * `(variables, initialValue) -> submit(nested JSON)` contract -- only
  * the source of `FormVariableInput[]` swaps.
  */
 export interface FormVariableInput {
     readonly path: string;
     readonly label: string | null;
     /**
-     * Phase 2 — propagated from
+     * Phase 2 -- propagated from
      * `ContextSchemaVariable.entityType`. When non-null, the form
      * renders `<cms-entity-picker>` for this variable. The picker
      * emits an entity id (string) for single refs or a list of ids
@@ -169,7 +169,7 @@ export interface FormVariableInput {
 }
 
 /**
- * F.14c-2 — recursive group tree the form template walks. A node with
+ * F.14c-2 -- recursive group tree the form template walks. A node with
  * `path === ''` is the synthetic root that holds top-level scalars
  * (rendered without a fieldset); every other node renders as a
  * fieldset with `label` as its legend.
@@ -182,7 +182,7 @@ export interface ContextVariableGroup {
 }
 
 /**
- * F.14c-2 — option in the dialog's output-format `<select>`. Sourced
+ * F.14c-2 -- option in the dialog's output-format `<select>`. Sourced
  * from a small per-format mapping today (`word -> docx | pdf`); a
  * future backend `format-info` field can supersede it without
  * touching the dialog.

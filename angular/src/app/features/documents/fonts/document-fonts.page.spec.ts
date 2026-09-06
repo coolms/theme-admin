@@ -5,7 +5,7 @@ import { ToastService } from '@coolms/ui-angular';
 import { DocumentFontService } from './document-font.service';
 
 /**
- * The installed-fonts admin surface — the two decisions worth testing.
+ * The installed-fonts admin surface -- the two decisions worth testing.
  *
  *  The SERVICE, not the page component. Rendering the page pulls
  * `<coolms-datagrid>`, which wants a config endpoint, a store snapshot and a

@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { useDocumentFontTransport, type DocumentFontTransport } from '@coolms/editor-angular';
 
 /**
- * Lets the editor read the MERGED font registry — the families the platform
+ * Lets the editor read the MERGED font registry -- the families the platform
  * ships plus the ones an operator installed.
  *
  * ## Why the application has to supply this
@@ -17,7 +17,7 @@ import { useDocumentFontTransport, type DocumentFontTransport } from '@coolms/ed
  * every installed face.
  *
  * So the package states an interface and the application implements it with the
- * client it already has. The editor stays usable with no transport at all — it
+ * client it already has. The editor stays usable with no transport at all -- it
  * falls back to the shipped manifest asset, which is every family the renderer
  * holds anyway.
  *

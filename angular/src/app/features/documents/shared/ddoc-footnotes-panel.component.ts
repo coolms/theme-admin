@@ -19,20 +19,20 @@ export interface FootnoteRow {
 }
 
 /**
- * The document's footnotes, listed and editable — Word's notes pane.
+ * The document's footnotes, listed and editable -- Word's notes pane.
  *
  * ## Why a panel and not the foot of the page
  *
  * Word puts a note at the bottom of the page its reference is on, and our
  * canvas draws no notes at all: the paginator lays out the body, and a note
  * belongs to a page only after the body has been laid out. Word has the same
- * problem in draft view and answers it the same way — a notes pane. So this is
+ * problem in draft view and answers it the same way -- a notes pane. So this is
  * the affordance an author already knows, not an invention.
  *
  * ##  The number is the POSITION, the id is the KEY
  *
  * Every reader prints a footnote's position, so the panel leads with that and
- * shows the stored id only where the two differ — which is exactly when an
+ * shows the stored id only where the two differ -- which is exactly when an
  * author would otherwise be confused by a marker that says one thing and a page
  * that says another. has the measurement.
  *
@@ -42,7 +42,7 @@ export interface FootnoteRow {
  * drops nothing for being unreferenced, because a client that failed to
  * register the reference node would otherwise wipe every note in the document
  * on its first save. So an orphan is real, and the honest thing is to say so
- * and offer a button — a note that quietly disappeared is the failure mode the
+ * and offer a button -- a note that quietly disappeared is the failure mode the
  * rule exists to prevent, and a note nobody can see or delete is the other one.
  */
 @Component({
@@ -184,7 +184,7 @@ export class DdocFootnotesPanelComponent {
     /** Every note the document has, by id, as editor HTML. */
     readonly footnotes = input.required<Record<string, string>>();
 
-    /** The ids the body points at, in document order — the panel's numbering. */
+    /** The ids the body points at, in document order -- the panel's numbering. */
     readonly referenced = input.required<readonly number[]>();
 
     /** One note's body was edited. */
@@ -199,7 +199,7 @@ export class DdocFootnotesPanelComponent {
         const referenced = this.referenced();
         const footnotes = this.footnotes();
 
-        // Referenced notes first, in DOCUMENT order — the order they print in.
+        // Referenced notes first, in DOCUMENT order -- the order they print in.
         const rows: FootnoteRow[] = referenced.map((id, index) => ({
             id,
             html: footnotes[String(id)] ?? '',
@@ -242,7 +242,7 @@ export class DdocFootnotesPanelComponent {
      * front of the author.
      *
      *  And through `DOMParser`, not a detached `div.innerHTML`. A detached
-     * div is not inert — an `<img>` assigned into one still loads, so an
+     * div is not inert -- an `<img>` assigned into one still loads, so an
      * `onerror` in a `.ddoc` from somewhere else would run while we were only
      * trying to read the text. `DOMParser` builds a document that loads nothing
      * and executes nothing.

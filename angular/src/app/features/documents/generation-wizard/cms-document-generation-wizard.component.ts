@@ -200,7 +200,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
      * anything that was not `pdf` into `docx`, which was invisible while Word
      * was the only format and actively wrong once a second one existed: a
      * spreadsheet template declares `xlsx`, the wizard would have asked for
-     * `docx`, and no renderer supports that pairing — the generation failed
+     * `docx`, and no renderer supports that pairing -- the generation failed
      * with nothing on screen to explain it.
      */
     protected readonly outputFormat = computed<string>(() => {
@@ -230,7 +230,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
                     // `FilterAudienceMaterializer` throws
                     // "Filter-mode audience criteria must contain a non-empty
                     // `rql` query string". So the wizard walked the operator to
-                    // Review and let them submit a run that could only fail —
+                    // Review and let them submit a run that could only fail --
                     // which is what the FAILED / total-0 rows in the
                     // generations list are.
                     if ('' === this.recipientsRql()) {
@@ -351,7 +351,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
             // actually reads. This used to send the filter under `rqlFilter`
             // and omit `entityType` entirely, so EVERY Filter-mode
             // generation died on "Filter-mode audience criteria must contain
-            // a non-empty `entityType`" — the mode had never completed once.
+            // a non-empty `entityType`" -- the mode had never completed once.
             // Only the preview call worked, which is why the wizard looked
             // healthy right up to Submit.
             audienceCriteria['rql'] = this.recipientsRql();

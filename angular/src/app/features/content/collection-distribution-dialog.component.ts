@@ -24,9 +24,9 @@ interface DistributionDialogData {
  * which outbound channels a published post in the collection fans out to.
  *
  *  - Channels come from the `core.outbound_channels` OptionSource, so the list
- *    grows automatically as channels are installed — no hard-coded ids.
+ *    grows automatically as channels are installed -- no hard-coded ids.
  *  - Reads the current config from the generic node-meta endpoint (`extras`).
- *  - Writes via the validated `PATCH …/collections/distribution` (unknown
+ *  - Writes via the validated `PATCH .../collections/distribution` (unknown
  *    channels are rejected server-side).
  *  - `webhook` gets a URL field (its per-channel config); other channels need
  *    no extra config today. Empty selection = no distribution.

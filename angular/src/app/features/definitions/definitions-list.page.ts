@@ -34,7 +34,7 @@ import {
 const PAGE_SIZE = 30;
 
 /**
- * Decodes the grid's multi-select filter value — a JSON array string,
+ * Decodes the grid's multi-select filter value -- a JSON array string,
  * the shape `columnFilterRql` splices into an `in (...)` expression.
  * Falls back to treating the raw value as a single token, so a
  * single-op filter on the same column still works.
@@ -44,7 +44,7 @@ function decodeTokens(value: string): string[] {
         const parsed: unknown = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed.map(String);
     } catch {
-        // Not JSON — a plain scalar filter value.
+        // Not JSON -- a plain scalar filter value.
     }
 
     return value === '' ? [] : [value];
@@ -53,13 +53,13 @@ function decodeTokens(value: string): string[] {
 /**
  * Unified Definitions admin list slot (`DefinitionsList`).
  *
- * Cross-module read surface — surfaces every deployed + draft
+ * Cross-module read surface -- surfaces every deployed + draft
  * definition across Workflow + Decision (today; future Form, etc.).
  * Backend feeds rows from each registered
  * `DefinitionCatalogProviderInterface` via the tagged lazy
  * registry; this slot renders them as one paginable, sortable table.
  *
- * Mounted inside `<cms-list-layout layoutId="definition:list">` —
+ * Mounted inside `<cms-list-layout layoutId="definition:list">` --
  * page header + footer come from the layout shell, this component
  * owns the toolbar + grid + drill-down behaviour. Title is set in
  * `config/modules/definition/layout/definitions-list.yaml`.
@@ -67,7 +67,7 @@ function decodeTokens(value: string): string[] {
  * **Toolbar**: bound to the `navi.toolbar.definition.catalog` tree.
  * Reload + row-action Open (visible whenever a row is selected).
  *
- * **Click-through drill-down** — every row opens the generic
+ * **Click-through drill-down** -- every row opens the generic
  * {@link DesignerEditorDialogComponent} MODAL (Workflow -> `bpmn-lite`,
  * Decision -> `dmn-table`), the same modal the VFS file explorer now
  * uses for `.bpmn.json` files. Modal-for-all mirrors how the image /
@@ -75,11 +75,11 @@ function decodeTokens(value: string): string[] {
  * consistent across surfaces. The standalone `/admin/designer/...`
  * routes stay as deep-linkable surfaces.
  *
- * **Loading mode** — `client`. Backend caps the page at 200 rows
+ * **Loading mode** -- `client`. Backend caps the page at 200 rows
  * (default 30); FE loads the first page on mount and renders. Lazy
  * server-side pagination follows when the catalog crosses ~100 rows.
  *
- * **Lifecycle actions** — Retire / Restore / Delete, routed
+ * **Lifecycle actions** -- Retire / Restore / Delete, routed
  * through the shared `DefinitionLifecycleRegistry` seam. BODY editing
  * still belongs to the per-module Designer (Save/Deploy, Fork-to-VFS,
  * Revert); what lives here is the cross-module lifecycle, which has no
@@ -93,7 +93,7 @@ function decodeTokens(value: string): string[] {
  * blocker, and that message is what the operator sees.
  *
  * The list asks for ACTIVE definitions only unless the toolbar's
- * Archive toggle is on — otherwise retiring would visibly do nothing.
+ * Archive toggle is on -- otherwise retiring would visibly do nothing.
  */
 @Component({
     selector: 'coolms-admin-definitions-list',
@@ -150,7 +150,7 @@ export class DefinitionsListPageComponent implements OnInit {
     readonly loaded      = signal(false);
     /**
      * Archive toggle. `false` (default) asks for active definitions
-     * only — matching the backend default, so retiring a definition
+     * only -- matching the backend default, so retiring a definition
      * visibly removes it from the list. `true` requests `retired=all`
      * so the operator can find and restore something.
      */
@@ -160,7 +160,7 @@ export class DefinitionsListPageComponent implements OnInit {
      * Footer-bar label fed to `<cms-list-page [footerCount]>`.
      *
      * `totalItems` is the count the SERVER reports for the current
-     * filter, so it needs no client-side adjustment — that is a direct
+     * filter, so it needs no client-side adjustment -- that is a direct
      * consequence of filtering server-side. While the grid was
      * `loadingMode: client` this number was the unfiltered total and
      * contradicted the table.
@@ -280,13 +280,13 @@ export class DefinitionsListPageComponent implements OnInit {
      * endpoint's named query params.
      *
      * The grid also emits ready-made RQL (`columnFilters`), which is what
-     * relational list endpoints consume — but this endpoint merges
+     * relational list endpoints consume -- but this endpoint merges
      * rows across modules in memory and has no RQL parser behind it, so
      * it takes named params instead. Reading the structured filters is
      * the honest translation; picking the RQL strings apart with regexes
      * would not be.
      *
-     * An unmapped column is IGNORED rather than guessed at — silently
+     * An unmapped column is IGNORED rather than guessed at -- silently
      * dropping it is better than sending a param the backend will refuse,
      * and the backend allowlist is the real gate either way.
      */
@@ -369,7 +369,7 @@ export class DefinitionsListPageComponent implements OnInit {
     // --- lifecycle actions ---------------------------------------
 
     /**
-     * Retire = archive. Reversible and lossless, so no confirm — the
+     * Retire = archive. Reversible and lossless, so no confirm -- the
      * Restore button is right there under the Archive toggle.
      */
     private retire(row: DefinitionCatalogDto): void {
@@ -405,10 +405,10 @@ export class DefinitionsListPageComponent implements OnInit {
     /**
      * Permanent delete. The backend refuses anything that has ever
      * deployed with a 409 that names the blocker and points at Retire,
-     * so the humanized error IS the guidance here — no special-casing.
+     * so the humanized error IS the guidance here -- no special-casing.
      *
      * ALWAYS confirms first, whichever path got here. The row action's
-     * `confirm: true` in the grid YAML is descriptive only — the
+     * `confirm: true` in the grid YAML is descriptive only -- the
      * DataGrid never reads it, so a caller that trusts the grid to have
      * already asked deletes silently. Confirmation lives here.
      */

@@ -20,7 +20,7 @@ export interface DecisionDeployResult {
 }
 
 /**
- * — shape of `GET / PUT /api/v1/state-machines/{key}/draft`
+ * -- shape of `GET / PUT /api/v1/state-machines/{key}/draft`
  * ({@see \StateMachineDraftResource}).
  * `body` is the editor's model JSON string; the page seeds the editor via
  * `JSON.parse(body)` -> `StateMachineEditor.load()`. A fresh key returns a
@@ -32,7 +32,7 @@ export interface StateMachineDraftPayload {
     readonly latestVersion: number;
 }
 
-/** — shape of `POST /api/v1/state-machines/{key}/deploy`. */
+/** -- shape of `POST /api/v1/state-machines/{key}/deploy`. */
 export interface StateMachineDeployResult {
     readonly key: string;
     readonly version: number;

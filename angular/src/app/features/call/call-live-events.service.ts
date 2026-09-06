@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 /**
- * Payload — a flat, low-cardinality snapshot of a CallRecord state
+ * Payload -- a flat, low-cardinality snapshot of a CallRecord state
  * transition, published by `CentrifugoCallEventPublisher`. The `type`
  * discriminator is `call.{state}` (`call.ringing` / `call.answered` /
  * `call.on_hold` / `call.ended`) so a wallboard can switch on the semantic
@@ -38,11 +38,11 @@ export interface CallLiveEvent {
  * the shared {@link CentrifugoClientService} that owns the subscription's
  * listener lifecycle and degrades silently if realtime is unavailable.
  *
- * Two scopes (both server-gated — the per-channel subscription token is minted
+ * Two scopes (both server-gated -- the per-channel subscription token is minted
  * by the client's `getToken` callback, `POST /centrifugo/subscription-token`):
- *  - `calls.broadcast`  — the wallboard firehose, `ROLE_CALL`-gated
+ *  - `calls.broadcast`  -- the wallboard firehose, `ROLE_CALL`-gated
  *    (`CallBroadcastChannelPolicyVoter`); carries caller phone numbers.
- *  - `calls.{agentUuid}` — an agent's own calls, own-user gated
+ *  - `calls.{agentUuid}` -- an agent's own calls, own-user gated
  *    (`CallAgentChannelPolicyVoter`).
  */
 @Injectable({ providedIn: 'root' })
@@ -54,9 +54,9 @@ export class CallLiveEventsService {
 
     /**
      * Live-observer count per channel. `getOrCreateSubscription` hands back ONE
-     * shared Centrifugo subscription per channel, so `calls.broadcast` — watched
+     * shared Centrifugo subscription per channel, so `calls.broadcast` -- watched
      * by BOTH the global screen-pop overlay (mounted for the whole session) and
-     * the Live-calls wallboard page — must be `unsubscribe()`d only when the LAST
+     * the Live-calls wallboard page -- must be `unsubscribe()`d only when the LAST
      * observer leaves. Without this refcount, navigating away from the wallboard
      * tore down the shared subscription and silently killed the overlay
      * everywhere but that page.
@@ -74,7 +74,7 @@ export class CallLiveEventsService {
     }
 
     /**
-     * Generic Centrifugo channel observer — connects, subscribes, emits each
+     * Generic Centrifugo channel observer -- connects, subscribes, emits each
      * publication `tryParse` recognises, and tears the subscription down on
      * unsubscribe. Mirrors {@link MessagesLiveEventsService.observeChannel}.
      */
@@ -83,7 +83,7 @@ export class CallLiveEventsService {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
 
-            // Retain synchronously — the teardown below is guaranteed to run once
+            // Retain synchronously -- the teardown below is guaranteed to run once
             // per observer, so the count stays balanced even if connect() is still
             // pending when the observer unsubscribes.
             this.channelRefs.set(channel, (this.channelRefs.get(channel) ?? 0) + 1);
@@ -122,7 +122,7 @@ export class CallLiveEventsService {
                         sub.off('publication', publicationHandler);
                     }
                     // Only tear down the SHARED subscription when the last observer
-                    // leaves — otherwise a sibling consumer (e.g. the global overlay)
+                    // leaves -- otherwise a sibling consumer (e.g. the global overlay)
                     // would stop receiving publications.
                     if (remaining === 0) {
                         sub.unsubscribe();

@@ -1,7 +1,7 @@
 /**
- * Bidirectional HTML ↔ dtmpl transform for the `imageMapWidget` Tiptap node.
+ * Bidirectional HTML <-> dtmpl transform for the `imageMapWidget` Tiptap node.
  *
- * On save:  `htmlToDtmpl()` rewrites every `<div data-widget="imagemap" …>…</div>`
+ * On save:  `htmlToDtmpl()` rewrites every `<div data-widget="imagemap" ...>...</div>`
  *           marker into `` {widget:imagemap:`<slug>`} ``, carrying `date` /
  *           `now` / `class` when they are present.
  * On load:  `dtmplToHtml()` does the inverse, rebuilding a minimal marker div
@@ -9,7 +9,7 @@
  *
  *  **Positional id, not a named param.** `ImageMapWidgetRenderer` reads the
  * slug from the tag's SECOND `:` segment (`$params['_id']`). It does also
- * accept `slug=`, and prefers it when both are given — but emitting the named
+ * accept `slug=`, and prefers it when both are given -- but emitting the named
  * form would diverge from the document widget for no gain, so this follows the
  * positional convention. The slug is BACKTICK-quoted so a dashed or dotted slug
  * tokenizes cleanly.
@@ -21,7 +21,7 @@
  * That is data loss disguised as a no-op, which is exactly the shape that hides.
  *
  * Disjoint namespace: this only touches `<div data-widget="imagemap">` and
- * `{widget:imagemap…}`, so it composes order-independently with the media,
+ * `{widget:imagemap...}`, so it composes order-independently with the media,
  * link, formField, embed, form and document transforms.
  */
 

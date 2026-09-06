@@ -42,7 +42,7 @@ describe('ui kit tokens', () => {
     /**
      * The admin loads Bootstrap, xterm and KaTeX alongside its own sheet. If one
      * unreadable sheet aborted the scan, the page would show an empty palette
-     * and look like the kit had vanished — so each sheet is guarded on its own.
+     * and look like the kit had vanished -- so each sheet is guarded on its own.
      */
  it('skips a stylesheet it may not read without losing the others', () => {
         const names = discoverTokenNames([
@@ -67,7 +67,7 @@ describe('ui kit tokens', () => {
         });
 
         /**
-         * An UNRESOLVED `var()` must not render as a swatch — an empty coloured
+         * An UNRESOLVED `var()` must not render as a swatch -- an empty coloured
          * box would disguise a broken reference as a legitimate colour.
          */
  it('rejects sizes, shadows and unresolved references', () => {
@@ -95,7 +95,7 @@ describe('ui kit tokens', () => {
          * THE case that caught a real flaw. `--cms-accent` is the HEAD of the
          * accent family; an earlier rule sent single-segment names to a
          * catch-all "base" group, so the head sat apart from `-hover`, `-light`
-         * and `-text` — the one token a reader looks for was the one not beside
+         * and `-text` -- the one token a reader looks for was the one not beside
          * its variants. A group of one costs far less than a split family.
          */
  it('keeps a family head with its variants rather than in a catch-all', () => {

@@ -29,7 +29,7 @@ export interface ChownDialogData {
 /**
  * A3 dialog convergence: VFS "Ownership" dialog now renders the platform
  * `<app-modal>` chrome instead of a bespoke native `<dialog>`. Opened via
- * CDK `Dialog.open()` (data in via DIALOG_DATA, result out via DialogRef —
+ * CDK `Dialog.open()` (data in via DIALOG_DATA, result out via DialogRef --
  * the `ChownPayload` or null; the opener fills `path`).
  */
 @Component({

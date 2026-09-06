@@ -27,7 +27,7 @@ import { CockpitInstanceDto } from './cockpit.types';
 const PAGE_SIZE = 50;
 
 /**
- * Decodes a multi-select filter value — a JSON array string, the shape
+ * Decodes a multi-select filter value -- a JSON array string, the shape
  * `columnFilterRql` splices into an `in (...)`. Falls back to the raw value so
  * a single-op filter on the same column still works.
  */
@@ -36,7 +36,7 @@ function decodeTokens(value: string): string[] {
         const parsed: unknown = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed.map(String);
     } catch {
-        // Not JSON — a plain scalar filter value.
+        // Not JSON -- a plain scalar filter value.
     }
 
     return value === '' ? [] : [value];
@@ -57,15 +57,15 @@ interface CockpitRow {
  *
  * The first M4 operator surface: a read-only table of process instances the
  * engine has run, filterable by state, backed by `GET /api/v1/cockpit/instances`
- * (ROLE_ADMIN). Built on the platform list-page pattern — `<cms-page-header>`
+ * (ROLE_ADMIN). Built on the platform list-page pattern -- `<cms-page-header>`
  * (icon + Reload action) + `<coolms-datagrid>` driven by the `cockpit:instances`
- * config YAML — so it matches Forms / Calendars / Definitions exactly (sortable
+ * config YAML -- so it matches Forms / Calendars / Definitions exactly (sortable
  * columns, per-column filter row incl. the state dropdown, column-visibility).
  *
  * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and
  * on every filter/sort/page change, and this page turns that into ONE server
- * request. It used to be `client` — one perPage=200 block filtered and sorted
- * in the browser — so past 200 live instances the filter row searched a subset
+ * request. It used to be `client` -- one perPage=200 block filtered and sorted
+ * in the browser -- so past 200 live instances the filter row searched a subset
  * and reported it as the whole answer. Instance detail (history timeline +
  * token positions) + steering actions land in later M4 slices.
  */
@@ -117,7 +117,7 @@ export class CockpitListPageComponent implements OnInit {
 
     private readonly rows = signal<CockpitRow[]>([]);
 
-    /** Selected grid row — drives the toolbar's selection-gated Open (navi showWhen). */
+    /** Selected grid row -- drives the toolbar's selection-gated Open (navi showWhen). */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     /** showWhen context for the `navi.toolbar.cockpit.instances` tree: `_selected` gates Open. */
@@ -125,7 +125,7 @@ export class CockpitListPageComponent implements OnInit {
         _selected: this.selectedRow() !== null,
     }));
 
-    /** Server's count for the CURRENT filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error). */
     readonly loaded = signal(false);
@@ -144,7 +144,7 @@ export class CockpitListPageComponent implements OnInit {
 
     /**
      * Footer row-count strip. `totalItems` is the SERVER's count for the
-     * active filter, so it needs no client-side adjustment — that follows from
+     * active filter, so it needs no client-side adjustment -- that follows from
      * filtering server-side. While the grid was `loadingMode: client` this
      * counted the loaded rows and disagreed with the filter row.
      */
@@ -156,7 +156,7 @@ export class CockpitListPageComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('Process Cockpit');
-        // Re-fetch whenever the drill-in filter changes — the report page links
+        // Re-fetch whenever the drill-in filter changes -- the report page links
         // here with `?definitionId=` / `?state=`. `queryParamMap` emits
         // the initial value, but the FIRST load is the grid's own `(loadMore)`
         // on mount; asking the grid to reload covers both without racing it.
@@ -172,7 +172,7 @@ export class CockpitListPageComponent implements OnInit {
     /**
      * The one place instances are fetched. Fired by the grid on mount, on every
      * filter/sort change (`reset`, offset 0) and when the lazy sentinel scrolls
-     * in. Column filters go to the SERVER — the grid used to apply them in
+     * in. Column filters go to the SERVER -- the grid used to apply them in
      * memory over a single 200-row page.
      */
     onLoadMore(event: {
@@ -222,7 +222,7 @@ export class CockpitListPageComponent implements OnInit {
     /**
      * Maps the grid's structured column filters to the endpoint's named query
      * params. Like the Definitions catalog and unlike the RQL-native
-     * endpoints, this provider takes named params — it reads a projected view
+     * endpoints, this provider takes named params -- it reads a projected view
      * built by `CockpitQueryService`, not a plain ORM entity.
      *
      * `state` is multi-select; the endpoint takes a comma-separated list.
@@ -273,7 +273,7 @@ export class CockpitListPageComponent implements OnInit {
      * Client-side CSV export of the LOADED instance rows.
      *
      * With lazy paging "loaded" is what the operator has scrolled
-     * through, not the whole filtered set — so when it covers less than the
+     * through, not the whole filtered set -- so when it covers less than the
      * server's total we SAY SO rather than hand over a silently partial file.
      * Exporting the full set would need the export to page the endpoint
      * itself; until then, an honest warning beats a quiet truncation.
@@ -324,7 +324,7 @@ export class CockpitListPageComponent implements OnInit {
 
     /**
      * Re-runs the current query from page 1, KEEPING the grid's active filters
-     * and sort — the grid owns that state now, so it must drive the refetch.
+     * and sort -- the grid owns that state now, so it must drive the refetch.
      */
     private load(): void {
         this.selectedRow.set(null);

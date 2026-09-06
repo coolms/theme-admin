@@ -12,13 +12,13 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/core-angular';
 /**
- * Recursive admin-sidebar nav item — renders one NaviGraph node and its
+ * Recursive admin-sidebar nav item -- renders one NaviGraph node and its
  * descendants, supporting up to three visible levels:
  *
- *   L1 (depth 0)  — top-level item under a section caption (as before).
- *   L2 (depth 1)  — children rendered INLINE, indented, with a chevron
+ *   L1 (depth 0)  -- top-level item under a section caption (as before).
+ *   L2 (depth 1)  -- children rendered INLINE, indented, with a chevron
  *                   that toggles the sub-tree (mirrors section collapse).
- *   L3 (depth ≥1's children) — rendered in a HOVER/FOCUS/CLICK flyout
+ *   L3 (depth >=1's children) -- rendered in a HOVER/FOCUS/CLICK flyout
  *                   anchored to the right of the L2 row.
  *
  * The icon-only collapsed rail also uses the flyout for a top-level
@@ -32,7 +32,7 @@ import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/co
  * explicit chevron that toggles the flyout.
  *
  * Backend already permission-filters the graph, so children arrive
- * pre-authorised — no re-filtering here. Special targets (logout /
+ * pre-authorised -- no re-filtering here. Special targets (logout /
  * external / terminal) bubble up via {@link specialClick} so the host
  * shell keeps owning those side effects.
  */
@@ -222,7 +222,7 @@ export class SidebarNavItemComponent {
     readonly inFlyout       = input<boolean>(false);
     readonly activeOverride = input<string | null>(null);
 
-    /** Non-route targets (logout / _blank / terminal) — handled by the shell. */
+    /** Non-route targets (logout / _blank / terminal) -- handled by the shell. */
     readonly specialClick = output<NaviGraphNode>();
 
     private readonly router       = inject(Router);
@@ -255,13 +255,13 @@ export class SidebarNavItemComponent {
         return this.sidebarState.isItemCollapsed(this.node().id);
     }
 
-    /** Inline (indented) children — only top-level items, in the expanded rail. */
+    /** Inline (indented) children -- only top-level items, in the expanded rail. */
     inlineExpanded(): boolean {
         if (this.collapsed() || this.depth() !== 0 || !this.hasChildren()) return false;
         return !this.collapsedInline() || this.hasActiveDescendant();
     }
 
-    /** Flyout children — the collapsed icon rail (L1) or any deeper level (L2->L3). */
+    /** Flyout children -- the collapsed icon rail (L1) or any deeper level (L2->L3). */
     usesFlyout(): boolean {
         if (!this.hasChildren()) return false;
         return (this.collapsed() && this.depth() === 0) || (!this.collapsed() && this.depth() >= 1);

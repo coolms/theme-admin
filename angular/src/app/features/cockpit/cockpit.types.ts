@@ -47,7 +47,7 @@ export interface ListCockpitInstancesOptions {
 }
 
 /**
- * One external-task row — a Camunda-style external worker task the engine
+ * One external-task row -- a Camunda-style external worker task the engine
  * has parked for an external worker to lock + complete. Mirrors the backend
  * `CockpitExternalTaskResource` wire shape (`/api/v1/cockpit/external-tasks`).
  */
@@ -94,7 +94,7 @@ export type ExecutionTokenState =
     | 'dead';
 
 /**
- * One execution token — a live (or finished) marker sitting on a flow
+ * One execution token -- a live (or finished) marker sitting on a flow
  * element. Newest-entered first in the detail payload.
  */
 export interface CockpitTokenDto {
@@ -115,7 +115,7 @@ export type TaskState =
     | 'cancelled';
 
 /**
- * One user task (M4 detail) — the operator-relevant facts behind a parked
+ * One user task (M4 detail) -- the operator-relevant facts behind a parked
  * `userTask:<id>` token: state, current assignee, candidate pool, timers.
  * Read-only; task ACTIONS (claim / delegate / complete) live in the Inbox.
  * `assigneeId` / candidate ids are raw ids (no name resolution).
@@ -135,20 +135,20 @@ export interface CockpitTaskDto {
 
 /**
  * One engine history event (token entered/left, task created, message
- * correlated, …). Chronological (oldest first) in the detail payload.
+ * correlated, ...). Chronological (oldest first) in the detail payload.
  */
 export interface CockpitHistoryEventDto {
     id: string;
     type: string;
     /**
-     * — server-derived human one-liner for the timeline ("Compensated 2
+     * -- server-derived human one-liner for the timeline ("Compensated 2
      * activities", "Error caught at svc.pay (code PAYMENT_DECLINED)"). The
      * backend `HistoryEventDescriber` produces it from the stable code + payload
      * so every client renders identically; empty/absent -> fall back to `type`.
      */
     summary?: string;
     /**
-     * / — grouping bucket for colour-coding the timeline marker +
+     * / -- grouping bucket for colour-coding the timeline marker +
      * badge: `process` | `token` | `compensation` | `task` | `timer` |
      * `message` | `external-task` (and any future bucket -> muted fallback).
      */
@@ -180,7 +180,7 @@ export interface CockpitInstanceDetailDto extends CockpitInstanceDto {
     tokens: CockpitTokenDto[];
     history: CockpitHistoryEventDto[];
     /**
-     * M4 — user tasks on the instance (each parked `userTask:<id>` token
+     * M4 -- user tasks on the instance (each parked `userTask:<id>` token
      * resolved to assignee/candidates/state/timers), creation order. Absent on
      * the list view; the service normalizes to `[]`.
      */
@@ -248,7 +248,7 @@ export interface CockpitReportDto {
 /**
  * Aggregate user-task metrics. Returned by the singleton GET
  * (`GET /api/v1/cockpit/task-metrics`, ROLE_ADMIN): the task-level complement
- * to `CockpitReportDto` — count by task state, the open subtotal, overdue
+ * to `CockpitReportDto` -- count by task state, the open subtotal, overdue
  * (SLA-breach) count, mean queue-/cycle-time, and completion throughput.
  * Note: API Platform omits null props, so `avgQueueSeconds`/`avgCycleSeconds`
  * arrive as `undefined` when there is no completed-task sample.
@@ -274,7 +274,7 @@ export interface CockpitTaskMetricsDto {
  * One element's dwell timing row from the per-definition bottleneck
  * report. `elementLabel`/`elementKind` are best-effort AST enrichment (null
  * when the id isn't resolvable). Note: API Platform omits null properties, so
- * a missing field arrives as `undefined` — guard with `== null`.
+ * a missing field arrives as `undefined` -- guard with `== null`.
  */
 export interface CockpitElementTimingDto {
     elementId: string;
@@ -300,11 +300,11 @@ export interface CockpitTimingReportDto {
 }
 
 /**
- *+ — the CSV-export envelope returned by
- * `GET /api/v1/cockpit/reports/export?kind=…` (ROLE_ADMIN). The CSV body rides
+ *+ -- the CSV-export envelope returned by
+ * `GET /api/v1/cockpit/reports/export?kind=...` (ROLE_ADMIN). The CSV body rides
  * in `csv` (with a suggested `filename`) so the Bearer-authed admin SPA can
  * fetch it (auth header attached by the interceptor) and trigger the download
- * client-side — a raw `Content-Disposition` attachment would 401, since a plain
+ * client-side -- a raw `Content-Disposition` attachment would 401, since a plain
  * `<a download>` can't carry the bearer token.
  */
 export interface CockpitReportExportDto {

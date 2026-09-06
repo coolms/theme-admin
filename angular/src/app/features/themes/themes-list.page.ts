@@ -18,21 +18,21 @@ import {
 } from '@coolms/ui-angular';
 import { SiteSectionDto, ThemeDto, ThemeTemplateDto, ThemesService } from './themes.service';
 
-/** A theme's templates folded into `emails/`, `pages/`, … for display. */
+/** A theme's templates folded into `emails/`, `pages/`, ... for display. */
 interface TemplateGroup {
     readonly dir:   string;
     readonly paths: readonly string[];
 }
 
 /**
- * Themes Explorer — the admin surface for which theme skins the site
+ * Themes Explorer -- the admin surface for which theme skins the site
  * and what it overrides.
  *
  * ## Why this page exists
  *
  * The Theme module has had `/themes`, `/themes/{id}` and
  * `/themes/{slug}/templates` for some time with no admin UI at all, so the only
- * way to see which theme was serving a site — or to change it — was the database
+ * way to see which theme was serving a site -- or to change it -- was the database
  * or the CLI. made that concrete: a theme's `emails/default.html.dtmpl`
  * shadows MailComposer's own layout, and fixing the shadowed copy meant editing
  * a file on disk with nothing in the admin even hinting the override existed.
@@ -40,16 +40,16 @@ interface TemplateGroup {
  * ## Deliberate limits (backend, not oversight)
  *
  *  - **No install action.** `ThemeResource` ships no POST; themes are installed
- *    via `coolms:theme:install <slug>` — and only for a theme whose BUNDLE is
+ *    via `coolms:theme:install <slug>` -- and only for a theme whose BUNDLE is
  *    registered, since the command resolves a registered provider, not a
  *    directory. (`ThemeResource`'s docblock says `<path>`; the command's own
  *    signature says slug, and it is right.) The page states this rather than
  *    offering a button that cannot work.
- *  - **Only SSR themes can be activated** — see {@link isSiteTheme}.
+ *  - **Only SSR themes can be activated** -- see {@link isSiteTheme}.
  *
  * Templates became READABLE in : `/themes/{slug}/template-source` returns
  * one file's bytes, and clicking a row opens {@link TemplateSourceDialog}. The
- * view is read-only by design — a theme package is not an editing surface, and
+ * view is read-only by design -- a theme package is not an editing surface, and
  * writing to one would be edited-in-place state that no reinstall preserves.
  *
  * Cards rather than a DataGrid: an install has a handful of themes, each with
@@ -324,7 +324,7 @@ export class ThemesListComponent {
 
     private readonly templates = signal<Record<string, ThemeTemplateDto[]>>({});
 
-    /** Read for `themeSlug` only — the asset half of the binding. */
+    /** Read for `themeSlug` only -- the asset half of the binding. */
     readonly sections = signal<SiteSectionDto[]>([]);
 
     readonly groups = computed<TemplateGroup[]>(() => {
@@ -356,12 +356,12 @@ export class ThemesListComponent {
     }
 
     /**
-     * Only an SSR theme can skin the public site — so only an SSR theme may be
+     * Only an SSR theme can skin the public site -- so only an SSR theme may be
      * activated.
      *
      * `ThemeRepository::findActive()` has NO feStack filter, so activating the
      * admin SPA (`feStack: spa`) would genuinely make it the site's active theme
-     * — and `ThemeAwareVfsLoader` bails on anything that is not SSR, leaving the
+     * -- and `ThemeAwareVfsLoader` bails on anything that is not SSR, leaving the
      * public site with no templates. The button is withheld rather than the
      * failure being explained after the fact.
      */
@@ -370,7 +370,7 @@ export class ThemesListComponent {
     }
 
     /**
-     * Sections this theme actually serves — the AUTHORITATIVE binding.
+     * Sections this theme actually serves -- the AUTHORITATIVE binding.
      *
      * `ThemeSubscriber` fast-paths on `SiteSection.themeSlug`: when a section
      * names a theme it is resolved by slug and `isActive` / `Theme.sections[]`
@@ -383,7 +383,7 @@ export class ThemesListComponent {
             .map(s => s.slug);
     }
 
-    /** Sections naming no theme — the only ones `isActive` can still decide. */
+    /** Sections naming no theme -- the only ones `isActive` can still decide. */
     unassignedSections(): string[] {
         return this.sections().filter(s => !s.themeSlug).map(s => s.slug);
     }
@@ -393,7 +393,7 @@ export class ThemesListComponent {
      *
      * Offering it unconditionally was misleading: on an install where every
      * section carries a `themeSlug`, activating a theme changes the database and
-     * nothing else — the button appeared to work and the site never moved.
+     * nothing else -- the button appeared to work and the site never moved.
      */
     canActivate(theme: ThemeDto): boolean {
         return !theme.isActive && this.isSiteTheme(theme) && this.unassignedSections().length > 0;
@@ -402,7 +402,7 @@ export class ThemesListComponent {
     /**
      * Leftover `Theme.sections[]` from before the binding was unified.
      *
-     * The value is no longer read by anything — `Version20260731120000` folded it
+     * The value is no longer read by anything -- `Version20260731120000` folded it
      * into `SiteSection.themeSlug` and the resolver's per-section step is gone.
      * Surfaced only so an operator who remembers configuring it here is told
      * where it went, instead of silently seeing it stop mattering.

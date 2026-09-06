@@ -21,22 +21,22 @@ import {
 } from './context-form.helpers';
 
 /**
- * F.14c-2 — schema-driven variable input. Walks a flat
+ * F.14c-2 -- schema-driven variable input. Walks a flat
  * `FormVariableInput[]` (extracted from a `DocumentTemplate`'s
  * DTMPL contextSchema) into a recursive group tree and renders one
  * text input per variable. Submits as **nested JSON**: dotted paths
  * collapse into nested objects so the backend's DTMPL renderer can
  * resolve them without flat-key reshaping.
  *
- * Replaceable. The contract — `(variables, initialValue) -> emit
- * nested JSON` — is intentionally narrow so the future F.9 Form
+ * Replaceable. The contract -- `(variables, initialValue) -> emit
+ * nested JSON` -- is intentionally narrow so the future F.9 Form
  * Builder can swap this implementation without touching the dialog
  * or the page-level wire-up.
  *
  * F.14c-2 scope:
  *   - Scalar variables render `<input type="text">`. Type detection
  *     (date / number / boolean) is deferred.
- *   - Variables flagged as entity references (Phase 2 —
+ *   - Variables flagged as entity references (Phase 2 --
  *     `entityType` non-null on the schema variable) render
  *     `<cms-entity-picker>` instead, persisting the entity id (or
  *     list of ids when `collection: true`) into the same nested-JSON
@@ -176,14 +176,14 @@ export class ContextInputFormComponent {
     constructor() {
         // Re-seed the form whenever a fresh `initialValue` arrives. The
         // signal carries a reference; consumers that mutate-in-place
-        // won't trigger this — pass a new object to reset the form.
+        // won't trigger this -- pass a new object to reset the form.
         //
         // CRITICAL: emit the locally-cloned `seed` directly, NOT
         // `this.formData()`. Reading `formData()` inside the effect
         // creates a tracked dependency on it, so every user-driven
         // `writeField()` would trigger the effect to re-run and reset
-        // `formData` back to `structuredClone(initialValue())` — i.e.
-        // back to `{}` when no parent passes an initial value —
+        // `formData` back to `structuredClone(initialValue())` -- i.e.
+        // back to `{}` when no parent passes an initial value --
         // clobbering the user's picker selection before Generate is
         // clicked. (Phase 2 ext smoke surfaced this as `{}` POST body
         // despite the picker emitting correctly.)
@@ -195,7 +195,7 @@ export class ContextInputFormComponent {
         });
     }
 
-    /** Public API — the dialog reads this on Generate as a fallback. */
+    /** Public API -- the dialog reads this on Generate as a fallback. */
     getValue(): ContextFormValue {
         return this.formData();
     }
@@ -206,7 +206,7 @@ export class ContextInputFormComponent {
     }
 
     /**
-     * Entity-picker read — returns the raw value (id string, id-list,
+     * Entity-picker read -- returns the raw value (id string, id-list,
      * or null) without the `String(...)` coercion `readField` applies
      * for text inputs. The picker's input contract is
      * `string | string[] | null`; coercing to '' would erase a
@@ -225,16 +225,16 @@ export class ContextInputFormComponent {
 
     /**
      * Persist a field write. Accepts:
-     *   - `string`          — plain text input or single entity id.
-     *   - `string[]`        — collection of entity ids (Phase 2 multi-
+     *   - `string`          -- plain text input or single entity id.
+     *   - `string[]`        -- collection of entity ids (Phase 2 multi-
      *                         select picker).
-     *   - `null`            — explicit clear from the entity picker
+     *   - `null`            -- explicit clear from the entity picker
      *                         (mapped onto the path so the renderer
      *                         sees the variable as missing).
      */
     protected writeField(path: string, value: string | string[] | null): void {
         // Mutate a fresh top-level reference so OnPush parents pick up
-        // the change; nested objects are mutated in place — fine here
+        // the change; nested objects are mutated in place -- fine here
         // since the form data is local-only and the snapshot we emit
         // is a fresh clone.
         const next = { ...this.formData() };
@@ -248,7 +248,7 @@ export class ContextInputFormComponent {
     }
 
     /**
-     * Phase 2 extension polish — strip the leading `@` that an entity-
+     * Phase 2 extension polish -- strip the leading `@` that an entity-
      * alias variable carries so the label reads as the alias name
      * itself (e.g., `user` rather than `@user`). The
      * persisted path keeps the `@` so the renderer's Context lookup

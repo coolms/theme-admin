@@ -1,5 +1,5 @@
 /**
- *.1a — pure helpers shared by the instances browser. The
+ *.1a -- pure helpers shared by the instances browser. The
  * file zone displays per-instance Location and Filename derived from
  * the entity's `vfsPath`; both transforms live here so the UI never
  * does string-mangling inline.
@@ -33,7 +33,7 @@ export function formatLocation(vfsPath: string | null | undefined): string {
 
 /**
  * Filename portion of a VFS path. Falls back to the supplied default
- * when the path is missing — pending instances may not have a path
+ * when the path is missing -- pending instances may not have a path
  * pinned yet, in which case the caller passes a stable id-derived
  * label.
  */
@@ -46,8 +46,8 @@ export function filenameOf(vfsPath: string | null | undefined, fallback: string)
 }
 
 /**
- *.1b — human-readable byte size for the instance properties
- * panel. Returns `'—'` for null/undefined/0 (the entity doesn't expose
+ *.1b -- human-readable byte size for the instance properties
+ * panel. Returns `'--'` for null/undefined/0 (the entity doesn't expose
  * size today; pending rows have nothing to measure either). Decimal
  * formatting matches Media's status-bar convention (1 KB = 1024 B).
  */

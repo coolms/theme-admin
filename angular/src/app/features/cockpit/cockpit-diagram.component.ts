@@ -28,7 +28,7 @@ import type { CockpitTokenDto } from './cockpit.types';
  * Reuses the BpmnLite designer's read-only viewer (`createEditor` with
  * `readOnly`/`hideToolbar`/`hideSidebar`) to paint the deployed process body,
  * then highlights the elements where execution tokens currently sit by
- * adding CSS classes onto the rendered `<g data-element-id="…">` nodes:
+ * adding CSS classes onto the rendered `<g data-element-id="...">` nodes:
  *   - **active**  token -> green glow
  *   - **waiting** token -> amber glow
  *   - the **failed** element (from the failure capture) -> red glow

@@ -5,8 +5,8 @@ import { VfsNodeDto } from '@coolms/ui-angular';
  * (BPMN-Lite) designer surface.
  *
  * Extracted from the (now-retired) bespoke `bpmn-editor-dialog` so the
- * generic {@link DesignerEditorDialogComponent} — which replaced it as
- * the File-Explorer editor for `.bpmn.json` files — can derive the
+ * generic {@link DesignerEditorDialogComponent} -- which replaced it as
+ * the File-Explorer editor for `.bpmn.json` files -- can derive the
  * workflow key + version from the double-clicked VFS node without
  * depending on the old dialog. `app.config.ts` registers these MIMEs
  * against the generic dialog; the dialog calls the two helpers to map a
@@ -51,14 +51,14 @@ export function workflowKeyFromNode(node: VfsNodeDto): string | null {
 /**
  * Detect a deployed-version body file (`/workflows/{key}/v{N}.bpmn.json`)
  * and extract its monotonic version number `N`. Returns null for any
- * non-version path — Package containers, `draft.bpmn.json`, and any
+ * non-version path -- Package containers, `draft.bpmn.json`, and any
  * other shape default to editor mode.
  *
  *  - `/workflows/identity.verify/v3.bpmn.json` -> `3`
  *  - `/workflows/identity.verify/draft.bpmn.json` -> null
  *  - `/workflows/identity.verify` (Package) -> null
  *  - `/workflows/identity.verify/v3.bpmn.json.bak` -> null
- *  - `/workflows/x/v0.bpmn.json` -> `0` (legal at the path level — the
+ *  - `/workflows/x/v0.bpmn.json` -> `0` (legal at the path level -- the
  *    backend returns 404 if no v0 exists, which is the correct UX)
  */
 export function workflowVersionFromNode(node: VfsNodeDto): number | null {

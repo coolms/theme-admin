@@ -10,9 +10,9 @@ import {
  * gallery (UUID-based) path and its disambiguation from single assets.
  *
  * Key invariant: galleries (collection-mode) and single assets now share the
- * `{widget:media:<uuid> …}` prefix; they are told apart by the presence of a
+ * `{widget:media:<uuid> ...}` prefix; they are told apart by the presence of a
  * `type=` param (galleries always carry it, single assets never do). The legacy
- * path form `{widget:media:/path …}` is gone.
+ * path form `{widget:media:/path ...}` is gone.
  */
 
 const ASSET_UUID = '019d3dbc-45e8-7e01-aaad-8aa3db96e95c';
@@ -45,7 +45,7 @@ describe('dtmplToHtml — single vs gallery disambiguation', () => {
  * delimiter, the raw (decoded) storage, and the save/reload round-trip.
  *
  * Note on JS: the dtmpl strings below carry literal backticks, so they are
- * written as single-quoted JS strings (backticks inside `'…'` are literal),
+ * written as single-quoted JS strings (backticks inside `'...'` are literal),
  * never as JS template literals.
  */
 describe('htmlToDtmpl — single-asset string params are backtick-delimited (SSR-safe)', () => {
@@ -121,7 +121,7 @@ describe('htmlToDtmpl — gallery placeholder div', () => {
         expect(dtmpl).toContain('type=slider');
         expect(dtmpl).toContain('limit=20');
         expect(dtmpl).toContain('depth=1');
- // The DTMPL tag lexer's only string delimiter is the backtick — a
+ // The DTMPL tag lexer's only string delimiter is the backtick -- a
  // double-quoted value 500s at SSR. So the tag must carry NO `"` and the
  // display name must NOT be serialized.
         expect(dtmpl).not.toContain('"');

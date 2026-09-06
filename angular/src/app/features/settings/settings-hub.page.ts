@@ -41,7 +41,7 @@ import { deslugify, groupBlocks, isEdited, type ModuleGroup } from './settings-g
 const PREFS_KEY = 'settings';
 
 /**
- * Settings (`/admin/settings`, ROLE_ADMIN) — the classic options shape: a tree
+ * Settings (`/admin/settings`, ROLE_ADMIN) -- the classic options shape: a tree
  * of every module's blocks on the left, the selected block's form in the main
  * area, its actions along the bottom.
  *
@@ -49,7 +49,7 @@ const PREFS_KEY = 'settings';
  * fill a wide screen with and no answer at twenty modules; a modal capped how
  * big a block could grow and made moving between blocks a close-then-open. A
  * rail plus a content pane is what every settings screen converges on because it
- * scales in the one direction settings actually grow — more of them — and it
+ * scales in the one direction settings actually grow -- more of them -- and it
  * lets a block have as much room as it needs.
  *
  * **Reuses the Explorer's resizable rail, not its shell.** `cms-pane-splitter`
@@ -58,7 +58,7 @@ const PREFS_KEY = 'settings';
  * slot components, which earns its keep where the layout itself is configurable
  * per deployment (VFS, Media, Pages) and would be ceremony here.
  *
- * **Selection lives in the QUERY STRING** — `?block=` for the selection,
+ * **Selection lives in the QUERY STRING** -- `?block=` for the selection,
  * `?module=` to root the tree at one module (what a module's own Settings button
  * links to). Both are deep-linkable, and a query-param change does not re-create
  * the component, so moving between blocks costs nothing. The older
@@ -550,8 +550,8 @@ export class SettingsHubPageComponent implements OnInit {
     readonly formKey = signal(0);
 
     //  Declared ABOVE the signals that read it. Field initialisers run in
-    // source order, so a `toSignal(this.store…)` above this line compiles and
-    // then reads undefined at runtime — TS2729 catches it, which is the only
+    // source order, so a `toSignal(this.store...)` above this line compiles and
+    // then reads undefined at runtime -- TS2729 catches it, which is the only
     // reason it is not a boot-time mystery.
     private readonly store = inject(Store);
 
@@ -562,7 +562,7 @@ export class SettingsHubPageComponent implements OnInit {
      * picker on a page that already had one in the global header. Two controls
      * for one question is the question asked twice, so that list went.
      *
-     * ⚠️ THE HEADER'S PICKER HAS SINCE COME HERE, and this is still not the
+     * !! THE HEADER'S PICKER HAS SINCE COME HERE, and this is still not the
      * second control it looks like. Measured: the picker changed the contents of
      * ZERO of 75 API collections, and the Pages screen overrides it on create
      * with its own space -- these settings are the one place the choice decides
@@ -581,8 +581,8 @@ export class SettingsHubPageComponent implements OnInit {
     /**
      * Whether a per-site choice means anything here.
      *
-     * With one section there is nothing to distinguish — the platform's values
-     * ARE that site's — and the header's own selector hides itself for exactly
+     * With one section there is nothing to distinguish -- the platform's values
+     * ARE that site's -- and the header's own selector hides itself for exactly
      * that reason. A layer toggle there would offer a decision with one outcome.
      */
     readonly multiSite = computed(() => this.sections().length > 1);
@@ -609,7 +609,7 @@ export class SettingsHubPageComponent implements OnInit {
     readonly scopedBlock = signal<ModuleSettingsBlockDto | null>(null);
 
     /**
-     * Modules whose branch is folded away — the COLLAPSED set, not the expanded
+     * Modules whose branch is folded away -- the COLLAPSED set, not the expanded
      * one, so a newly installed module shows up rather than hiding until someone
      * finds it.
      *
@@ -663,7 +663,7 @@ export class SettingsHubPageComponent implements OnInit {
             : 'Settings this module owns. Changes take effect immediately.',
     );
 
-    /** @see SettingsToolbarContributor — the server owns which buttons exist. */
+    /** @see SettingsToolbarContributor -- the server owns which buttons exist. */
     readonly toolbarTree = 'navi.toolbar.settings';
 
     /** Filled from the toolbar tree, not built here. */
@@ -681,7 +681,7 @@ export class SettingsHubPageComponent implements OnInit {
         _scoped: null !== this.scope(),
     }));
 
-    /** Mid-save, read from the form — both `saving` and `viewChild` are signals. */
+    /** Mid-save, read from the form -- both `saving` and `viewChild` are signals. */
     readonly saving = computed((): boolean => this.form()?.saving() ?? false);
 
     private readonly form = viewChild(DynamicFormComponent);
@@ -724,8 +724,8 @@ export class SettingsHubPageComponent implements OnInit {
     }
 
     constructor() {
-        // The breadcrumb should say where you ARE — the block, or the module
-        // whose tree is open — not repeat the section's own name back at you.
+        // The breadcrumb should say where you ARE -- the block, or the module
+        // whose tree is open -- not repeat the section's own name back at you.
         effect(() => this.pageTitle.set(
             this.selected()?.label ?? (this.scopeLabel() || 'Settings'),
         ));
@@ -762,7 +762,7 @@ export class SettingsHubPageComponent implements OnInit {
     }
 
     /**
-     * Rooted at one module, always open — its heading is hidden there, so a
+     * Rooted at one module, always open -- its heading is hidden there, so a
      * branch folded earlier on the all-modules tree would leave the rail empty
      * with no control anywhere to open it again.
      */
@@ -784,7 +784,7 @@ export class SettingsHubPageComponent implements OnInit {
      * Never leave the open block inside a folded branch.
      *
      * A deep link, or a Settings button on a module page, can land on a block
-     * whose module the reader collapsed weeks ago — the form would open with no
+     * whose module the reader collapsed weeks ago -- the form would open with no
      * highlighted row anywhere in the rail to say where it came from.
      */
     private revealSelected(module: string | null): void {
@@ -831,14 +831,14 @@ export class SettingsHubPageComponent implements OnInit {
             return;
         }
 
-        // Pinned keys must not travel — see `withoutPinnedKeys` for why a
+        // Pinned keys must not travel -- see `withoutPinnedKeys` for why a
         // disabled control still ends up in the payload, and what it costs.
         const payload = withoutPinnedKeys(value, this.selected()?.locked ?? {});
 
         this.settings.save(key, payload, this.selectedSite()).subscribe({
             next: saved => {
                 // Adopt the response: the store normalises and strips its own
-                // bookkeeping, so what came back is what a reload would show —
+                // bookkeeping, so what came back is what a reload would show --
                 // but into the RIGHT place. See `adoptSavedBlock`.
                 const { blocks, scoped } = adoptSavedBlock(this.blocks(), saved, this.selectedSite());
                 this.blocks.set(blocks);
@@ -898,8 +898,8 @@ export class SettingsHubPageComponent implements OnInit {
      *
      *  **The form is rebuilt when the values ARRIVE, not when the layer is
      * chosen.** `DynamicFormComponent` patches its initial value once, at
-     * definition load, so a rebuild triggered here — before the scoped fetch
-     * returns — patches the PLATFORM's values and then never re-reads. On the
+     * definition load, so a rebuild triggered here -- before the scoped fetch
+     * returns -- patches the PLATFORM's values and then never re-reads. On the
      * real screen that showed a site with a saved TTL of 60 as 300, with a Reset
      * button proving a row existed: the screen contradicting itself.
      *
@@ -942,7 +942,7 @@ export class SettingsHubPageComponent implements OnInit {
         this.settings.get(key, site).subscribe({
             next: block => {
                 this.scopedBlock.set(block);
-                // NOW the form has something scoped to render — see chooseSite.
+                // NOW the form has something scoped to render -- see chooseSite.
                 this.formKey.update(k => k + 1);
             },
             error: err => {

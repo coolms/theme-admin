@@ -7,14 +7,14 @@ import type { ContextFormValue } from './context-form.helpers';
 import { type FormVariableInput } from '../shared/document-explorer.types';
 
 /**
- * Phase 2 ext regression guard — exercises the value-emission
+ * Phase 2 ext regression guard -- exercises the value-emission
  * pipeline that the Generate dialog depends on. Earlier shape of the
  * constructor effect read `this.formData()` inside the same effect
  * that called `formData.set(...)`. Angular's signal tracking
  * registered `formData` as a dependency, so every user-driven
  * `writeField()` retriggered the effect, which reset `formData`
  * back to `structuredClone(initialValue())` (i.e. `{}` when no
- * parent passed an initial value) and emitted `{}` upward —
+ * parent passed an initial value) and emitted `{}` upward --
  * clobbering the picker's emitted selection before Generate fired.
  * The dialog therefore POSTed `explicitVariables: {}` no matter
  * what the user picked.
@@ -22,10 +22,10 @@ import { type FormVariableInput } from '../shared/document-explorer.types';
  * The spec asserts three invariants:
  *   1. A `writeField` call propagates the value to subscribers.
  *   2. The `@`-prefixed entity-alias path (Phase 2 ext) survives
- *      the round-trip — `getNestedValue` / `setNestedValue` do
+ *      the round-trip -- `getNestedValue` / `setNestedValue` do
  *      not strip or transform it.
  *   3. The most recent emit is the user's value, not a stale `{}`
- *      from the seed effect — i.e. the effect doesn't re-fire on
+ *      from the seed effect -- i.e. the effect doesn't re-fire on
  *      `formData` changes after the user types.
  */
 describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
@@ -45,7 +45,7 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
 
  // Schema must include the variable so `writeField` is
  // semantically meaningful from the form's perspective; the
- // test doesn't render the template — we drive the public
+ // test doesn't render the template -- we drive the public
  // signal/method surface directly.
         const variables: readonly FormVariableInput[] = [
             {

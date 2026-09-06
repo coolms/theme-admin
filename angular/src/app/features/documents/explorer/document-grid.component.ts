@@ -8,7 +8,7 @@ import { FolderContentComponent } from './folder-content.component';
 import { InstancesBrowserComponent } from './instances-browser.component';
 
 /**
- * F.14c-3 +.1a — main-panel router.
+ * F.14c-3 +.1a -- main-panel router.
  *
  * Despite the legacy `DocumentGrid` slot key (kept because the backend
  * layout YAML still references it), this component dispatches by
@@ -21,7 +21,7 @@ import { InstancesBrowserComponent } from './instances-browser.component';
  *                    reports `activeItem: null` in instances mode)
  *
  * Mode swaps replace what fills the main slot rather than overlaying
- * the right panel — keeps the "Show Instances" surface from being
+ * the right panel -- keeps the "Show Instances" surface from being
  * cramped at 360px.
  */
 @Component({
@@ -92,7 +92,7 @@ export class DocumentGridComponent {
     protected readonly state = inject(DocumentPageStateService);
 
     /**
-     * — `.templates` is shown under its friendly name so the
+     * -- `.templates` is shown under its friendly name so the
      * breadcrumb reads `Root / Documents / Templates`. The directory
      * itself keeps its real name: it is the security gate
      * `TemplateRootResolver` matches on, not a naming convention.
@@ -106,25 +106,25 @@ export class DocumentGridComponent {
     protected readonly showInstances = computed(() => this.state.browseView() !== 'templates');
 
     /**
-     * — the breadcrumb used to render `state.currentPath()` in
+     * -- the breadcrumb used to render `state.currentPath()` in
      * every mode, which made it claim `/docs` while the pane below
      * listed what actually lives in `/docs/.templates`. Now it states
      * the real location:
      *
-     *   templates listing -> `<space>/.templates`        -> `… / Documents / Templates`
-     *   space documents   -> `<space>`                   -> `… / Documents`
-     *   one template's instances -> the TEMPLATE's path  -> `… / Documents / Templates / <template>`
+     *   templates listing -> `<space>/.templates`        -> `... / Documents / Templates`
+     *   space documents   -> `<space>`                   -> `... / Documents`
+     *   one template's instances -> the TEMPLATE's path  -> `... / Documents / Templates / <template>`
      *
      * The instances chain is a REAL path, not a decoration: a template
      * IS a Node under `<space>/.templates/`, so the server resolves
-     * every segment — including the template's own title — and each
+     * every segment -- including the template's own title -- and each
      * ancestor is a working way out. Before this, that view showed
-     * `… / Documents` with `Documents` as the LAST segment, so nothing
+     * `... / Documents` with `Documents` as the LAST segment, so nothing
      * was clickable and the toolbar toggle was the only escape.
      */
     protected readonly breadcrumbPath = computed(() => {
         const path = this.state.currentPath().replace(/\/+$/, '');
-        // Anchored to the SPACE root, not `currentPath` — templates live
+        // Anchored to the SPACE root, not `currentPath` -- templates live
         // at one root per space, so a subfolder has none.
         const templatesDir = `${this.spaceRoot().replace(/\/+$/, '')}/${TEMPLATES_DIR}`;
 
@@ -171,7 +171,7 @@ export class DocumentGridComponent {
         // Second line of defence behind `navigableFrom`: never accept a
         // target outside the active space. `selectFolder` would set it
         // verbatim, and `breadcrumbPath()` would then append
-        // `.templates` to a path that is not a space — which is how
+        // `.templates` to a path that is not a space -- which is how
         // clicking `Root` produced `Root / Templates` over an empty
         // pane.
         const root = this.spaceRoot().replace(/\/+$/, '');
@@ -182,7 +182,7 @@ export class DocumentGridComponent {
     }
 
     /**
-     * E6 — folder-content's empty-area dropzone bubbled DOCX files up.
+     * E6 -- folder-content's empty-area dropzone bubbled DOCX files up.
      * Fan-out to the page through the state subject so the page-level
      * Upload service path (same as toolbar Upload) handles the actual
      * POST, refresh, and toast.

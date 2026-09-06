@@ -28,7 +28,7 @@ interface FolderNode {
      * A children request is in flight.
      *
      * Deliberately NOT rendered. It exists only to stop a second request when
-     * the user expands a folder whose prefetch has not landed yet — the tree
+     * the user expands a folder whose prefetch has not landed yet -- the tree
      * shows nothing at all until the answer is known, which is the point.
      */
     pending: boolean;
@@ -38,13 +38,13 @@ interface FolderNode {
  * Folder tree for the active page space.
  *
  * Projected into the space accordion, so it renders under the space you picked
- * — the sections (`blog`, `docs`, `news`) that used to be rows in the grid.
+ * -- the sections (`blog`, `docs`, `news`) that used to be rows in the grid.
  * Moving them here is what let the listing become pages-only: a folder is a
  * PLACE, and a place belongs in the navigator, not interleaved with the things
  * it contains.
  *
  * Children load on expand rather than up front. A site's page tree is the site
- * structure — potentially every section and sub-section — and eager loading
+ * structure -- potentially every section and sub-section -- and eager loading
  * would fetch the whole thing to render a strip a few entries tall.
  *
  * Selection writes the SHARED cursor, which the main pane reacts to; this
@@ -56,7 +56,7 @@ interface FolderNode {
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     // `NgTemplateOutlet` is what makes the recursive `branch` template work.
-    // Without it the build still passes and the tree renders NOTHING —
+    // Without it the build still passes and the tree renders NOTHING --
     // the outlet is just an unknown attribute on an `<ng-container>`.
     imports: [NgTemplateOutlet],
     template: `
@@ -189,7 +189,7 @@ export class PageFoldersTreeComponent {
         });
     }
 
-    /** The folder currently on screen — highlighted, not re-navigated. */
+    /** The folder currently on screen -- highlighted, not re-navigated. */
     protected isActive(node: FolderNode): boolean {
         return this.state.folderId() === node.id;
     }
@@ -205,10 +205,10 @@ export class PageFoldersTreeComponent {
     }
 
     /**
-     * Right-click a section — the left panel had no menu at all.
+     * Right-click a section -- the left panel had no menu at all.
      *
      * Does NOT navigate. The first version selected the folder before opening
-     * the menu, on the theory that the entries act on the folder cursor — but
+     * the menu, on the theory that the entries act on the folder cursor -- but
      * `openCreateDialog` scopes to the SPACE and never reads the cursor, so
      * the selection bought nothing and right-clicking a section silently
      * loaded its contents. A context menu is a question, not a command:
@@ -231,7 +231,7 @@ export class PageFoldersTreeComponent {
 
                     return;
                 }
-                // — section properties act on the folder that was
+                // -- section properties act on the folder that was
                 // right-clicked, NOT on the cursor, so the target travels with
                 // the action. Everything else is cursor/space-scoped and goes
                 // through the plain channel.
@@ -249,7 +249,7 @@ export class PageFoldersTreeComponent {
      * True once we KNOW the folder has nothing under it.
      *
      * The tree is lazy, so `children: null` means "not asked yet", not
-     * "empty" — the twisty has to stay until the first expand answers the
+     * "empty" -- the twisty has to stay until the first expand answers the
      * question. After that an empty array is a definite answer and the
      * control retires rather than staying as a chevron that does nothing.
      */
@@ -259,7 +259,7 @@ export class PageFoldersTreeComponent {
 
     protected toggle(node: FolderNode): void {
         node.expanded = !node.expanded;
-        // `pending` guards the case where the prefetch is still in flight —
+        // `pending` guards the case where the prefetch is still in flight --
         // without it, expanding early would fire the same request twice.
         if (node.expanded && null === node.children && !node.pending) {
             this.loadChildren(node);
@@ -288,7 +288,7 @@ export class PageFoldersTreeComponent {
 
     /**
      * @param lookAhead resolve the grandchildren too once this lands. FALSE
-     *        when the call IS the look-ahead — otherwise each prefetch would
+     *        when the call IS the look-ahead -- otherwise each prefetch would
      *        trigger the next and the "one level" walk would swallow the whole
      *        tree on mount.
      */
@@ -310,8 +310,8 @@ export class PageFoldersTreeComponent {
     /**
      * Silently resolve one level of children.
      *
-     * The tree cannot tell "empty" from "not asked yet" — `children: null`
-     * means the latter — so before this, every folder wore a chevron on spec
+     * The tree cannot tell "empty" from "not asked yet" -- `children: null`
+     * means the latter -- so before this, every folder wore a chevron on spec
      * and the answer arrived only after a click, flashing a note in between.
      * Asking ahead of time makes `isKnownLeaf` truthful at the moment the row
      * is first painted: a childless section simply never grows a twisty, and
@@ -330,7 +330,7 @@ export class PageFoldersTreeComponent {
         }
     }
 
-    /** Directories only — the tree is a map of PLACES, not of content. */
+    /** Directories only -- the tree is a map of PLACES, not of content. */
     private toNodes(items: PageDto[]): FolderNode[] {
         return items
             .filter(item => 'directory' === item.nodeType)

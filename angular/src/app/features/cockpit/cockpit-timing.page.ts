@@ -29,7 +29,7 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
  *
  * The deepest read-side slice of the Reporting leg: mines the engine's
  * `workflow.token.advanced` history to surface, per AST element, the mean +
- * max wall-clock "dwell" across every instance of the definition —
+ * max wall-clock "dwell" across every instance of the definition --
  * slowest-average first, so the operator reads the bottleneck off the top.
  * A relative bar visualises each element's avg dwell against the slowest.
  * Read-only; mirrors the report page's three-state shell + card styling.
@@ -206,7 +206,7 @@ export class CockpitTimingPageComponent implements OnInit {
     });
 
     /**
-     * Header actions (back to the report + reload) — declared in the
+     * Header actions (back to the report + reload) -- declared in the
      * `cockpit:timing` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>

@@ -15,7 +15,7 @@ import { TaxonomyNodeDto, TaxonomyService } from './taxonomy.service';
 export interface CategoryEditorDialogData {
     readonly mode:   'create' | 'edit';
     readonly treeId: string;
-    /** The full flat node list — used to build the create-mode parent picker. */
+    /** The full flat node list -- used to build the create-mode parent picker. */
     readonly nodes:  readonly TaxonomyNodeDto[];
     /** Edit mode: the node being renamed. */
     readonly node?:  TaxonomyNodeDto;
@@ -34,7 +34,7 @@ interface ParentOption {
  * modal convention (mirrors {@see CreatePageDialogComponent}).
  *
  * Create: name + parent picker; the slug is auto-derived from the name (matching
- * the previous page's behaviour). Rename: name only — the slug stays stable and
+ * the previous page's behaviour). Rename: name only -- the slug stays stable and
  * the current `parentId` is echoed so the re-parent-on-diff processor treats it
  * as a pure rename (never a silent move to root).
  */

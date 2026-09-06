@@ -23,11 +23,11 @@ import {
 /**
  * Edit Template dialog. Uses the shared CMS dialog shell (header / body
  * / footer, CMS dialog tokens) and edits three metadata fields:
- *   - `name`   — display label shown on tiles, used as the base for
+ *   - `name`   -- display label shown on tiles, used as the base for
  *                future instance filenames
- *   - `instanceNameSuffix` — DTMPL pattern appended to `name` when
+ *   - `instanceNameSuffix` -- DTMPL pattern appended to `name` when
  *                            generating; backend validates syntax
- *   - `defaultOutputFormat` — pre-selected format in the Generate
+ *   - `defaultOutputFormat` -- pre-selected format in the Generate
  *                             dialog; backend narrows to the
  *                             template's format's allow list
  *
@@ -43,7 +43,7 @@ const FORMAT_OUTPUT_OPTIONS: Readonly<Record<string, readonly OutputFormatOption
         { value: 'docx', label: 'Word (.docx)' },
         { value: 'pdf', label: 'PDF (.pdf)' },
     ],
-    // — a spreadsheet template produces a spreadsheet. Without this entry
+    // -- a spreadsheet template produces a spreadsheet. Without this entry
     // it fell through to the Word fallback below and offered .docx, which no
     // renderer supports for an xlsx source: the operator would have picked it
     // and got a generation that failed with nothing on screen explaining why.
@@ -52,8 +52,8 @@ const FORMAT_OUTPUT_OPTIONS: Readonly<Record<string, readonly OutputFormatOption
         { value: 'xlsx', label: 'Excel (.xlsx)' },
         { value: 'pdf', label: 'PDF (.pdf)' },
     ],
-    // — same reasoning as spreadsheet: a deck template produces a deck.
-    // PDF is one page per slide — the handout for recipients without
+    // -- same reasoning as spreadsheet: a deck template produces a deck.
+    // PDF is one page per slide -- the handout for recipients without
     // PowerPoint.
     presentation: [
         { value: 'pptx', label: 'PowerPoint (.pptx)' },
@@ -278,7 +278,7 @@ export class EditTemplateDialogComponent {
     protected readonly suffixPlaceholder = '_{var:counter|pad:4,`0`}';
 
     /**
-     * Page size— page-size / docx-width). Mirrors the content
+     * Page size-- page-size / docx-width). Mirrors the content
      * page-editor's Layout panel: the DOCX preset catalog + the template's
      * current size are fetched on open, and the choice is persisted via a VFS
      * merge-patch on the template Node's `extras.pageSize`. The template's VFS
@@ -306,7 +306,7 @@ export class EditTemplateDialogComponent {
     protected readonly canSave = computed(() => this.name().trim().length > 0);
 
     constructor() {
-        // Page size is editable only for native (DTMPL) templates — imported
+        // Page size is editable only for native (DTMPL) templates -- imported
         // .docx templates are read-only at the VFS layer (mode 0444) and keep
         // their original page, so skip the fetch and never render the control.
         if (!this.data.template.native) {
@@ -314,7 +314,7 @@ export class EditTemplateDialogComponent {
         }
         // Seed the page-size dropdown (DOCX catalog) + the template's current
         // size and VFS path. Failure leaves the control on "Default page" and
-        // unsaveable (no path) — it degrades silently rather than blocking the
+        // unsaveable (no path) -- it degrades silently rather than blocking the
         // rest of the metadata edit.
         this.pageSizes
             .fetch(this.data.template.id)
@@ -373,7 +373,7 @@ export class EditTemplateDialogComponent {
         // update: the metadata processor loads extras, the VFS merge-patch
         // commits pageSize, and then the metadata write lands with its stale
         // copy and the paper silently reverts. Save reported success either
-        // way — the only way to see it was to read the value back.
+        // way -- the only way to see it was to read the value back.
         metadata$
             .pipe(
                 concatMap((updated) => pageSize$.pipe(map(() => updated))),

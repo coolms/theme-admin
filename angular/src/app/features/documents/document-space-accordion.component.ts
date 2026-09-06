@@ -27,7 +27,7 @@ interface AvailableSite {
 }
 
 /**
- * ⚠️ Both collection keys, because API Platform's JSON-LD collection key
+ * !! Both collection keys, because API Platform's JSON-LD collection key
  * changed from `hydra:member` to `member` and a client reading only one of them
  * sees an empty list rather than an error on the other.
  */
@@ -50,7 +50,7 @@ interface AvailableSitesResponse {
  * the existing two-root experience still works.
  *
  * **Fetch/sort/restore now lives in {@link SpaceSelectionStore}**; what
- * remains here is the module-specific wiring — the state service
+ * remains here is the module-specific wiring -- the state service
  * (`currentPath`/`selectFolder`), the projected tree, and the legacy
  * fallback, which needs the signed-in user's id and so cannot be shared.
  *
@@ -168,7 +168,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
             if (null === root) {
                 return;
             }
-            // — publish the space root for the breadcrumb, which
+            // -- publish the space root for the breadcrumb, which
             // needs it to tell context from destination. This store is
             // provided on THIS component, so the main-slot grid cannot
             // reach it directly.
@@ -181,7 +181,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
 
                     return;
                 }
-                // — a RESTORED path below the space root belongs to
+                // -- a RESTORED path below the space root belongs to
                 // the Documents view, same rule as clicking the folder.
                 // Without this a reload highlighted the subfolder in the
                 // tree while the pane showed the space's templates: two
@@ -203,9 +203,9 @@ export class DocumentSpaceAccordionComponent implements OnInit {
 
     // -- Adding a space -----------------------------------------------
     //
-    // ⚠️ THIS EXISTS BECAUSE THE VISIBILITY RULE SHIPPED WITHOUT IT. The
+    // !! THIS EXISTS BECAUSE THE VISIBILITY RULE SHIPPED WITHOUT IT. The
     // accordion lists only sites where document handling is enabled, which is
-    // right — a site running a blog should not be offered a library it will
+    // right -- a site running a blog should not be offered a library it will
     // never use. But enabling one was a console command, so this screen could
     // only ever LOSE entries. A filtered list with no way to add to it is worse
     // than the dead end it replaced: before, a space could be reached and led
@@ -214,7 +214,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
     /**
      * Only when the endpoints are in the manifest.
      *
-     * ⚠️ Hidden rather than shown-and-broken on an older backend: a button that
+     * !! Hidden rather than shown-and-broken on an older backend: a button that
      * cannot work is the thing this whole change is about removing.
      */
     canAddSpace(): boolean {
@@ -243,7 +243,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
             next: () => {
                 this.busy.set(false);
                 this.picking.set(false);
-                // ⚠️ Re-read the list from the server rather than appending
+                // !! Re-read the list from the server rather than appending
                 // locally. The space's label, root path and writability are the
                 // backend's answer, and a locally-invented row would differ from
                 // what the next reload shows.
@@ -300,7 +300,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
     /**
      * Right-click on a space header.
      *
-     * A space IS a folder — its `rootPath` — so it reuses the folder record
+     * A space IS a folder -- its `rootPath` -- so it reuses the folder record
      * the folders tree already emits (`_kind: 'folder'` + `path`), which
      * means "Upload here" works on a space with no new NaviGraph node.
      *
@@ -332,7 +332,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
                     this.state.uploadToFolderRequested$.next(payload.space.rootPath);
                     return;
                 }
-                // — new subfolder directly under the space root.
+                // -- new subfolder directly under the space root.
                 if ('new-folder-here' === action) {
                     this.state.newFolderInRequested$.next(payload.space.rootPath);
                     return;
@@ -352,7 +352,7 @@ export class DocumentSpaceAccordionComponent implements OnInit {
     onSpaceChange(key: string): void {
         const next = this.store.select(key);
         if (!next) return;
-        // — publish the NEW root BEFORE navigating. `selectFolder`
+        // -- publish the NEW root BEFORE navigating. `selectFolder`
         // decides templates-vs-documents by comparing the target against
         // `spaceRoot`, and with the old root still in place a space switch
         // looked like a subfolder click and dropped the user into the

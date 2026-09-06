@@ -27,7 +27,7 @@ const KEY_RE = /^[a-z0-9][a-z0-9_-]*$/;
  *
  * **Create mode** (no dialog data): captures the experiment key + name and a
  * repeatable variant editor (key / label / weight rows, minimum two). The new
- * experiment starts `running` — the server default.
+ * experiment starts `running` -- the server default.
  *
  * **Edit mode** (an {@link ExperimentDto} passed as dialog data): the key and
  * the variant *keys* are frozen (the counters are keyed by them), so only the

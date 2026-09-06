@@ -33,7 +33,7 @@ import {
 } from './recurrence-form.types';
 
 /**
- * `<app-recurrence-form>` — human-friendly RFC 5545 RRULE builder.
+ * `<app-recurrence-form>` -- human-friendly RFC 5545 RRULE builder.
  *
  * Replaces the existing 3-mode none / simple / advanced toggle with
  * one structured form covering the common cases:
@@ -499,7 +499,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
      * When `false`, hides the "Doesn't repeat" option from the Repeats
      * dropdown and bootstraps the form at DAILY when `value` is null /
      * empty. Used when this form is hosted inside a sub-dialog opened
-     * from a parent "Custom…" / "Configure…" selection — at that point
+     * from a parent "Custom..." / "Configure..." selection -- at that point
      * the user has already opted into recurrence, so offering NONE again
      * is misleading clutter (closing the dialog without saving is the
      * cancel path; the outer "Doesn't repeat" preset is the remove path).
@@ -556,7 +556,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
             if (parsed) {
                 this.state.set(parsed);
             } else {
-                // Spec we can't round-trip — preserve it verbatim in RAW mode.
+                // Spec we can't round-trip -- preserve it verbatim in RAW mode.
                 this.state.set({ ...fresh, mode: 'RAW', rawSpec: this.value });
             }
         } else if (!this.allowNone) {
@@ -602,7 +602,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
                 },
                 error: err => {
                     this.previewLoading.set(false);
-                    // Surface the backend's message — usually "Invalid RRULE",
+                    // Surface the backend's message -- usually "Invalid RRULE",
                     // tz unknown, etc. Helpful while the user is mid-edit.
                     const detail =
                         err?.error?.['hydra:description']
@@ -643,7 +643,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
 
     setMode(mode: RecurrenceFreq): void {
         // When [allowNone] is false, defend against template injection /
-        // programmatic misuse — silently ignore an attempt to set NONE.
+        // programmatic misuse -- silently ignore an attempt to set NONE.
         // (The option isn't rendered anyway when allowNone is false.)
         if (!this.allowNone && mode === 'NONE') return;
         // When switching INTO structured modes from NONE / RAW, reset to
@@ -654,7 +654,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
         this.state.set({
             ...fresh,
             mode,
-            // Preserve excludeDates across freq switches — they're still
+            // Preserve excludeDates across freq switches -- they're still
             // meaningful if the new freq covers the excluded instants.
             excludeDates: cur.excludeDates,
             // Carry the raw spec across mode changes so the user can flip
@@ -687,12 +687,12 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
             } else {
                 set.add(code);
             }
-            // Keep weekday order canonical (Mo, Tu, …, Su) for stable
+            // Keep weekday order canonical (Mo, Tu, ..., Su) for stable
             // spec serialisation regardless of click order.
             const ordered: WeekdayCode[] = WEEKDAYS
                 .map(wd => wd.code)
                 .filter(c => set.has(c));
-            // Never persist an empty BYDAY list — leave at least the
+            // Never persist an empty BYDAY list -- leave at least the
             // anchor's weekday to keep the spec valid.
             const safe = ordered.length === 0
                 ? [WEEKDAYS.map(wd => wd.code).find(c => c === code) ?? 'MO']
@@ -832,7 +832,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
         this.emit();
     }
 
-    /** Exclude-date chips + occurrence-preview — pref-aware (tz + date-format), . */
+    /** Exclude-date chips + occurrence-preview -- pref-aware (tz + date-format), . */
     formatLocalDate(iso: string): string {
         return this.dtf.date(iso);
     }

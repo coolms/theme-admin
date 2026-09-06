@@ -23,7 +23,7 @@ export class TerminalService {
     /**
      * @param cwd the shell's working directory. The terminal is
      *            stateless server-side, so the location travels with each
-     *            command — which is also why two tabs behave as two shells.
+     *            command -- which is also why two tabs behave as two shells.
      */
     execute(input: string, cwd = '/'): Observable<TerminalExecuteEvent> {
         this.controller?.abort();

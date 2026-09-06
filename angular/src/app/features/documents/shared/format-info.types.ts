@@ -1,5 +1,5 @@
 /**
- * F.14c-1 — wire shape for the F.14b `GET /api/v1/document/format-info`
+ * F.14c-1 -- wire shape for the F.14b `GET /api/v1/document/format-info`
  * endpoint. The response is the authoritative source for per-format
  * UI metadata (icons, colours, labels) AND the file-picker `accept`
  * string; the frontend never hard-codes it.
@@ -15,7 +15,7 @@ export interface FormatDisplayInfo {
     /** Brand colour (CSS hex, e.g. `'#2B579A'`). */
     readonly color: string;
     /**
-     * Canonical source MIME types this format accepts — both halves of
+     * Canonical source MIME types this format accepts -- both halves of
      *'s source axis, so `['<docx mime>', 'text/x-dtmpl']` for Word.
      *
      * Positionally paired with {@link extensions}: `extensions[i]` is the
@@ -27,7 +27,7 @@ export interface FormatDisplayInfo {
     /** File extensions with leading dot, paired with {@link mimeTypes}. */
     readonly extensions: string[];
     /**
-     * Whether a template of this format can be authored from scratch —
+     * Whether a template of this format can be authored from scratch --
      * backend-derived from the provider's native source mime, so the "New
      * Template" format list is a projection of the registry rather than a
      * pair spelled out here. Word and Spreadsheet are true today;

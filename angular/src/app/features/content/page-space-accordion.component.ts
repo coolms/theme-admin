@@ -18,21 +18,21 @@ import { PageFoldersTreeComponent } from './page-folders-tree.component';
 import { PageSpaceStateService } from './page-space-state.service';
 
 /**
- * Pages left-pane space selector — the fourth consumer of
+ * Pages left-pane space selector -- the fourth consumer of
  * {@link SpaceSelectionStore}.
  *
  * Personal (`/home/{uuid}/pages`) and one entry per active site, rooted at the
  * SECTION ROOT so the site's page tree is the space.
  *
  * It projects the FOLDER TREE. The original comment here said the
- * opposite — that a tree belonged in `content.main` because the grid rendered
+ * opposite -- that a tree belonged in `content.main` because the grid rendered
  * its own, and a second one would give "two trees disagreeing about where they
  * are". The disagreement was real; the conclusion was backwards. The grid is
  * flat now and the navigator lives here, next to the space it belongs to,
  * which is where Documents and the file manager already put it.
  *
  * There is no legacy fallback. `/content/pages/spaces` ships with this
- * feature, so an install without it has no Pages explorer either — Media and
+ * feature, so an install without it has no Pages explorer either -- Media and
  * Documents carry fallbacks only because they predate their spaces endpoints.
  */
 @Component({
@@ -67,7 +67,7 @@ export class PageSpaceAccordionComponent implements OnInit {
     readonly spaces = this.store.spaces;
     readonly activeSpaceKey = this.store.activeKey;
 
-    /** Root of the open space — what the projected folder tree lists from. */
+    /** Root of the open space -- what the projected folder tree lists from. */
     readonly activeRootPath = this.store.activeRootPath;
 
     constructor() {
@@ -98,22 +98,22 @@ export class PageSpaceAccordionComponent implements OnInit {
     }
 
     /**
-     * Right-click a SPACE — Pages bound `spaceChange` and nothing
+     * Right-click a SPACE -- Pages bound `spaceChange` and nothing
      * else, so the space rows were the one part of the explorer with no menu
      * at all. The accordion has emitted `spaceContextMenu` since it shipped;
      * only Documents ever listened.
      *
      * ## This one DOES switch space first, unlike the folder menu
      *
-     * `page-folders-tree` deliberately does not navigate on right-click —
-     * "a context menu is a question, not a command" — because its entries
+     * `page-folders-tree` deliberately does not navigate on right-click --
+     * "a context menu is a question, not a command" -- because its entries
      * (`openCreateDialog` and friends) are SPACE-scoped and never read the
      * folder cursor, so selecting bought nothing.
      *
      * That same fact inverts the answer here. Space-scoped actions read the
      * ACTIVE space, so opening this menu on an inactive space and choosing
      * "New Page" would create the page in whichever space you happened to be
-     * in — silently, in a different site.
+     * in -- silently, in a different site.
      *
      *  So the switch stays, but it moved to ACTION time. Switching as
      * the menu OPENED meant a right-click navigated, and dismissing the menu
@@ -146,7 +146,7 @@ export class PageSpaceAccordionComponent implements OnInit {
 
                     return;
                 }
-                // Section properties need the target path — for a space that
+                // Section properties need the target path -- for a space that
                 // is its root, not the folder cursor ('s contract).
                 if ('section-properties' === action) {
                     this.state.sectionActionRequested$.next({
@@ -181,7 +181,7 @@ export class PageSpaceAccordionComponent implements OnInit {
      * Write the active space into shared state.
      *
      * Each signal is compared before writing so an unchanged value does not
-     * retrigger the grid's reload effect — and the KEY is written even when
+     * retrigger the grid's reload effect -- and the KEY is written even when
      * the root already matched, because on a restored reload the root arrives
      * from prefs before any space resolves: gating the key on the root would
      * leave the grid with an empty key and it would never load.

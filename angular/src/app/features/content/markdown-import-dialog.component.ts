@@ -11,7 +11,7 @@ import { ToastService } from '@coolms/ui-angular';
  * and the dialog closes with `{ html }`. The caller (the editor's
  * `content.importMarkdown` action handler, or any other host) inserts it.
  *
- * The conversion runs here — rather than in the handler — so the spinner and
+ * The conversion runs here -- rather than in the handler -- so the spinner and
  * any error surface in the dialog where the user is looking, and the handler
  * stays a thin "insert the result" step.
  */

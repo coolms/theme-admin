@@ -617,7 +617,7 @@ export class VfsFilesComponent {
     // -- Selection (directive-driven) --------------------------------------------
 
     /**
-     * Selection bridge — directive consumes a reference-stable array of the
+     * Selection bridge -- directive consumes a reference-stable array of the
      * currently-selected nodes for its includes() check during right-click
      * preservation logic.
      */
@@ -882,7 +882,7 @@ export class VfsFilesComponent {
      *
      * ONLY `/home/{uuid}` is relabelled. Everything else shows `name`, and
      * deliberately so: this is a file explorer, and a node's title is a
-     * free-text label that has nothing to do with its filename — the dev data
+     * free-text label that has nothing to do with its filename -- the dev data
      * has a file `i18nNodeSmoke.txt` titled "Intro video". Preferring `title`
      * globally would hide real filenames behind labels.
      *
@@ -894,7 +894,7 @@ export class VfsFilesComponent {
      * it alone left a raw UUID on direct navigation. It stays as a fallback
      * for directories whose title has not been stamped yet.
      *
-     * Display only — `name` remains the rename identity, which is why the
+     * Display only -- `name` remains the rename identity, which is why the
      * rename dialog pre-fills from `node.name` and shows the UUID.
      */
     nodeLabel(node: VfsNodeDto): string {

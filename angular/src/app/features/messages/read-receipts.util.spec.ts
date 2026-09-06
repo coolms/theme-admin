@@ -2,7 +2,7 @@ import { advancePeerCursor, peerReadCursors, readByEveryoneSeq, ReadReceiptParti
 
 /**
  * The read-receipt rule: a tick flips to "Read" only once EVERY peer has read
- * that far — including after a live `read` nudge, which is where it
+ * that far -- including after a live `read` nudge, which is where it
  * used to break.
  */
 describe('read receipts', () => {
@@ -49,7 +49,7 @@ describe('read receipts', () => {
 
  it('is zero when there are no peers at all', () => {
  // Self-notes, or a roster that hasn't loaded: with nobody to read
- // them, nothing is read — never "everything".
+ // them, nothing is read -- never "everything".
             expect(readByEveryoneSeq(new Map())).toBe(0);
         });
     });

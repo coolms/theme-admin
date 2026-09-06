@@ -1,9 +1,9 @@
 import { type Routes } from '@angular/router';
 
 /**
- * — Scheduler admin routes.
- * `/admin/schedules`         — list page
- * `/admin/schedules/:slug`   — detail page (settings + trigger editor + calendar + payload + history)
+ * -- Scheduler admin routes.
+ * `/admin/schedules`         -- list page
+ * `/admin/schedules/:slug`   -- detail page (settings + trigger editor + calendar + payload + history)
  */
 export const SCHEDULE_ROUTES: Routes = [
     {

@@ -16,13 +16,13 @@ export interface ImageMapFormDialogData {
 
 /**
  * Create/edit dialog for an ImageMap (`app-modal` + footer slot, the
- * dialog shape; one dialog for both modes via optional DIALOG_DATA — the
+ * dialog shape; one dialog for both modes via optional DIALOG_DATA -- the
  * sync edge-register pattern).
  *
  * The intrinsic size is the coordinate frame regions are normalized against:
  * raster = pixel dimensions, SVG = viewBox extent. On edit the backend
  * re-bases imageRef + BOTH dimensions together (all-or-nothing), so the PATCH
- * always carries the full trio — same values when untouched, which is a no-op.
+ * always carries the full trio -- same values when untouched, which is a no-op.
  */
 @Component({
     selector: 'coolms-admin-image-map-form-dialog',
@@ -115,7 +115,7 @@ export class ImageMapFormDialogComponent {
     readonly saving = signal(false);
 
     /**
-     * Assets only, emitting the node UUID — the exact scalar `imageRef` stores,
+     * Assets only, emitting the node UUID -- the exact scalar `imageRef` stores,
      * so the picker is a drop-in for the text box it replaces rather than a new
      * wire shape. `accept` keeps the grid to images: a region map drawn over a
      * PDF or an audio file is not a thing.
@@ -135,7 +135,7 @@ export class ImageMapFormDialogComponent {
      * mis-places every existing region. The backend already treats the trio as
      * all-or-nothing on edit; this makes the form agree with it.
      *
-     * Overwrites whatever was typed, deliberately — after changing the image the
+     * Overwrites whatever was typed, deliberately -- after changing the image the
      * previous numbers describe a different picture. A failed lookup or an asset
      * with no extracted dimensions (an SVG with no intrinsic size) leaves the
      * inputs alone rather than zeroing them, so the operator can still enter the
@@ -149,7 +149,7 @@ export class ImageMapFormDialogComponent {
         this.media.get(uuid).subscribe({
             next: asset => {
                 // `dimensions` is the only size on MediaAssetDto and it is
-                // nullable — the backend has not extracted one for every asset.
+                // nullable -- the backend has not extracted one for every asset.
                 const w = asset.dimensions?.width;
                 const h = asset.dimensions?.height;
                 if (w && h) {

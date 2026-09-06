@@ -2,7 +2,7 @@
  * Read-receipt derivation for the internal Messages surface.
  *
  * A tick is "Read" only once EVERY other participant has read that far, so the
- * receipt high-water is the MINIMUM of the peers' cursors — while the live
+ * receipt high-water is the MINIMUM of the peers' cursors -- while the live
  * `read` nudge that advances it names ONE participant. Keeping the peers'
  * cursors and taking the min is the only way for both halves to agree; folding
  * them into a single number made one member's read speak for the whole group
@@ -21,7 +21,7 @@ export interface ReadReceiptParticipant {
 }
 
 /**
- * Each OTHER participant's persisted read cursor, keyed by participant id —
+ * Each OTHER participant's persisted read cursor, keyed by participant id --
  * the seed taken when a conversation is opened. A peer who has never opened the
  * conversation sits at 0 and correctly holds the ticks at "Sent".
  */
@@ -40,7 +40,7 @@ export function peerReadCursors(
 }
 
 /**
- * The seq every peer has read past — messages at or below it show "Read".
+ * The seq every peer has read past -- messages at or below it show "Read".
  *
  * Zero when there are no peers (a self-notes conversation, or one whose roster
  * hasn't loaded): with nobody to read them, nothing is read.
@@ -58,8 +58,8 @@ export function readByEveryoneSeq(cursors: ReadonlyMap<string, number>): number 
  * Advance ONE peer's cursor (a live `read` nudge). Returns the SAME map when
  * the nudge carries nothing new, so a signal holding it doesn't re-emit.
  *
- * A nudge from a participant absent from the seeded roster — they joined since
- * the list loaded — is recorded rather than dropped.
+ * A nudge from a participant absent from the seeded roster -- they joined since
+ * the list loaded -- is recorded rather than dropped.
  */
 export function advancePeerCursor(
     cursors: ReadonlyMap<string, number>,

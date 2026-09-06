@@ -58,7 +58,7 @@ export class PageService {
      * Nodes carrying or leading to Page Containers). With `{ parentId }`
      * returns the direct children of that parent (tree-mode lazy expand).
      * With `{ search }` runs a bounded full-tree typeahead (name/path match,
-     * Packages only) — for pickers that want to find a page by name rather
+     * Packages only) -- for pickers that want to find a page by name rather
      * than drilling the tree. `search` takes precedence over `parentId`.
      */
     listPages(opts?: { parentId?: string | null; search?: string; space?: string | null }): Observable<PageDto[]> {
@@ -70,7 +70,7 @@ export class PageService {
         } else if (opts?.parentId !== undefined && opts.parentId !== null && opts.parentId !== '') {
             params = params.set('parent', opts.parentId);
         }
-        // — space scope. Sent alongside `parent` too, not just on the
+        // -- space scope. Sent alongside `parent` too, not just on the
         // root listing: the backend confines the parent to the space, so
         // dropping it here would let a stale parent id walk out of the space
         // the user has selected.
@@ -89,7 +89,7 @@ export class PageService {
      * Read from the manifest rather than a literal path, and NOT hardcoded on
      * the client: which kinds exist is deployment config (`content.page_types`),
      * and a client-side list would drift from the allow-list the create
-     * endpoint validates against — offering an option the server then 422s.
+     * endpoint validates against -- offering an option the server then 422s.
      *
      * Empty list on a missing manifest entry, so an older backend degrades to
      * "no explicit kinds" instead of throwing inside a dialog.
@@ -110,7 +110,7 @@ export class PageService {
      *
      * The explorer's accordion loads these through `SpaceSelectionStore`; this
      * is the same endpoint for callers that need the list WITHOUT the store's
-     * selection semantics — the placement dialog wants the site slugs, not an
+     * selection semantics -- the placement dialog wants the site slugs, not an
      * active space.
      */
     listPageSpaces(): Observable<SpaceDto[]> {
@@ -142,7 +142,7 @@ export class PageService {
     /**
      * Link a page into a surface, or remove that link.
      *
-     * `place` is the DISTRIBUTION verb — where else the page appears. It is not
+     * `place` is the DISTRIBUTION verb -- where else the page appears. It is not
      * `publishVariant`, which is the LIFECYCLE verb deciding which locale is
      * live. Naming them apart here is the whole point of's split.
      */
@@ -157,7 +157,7 @@ export class PageService {
     /**
      * Change an existing page's kind.
      *
-     * `contentType: ''` CLEARS the stamp — the backend unsets the extra rather
+     * `contentType: ''` CLEARS the stamp -- the backend unsets the extra rather
      * than storing an empty string, returning the page to "no explicit kind"
      * (inherit from the collection, else the SSR fallback).
      *
@@ -177,7 +177,7 @@ export class PageService {
      *
      * Used by editor flows that hold only the page id (e.g. resolveVariantPath
      * for content GET/PUT, deletePage). Replaces the previous listPages().find()
-     * approach which only matched root candidates — nested pages under sites
+     * approach which only matched root candidates -- nested pages under sites
      * (post-H1) were unreachable.
      */
     getPage(id: string): Observable<PageDto> {
@@ -209,7 +209,7 @@ export class PageService {
          */
         title?: string;
         /**
-         * Authoring space key to create IN — `personal`,
+         * Authoring space key to create IN -- `personal`,
          * `site:default`. Roots the derived path at that space instead of at a
          * SiteSection, which is the only way the personal space is reachable
          * without the caller knowing its own user UUID. An explicit `vfsPath`
@@ -235,7 +235,7 @@ export class PageService {
         contentType?: string;
         /**
          * Optional Markdown to seed the new page's initial-variant body
-         * — "New page from Markdown"). The backend converts it to
+         * -- "New page from Markdown"). The backend converts it to
          * safe HTML via the same hardened converter the editor's paste path
          * uses (raw HTML + unsafe links stripped, since bodies render
          * unsanitised), capped at 256 KB (422 over-limit). Omitted/empty keeps
@@ -250,10 +250,10 @@ export class PageService {
     }
 
     /**
-     * Renames a page's/article's slug ([]) — changes the Package directory
+     * Renames a page's/article's slug ([]) -- changes the Package directory
      * name AND its `extras.slug` in one atomic backend op. `vfsPath` names the
      * current Package; `slug` is the new URL segment; `force` bypasses the
-     * publish freeze (`slugLocked`) — a rename of a published page is refused
+     * publish freeze (`slugLocked`) -- a rename of a published page is refused
      * (409) unless `force` is set, because it changes the live URL. Returns the
      * re-pathed `PageDto` (the caller reloads / reopens at the new path).
      */
@@ -414,7 +414,7 @@ export class PageService {
      * Editorial review actions on a variant Node, keyed by its UUID:
      * `submit-for-review` (author), `approve` / `request-changes` (reviewer).
      * The endpoints sit alongside `/publish` under the same
-     * `content/variants/{id}/…` namespace, so we derive them from the
+     * `content/variants/{id}/...` namespace, so we derive them from the
      * manifest's `variantPublishUrl` pattern rather than adding three more
      * manifest keys. Each returns the variant's new `{ id, status, note }`.
      */

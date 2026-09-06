@@ -40,10 +40,10 @@ export interface RegisterEdgeRequest {
 /**
  * Sync fleet API client ( B.3.2).
  *
- * Talks to the `sync_fleet`-gated `/api/v1/sync/fleet` surface — the operator
+ * Talks to the `sync_fleet`-gated `/api/v1/sync/fleet` surface -- the operator
  * counterpart of `coolms:sync:edge:{register,list,remove}`. Feature-local
  * (mirrors BackupService). Register is an UPSERT with declared-state-wins
- * semantics: an omitted principal UNBINDS, an omitted scope clears it — the
+ * semantics: an omitted principal UNBINDS, an omitted scope clears it -- the
  * dialog therefore always submits the full desired state.
  */
 @Injectable({ providedIn: 'root' })
@@ -67,7 +67,7 @@ export class SyncFleetService {
             .pipe(map(res => res.edge));
     }
 
-    /** Removing an edge releases its cursor from the feed's prune floor — gone, not paused. */
+    /** Removing an edge releases its cursor from the feed's prune floor -- gone, not paused. */
     removeEdge(slug: string): Observable<void> {
         return this.http.delete<void>(`${this.apiBase}/sync/fleet/${encodeURIComponent(slug)}`);
     }

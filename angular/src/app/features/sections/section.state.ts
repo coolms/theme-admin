@@ -20,7 +20,7 @@ export interface SectionStateModel {
     currentSectionSlug: string | null;
     loading: boolean;
     error: string | null;
-    /** H9 — last result of `ApplyNginxChanges`. null until first apply. */
+    /** H9 -- last result of `ApplyNginxChanges`. null until first apply. */
     lastApplyResult: SectionApplyResultDto | null;
 }
 
@@ -92,7 +92,7 @@ export class SectionState {
     }
 
     /**
-     * H9 — invoke the nginx vhost generator. Refreshes the sections list
+     * H9 -- invoke the nginx vhost generator. Refreshes the sections list
      * after the apply succeeds so the UI reflects any state the apply
      * touched. Errors propagate to the caller's `.subscribe({ error })`
      * handler so the toast can show a humanised message.

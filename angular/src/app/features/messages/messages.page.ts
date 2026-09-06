@@ -37,9 +37,9 @@ import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
 
 /**
- * Internal Messages (`/admin/messages`, shell · rich composer
- * · attachments · realtime · emoji · self-set status ·
- * connection-derived online dot) — the user↔user chat
+ * Internal Messages (`/admin/messages`, shell - rich composer
+ * - attachments - realtime - emoji - self-set status -
+ * connection-derived online dot) -- the user<->user chat
  * surface over the generic Chat engine. Two panes:
  *  - LEFT: the current user's conversations + a "New message" user picker that
  *    opens (or reuses) a 1:1 DM via `POST /chat/conversations {withUserId}`.
@@ -47,13 +47,13 @@ import { RtcMediaKind } from '../rtc/rtc.types';
  *
  * Realtime: subscribing to the selected conversation's
  * `chat.room.{id}` Centrifugo channel ({@link MessagesLiveEventsService}) makes
- * new messages appear instantly — on a body-less `message.posted` nudge we
+ * new messages appear instantly -- on a body-less `message.posted` nudge we
  * cursor-refetch anything past our local `lastSeq`. A slow (20s) reconcile poll
  * is kept as a safety net for when realtime is unavailable (e.g. the Messenger
  * worker is down); both feed the same dedupe-by-id merge.
  *
  * The composer is the `comment`-profile `<coolms-editor>` (bold/italic/strike/
- * sup/sub/link) and posts `bodyFormat:html` — the backend sanitises the HTML to
+ * sup/sub/link) and posts `bodyFormat:html` -- the backend sanitises the HTML to
  * the comment allow-list on write, so nothing unsafe ever persists.
  * Messages render html via Angular's auto-sanitised `[innerHTML]` (plain bodies
  * still escape through `{{ }}`). Enter sends; Shift+Enter inserts a newline
@@ -73,7 +73,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
  *
  * `ViewEncapsulation.None` (mirrors RichTextFieldComponent + the editor itself):
  * required so the `.msg__composer` height overrides reach the editor's
- * imperatively-mounted `.cms-editor__mount`, and so `.msg__body p { … }` reaches
+ * imperatively-mounted `.cms-editor__mount`, and so `.msg__body p { ... }` reaches
  * the `[innerHTML]`-injected paragraphs (neither carries `_ngcontent`). Every
  * rule is anchored to the `.msg`/`app-messages-page` prefix to stay scoped.
  */
@@ -1083,7 +1083,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Pending `?c=<id>` preselect (from the topbar quick-panel, /).
-     * Re-armed on every distinct `?c=` value — so clicking "open full" on a
+     * Re-armed on every distinct `?c=` value -- so clicking "open full" on a
      * conversation while ALREADY on `/messages` switches to it (the snapshot-once
      * approach didn't, since Angular reuses the component on a query-param change).
      * Cleared once applied so a later list reload can't yank you off a thread you
@@ -1095,7 +1095,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly composerEl   = viewChild<ElementRef<HTMLElement>>('composer');
 
     /**
-     * `accept` hint for the file picker — mirrors the backend MIME allow-list
+     * `accept` hint for the file picker -- mirrors the backend MIME allow-list
      * (images + PDF + Office docs). The server is authoritative and rejects
      * anything else with a 4xx; this just nudges the OS picker.
      */
@@ -1112,28 +1112,28 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly error         = signal<string | null>(null);
 
     /**
-     * Inbox paging. The list used to be the WHOLE inbox on every load —
-     * and on every background refresh — so its cost grew with tenure and never
+     * Inbox paging. The list used to be the WHOLE inbox on every load --
+     * and on every background refresh -- so its cost grew with tenure and never
      * came back down.
      *
      * `hasMoreConversations` is inferred from the page LENGTH (the endpoint
      * returns a bare array with no total): a short page is the last one.
      *  {@link reloadList} re-reads as many rows as are ON SCREEN, not one
-     * page — otherwise any background refresh would silently throw away every
+     * page -- otherwise any background refresh would silently throw away every
      * page the user had loaded.
      */
     private readonly CONV_PAGE = 30;
     readonly hasMoreConversations = signal(false);
     readonly loadingMoreConversations = signal(false);
     /**
-     * Rows CONSUMED from the server's ordering — the next page's offset, and
+     * Rows CONSUMED from the server's ordering -- the next page's offset, and
      * deliberately not `conversations().length`. See `inbox-paging.util`, which
      * holds the rules (and the quick panel's copy of this state).
      */
     private convOffset = 0;
 
     /**
-     * Threads T2 — the thread side-panel. `openThreadRoot` is the (top-level)
+     * Threads T2 -- the thread side-panel. `openThreadRoot` is the (top-level)
      * message the panel is scoped to, or null when closed; `threadMessages` is
      * that thread's root + replies (seq-ascending). The panel has its own plain
      * composer (`threadReply`).
@@ -1145,7 +1145,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly sendingThreadReply = signal(false);
 
     /**
-     * Pinning — the open conversation's pinned messages (most-recently-pinned
+     * Pinning -- the open conversation's pinned messages (most-recently-pinned
      * first), loaded on select + refreshed on the `pin` room nudge; `pinnedOpen`
      * toggles the collapsible pinned-bar list.
      */
@@ -1153,7 +1153,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly pinnedOpen     = signal(false);
 
     /**
-     * I may pin/unpin in the open conversation — any ACTIVE member (Slack-channel
+     * I may pin/unpin in the open conversation -- any ACTIVE member (Slack-channel
      * semantics), NOT an excluded/read-only remnant. Mirrors the composer gate.
      */
     readonly canPin = computed<boolean>(() => !!this.selectedId() && !this.isExcluded());
@@ -1194,7 +1194,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly composerKey   = signal('0');
 
     // -- @-mentions ---------------------------------------------------------
-    /** The `@…` autocomplete popover is showing. */
+    /** The `@...` autocomplete popover is showing. */
     readonly mentionMenuOpen = signal(false);
     /** The raw text typed after `@` (for filtering + know how many chars to replace). */
     readonly mentionQuery = signal('');
@@ -1220,7 +1220,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // -- #-channel references -----------------------------------------------
 
-    /** The `#…` channel typeahead is open. */
+    /** The `#...` channel typeahead is open. */
     readonly channelMenuOpen = signal(false);
     /** Text typed after `#`, before the caret (may be ''). */
     readonly channelQuery = signal('');
@@ -1228,14 +1228,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly channelActiveIndex = signal(0);
 
     /**
-     * Channels offered for `#…` — matched on HANDLE first, then name, so typing
+     * Channels offered for `#...` -- matched on HANDLE first, then name, so typing
      * either the thing you see (`Release Notes`) or the thing you type
      * (`release-notes`) finds it.
      *
      * Only channels WITH a handle appear: a `#reference` has to resolve to
      * exactly one room, and one without a handle has nothing to cite. The list
      * comes from `GET /chat/channels`, fetched once the first time `#` is typed
-     * — the browse panel already loads it, so most of the time it is warm.
+     * -- the browse panel already loads it, so most of the time it is warm.
      */
     readonly channelCandidates = computed<readonly ChatChannelDto[]>(() => {
         if (!this.channelMenuOpen()) {
@@ -1245,7 +1245,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     /**
-     * Candidates for the `@…` popover (v2): conversation MEMBERS first (matching
+     * Candidates for the `@...` popover (v2): conversation MEMBERS first (matching
      * the query, `inConversation: true`), then DIRECTORY users so a mention can
      * reach someone not in the conversation. Excludes me; de-duplicated; capped.
      */
@@ -1274,7 +1274,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             seen.add(u.userId);
             // A directory hit may itself be a member whose NAME didn't match the
-            // query (matched by identifier instead) — don't mislabel them "not in
+            // query (matched by identifier instead) -- don't mislabel them "not in
             // chat" or offer to re-add them.
             out.push({ userId: u.userId, displayName: u.displayName, avatarUrl: u.avatarUrl, inConversation: memberIds.has(u.userId) });
         }
@@ -1288,7 +1288,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * Resizable composer: the editor's scroll ceiling in px (`--msg-editor-h`).
      * Seeded from localStorage so a chosen height survives reloads; dragged via
      * the top grip. Clamped to [{@link COMPOSER_MIN_H}, {@link COMPOSER_MAX_H}].
-     * NB: these two bounds are declared BEFORE the signal — the initializer calls
+     * NB: these two bounds are declared BEFORE the signal -- the initializer calls
      * `clampComposerH`, which reads them, so they must already hold their values.
      */
     private readonly COMPOSER_MIN_H = 80;
@@ -1303,13 +1303,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Auto-away (presence): after this many idle minutes with no activity we flip
-     * a self-set `online`/unset status to `away` — reverting to `online` on the
+     * a self-set `online`/unset status to `away` -- reverting to `online` on the
      * next activity. Never clobbers a MANUAL `busy`/`offline`/`away`. Per-device
      * (localStorage); options offered in the status menu.
      */
     readonly AWAY_OPTIONS: readonly number[] = [5, 10, 15, 30];
     readonly awayAfterMin = signal<number>(this.readStoredNumber('cms.msg.awayAfterMin', 10));
-    /** TRUE only while WE hold an auto-set `away` — so activity knows to revert it. */
+    /** TRUE only while WE hold an auto-set `away` -- so activity knows to revert it. */
     private autoAway = false;
     private idleTimer: ReturnType<typeof setTimeout> | null = null;
     private lastActivityAt = 0;
@@ -1329,7 +1329,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * The "New" composer's picked members (the group slice). Each pick from the
      * user search adds a chip; a lone member starts a 1:1 DM, two-or-more starts
-     * a group. `label` resolves async (best-effort) — see {@link onUserPicked}.
+     * a group. `label` resolves async (best-effort) -- see {@link onUserPicked}.
      */
     readonly groupMembers  = signal<{ id: string; label: string }[]>([]);
     /** Optional group name (only offered when 2+ members are picked). */
@@ -1363,11 +1363,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private enterHandler?: (ev: KeyboardEvent) => void;
 
     /**
-     * Slow RECONCILE poll — realtime is the primary update path; this is
+     * Slow RECONCILE poll -- realtime is the primary update path; this is
      * the FALLBACK for when no realtime/WS engine is connected (e.g. Centrifugo
      * isn't installed, or the Messenger worker draining its publish queue is
      * down). The poll TICK still runs on a timer, but {@link poll} no-ops while
-     * the WebSocket is connected — so it's a true fallback, not a
+     * the WebSocket is connected -- so it's a true fallback, not a
      * parallel path. Both feed the same dedupe-by-id merge, so they never
      * double-insert.
      */
@@ -1383,7 +1383,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      */
     private readonly roomCatchUp$ = new Subject<void>();
 
-    /** "X is typing…" indicator: the other participant's name, or null. */
+    /** "X is typing..." indicator: the other participant's name, or null. */
     readonly typingName = signal<string | null>(null);
     private typingTimer: ReturnType<typeof setTimeout> | null = null;
     /** Throttle outgoing typing signals to at most one per 3s while composing. */
@@ -1408,12 +1408,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * each `read` nudge.
      *
      *  Per-PEER, not a single number. The high-water below is the
-     * MINIMUM across peers — "read by everyone" — but a `read` nudge names ONE
+     * MINIMUM across peers -- "read by everyone" -- but a `read` nudge names ONE
      * participant, so folding it into a scalar with `max()` made any single
      * member's cursor speak for the whole group: one person opening a 20-member
      * channel flipped every sender's ticks to "Read". Seeding took the min and
      * updating took the max, so the bug only appeared once a nudge arrived,
-     * never on load — and never at all in a DM, where the two agree.
+     * never on load -- and never at all in a DM, where the two agree.
      */
     private readonly peerReadSeqs = signal<ReadonlyMap<string, number>>(new Map());
 
@@ -1425,7 +1425,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly readReceiptSeq = computed<number>(() => readByEveryoneSeq(this.peerReadSeqs()));
 
     /**
-     * My self-set presence status — drives the status control's dot + the
+     * My self-set presence status -- drives the status control's dot + the
      * dot others see on my avatar. Derived from my participant on list load (so a
      * reload reflects the persisted value) and set optimistically on pick. `null`
      * = no status set ("Set status").
@@ -1434,7 +1434,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly showStatusMenu = signal(false);
 
     /**
-     * Connection-derived ONLINE set — the rfc4122 ids of counterparts
+     * Connection-derived ONLINE set -- the rfc4122 ids of counterparts
      * currently holding a live realtime connection. Distinct from the self-set
      * {@link myStatus}/`presenceStatus`: this is "actually here right now".
      * {@link effectiveStatus} overlays the self-set away/busy on top.
@@ -1463,10 +1463,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
 
     /**
-     * The statuses a user can MANUALLY pick — `away` is intentionally excluded
+     * The statuses a user can MANUALLY pick -- `away` is intentionally excluded
      *: it is AUTO-only (the idle timer sets it; any real activity clears
      * it). Keeping it out of the menu removes the ambiguity that made a reloaded
-     * `away` stick — there was no way to tell an auto-away from a manual one, so
+     * `away` stick -- there was no way to tell an auto-away from a manual one, so
      * the revert-on-activity never fired after a page reload.
      */
     readonly MANUAL_STATUSES = this.STATUSES.filter(s => s.value !== 'away');
@@ -1490,7 +1490,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * The conversation list narrowed by {@link convQuery} (empty query -> the
-     * full list) and sorted most-recently-active first — the inbox convention,
+     * full list) and sorted most-recently-active first -- the inbox convention,
      * keyed on {@link ChatConversationDto.lastMessageAt} (falling back to
      * `updatedAt` for a conversation with no messages yet). The `watchUser`
      * refetch keeps it live as new messages land.
@@ -1545,10 +1545,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /** The selected conversation is a `group` (only groups have a members panel). */
     readonly isGroup = computed<boolean>(() => this.selected()?.kind === 'group');
 
-    /** True while a call is ringing / connected — disables the header call button. */
+    /** True while a call is ringing / connected -- disables the header call button. */
     readonly callActive = computed<boolean>(() => this.rtcCall.activeCall() !== null);
 
-    /** Place an audio or video call into the open conversation— the backend rings the roster). */
+    /** Place an audio or video call into the open conversation-- the backend rings the roster). */
     startCall(mediaKind: RtcMediaKind = 'audio'): void {
         const conversationId = this.selectedId();
         if (conversationId === null) {
@@ -1559,7 +1559,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * I was EXCLUDED from the open conversation (removed by the owner, keeping
-     * read-only history) — membership/history semantics. The FE renders a
+     * read-only history) -- membership/history semantics. The FE renders a
      * read-only banner and hides the composer.
      */
     readonly isExcluded = computed<boolean>(() => this.selected()?.viewerState === 'excluded');
@@ -1588,7 +1588,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Deep-link: arm the `?c=<id>` preselect on every distinct
         // value and apply it once the list contains it. As an OBSERVABLE (not a
         // one-shot snapshot) so clicking "open full" on a conversation while
-        // already on `/messages` switches the open thread — Angular reuses the
+        // already on `/messages` switches the open thread -- Angular reuses the
         // component on a query-param change, so ngOnInit/snapshot never re-fire.
         this.route.queryParamMap
             .pipe(
@@ -1602,7 +1602,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             });
 
         // Realtime: (re)subscribe to the selected conversation's
-        // `chat.room.{id}` channel whenever the selection changes — switchMap
+        // `chat.room.{id}` channel whenever the selection changes -- switchMap
         // tears down the prior subscription, takeUntilDestroyed the whole chain.
         // Realtime degrades silently (the slow reconcile poll covers an outage).
         toObservable(this.selectedId)
@@ -1617,14 +1617,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Debounced room catch-up: a burst of `message.posted` nudges
         // collapses into ONE `listMessages` cursor pull (afterSeq=lastSeq), instead
-        // of one fetch per nudge — bounds the request rate regardless of nudge volume.
+        // of one fetch per nudge -- bounds the request rate regardless of nudge volume.
         this.roomCatchUp$
             .pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef))
             .subscribe(() => this.catchUp());
 
-        // Realtime (re)connect catch-up: when the WS engine comes up — first
+        // Realtime (re)connect catch-up: when the WS engine comes up -- first
         // connect OR a reconnect after an outage during which the fallback poll was
-        // the only path — pull anything we missed once, so a gap can't linger if no
+        // the only path -- pull anything we missed once, so a gap can't linger if no
         // further nudge arrives. No-op when nothing's selected (catchUp guards it).
         toObservable(this.live.isConnected)
             .pipe(distinctUntilChanged(), filter(connected => connected), takeUntilDestroyed(this.destroyRef))
@@ -1648,20 +1648,20 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Online presence FALLBACK. The live answer arrives pushed
         // on the shared `presence.chat` channel; this queries
         // `GET /chat/presence` for the counterparts the list shows, and ONLY while
-        // push is unavailable — a client whose socket is down, or one that
+        // push is unavailable -- a client whose socket is down, or one that
         // subscribed but could not read the initial roster.
         //
         //  Both gates matter. `presenceLive.live()` is the rule (poll is
         // the no-realtime fallback, never a parallel path); `visibilityState` is
         // the rule (a backgrounded tab has no dot to update, and each tick
         // costs the server a Centrifugo round trip). Before push existed, the
-        // first gate could not be applied at all — nothing published presence —
+        // first gate could not be applied at all -- nothing published presence --
         // which is what made a left-open tab the most expensive idle client in
         // the product.
         merge(
             toObservable(this.conversations).pipe(debounceTime(500)),
             interval(this.PRESENCE_POLL_MS),
-            // …and one immediate refresh when the tab comes back, so the dots are
+            // ...and one immediate refresh when the tab comes back, so the dots are
             // right the moment you look at them rather than up to 20s later.
             fromEvent(document, 'visibilitychange'),
         )
@@ -1682,7 +1682,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.reloadList();
         // The channel list is what a `#handle` in an already-received message
         // resolves against, so it has to be here before the first render
-        // — not only once someone opens the browse panel. One small read, cached
+        // -- not only once someone opens the browse panel. One small read, cached
         // in the signal the panel and the typeahead already share.
         this.loadChannels();
         this.setupIdleTracking();
@@ -1690,7 +1690,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A body-less `message.posted` nudge arrived — pull anything past our local
+     * A body-less `message.posted` nudge arrived -- pull anything past our local
      * high-water `lastSeq` (skips our own just-sent message, already applied).
      */
     private onRoomNudge(nudge: ChatRoomNudge): void {
@@ -1711,12 +1711,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         if (nudge.type === 'pin') {
-            // Pinning: the pinned set changed — refresh the pinned bar.
+            // Pinning: the pinned set changed -- refresh the pinned bar.
             this.loadPinned(id);
             return;
         }
         if (nudge.type === 'reaction') {
-            // Reactions: a message's reactions changed — reconcile the
+            // Reactions: a message's reactions changed -- reconcile the
             // affected message's chips (a reaction doesn't bump seq, so the
             // seq-cursor catch-up below wouldn't touch it).
             this.reconcileReactions(id);
@@ -1727,7 +1727,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         // Coalesce into one debounced catch-up rather than fetching per nudge.
         this.roomCatchUp$.next();
-        // Threads T2: a reply lives in a thread, not the main timeline — if a
+        // Threads T2: a reply lives in a thread, not the main timeline -- if a
         // thread panel is open, refresh it so others' replies appear live.
         const openRoot = this.openThreadRoot();
         if (openRoot) {
@@ -1736,7 +1736,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `typing` nudge arrived — show "X is typing…" (mapping the
+     * A `typing` nudge arrived -- show "X is typing..." (mapping the
      * participantId to a name we already hold) and auto-clear after a short
      * idle. Our own typing echo is ignored. A fresh nudge resets the timer.
      */
@@ -1753,7 +1753,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `read` nudge arrived — another participant advanced their read
+     * A `read` nudge arrived -- another participant advanced their read
      * cursor. Bump the receipt high-water (monotonic) so my sent messages up to
      * that seq flip to "Read". My own read echo is ignored (a receipt tracks
      * OTHERS reading MY messages, not me reading theirs).
@@ -1766,7 +1766,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `presence` nudge arrived — a user changed their status. Flip the
+     * A `presence` nudge arrived -- a user changed their status. Flip the
      * colored dot on their avatar everywhere they appear (header / bubbles / list
      * rows) by updating their `presenceStatus` in the conversations signal. My
      * own status is already reflected via the set-status control, but keep it in
@@ -1791,7 +1791,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * My participant id in the open conversation (resolved from my user id). Falls
-     * back to the server-computed `viewerParticipantId` — an EXCLUDED member isn't
+     * back to the server-computed `viewerParticipantId` -- an EXCLUDED member isn't
      * in the active `participants` roster, but their read-only history still needs
      * "my messages" marked right (membership/history semantics).
      */
@@ -1812,7 +1812,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // commit. Bound once on the stable composer wrapper; the editor
         // re-mounts inside it without needing re-binding.
         this.enterHandler = (ev: KeyboardEvent) => {
-            // The #-channel popover takes the same priority as the @ one — only
+            // The #-channel popover takes the same priority as the @ one -- only
             // one of the two can be open, since their triggers are different
             // characters at the caret.
             const chans = this.channelCandidates();
@@ -1839,7 +1839,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
             }
             // The @-mention popover takes priority: arrow-navigate, Enter/Tab to
-            // pick, Escape to dismiss — none of these reach the editor or send.
+            // pick, Escape to dismiss -- none of these reach the editor or send.
             const candidates = this.mentionCandidates();
             if (this.mentionMenuOpen() && candidates.length && !ev.isComposing) {
                 if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -1884,8 +1884,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Whether editor HTML carries visible text (so an empty `<p></p>` doc — the
-     * Tiptap empty state — doesn't enable Send or post a blank message). Strips
+     * Whether editor HTML carries visible text (so an empty `<p></p>` doc -- the
+     * Tiptap empty state -- doesn't enable Send or post a blank message). Strips
      * tags, collapses `&nbsp;`, trims.
      */
     private hasText(html: string): boolean {
@@ -1900,7 +1900,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return text !== '';
     }
 
-    /** A conversation's display label — shared with the quick panel. */
+    /** A conversation's display label -- shared with the quick panel. */
     counterpartName(c: ChatConversationDto | null): string {
         return conversationLabel(c, this.meId);
     }
@@ -1917,7 +1917,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Mark a conversation read up to `seq` — optimistically clear its unread
+     * Mark a conversation read up to `seq` -- optimistically clear its unread
      * badge (local override) then persist the cursor server-side.
      */
     private markConversationRead(convId: string, seq: number): void {
@@ -1927,20 +1927,20 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.readSeqOverride.update(m => advanceReadOverride(m, convId, seq));
         // Send the seq we are actually claiming. It was computed here
         // for the optimistic override and then thrown away, so the server marked
-        // read up to ITS `lastSeq` — including messages this client had not
+        // read up to ITS `lastSeq` -- including messages this client had not
         // received, whose senders were then told "Read".
         this.api.markRead(convId, seq).subscribe({ error: () => { /* best-effort */ } });
     }
 
     /**
-     * Avatar for a conversation row / thread header — the FIRST other
+     * Avatar for a conversation row / thread header -- the FIRST other
      * participant (1:1 DMs have exactly one; a future group thread shows the
      * first, which is good enough for the roster glyph). Colored-initials
-     * fallback from `displayName` — no backend avatar URL needed.
+     * fallback from `displayName` -- no backend avatar URL needed.
      */
     rowAvatar(c: ChatConversationDto | null): ChatAvatarUser {
         const me = this.meId;
-        // Self-notes: show MY own avatar — there is no "other" participant.
+        // Self-notes: show MY own avatar -- there is no "other" participant.
         if (c?.kind === 'self_notes') {
             const mine = (c.participants ?? []).find(p => p.userId === me);
             return avatarUserFor(mine?.displayName ?? null, mine?.userId ?? c.id ?? null, mine?.avatarUrl);
@@ -1949,7 +1949,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return avatarUserFor(other?.displayName ?? null, other?.userId ?? c?.id ?? null, other?.avatarUrl);
     }
 
-    /** Avatar for a message bubble — resolved from the sender participant. */
+    /** Avatar for a message bubble -- resolved from the sender participant. */
     senderAvatar(m: ChatMessageDto): ChatAvatarUser {
         const p = (this.selected()?.participants ?? [])
             .find(x => x.participantId === m.senderParticipantId);
@@ -1964,7 +1964,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * This message begins a consecutive same-sender run — so it shows the avatar
+     * This message begins a consecutive same-sender run -- so it shows the avatar
      * (incoming) and, in a group/channel, the sender name; the rest of the run
      * collapses under it. `prev` is the message rendered just above WITHIN the
      * same day-group (null at a day boundary -> always starts a run).
@@ -1973,7 +1973,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return !prev || prev.senderParticipantId !== m.senderParticipantId;
     }
 
-    /** Show the sender's name above an incoming bubble — groups/channels only, first of a run. */
+    /** Show the sender's name above an incoming bubble -- groups/channels only, first of a run. */
     showSenderName(m: ChatMessageDto, prev: ChatMessageDto | null): boolean {
         return this.isGroup() && !this.isMine(m) && this.startsRun(m, prev);
     }
@@ -1992,11 +1992,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The dot a user gets — the self-set status OVER the /
+     * The dot a user gets -- the self-set status OVER the /
      * connection-derived online layer:
      *  - self-set `away`/`busy` -> ALWAYS shown (a deliberate declaration; visible
      *    even when the connection-presence layer is unavailable, e.g. Centrifugo
-     *    presence off — so "who is away/busy" is legible regardless of ops state);
+     *    presence off -- so "who is away/busy" is legible regardless of ops state);
      *  - self-set `offline` ("appear offline") -> no dot;
      *  - otherwise -> green `online` only while the user holds a live realtime socket.
      */
@@ -2004,7 +2004,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return presenceDot(userId, manual, this.presenceOnline());
     }
 
-    /** Distinct counterpart user ids across the conversation list — the presence poll set. */
+    /** Distinct counterpart user ids across the conversation list -- the presence poll set. */
     private counterpartUids(): string[] {
         const me = this.meId;
         const ids = new Set<string>();
@@ -2069,7 +2069,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /** Status-menu "Away after" pick — persist (per-device) + apply immediately. */
+    /** Status-menu "Away after" pick -- persist (per-device) + apply immediately. */
     setAwayAfter(min: number): void {
         if (!this.AWAY_OPTIONS.includes(min)) {
             return;
@@ -2082,7 +2082,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     // -- Auto-away idle tracking ---------------------------------------------
     // Activity anywhere (pointer/keyboard/wheel/touch, or the tab regaining
     // focus) re-arms an idle timer; on expiry we flip an available status to
-    // `away`. It NEVER overrides a manual busy/offline/away — only the
+    // `away`. It NEVER overrides a manual busy/offline/away -- only the
     // online/unset "available" state auto-transitions, and only an auto-set
     // `away` is auto-reverted on the next activity. Scoped to this page's
     // lifetime (torn down on destroy).
@@ -2123,11 +2123,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly onActivity = (): void => {
         if (this.myStatus() === 'away') {
             // Away is AUTO-only, so any genuine activity (pointer/keyboard/wheel/
-            // touch) or the tab regaining focus means I'm present again — clear it.
+            // touch) or the tab regaining focus means I'm present again -- clear it.
             // This also un-sticks an `away` that was seeded from a prior session on
             // reload (the in-memory `autoAway` flag resets to false on reload, which
             // was the "opened the chat but still Away" bug). Never fights a manual
-            // pick — busy/offline are not reverted here.
+            // pick -- busy/offline are not reverted here.
             this.autoAway = false;
             this.setStatusInternal('online');
             this.lastActivityAt = Date.now();
@@ -2151,7 +2151,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     private goAutoAway(): void {
         const s = this.myStatus();
-        // Only from the available state — never clobber a manual away/busy/offline.
+        // Only from the available state -- never clobber a manual away/busy/offline.
         if (s === null || s === 'online') {
             this.autoAway = true;
             this.setStatusInternal('away');
@@ -2260,7 +2260,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             }
         }
         // On the FIRST sync after mount, a seeded `away` is a stale auto-away from a
-        // prior session — the user just navigated here, so show them present at once
+        // prior session -- the user just navigated here, so show them present at once
         // (no "Away" flash). Later syncs (background polls) skip this, so a genuine
         // idle-away on THIS device is preserved until the user actually returns.
         if (this.firstStatusSync) {
@@ -2284,9 +2284,9 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * Insert an emoji into the composer at the caret. The `<coolms-editor>`
      * is a black box with no imperative insert API, so we reach the one
-     * contenteditable it mounts, focus it, and use `execCommand('insertText')` —
+     * contenteditable it mounts, focus it, and use `execCommand('insertText')` --
      * ProseMirror observes the resulting input event and emits `contentChange`,
-     * keeping `composerHtml` in sync and the caret in place. Fallback (rare —
+     * keeping `composerHtml` in sync and the caret in place. Fallback (rare --
      * execCommand is unsupported): append to the model + force a clean re-mount.
      */
     insertEmoji(emoji: string): void {
@@ -2338,7 +2338,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The text of the caret's own text node, up to the caret — what both
+     * The text of the caret's own text node, up to the caret -- what both
      * typeaheads match their trigger against. NULL when there is no usable
      * caret (no selection, a range rather than a caret, or a caret outside the
      * editor), which both callers treat as "no trigger".
@@ -2363,7 +2363,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The `#…` half of the same trick — a channel handle being typed
+     * The `#...` half of the same trick -- a channel handle being typed
      * right at the caret opens the channel typeahead.
      *
      * Handles are lowercase kebab-case, so the pattern is narrow on purpose: a
@@ -2376,7 +2376,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             this.closeChannelMenu();
             return;
         }
-        // Only fetch once — the browse panel shares this signal, so it is often
+        // Only fetch once -- the browse panel shares this signal, so it is often
         // already populated.
         if (this.channels().length === 0 && !this.loadingChannels()) {
             this.loadChannels();
@@ -2427,8 +2427,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         const q = query.trim();
         if (q === '') {
-            // A bare `@` searches the DIRECTORY for nothing — there is no query to
-            // send — but the menu still opens, and it is not empty: `mentionCandidates`
+            // A bare `@` searches the DIRECTORY for nothing -- there is no query to
+            // send -- but the menu still opens, and it is not empty: `mentionCandidates`
             // lists this conversation's own members, which is who you almost always
             // mean. Before this path left the menu blank, so `@` looked broken
             // until you typed a letter, which is exactly what was reported.
@@ -2464,7 +2464,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * Insert `@name ` at the active `@query` and record the drafted mention. For a
      * NON-member picked by the owner of a group, ALSO surface the "add to
-     * conversation?" prompt (mention-anyone v2) — the mention itself is cosmetic
+     * conversation?" prompt (mention-anyone v2) -- the mention itself is cosmetic
      * until they're added (a non-member can't read the conversation), so the prompt
      * offers to pull them in. In a DM / for a non-owner, only the cosmetic mention
      * lands. Also called from the keyboard handler.
@@ -2485,7 +2485,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Replace the trailing `@query` in the MODEL (not the live editor DOM — a click
+     * Replace the trailing `@query` in the MODEL (not the live editor DOM -- a click
      * on the popover drops ProseMirror's selection and its node recycling makes DOM
      * ranges unreliable) with `@name&nbsp;`, then re-mount the editor. The token is
      * the last `@query` in the composer HTML (the typeahead only matches at the
@@ -2558,7 +2558,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         // The server sanitiser encodes `@` as a numeric entity (e.g. `&;`) in the
         // stored HTML body, so a literal-`@` regex never matches. Decode the `@`
-        // entities back before matching — `@` is safe punctuation, so this doesn't
+        // entities back before matching -- `@` is safe punctuation, so this doesn't
         // weaken the already-sanitised markup. (A label may itself contain `@`, e.g.
         // an email, so both the trigger and in-label `@`s decode.)
         html = html.replace(/&(?:#0*64|#x0*40|commat);/gi, '@');
@@ -2578,7 +2578,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * Turn `#handle` into a clickable channel reference.
      *
      *  Only handles this client has actually RESOLVED are wrapped. A `#word`
-     * that matches no channel stays plain text — a reference that looks live and
+     * that matches no channel stays plain text -- a reference that looks live and
      * goes nowhere is worse than one that was never offered. It also means the
      * injected markup is built from a slug taken from the channel LIST, never
      * from message content, so nothing an author writes can reach the DOM
@@ -2598,10 +2598,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     reloadList(): void {
-        // Only show the full "Loading…" placeholder on the INITIAL load. A live
-        // background refresh (the `watchUser` nudge — e.g. a dropped call posting
+        // Only show the full "Loading..." placeholder on the INITIAL load. A live
+        // background refresh (the `watchUser` nudge -- e.g. a dropped call posting
         // its "Call cancelled" system messages) already has rows on screen, so
-        // flashing the whole list to "Loading…" and back reads as a jarring
+        // flashing the whole list to "Loading..." and back reads as a jarring
         // reload/jitter. Rows are keyed by `c.id`, so a silent `conversations.set`
         // updates them in place with no flash.
         if (this.conversations().length === 0) {
@@ -2609,7 +2609,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         // Re-read what is CURRENTLY on screen, not just the first page:
         // a refresh that dropped back to one page would erase every "Load more"
-        // the user had clicked — and this runs on a live nudge, mid-scroll.
+        // the user had clicked -- and this runs on a live nudge, mid-scroll.
         const want = refreshWindow(this.CONV_PAGE, this.conversations().length);
         this.api.listConversations(want).subscribe({
             next: list => {
@@ -2622,7 +2622,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    /** Append the next page of inbox rows — the rules live in `inbox-paging.util`. */
+    /** Append the next page of inbox rows -- the rules live in `inbox-paging.util`. */
     loadMoreConversations(): void {
         if (this.loadingMoreConversations() || !this.hasMoreConversations()) {
             return;
@@ -2650,7 +2650,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Honor a pending `?c=<conversationId>` deep-link (the topbar quick-panel
-     * /) once the conversation list contains it — open that thread.
+     * /) once the conversation list contains it -- open that thread.
      * Re-runs after each list load and on every `?c=` change (see the ctor),
      * so the deep-link works both on first arrival and while already on the page.
      */
@@ -2661,7 +2661,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         if (!this.conversations().some(c => c.id === id)) {
             //  Since the inbox is PAGED, "not in the list" no longer
-            // means "not loaded yet" — a deep-link to an older conversation may
+            // means "not loaded yet" -- a deep-link to an older conversation may
             // sit pages down and no amount of re-listing will surface it. Fetch
             // that ONE row and drop it in. A 404 is the honest answer for a
             // conversation the caller is not a member of; drop the pending id so
@@ -2683,7 +2683,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 },
                 error: () => {
                     this.clearPreselectFetch(id);
-                    // Only abandon the deep-link we were actually chasing — the URL
+                    // Only abandon the deep-link we were actually chasing -- the URL
                     // may have moved on to a different conversation since.
                     if (this.pendingPreselect === id) {
                         this.pendingPreselect = null;
@@ -2700,7 +2700,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * The conversation id {@link applyPreselect} currently has a one-row fetch out
-     * for — it must not re-fire that fetch on every list load, and must not block
+     * for -- it must not re-fire that fetch on every list load, and must not block
      * a fetch for a DIFFERENT id.
      */
     private preselectFetchingId: string | null = null;
@@ -2734,11 +2734,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadThread();
         this.loadPinned(id);
         this.startPolling();
-        // Marking read happens once the messages ARRIVE ({@link applyMessages}) —
+        // Marking read happens once the messages ARRIVE ({@link applyMessages}) --
         // not here. At this point `lastSeq` is 0 and the only seq to hand
         // is the conversation row's, which is the SERVER's high-water: claiming
         // it would mark messages this client has not fetched, and tell their
-        // senders "Read". An EXCLUDED (read-only) viewer is skipped there too —
+        // senders "Read". An EXCLUDED (read-only) viewer is skipped there too --
         // they cannot read new messages, and the server gates a non-member
         // mark-read anyway.
         const opened = this.selected();
@@ -2747,7 +2747,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
     }
 
-    /** Clear the "X is typing…" indicator + its idle timer. */
+    /** Clear the "X is typing..." indicator + its idle timer. */
     private clearTyping(): void {
         this.typingName.set(null);
         if (this.typingTimer) {
@@ -2771,10 +2771,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A user was picked in the "New" composer — add them as a member chip
+     * A user was picked in the "New" composer -- add them as a member chip
      * (deduped). The picker resets to its placeholder after each pick (it never
      * gets its `value` fed back), so the next selection appends another member.
-     * The chip label resolves best-effort in the background; it renders "…"
+     * The chip label resolves best-effort in the background; it renders "..."
      * until then and degrades to the id if the lookup fails.
      */
     onUserPicked(userId: string): void {
@@ -2865,7 +2865,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Open the current user's "message yourself" NOTES conversation from
-     * the "New" composer — idempotent server-side ({@link MessagesService.openSelfNotes}),
+     * the "New" composer -- idempotent server-side ({@link MessagesService.openSelfNotes}),
      * so it either reuses the existing notes room or mints it. Drops it into the
      * inbox, selects it, and closes the composer.
      */
@@ -2959,12 +2959,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      *
      *  The handle is read from the element's TEXT, not from a `data-` attribute:
      * Angular's HTML sanitizer keeps `class` but STRIPS `data-*`, so the obvious
-     * `data-chan="…"` arrives as null and every click silently does nothing. The
-     * text is the slug anyway — {@see linkifyChannelRefs} writes both from the
+     * `data-chan="..."` arrives as null and every click silently does nothing. The
+     * text is the slug anyway -- {@see linkifyChannelRefs} writes both from the
      * same value, and only for a channel it already resolved.
      *
      * A channel you are IN opens. One you are not in opens the browse panel
-     * instead of silently doing nothing — joining is a decision, not a
+     * instead of silently doing nothing -- joining is a decision, not a
      * side-effect of clicking a word in someone else's sentence.
      */
     onBodyClick(ev: Event): void {
@@ -3074,7 +3074,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Whether the context menu should offer "Leave group/channel" for this row —
+     * Whether the context menu should offer "Leave group/channel" for this row --
      * only for an ACTIVE member of a group/channel who is NOT its Owner (the owner
      * must transfer ownership first, so we don't offer them a dead action).
      */
@@ -3102,7 +3102,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Toggle MUTE from the context menu — optimistic: patch `viewerMuted`
+     * Toggle MUTE from the context menu -- optimistic: patch `viewerMuted`
      * so the row dims + the global badge drops immediately, then POST/DELETE the
      * mute endpoint; revert the flag on error. Only offered for an ACTIVE member
      * (the backend 403s a left/excluded participant).
@@ -3127,7 +3127,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Leave / remove-from-list from the context menu — self-leave (the server
+     * Leave / remove-from-list from the context menu -- self-leave (the server
      * drops the read-only remnant too), then drop the row from the inbox and
      * deselect if it was open. "Removing group/channel from the left list means
      * leave it."
@@ -3155,8 +3155,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Composer content changed — keep the model in sync AND emit a throttled
-     * typing signal so the other participant sees "X is typing…". We
+     * Composer content changed -- keep the model in sync AND emit a throttled
+     * typing signal so the other participant sees "X is typing...". We
      * only signal when there's real text (not on a placeholder/clear), and at
      * most once per 3s (the server nudge is ephemeral; the indicator self-clears
      * after ~4s of silence on the receiver).
@@ -3164,7 +3164,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     onComposerInput(html: string): void {
         this.composerHtml.set(html);
         // Re-evaluate both typeaheads against the caret on every edit. At most
-        // one can match — their triggers are different characters.
+        // one can match -- their triggers are different characters.
         this.updateMentionMenu();
         this.updateChannelMenu();
         const id = this.selectedId();
@@ -3269,7 +3269,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 );
                 this.scrollThreadPanelSoon();
                 // The root's seq didn't change, so a main-list catch-up won't refresh
-                // its reply-count chip — bump it optimistically.
+                // its reply-count chip -- bump it optimistically.
                 this.bumpRootReplyCount(root.id);
                 this.sendingThreadReply.set(false);
             },
@@ -3398,7 +3398,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * A `reaction` room nudge arrived — re-read the current window and merge each
+     * A `reaction` room nudge arrived -- re-read the current window and merge each
      * message's `reactions` in by id (a reaction doesn't bump `seq`, so the normal
      * catch-up merge, which only ADDS new-id messages, wouldn't touch existing ones).
      */
@@ -3430,7 +3430,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * Scroll the main timeline to a message (from the pinned bar) + briefly
      * highlight it. If the message isn't currently loaded it's a no-op (the pinned
-     * message may be far up the history — a fuller "jump to message" is a follow-up).
+     * message may be far up the history -- a fuller "jump to message" is a follow-up).
      */
     scrollToMessage(messageId: string): void {
         const el = document.querySelector(`.msg__scroll [data-mid="${messageId}"]`);
@@ -3504,7 +3504,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Fetch a finished group call's recording (participant-gated, G8f) as a
-     * Bearer-authorised blob and trigger a browser download — same pattern as
+     * Bearer-authorised blob and trigger a browser download -- same pattern as
      * {@link downloadAttachment} (a plain `<a href>` can't carry the token). The object
      * URL is revoked after the synthetic click so we don't leak it.
      */
@@ -3600,7 +3600,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Reconcile-poll tick — a NO-OP while the realtime WS engine is
+     * Reconcile-poll tick -- a NO-OP while the realtime WS engine is
      * connected (room nudges are the live path then); only does the catch-up
      * fetch when push is unavailable, so polling is a true fallback rather than
      * a parallel path. The timer keeps ticking cheaply; the work is gated.
@@ -3616,7 +3616,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * Pull anything past our local high-water `lastSeq` for the open thread
      * (afterSeq cursor) and merge it. Shared by the debounced realtime
      * {@link roomCatchUp$}, the WS-(re)connect catch-up, and the no-WS fallback
-     * {@link poll} — so every "fetch newer messages" path funnels through one
+     * {@link poll} -- so every "fetch newer messages" path funnels through one
      * dedupe-by-id merge. No-op when nothing is selected.
      */
     private catchUp(): void {
@@ -3632,7 +3632,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * Merge incoming messages into the thread (dedupe by id, re-sort by seq),
-     * advancing `lastSeq`. Returns how many were NEW — the pure state update,
+     * advancing `lastSeq`. Returns how many were NEW -- the pure state update,
      * with no scroll/read side-effects (so a backward "load earlier" page can
      * reuse it without yanking the viewport to the bottom).
      */

@@ -35,7 +35,7 @@ import {
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 
 /**
- * — Schedule Detail admin page (/admin/schedules/:slug).
+ * -- Schedule Detail admin page (/admin/schedules/:slug).
  *
  * Cards: Settings, Trigger, Calendar, Handler/Payload, History.
  * Header actions: Trigger Now, Delete.
@@ -350,7 +350,7 @@ export class ScheduleDetailPageComponent implements OnInit {
     /**
      * Anchor instant fed to &lt;app-recurrence-form&gt; for its DTSTART /
      * preview math when the trigger is RRule. Schedules don't carry a
-     * DTSTART — the form just needs a stable reference for preview
+     * DTSTART -- the form just needs a stable reference for preview
      * labels, so today at 09:00 is sufficient.
      */
     readonly triggerAnchorIso = (() => {
@@ -360,7 +360,7 @@ export class ScheduleDetailPageComponent implements OnInit {
     })();
 
     /**
-     * Navigation actions for the cms-page-header bar — declared in the
+     * Navigation actions for the cms-page-header bar -- declared in the
      * `scheduler:schedule-detail` layout config, not hardcoded.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
@@ -368,7 +368,7 @@ export class ScheduleDetailPageComponent implements OnInit {
     );
 
     /**
-     * Fixed-footer actions — declared in the same layout config. The static
+     * Fixed-footer actions -- declared in the same layout config. The static
      * descriptors (Trigger Now / Delete) come from config; the `trigger`
      * action's busy label + disabled flag are applied here from runtime state
      * (the config-declares / FE-evaluates split, per web:section-detail).

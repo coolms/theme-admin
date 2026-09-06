@@ -4,7 +4,7 @@ import type { ContentAdapter } from '@coolms/editor-angular';
 import { formFieldDtmplToHtml, formFieldHtmlToDtmpl } from '@coolms/editor-angular';
 import { embedDtmplToHtml, embedHtmlToDtmpl } from '@coolms/editor-angular';
 // `migrateLegacyGridLayout` is defined in this file (see export below) but
-// referenced inside the class methods — TypeScript handles the forward
+// referenced inside the class methods -- TypeScript handles the forward
 // reference at runtime since the function is hoisted at module load.
 import { MediaService } from '../media/media.service';
 import { kindForMime } from '../media/dtmpl/dtmpl-media-node';
@@ -27,19 +27,19 @@ import {
 } from '../image-map-widget/dtmpl/image-map-widget-transform';
 
 /**
- * Bridges the storage form (`{widget:media:UUID …}` dtmpl) to the editor
+ * Bridges the storage form (`{widget:media:UUID ...}` dtmpl) to the editor
  * HTML the bridge consumes. Lives in the Content module because dtmpl is a
  * content-storage concern; the bridge stays neutral and the page editor
  * passes this adapter as `[contentAdapter]`.
  *
- *   toEditor   asynchronous: extracts every {widget:media:UUID …} reference,
+ *   toEditor   asynchronous: extracts every {widget:media:UUID ...} reference,
  *              batch-fetches the missing assets via MediaService, then runs
  *              dtmplToHtml with a resolver that maps each uuid to its
  *              preview URL + kind. Mirrors the legacy mountEditorWithContent
  *              flow that page-editor used to do inline.
  *   toStorage  synchronous: htmlToDtmpl is a pure regex transform.
  *
- * The cache is per-adapter-instance (component-scoped — see
+ * The cache is per-adapter-instance (component-scoped -- see
  * `providedIn: 'root'` decision below). Multiple editor instances reading
  * the same uuid share a single fetch.
  */
@@ -51,19 +51,19 @@ export class DtmplContentAdapter implements ContentAdapter {
     private readonly cache = new Map<string, { mime: string; urls: Record<string, string> }>();
 
     /**
-     * Defense-in-depth: drop every `{widget:NAMESPACE:…}` reference whose
+     * Defense-in-depth: drop every `{widget:NAMESPACE:...}` reference whose
      * namespace isn't in the active profile's allow-list. Mirrors the
      * backend ContentSanitizer's grammar exactly so saved content the
      * server would reject also doesn't surface in the editor.
      *
-     * The wildcard '*' short-circuits — when the profile permits any
+     * The wildcard '*' short-circuits -- when the profile permits any
      * widget, return the input unchanged.
      */
     stripDisallowedWidgets(content: string, allowedWidgets: ReadonlyArray<string>): string {
         if (allowedWidgets.includes('*')) return content;
         const allowed = new Set(allowedWidgets);
         // Mirror ContentSanitizer's pattern:
-        //   {widget:NAMESPACE:ID …}
+        //   {widget:NAMESPACE:ID ...}
         // NAMESPACE = [a-zA-Z][a-zA-Z0-9_-]* ; ID = up to whitespace or `}`.
         return content.replace(
             /\{widget:([a-z][a-z0-9_-]*):[^\s}]+(?:\s+[^}]*)?\}/gi,
@@ -100,7 +100,7 @@ export class DtmplContentAdapter implements ContentAdapter {
         // `{widget:media:...}`, link `{widget:link:...}`, formField
         // `{widget:formField:...}`, embed `{widget:embed:...}`, form
         // `{widget:form:...}`, document `{widget:document:...}`, imagemap
-        // `{widget:imagemap:...}` — seven disjoint namespaces, no regex
+        // `{widget:imagemap:...}` -- seven disjoint namespaces, no regex
         // overlap. The legacy gridLayout migration runs last so it sees the
         // final HTML the parser will see.
         return migrateLegacyGridLayout(
@@ -131,8 +131,8 @@ export class DtmplContentAdapter implements ContentAdapter {
 
 /**
  * Wrap a bare `<div class="row">` (no `cms-grid` ancestor) in
- * `<div class="cms-grid">` so F.1 documents — which emitted gridLayout as
- * a flat row + cols structure — fit the F.1.1 schema (`gridLayout >
+ * `<div class="cms-grid">` so F.1 documents -- which emitted gridLayout as
+ * a flat row + cols structure -- fit the F.1.1 schema (`gridLayout >
  * gridRow+ > gridColumn+`). Idempotent: rows already inside a `cms-grid`
  * wrapper are left alone, so a second pass over migrated content is a
  * no-op.
@@ -163,7 +163,7 @@ export function migrateLegacyGridLayout(html: string): string {
             // Find the matching `</div>` for this row by depth-tracking.
             const rowEnd = findMatchingClose(html, ROW_OPEN.lastIndex);
             if (rowEnd === -1) {
-                // Unbalanced HTML — leave as-is so source-mode editing
+                // Unbalanced HTML -- leave as-is so source-mode editing
                 // shows the original, fixable input.
                 result += match[0];
             } else {

@@ -10,7 +10,7 @@ import { RtcLiveEventsService } from './rtc-live-events.service';
 import { RtcService } from './rtc.service';
 import { RtcCallChannelNudge, RtcCallDto, RtcCallState, RtcIncomingCallNudge, RtcMediaKind } from './rtc.types';
 
-/** The overlay's view of what's happening — a local UI state atop the server {@link RtcCallState}. */
+/** The overlay's view of what's happening -- a local UI state atop the server {@link RtcCallState}. */
 export type RtcUiState = 'ringing-out' | 'ringing-in' | 'connecting' | 'connected' | 'ended';
 
 export interface ActiveCall {
@@ -31,8 +31,8 @@ export interface ActiveCall {
      */
     readonly topology: 'mesh' | 'sfu' | null;
     /**
-     * Whether the group call's media room is being recorded ( G8c) — the
-     * notify-by-default `● REC` consent indicator. Mirrors the server's
+     * Whether the group call's media room is being recorded ( G8c) -- the
+     * notify-by-default `- REC` consent indicator. Mirrors the server's
      * `recordingActive`; reconciled from every REST read + refreshed on a
      * while-connected state nudge (a peer toggling it).
      */
@@ -40,7 +40,7 @@ export interface ActiveCall {
 }
 
 /**
- * The call-CONTROL orchestrator, Slice 4a) — the single owner of "is
+ * The call-CONTROL orchestrator, Slice 4a) -- the single owner of "is
  * there a call, and what's its state". It:
  *
  *  - subscribes to `rtc.user.{myId}` for the whole session so an INCOMING call
@@ -49,10 +49,10 @@ export interface ActiveCall {
  *  - subscribes to the active call's `rtc.call.{id}` channel to follow lifecycle
  *    `call.state` nudges + forward `call.signal` SDP/ICE to the media plane;
  *  - invokes {@link RtcMediaController} at connect / signal / end (the seam the
- *    Slice-4b WebRTC media plugs into — no `RTCPeerConnection` here yet).
+ *    Slice-4b WebRTC media plugs into -- no `RTCPeerConnection` here yet).
  *
  * Exactly one call at a time in 4a: a second incoming ring while busy is ignored.
- * All realtime is best-effort — a dropped nudge is reconciled by the REST reads.
+ * All realtime is best-effort -- a dropped nudge is reconciled by the REST reads.
  */
 @Injectable({ providedIn: 'root' })
 export class RtcCallService {
@@ -145,7 +145,7 @@ export class RtcCallService {
     }
 
     /**
-     * Start recording the connected GROUP call's media room ( G8c) — the
+     * Start recording the connected GROUP call's media room ( G8c) -- the
      * notify-by-default consent surface's control. Group-only (recording rides the
      * SFU); a no-op unless connected + SFU + not already recording. A recorder that
      * isn't deployed answers 503 -> a toast, so the button degrades cleanly.
@@ -178,7 +178,7 @@ export class RtcCallService {
      * G8f/G8g). Thin passthrough to {@link RtcService}; the caller (the Messages
      * timeline) triggers the browser save. Surfaced from the `:rec:ready` timeline
      * notice the ingest posts once the artifact lands. Any active call is
-     * irrelevant — this reads a past call's recording by id.
+     * irrelevant -- this reads a past call's recording by id.
      */
     downloadRecording(callId: string): Observable<Blob> {
         return this.rtc.downloadRecording(callId);
@@ -243,7 +243,7 @@ export class RtcCallService {
                 this.patch({ ui: 'connected', connectedAtMs: Date.now() });
                 this.startMedia(call);
             } else {
-                // Already connected — a `call.state` nudge here signals a
+                // Already connected -- a `call.state` nudge here signals a
                 // while-connected change (e.g. a peer toggled recording); refresh the
                 // recording flag from REST since the nudge carries only the lifecycle.
                 this.refreshRecording(call.callId);
@@ -253,7 +253,7 @@ export class RtcCallService {
         if (state === 'ringing') {
             return; // still ringing; nothing to change
         }
-        // Terminal: ended / declined / missed / cancelled — show briefly, then dismiss.
+        // Terminal: ended / declined / missed / cancelled -- show briefly, then dismiss.
         this.patch({ ui: 'ended', endReason: state });
         this.media.stop();
         this.sfu.stop();

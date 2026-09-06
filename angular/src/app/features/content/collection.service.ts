@@ -50,7 +50,7 @@ export interface SetCollectionDistributionRequest {
 }
 
 /**
- * A section's own settings — what the posts inside it ARE, as opposed
+ * A section's own settings -- what the posts inside it ARE, as opposed
  * to {@link CollectionDistribution}, which is where a published one goes.
  *
  * `isCollection` false means the directory was never declared: it lists and
@@ -71,7 +71,7 @@ export interface CollectionSettings {
  * `ChannelConfigField`.
  *
  * `type: 'secretRef'` means the value is the NAME of a stored secret, not the
- * secret itself — so it displays and round-trips like any other text.
+ * secret itself -- so it displays and round-trips like any other text.
  * There is deliberately no "raw credential" field kind: per-section config is
  * persisted in the collection Node's `extras`, so a live token could never sit
  * here safely no matter how the input was rendered.
@@ -85,7 +85,7 @@ export interface ChannelConfigField {
     readonly placeholder: string;
 }
 
-/** An enabled channel and what it needs configured — `GET /outbound-channels`. */
+/** An enabled channel and what it needs configured -- `GET /outbound-channels`. */
 export interface OutboundChannelDto {
     readonly id: string;
     readonly label: string;
@@ -132,7 +132,7 @@ export class CollectionService {
 
     /**
      * Read a collection's current distribution config. There is no dedicated
-     * read endpoint — the generic node-meta endpoint already returns the full
+     * read endpoint -- the generic node-meta endpoint already returns the full
      * `extras` bag, so we project the two distribution keys out of it (and use
      * `collectionType`'s presence to confirm the dir IS a content collection).
      */
@@ -183,7 +183,7 @@ export class CollectionService {
     }
 
     /**
-     * Read a section's settings — same trick as `getDistribution`: the
+     * Read a section's settings -- same trick as `getDistribution`: the
      * node-meta endpoint returns the whole `extras` bag, so both reads are one
      * projection each and neither needs an endpoint of its own.
      *
@@ -215,7 +215,7 @@ export class CollectionService {
 
     /**
      * Write the section settings. Passing `collectionType` for a plain
-     * directory PROMOTES it into a content collection — which is what gives the
+     * directory PROMOTES it into a content collection -- which is what gives the
      * section a feed.
      */
     setSettings(req: SetCollectionSettingsRequest): Observable<unknown> {

@@ -15,7 +15,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
  * ExplorerLayoutComponent's YAML-driven header.
  *
  * The toolbar holds only action buttons; the FQCN + type-badge breadcrumb
- * lives as a sticky band at the top of the detail panel — see
+ * lives as a sticky band at the top of the detail panel -- see
  * DomainExplorerDetailComponent, whose layout this mirrors.
  */
 @Component({

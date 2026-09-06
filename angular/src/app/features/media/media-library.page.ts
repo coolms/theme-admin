@@ -63,7 +63,7 @@ export type ToolbarContext =
     | { type: 'files'; assets: MediaAssetDto[] };
 
 /**
- * Media Library page — thin orchestrator.
+ * Media Library page -- thin orchestrator.
  *
  * Provides MediaPageStateService (scoped to this page subtree) and
  * subscribes to its action Subjects to perform API calls / open dialogs.
@@ -190,7 +190,7 @@ export class MediaLibraryPage implements OnInit {
     // -- Computed context passed to ExplorerLayout ---------------------------
 
     readonly pageContext = computed((): Record<string, unknown> => ({
-        // The right panel hosts either an asset OR a collection — show it for both.
+        // The right panel hosts either an asset OR a collection -- show it for both.
         activeItem: this.state.activeAsset() ?? this.state.activeCollection(),
     }));
 
@@ -670,7 +670,7 @@ export class MediaLibraryPage implements OnInit {
     }
 
     /**
-     * Resolve a collection path to its VFS Node id — the
+     * Resolve a collection path to its VFS Node id -- the
      * `vfs.parent.{id}` channel selector for live updates. Mirrors the
      * VFS File Explorer's folder stat (`GET /vfs/files?path=`). Returns
      * null on any error (missing path, permission denied, transport) so

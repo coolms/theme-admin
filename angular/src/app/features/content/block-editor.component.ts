@@ -30,7 +30,7 @@ import {
 import { ProcessCaptureComponent } from './process-capture.component';
 
 /**
- * Landing-page section builder — the admin authoring surface
+ * Landing-page section builder -- the admin authoring surface
  * for `extras.blocks`.
  *
  * Self-contained and self-hiding: given a page `path`, it fetches
@@ -38,8 +38,8 @@ import { ProcessCaptureComponent } from './process-capture.component';
  * `contentType === 'landing'` (so dropping it into the page editor is a no-op
  * for every other page).
  *
- * The ordered-list machinery — the type palette (click / drag to place), the
- * drag-drop reorder, move ↑/↓, remove, dirty/Save plumbing — lives in the
+ * The ordered-list machinery -- the type palette (click / drag to place), the
+ * drag-drop reorder, move ^/v, remove, dirty/Save plumbing -- lives in the
  * generic {@link OrderedBuilderComponent} substrate. This component is
  * the landing-block *consumer*: it owns the `blocks` source signal (two-way into
  * the builder), the block-type catalog, the page-load lifecycle, and the
@@ -53,7 +53,7 @@ import { ProcessCaptureComponent } from './process-capture.component';
  *
  * "Save sections" merge-patches `extras.blocks`; the SSR renderer reads it live,
  * so the public page updates without a republish. Validation stays server-side,
- * so the editor never needs the rules — only the field shapes.
+ * so the editor never needs the rules -- only the field shapes.
  */
 @Component({
     selector: 'app-block-editor',
@@ -203,13 +203,13 @@ export class BlockEditorComponent {
         this.types().map(t => ({ id: t.id, label: t.label })),
     );
 
-    /** Dirty state — delegated to the substrate (false when not a landing page). */
+    /** Dirty state -- delegated to the substrate (false when not a landing page). */
     readonly dirty = computed(() => this.builder()?.dirty() ?? false);
 
     private loadedPath = '';
 
     constructor() {
-        // Re-fetch whenever the bound path changes (load is async — guards on
+        // Re-fetch whenever the bound path changes (load is async -- guards on
         // path change so it never feeds back on itself, mirroring the content
         // field panels component).
         effect(() => {
@@ -227,7 +227,7 @@ export class BlockEditorComponent {
     }
 
     /**
-     * The substrate's save as a cold Observable — see
+     * The substrate's save as a cold Observable -- see
      * {@link OrderedBuilderComponent.save$}. The page editor uses this instead
      * of {@see save} so the blocks write is *sequenced* against the other
      * writers on the same Package node's `extras` column (the Fields panel and

@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
  * and pages fall. CSS can approximate the first question and cannot touch the
  * second.
  *
- * Nothing is persisted server-side — no instance, no artifact. The response is
+ * Nothing is persisted server-side -- no instance, no artifact. The response is
  * the bytes.
  */
 @Injectable({ providedIn: 'root' })

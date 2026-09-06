@@ -25,12 +25,12 @@ import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events
 import { ChatConversationDto, ChatMessageDto } from './messages.types';
 
 /**
- * Messages quick-panel — the right-drawer content for the topbar
+ * Messages quick-panel -- the right-drawer content for the topbar
  * chat launcher ({@link MessagesQuickAccessComponent}), mirroring the Calendar
  * quick-panel pattern (). Two modes:
  *  - LIST: the current user's conversations (labeled by counterpart, live online
  *    dot , unread badge ) + a ＋New picker that opens a 1:1 DM ([]).
- *  - THREAD: tap a row to read + reply INLINE without leaving the page —
+ *  - THREAD: tap a row to read + reply INLINE without leaving the page --
  *    recent messages + a quick composer + realtime ([]) + mark-read ([]).
  *    A ↗ button still jumps to the full `/admin/messages` view (the rich composer,
  *    attachments, emoji live there). The {@link DrawerService} auto-closes on
@@ -208,14 +208,14 @@ export class MessagesQuickPanelComponent implements OnInit {
     readonly showNew       = signal(false);
 
     /**
-     * Inbox paging — the drawer used to render EVERY conversation the
+     * Inbox paging -- the drawer used to render EVERY conversation the
      * user had ever joined, and its background refresh re-fetched all of them.
      * A smaller page than the full page's: this is a peek list, not the inbox.
      * The rules (and the page's copy of this state) live in `inbox-paging.util`.
      */
     /**
      * Optimistic read cursors while a mark-read is in flight, keyed by
-     * conversation id — the same mechanism the full page uses, so the
+     * conversation id -- the same mechanism the full page uses, so the
      * badge clears on read rather than on the next list refresh.
      */
     private readonly readSeqOverride = signal<Record<string, number>>({});
@@ -237,7 +237,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         () => groupByDay(this.threadMessages(), m => m.createdAt, this.dtf),
     );
 
-    /** Lazy "load earlier" paging — open on the newest page, prepend on scroll-up. */
+    /** Lazy "load earlier" paging -- open on the newest page, prepend on scroll-up. */
     private readonly PAGE = 30;
     readonly loadingOlder = signal(false);
     readonly hasMoreOlder = signal(false);
@@ -248,14 +248,14 @@ export class MessagesQuickPanelComponent implements OnInit {
     private readonly threadScroll = viewChild<ElementRef<HTMLElement>>('threadScroll');
 
     /**
-     * Connection-derived ONLINE set — the counterparts holding a live
+     * Connection-derived ONLINE set -- the counterparts holding a live
      * realtime connection, polled from `GET /chat/presence`; combined with the
      * self-set status via {@link effectiveStatus} for the avatar dot.
      */
     readonly presencePolled = signal<ReadonlySet<string>>(new Set());
 
     /**
-     * PUSHED — the shared `presence.chat` channel, held open by the
+     * PUSHED -- the shared `presence.chat` channel, held open by the
      * topbar for the whole session. {@link presencePolled} is the fallback for a
      * client whose socket is down.
      */
@@ -266,7 +266,7 @@ export class MessagesQuickPanelComponent implements OnInit {
     /** Fallback re-poll cadence, used only while push is unavailable. */
     private readonly PRESENCE_POLL_MS = 20_000;
 
-    /** Fallback list-refresh cadence — used ONLY while realtime is down. */
+    /** Fallback list-refresh cadence -- used ONLY while realtime is down. */
     private readonly LIST_POLL_MS = 20_000;
 
     readonly usersApiUrl = computed<string>(() => {
@@ -279,7 +279,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         this.conversations().find(c => c.id === this.openId()) ?? null,
     );
 
-    /** My participant id within the open conversation — marks "my" messages. */
+    /** My participant id within the open conversation -- marks "my" messages. */
     private readonly myParticipantId = computed<string | null>(() => {
         const me = this.meId;
         return this.selectedConv()?.participants?.find(p => p.userId === me)?.participantId ?? null;
@@ -294,7 +294,7 @@ export class MessagesQuickPanelComponent implements OnInit {
     }
 
     constructor() {
-        // Online presence poll — re-poll while the drawer is open, and
+        // Online presence poll -- re-poll while the drawer is open, and
         // NOT while the tab is hidden: each tick costs the server one
         // Centrifugo round trip per counterpart, for dots nobody is looking at.
         merge(
@@ -319,11 +319,11 @@ export class MessagesQuickPanelComponent implements OnInit {
         //  The LIST kept whatever `ngOnInit` fetched, for as long as the drawer
         // stayed open. It had neither of the two paths the full page has
         // had/, so a conversation could go on receiving messages
-        // with the panel showing a stale preview and a stale unread badge — and a
+        // with the panel showing a stale preview and a stale unread badge -- and a
         // drawer left open all day never noticed. Both paths now:
         //  - my `chat.user.{uid}` channel, debounced, for the live case;
         //  - a poll ONLY while the socket is down, which is what polling is for
-        // — the list read is unpaged, so a connected client must not
+        // -- the list read is unpaged, so a connected client must not
         //    re-fetch the whole inbox on a timer.
         const me = this.meId;
         merge(
@@ -334,8 +334,8 @@ export class MessagesQuickPanelComponent implements OnInit {
             .subscribe(() => this.refreshList());
 
         // Realtime (re)connect catch-up (mirroring the page): when the
-        // transport comes up — first connect, or a reconnect after the outage the
-        // poll above covered — pull the open thread's missed messages once and
+        // transport comes up -- first connect, or a reconnect after the outage the
+        // poll above covered -- pull the open thread's missed messages once and
         // re-read the list, so a gap can't linger until the next nudge.
         toObservable(this.live.isConnected)
             .pipe(distinctUntilChanged(), filter(connected => connected), takeUntilDestroyed(this.destroyRef))
@@ -356,20 +356,20 @@ export class MessagesQuickPanelComponent implements OnInit {
         return conversationLabel(c, this.meId);
     }
 
-    /** Unread count for a row — the server's number, else derived. */
+    /** Unread count for a row -- the server's number, else derived. */
     unreadCount(c: ChatConversationDto): number {
         // Shared with the page, including the in-flight override.
         return unreadFor(c, this.meId, this.readSeqOverride()[c.id] ?? 0);
     }
 
-    /** Avatar for a row — counterpart's photo if any, else colored initials. */
+    /** Avatar for a row -- counterpart's photo if any, else colored initials. */
     rowAvatar(c: ChatConversationDto | null): ChatAvatarUser {
         const me = this.meId;
         const other = (c?.participants ?? []).find(p => p.userId && p.userId !== me);
         return avatarUserFor(other?.displayName ?? null, other?.userId ?? c?.id ?? null, other?.avatarUrl);
     }
 
-    /** Counterpart's presence dot — connection-online ([]) with away/busy overlaid. */
+    /** Counterpart's presence dot -- connection-online ([]) with away/busy overlaid. */
     rowStatus(c: ChatConversationDto | null): string | null {
         const me = this.meId;
         const other = (c?.participants ?? []).find(p => p.userId && p.userId !== me);
@@ -389,7 +389,7 @@ export class MessagesQuickPanelComponent implements OnInit {
 
     /**
      * FALLBACK poll of `/chat/presence` for the rows' counterparts; keep the last
-     * set on error. A no-op while the pushed channel is live — the poll
+     * set on error. A no-op while the pushed channel is live -- the poll
      * is the no-realtime path, never a parallel one.
      */
     private refreshPresence(): void {
@@ -436,7 +436,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         });
     }
 
-    /** Open a thread INLINE in the drawer — load + mark read + subscribe live. */
+    /** Open a thread INLINE in the drawer -- load + mark read + subscribe live. */
     open(conversationId: string): void {
         this.openId.set(conversationId);
         this.threadMessages.set([]);
@@ -444,7 +444,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         this.lastSeq = 0;
         this.hasMoreOlder.set(false);
         this.loadingOlder.set(false);
-        // Marking read happens once the messages ARRIVE (see applyMessages) —
+        // Marking read happens once the messages ARRIVE (see applyMessages) --
         // not here. At this point `lastSeq` is 0 and the only seq
         // available is the conversation row's, which is the SERVER's high-water:
         // claiming it would mark messages this panel has not fetched, and tell
@@ -531,7 +531,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         });
     }
 
-    /** Scroll-up lazy load — prepend the previous page, preserving the anchor. */
+    /** Scroll-up lazy load -- prepend the previous page, preserving the anchor. */
     onThreadScroll(): void {
         const el = this.threadScroll()?.nativeElement;
         if (!el || el.scrollTop > 40) {
@@ -568,7 +568,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         });
     }
 
-    /** A realtime nudge arrived — pull anything past our local high-water. */
+    /** A realtime nudge arrived -- pull anything past our local high-water. */
     private onNudge(nudge: ChatRoomNudge): void {
         const id = this.openId();
         if (id === null || nudge.conversationId !== id || nudge.type !== 'message.posted' || nudge.seq <= this.lastSeq) {
@@ -594,7 +594,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         this.threadMessages.set(merged);
 
         // The thread is open and on screen, so what just arrived counts as read
-        // — and now there IS a client-side seq to claim. Mirrors the full
+        // -- and now there IS a client-side seq to claim. Mirrors the full
         // page, which the panel had no equivalent of: opening a thread here used
         // to mark read up to the SERVER's `lastSeq` and nothing ever corrected it.
         const id = this.openId();
@@ -618,7 +618,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         }
         //  The optimistic cursor goes in the OVERRIDE map, which is what the
         // badge consults. This used to edit the participant roster
-        // instead — somewhere `unreadFor` never looks once the server sends
+        // instead -- somewhere `unreadFor` never looks once the server sends
         // `viewerUnread`, so the clear was invisible and the badge waited for the
         // next list refresh.
         this.readSeqOverride.update(m => advanceReadOverride(m, conv.id, upTo));
@@ -647,7 +647,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         this.loading.set(true);
         // Same window rule as the background refresh: on first open there
         // is nothing loaded and this is one page, but `back()` also comes through
-        // here — and stepping out of a thread should not collapse the pages the
+        // here -- and stepping out of a thread should not collapse the pages the
         // user had loaded before stepping in.
         const want = refreshWindow(this.CONV_PAGE, this.conversations().length);
         this.api.listConversations(want).subscribe({
@@ -660,7 +660,7 @@ export class MessagesQuickPanelComponent implements OnInit {
         });
     }
 
-    /** Append the next page of rows — the rules live in `inbox-paging.util`. */
+    /** Append the next page of rows -- the rules live in `inbox-paging.util`. */
     loadMore(): void {
         if (this.loadingMore() || !this.hasMore()) {
             return;
@@ -688,21 +688,21 @@ export class MessagesQuickPanelComponent implements OnInit {
     }
 
     /**
-     * Background list refresh — same read as {@link load}, but it never
+     * Background list refresh -- same read as {@link load}, but it never
      * raises the spinner and never surfaces an error: a failed background poll
      * should leave the rows you are reading alone, not replace them with a
      * message about it. The open thread is unaffected (it is keyed by `openId`,
      * not by an object identity in this list).
      */
     private refreshList(): void {
-        // Re-read as many rows as are ON SCREEN, not one page — a
+        // Re-read as many rows as are ON SCREEN, not one page -- a
         // background refresh that dropped back to the first page would erase
         // every "Load more" the user had clicked, while they were reading.
         const want = refreshWindow(this.CONV_PAGE, this.conversations().length);
         this.api.listConversations(want).subscribe({
             next: list => {
                 this.applyInboxPage(firstInboxPage(list, want));
-                // Presence follows the SAME visibility gate as its own poll —
+                // Presence follows the SAME visibility gate as its own poll --
                 // otherwise the fallback list refresh (which runs while the socket
                 // is down, hidden tab or not) would quietly put the per-counterpart
                 // Centrifugo round trips back on a tab nobody is looking at.

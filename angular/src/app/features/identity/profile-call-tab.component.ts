@@ -22,7 +22,7 @@ import { WebPhoneService } from '../call/web-phone.service';
  * `CallOverlayPreferencesService` so the live overlay reacts immediately.
  *
  * A checkbox + a gated numeric field don't warrant the DynamicForm
- * pipeline, so — like the Calendar tab — this is a dedicated component
+ * pipeline, so -- like the Calendar tab -- this is a dedicated component
  * behind the `call:user_settings` sentinel formId.
  */
 @Component({
@@ -133,7 +133,7 @@ export class ProfileCallTabComponent implements OnInit {
      * The softphone's LIVE registration state. Read, never
      * driven: the shell boots the service from the screen-pop overlay, so this
      * panel only reports what is actually true. It replaced a hardcoded "coming
-     * soon" notice that outlived the feature it described — the softphone had
+     * soon" notice that outlived the feature it described -- the softphone had
      * shipped, and the card went on saying it hadn't.
      */
     protected readonly webphone = inject(WebPhoneService);
@@ -162,7 +162,7 @@ export class ProfileCallTabComponent implements OnInit {
     }
 
     save(): void {
-        // Clamp defensively — the backend + prefs service also validate.
+        // Clamp defensively -- the backend + prefs service also validate.
         const seconds = Number.isFinite(this.autoDismissSeconds)
             ? Math.min(600, Math.max(0, Math.floor(this.autoDismissSeconds)))
             : 8;

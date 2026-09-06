@@ -163,7 +163,7 @@ export class CreatePageDialogComponent {
      * `''` means "send nothing", which is NOT the same as picking `page`:
      * empty lets the enclosing content collection stamp its own type (a page
      * created inside a blog collection becomes a `blog_post`), while an
-     * explicit choice OVERRIDES that. Two values, two meanings — hence the
+     * explicit choice OVERRIDES that. Two values, two meanings -- hence the
      * "Default" option rather than folding it into the list.
      */
     contentType = '';
@@ -240,7 +240,7 @@ export class CreatePageDialogComponent {
         // The site's own set, which narrows the list above once it arrives. A
         // failure leaves the manifest list in place rather than blocking
         // creation on a config read.
-        // ⚠️ ASK FOR THE DESTINATION SITE'S LOCALES, NOT THE HEADER'S. This
+        // !! ASK FOR THE DESTINATION SITE'S LOCALES, NOT THE HEADER'S. This
         // option source resolves from `_coolms_section`, which the section
         // interceptor stamps from the site picker -- while the page itself is
         // created into `space`, which OVERRIDES that section on the backend
@@ -281,7 +281,7 @@ export class CreatePageDialogComponent {
                 error: () => { /* keep the manifest list */ },
             });
 
-        // — the kinds this installation offers. Failure leaves the list
+        // -- the kinds this installation offers. Failure leaves the list
         // empty, which degrades to the "Default" option alone rather than
         // blocking page creation on a config read.
         this.pageSvc.listPageTypes()
@@ -309,7 +309,7 @@ export class CreatePageDialogComponent {
             vfsPath: this.vfsPath.trim() || undefined,
             locale: this.locale || undefined,
             contentType: this.contentType || undefined,
-            // Landing pages render blocks, not a body — never seed Markdown there.
+            // Landing pages render blocks, not a body -- never seed Markdown there.
             markdown: this.contentType !== 'landing' && this.markdown.trim()
                 ? this.markdown
                 : undefined,

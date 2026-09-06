@@ -52,7 +52,7 @@ interface EditorRow {
  * The layout shell renders cms-page-header (icon, title, header
  * actions) + cms-page-footer; this slot owns the toolbar +
  * editor table. Title is set dynamically via `PageTitleService`
- * once the catalogue is fetched (e.g. "messages · en") so the
+ * once the catalogue is fetched (e.g. "messages - en") so the
  * header shows the live catalogue id instead of the YAML fallback.
  *
  * **Toolbar** -- bound to `navi.toolbar.i18n.translation-detail`.

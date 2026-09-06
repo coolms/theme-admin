@@ -16,25 +16,25 @@ import { AppConfigState } from '@coolms/core-angular';
 import { CmsListPageComponent, DataGridComponent, type DataGridData } from '@coolms/ui-angular';
 
 /**
- * MCP tool-governance audit — the operator-facing view over
+ * MCP tool-governance audit -- the operator-facing view over
  * `GET /api/mcp/tools` (`McpToolCatalogController`, ROLE_ADMIN). It lists
  * every tool an external AI agent can call through the governed JSON-RPC
  * endpoint (`POST /api/mcp/rpc`) and, crucially, the AUTHORIZATION GATE on
- * each one — so an admin can see at a glance which tools are public
+ * each one -- so an admin can see at a glance which tools are public
  * (authenticated-only), which require an elevated role, and which resolve
  * per-user permissions at call time.
  *
  * Read-only. The gate is defined in code (the tool's `requiredRole()` +
  * runtime governance shape); this screen is the single auditable inventory
- * mandates ("tools stay centralized in src/Mcp … auditable in one
- * place"). Lives under /admin/--system next to the Centrifugo dashboard —
+ * mandates ("tools stay centralized in src/Mcp ... auditable in one
+ * place"). Lives under /admin/--system next to the Centrifugo dashboard --
  * both are platform-plumbing operator surfaces.
  *
  * **Platform list shell**: `<cms-list-page>` +
  * `<coolms-datagrid gridId="mcp:tools">` + the `navi.toolbar.mcp.tools`
  * toolbar tree. It previously hand-rolled a `<table>` inside a bespoke card,
  * which cost it sorting, filtering, the column chooser, selection and the
- * context menu — and produced a **duplicate Refresh button**, because the card
+ * context menu -- and produced a **duplicate Refresh button**, because the card
  * header re-added a control the page header already had. Descriptions are a
  * `snippet` column so a multi-sentence governance note renders across several
  * lines instead of being truncated to one.
@@ -75,7 +75,7 @@ export class McpToolsPageComponent implements OnInit {
     );
 
     /**
-     * `id` is the tool NAME — datagrid selection is keyed on `row['id']`, and
+     * `id` is the tool NAME -- datagrid selection is keyed on `row['id']`, and
      * tool names are unique within the registry.
      *
      * `access` is projected to the DISPLAY label rather than the raw
