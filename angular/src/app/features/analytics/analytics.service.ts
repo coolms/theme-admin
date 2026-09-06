@@ -7,7 +7,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { HydraCollection } from '../../api/api.service';
 
 /**
- * W8 — one "top page" row.
+ * One "top page" row.
  *
  * Mirrors the backend `PageView` read serialization group (`pageview:read`):
  * a normalized request `path` plus its aggregate view `count`. The backend
@@ -20,7 +20,7 @@ export interface TopPageDto {
 }
 
 /**
- * W3.3.c — one search-analytics row.
+ * One search-analytics row.
  *
  * Mirrors the backend `SearchQueryStat` read group (`search_stat:read`): a
  * normalized search `term` plus its aggregate `searches` count over the window.
@@ -48,7 +48,7 @@ export interface EventSummaryDto {
 }
 
 /**
- * W8 — the analytics dashboard admin API client.
+ * The analytics dashboard admin API client.
  *
  * Talks to two privacy-first ledgers off the generic `manifest.apiBase` (so no
  * module-specific manifest entry is needed):
@@ -57,7 +57,7 @@ export interface EventSummaryDto {
  *    zero-result-queries}?days=&limit=`, ).
  *
  * Feature-local (not on the shared ApiService) — the analytics surface is small
- * and self-contained. Mirrors the W7.d ModerationService / W8.c LeadsService.
+ * and self-contained. Mirrors the ModerationService / LeadsService.
  */
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {

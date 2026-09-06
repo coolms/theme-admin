@@ -1488,7 +1488,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Run a full-text search across the selected mailbox (,). */
+    /** Run a full-text search across the selected mailbox. */
     runSearch(): void {
         const q = this.searchQuery.trim();
         const mailboxId = this.selectedMailboxId();

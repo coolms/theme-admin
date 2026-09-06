@@ -26,7 +26,7 @@ import { ModerationService, PendingCommentDto } from './moderation.service';
 const PAGE_SIZE = 50;
 
 /**
- * W7.d — Comment moderation admin page (/admin/moderation).
+ * Comment moderation admin page (/admin/moderation).
  *
  * The queue of comments awaiting a decision, surfaced as a `<coolms-datagrid>` (config from
  * the `comment:moderation` YAML, data fed as `externalData`) for visual
@@ -47,7 +47,7 @@ const PAGE_SIZE = 50;
  * The Comment backend exposes only approve/reject — there is no spam transition
  * — so those are the only two actions.
  *
- * Complementary to the W7.c Inbox dogfood: the same `CommentService` backs both
+ * Complementary to the Inbox dogfood: the same `CommentService` backs both
  * this direct queue and the `comment.moderation` workflow tasks.
  */
 @Component({

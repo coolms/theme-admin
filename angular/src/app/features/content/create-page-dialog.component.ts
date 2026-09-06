@@ -158,7 +158,7 @@ export class CreatePageDialogComponent {
     title   = '';
     vfsPath = '';
     /**
-     * Page-level content type (W5.f,).
+     * Page-level content type.
      *
      * `''` means "send nothing", which is NOT the same as picking `page`:
      * empty lets the enclosing content collection stamp its own type (a page

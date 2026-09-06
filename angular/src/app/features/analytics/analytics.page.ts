@@ -26,7 +26,7 @@ import { AnalyticsService, EventSummaryDto, SearchQueryStatDto, TopPageDto } fro
 const ROW_LIMIT = 20;
 
 /**
- * W8 — Analytics dashboard admin page (/admin/analytics).
+ * Analytics dashboard admin page (/admin/analytics).
  *
  * One read-only privacy-first dashboard over a shared day-window (7 / 30 / 90
  * days), surfacing four consent-gated aggregate ledgers via
@@ -47,7 +47,7 @@ const ROW_LIMIT = 20;
  * search module) leaves the others working, with the failed section showing a
  * "couldn't load" note rather than blanking the page.
  *
- * Mirrors the W7.d moderation page and W8.c lead inbox (the day-range selector
+ * Mirrors the moderation page and lead inbox (the day-range selector
  * stands in for their status tabs).
  */
 @Component({

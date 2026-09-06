@@ -227,7 +227,7 @@ export class PageService {
          */
         locale?: string;
         /**
-         * Optional page-level content type (W5.f). `'landing'` mints the page
+         * Optional page-level content type. `'landing'` mints the page
          * with `extras.contentType=landing` so the block editor lights up
          * immediately; omitted/empty creates a plain page. Backend restricts
          * this to a known allow-list (422 otherwise).
@@ -411,7 +411,7 @@ export class PageService {
     }
 
     /**
-     * Editorial review actions (W6.a) on a variant Node, keyed by its UUID:
+     * Editorial review actions on a variant Node, keyed by its UUID:
      * `submit-for-review` (author), `approve` / `request-changes` (reviewer).
      * The endpoints sit alongside `/publish` under the same
      * `content/variants/{id}/…` namespace, so we derive them from the
@@ -431,8 +431,8 @@ export class PageService {
     }
 
     /**
-     * Sets (or clears) the scheduled publish/unpublish for a variant Node
-     * (W6.d), keyed by its UUID. `publishAt` / `unpublishAt` are full ISO-8601
+     * Sets (or clears) the scheduled publish/unpublish for a variant Node,
+     * keyed by its UUID. `publishAt` / `unpublishAt` are full ISO-8601
      * strings (with offset) or `null` to cancel that action. The endpoint sits
      * alongside `/publish`, so we derive it from `variantPublishUrl`. Returns
      * the persisted schedule snapshot.
@@ -590,11 +590,11 @@ export class PageService {
             template:  node.template ?? (extras['template'] as string | undefined),
             createdAt: node.createdAt,
             updatedAt: node.updatedAt,
-            // W6.c: review audit, surfaced to the author on changes_requested.
+            // Review audit, surfaced to the author on changes_requested.
             reviewNote: extras['reviewNote'] as string | undefined,
             reviewedBy: extras['reviewedBy'] as string | undefined,
             reviewedAt: extras['reviewedAt'] as string | undefined,
-            // W6.d: pending scheduled publish/unpublish times.
+            // Pending scheduled publish/unpublish times.
             publishAt:   extras['publishAt']   as string | undefined,
             unpublishAt: extras['unpublishAt'] as string | undefined,
         };

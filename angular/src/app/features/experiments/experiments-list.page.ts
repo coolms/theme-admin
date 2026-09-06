@@ -20,9 +20,9 @@ import { ExperimentDto, ExperimentResult, ExperimentsService } from './experimen
 import { ExperimentFormDialogComponent } from './experiment-form-dialog.component';
 
 /**
- * W8 — Experiments admin page (/admin/experiments, ).
+ * Experiments admin page (/admin/experiments).
  *
- * The read/control surface over the W8 A/B experiment store. Each experiment is
+ * The read/control surface over the A/B experiment store. Each experiment is
  * a card: its status, exposure + conversion totals, and a per-variant
  * **conversion-rate** bar (conversions ÷ exposures — the outcome that actually
  * decides a winner, not the exposure share which mostly mirrors the weights).

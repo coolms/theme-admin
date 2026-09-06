@@ -31,7 +31,7 @@ export interface ExperimentResult {
 }
 
 /**
- * W8 — one A/B experiment with its live results.
+ * One A/B experiment with its live results.
  *
  * Mirrors the backend `Experiment` read group (`experiment:read`): the static
  * `variants` config plus the derived `results` (per-arm exposure counts) and
@@ -71,13 +71,13 @@ export interface UpdateExperimentInput {
 }
 
 /**
- * W8 — the experiment admin API client.
+ * The experiment admin API client.
  *
- * Talks to the W8 experiment endpoints (`GET/POST /experiments`,
+ * Talks to the experiment endpoints (`GET/POST /experiments`,
  * `POST /experiments/status`) off the generic `manifest.apiBase`, so no
  * module-specific manifest entry is needed. Feature-local (not on the shared
  * ApiService) — the experiment surface is small and self-contained. Mirrors the
- * W8 AnalyticsService / NewsletterService. The public `/experiments/exposure`
+ * AnalyticsService / NewsletterService. The public `/experiments/exposure`
  * beacon is fired by the theme assigner, never from the admin UI, so it is not
  * exposed here.
  */

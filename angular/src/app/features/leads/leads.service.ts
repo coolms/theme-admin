@@ -13,7 +13,7 @@ export type LeadStatus = 'new' | 'handled' | 'spam';
 export type LeadChannel = 'web_form' | 'dynamic_chat' | 'email' | 'phone';
 
 /**
- * W8.c — one captured lead.
+ * One captured lead.
  *
  * Mirrors the backend `Lead` read serialization group (`lead:read`): the
  * `website` honeypot is write-only and never arrives here. `source` is the
@@ -43,13 +43,13 @@ export interface LeadDto {
 }
 
 /**
- * W8.c — the lead-inbox admin API client.
+ * The lead-inbox admin API client.
  *
- * Talks to the W8.a endpoints (`GET /leads?status=`,
+ * Talks to the lead endpoints (`GET /leads?status=`,
  * `POST /leads/{id}/handle|spam|reopen`) off the generic `manifest.apiBase`,
  * so no module-specific manifest entry is needed. Feature-local (not on the
  * shared ApiService) — the lead surface is small and self-contained. Mirrors
- * the W7.d ModerationService.
+ * the ModerationService.
  */
 @Injectable({ providedIn: 'root' })
 export class LeadsService {

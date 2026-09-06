@@ -40,7 +40,7 @@ interface StatusTab {
 }
 
 /**
- * W8 — Newsletter admin page (/admin/newsletter).
+ * Newsletter admin page (/admin/newsletter).
  *
  * Subscribers list for a status bucket (Confirmed default, Pending,
  * Unsubscribed), rendered as a `<coolms-datagrid>` (config from the

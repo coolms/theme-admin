@@ -36,7 +36,7 @@ const TREE_CODE = 'categories';
 
 /**
  * Admin page for the `categories` taxonomy tree (the picker source for the blog
- * `categoryIds` field + search faceting — W1.b).
+ * `categoryIds` field + search faceting).
  *
  * Re-skinned onto the platform convention: a `<cms-list-page>` shell +
  * a backend-config-driven `<coolms-datagrid>` in **tree mode** + `.cms-dialog`

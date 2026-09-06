@@ -10,7 +10,7 @@ import { HydraCollection } from '../../api/api.service';
 export type SubscriptionStatus = 'pending' | 'confirmed' | 'unsubscribed';
 
 /**
- * W8 — one newsletter subscriber.
+ * One newsletter subscriber.
  *
  * Mirrors the backend `Subscriber` read group (`subscriber:read`): the
  * capability `token` and the `website` honeypot are never serialized here.
@@ -26,7 +26,7 @@ export interface SubscriberDto {
     readonly confirmedAt: string | null;
 }
 
-/** W8 — the recorded result of a campaign broadcast (`campaign:read`). */
+/** The recorded result of a campaign broadcast (`campaign:read`). */
 export interface CampaignDto {
     readonly id:             string;
     readonly subject:        string;
@@ -54,13 +54,13 @@ export interface NewsletterSiteDto {
 }
 
 /**
- * W8 — the newsletter admin API client.
+ * The newsletter admin API client.
  *
- * Talks to the W8 endpoints (`GET /newsletter/subscribers?status=`,
+ * Talks to the newsletter endpoints (`GET /newsletter/subscribers?status=`,
  * `POST /newsletter/campaigns`) off the generic `manifest.apiBase`, so no
  * module-specific manifest entry is needed. Feature-local (not on the shared
  * ApiService) — the newsletter surface is small and self-contained. Mirrors the
- * W8.c LeadsService.
+ * LeadsService.
  */
 @Injectable({ providedIn: 'root' })
 export class NewsletterService {

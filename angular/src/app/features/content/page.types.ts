@@ -99,8 +99,8 @@ export interface PageDto {
     hasChildren?: boolean;
     ancestorIds?: string[];
     /**
-     * Whether the enclosing content collection requires editorial review
-     * (W6.c). Populated by the backend only on single-page reads (`?id=` /
+     * Whether the enclosing content collection requires editorial review.
+     * Populated by the backend only on single-page reads (`?id=` /
      * `?path=`); drives whether the editor shows "Submit for review".
      * `undefined`/`false` -> publish directly (no review flow).
      */
@@ -156,7 +156,7 @@ export interface PageVariantDto {
     createdAt?: string;
     updatedAt?: string;
     /**
-     * Editorial review audit (W6.a/W6.c), read from the variant Node's extras.
+     * Editorial review audit, read from the variant Node's extras.
      * `reviewNote` is the reviewer's feedback shown to the author when the
      * variant is bounced back (`status === 'changes_requested'`); `reviewedAt`
      * timestamps it. (`reviewedBy` is a user UUID today — name resolution is a
@@ -166,7 +166,7 @@ export interface PageVariantDto {
     reviewedBy?: string;
     reviewedAt?: string;
     /**
-     * Scheduled publish/unpublish times (W6.d), read from the variant Node's
+     * Scheduled publish/unpublish times, read from the variant Node's
      * extras. ISO-8601 strings (or absent when nothing is scheduled). Set via
      * `PageService.scheduleVariant`; the Scheduler clears the matching marker
      * once it fires.
@@ -175,7 +175,7 @@ export interface PageVariantDto {
     unpublishAt?: string;
     /**
      * The variant Node's raw `extras` map. Surfaced so the page editor can read
-     * arbitrary declared SEO-group field values per locale (W1.d.2 dynamic-SEO
+     * arbitrary declared SEO-group field values per locale (the dynamic-SEO
      * consolidation), instead of only the flattened metaTitle/metaDesc. The
      * dedicated metaTitle/metaDesc/ogImage fields above remain for existing
      * readers; this is the generic source for the declaration-driven Meta panel.

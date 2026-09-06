@@ -11,7 +11,7 @@ import {
 } from './file-history.types';
 
 /**
- * Data layer for the VFS file-history UI ( W6.3): log, single-revision
+ * Data layer for the VFS file-history UI: log, single-revision
  * body, any-two (or vs-current) diff, restore-forward, and line-level blame.
  *
  * The endpoints are generic over any VFS file Node and path-addressed, so the

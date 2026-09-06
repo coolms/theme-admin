@@ -34,9 +34,9 @@ interface StatusTab {
 const PAGE_SIZE = 50;
 
 /**
- * W8.c — Lead inbox admin page (/admin/leads).
+ * Lead inbox admin page (/admin/leads).
  *
- * The visitor-facing W8.b contact form POSTs to the W8.a backend; this is
+ * The visitor-facing contact form POSTs to the backend; this is
  * where an admin triages what comes in. Three buckets (New / Handled / Spam)
  * via {@link LeadsService}, each server-filtered, sorted and paged.
  *

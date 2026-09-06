@@ -23,7 +23,7 @@ import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 type HistoryTab = 'revisions' | 'diff' | 'blame';
 
 /**
- * File-history panel ( W6.3) for the content/page editor: lists a VFS
+ * File-history panel for the content/page editor: lists a VFS
  * file's revision timeline, previews a revision's body, diffs any two points
  * (or a revision vs. the live content), shows per-line blame, and restores a
  * past version forward (non-destructive, behind a confirm + write gate).

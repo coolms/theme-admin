@@ -7,7 +7,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { HydraCollection } from '../../api/api.service';
 
 /**
- * W7.d — one pending comment awaiting moderation.
+ * One pending comment awaiting moderation.
  *
  * Mirrors the backend `Comment` read serialization group (`comment:read`):
  * the author email + honeypot are write-only and never arrive here.
@@ -23,9 +23,9 @@ export interface PendingCommentDto {
 }
 
 /**
- * W7.d — the comment-moderation queue admin API client.
+ * The comment-moderation queue admin API client.
  *
- * Talks to the W7.a endpoints (`GET /moderation/comments`,
+ * Talks to the comment endpoints (`GET /moderation/comments`,
  * `POST /comments/{id}/approve|reject`) off the generic `manifest.apiBase`,
  * so no module-specific manifest entry is needed. Feature-local (not on the
  * shared ApiService) — the moderation surface is small and self-contained.

@@ -88,16 +88,16 @@ export const routes: Routes = [
                     import('./features/cockpit/cockpit.routes').then(m => m.COCKPIT_ROUTES),
                 data: { activeNav: '/cockpit' },
             },
-            // W7.d — Comment moderation: the pending-comment queue
-            // (approve / reject), backed by the W7.a CommentService.
+            // Comment moderation: the pending-comment queue
+            // (approve / reject), backed by the CommentService.
             {
                 path: 'moderation',
                 loadChildren: () =>
                     import('./features/moderation/moderation.routes').then(m => m.MODERATION_ROUTES),
                 data: { activeNav: '/moderation' },
             },
-            // W8.c — Lead inbox: the lead triage queue (New / Handled / Spam),
-            // backed by the W8.a LeadsService. Sibling of the moderation queue.
+            // Lead inbox: the lead triage queue (New / Handled / Spam),
+            // backed by the LeadsService. Sibling of the moderation queue.
             {
                 path: 'leads',
                 loadChildren: () =>
@@ -145,7 +145,7 @@ export const routes: Routes = [
                     import('./features/email/email.routes').then(m => m.EMAIL_ROUTES),
                 data: { activeNav: '/email', fullHeight: true },
             },
-            // W8 — Newsletter: confirmed-subscriber list + campaign compose,
+            // Newsletter: confirmed-subscriber list + campaign compose,
             // backed by the NewsletterService. Sibling of the leads queue.
             {
                 path: 'newsletter',
@@ -153,7 +153,7 @@ export const routes: Routes = [
                     import('./features/newsletter/newsletter.routes').then(m => m.NEWSLETTER_ROUTES),
                 data: { activeNav: '/newsletter' },
             },
-            // W8 — Analytics dashboard: the "Top pages" leaderboard over the
+            // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {
                 path: 'analytics',
@@ -171,7 +171,7 @@ export const routes: Routes = [
                     import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
                 data: { activeNav: '/cdp' },
             },
-            // W8 — Experiments: the A/B experiment list + per-variant results
+            // Experiments: the A/B experiment list + per-variant results
             // surface with Start/Stop controls, backed by
             // ExperimentsService. Sibling of the analytics dashboard.
             {
