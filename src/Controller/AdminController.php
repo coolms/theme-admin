@@ -103,7 +103,7 @@ final class AdminController
         // __DIR__ = .../src/Controller  ->  dirname(2) = package root.
         $this->buildDir = $buildDir ?? dirname(__DIR__, 2) . '/public/browser';
 
-        // ⚠️ The vendored document fonts are NOT in the build. They are 7.68 MB
+        // !! The vendored document fonts are NOT in the build. They are 7.68 MB
         // that never change, and putting them in the admin artefact would mean
         // rewriting them on every release beside 121 rehashed bundles. They ship
         // once, in coolms/document-engine, and are served from there.

@@ -9,7 +9,7 @@ use CoolMS\Core\Theme\ThemeProviderInterface;
 /**
  * Registers coolms-admin as a known theme.
  *
- * This is an SPA theme — no DTMPL templates.
+ * This is an SPA theme -- no DTMPL templates.
  * Assets are produced by `ng build` into packages/theme-admin/public/
  * and copied to public/themes/coolms-admin/ by `coolms:theme:install coolms-admin`.
  */
