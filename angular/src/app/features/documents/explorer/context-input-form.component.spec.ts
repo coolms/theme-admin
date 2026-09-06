@@ -51,7 +51,7 @@ describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
             {
                 path:       '@identity_user',
                 label:      null,
-                entityType: 'App\\Identity\\Domain\\Entity\\User',
+                entityType: 'Acme\\Entity\\User',
                 collection: false,
                 fields:     null,
             },
