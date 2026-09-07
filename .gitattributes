@@ -1,16 +1,30 @@
 # What a PHP consumer of `coolms/theme-admin` receives.
 #
-# Composer serves a git archive, so anything tracked and not excluded here
-# is downloaded by every application that installs this package. The Angular
-# sources are 502 of the 516 tracked files and 13.25 of the 13.70 MB, and a
-# PHP application can do nothing with them: building the admin needs Node, an
+# Composer serves a git archive, so anything tracked and not excluded here is
+# downloaded by every application that installs this package. The Angular
+# sources are 480 of the 1146 tracked files and 5.60 of the 26.67 MB, and a PHP
+# application can do nothing with them: building the admin needs Node, an
 # Angular toolchain and roughly 837 MB of node_modules. They belong in the
 # repository and not in the package.
 #
-# ⚠️ `export-ignore` affects the ARCHIVE ONLY. Everything below stays in git,
+# !! THE FIGURES ABOVE WERE RE-MEASURED 2026-09-07 and they had drifted. The
+# previous ones -- 502 of 516 files, 13.25 of 13.70 MB -- were true when written
+# and stopped being true when 2.0.0-alpha4 put the built admin in the package.
+# The tree roughly doubled and `angular/` stopped being the bulk of it, so the
+# sentence justifying this exclusion was arguing from numbers that no longer
+# reproduced.
+#
+# !! `export-ignore` affects the ARCHIVE ONLY. Everything below stays in git,
 # stays in CI, and stays in a clone. Nothing is being deleted.
+#
+# !! `tests/` IS KEPT, and the exception that used to exclude it is withdrawn.
+# The argument for it was that percentages of a 21 MB archive are real
+# megabytes. Measured, the whole of `tests/` is one 3,581-byte file, and adding
+# it to the archive changes the file count from 661 to 662 and the byte count
+# not at all -- it fits inside tar's existing block padding. Zero bytes is not
+# a percentage worth an exception, so the estate rule stands here too: tests
+# ship, because someone debugging an integration reads them.
 angular/          export-ignore
-tests/            export-ignore
 phpunit.xml.dist  export-ignore
 .github/          export-ignore
 package-lock.json export-ignore
