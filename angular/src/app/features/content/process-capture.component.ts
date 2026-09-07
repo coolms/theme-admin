@@ -138,7 +138,7 @@ interface CatalogResponse {
         .pcap__canvas--empty { display: none; }
         .pcap__actions { display: flex; gap: 8px; }
         .pcap__error { color: var(--cms-danger-text); font-size: .85rem; margin: 0; }
-        .pcap__stale { color: var(--cms-warning-text, #8a6100); font-size: .85rem; margin: 0; }
+        .pcap__stale { color: var(--cms-warning-text, #92400e); font-size: .85rem; margin: 0; }
         .pcap__ok { color: var(--cms-text-secondary); font-size: .85rem; margin: 0; }
         .pcap__dim { color: var(--cms-text-muted); }
     `],

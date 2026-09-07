@@ -116,10 +116,10 @@ interface AvailableSitesResponse {
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
         app-explorer-accordion { flex: 1; min-height: 0; overflow-y: auto; }
-        .cms-add-space { border-top: 1px solid var(--cms-border, #dee2e6); padding: 0.5rem; flex: 0 0 auto; }
+        .cms-add-space { border-top: 1px solid var(--cms-border, #e5e7eb); padding: 0.5rem; flex: 0 0 auto; }
         .cms-add-space__toggle { text-decoration: none; }
         .cms-add-space__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
-        .cms-add-space__error { color: var(--cms-danger-text, #b02a37); }
+        .cms-add-space__error { color: var(--cms-danger-text, #991b1b); }
     `],
 })
 export class DocumentSpaceAccordionComponent implements OnInit {
