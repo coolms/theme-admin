@@ -5,6 +5,21 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
+## Unreleased
+
+### Added
+
+**`tests/` is in the package again.** It was excluded on the grounds that
+percentages of a 21 MB archive are real megabytes. Re-measured: the whole of
+`tests/` is one 3,581-byte file, and adding it moves the archive from 661 files
+to 662 and the byte count not at all -- it fits inside tar's existing block
+padding. The exception cost a reader their tests and saved nothing, so it is
+withdrawn and this package follows the same rule as the rest: tests ship.
+
+The figures in `.gitattributes` justifying the remaining exclusions were also
+re-measured. They had drifted when 2.0.0-alpha4 put the built admin in the
+package -- the tree roughly doubled and `angular/` stopped being the bulk of it.
+
 ## 2.0.0-alpha4 - 2026-09-04
 
 ### Added
