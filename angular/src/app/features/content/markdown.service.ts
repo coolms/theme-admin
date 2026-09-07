@@ -6,13 +6,13 @@ import { AppConfigState } from '@coolms/core-angular';
 /**
  * Data layer for the Markdown import/export round-trip.
  *
- *  - `toHtml`        -> `POST /content/markdown/to-html` — converts pasted/imported
+ *  - `toHtml`        -> `POST /content/markdown/to-html` -- converts pasted/imported
  *                      Markdown to editor HTML through the SAME server-side
  *                      hardened converter the create-from-Markdown path uses
  *                      (raw HTML + unsafe links stripped at the source). The FE
  *                      deliberately runs no client-side Markdown parser, so the
  *                      one security boundary lives on the server.
- *  - `exportPage`    -> `GET /content/pages/export` — reads a page variant's HTML
+ *  - `exportPage`    -> `GET /content/pages/export` -- reads a page variant's HTML
  *                      body and returns it as Markdown plus a suggested filename.
  *  - `downloadMarkdown` -> client-side Blob download (the admin is a Bearer SPA,
  *                      so the auth'd JSON is fetched first, then turned into a

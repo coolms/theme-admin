@@ -2,7 +2,7 @@ import { advanceReadOverride, mayMarkRead, ReadOverrides } from './mark-read.uti
 import { ChatConversationDto } from './messages.types';
 
 /**
- * Mark-read rules — shared after the page and the quick panel were found
+ * Mark-read rules -- shared after the page and the quick panel were found
  * to disagree about both of them.
  */
 describe('mark read', () => {
@@ -24,13 +24,13 @@ describe('mark read', () => {
 
  it('refuses an owner-EXCLUDED viewer', () => {
  // The drift. They are read-only up to a frozen ceiling, the server
- // refuses the call, and hides the control — so the quick panel
+ // refuses the call, and hides the control -- so the quick panel
  // was issuing a request that existed only to be rejected.
             expect(mayMarkRead(conv({ viewerState: 'excluded' }), 5)).toBe(false);
         });
 
  it('allows a viewer whose state is not resolved', () => {
- // Absent is not excluded — a payload without the field must not stop
+ // Absent is not excluded -- a payload without the field must not stop
  // an ordinary member marking their messages read.
             expect(mayMarkRead(conv({ viewerState: undefined }), 5)).toBe(true);
             expect(mayMarkRead(conv({ viewerState: null }), 5)).toBe(true);
@@ -40,7 +40,7 @@ describe('mark read', () => {
  // Deliberate, and the same rule one test up: a row we do not have
  // is not a row that says "excluded". Since the inbox is paged
  //, a deep-linked conversation can be open while its row has
- // not loaded — refusing here would leave those messages permanently
+ // not loaded -- refusing here would leave those messages permanently
  // unread. The seq being claimed is still the CLIENT's own high-water,
  // so nothing is over-claimed.
             expect(mayMarkRead(null, 5)).toBe(true);

@@ -12,7 +12,7 @@ import { type DocumentTemplate } from '../shared/document-explorer.types';
  * The Replace dialog's file picker.
  *
  * The bug these pin: the picker was hard-coded to `.docx` and the copy named
- * Word, while the dialog opens for whichever template is selected — so
+ * Word, while the dialog opens for whichever template is selected -- so
  * replacing a spreadsheet's or a presentation's source meant defeating the
  * chooser's own filter and reading about the wrong application.
  *
@@ -32,7 +32,7 @@ describe('ReplaceTemplateDialogComponent', () => {
     const DTMPL_MIME = 'text/x-dtmpl';
     const DSHEET_MIME = 'application/x-coolms-sheet+json';
 
-    /** The shape the backend really publishes — both halves, in pairs. */
+    /** The shape the backend really publishes -- both halves, in pairs. */
     const REGISTRY = [
         {
             format: 'word',
@@ -137,7 +137,7 @@ describe('ReplaceTemplateDialogComponent', () => {
     }
 
     /**
-     * Found by LABEL, never by index — the footer swaps its primary button
+     * Found by LABEL, never by index -- the footer swaps its primary button
      * between phases, and `querySelectorAll('button')[n]` has turned a
      * "click preview" into a "click cancel" in this codebase before.
      */
@@ -189,7 +189,7 @@ describe('ReplaceTemplateDialogComponent', () => {
         });
 
  it('never offers the NATIVE half the payload advertises beside it', () => {
- // `format-info` says word is ['.docx', '.dtmpl'] — the whole list
+ // `format-info` says word is ['.docx', '.dtmpl'] -- the whole list
  // would offer a file `replaceSource()` cannot read.
             expect(accept(build({ template: template() }))).not.toContain('.dtmpl');
             expect(
@@ -280,7 +280,7 @@ describe('ReplaceTemplateDialogComponent', () => {
         });
 
  it('names the imported extension from the local map when the fetch fails', () => {
- // format-info is best-effort on the page too — its errors are
+ // format-info is best-effort on the page too -- its errors are
  // swallowed. A dialog that filtered to nothing here would be
  // worse than one that filters to the fallback map's answer.
             const fixture = build({

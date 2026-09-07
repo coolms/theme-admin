@@ -4,7 +4,7 @@ import { VfsNodeDto } from '@coolms/ui-angular';
 import { VfsPageStateService } from './vfs-page-state.service';
 
 /**
- * Footer status bar — shows loading spinner, item counts (dirs + files), and selection count.
+ * Footer status bar -- shows loading spinner, item counts (dirs + files), and selection count.
  * Injected by ExplorerLayoutComponent via SlotComponent using ComponentRegistry key 'VfsStatusBar'.
  */
 @Component({

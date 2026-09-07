@@ -24,7 +24,7 @@ export function isContributorSource409(err: unknown): boolean {
  * 409, or `null` when the definition has none deployed.
  *
  * Lets the Designer offer a READ-ONLY VIEW of a module-shipped body
- * instead of making "Fork to VFS or nothing" the only path — the
+ * instead of making "Fork to VFS or nothing" the only path -- the
  * deployed body is already served by
  * `GET /workflows/{key}/versions/{n}` (whose loader router handles
  * contributor-source), so viewing never requires taking local

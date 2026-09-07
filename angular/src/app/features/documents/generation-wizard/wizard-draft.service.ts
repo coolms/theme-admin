@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 
 /**
- *-2.6a — localStorage draft persistence for the document-
+ *-2.6a -- localStorage draft persistence for the document-
  * generation wizard.
  *
  * Stored value is version-tagged and time-stamped. On restore we
  * silently drop drafts that don't match the current schema version
- * or that exceed the TTL — both are treated as "stale, start
+ * or that exceed the TTL -- both are treated as "stale, start
  * fresh" rather than as recoverable errors.
  *
  * The restore prompt itself uses `window.confirm` for X-2.6a; the
@@ -90,7 +90,7 @@ export class WizardDraftService {
 
             apply(probe as unknown as WizardDraft);
         } catch {
-            // Corrupt entry — wipe and move on.
+            // Corrupt entry -- wipe and move on.
             storage.removeItem(key);
         }
     }
@@ -110,7 +110,7 @@ export class WizardDraftService {
         try {
             storage.setItem(this.key(templateId), JSON.stringify(draft));
         } catch {
-            // Quota / serialisation errors are non-fatal — the wizard
+            // Quota / serialisation errors are non-fatal -- the wizard
             // keeps working without persistence.
         }
     }
@@ -125,7 +125,7 @@ export class WizardDraftService {
         return `wizard-draft-${templateId}`;
     }
 
-    /** Localised storage access — returns null when the environment
+    /** Localised storage access -- returns null when the environment
      *  has no storage (SSR, tests) or the browser denies access
      *  (private mode + Safari). */
     private tryStorage(): Storage | null {

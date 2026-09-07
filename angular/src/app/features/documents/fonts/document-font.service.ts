@@ -45,7 +45,7 @@ export interface CatalogueResponseDto {
  *
  *  The upload names NOTHING about the file. The family and the face come out
  * of the font's own `name` and `OS/2` tables on the server, so four uploads
- * assemble one family without the operator typing "bold" anywhere — and a form
+ * assemble one family without the operator typing "bold" anywhere -- and a form
  * field that DID name it would be stating something the bytes could
  * contradict.
  *
@@ -91,8 +91,8 @@ export class DocumentFontService {
     }
 
     remove(family: string): Observable<{ family: string; removed: number }> {
-        // The family can hold anything a font's name table can — spaces, and
-        // in principle a slash — so it is encoded rather than interpolated.
+        // The family can hold anything a font's name table can -- spaces, and
+        // in principle a slash -- so it is encoded rather than interpolated.
         return this.http.delete<{ family: string; removed: number }>(
             `${this.base}/${encodeURIComponent(family)}`,
         );

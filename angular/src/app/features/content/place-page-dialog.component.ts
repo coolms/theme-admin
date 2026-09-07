@@ -19,13 +19,13 @@ export interface PlacePageDialogData {
 }
 
 /**
- * Where a page appears — add or remove a surface placement ( step (c),
+ * Where a page appears -- add or remove a surface placement ( step (c),
  * ).
  *
  * ## The verb this dialog is NOT
  *
- * It does not publish. Publishing is variant lifecycle — which locale is live
- * — and lives in the page editor. This is DISTRIBUTION: the same page linked
+ * It does not publish. Publishing is variant lifecycle -- which locale is live
+ * -- and lives in the page editor. This is DISTRIBUTION: the same page linked
  * into a site's blog or news surface, still authored in one place. A personal
  * draft can be placed on a site's blog without ever being copied there, which
  * is the motivating case was written for.
@@ -33,7 +33,7 @@ export interface PlacePageDialogData {
  * ## Why the site list comes from page spaces
  *
  * A surface is `(site, surface key)`, and the sites a user may target are
- * exactly the site page-spaces the registry offers them — so the list is
+ * exactly the site page-spaces the registry offers them -- so the list is
  * derived from the same endpoint the explorer's accordion uses rather than
  * from a sites API this module would otherwise have no reason to know about.
  * A user with no site space sees an explicit "nowhere to place" state instead
@@ -157,7 +157,7 @@ export class PlacePageDialogComponent {
      * Needed explicitly: `takeUntilDestroyed()` resolves its own DestroyRef
      * only inside an injection context, and the place/remove handlers run
      * from a click. Without it they throw NG0203 the moment the button is
-     * pressed — a failure no build or lint sees, because the call is legal
+     * pressed -- a failure no build or lint sees, because the call is legal
      * everywhere the compiler looks.
      */
     private readonly destroyRef = inject(DestroyRef);
@@ -171,7 +171,7 @@ export class PlacePageDialogComponent {
     protected site = '';
     protected surface = '';
 
-    /** True once anything was placed or removed — the caller reloads on close. */
+    /** True once anything was placed or removed -- the caller reloads on close. */
     private changed = false;
 
     constructor() {
@@ -227,7 +227,7 @@ export class PlacePageDialogComponent {
                 error: (e: { error?: { detail?: string }; message?: string }) => {
                     this.busy.set(false);
                     // The surface's OWN permissions decide this, per site and
-                    // per surface — so the server's reason is the useful one.
+                    // per surface -- so the server's reason is the useful one.
                     this.toast.error(e.error?.detail ?? e.message ?? 'Could not place the page.');
                 },
             });
@@ -258,7 +258,7 @@ export class PlacePageDialogComponent {
         this.dialogRef.close(this.changed);
     }
 
-    /** `/content/{site}/{surfaceRelativePath}/{basename}` — the server's own rule. */
+    /** `/content/{site}/{surfaceRelativePath}/{basename}` -- the server's own rule. */
     private linkPathFor(site: string, surfaceKey: string, pagePath: string): string {
         const relative = this.surfaces().find(s => s.key === surfaceKey)?.relativePath ?? surfaceKey;
         const basename = pagePath.slice(pagePath.lastIndexOf('/') + 1);

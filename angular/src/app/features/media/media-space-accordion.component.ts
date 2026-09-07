@@ -39,7 +39,7 @@ import { MediaService } from './media.service';
  * three things that are NOT shared: the state service this bridges to
  * (`currentDir`), the child tree it projects, and the side effect after a
  * space change (refilling collections through `MediaService`). That split is
- * why the store is a store and not a generic component — see its header.
+ * why the store is a store and not a generic component -- see its header.
  *
  * Registered as `CollectionsTree` in {@link app.config} so the
  * Media Library layout (`media:library` -> `content.panel.left`) picks
@@ -102,7 +102,7 @@ export class MediaSpaceAccordionComponent implements OnInit {
 
             untracked(() => {
                 // The path bar's floor follows the resolved space, and must be
-                // set on RESTORE too — not only when the operator
+                // set on RESTORE too -- not only when the operator
                 // switches spaces, or a reload would leave it at the default
                 // while the explorer sat in a different space.
                 this.state.spaceRoot.set(root);
@@ -138,21 +138,21 @@ export class MediaSpaceAccordionComponent implements OnInit {
 
     /**
      * Right-click a SPACE row. Media was the last explorer whose space
-     * rows had no menu at all — the accordion has emitted `spaceContextMenu`
+     * rows had no menu at all -- the accordion has emitted `spaceContextMenu`
      * since it shipped, and Documents and Pages were the only listeners.
      *
      * ## Not the toolbar node set, unlike every other Media surface
      *
      * The collection menu is built from `toolbarNodes()` with
      * `_context: 'collection'`, and that set contains `rename` and `delete-col`
-     * — both of which act on `currentDir()`. On a space row the current
+     * -- both of which act on `currentDir()`. On a space row the current
      * directory IS the space root, so "Delete collection" there would offer to
      * delete the space. {@link MEDIA_ROOT_MENU_ITEMS} is the root-safe pair,
      * shared with the tree's "All media" row so the two cannot drift.
      *
      * ## Switch on OPEN, act on the space ROOT
      *
-     * Choosing an action switches to the space if it is not active — the same
+     * Choosing an action switches to the space if it is not active -- the same
      * rule Pages and Documents follow, because these actions read the active
      * space and would otherwise file a new collection under whichever space the
      * operator happened to be in. The space root is pinned at ACTION time too:

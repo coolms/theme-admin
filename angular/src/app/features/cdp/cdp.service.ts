@@ -8,15 +8,15 @@ import { HydraCollection } from '../../api/api.service';
 import { SegmentDto, SegmentRuleCheckDto, SegmentWriteDto, SubjectDto } from './cdp.types';
 
 /**
- *Phase 3 (CDP core, ) — admin API client for the Customer Data
+ *Phase 3 (CDP core, ) -- admin API client for the Customer Data
  * Platform surfaces.
  *
  * Feature-local (not on the shared ApiService), mirroring {@link
  * ../analytics/analytics.service}: the CDP surface is small, self-contained,
  * and lives off the generic `manifest.apiBase` (no module-specific manifest
  * entry). Talks to two ledgers, both `ROLE_ADMIN`:
- *  - audience Segments — `/analytics/segments` (CRUD + `/validate`);
- *  - Subject profiles — `/analytics/subjects` (read-only, counts-only).
+ *  - audience Segments -- `/analytics/segments` (CRUD + `/validate`);
+ *  - Subject profiles -- `/analytics/subjects` (read-only, counts-only).
  */
 @Injectable({ providedIn: 'root' })
 export class CdpService {
@@ -25,7 +25,7 @@ export class CdpService {
 
     // Collection GETs ask for JSON-LD so API Platform returns member/totalItems.
     private readonly collectionHeaders = { headers: { Accept: 'application/ld+json' } };
-    // API-Platform PATCH ops require merge-patch (else 415) — see ApiService.patchHeaders.
+    // API-Platform PATCH ops require merge-patch (else 415) -- see ApiService.patchHeaders.
     private readonly patchHeaders = { headers: { 'Content-Type': 'application/merge-patch+json' } };
 
     private get apiBase(): string {
@@ -61,7 +61,7 @@ export class CdpService {
     }
 
     /**
-     * Live rule-lint — the SAME lint the create/update path enforces, so a rule
+     * Live rule-lint -- the SAME lint the create/update path enforces, so a rule
      * that validates here will not 400 on save. 200 in both verdicts (an invalid
      * RULE is a valid REQUEST); the caller reads `valid` + `message`.
      */
@@ -73,7 +73,7 @@ export class CdpService {
 
     /**
      * One SERVER page of subjects. Filters travel as repeated
-     * `filter=` RQL terms — the endpoint is RQL-native, so the grid's
+     * `filter=` RQL terms -- the endpoint is RQL-native, so the grid's
      * `columnFilters` go through verbatim, including the Segments multi-select
      * (`segments in [...]`), which the provider lifts out and turns into a JSON
      * membership test.
@@ -82,8 +82,8 @@ export class CdpService {
      * deep-link, independent of whatever the operator has typed into the filter
      * row.
      *
-     * Replaces the old unpaged `listSubjects()`, which fetched EVERY subject —
-     * one row per visitor — so the grid could filter in the browser.
+     * Replaces the old unpaged `listSubjects()`, which fetched EVERY subject --
+     * one row per visitor -- so the grid could filter in the browser.
      */
     listSubjectsPage(params: {
         page?:    number;
@@ -98,7 +98,7 @@ export class CdpService {
         if (params.sort)                  httpParams = httpParams.set('sort', params.sort);
         if (params.segment)               httpParams = httpParams.set('segment', params.segment);
         for (const f of params.filters ?? []) {
-            // Repeated `filter=…` keys — RqlParser collects all of them as AND conditions.
+            // Repeated `filter=...` keys -- RqlParser collects all of them as AND conditions.
             httpParams = httpParams.append('filter', f);
         }
 

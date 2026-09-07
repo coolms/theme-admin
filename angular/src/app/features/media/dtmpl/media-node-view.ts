@@ -119,7 +119,7 @@ export class MediaNodeView {
 
     /**
      * Don't ask ProseMirror to re-render the NodeView when our internal DOM
-     * changes (handles / inline style during drag) — those are pure decoration.
+     * changes (handles / inline style during drag) -- those are pure decoration.
      */
     ignoreMutation(): boolean {
         return true;
@@ -216,7 +216,7 @@ export class MediaNodeView {
      * Open a CDK Overlay below the selected media node and mount the alt
      * editor inside. Skips silently when no Injector was passed (e.g. when
      * the extension was registered without provideCoolmsEditorMedia, as in
-     * unit tests) — selection still works, just without the alt popup.
+     * unit tests) -- selection still works, just without the alt popup.
      */
     private openAltEditor(): void {
         if (!this.injector) return;

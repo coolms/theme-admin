@@ -10,7 +10,7 @@ import { HydraCollection } from '../../api/api.service';
 export type SubscriptionStatus = 'pending' | 'confirmed' | 'unsubscribed';
 
 /**
- * W8 — one newsletter subscriber.
+ * One newsletter subscriber.
  *
  * Mirrors the backend `Subscriber` read group (`subscriber:read`): the
  * capability `token` and the `website` honeypot are never serialized here.
@@ -26,7 +26,7 @@ export interface SubscriberDto {
     readonly confirmedAt: string | null;
 }
 
-/** W8 — the recorded result of a campaign broadcast (`campaign:read`). */
+/** The recorded result of a campaign broadcast (`campaign:read`). */
 export interface CampaignDto {
     readonly id:             string;
     readonly subject:        string;
@@ -43,7 +43,7 @@ export interface CampaignDto {
  * One targetable list: a site slug, its label, and how many confirmed
  * subscribers it has right now.
  *
- * The count is what makes the compose picker honest — an admin can see they are
+ * The count is what makes the compose picker honest -- an admin can see they are
  * about to mail 4 people rather than 4000 before clicking Send.
  */
 export interface NewsletterSiteDto {
@@ -54,13 +54,13 @@ export interface NewsletterSiteDto {
 }
 
 /**
- * W8 — the newsletter admin API client.
+ * The newsletter admin API client.
  *
- * Talks to the W8 endpoints (`GET /newsletter/subscribers?status=`,
+ * Talks to the newsletter endpoints (`GET /newsletter/subscribers?status=`,
  * `POST /newsletter/campaigns`) off the generic `manifest.apiBase`, so no
  * module-specific manifest entry is needed. Feature-local (not on the shared
- * ApiService) — the newsletter surface is small and self-contained. Mirrors the
- * W8.c LeadsService.
+ * ApiService) -- the newsletter surface is small and self-contained. Mirrors the
+ * LeadsService.
  */
 @Injectable({ providedIn: 'root' })
 export class NewsletterService {
@@ -73,16 +73,16 @@ export class NewsletterService {
         return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
     }
 
-    /** Subscribers in a bucket — newest-first (server-ordered). */
+    /** Subscribers in a bucket -- newest-first (server-ordered). */
     /**
-     * One PAGE of a subscriber bucket — newest-first, server-filtered and sorted
+     * One PAGE of a subscriber bucket -- newest-first, server-filtered and sorted
      *.
      *
      * Replaces the old `list()`, which fetched a whole bucket for a client-mode
      * grid. The endpoint capped that at 200 rows, so the browser was filtering a
      * truncated window and calling it the complete list.
      *
-     * `filters` go through VERBATIM — the endpoint is RQL-native and its
+     * `filters` go through VERBATIM -- the endpoint is RQL-native and its
      * allowlist comes from the same `newsletter:list` YAML that renders the
      * filter row.
      */
@@ -119,7 +119,7 @@ export class NewsletterService {
      * default list.
      */
     /**
-     * @param contents      per-locale `{subject, body}` — one entry is a
+     * @param contents      per-locale `{subject, body}` -- one entry is a
      *                      single-language campaign, several make each recipient
      *                      receive the one resolved for them
      * @param defaultLocale which entry a recipient falls back to; must be present

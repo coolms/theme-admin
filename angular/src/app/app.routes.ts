@@ -7,7 +7,7 @@ export const routes: Routes = [
     // Redirect authenticated callers away from /login so a stale tab
     // parked here cannot interfere with another tab's active session.
     { path: 'login', component: LoginComponent, canActivate: [loginPageGuard] },
-    // Sub-prompt B2 smoke route — public so we can exercise the bridge
+    // Sub-prompt B2 smoke route -- public so we can exercise the bridge
     // without booting an auth context. Removed in B3 once page-editor
     // adopts the bridge.
     {
@@ -40,7 +40,7 @@ export const routes: Routes = [
                 loadChildren: () =>
                     import('./features/sections/sections.routes').then(m => m.SECTION_ROUTES),
             },
-            // — Calendar admin (list + detail with working hours,
+            // -- Calendar admin (list + detail with working hours,
             // holiday rules, and year preview).
             {
                 path: 'calendars',
@@ -48,7 +48,7 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // — Scheduler admin (list + detail with cron/RRule editor,
+            // -- Scheduler admin (list + detail with cron/RRule editor,
             // calendar attachment, payload editor, trigger-now CTA).
             {
                 path: 'schedules',
@@ -88,23 +88,23 @@ export const routes: Routes = [
                     import('./features/cockpit/cockpit.routes').then(m => m.COCKPIT_ROUTES),
                 data: { activeNav: '/cockpit' },
             },
-            // W7.d — Comment moderation: the pending-comment queue
-            // (approve / reject), backed by the W7.a CommentService.
+            // Comment moderation: the pending-comment queue
+            // (approve / reject), backed by the CommentService.
             {
                 path: 'moderation',
                 loadChildren: () =>
                     import('./features/moderation/moderation.routes').then(m => m.MODERATION_ROUTES),
                 data: { activeNav: '/moderation' },
             },
-            // W8.c — Lead inbox: the lead triage queue (New / Handled / Spam),
-            // backed by the W8.a LeadsService. Sibling of the moderation queue.
+            // Lead inbox: the lead triage queue (New / Handled / Spam),
+            // backed by the LeadsService. Sibling of the moderation queue.
             {
                 path: 'leads',
                 loadChildren: () =>
                     import('./features/leads/leads.routes').then(m => m.LEADS_ROUTES),
                 data: { activeNav: '/leads' },
             },
-            // C.3 — Contacts: the generic Person directory / address
+            // C.3 -- Contacts: the generic Person directory / address
             // book (/admin/contacts). cms-list-page + coolms-datagrid (client
             // mode) + a create/edit modal, over the C.2 /contacts CRUD API.
             {
@@ -113,8 +113,8 @@ export const routes: Routes = [
                     import('./features/contacts/contacts.routes').then(m => m.CONTACTS_ROUTES),
                 data: { activeNav: '/contacts' },
             },
-            // M7 — DynamicChat agent inbox: the staff queue of open visitor
-            // conversations (left pane) ↔ thread + composer (right pane).
+            // M7 -- DynamicChat agent inbox: the staff queue of open visitor
+            // conversations (left pane) <-> thread + composer (right pane).
             // Joins a conversation, reads history via the generic Chat
             // cursor read, replies via POST /chat/messages, live over
             // chat.room.{id}. Sibling of the leads queue (same lead-source
@@ -125,8 +125,8 @@ export const routes: Routes = [
                     import('./features/dynamic-chat/dynamic-chat.routes').then(m => m.DYNAMIC_CHAT_ROUTES),
                 data: { activeNav: '/dynamic-chat', fullHeight: true },
             },
-            // M7 — Internal Messages: user↔user DM/chat over the Chat engine.
-            // Two-pane conversation list ↔ thread; "New" opens a 1:1 via
+            // M7 -- Internal Messages: user<->user DM/chat over the Chat engine.
+            // Two-pane conversation list <-> thread; "New" opens a 1:1 via
             // POST /chat/conversations {withUserId}. Backend complete
             // (DM open + rich-text body + attachments); FE shell in.
             {
@@ -137,7 +137,7 @@ export const routes: Routes = [
             },
             // Email mailbox client: a three-pane reader (mailbox rail /
             // message list / detail + composer) over the read/send/reply/
-            // folders/seen APIs (–). Full-height like the Messages
+            // folders/seen APIs (-). Full-height like the Messages
             // two-pane. ROLE_ADMIN server-side on every endpoint.
             {
                 path: 'email',
@@ -145,7 +145,7 @@ export const routes: Routes = [
                     import('./features/email/email.routes').then(m => m.EMAIL_ROUTES),
                 data: { activeNav: '/email', fullHeight: true },
             },
-            // W8 — Newsletter: confirmed-subscriber list + campaign compose,
+            // Newsletter: confirmed-subscriber list + campaign compose,
             // backed by the NewsletterService. Sibling of the leads queue.
             {
                 path: 'newsletter',
@@ -153,7 +153,7 @@ export const routes: Routes = [
                     import('./features/newsletter/newsletter.routes').then(m => m.NEWSLETTER_ROUTES),
                 data: { activeNav: '/newsletter' },
             },
-            // W8 — Analytics dashboard: the "Top pages" leaderboard over the
+            // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {
                 path: 'analytics',
@@ -161,7 +161,7 @@ export const routes: Routes = [
                     import('./features/analytics/analytics.routes').then(m => m.ANALYTICS_ROUTES),
                 data: { activeNav: '/analytics' },
             },
-            //Phase 3 (CDP core) — Customer Data Platform admin: the
+            //Phase 3 (CDP core) -- Customer Data Platform admin: the
             // audience Segment builder (EL rules, linted live) + the Subject
             // profile explorer, over /analytics/segments + /analytics/subjects.
             // Sibling of the analytics dashboard (same event substrate).
@@ -171,7 +171,7 @@ export const routes: Routes = [
                     import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
                 data: { activeNav: '/cdp' },
             },
-            // W8 — Experiments: the A/B experiment list + per-variant results
+            // Experiments: the A/B experiment list + per-variant results
             // surface with Start/Stop controls, backed by
             // ExperimentsService. Sibling of the analytics dashboard.
             {
@@ -180,7 +180,7 @@ export const routes: Routes = [
                     import('./features/experiments/experiments.routes').then(m => m.EXPERIMENT_ROUTES),
                 data: { activeNav: '/experiments' },
             },
-            // Themes Explorer — which theme skins each site and what it
+            // Themes Explorer -- which theme skins each site and what it
             // overrides. The Theme endpoints predated any admin UI, so the only
             // way to see or change the active theme was the DB or the CLI.
             {
@@ -273,7 +273,7 @@ export const routes: Routes = [
                 loadChildren: () =>
                     import('./features/content/content.routes').then(m => m.CONTENT_ROUTES),
             },
-            // follow-up — Categories admin: manage the `categories`
+            // follow-up -- Categories admin: manage the `categories`
             // taxonomy tree (add / rename / move / delete), backed by the
             // Taxonomy REST API. Sits in the Content sidebar section.
             {
@@ -283,9 +283,9 @@ export const routes: Routes = [
                         .then(m => m.CategoriesPageComponent),
                 data: { activeNav: '/taxonomy/categories' },
             },
-            // Sub-prompt B2 smoke route — exercises the @coolms/editor-angular
+            // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
             // bridge end-to-end. Removed after page-editor adopts the bridge
-            // (sub-prompt B3) or kept as a dev tool — Dmitry decides.
+            // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.
             {
                 path: 'editor-test',
                 loadComponent: () =>
@@ -332,7 +332,7 @@ export const routes: Routes = [
                         .then(m => m.CentrifugoDashboardComponent),
                 data: { activeNav: '/centrifugo' },
             },
-            // — MCP tool-governance audit. Read-only operator view
+            // -- MCP tool-governance audit. Read-only operator view
             // over GET /api/mcp/tools (ROLE_ADMIN, McpToolCatalogController):
             // the full inventory of tools external AI agents can invoke via
             // POST /api/mcp/rpc plus the authorization gate on each. Sits in
@@ -363,7 +363,7 @@ export const routes: Routes = [
                 data: { activeNav: '/ui-kit' },
             },
             // Module settings (ROLE_ADMIN). The hub lists every settings block an
-            // installed module DECLARED — it is generated from the contributor
+            // installed module DECLARED -- it is generated from the contributor
             // registry, not a list maintained here, so an uninstalled module
             // simply has no row. Sits in the /admin/--system section. Every
             // /api/v1/module-settings operation is is_granted('ROLE_ADMIN'), so a
@@ -374,7 +374,7 @@ export const routes: Routes = [
                     import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
                 data: { activeNav: '/settings' },
             },
-            // — Backup admin page. List on-disk backup bundles,
+            // -- Backup admin page. List on-disk backup bundles,
             // create a new one, and DRY-RUN a restore preview. Sits in the
             // /admin/--system ops section. The three /api/v1/backup*
             // endpoints are gated server-side by the root:backup 0o770 VFS node
@@ -386,7 +386,7 @@ export const routes: Routes = [
                         .then(m => m.BackupsListPageComponent),
                 data: { activeNav: '/backups' },
             },
-            // B.3.2 — Sync fleet admin page. Register/edit/remove edge
+            // B.3.2 -- Sync fleet admin page. Register/edit/remove edge
             // nodes, see health/cursor/principal/scope, trigger a fleet nudge.
             // Gated server-side by the NESTED root:sync_fleet 0o770 VFS node
             // (a different group from the machine-facing sync node, so an edge
@@ -467,7 +467,7 @@ export const routes: Routes = [
             },
             // Protected by the parent canActivate: [authGuard] above.
             // DynamicRecordListComponent fires forkJoin(schema + records) in
-            // ngOnInit — both requests carry the token restored by RestoreSession
+            // ngOnInit -- both requests carry the token restored by RestoreSession
             // before load() completed, so no 401 on F5 for non-expired tokens.
             // Expired-token 401s are handled transparently by the auth interceptor.
             {

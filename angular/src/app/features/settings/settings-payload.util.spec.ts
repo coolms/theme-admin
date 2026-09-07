@@ -5,7 +5,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
  * The save payload drops environment-pinned keys.
  *
  * Covered here rather than on the hub because a spec importing the hub fails the
- * whole karma build — see the note in the util.
+ * whole karma build -- see the note in the util.
  */
 describe('withoutPinnedKeys', () => {
  it('drops a pinned key and keeps everything else', () => {
@@ -51,7 +51,7 @@ describe('withoutPinnedKeys', () => {
  *  Written after the bug, not before it. Saving a TTL of 60 for one site made
  * the PLATFORM view read 60 on the real screen, because the scoped response was
  * written into the platform-wide list. The stored file proved the platform was
- * untouched — so the data was right and the screen was lying, which is the
+ * untouched -- so the data was right and the screen was lying, which is the
  * failure this whole tier exists to prevent, arriving through the one path that
  * had no test.
  */

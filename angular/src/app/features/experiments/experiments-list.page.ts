@@ -20,11 +20,11 @@ import { ExperimentDto, ExperimentResult, ExperimentsService } from './experimen
 import { ExperimentFormDialogComponent } from './experiment-form-dialog.component';
 
 /**
- * W8 — Experiments admin page (/admin/experiments, ).
+ * Experiments admin page (/admin/experiments).
  *
- * The read/control surface over the W8 A/B experiment store. Each experiment is
+ * The read/control surface over the A/B experiment store. Each experiment is
  * a card: its status, exposure + conversion totals, and a per-variant
- * **conversion-rate** bar (conversions ÷ exposures — the outcome that actually
+ * **conversion-rate** bar (conversions / exposures -- the outcome that actually
  * decides a winner, not the exposure share which mostly mirrors the weights).
  * The backend's significance verdict drives a "Winner" / "Leading" hint with a
  * confidence figure. Per-card controls: Start/Stop (`/status`), Edit
@@ -303,10 +303,10 @@ export class ExperimentsListComponent implements OnInit {
 
     readonly experiments = signal<ExperimentDto[]>([]);
     readonly loading     = signal(true);
-    /** Keys with an in-flight mutation — disables that card's controls. */
+    /** Keys with an in-flight mutation -- disables that card's controls. */
     private readonly pendingKeys = signal<ReadonlySet<string>>(new Set());
 
-    /** Footer row-count strip (bottom-left) — the count lives here, not the header. */
+    /** Footer row-count strip (bottom-left) -- the count lives here, not the header. */
     readonly footerLabel = computed(() => {
         if (this.loading()) return '';
         const all = this.experiments();
@@ -340,7 +340,7 @@ export class ExperimentsListComponent implements OnInit {
         return exp.winner === variant;
     }
 
-    /** Conversion rate as a 0–100 percentage label (one decimal), or '—' when unshown. */
+    /** Conversion rate as a 0-100 percentage label (one decimal), or '--' when unshown. */
     ratePct(r: ExperimentResult): string {
         if (r.count <= 0) return '—';
         return `${(r.conversionRate * 100).toFixed(1)}%`;

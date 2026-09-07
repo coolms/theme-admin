@@ -17,7 +17,7 @@ export interface DelegateDialogResult {
 }
 
 /**
- * FE — Delegate dialog.
+ * FE -- Delegate dialog.
  *
  * Tiny wrapper around `<app-user-search-select>` + a Confirm/Cancel
  * footer. The consumer (`inbox-list.page`) opens it via the CDK
@@ -75,10 +75,10 @@ export class InboxTaskDelegateDialogComponent {
     readonly picked = signal<string>('');
 
     /**
-     * The users list/search URL — resolved from the boot manifest
+     * The users list/search URL -- resolved from the boot manifest
      * (`identity.usersUrl` = `GET /api/v1/auth/users`), the same source the
      * working pickers use (site-members, vfs-chown, messages). RQL-searchable
-     * per LazySelect's `'rql'` searchStyle. (A hardcoded `/identity/users` 404s —
+     * per LazySelect's `'rql'` searchStyle. (A hardcoded `/identity/users` 404s --
      * there is no such route; only `/auth/users` exists.)
      */
     readonly usersApiUrl: string = (() => {

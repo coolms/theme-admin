@@ -4,7 +4,7 @@ import { CmsLoaderComponent } from '@coolms/core-angular';
 import { DocumentPageStateService } from './document-page-state.service';
 
 /**
- * Footer status line — count + busy indicator. Mirrors
+ * Footer status line -- count + busy indicator. Mirrors
  * MediaStatusBar's role of giving the explorer layout *something* in
  * the footer slot so the bottom edge isn't a bare strip.
  */

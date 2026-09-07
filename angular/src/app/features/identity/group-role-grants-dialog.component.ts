@@ -21,7 +21,7 @@ export interface GroupRoleGrantsDialogData {
 }
 
 /**
- * Role grants for one group — which OTHER groups' roles are handed out
+ * Role grants for one group -- which OTHER groups' roles are handed out
  * by holding this one's.
  *
  * ## Why the wording is laboured
@@ -39,7 +39,7 @@ export interface GroupRoleGrantsDialogData {
  * picker offers every group and the SERVER refuses the cycle with a message
  * naming the group. Reimplementing the graph walk here would be a second
  * implementation of the platform's most privilege-bearing rule, kept in sync by
- * hope — and the refusal an operator needs to see is the authoritative one.
+ * hope -- and the refusal an operator needs to see is the authoritative one.
  */
 @Component({
     selector: 'app-group-role-grants-dialog',
@@ -143,7 +143,7 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
 
     ngOnInit(): void {
         // The LIST omits `grantsGroupIds`, so the editor re-reads the ITEM
-        // rather than trusting the row it was opened from — `undefined` there
+        // rather than trusting the row it was opened from -- `undefined` there
         // means "not loaded", and treating it as "grants nothing" would let a
         // Save silently clear every edge.
         this.api.getGroup(this.data.id).pipe(
@@ -169,9 +169,9 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
                 this.toast.success('Role grants saved', this.title);
                 this.ref.close(true);
             },
-            // Surface the SERVER's reason. The refusals here are specific — "that
+            // Surface the SERVER's reason. The refusals here are specific -- "that
             // would let X grant its own role", "a group cannot grant its own
-            // role" — and a generic "Save failed" would hide the one sentence
+            // role" -- and a generic "Save failed" would hide the one sentence
             // that tells the operator what to change.
             error: err => {
                 this.saving.set(false);

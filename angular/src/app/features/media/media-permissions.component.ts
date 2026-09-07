@@ -310,7 +310,7 @@ export class MediaPermissionsComponent implements OnInit {
     asset            = signal(this.data.asset);
     parentCollection = signal<CollectionInfo | null>(null);
 
-    // Presets control mode bits only — group is selected separately via the search selector
+    // Presets control mode bits only -- group is selected separately via the search selector
     presets = [
         { key: 'public',  label: 'Public',   icon: '🌍', groupAccess: 'r',  othersAccess: 'r'  },
         { key: 'members', label: 'Members',  icon: '🔒', groupAccess: 'r',  othersAccess: ''   },

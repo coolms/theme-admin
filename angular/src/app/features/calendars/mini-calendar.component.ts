@@ -22,10 +22,10 @@ interface MiniCell {
 }
 
 /**
- * — Tiny month-view calendar for the Calendar Detail sidebar.
+ * -- Tiny month-view calendar for the Calendar Detail sidebar.
  *
  * Renders a 6x7 month grid (always 42 cells so layout never reflows
- * between months). Pure presentation — emits `dateSelect` when a cell
+ * between months). Pure presentation -- emits `dateSelect` when a cell
  * is clicked; the parent owns the rest (e.g., scrolls FullCalendar's
  * main grid to the chosen date).
  *
@@ -180,7 +180,7 @@ export class MiniCalendarComponent {
     private readonly userPrefs = inject(UserCalendarPreferencesService);
 
     /**
-     * Weekday header labels — re-orderable based on the user's week-start
+     * Weekday header labels -- re-orderable based on the user's week-start
      * preference (Task ). Monday = ISO default; Sunday = US.
      */
     readonly weekdayLabels = computed<readonly string[]>(() =>
@@ -193,7 +193,7 @@ export class MiniCalendarComponent {
      * Cursor: year + 0-based month displayed by this mini-cal.
      *
      * Initialised lazily via a factory so we evaluate `new Date()` at
-     * construction time rather than at module-load time — the latter
+     * construction time rather than at module-load time -- the latter
      * was the root cause of the "shows April when today is May 30"
      * bug, because module-level signal initialisers were captured
      * when Vite first imported the file (often the prior month).
@@ -208,7 +208,7 @@ export class MiniCalendarComponent {
     constructor() {
         // Follow the parent's selectedDate when it moves to a different
         // month. Without this, the user clicks Today / a far-off date in
-        // the main grid and the mini-cal stays put — confusing because
+        // the main grid and the mini-cal stays put -- confusing because
         // the highlighted "selected" cell renders as an out-of-month
         // greyed-out cell on an unrelated month grid.
         effect(() => {
@@ -238,7 +238,7 @@ export class MiniCalendarComponent {
         const selKey = this.dateKey(this.selectedDate());
 
         const firstOfMonth = new Date(year, month, 1);
-        // Task — shift so the grid's column 0 lines up with the user's
+        // Task -- shift so the grid's column 0 lines up with the user's
         // chosen week-start day. Monday-start: 0 = Monday (ISO). Sunday-start
         // (US convention): 0 = Sunday (native JS getDay() == 0).
         const sundayStart = this.userPrefs.weekStart() === 'sunday';

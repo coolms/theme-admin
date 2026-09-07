@@ -3,7 +3,7 @@ import { CmsLoaderComponent } from '@coolms/core-angular';
 import { MediaPageStateService } from './media-page-state.service';
 
 /**
- * Footer status bar — shows loading spinner, total count, and selection count.
+ * Footer status bar -- shows loading spinner, total count, and selection count.
  * Injected by ExplorerLayoutComponent via SlotComponent using ComponentRegistry key 'MediaStatusBar'.
  */
 @Component({

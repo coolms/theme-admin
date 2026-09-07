@@ -11,7 +11,7 @@ import { type DocumentFolder, type DocumentTemplate } from '../shared/document-e
 /**
  * Is a persisted path worth restoring at all?
  *
- * Shape only — whether it EXISTS and whether this user may read it are async
+ * Shape only -- whether it EXISTS and whether this user may read it are async
  * questions the constructor cannot ask. This rejects the values that are wrong
  * on their face: a previous build's empty string, a relative fragment, or a
  * traversal.
@@ -32,14 +32,14 @@ export interface OpenInstanceRequest {
  * Both Documents view modes are the SHARED explorer vocabulary.
  *
  * Was `'grid' | 'list'` in both cases, where `list` meant a hand-rolled table
- * with three click-to-sort headers. That table is now the platform DataGrid —
+ * with three click-to-sort headers. That table is now the platform DataGrid --
  * the mode it answers to is `details`, the same word Pages and Media use.
  */
 export type DocumentViewMode = ExplorerViewMode;
 
 /**
  *.1a: instances file zone has its own view mode independent
- * of the folder-content view mode — a user may want details-view for
+ * of the folder-content view mode -- a user may want details-view for
  * instances (location column matters) but stay on tiles for templates.
  */
 export type InstancesViewMode = ExplorerViewMode;
@@ -53,11 +53,11 @@ export type InstancesViewMode = ExplorerViewMode;
 export type RightPanelMode = 'properties' | 'instances';
 
 export interface InstanceFilters {
-    /** outputFormat eq — `null` means "all formats". */
+    /** outputFormat eq -- `null` means "all formats". */
     readonly outputFormat: string | null;
-    /** status eq — `null` means "all statuses". */
+    /** status eq -- `null` means "all statuses". */
     readonly status: string | null;
-    /** name cn (LIKE %x%) — empty string means "no search". */
+    /** name cn (LIKE %x%) -- empty string means "no search". */
     readonly search: string;
 }
 
@@ -67,7 +67,7 @@ export interface InstanceFilters {
  * imperative subjects to react to user-driven actions (refresh,
  * delete, etc.) without forcing slots to know about each other.
  *
- * Mirrors `MediaPageStateService`'s shape — signals for state, RxJS
+ * Mirrors `MediaPageStateService`'s shape -- signals for state, RxJS
  * subjects for "the user wants something to happen" events. Provided
  * `providedIn: 'root'` like its Media sibling so slot components and
  * the page component all see the same instance.
@@ -76,7 +76,7 @@ export interface InstanceFilters {
  * layout. The state service now distinguishes between "a folder is
  * selected" (shows a folder content view) and "a template is
  * selected" (shows the template-detail panel). Both selections are
- * mutually exclusive — picking a folder clears the template id and
+ * mutually exclusive -- picking a folder clears the template id and
  * vice versa, so `selectedTemplate()` and `currentPath()` together
  * tell the main panel which view to render.
  */
@@ -99,14 +99,14 @@ export class DocumentPageStateService {
             viewMode?: string;
             instancesViewMode?: string;
         }>('documents');
-        // ⚠️ VALIDATED, because a restored location that no longer works is
+        // !! VALIDATED, because a restored location that no longer works is
         // STICKY. The path is persisted on every change, so one navigation to a
         // folder that has since been deleted, had its permissions changed, or
         // belonged to a space that is no longer enabled is written back on the
         // next visit and again on the one after. The section becomes
         // permanently unusable and nothing tells the user why.
         //
-        // ⚠️ The argument for this is already in this file, applied to the
+        // !! The argument for this is already in this file, applied to the
         // lesser field: `toExplorerViewMode` below exists so "an unrecognised
         // mode must fall back to the default instead of restoring one the view
         // cannot draw". A path the explorer cannot open is the same problem with
@@ -118,7 +118,7 @@ export class DocumentPageStateService {
         // `DocumentSpaceAccordionComponent`: once the active space resolves, a
         // path that is neither the root nor below it becomes `selectFolder(root)`.
         //
-        // ⚠️ What nothing yet covers is a path INSIDE the active root that has
+        // !! What nothing yet covers is a path INSIDE the active root that has
         // since been deleted or had its permissions changed. `loadFolder()` in
         // `folder-content.component.ts` swallows both with
         // `catchError(() => of([]))`, so that case renders as an empty folder
@@ -128,14 +128,14 @@ export class DocumentPageStateService {
             this.currentPath.set(lastPath as string);
         }
 
-        // — Documents was the only explorer that forgot its view mode:
+        // -- Documents was the only explorer that forgot its view mode:
         // it persisted `lastPath` and nothing else, so every reload dropped
         // you back to Large icons however you had left it.
         //
         // `toExplorerViewMode` rather than a cast: the stored value is
         // whatever a previous build wrote, and an unrecognised mode must fall
         // back to the default instead of restoring one the view cannot draw.
-        // No `list` remap here (the shape Media carries from ) — this key
+        // No `list` remap here -- this key
         // has never been written before, so there is no legacy value to
         // translate.
         const restoredView = toExplorerViewMode(saved?.viewMode);
@@ -156,7 +156,7 @@ export class DocumentPageStateService {
         });
 
         // Separate effects, one key each. `setPageState` MERGES
-        // (`{...existing, ...state}`), so these cannot clobber `lastPath` —
+        // (`{...existing, ...state}`), so these cannot clobber `lastPath` --
         // and each only re-runs for its own signal rather than rewriting the
         // whole record whenever any of the three changes.
         effect(() => {
@@ -190,7 +190,7 @@ export class DocumentPageStateService {
     readonly sharedFolders = signal<DocumentFolder[]>([]);
     readonly personalFolders = signal<DocumentFolder[]>([]);
 
-    /** Currently focused template id — drives the right detail panel. */
+    /** Currently focused template id -- drives the right detail panel. */
     readonly selectedId = signal<string | null>(null);
     /** True while the templates list is being fetched. */
     readonly loading = signal(false);
@@ -204,7 +204,7 @@ export class DocumentPageStateService {
      *
      * `currentPath` alone can't stand in for it: it may be a subfolder,
      * and the breadcrumb needs to know how far UP the module is willing
-     * to go. Above the space root the chain is real but unreachable —
+     * to go. Above the space root the chain is real but unreachable --
      * Documents has no view for `/`, `/home` or `/home/{uuid}`.
      *
      * `null` until the spaces response lands.
@@ -214,7 +214,7 @@ export class DocumentPageStateService {
     /**
      * Bumped when a subfolder is created. The folder chips and
      * the tree key their fetch on the PATH, which does not change when a
-     * child appears underneath it — without this they would keep showing
+     * child appears underneath it -- without this they would keep showing
      * the pre-create listing until the user navigated away and back.
      */
     readonly folderVersion = signal(0);
@@ -229,7 +229,7 @@ export class DocumentPageStateService {
     readonly rightPanelMode = signal<RightPanelMode>('properties');
 
     /**
-     * — the SPACE scope for instances mode.
+     * -- the SPACE scope for instances mode.
      *
      * Instances mode answers one of two questions, and this signal is
      * the discriminator:
@@ -240,22 +240,22 @@ export class DocumentPageStateService {
      *                 in the breadcrumb)
      *
      * Deliberately reusing `rightPanelMode === 'instances'` rather than
-     * adding a third mode: everything downstream of it — the instance
+     * adding a third mode: everything downstream of it -- the instance
      * detail panel, the toolbar's `_kind`, the filter projection, the
-     * open/download/regenerate handlers — is already scope-agnostic, so
+     * open/download/regenerate handlers -- is already scope-agnostic, so
      * the space view inherits the lot instead of forking it.
      */
     readonly instancesScopePath = signal<string | null>(null);
 
     /**
-     * — which of the three views the main pane is showing. ONE
+     * -- which of the three views the main pane is showing. ONE
      * definition, read by the pane router, the breadcrumb and the
      * toolbar/context records, so they cannot disagree about where the
      * user is:
      *
-     *   `templates` — the space's template listing (the default)
-     *   `documents` — everything the space produced
-     *   `instances` — everything ONE template produced
+     *   `templates` -- the space's template listing (the default)
+     *   `documents` -- everything the space produced
+     *   `instances` -- everything ONE template produced
      *
      * `rightPanelMode` alone can't answer this: the two instance views
      * share it, and it can briefly read `instances` with nothing in
@@ -297,7 +297,7 @@ export class DocumentPageStateService {
 
     /**
      *.1b: focused instance in the file zone. Drives the
-     * three-pane layout in instances mode — when non-null the right
+     * three-pane layout in instances mode -- when non-null the right
      * detail panel mounts InstanceDetail; null leaves the file zone
      * full-width.
      */
@@ -306,7 +306,7 @@ export class DocumentPageStateService {
     /**
      * F.14c-3: paths of tree nodes whose children have been fetched
      * and should render expanded. The folders-tree component owns
-     * mutations — it adds the path on first expand and removes it on
+     * mutations -- it adds the path on first expand and removes it on
      * collapse. Living on the state service means the page-level
      * "select a folder" action can reveal the matching node by
      * adding ancestors to this set if a future deep-link feature
@@ -350,39 +350,39 @@ export class DocumentPageStateService {
     readonly previewLatestRequested$ = new Subject<DocumentTemplate>();
     /** F.14c-3: emitted when the user double-clicks a row in the
      *  template-detail's instances list. The page opens the viewer
-     *  modal — keeps the detail component free of dialog deps. */
+     *  modal -- keeps the detail component free of dialog deps. */
     readonly openInstanceRequested$ = new Subject<OpenInstanceRequest>();
     /**
      *: emitted when the user double-clicks a template tile or
      * row. The page decides whether to open a viewer modal (imported
      * templates) or surface the "native editor coming soon"
      * placeholder (native templates). Generate stays as an explicit
-     * action — toolbar / properties panel.
+     * action -- toolbar / properties panel.
      */
     readonly templateOpenRequested$ = new Subject<DocumentTemplate>();
 
     /**
-     * E6 — folder-content's empty-area `<cms-dropzone>` emitted DOCX
+     * E6 -- folder-content's empty-area `<cms-dropzone>` emitted DOCX
      * files. Page subscribes and calls the existing upload flow (one
      * POST per file against `currentPath()`).
      */
     readonly uploadFilesRequested$ = new Subject<File[]>();
 
     /**
-     * E6 — folder-tree "Upload here" right-click action. Carries the
+     * E6 -- folder-tree "Upload here" right-click action. Carries the
      * target folder path so the page can scope the upload dialog to
      * the right-clicked section/folder instead of `currentPath()`.
      */
     readonly uploadToFolderRequested$ = new Subject<string>();
 
     /**
-     * — files dropped on the DOCUMENTS zone. Separate from
+     * -- files dropped on the DOCUMENTS zone. Separate from
      * `uploadFilesRequested$`, which routes through the template
      * service and lands under `.templates`.
      */
     readonly uploadDocumentsRequested$ = new Subject<File[]>();
 
-    /** — "New folder here" from a tree/space right-click. Carries
+    /** -- "New folder here" from a tree/space right-click. Carries
      *  the RIGHT-CLICKED path, not `currentPath`. */
     readonly newFolderInRequested$ = new Subject<string>();
 
@@ -405,7 +405,7 @@ export class DocumentPageStateService {
 
     /**
      * Bus from context-menu / sub-component action emitters back to the
-     * page's `onToolbarAction(action)` handler. Single dispatch point —
+     * page's `onToolbarAction(action)` handler. Single dispatch point --
      * no per-action subjects, so adding a new action means one switch
      * branch on the page, not a new state-service field.
      */
@@ -421,18 +421,18 @@ export class DocumentPageStateService {
      * Switching to a folder clears any template selection so the main
      * panel renders the folder-content view, not the template-detail
      * panel. Selecting a template (`selectedId.set(...)`) doesn't
-     * touch the path — it overlays the detail view.
+     * touch the path -- it overlays the detail view.
      */
     selectFolder(path: string): void {
         this.currentPath.set(path);
         this.selectedId.set(null);
 
-        // — a folder BELOW the space root cannot hold templates:
+        // -- a folder BELOW the space root cannot hold templates:
         // `TemplateRootResolver` recognises only `<spaceRoot>/.templates`.
         // So picking a subfolder in the tree is DOCUMENTS navigation, and
         // staying in the templates view left the pane showing the space's
         // templates under a `Templates` breadcrumb no matter which folder
-        // was selected — the tree row highlighted and nothing else moved.
+        // was selected -- the tree row highlighted and nothing else moved.
         // Selecting the space root itself leaves the current view alone,
         // which is what keeps the accordion's own re-sync from yanking the
         // user out of Templates.
@@ -475,12 +475,12 @@ export class DocumentPageStateService {
     }
 
     /**
-     * — enter the space-scoped Documents view: "everything this
+     * -- enter the space-scoped Documents view: "everything this
      * space has produced", regardless of which template produced it.
      *
      * Reached by clicking the space segment in the breadcrumb while
      * browsing templates. The way BACK is the Templates folder tile the
-     * instances browser renders in this scope — the space root is the
+     * instances browser renders in this scope -- the space root is the
      * last breadcrumb segment here, so it isn't a link.
      */
     enterSpaceDocuments(rootPath: string): void {
@@ -490,7 +490,7 @@ export class DocumentPageStateService {
     }
 
     /**
-     * — show the template listing at the current path, from
+     * -- show the template listing at the current path, from
      * either instances view. Reached by the Templates folder chip in
      * the space view and by the `Templates` breadcrumb segment in a
      * template's instances view.
@@ -498,7 +498,7 @@ export class DocumentPageStateService {
     showTemplates(): void {
         // Templates are per-SPACE, not per-folder: `TemplateRootResolver`
         // only recognises `<spaceRoot>/.templates`, so a `.templates`
-        // inside a subfolder would be inert — not a template root, not
+        // inside a subfolder would be inert -- not a template root, not
         // discovered, not writable through the template endpoints.
         // Entering the Templates view therefore always returns to the
         // space root; leaving `currentPath` on a subfolder would show an

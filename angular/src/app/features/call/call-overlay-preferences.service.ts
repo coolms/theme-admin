@@ -41,7 +41,7 @@ const DEFAULTS: CallOverlayPrefs = {
     sipEndpoint:        '',
 };
 
-/** Upper bound on the auto-dismiss window (10 minutes) — a settled card
+/** Upper bound on the auto-dismiss window (10 minutes) -- a settled card
  *  should never sit forever unless the user explicitly picked 0. */
 const MAX_DISMISS_SECONDS = 600;
 
@@ -96,7 +96,7 @@ export class CallOverlayPreferencesService {
         return this.ensureLoaded();
     }
 
-    /** Reset to defaults — used on logout. */
+    /** Reset to defaults -- used on logout. */
     reset(): void {
         this._prefs.set(DEFAULTS);
         this.loadOnce$ = undefined;

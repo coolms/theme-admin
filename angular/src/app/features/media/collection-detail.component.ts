@@ -22,7 +22,7 @@ import { AppConfigState } from '@coolms/core-angular';
 /**
  * Properties panel for a media COLLECTION (directory). Edits the directory
  * Node's localized title + description through the SAME resolve-on-read /
- * scope-on-write model as the asset panel — directories are VFS Nodes, so the
+ * scope-on-write model as the asset panel -- directories are VFS Nodes, so the
  * generic `PATCH/GET /vfs/files?path=&locale=` already resolves/scopes those
  * fields (no Media-specific backend). One panel-level locale switcher; switching
  * lazily reloads the node for that locale; save scopes the write.
@@ -113,10 +113,10 @@ export class CollectionDetailComponent {
 
     /** Seed HTML for the rich Description editor (set on populate). */
     readonly descriptionHtml = signal<string>('');
-    /** Remount key — bumps on path/locale change so the editor re-seeds. */
+    /** Remount key -- bumps on path/locale change so the editor re-seeds. */
     readonly descMountKey = computed<string>(() => `${this.path()}:${this.activeLocale()}`);
 
-    /** Canonical default-locale values — the fallback hint shown on non-default tabs. */
+    /** Canonical default-locale values -- the fallback hint shown on non-default tabs. */
     private readonly canonical = signal<NodeMetaDto>({ title: null, description: null, canWrite: true });
 
     private readonly svc       = inject(MediaService);

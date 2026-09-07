@@ -16,7 +16,7 @@ export interface PageMetadataDialogData {
 }
 
 /**
- * Per-locale metadata for a page — meta tags, Open Graph, canonical, robots
+ * Per-locale metadata for a page -- meta tags, Open Graph, canonical, robots
  *.
  *
  * ## Why this hosts a component instead of a form
@@ -24,7 +24,7 @@ export interface PageMetadataDialogData {
  * The SEO field set is DECLARED, not coded: `GET /content/field-panels?path=`
  * returns whichever groups apply to a node, and `ContentFieldPanelsComponent`
  * renders and saves them through the field-widget registry. So this dialog
- * owns no field list at all — adding `og:video` tomorrow is one YAML in
+ * owns no field list at all -- adding `og:video` tomorrow is one YAML in
  * `config/modules/content/fields/vfs_node/`, and it appears here AND in the
  * page editor's Meta panel with no code change in either. A hand-written form
  * would have been a second list to keep in step, and the first one to drift.
@@ -158,7 +158,7 @@ export class PageMetadataDialogComponent {
     protected readonly data = inject<PageMetadataDialogData>(DIALOG_DATA);
     private readonly ref = inject<DialogRef<boolean>>(DialogRef);
 
-    /** The embedded panels — the dialog drives their dirty/save from the footer. */
+    /** The embedded panels -- the dialog drives their dirty/save from the footer. */
     protected readonly panels = viewChild(ContentFieldPanelsComponent);
 
     protected readonly variants = computed<readonly PageVariantSummaryDto[]>(
@@ -202,7 +202,7 @@ export class PageMetadataDialogComponent {
     }
 
     /**
-     * A save closes the dialog with `true` so the caller can refresh — the
+     * A save closes the dialog with `true` so the caller can refresh -- the
      * listing shows `ogImage` on its rows, so metadata edits are visible there.
      */
     protected onSaved(): void {

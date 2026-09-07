@@ -16,14 +16,14 @@ import { ContentFieldDescriptorDto, ContentFieldPanelDto, ContentFieldPanelsServ
 import { FieldWidgetHostComponent, FieldWidgetRegistry, ToastService } from '@coolms/ui-angular';
 
 /**
- * Renders the module-contributed field-set panels (, W1.d) that apply to
+ * Renders the module-contributed field-set panels that apply to
  * one content node and saves edits to its `extras`.
  *
  * Self-contained: given a node `path`, it fetches `/content/field-panels?path=`,
  * renders each panel (e.g. the **Blog** post-settings set: author / publish date
  * / categories / tags) as labelled inputs keyed off the field `type`, and writes
  * changes back via a generic VFS merge-patch on its own "Save fields" button.
- * Renders nothing when the node has no applicable panels — so dropping it into
+ * Renders nothing when the node has no applicable panels -- so dropping it into
  * an editor is a no-op for plain pages and lights up automatically for posts in
  * a collection that opts into a field set.
  *
@@ -32,7 +32,7 @@ import { FieldWidgetHostComponent, FieldWidgetRegistry, ToastService } from '@co
  * module's tags input, a taxonomy picker) when one is installed, else the
  * built-in `text` / `textarea` / `date` widget keyed off the field `type`
  * (unknown types fall back to `text`). There is no hardcoded per-type input
- * branch — the registry is the single resolution path.
+ * branch -- the registry is the single resolution path.
  */
 @Component({
     selector: 'app-content-field-panels',
@@ -105,7 +105,7 @@ export class ContentFieldPanelsComponent {
     /** VFS path of the node whose module field panels to render. */
     readonly path = input.required<string>();
     /**
-     * Hide the built-in "Save fields" button — set when a host (e.g. the page
+     * Hide the built-in "Save fields" button -- set when a host (e.g. the page
      * editor's single-Save) drives `dirty()`/`save()` from outside.
      */
     readonly embedded = input(false);
@@ -121,7 +121,7 @@ export class ContentFieldPanelsComponent {
     private loadedPath = '';
 
     constructor() {
-        // Re-fetch whenever the bound path changes (load is async — no signal
+        // Re-fetch whenever the bound path changes (load is async -- no signal
         // is written synchronously here, so this never feeds back on itself).
         effect(() => {
             const p = this.path();
@@ -168,16 +168,16 @@ export class ContentFieldPanelsComponent {
      * *sequence* this write against other writers on the same node (see the
      * page editor's `saveAll`: this panel, the landing block editor and the
      * page-size control all merge-patch one `extras` JSON column, and the
-     * server persists that column whole — overlapping them loses an update).
+     * server persists that column whole -- overlapping them loses an update).
      * Owns this panel's `saving`/`dirty` state and the `saved` output; the
      * host owns the toast, so one Save reports once.
      *
-     * Nothing to save (pristine or already in flight) yields an empty stream —
+     * Nothing to save (pristine or already in flight) yields an empty stream --
      * safe to drop into a `concat` chain.
      */
     save$(): Observable<unknown> {
         if (!this.dirty() || this.saving()) return EMPTY;
-        // `defer` so the flag flips and the model is read at SUBSCRIBE time —
+        // `defer` so the flag flips and the model is read at SUBSCRIBE time --
         // in a sequential chain this op starts long after it was built.
         return defer(() => {
             this.saving.set(true);

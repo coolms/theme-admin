@@ -1,11 +1,11 @@
 import {
-    ChangeDetectionStrategy, Component, computed, effect, input, model, signal,
+    ChangeDetectionStrategy, Component, inject, computed, effect, input, model, signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { CmsDirectoryPickerComponent, CmsDtmplTokenInputComponent } from '@coolms/ui-angular';
 import { type ContextSchemaVariable } from '../../shared/document-explorer.types';
-import { USER_ENTITY_FQCN } from './mode-step.component';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /** Location preset bound to the basePath radio group. */
 type LocationKind = 'inbox' | 'shared' | 'custom';
@@ -15,19 +15,19 @@ type LocationKind = 'inbox' | 'shared' | 'custom';
  *
  * **`docs/`, not `docs/inbox/`.** The home layout
  * (`DefaultHomeDirectoryPolicy::getSubdirectories`) ships exactly
- * `pages`/`media`/`docs`/`tmp`/`public` — there is no `inbox`, and since
+ * `pages`/`media`/`docs`/`tmp`/`public` -- there is no `inbox`, and since
  * `docs/` IS the drop-box the `document` group may write into
  * (mode 3730). Writing a level deeper would have created a directory
  * owned by whoever generated first, outside the drop-box contract.
  *
  * **`{var:audienceEntityId}`, not `{var:<alias>.id}`.** The base path is
  * rendered by `WordFormatProvider::resolveInstanceParentFolderWith` at
- * `createInstance` time, against the RAW per-instance variables — the
+ * `createInstance` time, against the RAW per-instance variables -- the
  * entity-reference alias is not hydrated into an object until later in
  * the render pipeline. The old preset therefore resolved to nothing and
  * every delivery died on `cannot create directory in '/home//docs'`
  * (note the empty segment). `audienceEntityId` is the recipient id as it
- * exists in that context — the same key the render hydrates the alias
+ * exists in that context -- the same key the render hydrates the alias
  * from and the artifact query reads back to find the recipient.
  */
 const PERSONAL_INBOX_PATH = '/home/{var:audienceEntityId}/docs/';
@@ -231,6 +231,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
     `],
 })
 export class CmsWizardOutputStepComponent {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     protected readonly sharedPath = SHARED_FOLDER_PATH;
 
     /** Context-schema variables -- drives token discovery. */
@@ -249,7 +250,7 @@ export class CmsWizardOutputStepComponent {
      * The template's own alias for its user recipient, e.g. `@identity_user`.
      *
      * Matched by ENTITY TYPE, not by name. This used to test
-     * `v.path === '@user'` — a literal no shipped template uses. The
+     * `v.path === '@user'` -- a literal no shipped template uses. The
      * welcome-letter declares `@identity_user`, so the personal-space option
      * was unreachable for every template in the system, which is why the
      * only way to deliver into someone's home was to hand-type the DTMPL
@@ -257,7 +258,7 @@ export class CmsWizardOutputStepComponent {
      */
     protected readonly recipientAlias = computed<string | null>(() => {
         for (const v of this.variables()) {
-            if (v.entityType === USER_ENTITY_FQCN) {
+            if (this.recipientEntity.matches(v.entityType)) {
                 return v.path;
             }
         }
@@ -271,12 +272,12 @@ export class CmsWizardOutputStepComponent {
     );
 
     /**
-     * Offered whenever the template HAS a user recipient — in Single mode
+     * Offered whenever the template HAS a user recipient -- in Single mode
      * too. The mode gate used to also require `filter`, but the token
      * resolves per generated instance either way: Single mode materialises
      * exactly one recipient and binds it to the same variable, so
-     * "deliver this invoice into that customer's documents" — the case
-     * built the drop-box for — was being refused for no reason.
+     * "deliver this invoice into that customer's documents" -- the case
+     * built the drop-box for -- was being refused for no reason.
      */
     protected readonly showInbox = computed<boolean>(() => null !== this.recipientAlias());
 

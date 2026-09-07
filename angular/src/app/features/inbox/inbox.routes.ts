@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * FE — Inbox feature routes.
+ * FE -- Inbox feature routes.
  *
  * Single page today: list with URL-driven tab strip (`?tab=`). The
  * route loads `InboxListComponent` directly; it renders its chrome via

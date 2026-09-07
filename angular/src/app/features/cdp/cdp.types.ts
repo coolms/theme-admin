@@ -1,5 +1,5 @@
 /**
- *Phase 3 (CDP core, ) — admin FE wire shapes.
+ *Phase 3 (CDP core, ) -- admin FE wire shapes.
  *
  * Mirror the backend Analytics resources:
  *  - `AnalyticsSegmentResource`      -> {@link SegmentDto}
@@ -10,9 +10,9 @@
  * (no PII), inheriting the event store's privacy-by-design posture.
  */
 
-/** One audience segment — an EL rule over a subject context. */
+/** One audience segment -- an EL rule over a subject context. */
 export interface SegmentDto {
-    /** Durable kebab slug — the API identifier AND the membership token on subjects. */
+    /** Durable kebab slug -- the API identifier AND the membership token on subjects. */
     readonly key:         string;
     readonly name:        string;
     /** Expression-Language boolean over the `subject` context. */
@@ -43,7 +43,7 @@ export interface SegmentRuleCheckDto {
     readonly message: string | null;
 }
 
-/** One CDP subject profile — counts only. */
+/** One CDP subject profile -- counts only. */
 export interface SubjectDto {
     /** `known:<userId>` (durable) or `anon:<visitorRef>` (ephemeral). */
     readonly key:         string;

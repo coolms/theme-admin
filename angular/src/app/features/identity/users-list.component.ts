@@ -123,7 +123,7 @@ export class UsersListComponent implements OnInit {
      *
      * `columnFilters` contains pre-built RQL expressions emitted by the DataGrid's
      * column filter row (e.g. `['identifier cn "john"', 'isActive eq true']`).
-     * These are passed directly to the API as filter params — no translation needed.
+     * These are passed directly to the API as filter params -- no translation needed.
      */
     onLoadMore(event: {
         offset:        number;

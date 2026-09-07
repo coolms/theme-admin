@@ -22,21 +22,21 @@ export interface ExperimentResult {
     readonly variant:        string;
     readonly label:          string;
     readonly weight:         number;
-    /** Exposures — times this arm was shown. */
+    /** Exposures -- times this arm was shown. */
     readonly count:          number;
-    /** Conversions — times this arm hit the experiment's goal. */
+    /** Conversions -- times this arm hit the experiment's goal. */
     readonly conversions:    number;
-    /** conversions ÷ exposures, 0–1 (0 when never shown). */
+    /** conversions / exposures, 0-1 (0 when never shown). */
     readonly conversionRate: number;
 }
 
 /**
- * W8 — one A/B experiment with its live results.
+ * One A/B experiment with its live results.
  *
  * Mirrors the backend `Experiment` read group (`experiment:read`): the static
  * `variants` config plus the derived `results` (per-arm exposure counts) and
  * the `totalExposures` rollup. The experiment is keyed by its stable `key`
- * (there is no surrogate id on the read surface) — every admin write addresses
+ * (there is no surrogate id on the read surface) -- every admin write addresses
  * it by that key.
  */
 export interface ExperimentDto {
@@ -49,7 +49,7 @@ export interface ExperimentDto {
     readonly totalConversions: number;
     /** Variant key of the credible front-runner by conversion rate, or null. */
     readonly winner:           string | null;
-    /** One-sided confidence (0–1) that `winner` truly beats the runner-up. */
+    /** One-sided confidence (0-1) that `winner` truly beats the runner-up. */
     readonly confidence:       number | null;
     /** Whether `confidence` clears the 95% significance threshold. */
     readonly significant:      boolean | null;
@@ -64,20 +64,20 @@ export interface CreateExperimentInput {
     status?:  ExperimentStatus;
 }
 
-/** Edit-experiment request body — variant keys must match the existing set. */
+/** Edit-experiment request body -- variant keys must match the existing set. */
 export interface UpdateExperimentInput {
     name:     string;
     variants: ExperimentVariant[];
 }
 
 /**
- * W8 — the experiment admin API client.
+ * The experiment admin API client.
  *
- * Talks to the W8 experiment endpoints (`GET/POST /experiments`,
+ * Talks to the experiment endpoints (`GET/POST /experiments`,
  * `POST /experiments/status`) off the generic `manifest.apiBase`, so no
  * module-specific manifest entry is needed. Feature-local (not on the shared
- * ApiService) — the experiment surface is small and self-contained. Mirrors the
- * W8 AnalyticsService / NewsletterService. The public `/experiments/exposure`
+ * ApiService) -- the experiment surface is small and self-contained. Mirrors the
+ * AnalyticsService / NewsletterService. The public `/experiments/exposure`
  * beacon is fired by the theme assigner, never from the admin UI, so it is not
  * exposed here.
  */
@@ -106,7 +106,7 @@ export class ExperimentsService {
 
     /**
      * Edit an experiment's name + variant labels/weights (keys frozen). Posts
-     * the key in the body — the convention the module's mutation endpoints use.
+     * the key in the body -- the convention the module's mutation endpoints use.
      */
     update(key: string, input: UpdateExperimentInput): Observable<ExperimentDto> {
         return this.http.post<ExperimentDto>(`${this.apiBase}/experiments/update`, { key, ...input });

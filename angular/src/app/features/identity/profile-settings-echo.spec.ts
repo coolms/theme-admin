@@ -10,13 +10,13 @@ import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfileCallTabComponent } from './profile-call-tab.component';
 
 /**
- * downstream audit — what the section PATCH's echo DID to the caches.
+ * downstream audit -- what the section PATCH's echo DID to the caches.
  *
  * `updateSettings()` used to go out without `Accept: application/json`, so API
  * Platform answered in ld+json. A settings section is a MAP, and ld+json
  * renders a map as a Hydra Collection with the KEYS STRIPPED:
  * `{"member":["Europe/Berlin","dd.MM.yyyy","12h","sunday","team-ops"]}`. The
- * PATCH persisted correctly — only the echo was keyless — and all three save
+ * PATCH persisted correctly -- only the echo was keyless -- and all three save
  * handlers in `profile-page.component.ts` merge that echo into a cache.
  *
  * The header itself is pinned by `api/api.service.settings.spec.ts`.
@@ -24,11 +24,11 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  *
  *  - the two preference services rebuild their VO from a whitelist, so a
  *    keyless bag contributes NOTHING and every field resolves from the
- *    previous value. No junk, no error — the save simply did not land in
+ *    previous value. No junk, no error -- the save simply did not land in
  *    memory, and the widgets already on screen kept the old values.
  *  - the page's `settings` signal DID keep the keyless bag, and that is what
  *    re-seeds a tab body when the user leaves the tab and comes back. Fed one,
- *    the tab falls to its hardcoded defaults — and the next Save writes THOSE
+ *    the tab falls to its hardcoded defaults -- and the next Save writes THOSE
  *    to the server.
  *
  * Each spec runs the real chain: the real `ApiService.updateSettings()` over a
@@ -38,11 +38,11 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  * the header again and these go red where a user would notice, not at a header
  * string.
  *
- * BOUNDARY — the one link these cannot execute is `ProfilePageComponent`
+ * BOUNDARY -- the one link these cannot execute is `ProfilePageComponent`
  * itself: it imports `DynamicFormComponent`, whose rich-text field pulls
  * `@coolms/editor-angular` -> `@coolms/document-engine`, and the karma builder
  * (webpack) cannot resolve that package's `./x.js` specifiers to its `.ts`
- * sources the way the esbuild application builder does — importing the page
+ * sources the way the esbuild application builder does -- importing the page
  * fails the whole suite at build time. So the three `update(...)` calls below
  * are written out here exactly as the handlers make them
  * (profile-page.component.ts:571-572, :595-596, :612, :618-619); everything on
@@ -93,7 +93,7 @@ describe('Settings-section echo -> profile caches', () => {
     }
 
     /**
-     * Save a section and return what the handler would hold as `updated` —
+     * Save a section and return what the handler would hold as `updated` --
      * the value it merges into `settings` and hands to the prefs services.
      * `stored` is the whole merged bag the server answers with, as it does.
      */
@@ -115,7 +115,7 @@ describe('Settings-section echo -> profile caches', () => {
                 provideHttpClientTesting(),
  // Covers both roles this graph asks of the store: the API
  // manifest (ApiService, platform defaults) and
- // `AuthState.currentUser` — the manifest object carries no
+ // `AuthState.currentUser` -- the manifest object carries no
  // `id`, so the personal-calendar fallback resolves to null,
  // which nothing here leans on.
                 { provide: Store, useValue: { selectSnapshot: () => MANIFEST } },
@@ -180,7 +180,7 @@ describe('Settings-section echo -> profile caches', () => {
  // Switching profile tabs destroys the tab body and builds a new one
  // from `settings()[section]`, which is this echo; the component reads
  // `initial` once, in ngOnInit. Fed a keyless bag it falls to
- // UTC / yyyy-MM-dd / 24h / monday / personal — and the next Save
+ // UTC / yyyy-MM-dd / 24h / monday / personal -- and the next Save
  // writes those over what the user actually stored, which is how a
  // mangled echo turns into data loss.
         const tab = TestBed.createComponent(ProfileCalendarTabComponent);
@@ -273,7 +273,7 @@ describe('Settings-section echo -> profile caches', () => {
         );
 
  // DynamicFormComponent patches its group from `initialValue` once, when
- // the definition arrives. A `{member:[…]}` bag is non-empty, so the
+ // the definition arrives. A `{member:[...]}` bag is non-empty, so the
  // patch RAN, matched no control, and the re-opened form showed the
  // definition's defaults with nothing to suggest anything was wrong.
         expect(Object.keys(echo)).not.toContain('member');

@@ -1,5 +1,5 @@
 /**
- * UI-polish B2 — one best-effort error-message extractor for the designer
+ * UI-polish B2 -- one best-effort error-message extractor for the designer
  * wrappers. Previously each of the four editor pages (BPMN / DMN-table /
  * DMN-DRD / state-machine) carried its own near-identical copy that drifted
  * in coverage: the narrowest only read `error.error`, while the DRD copy had
@@ -28,7 +28,7 @@ export function errorMessage(err: unknown): string {
         }
         // Plain text error body.
         if (typeof body === 'string' && body !== '') return body;
-        // HttpErrorResponse — surface its `.message` / status rather than [object Object].
+        // HttpErrorResponse -- surface its `.message` / status rather than [object Object].
         const message = (err as { message?: unknown }).message;
         if (typeof message === 'string' && message !== '') return message;
         const status = (err as { status?: unknown }).status;

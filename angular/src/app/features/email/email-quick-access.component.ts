@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { AuthState } from '@coolms/core-angular';
 /**
- * Email quick-access icon for the admin topbar — a from-anywhere launcher for the
+ * Email quick-access icon for the admin topbar -- a from-anywhere launcher for the
  * mailbox client at `/admin/email`, sitting in the right-side action cluster next
  * to Messages / DynamicChat / Notifications. A plain nav button (no drawer panel):
  * Email is a full-page workspace, so the icon routes straight to it.

@@ -9,8 +9,8 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
  * Properties panel for the Pages explorer.
  *
  * Pages was the only one of the three explorers with no `content.panel.right`,
- * so everything a page IS beyond its name — where it lives, what renders it,
- * which locales exist and which of them is live, where it is distributed — was
+ * so everything a page IS beyond its name -- where it lives, what renders it,
+ * which locales exist and which of them is live, where it is distributed -- was
  * reachable only by opening the editor. That is a round trip through a full
  * page load to answer "is this published?".
  *
@@ -19,7 +19,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
  * review rules to be enforced (or forgotten). The one action here is the one
  * this panel cannot answer for you: open the editor.
  *
- * Everything shown comes from the `PageDto` the listing already loaded — the
+ * Everything shown comes from the `PageDto` the listing already loaded -- the
  * panel issues no request of its own, so selecting a row costs nothing.
  */
 @Component({
@@ -312,7 +312,7 @@ import { PagePlacementDto, PageVariantSummaryDto } from './page.types';
 })
 export class PageDetailComponent {
     /**
-     * Why a frozen slug matters, stated once and used twice — as the hover on
+     * Why a frozen slug matters, stated once and used twice -- as the hover on
      * the inline badge and as the sentence below the list.
      */
     protected readonly FROZEN_HINT =
@@ -339,7 +339,7 @@ export class PageDetailComponent {
     /**
      * The URL this page is served at.
      *
-     * Derived by stripping the space's content root from the VFS path — the
+     * Derived by stripping the space's content root from the VFS path -- the
      * URL MIRRORS the filename, extension and all, so there is nothing
      * to compute beyond the prefix. Null for a personal-space page, which has
      * no site root and therefore no public URL at all until it is placed.
@@ -367,7 +367,7 @@ export class PageDetailComponent {
     }
 
     /**
-     * A stored `ogImage` can 404 — the media behind it may be gone, or the
+     * A stored `ogImage` can 404 -- the media behind it may be gone, or the
      * value may be an absolute URL from another environment. Hide the broken
      * image and let the panel read as though the page has none.
      */
@@ -378,8 +378,8 @@ export class PageDetailComponent {
     /**
      * Closing closes the PANEL and leaves the selection alone.
      *
-     * The layout gates the panel on `activeItem`, so the naive version —
-     * clearing the selection — made the close button deselect behind the
+     * The layout gates the panel on `activeItem`, so the naive version --
+     * clearing the selection -- made the close button deselect behind the
      * user's back: the row stayed highlighted in the grid while the toolbar's
      * row actions vanished. The host reports `activeItem` as null while this
      * flag is down instead, which is the same shape Documents uses.
@@ -392,7 +392,7 @@ export class PageDetailComponent {
      * The one write this panel offers: hand off to the editor.
      *
      * Routed through the SAME action channel the toolbar uses rather than
-     * opening the editor here — the listing owns that navigation, and a second
+     * opening the editor here -- the listing owns that navigation, and a second
      * caller would be a second place for the landing-vs-prose decision to be
      * made.
      */

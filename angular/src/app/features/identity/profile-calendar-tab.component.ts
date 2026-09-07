@@ -37,7 +37,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
 ];
 
 /**
- * Task () — bespoke "Calendar" tab inside My Profile.
+ * Task () -- bespoke "Calendar" tab inside My Profile.
  *
  * Renders the user's calendar preferences with a live date-format
  * preview, radio groups for binary choices (time format, week start),
@@ -250,7 +250,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     readonly personalSlugHint = computed(() => this.prefs.defaultCalendarSlug());
 
     /**
-     * Task — option projection for `<app-lazy-select>`.
+     * Task -- option projection for `<app-lazy-select>`.
      *
      * Prepends a synthetic "(Personal)" row so users can revert to the
      * personal-calendar default without scrolling. The lazy-select uses
@@ -293,7 +293,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     }
 
     /**
-     * Task — bridge LazySelect's string-only valueChange to the
+     * Task -- bridge LazySelect's string-only valueChange to the
      * tristate `string | null` model used by the API. Empty string from
      * the lazy-select means "personal default".
      */
@@ -302,7 +302,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     }
 
     /**
-     * OptionSource ship — guard the bound tz field against the picker
+     * OptionSource ship -- guard the bound tz field against the picker
      * emitting an empty string (defensive: nothing actually clears the
      * trigger, but the form must always submit a concrete IANA id).
      */

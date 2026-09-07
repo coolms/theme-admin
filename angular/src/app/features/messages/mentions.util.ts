@@ -4,7 +4,7 @@ import { ChatMessageDto } from './messages.types';
  * Does this message `@`-mention the given user?
  *
  * The predicate behind the highlighted bubble. It was four lines inside the
- * page component with no test — and the CSS that made its answer VISIBLE was
+ * page component with no test -- and the CSS that made its answer VISIBLE was
  * missing entirely, so for a while it could have returned anything at all and
  * nobody would have seen a difference. Now the styling exists, this is the rule
  * that decides which message gets it.

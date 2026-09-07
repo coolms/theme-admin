@@ -24,7 +24,7 @@ import {
 import { NewsletterComposeDialogComponent } from './newsletter-compose-dialog.component';
 import { SubscriberDto, SubscriptionStatus, NewsletterService } from './newsletter.service';
 
-/** Rows per lazy page — matches the grid YAML's `dataSource.pageSize`. */
+/** Rows per lazy page -- matches the grid YAML's `dataSource.pageSize`. */
 const PAGE_SIZE = 50;
 
 /**
@@ -40,7 +40,7 @@ interface StatusTab {
 }
 
 /**
- * W8 — Newsletter admin page (/admin/newsletter).
+ * Newsletter admin page (/admin/newsletter).
  *
  * Subscribers list for a status bucket (Confirmed default, Pending,
  * Unsubscribed), rendered as a `<coolms-datagrid>` (config from the
@@ -49,18 +49,18 @@ interface StatusTab {
  * (avatar + signup source, with a one-click mailto available via the column
  * chooser), the status (coloured badge) and the subscribed / confirmed dates.
  *
- * **Compose** lives behind the header "Compose" toolbar action — it opens the
+ * **Compose** lives behind the header "Compose" toolbar action -- it opens the
  * standalone `app-newsletter-compose-dialog` (Option A, ), seeded with the
  * confirmed-recipient count, which collects subject + HTML body and POSTs to
  * `/newsletter/campaigns` (the backend fans the send out asynchronously and
  * replies with the authoritative queued count). The "export" action writes a
- * CSV of the WHOLE bucket — see {@link exportCsv}.
+ * CSV of the WHOLE bucket -- see {@link exportCsv}.
  *
  * The Newsletter backend exposes no per-subscriber admin mutation (only list +
- * send-campaign), so the grid is display-only — there are no row actions.
+ * send-campaign), so the grid is display-only -- there are no row actions.
  *
- * **`loadingMode: lazy`.** It used to be `client` — one request per
- * tab, whole bucket, filtered in the browser — but the endpoint capped that at
+ * **`loadingMode: lazy`.** It used to be `client` -- one request per
+ * tab, whole bucket, filtered in the browser -- but the endpoint capped that at
  * 200 rows, so the list silently omitted subscribers past the cap AND every
  * filter searched a truncated window while presenting itself as complete. Rows
  * now arrive a page at a time through `(loadMore)`, which is also the ONE entry
@@ -139,7 +139,7 @@ export class NewsletterListComponent implements OnInit {
      * announced "200 recipients" in the compose dialog.
      */
     readonly confirmedCount = signal(0);
-    /** Server's count for the CURRENT bucket + filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT bucket + filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded = signal(false);
@@ -170,7 +170,7 @@ export class NewsletterListComponent implements OnInit {
     });
 
     /**
-     * Footer row-count strip (bottom-left) — the SERVER's count for the bucket
+     * Footer row-count strip (bottom-left) -- the SERVER's count for the bucket
      * and active filter, so it no longer silently means "rows I happened to
      * load".
      */
@@ -187,14 +187,14 @@ export class NewsletterListComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('Newsletter');
-        // No fetch here — the grid emits `(loadMore)` on mount, which is the
+        // No fetch here -- the grid emits `(loadMore)` on mount, which is the
         // single entry point. Fetching here too would race and double-load.
     }
 
     /**
      * The one place subscribers are fetched. Fired on mount, on every
      * filter/sort change (`reset`, offset 0), when the lazy sentinel scrolls in,
-     * and — via `grid.reload()` — on a tab switch or a manual refresh.
+     * and -- via `grid.reload()` -- on a tab switch or a manual refresh.
      *
      * `columnFilters` is passed VERBATIM: the endpoint is RQL-native and its
      * allowlist comes from the same `newsletter:list` YAML that renders the
@@ -230,7 +230,7 @@ export class NewsletterListComponent implements OnInit {
                 this.loading.set(false);
                 this.loaded.set(true);
                 // Keep the compose recipient count fresh whenever the confirmed
-                // bucket loads — and unfiltered, since a campaign goes to the
+                // bucket loads -- and unfiltered, since a campaign goes to the
                 // whole bucket rather than to what the grid is showing.
                 if (status === 'confirmed' && event.columnFilters.length === 0) {
                     this.confirmedCount.set(result.totalItems);
@@ -275,7 +275,7 @@ export class NewsletterListComponent implements OnInit {
      *
      * Goes through `grid.reload()` rather than calling the API directly, so the
      * grid re-emits `(loadMore)` carrying its CURRENT filters and sort. Fetching
-     * here instead would quietly drop them — the page does not own that state.
+     * here instead would quietly drop them -- the page does not own that state.
      */
     private load(): void {
         this.loading.set(true);
@@ -287,7 +287,7 @@ export class NewsletterListComponent implements OnInit {
      *
      * With lazy loading `subscribers()` holds only what has been scrolled into
      * view, so exporting it would silently produce a 50-row CSV of a 5,000-row
-     * list — a worse version of the bug this slice fixes. So the export fetches
+     * list -- a worse version of the bug this slice fixes. So the export fetches
      * every page first. It is a deliberate, user-initiated bulk read: the one
      * place asking the server for everything is the correct thing to do.
      */

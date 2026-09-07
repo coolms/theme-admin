@@ -270,7 +270,7 @@ export class DynamicTypeDialogComponent implements OnInit {
             this.form.get('parentId')!.disable();
         }
         if (!this.isEdit) {
-            // name is the primary field — derives slug + label while those are pristine
+            // name is the primary field -- derives slug + label while those are pristine
             this.form.get('name')!.valueChanges
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(val => {

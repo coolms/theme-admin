@@ -16,7 +16,7 @@ import { ApiService, ThemeTemplateDto } from '../../api/api.service';
  * ). Bound directly to the NaviNode form's `template` FormControl.
  *
  * Deliberately a free-text input (NOT a select): a node may point at a custom
- * template that isn't listed yet, so the datalist only *suggests* — it never
+ * template that isn't listed yet, so the datalist only *suggests* -- it never
  * restricts. When `themeSlug` is empty (e.g. an admin nav tree that maps to no
  * site theme) there are no suggestions, but the input still accepts a path.
  *

@@ -19,7 +19,7 @@ import {
  * asked for "an extensible base theme other themes extend"; the SSR half of
  * that already exists as the `coolms-bootstrap` theme, which
  * `coolms-default` and `coolms-site` both declare `extends:` on. The Angular
- * half had no equivalent — and no surface on which to SEE what the kit even
+ * half had no equivalent -- and no surface on which to SEE what the kit even
  * contains.
  *
  * You cannot standardise, extract or extend a kit you cannot look at, so this
@@ -30,15 +30,15 @@ import {
  * ## It reads the kit, it does not restate it
  *
  * The token table is built by walking the CSSOM for `--cms-*` custom
- * properties and resolving each against `:root` — see {@link discoverTokenNames}.
+ * properties and resolving each against `:root` -- see {@link discoverTokenNames}.
  * A hard-coded list would drift the moment someone edited `styles.scss`, and a
  * styleguide that lies about the palette is worse than no styleguide, because
  * it is the artefact people trust. Add a token and it appears here; delete one
  * and it stops being advertised.
  *
- * The component gallery below is necessarily hand-written markup — there is no
- * registry of classes to enumerate — so it is deliberately built from the SAME
- * class names application code uses (`.cms-btn`, `.cms-input`, …) rather than
+ * The component gallery below is necessarily hand-written markup -- there is no
+ * registry of classes to enumerate -- so it is deliberately built from the SAME
+ * class names application code uses (`.cms-btn`, `.cms-input`, ...) rather than
  * bespoke styling, which would make it a drawing of the kit instead of the kit.
  */
 @Component({
@@ -282,7 +282,7 @@ export class UiKitPageComponent implements OnInit {
             .map(name => {
                 // `getPropertyValue` resolves `var()` indirection for us, so a
                 // token defined as `var(--cms-accent)` shows the colour it ends
-                // up being rather than the reference — which is what someone
+                // up being rather than the reference -- which is what someone
                 // picking a colour needs to see.
                 const value = computed.getPropertyValue(name).trim();
 

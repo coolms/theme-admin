@@ -11,10 +11,10 @@ import { DocumentInstance } from '@coolms/document-angular';
 import { filenameOf, formatLocation, formatSize } from './vfs-location.helpers';
 
 /**
- *.1b — focused-instance properties panel. Mounts in the right
+ *.1b -- focused-instance properties panel. Mounts in the right
  * detail slot when `state.rightPanelMode === 'instances'` and an
  * instance is selected. The DocumentDetail dispatcher routes here
- * directly (no per-format split — instance metadata is uniform across
+ * directly (no per-format split -- instance metadata is uniform across
  * formats).
  *
  * hotfix #2: read-only metadata view. View / Download /
@@ -167,7 +167,7 @@ export class InstanceDetailComponent {
     protected readonly location = computed(() => formatLocation(this.instance().vfsPath));
 
     /**
-     * Read from `templateSnapshot.name` — denormalised on the backend
+     * Read from `templateSnapshot.name` -- denormalised on the backend
      * row so the explorer doesn't have to join the live template
      * table. Falls back to the snapshot's `slug` if `name` was empty
      * at generation time.
@@ -186,7 +186,7 @@ export class InstanceDetailComponent {
     });
 
     /**
-     *.1b backend ops: file size lives on the resource now —
+     *.1b backend ops: file size lives on the resource now --
      * provider batch-resolves the VFS node per page. `null` for
      * pending rows or orphans (file gone but row still in DB).
      */

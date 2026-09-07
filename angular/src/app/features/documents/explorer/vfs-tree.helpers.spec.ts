@@ -84,7 +84,7 @@ describe('transformVfsToTree', () => {
 
  it('flattens nested input — only the directory entries at the listed level are surfaced', () => {
  // listDirectory is intentionally non-recursive; transformVfsToTree
- // mirrors that — children stay null until lazily loaded.
+ // mirrors that -- children stay null until lazily loaded.
         const nodes = [
             makeNode({ name: 'a', path: '/documents/a', type: 'directory' }),
             makeNode({ name: 'b', path: '/documents/b', type: 'directory' }),
@@ -119,7 +119,7 @@ describe('filterTemplatesForFolder', () => {
  // AFTER the spread on purpose. `DocumentTemplate` gained `path`
  // when native templates started opening through FileEditorRegistry,
  // and `Partial<DocumentTemplate>` makes it `string | null |
- // undefined` — spreading it over a default widens the property and
+ // undefined` -- spreading it over a default widens the property and
  // the whole object stops satisfying `DocumentTemplate`, which broke
  // the compile and with it the ENTIRE suite (karma reports one load
  // error and runs zero specs). No caller overrides `path`, so
@@ -145,7 +145,7 @@ describe('filterTemplatesForFolder', () => {
  it('ignores directory entries when matching templates', () => {
         const nodes = [
  // Stray directory whose id collides with a template id.
- // Filter must ignore directories — only file entries qualify.
+ // Filter must ignore directories -- only file entries qualify.
             makeNode({ name: 'a', path: '/documents/.templates/a', type: 'directory', id: 't-a' }),
         ];
         const templates = [

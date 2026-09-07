@@ -38,10 +38,10 @@ interface SegmentRow {
 }
 
 /**
- *Phase 3 (CDP core, ) — audience-Segment list (`/admin/cdp/segments`).
+ *Phase 3 (CDP core, ) -- audience-Segment list (`/admin/cdp/segments`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the
- * `analytics:segments` config YAML) — matches Cockpit / Webhooks / Schedules
+ * `analytics:segments` config YAML) -- matches Cockpit / Webhooks / Schedules
  * exactly: sortable columns, per-column filter row, column visibility, the row
  * count in the FOOTER (bottom-left), and platform toolbar buttons. Create / Edit
  * open the {@link SegmentEditorDialogComponent} modal; "View members" jumps to the
@@ -113,7 +113,7 @@ export class SegmentsListPageComponent implements OnInit {
         };
     });
 
-    /** Footer row-count strip (bottom-left) — mirrors the other cms-list-page consumers. */
+    /** Footer row-count strip (bottom-left) -- mirrors the other cms-list-page consumers. */
     readonly footerLabel = computed(() => {
         if (!this.loaded()) {
             return '';

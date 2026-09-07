@@ -3,7 +3,7 @@ import { type Routes } from '@angular/router';
 /**
  * DynamicChat agent inbox routes (`/admin/dynamic-chat`,.
  *
- * Single lazy page — a two-pane queue↔thread panel. `fullHeight` lets the
+ * Single lazy page -- a two-pane queue<->thread panel. `fullHeight` lets the
  * admin layout hand the page the full content height (the thread scrolls
  * internally, like the VFS / Media routes).
  */

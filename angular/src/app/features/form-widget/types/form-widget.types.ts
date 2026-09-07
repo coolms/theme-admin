@@ -1,5 +1,5 @@
 /**
- * Attribute set for the `formWidget` Tiptap node — the editor representation
+ * Attribute set for the `formWidget` Tiptap node -- the editor representation
  * of a `{widget:form formId=<id>}` dtmpl tag (rendered server-side by the Form
  * module's FormRenderWidgetRenderer).
  *

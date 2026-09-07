@@ -77,13 +77,13 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
 }
 
 /**
- * Document Library admin page — F.13b shell.
+ * Document Library admin page -- F.13b shell.
  *
  * Thin orchestrator: provides DocumentPageStateService at the page
  * subtree, mounts ExplorerLayoutComponent + PageToolbarComponent, and
  * subscribes to slot-emitted action subjects. The four slot components
  * (FoldersTree / Grid / Detail / StatusBar) communicate with this page
- * exclusively through the shared state service — no direct refs.
+ * exclusively through the shared state service -- no direct refs.
  *
  * Toolbar action dispatch is a hardcoded switch (matching Media's
  * pattern). No pluggable handler registry; the prompt's "
@@ -169,7 +169,7 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
     // collapses to its content-intrinsic height instead of filling
     // the admin shell's main area, so ExplorerLayout's flex chain
     // can't pin the footer to the bottom of the viewport. `min-height:
-    // 0` is load-bearing — without it the inner overflow:hidden
+    // 0` is load-bearing -- without it the inner overflow:hidden
     // wrappers leak past their parent and the page scrolls instead of
     // its inner panes.
     styles: [`
@@ -206,7 +206,7 @@ export class DocumentLibraryPage implements OnInit {
     private readonly store = inject(Store);
     private readonly editorRegistry = inject(FileEditorRegistry);
     private readonly nativeDialog = inject(NativeDialogService);
-    // — VFS mkdir + binary upload for the Documents view.
+    // -- VFS mkdir + binary upload for the Documents view.
     private readonly api = inject(ApiService);
     private readonly confirmSvc = inject(ConfirmDialogService);
     private readonly esc = inject(EscCoordinatorService);
@@ -225,9 +225,9 @@ export class DocumentLibraryPage implements OnInit {
     protected readonly headerActions = signal<ToolbarAction[]>([]);
 
     constructor() {
-        // Phase E3 ( §3): register the panel-close ESC handler
+        // Phase E3 ( section 3): register the panel-close ESC handler
         // only while the panel can actually consume it. When the panel
-        // is closed the handler isn't on the stack — the context-menu
+        // is closed the handler isn't on the stack -- the context-menu
         // handler (registered via its own effect on `menu()`) gets the
         // keystroke instead. Fixes #4.8 double-close.
         effect((onCleanup) => {
@@ -244,21 +244,21 @@ export class DocumentLibraryPage implements OnInit {
         //: when the focused template changes, reset filters and
         // fetch the instance count for the badge. Effect (not Subject)
         // so the reset state is visible at the same change-detection
-        // tick as the new template id — otherwise the toolbar's
+        // tick as the new template id -- otherwise the toolbar's
         // `activeWhen` evaluates against the *previous* template's
         // mode for one frame.
         //
         //: dropped the `setRightPanelMode('properties')` call on
         // template selection. Right-click selects the entity to populate
         // the would-be Properties panel, but it should NOT also force
-        // the panel mode — the user's prior mode (instances vs
+        // the panel mode -- the user's prior mode (instances vs
         // properties) stays in effect. The deselection branch still
         // resets mode so the next template selection lands in a
         // predictable default.
         effect((onCleanup) => {
             const tpl = this.state.selectedTemplate();
             //.1b: any template change clears the focused
-            // instance — stale instance properties from a previous
+            // instance -- stale instance properties from a previous
             // template would mislead the user.
             this.state.selectInstance(null);
             if (!tpl) {
@@ -278,12 +278,12 @@ export class DocumentLibraryPage implements OnInit {
 
         // hotfix #4: removed the "clear selectedInstance on
         // leaving instances mode" effect. Selection now persists
-        // across mode toggles (verification 15) — re-entering
+        // across mode toggles (verification 15) -- re-entering
         // instances mode lands the user back on their previously
         // focused instance.
 
         //.1a: clicking a folder in the tree while the user is
-        // in instances mode is a clear navigation intent — return to
+        // in instances mode is a clear navigation intent -- return to
         // properties (folder browsing) layout. Tracking `currentPath`
         // separately from the template effect so a path change without
         // a template selected (background folder browsing) still
@@ -294,7 +294,7 @@ export class DocumentLibraryPage implements OnInit {
                 || this.state.selectedTemplate() !== null) {
                 return;
             }
-            // — in the SPACE scope a path change is a change of
+            // -- in the SPACE scope a path change is a change of
             // space, not an exit: rescope the listing and stay in the
             // Documents view. Read untracked because this effect also
             // WRITES the scope; tracking it would make the effect
@@ -309,7 +309,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * Context for slot components — the right detail panel reads
+     * Context for slot components -- the right detail panel reads
      * `activeItem` to know whether to render itself.
      *
      * hotfix #3: gated on `propertiesPanelOpen`. Selection alone
@@ -330,7 +330,7 @@ export class DocumentLibraryPage implements OnInit {
     protected readonly showInstancesFilters = computed(() =>
         this.state.rightPanelMode() === 'instances'
             && (this.state.selectedTemplate() !== null
-                // — the space scope lists instances too, so it
+                // -- the space scope lists instances too, so it
                 // wants the same format / status / search filters.
                 || this.state.instancesScopePath() !== null),
     );
@@ -339,7 +339,7 @@ export class DocumentLibraryPage implements OnInit {
      * Context for the toolbar's NaviGraph showWhen rules.
      * hotfix #2: dropped legacy `_context` / `_single` fields. They
      * were derived from `selectedTpl` alone and mis-matched on instance
-     * state (where `selectedTpl` is also non-null) — predicates using
+     * state (where `selectedTpl` is also non-null) -- predicates using
      * `_context eq 'template' AND _single eq true` would render
      * template-scoped actions even when the user had focused an
      * instance, producing the duplicate-toolbar regression.
@@ -354,7 +354,7 @@ export class DocumentLibraryPage implements OnInit {
         const selectedInst = this.state.selectedInstance();
         const inInstancesMode = this.state.rightPanelMode() === 'instances';
         // hotfix #4: mode-precedence `_kind`. The active center
-        // view dictates which selection drives the toolbar — instances
+        // view dictates which selection drives the toolbar -- instances
         // mode reads `selectedInstance`, templates mode reads
         // `selectedTemplate`. With selection now persisted across mode
         // toggles (hotfix #4 reverted effect 2), this stops the
@@ -366,7 +366,7 @@ export class DocumentLibraryPage implements OnInit {
         return {
             _surface: 'toolbar',
             _kind: kind,
-            // — WHICH VIEW, as opposed to `_kind`'s WHAT IS
+            // -- WHICH VIEW, as opposed to `_kind`'s WHAT IS
             // SELECTED. The two instance views share `_rightPanelMode`,
             // so without this a predicate cannot say "only where
             // templates live": Upload / New Template / New Folder were
@@ -381,7 +381,7 @@ export class DocumentLibraryPage implements OnInit {
             _instanceCount: this.state.instanceCount(),
             _status: selectedInst?.status ?? '',
             // hotfix #4: drives the mode-properties button's
-            // pressed/active styling — it's now a true visibility toggle.
+            // pressed/active styling -- it's now a true visibility toggle.
             _propertiesPanelOpen: this.state.propertiesPanelOpen(),
         };
     });
@@ -389,7 +389,7 @@ export class DocumentLibraryPage implements OnInit {
     ngOnInit(): void {
         // F.14c-1: load format-info early so the grid + upload dialog
         // can render icons / accept-strings against the canonical
-        // backend payload. Errors are swallowed — the format-icons
+        // backend payload. Errors are swallowed -- the format-icons
         // fallback constants keep the UI usable while we re-attempt
         // on the next interaction.
         this.formatInfo
@@ -400,7 +400,7 @@ export class DocumentLibraryPage implements OnInit {
         this.refresh();
 
         // Slots use the state service's subjects to ask the page to
-        // do something — keeps the slot components free of HTTP and
+        // do something -- keeps the slot components free of HTTP and
         // dialog dependencies.
         this.state.refreshRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -426,17 +426,17 @@ export class DocumentLibraryPage implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((action) => this.onToolbarAction(action));
 
-        // E6 — empty-area drop on folder-content: direct upload (no dialog).
+        // E6 -- empty-area drop on folder-content: direct upload (no dialog).
         this.state.uploadFilesRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((files) => this.uploadFiles(files, this.state.currentPath()));
 
-        // E6 — tree right-click "Upload here": dialog path, folder pre-set.
+        // E6 -- tree right-click "Upload here": dialog path, folder pre-set.
         this.state.uploadToFolderRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((path) => this.openUploadDialog(path));
 
-        // — files dropped on the DOCUMENTS zone: straight to the
+        // -- files dropped on the DOCUMENTS zone: straight to the
         // VFS at the current folder, no template detour.
         this.state.uploadDocumentsRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -444,7 +444,7 @@ export class DocumentLibraryPage implements OnInit {
                 this.uploadDocumentsTo(files, this.state.currentPath().replace(/\/+$/, '')),
             );
 
-        // — "New folder here" targets the RIGHT-CLICKED folder.
+        // -- "New folder here" targets the RIGHT-CLICKED folder.
         this.state.newFolderInRequested$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe((path) => void this.runNewFolder(path));
@@ -497,7 +497,7 @@ export class DocumentLibraryPage implements OnInit {
             }
             case 'download-source': {
                 const t = this.state.selectedTemplate();
-                // Templates are now Nodes themselves — the template id IS
+                // Templates are now Nodes themselves -- the template id IS
                 // the backing file's id, regardless of format. Native
                 // (DTMPL) templates also have downloadable bytes via VFS;
                 // imported (DOCX) templates resolve to the uploaded
@@ -529,10 +529,10 @@ export class DocumentLibraryPage implements OnInit {
             case 'view-instance': {
                 const i = this.state.selectedInstance();
                 if (i) {
-                    // — the template is only a source of NAMES here,
+                    // -- the template is only a source of NAMES here,
                     // and the space-scoped Documents view has none
                     // selected. Requiring one made View and double-click
-                    // silently no-op there — the same
+                    // silently no-op there -- the same
                     // guard-returns-quietly shape as .
                     this.openPreview(this.state.selectedTemplate(), i);
                 }
@@ -572,7 +572,7 @@ export class DocumentLibraryPage implements OnInit {
                 this.state.setPropertiesPanelOpen(true);
                 break;
             case 'mode-properties':
-                // hotfix #4: single semantic — toggle panel
+                // hotfix #4: single semantic -- toggle panel
                 // visibility. No mode change, no selection clearing.
                 // (Hotfix #3's overload split between transition vs
                 // toggle is reverted; `mode-instances` is now the only
@@ -582,7 +582,7 @@ export class DocumentLibraryPage implements OnInit {
             case 'mode-instances': {
                 // hotfix #4: pure center-mode switcher between
                 // templates view (folder-content) and instances view
-                // (instances-browser). Selection persists per-view —
+                // (instances-browser). Selection persists per-view --
                 // returning to instances mode later still has the
                 // previously-focused instance in scope.
                 const next = this.state.rightPanelMode() === 'instances' ? 'properties' : 'instances';
@@ -595,8 +595,8 @@ export class DocumentLibraryPage implements OnInit {
     /**
      * Which rendering the switcher should show as pressed.
      *
-     * The two panes keep INDEPENDENT modes — a user may want the templates as
-     * tiles and the documents they produced as a table — so the one control
+     * The two panes keep INDEPENDENT modes -- a user may want the templates as
+     * tiles and the documents they produced as a table -- so the one control
      * reads and writes whichever signal belongs to the pane on screen.
      */
     protected readonly activeViewMode = computed<ExplorerViewMode>(() =>
@@ -620,7 +620,7 @@ export class DocumentLibraryPage implements OnInit {
 
     /**
      *.1b: in instances mode, background click closes only the
-     * instance properties panel — the template stays focused so the
+     * instance properties panel -- the template stays focused so the
      * user remains in the file zone. In properties mode the click
      * clears template selection (legacy behavior).
      *
@@ -638,7 +638,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     // Phase E3: ESC handler migrated to EscCoordinatorService (LIFO
-    // stack) — registration lives in the constructor
+    // stack) -- registration lives in the constructor
     // effect tied to `propertiesPanelOpen()` so the handler is only
     // on the stack when the panel can actually consume the ESC.
     // Fixes regression-smoke deviation #4.8 (panel + menu double-close):
@@ -649,7 +649,7 @@ export class DocumentLibraryPage implements OnInit {
     private refresh(): void {
         this.state.loading.set(true);
         // F.14c-1: list via the cross-format aggregator so future
-        // format modules surface in the grid the moment they ship —
+        // format modules surface in the grid the moment they ship --
         // no per-format `templatesSvc.list()` plumbing needed.
         this.aggregator
             .listTemplates()
@@ -694,7 +694,7 @@ export class DocumentLibraryPage implements OnInit {
      *
      * A toast is the wrong shape: this is a LIST, it is the reason the choice
      * existed, and it disappears before anyone reads three lines of it. A
-     * dialog with no Cancel is an alert — `cancelLabel: ''` hides the button
+     * dialog with no Cancel is an alert -- `cancelLabel: ''` hides the button
      * and leaves the X and the backdrop, which is exactly right for something
      * there is nothing to decide about.
      *
@@ -720,7 +720,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * E6 — direct upload path used by the empty-area dropzone. One POST
+     * E6 -- direct upload path used by the empty-area dropzone. One POST
      * per file against `folderPath` via the same aggregator the upload
      * dialog uses. Toast-success per file; on the last completion the
      * folder reloads and the most recent template becomes selected.
@@ -820,7 +820,7 @@ export class DocumentLibraryPage implements OnInit {
                 return null;
             }
         }
-        // save-as — retry with the renamed File. May 409 again; the
+        // save-as -- retry with the renamed File. May 409 again; the
         // recursion terminates when the user picks a non-colliding
         // name or cancels.
         const renamed = new File([file], result.newName ?? payload.suggestedName, { type: file.type });
@@ -854,7 +854,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3a — open the Edit Template metadata dialog. On save the
+     * F.14c-3a -- open the Edit Template metadata dialog. On save the
      * template list is refreshed so the new label / suffix / default
      * format surface immediately in folder content + the Generate
      * dialog. Existing rendered instances are unaffected (Option A's
@@ -877,7 +877,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3b — open the 2-phase Replace Template dialog. On commit
+     * F.14c-3b -- open the 2-phase Replace Template dialog. On commit
      * the template list refreshes so the new schema (if changed via
      * the adaptive policy) surfaces in the Generate dialog without
      * a page reload. Existing rendered instances are unchanged per
@@ -919,7 +919,7 @@ export class DocumentLibraryPage implements OnInit {
 
     /**
      * `template` is nullable because the space-scoped Documents view
-     * has no template in scope — it is used for naming only,
+     * has no template in scope -- it is used for naming only,
      * and the instance's own VFS filename is the better fallback
      * anyway (it is what the file is actually called on disk).
      */
@@ -929,7 +929,7 @@ export class DocumentLibraryPage implements OnInit {
         }
         const mime = this.instances.inferMimeType(instance);
         if (!mime) {
-            // — no VIEWER for this format does not mean nothing can
+            // -- no VIEWER for this format does not mean nothing can
             // open it. `text/*` has been registered to the CodeEditor all
             // along, so a `.txt` in the docs folder opened fine from the
             // VFS file manager and answered "use Download" here. Same
@@ -947,7 +947,7 @@ export class DocumentLibraryPage implements OnInit {
             ? `${template.slug}.${instance.outputFormat}`
             : this.instanceFilename(instance);
         const data: ViewerModalData = {
-            // xlsx / pptx are shown as a PDF rendition — the viewer
+            // xlsx / pptx are shown as a PDF rendition -- the viewer
             // reads that, while Download below still hands over the REAL file.
             fileUrl: this.instances.previewUrl(instance.generatedFileId, instance.outputFormat)
                 ?? this.instances.getDownloadUrl(instance.generatedFileId, { disposition: 'inline' }),
@@ -968,7 +968,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3 — Preview Latest opens the most recently rendered
+     * F.14c-3 -- Preview Latest opens the most recently rendered
      * instance for the selected template. Drives off the new
      * `?filter=templateId eq ...` collection: pick the freshest
      * `rendered` row by `generatedAt`. Falls back to a toast when
@@ -996,10 +996,10 @@ export class DocumentLibraryPage implements OnInit {
      *
      * Imported templates (`native: false`) preview through ViewerModal
      * keyed by `sourceMimeType`; the existing F.7 ViewerHost picks the
-     * right format (DocxViewer for DOCX, PdfViewer for PDF, …).
+     * right format (DocxViewer for DOCX, PdfViewer for PDF, ...).
      *
      * Native templates (`native: true`) open whatever editor the
-     * `FileEditorRegistry` has for their MIME — `text/x-dtmpl` is already
+     * `FileEditorRegistry` has for their MIME -- `text/x-dtmpl` is already
      * registered to `DtmplEditorDialogComponent`. This used to be a
      * "coming soon" toast, while the SAME file opened fine from the VFS file
      * manager, which routes through that registry. Nothing needed building:
@@ -1010,7 +1010,7 @@ export class DocumentLibraryPage implements OnInit {
      *
      * The node is fetched rather than fabricated from the template DTO: the
      * registry keys on `mimeType`/`type`, and every editor takes the whole
-     * `VfsNodeDto` — `DtmplEditorDialogComponent` loads and saves BY PATH and
+     * `VfsNodeDto` -- `DtmplEditorDialogComponent` loads and saves BY PATH and
      * also reads `name` and `mimeType`. Hand-building a partial would work
      * today and break the first time an editor reads a field we did not
      * bother to set.
@@ -1026,7 +1026,7 @@ export class DocumentLibraryPage implements OnInit {
      * Open the VFS node at `path` in whatever editor the registry has for
      * its MIME; `missMessage` is shown when nothing is registered.
      *
-     * Shared by the template path and the instance path —
+     * Shared by the template path and the instance path --
      * an instance is a VFS file like any other, and the reason `.txt`
      * could not be opened was that only templates ever consulted this.
      */
@@ -1058,13 +1058,13 @@ export class DocumentLibraryPage implements OnInit {
     /**
      * Create an empty NATIVE template and open it in the editor.
      *
-     * A native template has no source file to upload — it is authored in
-     * place — so "New Template" is a name prompt, not an upload. The slug is
+     * A native template has no source file to upload -- it is authored in
+     * place -- so "New Template" is a name prompt, not an upload. The slug is
      * derived from the name because asking an operator for a slug is asking
      * them to do the machine's job; a collision comes back as a 422 the
      * humaniser surfaces.
      *
-     * — that derivation now happens SERVER-side. The local fold here
+     * -- that derivation now happens SERVER-side. The local fold here
      * was `[^a-z0-9]+`, which cannot transliterate: `Счета` folded to the
      * empty string and the operator got "no characters a slug can be built
      * from" for a perfectly good name.
@@ -1077,7 +1077,7 @@ export class DocumentLibraryPage implements OnInit {
      * mintable, renderable and editable in the grid
      * while the only reachable answer here was Word.
      *
-     * The option list is the backend's, read off `/document/format-info` —
+     * The option list is the backend's, read off `/document/format-info` --
      * every format whose provider names a native source mime, which is
      * exactly the set that has an editor behind it. Not a hard-coded
      * Word/Spreadsheet pair and not a second toolbar button per format:
@@ -1089,14 +1089,14 @@ export class DocumentLibraryPage implements OnInit {
             .nativeAuthoringFormats()
             .map((f) => ({ value: f.format, label: f.label }));
 
-        // One option is not a choice — keep the plain name prompt rather than
+        // One option is not a choice -- keep the plain name prompt rather than
         // a select the operator can only agree with. NONE means the
         // format-info payload has not arrived, failed, or came from a backend
         // predating the flag; falling back to 'word' degrades to exactly the
         // behaviour this action had before the choice existed, which beats
         // blocking template creation on a metadata fetch.
         // Which option is PRE-selected is not the registry's to decide. The
-        // list arrives in DI tag order, which today puts Spreadsheet first —
+        // list arrives in DI tag order, which today puts Spreadsheet first --
         // so an operator who has always made Word templates by typing a name
         // and pressing Create would silently start making spreadsheets, and
         // the default would shift again whenever a module is added. Word is
@@ -1139,7 +1139,7 @@ export class DocumentLibraryPage implements OnInit {
                 next: (created) => {
                     this.state.refreshRequested$.next();
                     this.toast.success('Template created', created.name);
-                    // Straight into the editor — a brand-new template is empty,
+                    // Straight into the editor -- a brand-new template is empty,
                     // so the only useful next step is writing it.
                     this.openNativeTemplate(created);
                 },
@@ -1148,7 +1148,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * — create a subfolder in the CURRENT documents folder.
+     * -- create a subfolder in the CURRENT documents folder.
      *
      * Never under `.templates`: the NaviGraph node is gated on
      * `_view eq 'documents'`, and templates are per-space anyway, so a
@@ -1168,7 +1168,7 @@ export class DocumentLibraryPage implements OnInit {
             return;
         }
 
-        // — the TITLE goes to the server, which slugs it with the
+        // -- the TITLE goes to the server, which slugs it with the
         // platform's national transliteration rules and stores the title
         // on the Node. Folding locally was the outlier: every other
         // create path on the platform (Page, Article) already posts a
@@ -1190,11 +1190,11 @@ export class DocumentLibraryPage implements OnInit {
      * Create an empty NATIVE document and open it in the editor.
      *
      * The counterpart to {@link runNewTemplate}: same prompt-then-author flow,
-     * one folder over. A document has no source file to upload — it is written
-     * here — so this is a name-and-format prompt, not a file picker.
+     * one folder over. A document has no source file to upload -- it is written
+     * here -- so this is a name-and-format prompt, not a file picker.
      *
      * Between the two entries the operator reaches all four combinations the
-     * platform supports — Word template, Word document, Spreadsheet template,
+     * platform supports -- Word template, Word document, Spreadsheet template,
      * Spreadsheet document. They are grouped by template-vs-document rather
      * than offered as one flat list of four because the two menu entries come
      * from the NaviGraph: collapsing them into one would need a re-seed, and
@@ -1207,14 +1207,14 @@ export class DocumentLibraryPage implements OnInit {
      * wherever the operator is standing.
      *
      * The TITLE goes to the server, which slugs it with national
-     * transliteration and stores the title on the Node — the platform rule
+     * transliteration and stores the title on the Node -- the platform rule
      * every other create path follows since [].
      */
     private async runNewDocument(): Promise<void> {
-        // — the same FORMAT choice New Template offers, and for the same
+        // -- the same FORMAT choice New Template offers, and for the same
         // reason: a whole backend was stranded behind a prompt that could only
         // answer Word. `.dsheet` documents are mintable, seeded with a
-        // parseable grid, and editable — but until now unreachable, because
+        // parseable grid, and editable -- but until now unreachable, because
         // this dialog asked for a name and nothing else.
         //
         // Read off `/document/format-info` rather than hard-coded, so the next
@@ -1260,7 +1260,7 @@ export class DocumentLibraryPage implements OnInit {
                 next: (created) => {
                     this.state.refreshRequested$.next();
                     this.toast.success('Document created', created.title);
-                    // Straight into the editor — a brand-new document is empty,
+                    // Straight into the editor -- a brand-new document is empty,
                     // so the only useful next step is writing it.
                     this.openInRegisteredEditor(
                         created.path,
@@ -1272,7 +1272,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * — upload arbitrary documents into the current docs folder.
+     * -- upload arbitrary documents into the current docs folder.
      *
      * Distinct from `upload` (Upload Template), which routes through the
      * template service and appends `.templates`. Not every document a
@@ -1359,7 +1359,7 @@ export class DocumentLibraryPage implements OnInit {
     /**
      * Name a template's source download after what the source actually is.
      *
-     * The call site spelled `slug + '.docx'` for every template — wrong the
+     * The call site spelled `slug + '.docx'` for every template -- wrong the
      * moment native Word landed (a `.dtmpl` source downloading as `.docx`),
      * and plainly wrong once the admin could create native SPREADSHEET
      * templates, whose source is a `.dsheet`. Same single-format leftover

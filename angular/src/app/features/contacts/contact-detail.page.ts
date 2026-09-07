@@ -32,18 +32,18 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
 };
 
 /**
- * Contacts — Contact DETAIL page / Person hub (/admin/contacts/:id).
+ * Contacts -- Contact DETAIL page / Person hub (/admin/contacts/:id).
  *
- * The Contacts module (C.1–7) makes a `Contact` the cross-channel Person: a
+ * The Contacts module (C.1-7) makes a `Contact` the cross-channel Person: a
  * lead de-duplicates INTO one (C.5), a platform user LINKS to one (C.6), a CDP
  * subject cross-links off it (C.7). This is where all of that converges into a
- * single view — the person's identity + contact channels + linked user + CDP
+ * single view -- the person's identity + contact channels + linked user + CDP
  * subject, PLUS their **leads across every channel** (web form / chat / email /
  * phone), each a click-through to the lead detail. It's the omnichannel
  * convergence centrepiece: one Person, every touch-point.
  *
  * Reads `GET /contacts/{id}` (existing) for the person and `GET
- * /leads?contactId={id}` for the leads. The leads read is best-effort —
+ * /leads?contactId={id}` for the leads. The leads read is best-effort --
  * a failure just hides the section rather than erroring the whole page.
  */
 @Component({
@@ -295,7 +295,7 @@ export class ContactDetailComponent implements OnInit {
         return c ? `Contact — ${c.displayName || c.primaryEmail || c.id}` : 'Contact';
     });
 
-    /** Read-only page — Back only (edit/link live on the list's modal + toolbar). */
+    /** Read-only page -- Back only (edit/link live on the list's modal + toolbar). */
     /** Declared in the `contact:detail` layout, not here. */
     readonly headerActions = computed<ToolbarAction[]>(() =>
         this.layoutActions.resolve(this.layout()?.headerActions),

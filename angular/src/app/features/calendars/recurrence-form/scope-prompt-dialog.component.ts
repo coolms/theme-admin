@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '@coolms/ui-angular';
 
 /**
- * Phase 2 — scope choice when editing / deleting / dragging an
+ * Phase 2 -- scope choice when editing / deleting / dragging an
  * occurrence of a recurring CalendarItem.
  *
  * Three options, matching Google Calendar's wording:
@@ -23,7 +23,7 @@ import { ModalComponent } from '@coolms/ui-angular';
  *    row (existing single-row write paths)
  *
  * The dialog returns the chosen scope ('this' | 'following' | 'all')
- * or `undefined` when the user cancels — callers MUST treat undefined
+ * or `undefined` when the user cancels -- callers MUST treat undefined
  * as "abort, revert the optimistic UI change".
  */
 export type ScopePromptResult = 'this' | 'following' | 'all' | undefined;
@@ -35,7 +35,7 @@ export interface ScopePromptDialogData {
      */
     intent?:    'edit' | 'delete';
     /**
-     * Optional title of the event being edited — shown in the prompt
+     * Optional title of the event being edited -- shown in the prompt
      * body to give the user something concrete to anchor on.
      */
     itemTitle?: string;
@@ -140,7 +140,7 @@ export class ScopePromptDialogComponent {
     private readonly dialogRef = inject<DialogRef<ScopePromptResult>>(DialogRef);
 
     /**
-     * Selected scope. Defaults to 'this' — the least destructive
+     * Selected scope. Defaults to 'this' -- the least destructive
      * choice (one occurrence only), so a confused user who hits Enter
      * doesn't accidentally edit/delete the entire series.
      */
@@ -167,7 +167,7 @@ export class ScopePromptDialogComponent {
     /**
      * Human-readable "(Mon, Jun 15)" hint for the "Only this event"
      * label. We don't have the instant here so we just show "selected"
-     * — the parent context (the modal title + the lead paragraph) is
+     * -- the parent context (the modal title + the lead paragraph) is
      * enough.
      */
     readonly instantDay = computed(() => 'selected');

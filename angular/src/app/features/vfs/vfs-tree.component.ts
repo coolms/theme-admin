@@ -28,7 +28,7 @@ import { type VfsNodeChangeEvent } from './vfs-live-events.service';
 
 /**
  * A row in the flattened visible tree.
- * 'node' — a directory entry; 'more' — a "Load more…" button for a given parent path.
+ * 'node' -- a directory entry; 'more' -- a "Load more..." button for a given parent path.
  */
 type FlatItem =
     | { readonly kind: 'node'; readonly node: VfsNodeDto; readonly depth: number }
@@ -43,9 +43,9 @@ type FlatItem =
  * caused cascading HTTP requests and made auto-expand impossible for unloaded
  * ancestors), this component is FLAT:
  *
- * - `childrenMap`  — Map<parentPath, VfsNodeDto[]>  — all loaded directory children
- * - `expandedPaths` — Set<string>  — which paths are currently open
- * - `pathLoaded`  — Set<string>  — which paths have been fetched (prevents double-fetch)
+ * - `childrenMap`  -- Map<parentPath, VfsNodeDto[]>  -- all loaded directory children
+ * - `expandedPaths` -- Set<string>  -- which paths are currently open
+ * - `pathLoaded`  -- Set<string>  -- which paths have been fetched (prevents double-fetch)
  *
  * `flatNodes` (computed) depth-first flattens `childrenMap` into a single
  * renderable list, inserting "Load more" sentinels where pagination applies.
@@ -58,7 +58,7 @@ type FlatItem =
  *   2. If its children haven't been fetched yet, fires `loadChildrenByPath()`.
  *
  * Because expansion is path-based (not node-ID-based) no node object needs to
- * be in memory — the path alone is enough to trigger a fetch and show the
+ * be in memory -- the path alone is enough to trigger a fetch and show the
  * result once it arrives.
  */
 @Component({
@@ -188,7 +188,7 @@ type FlatItem =
     `],
 })
 export class VfsTreeComponent implements OnInit {
-    /** Starting path — the component shows children of this directory at depth 0. */
+    /** Starting path -- the component shows children of this directory at depth 0. */
     @Input() rootPath = '/';
 
     private readonly store      = inject(Store);
@@ -408,7 +408,7 @@ export class VfsTreeComponent implements OnInit {
     toggleExpand(node: VfsNodeDto, event?: Event): void {
         event?.stopPropagation();
         if (this.expandedPaths().has(node.path)) {
-            // Collapse — children stay in childrenMap so re-expand is instant
+            // Collapse -- children stay in childrenMap so re-expand is instant
             this.expandedPaths.update(s => {
                 const next = new Set(s);
                 next.delete(node.path);
@@ -459,7 +459,7 @@ export class VfsTreeComponent implements OnInit {
     /**
      * Expand every ancestor directory along fullPath.
      *
-     * For each ancestor segment (/home, /home/uuid, …):
+     * For each ancestor segment (/home, /home/uuid, ...):
      *   - Add its path to expandedPaths immediately.
      *   - If its children haven't been fetched yet, fire fetchPath().
      *

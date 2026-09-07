@@ -13,7 +13,7 @@ import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service
 import { AgentConversationDto, QueueAgentDto } from './dynamic-chat.types';
 
 /**
- * DynamicChat quick-panel, Slice C) — the right-drawer content for
+ * DynamicChat quick-panel, Slice C) -- the right-drawer content for
  * the topbar agent-queue launcher ({@link DynamicChatQuickAccessComponent}),
  * mirroring the Messages quick-panel pattern ([]). A compact PREVIEW of the
  * visitor queue, **New-first** (the ones waiting for a reply on top), each row

@@ -2,7 +2,7 @@ import type { ModuleSettingsBlockDto } from './module-settings.types';
 
 /** One module's blocks, as the hub renders them. */
 export interface ModuleGroup {
-    /** The slug — the grouping key and the track key, never a heading. */
+    /** The slug -- the grouping key and the track key, never a heading. */
     readonly module: string;
     /** What the heading says: the module's declared name, or the slug read as words. */
     readonly label: string;
@@ -20,7 +20,7 @@ export interface ModuleGroup {
  *
  * Lives in a util rather than on the component because the hub imports the
  * settings dialog, which imports DynamicFormComponent, which reaches
- * `@coolms/editor-angular` — and the karma builder cannot resolve that
+ * `@coolms/editor-angular` -- and the karma builder cannot resolve that
  * package's `./x.js` specifiers to its `.ts` sources, so ANY spec that pulls
  * the hub in fails the whole suite at build time. Same boundary the profile
  * page hit. Keeping the decisions here keeps them covered.
@@ -72,7 +72,7 @@ export function groupBlocks(blocks: readonly ModuleSettingsBlockDto[]): ModuleGr
                 // Normalised to an absolute admin path: a module declares
                 // `dynamic-chat`, and a heading link has to resolve from the
                 // router root, not from wherever the hub happens to sit.
-                // A TRUTHY test, not `null !== …`: the wire omits null
+                // A TRUTHY test, not `null !== ...`: the wire omits null
                 // properties entirely (API Platform's `skip_null_values`), so a
                 // field the DTO types as `string | null` can arrive `undefined`
                 // and an explicit null comparison lets it through to `.replace`.

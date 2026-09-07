@@ -27,14 +27,14 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Sibling — Schedules admin list page (/admin/schedules).
+ * Sibling -- Schedules admin list page (/admin/schedules).
  *
  * Server-side paginated. The DataGrid emits `(loadMore)` on its mount
  * + on every sort / filter change; this page calls
  * {@link ApiService.listSchedulesPage} with the mapped paging params
  * and feeds the result envelope back via `[externalData]`. No
  * client-side filtering, no second round-trip to resolve calendar
- * slugs — `calendarSlug` + `ownerLabel` now come back as projection
+ * slugs -- `calendarSlug` + `ownerLabel` now come back as projection
  * slots from {@link ListSchedulesProvider}.
  */
 @Component({
@@ -90,7 +90,7 @@ export class SchedulesListComponent implements OnInit {
     /**
      * Flips `true` after the first `loadMore` response (success OR
      * error). Before that, `hasMore` is forced `true` so the lazy
-     * sentinel fires the initial fetch — empty schedules + zero total
+     * sentinel fires the initial fetch -- empty schedules + zero total
      * would otherwise compute `hasMore = false` and trap the page in
      * "No data found" forever.
      */
@@ -119,7 +119,7 @@ export class SchedulesListComponent implements OnInit {
 
     /**
      * Grid payload. `calendarSlug` arrives pre-resolved from the
-     * backend — no FE-side calendar UUID-to-slug map needed. hasMore
+     * backend -- no FE-side calendar UUID-to-slug map needed. hasMore
      * drives the sentinel-based lazy fetch loop.
      */
     readonly gridData = computed((): DataGridData => {

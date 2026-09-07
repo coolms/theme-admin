@@ -33,7 +33,7 @@ describe('conversation row', () => {
 
  it('names a self-notes room "Notes"', () => {
  // DRIFT #1. Self-notes has no title and no other participants, so
- // without this branch it falls through to "Conversation" — which is
+ // without this branch it falls through to "Conversation" -- which is
  // what the quick panel showed while the page said "Notes".
             expect(conversationLabel(conv({ kind: 'self_notes' }), me)).toBe('Notes');
         });
@@ -67,12 +67,12 @@ describe('conversation row', () => {
 
  describe('unreadFor', () => {
  it('takes the SERVER number when there is one', () => {
- // — only the server knows an excluded viewer's history ceiling.
+ // -- only the server knows an excluded viewer's history ceiling.
             expect(unreadFor(conv({ viewerUnread: 3, lastSeq: 99, viewerLastReadSeq: 0 }), me)).toBe(3);
         });
 
  it('prefers the viewer cursor over the roster lookup', () => {
- // — an EXCLUDED viewer is absent from `participants`, so the
+ // -- an EXCLUDED viewer is absent from `participants`, so the
  // roster lookup yielded 0 and showed everything as unread forever.
             expect(unreadFor(conv({ lastSeq: 10, viewerLastReadSeq: 7, participants: [] }), me)).toBe(3);
         });

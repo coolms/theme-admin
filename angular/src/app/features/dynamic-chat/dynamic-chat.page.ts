@@ -31,19 +31,19 @@ import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service
 import { DynamicChatService } from './dynamic-chat.service';
 import { AgentConversationDto, ChatAttachmentDto, ChatMessageDto, QueueAgentDto, RoomNudge } from './dynamic-chat.types';
 
-/** Queue auto-refresh cadence — there is no queue-level realtime channel, so
+/** Queue auto-refresh cadence -- there is no queue-level realtime channel, so
  *  the queue is polled (per-conversation nudges keep the OPEN thread live). */
 const QUEUE_POLL_MS = 12_000;
 
 /**
- * DynamicChat agent inbox (`/admin/dynamic-chat`, — closes the
+ * DynamicChat agent inbox (`/admin/dynamic-chat`, -- closes the
  * two-way DynamicChat loop in the UI.
  *
  * **Two-pane layout** under a `cms-page-header`: the left pane is the
  * visitor queue (every active DynamicChat conversation), the right pane is the
  * selected conversation's thread + a composer.
  *
- * **Flow.** Selecting a conversation JOINs it (`POST …/join` -> the agent
+ * **Flow.** Selecting a conversation JOINs it (`POST .../join` -> the agent
  * becomes a participant + we learn our `agentParticipantId`), then reads the
  * history via the generic Chat cursor read, then subscribes to
  * `chat.room.{id}` for push. Each realtime nudge (body-less) triggers a
@@ -56,7 +56,7 @@ const QUEUE_POLL_MS = 12_000;
  * also works via poll/cursor, so a dropped socket degrades silently.
  *
  * **XSS.** Message bodies render through Angular interpolation (`{{ }}`),
- * which HTML-escapes — never `[innerHTML]`. `white-space: pre-wrap` keeps
+ * which HTML-escapes -- never `[innerHTML]`. `white-space: pre-wrap` keeps
  * the visitor's line breaks without allowing markup.
  */
 @Component({
@@ -791,7 +791,7 @@ export class DynamicChatPageComponent implements OnInit {
     });
 
     /**
-     * TRUE when the OPEN conversation is claimed by me — so the Release control
+     * TRUE when the OPEN conversation is claimed by me -- so the Release control
      * shows. `agentParticipantId` is set the moment we join (immediate, this
      * session); `assignedToMe` is the backend truth that survives the next poll.
      */
@@ -807,14 +807,14 @@ export class DynamicChatPageComponent implements OnInit {
             : `${n} open conversation${n === 1 ? '' : 's'}`;
     });
 
-    /** @see AgentToolbarContributor — the server owns which buttons exist. */
+    /** @see AgentToolbarContributor -- the server owns which buttons exist. */
     readonly toolbarTree = 'navi.toolbar.dynamic_chat.agent';
 
     /**
      * Filled from the toolbar tree, not built here.
      *
-     * Nothing about a button — its label, its icon, whether an admin-only one
-     * appears at all — is a decision this component should be making. The tree
+     * Nothing about a button -- its label, its icon, whether an admin-only one
+     * appears at all -- is a decision this component should be making. The tree
      * is filtered by permission server-side, so an agent who is not an admin
      * never receives the Settings node, rather than receiving it and having it
      * hidden.
@@ -832,7 +832,7 @@ export class DynamicChatPageComponent implements OnInit {
     });
 
     constructor() {
-        // QUEUE — realtime-first: refetch on a `queue.changed` nudge, on
+        // QUEUE -- realtime-first: refetch on a `queue.changed` nudge, on
         // each WS (re)connect, on manual Refresh, OR on a fallback timer tick that
         // only fires while the WS is DISCONNECTED (so polling is a true no-WS
         // fallback, not a parallel 12s poll). Errors -> null so a transient failure
@@ -845,7 +845,7 @@ export class DynamicChatPageComponent implements OnInit {
         // window delays the queue appearing by exactly that window, and the
         // window has to be wider than the connect gap to suppress anything. A
         // cancelled request nobody can feel, traded for a queue that paints late
-        // on every open — the trade is the wrong way round. Left deliberately.
+        // on every open -- the trade is the wrong way round. Left deliberately.
         merge(
             timer(0, QUEUE_POLL_MS).pipe(filter(() => !this.live.isConnected())),
             this.queueReload$,
@@ -881,7 +881,7 @@ export class DynamicChatPageComponent implements OnInit {
                 this.tryApplyPreselect();
             });
 
-        // OPEN THREAD — (re)subscribe to the room channel whenever the
+        // OPEN THREAD -- (re)subscribe to the room channel whenever the
         // selected conversation changes. Subscribing needs no membership;
         // the nudge handler no-ops until we've joined.
         toObservable(this.selectedId)
@@ -984,7 +984,7 @@ export class DynamicChatPageComponent implements OnInit {
                 next: () => {
                     this.releasing.set(false);
                     this.toast.success('Conversation released to the queue.');
-                    // We're no longer the agent here — drop the open thread if it's this one.
+                    // We're no longer the agent here -- drop the open thread if it's this one.
                     if (this.selectedId() === conv.id) {
                         this.selectedId.set(null);
                         this.agentParticipantId.set(null);
@@ -1021,7 +1021,7 @@ export class DynamicChatPageComponent implements OnInit {
             });
     }
 
-    /** A body-less nudge arrived — pull anything past our local high-water seq. */
+    /** A body-less nudge arrived -- pull anything past our local high-water seq. */
     private onRoomNudge(nudge: RoomNudge): void {
         const id = this.selectedId();
         if (id === null || nudge.conversationId !== id || this.agentParticipantId() === null) {
@@ -1096,7 +1096,7 @@ export class DynamicChatPageComponent implements OnInit {
         return this.dtf.auto(iso);
     }
 
-    /** Per-bubble thread timestamp = TIME only — the date lives on the per-day separator chip. */
+    /** Per-bubble thread timestamp = TIME only -- the date lives on the per-day separator chip. */
     formatBubbleTime(iso: string | null): string {
         return this.dtf.time(iso);
     }
@@ -1135,7 +1135,7 @@ export class DynamicChatPageComponent implements OnInit {
 
     // - Attachment uploads (composer) -
 
-    /** A file picked from the hidden `<input type=file>` — upload + stage it. */
+    /** A file picked from the hidden `<input type=file>` -- upload + stage it. */
     onFilesSelected(event: Event): void {
         const input = event.target as HTMLInputElement;
         if (input.files) {
@@ -1224,7 +1224,7 @@ export class DynamicChatPageComponent implements OnInit {
                         },
                         error: () => {
                             this.imageLoading.delete(att.vfsNodeId);
-                            // Leave it unresolved — the chip fallback renders instead.
+                            // Leave it unresolved -- the chip fallback renders instead.
                         },
                     });
             }

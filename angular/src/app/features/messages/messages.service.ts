@@ -13,7 +13,7 @@ export interface MentionDirectoryUser {
 }
 
 /**
- * Internal Messages — thin API client over the generic Chat conversation +
+ * Internal Messages -- thin API client over the generic Chat conversation +
  * message API. Standalone per-feature service, like
  * {@link DynamicChatService} (the agent-panel sibling).
  *
@@ -35,13 +35,13 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/conversations — the current user's conversations, newest-active
+     * GET /chat/conversations -- the current user's conversations, newest-active
      * first, PAGED.
      *
      * The response is a bare array with no total, so "is there more?" is read
      * off the LENGTH: fewer rows back than asked for means that was the last
      * page. Omitting `limit` takes the server default (30) rather than the whole
-     * inbox — an unbounded read is no longer on offer from either side.
+     * inbox -- an unbounded read is no longer on offer from either side.
      */
     listConversations(limit?: number, offset = 0): Observable<ChatConversationDto[]> {
         let params = new HttpParams();
@@ -57,7 +57,7 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations {withUserId} — open (or get the existing) 1:1
+     * POST /chat/conversations {withUserId} -- open (or get the existing) 1:1
      * DM with another user; the response carries both participants.
      */
     openDirect(withUserId: string): Observable<ChatConversationDto> {
@@ -68,9 +68,9 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations {participantUserIds, title?} — open a NEW `group`
+     * POST /chat/conversations {participantUserIds, title?} -- open a NEW `group`
      * conversation with the given members (besides the creator, who is joined as
-     * owner). Unlike {@link openDirect} this is NOT idempotent — each call mints
+     * owner). Unlike {@link openDirect} this is NOT idempotent -- each call mints
      * a fresh room. `title` is optional; when blank the FE renders the members'
      * names. The response carries every participant enriched with labels.
      */
@@ -82,7 +82,7 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations {visibility:'public', title} — open a new PUBLIC
+     * POST /chat/conversations {visibility:'public', title} -- open a new PUBLIC
      * CHANNEL (Chat-channels arc): a discoverable, open-join group created solo
      * (the creator is its owner; others self-join). The response carries the
      * conversation so it can be selected immediately.
@@ -95,7 +95,7 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations {selfNotes:true} — open (or return the existing)
+     * POST /chat/conversations {selfNotes:true} -- open (or return the existing)
      * the current user's private "message yourself" NOTES conversation:
      * a single-participant self-chat, idempotent (one per user). The response
      * carries the conversation (kind `self_notes`) so it drops straight into the
@@ -109,9 +109,9 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/channels — the public-channel discovery list (Chat-channels arc).
+     * GET /chat/channels -- the public-channel discovery list (Chat-channels arc).
      * Every active public channel, each flagged `joined` for the current user
-     * (Join vs Open). Membership-unscoped — the whole point of browsing.
+     * (Join vs Open). Membership-unscoped -- the whole point of browsing.
      */
     listChannels(): Observable<ChatChannelDto[]> {
         return this.http
@@ -120,7 +120,7 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations/{id}/join — open self-join a public channel. Any
+     * POST /chat/conversations/{id}/join -- open self-join a public channel. Any
      * authenticated user; returns the conversation (with refreshed members) so
      * it drops straight into the inbox. Idempotent server-side.
      */
@@ -132,7 +132,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/conversations/{id} — refetch ONE conversation (its enriched
+     * GET /chat/conversations/{id} -- refetch ONE conversation (its enriched
      * participants). Used to refresh the members panel after a change that
      * returns 204 (a remove), where the response carries no body.
      */
@@ -145,7 +145,7 @@ export class MessagesService {
 
     /**
      * POST /chat/conversations/{id}/participants {participantUserIds, shareHistory}
-     * — add members to a GROUP (Chat-groups G2). Owner-only server-side (403 else).
+     * -- add members to a GROUP (Chat-groups G2). Owner-only server-side (403 else).
      * Returns the conversation with its refreshed, enriched participant list.
      *
      * `shareHistory` (G2.1, default `true`) decides whether the new members may
@@ -164,7 +164,7 @@ export class MessagesService {
     }
 
     /**
-     * DELETE /chat/conversations/{id}/participants/{userId} — remove a member
+     * DELETE /chat/conversations/{id}/participants/{userId} -- remove a member
      * (Owner) or leave the group yourself (`userId` == me). 204, no body.
      */
     removeParticipant(conversationId: string, userId: string): Observable<void> {
@@ -196,10 +196,10 @@ export class MessagesService {
 
     /**
      * GET {identity.usersUrl}?filter=firstName cn "q"|lastName cn "q"|identifier cn "q"
-     * &filter=isSystem eq false — the mention typeahead's DIRECTORY search
+     * &filter=isSystem eq false -- the mention typeahead's DIRECTORY search
      * (`@`-mentions v2 / ): find users NOT (necessarily) in the conversation
      * so a mention can reach anyone. Matches by NAME (profile first/last) OR email
-     * — the pipe (`|`) is one RQL OR-group inside a single `filter` param; the
+     * -- the pipe (`|`) is one RQL OR-group inside a single `filter` param; the
      * repeated `filter` AND-combines the system-user exclusion. System
      * users are hidden. Best-effort: degrades to `[]` on error / missing manifest
      * URL / blank query. Labels prefer the full name (the backend's `displayName`
@@ -216,7 +216,7 @@ export class MessagesService {
         }
         // Repeated `filter` params AND-combine server-side (the raw-QUERY_STRING RQL
         // parser honours duplicate keys, ); the first clause is a single
-        // pipe-separated OR group (name OR email) — hide system users.
+        // pipe-separated OR group (name OR email) -- hide system users.
         const params = new HttpParams()
             .append('filter', `firstName cn "${q}"|lastName cn "${q}"|identifier cn "${q}"`)
             .append('filter', 'isSystem eq false')
@@ -247,7 +247,7 @@ export class MessagesService {
         return fallback;
     }
 
-    /** GET /chat/messages?conversationId=&afterSeq=&limit= — the in-order cursor read. */
+    /** GET /chat/messages?conversationId=&afterSeq=&limit= -- the in-order cursor read. */
     listMessages(conversationId: string, afterSeq = 0, limit = 200): Observable<ChatMessageDto[]> {
         const params = new HttpParams()
             .set('conversationId', conversationId)
@@ -259,7 +259,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/messages?conversationId=&limit= (NO cursor) — the NEWEST `limit`
+     * GET /chat/messages?conversationId=&limit= (NO cursor) -- the NEWEST `limit`
      * messages, ascending. The initial thread read for lazy paging: a
      * long conversation opens on its latest page, not its head. Older pages are
      * pulled on demand via {@link listBefore} as the user scrolls up.
@@ -274,7 +274,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/messages?conversationId=&beforeSeq=&limit= — the `limit` messages
+     * GET /chat/messages?conversationId=&beforeSeq=&limit= -- the `limit` messages
      * immediately BEFORE `beforeSeq`, ascending (lazy "load earlier", ).
      * The caller passes the lowest seq it currently holds and prepends the
      * returned page.
@@ -290,11 +290,11 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/messages — post a message. Delegates server-side to
+     * POST /chat/messages -- post a message. Delegates server-side to
      * `SendMessageService::sendAsUser` (row-locked seq, `clientId` idempotency,
      * auto-resolves the sender's participant, realtime nudge). `bodyFormat`
      * selects the body kind: `plain` (escaped on render) or `html` (the rich
-     * `comment`-profile composer, ) — the backend sanitises `html` to the
+     * `comment`-profile composer, ) -- the backend sanitises `html` to the
      * comment allow-list on write before it ever persists. Attachments are a
      * later slice.
      */
@@ -311,7 +311,7 @@ export class MessagesService {
             `${this.apiBase}/chat/messages`,
             // `threadRootId` (Threads T1) posts the message as a reply under that
             // root; omitted -> a top-level message. `mentions` = the @-mentioned
-            // users (each `{userId, label}`; may include non-members — the server
+            // users (each `{userId, label}`; may include non-members -- the server
             // de-dupes + caps but does NOT membership-gate).
             {
                 conversationId, body, clientId, bodyFormat, attachments,
@@ -322,7 +322,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/messages?conversationId=&threadRootId=&limit= — read ONE thread
+     * GET /chat/messages?conversationId=&threadRootId=&limit= -- read ONE thread
      * (Threads T1): the root message + its replies, ascending seq. The thread
      * side-panel's read.
      */
@@ -337,7 +337,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/messages?conversationId=&pinned=1 — read the conversation's PINNED
+     * GET /chat/messages?conversationId=&pinned=1 -- read the conversation's PINNED
      * messages (pinning), most-recently-pinned first. Feeds the pinned bar.
      */
     listPinned(conversationId: string, limit = 100): Observable<ChatMessageDto[]> {
@@ -351,7 +351,7 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/messages/{id}/pin — pin a message to its conversation (pinning).
+     * POST /chat/messages/{id}/pin -- pin a message to its conversation (pinning).
      * Any active member; 204. The server publishes a `pin` room nudge so peers
      * refresh their pinned bar.
      */
@@ -359,28 +359,28 @@ export class MessagesService {
         return this.http.post<void>(`${this.apiBase}/chat/messages/${messageId}/pin`, {});
     }
 
-    /** POST /chat/messages/{id}/unpin — unpin a message (pinning). 204. */
+    /** POST /chat/messages/{id}/unpin -- unpin a message (pinning). 204. */
     unpinMessage(messageId: string): Observable<void> {
         return this.http.post<void>(`${this.apiBase}/chat/messages/${messageId}/unpin`, {});
     }
 
     /**
-     * POST /chat/messages/{id}/react `{emoji}` — TOGGLE the caller's emoji reaction
+     * POST /chat/messages/{id}/react `{emoji}` -- TOGGLE the caller's emoji reaction
      * on a message. Reacting with an emoji the caller already used removes
      * it; 204. The server publishes a `reaction` room nudge so peers reconcile the
      * affected message's reaction chips. Reactions ride on the normal message reads
-     * (no separate list endpoint — like mentions).
+     * (no separate list endpoint -- like mentions).
      */
     reactToMessage(messageId: string, emoji: string): Observable<void> {
         return this.http.post<void>(`${this.apiBase}/chat/messages/${messageId}/react`, { emoji });
     }
 
     /**
-     * POST /chat/attachments (multipart) — upload one file to the current user's
+     * POST /chat/attachments (multipart) -- upload one file to the current user's
      * private chat-uploads store; returns the attachment descriptor to thread
      * into a subsequent {@link postMessage}. The server sniffs the
      * MIME (never trusts the client) + enforces an allow-list, so a rejected file
-     * surfaces as a 4xx. We deliberately do NOT set `Content-Type` — the browser
+     * surfaces as a 4xx. We deliberately do NOT set `Content-Type` -- the browser
      * must set the multipart boundary itself; the auth interceptor adds Bearer.
      */
     uploadAttachment(file: File): Observable<ChatAttachmentDto> {
@@ -390,10 +390,10 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations/{id}/typing — signal the current user is typing
+     * POST /chat/conversations/{id}/typing -- signal the current user is typing
      *. Fire-and-forget + ephemeral: the server publishes a body-less
      * `typing` nudge on the room channel (nothing persisted), so a transient
-     * failure is harmless — the next keystroke re-sends. Returns 204 (no body).
+     * failure is harmless -- the next keystroke re-sends. Returns 204 (no body).
      */
     sendTyping(conversationId: string): Observable<void> {
         return this.http.post<void>(
@@ -403,12 +403,12 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/unread — unread messages across EVERY conversation, as one
+     * GET /chat/unread -- unread messages across EVERY conversation, as one
      * number.
      *
-     * The topbar badge used to fetch the whole inbox for this — every
+     * The topbar badge used to fetch the whole inbox for this -- every
      * conversation, with participants enriched from the identity directory and a
-     * last-message preview each — to subtract two integers per row and sum them.
+     * last-message preview each -- to subtract two integers per row and sum them.
      * Muted conversations are excluded server-side, matching the per-row badge.
      *
      * Best-effort by convention: a caller keeps its last count on failure rather
@@ -425,15 +425,15 @@ export class MessagesService {
     }
 
     /**
-     * POST /chat/conversations/{id}/read[?upToSeq=N] — advance the caller's
+     * POST /chat/conversations/{id}/read[?upToSeq=N] -- advance the caller's
      * `lastReadSeq`. Used to clear the unread badge on open.
      * Fire-and-forget; the cursor only moves forward server-side, so a redundant
      * call is harmless. Returns 204.
      *
-     *  SEND `upToSeq` — the seq this client has actually received.
+     *  SEND `upToSeq` -- the seq this client has actually received.
      * Without it the server marks everything up to the conversation's CURRENT
      * `lastSeq`, including messages that landed after this client's last fetch:
-     * they are silently cleared from the badge, and — worse — the read receipt
+     * they are silently cleared from the badge, and -- worse -- the read receipt
      * tells their sender "Read" for a message the reader has never seen. The
      * server still clamps to its own `lastSeq`, so a stale or forged value can
      * only ever mark LESS.
@@ -451,7 +451,7 @@ export class MessagesService {
     }
 
     /**
-     * POST|DELETE /chat/conversations/{id}/mute — MUTE (`POST`) or UNMUTE
+     * POST|DELETE /chat/conversations/{id}/mute -- MUTE (`POST`) or UNMUTE
      * (`DELETE`) this conversation for the current user: a per-viewer
      * notification preference. A muted conversation still delivers messages but is
      * excluded from the global unread badge + produces no live inbox nudge.
@@ -471,14 +471,14 @@ export class MessagesService {
     }
 
     /**
-     * PATCH /auth/me/status {status} — set the current user's presence status
+     * PATCH /auth/me/status {status} -- set the current user's presence status
      * (online/away/busy/offline,. The new status surfaces as a
      * colored dot on every avatar the user appears on (others' Messages views).
      * Returns the updated user resource (ignored by the caller).
      *
      * Must send `Content-Type: application/merge-patch+json`: the global
      * `api_platform.yaml` declares no `patch_formats`, so every PATCH op accepts
-     * ONLY merge-patch — a plain `application/json` body is rejected 415
+     * ONLY merge-patch -- a plain `application/json` body is rejected 415
      * (the documented API-Platform PATCH gotcha; mirrors `ApiService.patchHeaders`).
      */
     setStatus(status: string): Observable<unknown> {
@@ -490,7 +490,7 @@ export class MessagesService {
     }
 
     /**
-     * GET /chat/presence?userIds=a,b,c — batched connection-derived online
+     * GET /chat/presence?userIds=a,b,c -- batched connection-derived online
      * lookup. Returns a `{uid -> online}` map for the queried
      * users, where `online` is TRUE iff that user currently holds a live
      * realtime connection (NOT the self-set status, ). Best-effort: the
@@ -519,7 +519,7 @@ export class MessagesService {
 
     /**
      * The authenticated download URL for an attachment (`GET /chat/attachments/
-     * {vfsNodeId}`). Bearer-only — a plain `<img src>`/`<a href>` can't carry the
+     * {vfsNodeId}`). Bearer-only -- a plain `<img src>`/`<a href>` can't carry the
      * token, so callers fetch through HttpClient ({@link fetchAttachment} or the
      * `[vfsSecureSrc]` directive) and hand the browser an object URL.
      */

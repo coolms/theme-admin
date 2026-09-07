@@ -36,7 +36,7 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * Slice 5 — DMN DRD (Decision Requirements Diagram) designer page.
+ * Slice 5 -- DMN DRD (Decision Requirements Diagram) designer page.
  * Hosts the vanilla-TS {@link DmnDrdEditor} (from
  * `@coolms/designer/dmn-drd`) inside the shared editor shell, wired to
  * the decision VFS draft via {@link DesignerService} (`getDraft` /
@@ -49,7 +49,7 @@ import { DesignerI18nService } from './designer-i18n.service';
  * the toolbar creation group via {@link paletteHost}); the primary
  * **Save / Deploy** actions + the status (connect hint + saved-at +
  * deploy-pending badge) live in the single bottom bar ({@link
- * DesignerActionFooterComponent}, Image-Editor chrome) — there is no
+ * DesignerActionFooterComponent}, Image-Editor chrome) -- there is no
  * separate status strip above the canvas, matching the BPMN/state-machine
  * pages.
  *
@@ -60,7 +60,7 @@ import { DesignerI18nService } from './designer-i18n.service';
  * DRD XML via {@link writeDrdXml}; load seeds it via {@link readDrdXml}.
  *
  * **Deploy** validates the DRD graph (backend `DmnDrdValidator`) + mints
- * an immutable `v{N}.dmn` version — save-then-deploy, mirroring the BPMN
+ * an immutable `v{N}.dmn` version -- save-then-deploy, mirroring the BPMN
  * and state-machine editors. The backend auto-provisions a fresh key on
  * first save. Route: `/admin/designer/decision/:key`.
  */
@@ -212,7 +212,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         });
 
         // Mount the DRD create-tools into the shell toolbar's creation
-        // group, right after the shell-rendered Connect button — the same
+        // group, right after the shell-rendered Connect button -- the same
         // seam the BPMN-Lite Palette uses. They share the shell button
         // styling so the toolbar reads as one native row. Disposed with
         // the toolbar when the shell is destroyed (it owns the DOM).
@@ -259,7 +259,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
             this.drdEditor.load(model);
             queueMicrotask(() => this.fitToContent());
         } catch (err) {
-            // A fresh decision key legitimately has no draft yet (404) —
+            // A fresh decision key legitimately has no draft yet (404) --
             // mount a blank DRD. Surface only genuine failures.
             if (httpStatus(err) === 404) {
                 this.drdEditor.load(emptyDmnDrdModel(key));
@@ -272,7 +272,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
-    /** UI-polish — retry the initial draft load from the shared error banner. */
+    /** UI-polish -- retry the initial draft load from the shared error banner. */
     protected retryLoad(): void {
         if (this.definitionKey === '') return;
         void this.loadDraft(this.definitionKey);
@@ -293,7 +293,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
 
     protected async onDeploy(): Promise<void> {
         if (this.drdEditor === undefined || this.definitionKey === '') return;
-        // Save first — the deployer reads the persisted draft from VFS, not
+        // Save first -- the deployer reads the persisted draft from VFS, not
         // the request body (mirrors the BPMN + state-machine designers).
         const xml = writeDrdXml(this.drdEditor.state);
         try {
@@ -305,7 +305,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
             this.toast.success(`Deployed "${this.definitionKey}" v${result.version}.`);
         } catch (err) {
             // A DRD validation failure surfaces as 422 with the validator's
-            // message (dangling/self/cyclic requirement, id mismatch, …).
+            // message (dangling/self/cyclic requirement, id mismatch, ...).
             this.toast.error(`Deploy failed: ${errorMessage(err)}`);
         }
     }

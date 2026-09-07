@@ -19,14 +19,14 @@ import { ApplyNginxChanges, CreateSection, LoadSections } from './section.action
  * that has to be generated and then reloaded by hand. Today that knowledge
  * lives in the API's validation messages and in somebody's head.
  *
- * ⚠️ ONE IMPLEMENTATION, TWO FACES -- and the face is the new part, not the
+ * !! ONE IMPLEMENTATION, TWO FACES -- and the face is the new part, not the
  * operation. Every step dispatches the SAME NgXS actions the plain section form
  * already used ({@link CreateSection}) and the list page's Apply button already
  * used ({@link ApplyNginxChanges}), which land on `POST /api/v1/sections` and
  * `POST /api/v1/sections/_apply`. Nothing here re-implements provisioning, so
  * there is no second copy to drift.
  *
- * ⚠️ AND THERE IS NO CONSOLE COMMAND TO BE A FACE ON. Worth stating, because
+ * !! AND THERE IS NO CONSOLE COMMAND TO BE A FACE ON. Worth stating, because
  * the natural assumption is the other way round: `coolms:sites:apply` only
  * regenerates vhosts from sections that already exist, and `coolms:site:install`
  * installs one specific product website from a hardcoded page list. Creating an
@@ -284,7 +284,7 @@ export class SiteWizardComponent {
             matchHost: this.host.trim() || undefined,
             matchPathPrefix: this.prefix.trim() || undefined,
             matchPriority: this.priority,
-            // ⚠️ The gap this wizard closes. The plain create form omitted
+            // !! The gap this wizard closes. The plain create form omitted
             // `themeSlug` while the edit form set it, so every new site was
             // born with no theme and had to be edited immediately. The create
             // endpoint has always accepted it.

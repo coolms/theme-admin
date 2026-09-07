@@ -1847,7 +1847,7 @@ figure > figcaption {
 // topbar controls (the wordmark, the breadcrumb, the quick-access buttons) and
 // the other two are a label over a `bg-danger` media overlay. All twelve want a
 // foreground that stays light, because none of their backgrounds lighten when
-// the theme flips — see the token's own note (, correcting ).
+// the theme flips — see the token's own note.
 .text-white     { color: var(--cms-on-chrome) !important; }
 .text-secondary { color: var(--cms-text-secondary) !important; }
 // `.text-dark` is only ever used as dark text ON a light or coloured fill —

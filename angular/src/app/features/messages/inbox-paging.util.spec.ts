@@ -1,7 +1,7 @@
 import { emptyInboxPage, firstInboxPage, Identified, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 
 /**
- * Inbox paging — the rules that let a capped conversation list stay
+ * Inbox paging -- the rules that let a capped conversation list stay
  * honest: no row rendered twice, no row stranded, and no state where the
  * "Load more" button is lit but cannot make progress.
  */
@@ -30,7 +30,7 @@ describe('inbox paging', () => {
  it('compares against what was ASKED FOR, not the page size', () => {
  // A refresh re-reads everything on screen (refreshWindow), so 30 rows
  // back from a request for 30 is a full page even though the client's
- // page size is 10 — measuring against 10 would claim "more" forever.
+ // page size is 10 -- measuring against 10 would claim "more" forever.
             expect(firstInboxPage(rows(...Array.from({ length: 30 }, (_, i) => `c${i}`)), 30).hasMore).toBe(true);
         });
     });

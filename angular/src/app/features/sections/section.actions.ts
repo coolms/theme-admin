@@ -30,7 +30,7 @@ export class DeleteSection {
 }
 
 /**
- * H9 — invoke the nginx vhost generator (`POST /api/v1/sections/_apply`).
+ * H9 -- invoke the nginx vhost generator (`POST /api/v1/sections/_apply`).
  * Stores the last apply result so the UI can display the reload command
  * and "Applied N section(s)" feedback. Backend is admin-only.
  */

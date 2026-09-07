@@ -4,13 +4,13 @@ import { Node, mergeAttributes, type RawCommands } from '@tiptap/core';
 export type GalleryType = 'grid' | 'slider' | 'list';
 
 /**
- * Attribute set for `{widget:media:<collection-uuid> type=…}` dtmpl tags.
+ * Attribute set for `{widget:media:<collection-uuid> type=...}` dtmpl tags.
  * Mirrors the collection-mode dispatch in the backend renderer, which resolves
  * the UUID to a directory Node and renders its images.
  *
  *   collectionId - VFS directory Node UUID of the collection. Required.
  *   name         - human-readable collection name; display-only (the editor
- *                  placeholder card label). Editor-only — NOT serialized into the
+ *                  placeholder card label). Editor-only -- NOT serialized into the
  *                  dtmpl tag (the tag lexer rejects double-quoted values), so the
  *                  card shows it in-session but falls back to a generic label
  *                  after reload.
@@ -38,8 +38,8 @@ declare module '@tiptap/core' {
 
 /**
  * Inline-block placeholder Tiptap node that mirrors a
- * `{widget:media:<collection-uuid> …}` collection-mode dtmpl tag. The editor
- * preview is informational only (icon + collection name + summary) — the actual
+ * `{widget:media:<collection-uuid> ...}` collection-mode dtmpl tag. The editor
+ * preview is informational only (icon + collection name + summary) -- the actual
  * gallery markup is produced server-side by MediaWidgetRenderer when the page is
  * rendered. Authors edit attributes by deleting + re-inserting until a future
  * inline editor lands.

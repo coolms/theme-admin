@@ -7,14 +7,14 @@ import { type FormatDisplayInfo, type FormatInfoResponse } from '../shared/forma
 import { extensionForMimeIn } from './template-source.helpers';
 
 /**
- * F.14c-1 — wraps `GET /api/v1/document/format-info` (F.14b backend).
+ * F.14c-1 -- wraps `GET /api/v1/document/format-info` (F.14b backend).
  * The Document Library page calls `loadFormatInfo()` once on mount
  * and slot components read the cached signal synchronously to drive
  * format icons / colours / labels and the upload dialog's `accept`
  * string.
  *
  * The lookup helpers fall through to the `format-icons.constants`
- * defaults when the payload hasn't arrived yet — the very first
+ * defaults when the payload hasn't arrived yet -- the very first
  * paint of the grid renders sensible iconography even before the
  * HTTP round-trip completes.
  */
@@ -26,7 +26,7 @@ export class FormatInfoService {
     readonly loading = signal(false);
 
     /**
-     * `filterFormat` narrows the response to one format (`?format=word`) —
+     * `filterFormat` narrows the response to one format (`?format=word`) --
      * what the Replace dialog asks for, since it already knows the format of
      * the template being replaced.
      *
@@ -36,7 +36,7 @@ export class FormatInfoService {
      * one signal, and `extensionForMime()` names every source download from
      * it. Caching a one-format answer there would blank the icons of every
      * other format on the page and mis-name their downloads until the next
-     * full load — a narrowing that outlives the dialog that asked for it.
+     * full load -- a narrowing that outlives the dialog that asked for it.
      */
     loadFormatInfo(filterFormat?: string): Observable<FormatInfoResponse> {
         this.loading.set(true);
@@ -64,7 +64,7 @@ export class FormatInfoService {
     }
 
     /**
-     * Synchronous lookup — returns the cached format payload or
+     * Synchronous lookup -- returns the cached format payload or
      * `undefined` if the format hasn't been advertised by the
      * backend yet (or the payload hasn't arrived).
      */
@@ -77,7 +77,7 @@ export class FormatInfoService {
     }
 
     /**
-     * The formats a template can be AUTHORED in, as opposed to imported —
+     * The formats a template can be AUTHORED in, as opposed to imported --
      * the ones whose provider names a native source mime, which is the
      * same thing as "there is an editor behind this".
      *
@@ -94,8 +94,8 @@ export class FormatInfoService {
      * File extension (leading dot) for a SOURCE mime, read off the payload
      * rather than a map here.
      *
-     * Each format publishes `mimeTypes` and `extensions` in the same order —
-     * `extensions[i]` names `mimeTypes[i]` — so this pairs them by index.
+     * Each format publishes `mimeTypes` and `extensions` in the same order --
+     * `extensions[i]` names `mimeTypes[i]` -- so this pairs them by index.
      * That pairing is the contract `DocumentFormatProviderInterface` states
      * for `getAcceptedMimeTypes()` / `getAcceptedExtensions()`.
      *
@@ -103,7 +103,7 @@ export class FormatInfoService {
      * `text/x-dtmpl` and `application/x-coolms-sheet+json` are spelled by the
      * format modules that own them, and a format that ships a new source type
      * names its own extension with no edit on this side. A frontend map would
-     * have to be revisited every time — which is exactly how a `.dtmpl` and a
+     * have to be revisited every time -- which is exactly how a `.dtmpl` and a
      * `.dsheet` both came to download named `.docx`.
      *
      * `null` when the payload hasn't arrived or the mime isn't advertised;

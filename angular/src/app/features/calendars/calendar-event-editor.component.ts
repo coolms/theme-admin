@@ -60,7 +60,7 @@ export interface CalendarEventEditorData {
     /** In edit-mode, gates the save / delete buttons. */
     canEdit?:      boolean;
     /**
-     * Phase 2 — when set, the editor was opened from clicking a single
+     * Phase 2 -- when set, the editor was opened from clicking a single
      * occurrence of a recurring series (the events card supplies the
      * displayed instant via `arg.event.start`). Save / delete will
      * prompt the user for scope ("only this" vs "all events") and
@@ -76,14 +76,14 @@ export interface CalendarEventEditorData {
 export type CalendarEventEditorResult =
     | { action: 'created'; item: CalendarItemDto }
     | { action: 'updated'; item: CalendarItemDto }
-    /** Phase 2 — "only this event" save -> an override row was written. */
+    /** Phase 2 -- "only this event" save -> an override row was written. */
     | { action: 'overridden'; parentItemId: string; overrideId: string }
-    /** Phase 3 — "this and following events" save -> series was split. */
+    /** Phase 3 -- "this and following events" save -> series was split. */
     | { action: 'split'; parentItemId: string; newBaseId: string; seriesId: string | null }
     | { action: 'deleted'; id: string }
-    /** Phase 2 — "only this event" delete -> EXDATE was appended to the parent. */
+    /** Phase 2 -- "only this event" delete -> EXDATE was appended to the parent. */
     | { action: 'occurrence-skipped'; parentItemId: string; recurrenceInstant: string }
-    /** Phase 3 — "delete this and following events" -> series was truncated. */
+    /** Phase 3 -- "delete this and following events" -> series was truncated. */
     | { action: 'following-deleted'; parentItemId: string; recurrenceInstant: string }
     | { action: 'cancelled' };
 
@@ -107,7 +107,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
 ];
 
 /**
- * — Calendar event editor modal.
+ * -- Calendar event editor modal.
  *
  * Supports create + edit + delete. Recurrence editing is delegated to
  * the structured `<app-recurrence-form>` component, which renders a
@@ -327,7 +327,7 @@ export class CalendarEventEditorComponent {
      * color picker with the user's avatarColor. Only swaps in the
      * profile color when the user hasn't already touched the input
      * (i.e. the field is still at the FALLBACK_COLOR). Edit mode is
-     * skipped — we never trample an existing event's color choice.
+     * skipped -- we never trample an existing event's color choice.
      * Errors are swallowed silently: this is a UX nicety, not a hard
      * requirement, and falling through to the FALLBACK_COLOR is fine.
      */
@@ -359,7 +359,7 @@ export class CalendarEventEditorComponent {
     readonly visibilities = VISIBILITIES;
     readonly statuses     = STATUSES;
 
-    /** Edit gating — false in edit-mode when caller passed canEdit=false. */
+    /** Edit gating -- false in edit-mode when caller passed canEdit=false. */
     readonly editable = this.mode === 'create' ? true : (this.data.canEdit !== false);
 
     // Form state
@@ -383,13 +383,13 @@ export class CalendarEventEditorComponent {
      *     when the user has no avatar color set or the /me fetch fails.
      * The initial value is the existing-item-or-blue pair; the profile
      * color overwrites blue once /me resolves (only when no item color
-     * was supplied — we never trample an explicit per-event choice).
+     * was supplied -- we never trample an explicit per-event choice).
      */
     color:         string  = this.data.item?.color ?? CalendarEventEditorComponent.FALLBACK_COLOR;
     visibility:    CalendarItemVisibilityCode = (this.data.item?.visibility ?? 'default');
     status:        CalendarItemStatusCode     = (this.data.item?.status ?? 'confirmed');
     /**
-     * — non-working-day handling for the series. Server default
+     * -- non-working-day handling for the series. Server default
      * is `off` so existing rows render with no change. Only sent on the
      * wire when the user actually picked a non-off value (saves a few
      * bytes and makes the diff in dev-tools cleaner).
@@ -397,8 +397,8 @@ export class CalendarEventEditorComponent {
     nwdPolicy:     NonWorkingDayPolicy = (this.data.item?.nwdPolicy ?? 'off');
 
     /**
-     * Recurrence spec — owned by the editor. The structured form lives
-     * inside a sub-dialog opened from the Repeats dropdown's "Custom…"
+     * Recurrence spec -- owned by the editor. The structured form lives
+     * inside a sub-dialog opened from the Repeats dropdown's "Custom..."
      * option. Preset keys map cleanly onto canonical specs via
      * `buildPresetSpec`; anything outside the preset shapes is held
      * here as a raw RFC 5545 string and rendered as a summary line.
@@ -414,7 +414,7 @@ export class CalendarEventEditorComponent {
         detectPreset(this.data.item?.recurrence ?? null, new Date(this.anchorStart())),
     );
 
-    /** Dropdown options — labels are dtstart-derived. */
+    /** Dropdown options -- labels are dtstart-derived. */
     readonly presetOptions = computed(() => buildPresetOptions(new Date(this.anchorStart())));
 
     /** Summary line shown under the dropdown when the spec is `custom`. */
@@ -440,7 +440,7 @@ export class CalendarEventEditorComponent {
 
     onPresetChange(key: RecurrencePresetKey): void {
         if (key === 'custom') {
-            // Opening the dialog is the "selection" — don't move the
+            // Opening the dialog is the "selection" -- don't move the
             // dropdown until the user actually saves a custom spec.
             this.openRecurrenceDialog();
             return;
@@ -474,7 +474,7 @@ export class CalendarEventEditorComponent {
      * or from the date-select drag defaults (create mode). The picker
      * owns its own state thereafter; we just feed the kickoff.
      *
-     * Robustness: existing rows in the wild can have `end = null` —
+     * Robustness: existing rows in the wild can have `end = null` --
      * tasks legitimately do (`Task`-type items only carry a due `start`);
      * all-day events sometimes do too (older creates didn't always send
      * an `end`, and the DB column is nullable). Returning `null` from
@@ -536,7 +536,7 @@ export class CalendarEventEditorComponent {
         }
         this.error.set(null);
 
-        // Phase 2/3 — editing one occurrence of a recurring series:
+        // Phase 2/3 -- editing one occurrence of a recurring series:
         // prompt for scope before committing. NULL `occurrenceInstant`
         // means we're editing the canonical row (list view, create
         // mode), so the existing PATCH/POST path applies directly.
@@ -559,7 +559,7 @@ export class CalendarEventEditorComponent {
     }
 
     /**
-     * Existing path — POST a new item or PATCH the canonical row with
+     * Existing path -- POST a new item or PATCH the canonical row with
      * all current form values. Used in create mode, list-mode edits,
      * and "all events" scope on recurring edits.
      */
@@ -578,7 +578,7 @@ export class CalendarEventEditorComponent {
             color:       this.color || null,
             visibility:  this.visibility,
             status:      this.status,
-            // — only send NWD policy when the event actually has
+            // -- only send NWD policy when the event actually has
             // a recurrence; the field is a no-op otherwise and we'd
             // rather keep one-shot writes minimal.
             ...(this.recurrenceSpec() ? { nwdPolicy: this.nwdPolicy } : {}),
@@ -606,10 +606,10 @@ export class CalendarEventEditorComponent {
     }
 
     /**
-     * Phase 3 — POST /calendar/items/{itemId}/split. Trims the base's
+     * Phase 3 -- POST /calendar/items/{itemId}/split. Trims the base's
      * RRULE at the occurrence's original instant and creates a new
      * base item starting at the user-edited times. The form's
-     * recurrence value is intentionally NOT sent — the new base
+     * recurrence value is intentionally NOT sent -- the new base
      * inherits the trimmed base's RRule structure server-side.
      */
     private commitSeriesSplit(range: DateTimeRangeValue): void {
@@ -642,9 +642,9 @@ export class CalendarEventEditorComponent {
     }
 
     /**
-     * Phase 2 — POST /calendar/items/{itemId}/exception. Writes an
+     * Phase 2 -- POST /calendar/items/{itemId}/exception. Writes an
      * override row for this single occurrence. The recurrence field
-     * on the form is intentionally NOT included — overrides cover one
+     * on the form is intentionally NOT included -- overrides cover one
      * instance and never carry their own RRULE.
      */
     private commitOccurrenceOverride(range: DateTimeRangeValue): void {
@@ -677,7 +677,7 @@ export class CalendarEventEditorComponent {
 
     /**
      * True when the editor was opened on a single occurrence of a
-     * recurring series — gated by both the data flag (set by the
+     * recurring series -- gated by both the data flag (set by the
      * events card when it opens the editor from a click on an
      * occurrence) AND the item actually carrying a recurrence spec.
      */
@@ -703,7 +703,7 @@ export class CalendarEventEditorComponent {
         if (!this.editable || this.mode !== 'edit' || !this.data.item) return;
         const item = this.data.item;
 
-        // Phase 2/3 — deleting one occurrence of a recurring series
+        // Phase 2/3 -- deleting one occurrence of a recurring series
         // prompts for scope:
         //   "only this"      -> POST /skip (append EXDATE)
         //   "this and following" -> POST /delete-following (truncate RRULE)
@@ -722,7 +722,7 @@ export class CalendarEventEditorComponent {
             return;
         }
 
-        // Non-recurring (or canonical-row edit) delete — keep the
+        // Non-recurring (or canonical-row edit) delete -- keep the
         // existing confirm-dialog flow.
         this.confirmSvc.open({
             title:        `Delete "${item.title}"?`,

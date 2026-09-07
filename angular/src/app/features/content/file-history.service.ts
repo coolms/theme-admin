@@ -11,7 +11,7 @@ import {
 } from './file-history.types';
 
 /**
- * Data layer for the VFS file-history UI ( W6.3): log, single-revision
+ * Data layer for the VFS file-history UI: log, single-revision
  * body, any-two (or vs-current) diff, restore-forward, and line-level blame.
  *
  * The endpoints are generic over any VFS file Node and path-addressed, so the
@@ -62,7 +62,7 @@ export class FileHistoryService {
 
     /**
      * Restore a past revision by writing its body forward as the new current
-     * content (never destructive — the restore is itself recorded as a new
+     * content (never destructive -- the restore is itself recorded as a new
      * revision). Returns the refreshed log.
      */
     restore(path: string, revisionId: string): Observable<FileRevisionLog> {

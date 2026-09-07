@@ -54,7 +54,7 @@ function rowsToOctal(rows: [PermRow, PermRow, PermRow], special = 0): string {
  * A3 dialog convergence: VFS "Permissions" (chmod) dialog now renders the
  * platform `<app-modal>` chrome instead of a bespoke native `<dialog>`.
  * Opened via CDK `Dialog.open()` (data in via DIALOG_DATA, result out via
- * DialogRef — the `ChmodPayload` or null; the opener fills `path`). The
+ * DialogRef -- the `ChmodPayload` or null; the opener fills `path`). The
  * permission-matrix + special-bits + recursive-file-mode logic is unchanged;
  * `open()`'s init-from-initialMode now runs in field initializers since CDK
  * constructs the component fresh per open.

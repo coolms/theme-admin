@@ -15,10 +15,10 @@ declare module '@tiptap/core' {
  * round-trips through the form widget transform pair, and the backend
  * FormRenderWidgetRenderer renders the real (multi-step) form at SSR time.
  *
- * In-editor: `<div data-widget="form" data-form-id="…" data-form-name="…">`
- *            styled as a chip ("📋 Form: name"). Atom — authors pick the form
+ * In-editor: `<div data-widget="form" data-form-id="..." data-form-name="...">`
+ *            styled as a chip ("📋 Form: name"). Atom -- authors pick the form
  *            through the picker rather than typing into the node.
- * On save:   `htmlToDtmpl()` swaps the marker div into `{widget:form formId=…}`.
+ * On save:   `htmlToDtmpl()` swaps the marker div into `{widget:form formId=...}`.
  * On load:   `dtmplToHtml()` rebuilds the marker div from the dtmpl tag.
  */
 export const FormWidget = Node.create({
@@ -57,7 +57,7 @@ export const FormWidget = Node.create({
             'data-form-name': String(label),
             'class':          'cms-form-widget',
             // Editor-only chip styling; storage drops the whole div for the
-            // `{widget:form …}` tag, so these never reach the saved content.
+            // `{widget:form ...}` tag, so these never reach the saved content.
             'style': 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:6px 0;'
                 + 'border:1px dashed #94a3b8;border-radius:var(--cms-radius-md, 8px);background:#f1f5f9;'
                 + 'color:#334155;font-size:13px;font-weight:600;user-select:none;',

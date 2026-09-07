@@ -23,12 +23,12 @@ export class RtcService {
         return new HttpHeaders({ Accept: 'application/json' });
     }
 
-    /** POST /rtc/calls — place a call into a conversation; the backend seeds + rings the roster. */
+    /** POST /rtc/calls -- place a call into a conversation; the backend seeds + rings the roster. */
     place(conversationId: string, mediaKind: RtcMediaKind): Observable<RtcCallDto> {
         return this.http.post<RtcCallDto>(`${this.apiBase}/rtc/calls`, { conversationId, mediaKind }, { headers: this.jsonHeaders });
     }
 
-    /** GET /rtc/calls/{id} — read a call the current user participates in. */
+    /** GET /rtc/calls/{id} -- read a call the current user participates in. */
     get(callId: string): Observable<RtcCallDto> {
         return this.http.get<RtcCallDto>(`${this.apiBase}/rtc/calls/${encodeURIComponent(callId)}`, { headers: this.jsonHeaders });
     }
@@ -45,28 +45,28 @@ export class RtcService {
         return this.action(callId, 'hangup');
     }
 
-    /** POST /rtc/calls/{id}/recording/start — begin recording the group call's media room. 503s when no recorder is deployed. */
+    /** POST /rtc/calls/{id}/recording/start -- begin recording the group call's media room. 503s when no recorder is deployed. */
     startRecording(callId: string): Observable<RtcCallDto> {
         return this.recording(callId, 'start');
     }
 
-    /** POST /rtc/calls/{id}/recording/stop — stop the in-progress recording. */
+    /** POST /rtc/calls/{id}/recording/stop -- stop the in-progress recording. */
     stopRecording(callId: string): Observable<RtcCallDto> {
         return this.recording(callId, 'stop');
     }
 
-    /** POST /rtc/calls/{id}/signal — relay an SDP/ICE envelope to the call's peers (204). */
+    /** POST /rtc/calls/{id}/signal -- relay an SDP/ICE envelope to the call's peers (204). */
     sendSignal(callId: string, signal: RtcSignal): Observable<void> {
         return this.http.post<void>(`${this.apiBase}/rtc/calls/${encodeURIComponent(callId)}/signal`, signal, { headers: this.jsonHeaders });
     }
 
-    /** GET /rtc/ice-servers — the STUN/TURN configuration for the peer connection (Slice 4c). */
+    /** GET /rtc/ice-servers -- the STUN/TURN configuration for the peer connection (Slice 4c). */
     getIceServers(): Observable<RtcIceServersDto> {
         return this.http.get<RtcIceServersDto>(`${this.apiBase}/rtc/ice-servers`, { headers: this.jsonHeaders });
     }
 
     /**
-     * GET /rtc/calls/{id}/media-token — the SFU join credentials for a GROUP call
+     * GET /rtc/calls/{id}/media-token -- the SFU join credentials for a GROUP call
      * ( Slice G2); 503s when no SFU is deployed. Only an active participant
      * of the call may fetch it.
      */
@@ -75,7 +75,7 @@ export class RtcService {
     }
 
     /**
-     * GET /rtc/calls/{id}/recording — stream the finished group-call recording as a
+     * GET /rtc/calls/{id}/recording -- stream the finished group-call recording as a
      * Bearer-authorised blob ( G8f; the interceptor attaches the token, a plain
      * `<a href>` can't). Only a PARTICIPANT of the call may fetch it; a missing /
      * non-participant / not-recorded call all -> the same opaque 404. The caller triggers

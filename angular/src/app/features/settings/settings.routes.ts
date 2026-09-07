@@ -5,12 +5,12 @@ import { type Routes, type UrlMatchResult, type UrlSegment } from '@angular/rout
  *
  *   /admin/settings                        every module
  *   /admin/settings/{module}               that module's tree
- *   /admin/settings/{module}/{block}       …with a block open
+ *   /admin/settings/{module}/{block}       ...with a block open
  *
  * One config, not three `path` entries, and that is the whole trick: Angular
  * re-creates a routed component whenever the matched route CONFIG changes, so
- * separate entries would tear the page down and rebuild it — re-fetching the
- * list, losing the rail's scroll — every time the reader clicked another block.
+ * separate entries would tear the page down and rebuild it -- re-fetching the
+ * list, losing the rail's scroll -- every time the reader clicked another block.
  * Matched here, walking the tree only changes PARAMS and the page stays put
  * while its content pane swaps.
  */
@@ -33,7 +33,7 @@ export function settingsUrlMatcher(segments: UrlSegment[]): UrlMatchResult | nul
 /**
  * Module-settings admin routes (`/admin/settings`).
  *
- * **The path IS the tree.** Module first, block under it — so a URL says where
+ * **The path IS the tree.** Module first, block under it -- so a URL says where
  * you are the way the rail does, and a module's own Settings button links at
  * `/admin/settings/{module}` without naming a block it should not have to know
  * about. Platform-wide settings need no special case: they belong to a module

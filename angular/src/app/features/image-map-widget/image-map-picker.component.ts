@@ -5,7 +5,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { ImageMapService } from '../image-maps/image-map.service';
 import type { ImageMapDto } from '../image-maps/image-map.types';
 
-/** What the picker hands back — enough to insert the node without a refetch. */
+/** What the picker hands back -- enough to insert the node without a refetch. */
 export interface ImageMapPick {
     readonly slug: string;
     readonly title: string;
@@ -18,7 +18,7 @@ export interface ImageMapPick {
  * A DISABLED map is shown but not selectable: the SSR widget renders nothing
  * for one, so letting an author embed it would produce a page with a silently
  * missing map and no way to tell why. The same applies to a map with no
- * regions — it renders the base image with an empty overlay, which is legal
+ * regions -- it renders the base image with an empty overlay, which is legal
  * but almost never what someone meant, so it is flagged rather than blocked.
  *
  * Colours come from `--cms-*` throughout: this dialog is new code, and the

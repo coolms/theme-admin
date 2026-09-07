@@ -618,7 +618,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * True when mode='override' AND the field comes from a static PHP entity
-     * (source='entity' or source='module') — NOT a dynamic runtime-type override.
+     * (source='entity' or source='module') -- NOT a dynamic runtime-type override.
      * In this case we show the restricted UI with read-only name/type.
      */
     readonly isStaticOverride: boolean =
@@ -635,7 +635,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     readonly typeBadgeClass: string = typeBadgeClass(this.field.type ?? '');
 
     /**
-     * Template-visible {@link isNumeric} — the static-override branch gates its
+     * Template-visible {@link isNumeric} -- the static-override branch gates its
      * Number Options group on it, and an Angular template can only call class
      * members.
      */
@@ -661,7 +661,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     /**
      * Inline ReactiveForm used only in isStaticOverride mode.
      * Pre-filled from the incoming FieldSchemaItem; always valid when label is present.
-     * Built eagerly (not lazily) so the template can bind to it unconditionally —
+     * Built eagerly (not lazily) so the template can bind to it unconditionally --
      * the @if (isStaticOverride) guard prevents it from rendering in other modes.
      */
     readonly staticForm: FormGroup = (() => {
@@ -714,7 +714,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
         // `type` is loaded VERBATIM. It used to be pushed through a
         // FORM_TYPE_MAP that folded the storage spellings onto form-select
-        // values — float/int/integer -> 'number', string -> 'text', datetime ->
+        // values -- float/int/integer -> 'number', string -> 'text', datetime ->
         // 'date'. That map was lossy in the one direction that mattered: submit
         // spreads `...values`, so the folded word was saved BACK, and editing a
         // `float` field's LABEL rewrote its type to `number`. The dropdown now
@@ -763,7 +763,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         const f = this.data.field;
         const preservedRules = f ? { ...(f.validationRules ?? {}) } : {};
         delete preservedRules['NotBlank'];
-        // NB: selectOptions is intentionally NOT carried here — it is now an
+        // NB: selectOptions is intentionally NOT carried here -- it is now an
         // editable form field (the optionsEditor widget). extraPayload is
         // spread OVER the form values on submit, so listing it here would
         // clobber whatever the operator just authored. The control's value
@@ -818,7 +818,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * The source (default-locale) label, shown as the panel's row preview and
-     * each input's placeholder. Captured from the field as opened — the live
+     * each input's placeholder. Captured from the field as opened -- the live
      * default-locale value is edited in the DynamicForm's own `label` field.
      */
     readonly sourceLabel = computed((): string => this.data.field?.label ?? '');
@@ -841,7 +841,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * Collapse the label panel into the wire shape, diffing against the loaded
-     * baseline ({@link labelPrefill}) — same rules as {@link collectOptionLabels}:
+     * baseline ({@link labelPrefill}) -- same rules as {@link collectOptionLabels}:
      * a fresh/edited non-empty value is sent as text; a prefilled value the
      * operator emptied is sent as `null` (clear -> revert to source); an untouched
      * value is omitted. Returns `locale => (text | null)`, or null when nothing
@@ -863,13 +863,13 @@ export class FieldDefinitionFormComponent implements OnInit {
         return Object.keys(out).length > 0 ? out : null;
     }
 
-    /** Default (source) locale — translations are authored for the OTHER locales. */
+    /** Default (source) locale -- translations are authored for the OTHER locales. */
     readonly defaultLocaleCode = computed((): string => {
         const m = this.store.selectSnapshot(AppConfigState.manifest);
         return m?.platformDefaults?.locale ?? m?.supportedLocales?.[0]?.code ?? 'en';
     });
 
-    /** Supported locales minus the default — the columns of the translations panel. */
+    /** Supported locales minus the default -- the columns of the translations panel. */
     readonly nonDefaultLocales = computed((): Array<{ code: string; label: string }> => {
         const m = this.store.selectSnapshot(AppConfigState.manifest);
         const def = this.defaultLocaleCode();
@@ -877,7 +877,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     });
 
     /**
-     * The select field's options as they currently stand IN THE DIALOG — seeded
+     * The select field's options as they currently stand IN THE DIALOG -- seeded
      * from the saved field on open, then kept live from the options-editor
      * control by {@link onFormChanged}. Reading the live value (not the static
      * `data.field` snapshot) is what lets a just-added option become translatable
@@ -889,7 +889,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * Rows of the option-translations panel: the live options, minus any whose
-     * `value` is still blank — an option's stable `value` is the catalogue key,
+     * `value` is still blank -- an option's stable `value` is the catalogue key,
      * so a half-typed row can't be translated until it has one (the editor
      * auto-derives a slug from the label).
      */
@@ -898,7 +898,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * Show the panel whenever there's something to translate INTO: at least one
-     * non-default locale configured AND at least one named option (live — so it
+     * non-default locale configured AND at least one named option (live -- so it
      * works in create mode too, since the create processor writes option labels
      * after minting the new definition's UUID). Hidden for overrides, whose
      * options aren't authored here. Single-locale deployments see nothing.
@@ -977,7 +977,7 @@ export class FieldDefinitionFormComponent implements OnInit {
             return;
         }
 
-        // Branch B — pre-fill the label- and option-translation panels with the
+        // Branch B -- pre-fill the label- and option-translation panels with the
         // translations already authored for this field, so the operator edits
         // what exists rather than starting blank. One GET seeds both panels.
         // Only relevant in edit mode when at least one panel will show and the
@@ -1002,7 +1002,7 @@ export class FieldDefinitionFormComponent implements OnInit {
 
     /**
      * Submit handler for the static-override inline form (Branch A).
-     * Only sends overrideable fields — name and type are taken from the
+     * Only sends overrideable fields -- name and type are taken from the
      * original field and passed through unchanged so the backend can
      * create/update the FieldDefinition record correctly.
      */
@@ -1044,7 +1044,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         if (v.serializedName) serializerConfig['serialized_name'] = v.serializedName;
         if (v.ignoreInApi)    serializerConfig['ignore']           = true;
 
-        // Form options — only include non-empty values
+        // Form options -- only include non-empty values
         const formOptions: Record<string, unknown> = {};
         if (v.placeholder)      formOptions['placeholder'] = v.placeholder;
         if (v.helpText)         formOptions['help']        = v.helpText;
@@ -1056,7 +1056,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         const payload: Record<string, unknown> = {
             entityAlias:     this.data.entityAlias ?? '',
             // name and type are required by the backend to create the FieldDefinition record.
-            // They are passed through unchanged — the user cannot edit them in this mode.
+            // They are passed through unchanged -- the user cannot edit them in this mode.
             name:            this.field.name,
             type:            this.field.type,
             label:           v.label,
@@ -1088,7 +1088,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     }
 
     /**
-     * Submit handler for the DynamicForm (Branch B — create / edit / runtime override).
+     * Submit handler for the DynamicForm (Branch B -- create / edit / runtime override).
      */
     onSubmit(values: Record<string, unknown>): void {
         const securityRead  = String(values['securityRead']  ?? '').split(',').map(s => s.trim()).filter(Boolean);
@@ -1141,7 +1141,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         // Attach per-locale label translations the operator changed: the
         // field's own label and each option's label. Both diff against their
         // loaded baseline; the backend persists them into the XLIFF catalogue
-        // (label -> definition.{uuid}.label, options -> …option.{value}.label).
+        // (label -> definition.{uuid}.label, options -> ...option.{value}.label).
         // Absent = no change.
         const labelTranslations = this.collectLabelTranslations();
         if (labelTranslations) {
@@ -1183,7 +1183,7 @@ export class FieldDefinitionFormComponent implements OnInit {
     }
 
     /**
-     * Called on every DynamicForm value change — marks override forms dirty and
+     * Called on every DynamicForm value change -- marks override forms dirty and
      * mirrors the options-editor control into {@link liveSelectOptions} so a
      * just-added option shows up in the translations panel without a save+reopen.
      */

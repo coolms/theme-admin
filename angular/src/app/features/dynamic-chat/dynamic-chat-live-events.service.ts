@@ -8,7 +8,7 @@ import { RoomNudge } from './dynamic-chat.types';
 const QUEUE_CHANNEL = 'chat.dynamic-chat-queue';
 
 /**
- * DynamicChat agent panel — realtime wrapper over `chat.room.{conversationId}`
+ * DynamicChat agent panel -- realtime wrapper over `chat.room.{conversationId}`
  *. Mirror of `InboxLiveEventsService` / `VfsLiveEventsService`:
  * opens the Centrifugo subscription on the first RxJS subscriber, closes it
  * when the last unsubscribes.
@@ -25,7 +25,7 @@ export class DynamicChatLiveEventsService {
 
     /**
      * Reactive WebSocket connection state (passthrough to
-     * {@link CentrifugoClientService.isConnected}) — lets the queue surfaces
+     * {@link CentrifugoClientService.isConnected}) -- lets the queue surfaces
      * SUSPEND their polling fallback while push is healthy. Polling is
      * the no-realtime fallback, not a parallel path.
      */
@@ -34,7 +34,7 @@ export class DynamicChatLiveEventsService {
     /**
      * Subscribe to the shared agent-queue channel (`chat.dynamic-chat-queue`,
      * ); emits each time the queue changed (a new visitor session, a message
-     * on a DynamicChat conversation, or a claim/release). Body-less — the
+     * on a DynamicChat conversation, or a claim/release). Body-less -- the
      * subscriber refetches `GET /dynamic-chat/agent/conversations` (authoritative).
      */
     watchQueue(): Observable<void> {

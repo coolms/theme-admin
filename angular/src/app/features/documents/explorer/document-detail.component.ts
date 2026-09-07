@@ -6,7 +6,7 @@ import { DocumentPageStateService } from './document-page-state.service';
 import { InstanceDetailComponent } from './instance-detail.component';
 
 /**
- * F.14c-1 +.1b — right-panel detail dispatcher.
+ * F.14c-1 +.1b -- right-panel detail dispatcher.
  *
  * Branches by the page's right-panel mode:
  *
@@ -20,7 +20,7 @@ import { InstanceDetailComponent } from './instance-detail.component';
  *     instance-detail extensions it can wrap or replace this branch.
  *
  * The page coordinator gates the right panel on `pageContext.activeItem`
- * — we only render content here when ExplorerLayout has already
+ * -- we only render content here when ExplorerLayout has already
  * decided the panel is visible.
  */
 @Component({
@@ -99,7 +99,7 @@ export class DocumentDetailComponent {
     protected onClose(): void {
         // hotfix #4: panel header close X is one of four panel
         // close affordances (close X, mode-properties toggle, ESC,
-        // background click). Selection is left untouched — closing the
+        // background click). Selection is left untouched -- closing the
         // panel doesn't deselect the entity.
         this.state.setPropertiesPanelOpen(false);
     }

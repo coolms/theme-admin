@@ -62,7 +62,7 @@ describe('chat presence', () => {
         });
 
  it('KEEPS the user online while another of their connections remains', () => {
- // The one that matters. Two tabs, close one — Alice is still here.
+ // The one that matters. Two tabs, close one -- Alice is still here.
  // Keying presence by user id instead of client id loses exactly this.
             const map = withoutPresenceClient(seedPresence([c('c1', 'alice'), c('c2', 'alice')]), 'c1');
 

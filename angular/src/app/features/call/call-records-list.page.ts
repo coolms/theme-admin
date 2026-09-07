@@ -27,7 +27,7 @@ import {
  * Read-only, server-side paginated: the DataGrid emits `(loadMore)` on mount
  * + on every sort / filter change; this page calls
  * {@link ApiService.listCallRecordsPage} and feeds the result envelope back
- * via `[externalData]` (mirrors the Schedules list, minus create/edit/delete —
+ * via `[externalData]` (mirrors the Schedules list, minus create/edit/delete --
  * CallRecords are minted only by the AMI event stream, never the API).
  *
  * Drill-in: the `open` row action (context menu) or the toolbar

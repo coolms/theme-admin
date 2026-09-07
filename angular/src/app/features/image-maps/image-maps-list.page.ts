@@ -26,8 +26,8 @@ import { ImageMapService } from './image-map.service';
 import type { ImageMapDto } from './image-map.types';
 
 /**
- * ImageMap list page (`/admin/image-maps`) — the spatial-substrate admin
- *–backend). `loadingMode: client`: maps are few, so the
+ * ImageMap list page (`/admin/image-maps`) -- the spatial-substrate admin
+ *-backend). `loadingMode: client`: maps are few, so the
  * page loads the whole catalogue via `GET /image-maps` and feeds the grid
  * through [externalData]; create/edit run in a modal dialog (the platform's
  * BE-config-datagrid + modal-editor convention). Region authoring is a later
@@ -72,10 +72,10 @@ export class ImageMapsListPageComponent implements OnInit {
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
-    /** Whole catalogue, keyed by slug — rows project from it, the dialog seeds from it. */
+    /** Whole catalogue, keyed by slug -- rows project from it, the dialog seeds from it. */
     private readonly maps = signal<ImageMapDto[]>([]);
 
-    /** Selected grid row — drives the toolbar's selection-gated Edit/Delete (navi showWhen). */
+    /** Selected grid row -- drives the toolbar's selection-gated Edit/Delete (navi showWhen). */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     readonly toolbarContext = computed((): Record<string, unknown> => ({

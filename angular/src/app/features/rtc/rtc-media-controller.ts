@@ -5,11 +5,11 @@ import { ToastService } from '@coolms/ui-angular';
 import { RtcService } from './rtc.service';
 import { RtcMediaKind, RtcSignal } from './rtc.types';
 
-/** Which side of the negotiation this peer is — drives the polite/impolite roles. */
+/** Which side of the negotiation this peer is -- drives the polite/impolite roles. */
 export type RtcCallRole = 'caller' | 'callee';
 
 /**
- * Fallback ICE servers if `GET /rtc/ice-servers` (Slice 4c) can't be reached — a
+ * Fallback ICE servers if `GET /rtc/ice-servers` (Slice 4c) can't be reached -- a
  * public STUN, enough for same-network / dev (host + server-reflexive
  * candidates). Normal operation fetches the server's configuration, which adds
  * the authenticated Coturn TURN relay (ephemeral creds from the F1 secret store)
@@ -18,7 +18,7 @@ export type RtcCallRole = 'caller' | 'callee';
 const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 /**
- * The MEDIA plane, Slice 4b audio · Slice 4d video) — the real WebRTC
+ * The MEDIA plane, Slice 4b audio - Slice 4d video) -- the real WebRTC
  * behind the seam {@link RtcCallService} drives. On connect it acquires local
  * capture (mic always; a camera track too when the call's `mediaKind` is
  * `video`), builds a 1:1 {@link RTCPeerConnection}, and negotiates via the
@@ -29,14 +29,14 @@ const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.
  * exposes; inbound envelopes arrive via {@link handleSignal}.
  *
  * Remote AUDIO always plays through a detached `<audio>` element this controller
- * owns, so playback is independent of the overlay's render lifecycle — for BOTH
+ * owns, so playback is independent of the overlay's render lifecycle -- for BOTH
  * audio and video calls. Remote/local VIDEO is surfaced via the `remoteStream` /
  * `localStream` signals, which the overlay binds to `<video>` elements (both
  * muted, so the audio never doubles with the `<audio>` sink). The control-plane
  * contract (start / handleSignal / toggleMute / stop + `remoteStream` /
  * `micMuted`) never changed; Slice 4d ADDED `localStream` / `cameraOff` /
  * `toggleCamera`, and Slice 4g ADDED `toggleScreenShare` / `screenSharing` (screen
- * capture swapped onto the outgoing video via `replaceTrack`) — so
+ * capture swapped onto the outgoing video via `replaceTrack`) -- so
  * {@link RtcCallService} still needs no edit.
  */
 @Injectable({ providedIn: 'root' })
@@ -70,7 +70,7 @@ export class RtcMediaController {
     private readonly _screenSharing = signal<boolean>(false);
     readonly remoteStream: Signal<MediaStream | null> = this._remoteStream.asReadonly();
     /**
-     * The local self-view stream the overlay binds to a muted `<video>` — the camera
+     * The local self-view stream the overlay binds to a muted `<video>` -- the camera
      * capture on a video call, or the SCREEN while {@link screenSharing} is on.
      */
     readonly localStream: Signal<MediaStream | null> = this._localStream.asReadonly();
@@ -196,7 +196,7 @@ export class RtcMediaController {
 
     /**
      * Share the screen: capture it via `getDisplayMedia`, then send it to the peer
-     * by REPLACING the outgoing camera track (video call — no renegotiation) or, if
+     * by REPLACING the outgoing camera track (video call -- no renegotiation) or, if
      * there is no video track yet (audio call), ADDING it (perfect-negotiation
      * handles the resulting offer). The local self-view switches to the screen, and
      * the browser's own "Stop sharing" affordance (the track's `ended` event) tears
@@ -220,7 +220,7 @@ export class RtcMediaController {
 
         const tracks = display.getVideoTracks();
         if (this.callId !== callId || tracks.length === 0) {
-            // The call ended while the picker was open (or no video track) — abandon.
+            // The call ended while the picker was open (or no video track) -- abandon.
             display.getTracks().forEach(t => t.stop());
             return;
         }
@@ -292,7 +292,7 @@ export class RtcMediaController {
                 return config.iceServers;
             }
         } catch {
-            // Endpoint unreachable / errored — degrade to the static STUN fallback.
+            // Endpoint unreachable / errored -- degrade to the static STUN fallback.
         }
 
         return [...RTC_FALLBACK_ICE_SERVERS];
@@ -311,7 +311,7 @@ export class RtcMediaController {
                 return;
             }
 
-            // offer / answer — perfect-negotiation collision handling.
+            // offer / answer -- perfect-negotiation collision handling.
             const description = signal.payload as RTCSessionDescriptionInit;
             const collision = description.type === 'offer' && (this.makingOffer || pc.signalingState !== 'stable');
             this.ignoreOffer = !this.polite && collision;

@@ -7,14 +7,14 @@ import {
 } from '../media-picker-host.component';
 
 /**
- * Handles `media.openPicker` — opens MediaPickerHostComponent in single-asset
+ * Handles `media.openPicker` -- opens MediaPickerHostComponent in single-asset
  * mode and dispatches the picked asset onto the active Tiptap chain via the
  * `mediaWidget` extension's `insertMedia` command (or as plain HTML when the
  * user has flipped insertMode in the picker UI).
  *
  * Cancelled dialogs no-op; misshapen results log via the registry's normal
  * try/catch. The handler is `@Injectable({})` so DI can deliver it through
- * the APP_INITIALIZER factory in `provideCoolmsEditorMedia()` — Dialog is
+ * the APP_INITIALIZER factory in `provideCoolmsEditorMedia()` -- Dialog is
  * pulled lazily through `ctx.injector` so the handler stays test-friendly.
  */
 @Injectable()
@@ -45,7 +45,7 @@ export class OpenMediaPickerHandler implements EditorActionHandler {
         // Result shape from MediaPickerHost:
         //   { type: 'widget', uuid, size, kind, mime, previewUrl, alt, width, height, align, caption }
         //   { type: 'plain',  html }
-        //   { type: 'gallery', path, galleryType, cols, limit, depth, align } — only fires when
+        //   { type: 'gallery', path, galleryType, cols, limit, depth, align } -- only fires when
         //                                                                       user toggled to gallery
         if (result.type === 'widget') {
             ctx.editor.chain().focus().insertMedia({

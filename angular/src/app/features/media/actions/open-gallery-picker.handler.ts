@@ -7,7 +7,7 @@ import {
 } from '../media-picker-host.component';
 
 /**
- * Handles `media.openGalleryPicker` — opens MediaPickerHostComponent with
+ * Handles `media.openGalleryPicker` -- opens MediaPickerHostComponent with
  * gallery mode pre-selected, and dispatches the picked collection onto the
  * active Tiptap chain via the `mediaGalleryWidget` extension's `insertGallery`
  * command.
@@ -25,7 +25,7 @@ export class OpenGalleryPickerHandler implements EditorActionHandler {
                 bindTarget: 'collection',
                 accept:     '*',
                 // Gallery view doesn't surface the recently-used / hover-preview
-                // affordances — they're noisy when picking folders.
+                // affordances -- they're noisy when picking folders.
                 recentlyUsed: false,
                 hoverPreview: false,
             },
@@ -40,7 +40,7 @@ export class OpenGalleryPickerHandler implements EditorActionHandler {
         if (!result) return;
 
         // The host can still emit a 'widget' result if the user toggled back
-        // to single mode mid-flow — handle both branches so the user's final
+        // to single mode mid-flow -- handle both branches so the user's final
         // intent always lands on the right command.
         if (result.type === 'gallery') {
             ctx.editor.chain().focus().insertGallery({

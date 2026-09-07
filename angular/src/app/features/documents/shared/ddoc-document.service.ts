@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { SECTION_BREAK_HTML, SECTION_BREAK_PATTERN } from '@coolms/editor-angular';
 import type { Observable } from 'rxjs';
 
-/** `application/x-coolms-document+json` — the native document source format. */
+/** `application/x-coolms-document+json` -- the native document source format. */
 export const DDOC_DOCUMENT_MIME = 'application/x-coolms-document+json';
 
 /**
@@ -11,7 +11,7 @@ export const DDOC_DOCUMENT_MIME = 'application/x-coolms-document+json';
  *
  * Mirrors `PaperCatalog::CUSTOM_SIZE`. The server sends the row only when no
  * preset names the document's paper, and it carries both orientations like
- * every other row — so rotating odd paper is a lookup here, never a swap.
+ * every other row -- so rotating odd paper is a lookup here, never a swap.
  */
 export const DDOC_CUSTOM_SIZE = 'custom';
 
@@ -57,8 +57,8 @@ export interface DdocMarginPreset extends DdocMargins {
 /**
  * What an author may choose from, with the twips behind every name.
  *
- *  The twips travel WITH the offers on purpose. The alternative — the FE
- * knowing that A4 is 11906 x 16838 and that landscape swaps them — is a second
+ *  The twips travel WITH the offers on purpose. The alternative -- the FE
+ * knowing that A4 is 11906 x 16838 and that landscape swaps them -- is a second
  * copy of `PageSizeResolver`'s table, which is the one thing the `.ddoc` paper
  * seam was designed to avoid. Nothing here is computed in the browser.
  */
@@ -100,7 +100,7 @@ export interface DdocSectionEdit {
  *
  *  Sent only when the author edited one. Absent means unchanged on the
  * server, and every note the payload does not mention keeps whatever the file
- * said — which is what stops a save that only touched the text from wiping the
+ * said -- which is what stops a save that only touched the text from wiping the
  * bodies of an imported document's footnotes.
  */
 export type DdocFootnoteEdits = Record<string, string>;
@@ -112,8 +112,8 @@ export type DdocFootnoteEdits = Record<string, string>;
  *
  * A `.dtmpl` needs no service of its own: its stored form IS a fragment of
  * HTML, so `GET /vfs/files/content` hands the editor exactly what it edits. A
- * `.ddoc` is the document MODEL, and the projection between the two — the
- * mapper chain, the style ids, twips — lives in PHP. Fetching the JSON here
+ * `.ddoc` is the document MODEL, and the projection between the two -- the
+ * mapper chain, the style ids, twips -- lives in PHP. Fetching the JSON here
  * would mean writing that chain a second time in TypeScript and then keeping
  * two implementations agreeing about `w:ilvl`.
  *
@@ -128,7 +128,7 @@ export type DdocFootnoteEdits = Record<string, string>;
  *
  * A `.ddoc` is a LIST of sections and the editor holds one flow. Showing only
  * the first would leave the rest of the document invisible while still saving
- * it — an author would see a document shorter than the one they have.
+ * it -- an author would see a document shorter than the one they have.
  */
 export function joinDdocSections(sections: readonly DdocSection[]): string {
     return sections.map(section => section.html).join(SECTION_BREAK_HTML);
@@ -146,8 +146,8 @@ export function joinDdocSections(sections: readonly DdocSection[]): string {
  * who adds a break gets a new section inheriting the last one's paper.
  *
  *  `page` goes on EVERY section when it goes at all. The paper control edits
- * the whole document — the way Word's Page Setup defaults to "Apply to: whole
- * document" — so applying it to the first section alone would leave an author
+ * the whole document -- the way Word's Page Setup defaults to "Apply to: whole
+ * document" -- so applying it to the first section alone would leave an author
  * looking at a control that describes a page the rest of their document is not
  * on.
  */
@@ -155,7 +155,7 @@ export function joinDdocSections(sections: readonly DdocSection[]): string {
  * The footnote ids the editor's HTML points at, in document order.
  *
  *  Read off the MARKUP rather than the ProseMirror document, because that is
- * what the dialog holds — the editor hands back HTML and keeps its own state to
+ * what the dialog holds -- the editor hands back HTML and keeps its own state to
  * itself. The attribute is the fact on both sides (`FootnoteMapper` reads the
  * same one), so this cannot disagree with what a save actually sends.
  *
@@ -178,7 +178,7 @@ export function referencedFootnoteIds(html: string): number[] {
  * Whether the document's sections are on more than one paper.
  *
  * A paper control describes the FIRST section, so a document whose sections
- * disagree needs to say so — otherwise the status bar states a page that most
+ * disagree needs to say so -- otherwise the status bar states a page that most
  * of the document is not on.
  *
  * Compared on the twips, not on `preset`: two sections can both be off-catalog
@@ -256,7 +256,7 @@ export class DdocDocumentService {
     /**
      *  `footnotes` is OMITTED when there is nothing to say, never sent as an
      * empty object. `{}` is a payload that mentions the notes and changes none
-     * — the same outcome today, but only by accident of the merge rules, while
+     * -- the same outcome today, but only by accident of the merge rules, while
      * the rule the seam states is that an ABSENT key is unchanged. Saying
      * nothing is the shape that cannot be misread later.
      */

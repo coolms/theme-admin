@@ -220,7 +220,7 @@ export class CollectionsTreeComponent implements OnInit {
     /**
      * Depth-first flattened view of the collections tree.
      *
-     * Padding formula: 8 + visualDepth × 16.
+     * Padding formula: 8 + visualDepth x 16.
      *   depth=1 -> 24px  (collection items)
      *   depth=2 -> 40px  (sub-collections)
      *

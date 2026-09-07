@@ -687,7 +687,7 @@ export class DomainExplorerDetailComponent {
         const withoutDragged = items.filter(n => n !== name);
         withoutDragged.splice(event.newIndex, 0, name);
 
-        // Assign sequential sortOrder (10, 20, 30…) to every item in its new position
+        // Assign sequential sortOrder (10, 20, 30...) to every item in its new position
         const reorderPayload = withoutDragged.map((fieldName, idx) => ({
             name:      fieldName,
             sortOrder: (idx + 1) * 10,

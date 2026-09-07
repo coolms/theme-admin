@@ -6,13 +6,13 @@ import { RtcSfuMediaController } from './rtc-sfu-media-controller';
 import { RtcSrcObjectDirective } from './rtc-src-object.directive';
 
 /**
- * Global call overlay, Slice 4a control · 4d video · G4b group grid) —
+ * Global call overlay, Slice 4a control - 4d video - G4b group grid) --
  * mounted once in the admin shell so it floats above every route. Renders the single
  * {@link RtcCallService.activeCall}: an INCOMING ring card (Accept / Decline), an
- * OUTGOING "Calling…" bar (Cancel), a "Call ended" note, and — when connected — one
+ * OUTGOING "Calling..." bar (Cancel), a "Call ended" note, and -- when connected -- one
  * of three in-call surfaces chosen by the call's media topology ( hybrid):
  *
- *  - a **group tile grid** (`topology === 'sfu'`, 3+ parties) — a self-tile plus one
+ *  - a **group tile grid** (`topology === 'sfu'`, 3+ parties) -- a self-tile plus one
  *    tile per remote participant (their live video, or an avatar when their camera is
  *    off), driven by {@link RtcSfuMediaController}'s `participants` / `localVideoStream`
  *    signals, with the shared mute / camera / share-screen / hang-up controls;
@@ -422,7 +422,7 @@ export class RtcCallOverlayComponent {
         void this.media.toggleScreenShare();
     }
 
-    /** Toggle recording on the group call — the notify-by-default consent control ( G8c). */
+    /** Toggle recording on the group call -- the notify-by-default consent control ( G8c). */
     onToggleRecording(c: ActiveCall): void {
         if (c.recording) {
             this.rtc.stopRecording();

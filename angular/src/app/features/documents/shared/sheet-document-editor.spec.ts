@@ -13,21 +13,21 @@ import { SHEET_DOCUMENT_MIME } from './sheet-document.constants';
  *
  * It cannot assert that `app.config.ts` performs the registration, because
  * importing that module for its side effects pulls the whole application graph
- * into the karma build — including `@coolms/designer`, whose `index.ts`
+ * into the karma build -- including `@coolms/designer`, whose `index.ts`
  * re-exports through ESM `./X.js` specifiers that the karma webpack build
  * cannot resolve (42 "Module not found" errors) even though `ng build` resolves
  * them fine. One such import takes the ENTIRE suite from 271 passing to zero
  * executed, so no spec may import `app.config`.
  *
  * What is testable is the property that makes the exact registration
- * load-bearing rather than tidy — pinned here so a future reader does not
+ * load-bearing rather than tidy -- pinned here so a future reader does not
  * "simplify" it into an `application/json` fallback that cannot fire.
  */
 describe('native spreadsheet template editor registration', () => {
  it('cannot inherit an editor from a wildcard, so the entry must be exact', () => {
  // The resolver's ONLY fallback is the mime's first segment plus `/*`.
  // For `application/x-coolms-sheet+json` that is `application/*`, which
- // nothing registers — the `+json` suffix does not reach
+ // nothing registers -- the `+json` suffix does not reach
  // `application/json`.
  expect(SHEET_DOCUMENT_MIME.split('/')[0] + '/*').toBe('application/*');
         expect(FileEditorRegistry.hasEditorForMime('application/*')).toBeFalse();

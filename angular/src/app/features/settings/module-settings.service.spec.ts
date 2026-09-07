@@ -10,7 +10,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
  * A settings block's `data` is a MAP, and that is the whole hazard here.
  *
  * Without an explicit `Accept`, API Platform negotiates `application/ld+json`
- * and renders a map as a Hydra Collection with the KEYS STRIPPED — a 200 that
+ * and renders a map as a Hydra Collection with the KEYS STRIPPED -- a 200 that
  * carries every value and no way to name one. The settings form would then load
  * empty over values that ARE saved, and the next Save would write those blanks
  * back. The platform has already paid for this once on
@@ -19,8 +19,8 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
  * field off it.
  *
  * So the fake backend below decides its shape from the REQUEST, the way the real
- * one does. The spec never picks the good shape — the header the service sends
- * does — which is what makes these regression tests rather than a restatement of
+ * one does. The spec never picks the good shape -- the header the service sends
+ * does -- which is what makes these regression tests rather than a restatement of
  * the fixed code. Delete `Accept: application/json` from any call and its test
  * goes red on a value the UI actually reads.
  */
@@ -241,7 +241,7 @@ describe('ModuleSettingsService', () => {
             .flush({ ...BLOCK, locked: { a: 'REAL_VAR', b: true, c: '', d: null } });
 
  // A lock we cannot explain would disable a control and say nothing about
- // why — worse than not locking it.
+ // why -- worse than not locking it.
         expect(got!.locked).toEqual({ a: 'REAL_VAR' });
     });
 
@@ -256,7 +256,7 @@ describe('ModuleSettingsService', () => {
     });
 
  it('turns a field the server OMITTED into null, not undefined', () => {
- // **The wire never sends `null` — it sends nothing.** API Platform
+ // **The wire never sends `null` -- it sends nothing.** API Platform
  // defaults `skip_null_values` to true, so a null property is dropped from
  // the JSON entirely while the DTO still promises `string | null`. A
  // consumer written to that promise with an explicit `null !== x` test

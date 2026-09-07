@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from '@tiptap/core';
 
 /** Attributes carried by a `documentWidget` node. */
 export interface DocumentWidgetAttrs {
-    /** Template slug — the `_id` segment of `{widget:document:<slug>}`. */
+    /** Template slug -- the `_id` segment of `{widget:document:<slug>}`. */
     readonly slug: string;
     /** Human template name, for the editor chip only; never stored. */
     readonly name?: string | null;
@@ -26,11 +26,11 @@ declare module '@tiptap/core' {
  *  **This embeds a GENERATE button, not a file.** The published page renders a
  * "Generate {template}" control; the reader clicks it and a document is produced
  * for them on demand. That is why the picker behind it lists TEMPLATES rather
- * than browsing the VFS — attaching an existing PDF is a different feature
+ * than browsing the VFS -- attaching an existing PDF is a different feature
  * (`<cms-file-picker>`), and conflating them is the mistake this node's
  * existence is meant to prevent.
  *
- * In-editor: `<div data-widget="document" data-slug="…">` styled as a chip.
+ * In-editor: `<div data-widget="document" data-slug="...">` styled as a chip.
  *            Atom, because the slug is picked rather than typed.
  * On save:   `htmlToDtmpl()` swaps the marker div for `{widget:document:<slug>}`.
  * On load:   `dtmplToHtml()` rebuilds the marker div, which `parseHTML` rehydrates.
@@ -82,7 +82,7 @@ export const DocumentWidget = Node.create({
             'data-name':   String(label),
             'class':       'cms-document-widget',
             // Editor-only chip styling; storage drops the div entirely for the
-            // `{widget:document:…}` tag, so none of this reaches saved content.
+            // `{widget:document:...}` tag, so none of this reaches saved content.
             'style': 'display:flex;align-items:center;gap:8px;padding:10px 14px;margin:6px 0;'
                 + 'border:1px dashed #94a3b8;border-radius:var(--cms-radius-md, 8px);background:#f1f5f9;'
                 + 'color:#334155;font-size:13px;font-weight:600;user-select:none;',

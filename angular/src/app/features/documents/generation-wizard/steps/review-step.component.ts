@@ -112,7 +112,7 @@ export class CmsWizardReviewStepComponent {
     });
 
     /**
-     * The stored RQL is a query string (`filter[]=isActive%20eq%20true&…`),
+     * The stored RQL is a query string (`filter[]=isActive%20eq%20true&...`),
      * which is what the backend wants but not what an operator should have to
      * read on a confirmation screen. Show the criteria themselves, decoded
      * and comma-joined.

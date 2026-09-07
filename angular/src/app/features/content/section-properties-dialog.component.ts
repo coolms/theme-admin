@@ -30,27 +30,27 @@ export interface SectionPropertiesDialogData {
 }
 
 /**
- * Section properties — everything a section declares about the posts
+ * Section properties -- everything a section declares about the posts
  * inside it, and where a published one goes.
  *
  * ## Why this exists at all
  *
  * The per-section distribution config has been implemented since, but its
- * only door was a row action on a DIRECTORY row in the Pages grid — and
+ * only door was a row action on a DIRECTORY row in the Pages grid -- and
  * moved folders out of that grid, so the action could no longer fire. The
  * capability was intact and unreachable. This is the door, in the place a
  * section now lives: the left-panel tree.
  *
  * ## Three groups, in the order a person asks about them
  *
- *  1. **Feed** — is this section a content collection? Only a collection has
+ *  1. **Feed** -- is this section a content collection? Only a collection has
  *     `/{section}/feed.xml`, so a plain directory shows the reason and a button
  *     that promotes it. The feed itself needs no configuring: it renders on
  *     demand from the live published posts, so it is never stale.
- *  2. **Posts** — the section's DEFAULT PAGE TEMPLATE (`postContentType`, the
+ *  2. **Posts** -- the section's DEFAULT PAGE TEMPLATE (`postContentType`, the
  *     `extras.contentType` stamped on each new post, which the resolver maps to
  *     `pages/{type}.html.dtmpl`) and whether they need editorial review.
- *  3. **Distribution** — which outbound channels a published post fans out to,
+ *  3. **Distribution** -- which outbound channels a published post fans out to,
  *     and each selected channel's settings. The list comes from the
  *     `core.outbound_channels` OptionSource and the settings from
  *     `GET /outbound-channels`, both served off the same gated registry,
@@ -58,7 +58,7 @@ export interface SectionPropertiesDialogData {
  *     in this file names a channel: the first version hard-coded one "Webhook
  *     URL" input, which made every other channel tickable but unconfigurable.
  *
- * Two endpoints back it (`…/settings` and `…/distribution`) because they
+ * Two endpoints back it (`.../settings` and `.../distribution`) because they
  * validate different things; the dialog saves both and reports once.
  */
 @Component({
@@ -294,7 +294,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
     protected readonly pageTypes = signal<readonly PageTypeDto[]>([]);
     protected readonly enabledChannels = signal<readonly string[]>([]);
 
-    /** Every enabled channel with its declared settings — `GET /outbound-channels`. */
+    /** Every enabled channel with its declared settings -- `GET /outbound-channels`. */
     private readonly channels = signal<readonly OutboundChannelDto[]>([]);
 
     /**
@@ -313,7 +313,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
      *
      * Flat because the template binds one input per (channel, field) pair and a
      * nested record would need each channel's object to exist before ngModel
-     * could write into it — an initialisation step that silently does nothing
+     * could write into it -- an initialisation step that silently does nothing
      * when a channel is selected after load.
      */
     private readonly fieldValues = signal<Record<string, string>>({});
@@ -324,7 +324,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
      * Declaring a field controls what the dialog OFFERS, not what the channel
      * accepts: `email` reads `from`/`cc`/`bcc` and `websub` reads a caller-
      * supplied `topicUrl`, none of which appear here. Rebuilding `channelConfig`
-     * from the declared fields alone would drop them on every save — the same
+     * from the declared fields alone would drop them on every save -- the same
      * class of silent loss as the `forkJoin` bug below, one layer down.
      */
     private loadedConfig: Record<string, Record<string, unknown>> = {};
@@ -338,7 +338,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
     }
 
     /**
-     * Public feed URLs, derived by stripping the content root — the same
+     * Public feed URLs, derived by stripping the content root -- the same
      * mirror-the-path rule the pages themselves follow, so these are
      * the real addresses rather than a guess.
      */
@@ -414,7 +414,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
      * Not a save blocker: a channel with no config soft-skips at publish time
      * rather than failing the post, so blocking would be a stricter rule than
      * the backend's. But leaving it silent is what made the old dialog
-     * misleading — a channel could be ticked and never fire, with nothing on
+     * misleading -- a channel could be ticked and never fire, with nothing on
      * screen saying so.
      */
     protected missing(channel: OutboundChannelDto): readonly string[] {
@@ -457,7 +457,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
      * Assemble what to persist: the loaded config for each still-selected
      * channel, with the declared fields overlaid.
      *
-     * Config for a DESELECTED channel is dropped — leaving it behind would mean
+     * Config for a DESELECTED channel is dropped -- leaving it behind would mean
      * re-ticking the channel silently resurrects settings the operator last saw
      * being removed.
      */
@@ -475,8 +475,8 @@ export class SectionPropertiesDialogComponent implements OnInit {
                 // because a masked credential could not be read back and saving
                 // the dialog would have erased it. removed the credential
                 // rather than the exception: what a `secretRef` holds is a NAME,
-                // which reads back like anything else, so the special case — and
-                // the surprise of a field that ignores being emptied — is gone.
+                // which reads back like anything else, so the special case -- and
+                // the surprise of a field that ignores being emptied -- is gone.
                 const value = this.fieldValue(id, field.key).trim();
                 if ('' === value) {
                     delete entry[field.key];
@@ -519,7 +519,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
                 },
                 // Surface the SERVER's reason. The write is gated on
                 // `VfsPermission::WRITE`, so the common failure is a 403 whose
-                // detail names the path — and "Failed to declare the
+                // detail names the path -- and "Failed to declare the
                 // collection" would hide the one fact that lets an operator
                 // act (the directory is not writable by their group).
                 error: err => {
@@ -534,7 +534,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
 
         const channelConfig = this.buildChannelConfig();
 
-        // Two writes, one save button — STRICTLY SEQUENTIAL.
+        // Two writes, one save button -- STRICTLY SEQUENTIAL.
         //
         // The first version ran them through `forkJoin` on the reasoning that
         // they touch disjoint extras keys. That reasoning is wrong and cost a

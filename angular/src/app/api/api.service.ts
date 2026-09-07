@@ -53,7 +53,7 @@ export interface CreateSectionDto {
     matchPathPrefix?: string;
     matchPriority?:  number;
     /**
-     * ⚠️ Was missing here while `UpdateSectionDto` had it, so a site created
+     * !! Was missing here while `UpdateSectionDto` had it, so a site created
      * from the admin was born with NO theme binding and had to be edited
      * immediately to get one. `CreateSiteSectionProcessor` has always read
      * `themeSlug` off the resource -- the omission was only on this side.
@@ -69,8 +69,8 @@ export interface UpdateSectionDto {
     matchPriority?:  number;
     /**
      * THE authoritative theme binding. A section naming a theme resolves
-     * to it directly via `ThemeSubscriber`'s fast-path, so this — not the Themes
-     * page's Activate — decides a site's theme. `null` clears it, falling back to
+     * to it directly via `ThemeSubscriber`'s fast-path, so this -- not the Themes
+     * page's Activate -- decides a site's theme. `null` clears it, falling back to
      * whichever theme is active; `undefined` leaves it unchanged (merge-patch).
      */
     themeSlug?:      string | null;
@@ -86,7 +86,7 @@ export interface SectionApplyResultDto {
     readonly unchanged:     ReadonlyArray<string>;
     readonly skipped:       ReadonlyArray<string>;
     /**
-     * ⚠️ Vhosts DELETED because no section owns them any more. The backend
+     * !! Vhosts DELETED because no section owns them any more. The backend
      * computed this all along and the API resource dropped it, so the admin's
      * Apply could delete a server block and report only what it wrote -- the
      * one outcome an operator cannot infer from the section list.
@@ -330,7 +330,7 @@ export interface IdentityGroupDto {
     description: string | null;
     memberCount: number;
     /**
-     * Groups whose roles are granted by holding THIS group's role — one
+     * Groups whose roles are granted by holding THIS group's role -- one
      * hop, the stored edges, not the transitive closure the security hierarchy
      * computes.
      *
@@ -433,7 +433,7 @@ export interface ChownDto {
 // --- DocumentGeneration DTOs -------------------------------------------------
 
 /**
- * `GET /document/generations/preview-audience` — who an RQL filter selects.
+ * `GET /document/generations/preview-audience` -- who an RQL filter selects.
  *
  * `count` is authoritative: it comes from the same `FilterAudienceMaterializer`
  * the submit runs, so it is the number that lands in `BatchJob.totalCount`.
@@ -454,7 +454,7 @@ export interface AudiencePreviewDto {
 export interface CreateDocumentGenerationPayload {
     templateId:       string;
     /**
-     * The template's own output format — `docx`, `pdf`, `xlsx`, … Widened from
+     * The template's own output format -- `docx`, `pdf`, `xlsx`, ... Widened from
      * a `'docx' | 'pdf'` union in : the union was accurate only while Word
      * was the sole format module, and it forced the wizard to coerce a
      * spreadsheet template's `xlsx` into `docx`.
@@ -546,7 +546,7 @@ export interface WeekdayHoursDto {
 }
 
 /** Snapshot of a Calendar entity for the list / detail / form. */
-/** — summary returned by `POST /api/v1/calendar/{slug}/import`. */
+/** -- summary returned by `POST /api/v1/calendar/{slug}/import`. */
 export interface CalendarImportResultDto {
     readonly imported: number;
     readonly skipped:  number;
@@ -608,7 +608,7 @@ export interface HolidayPreviewItemDto {
     readonly isWorking:  boolean;
 }
 
-/** — Scheduler trigger kind code, lowercase enum. */
+/** -- Scheduler trigger kind code, lowercase enum. */
 export type TriggerKindCode = 'cron' | 'rrule';
 
 /** Snapshot of a Schedule for list / detail / form. */
@@ -624,13 +624,13 @@ export interface ScheduleDto {
     readonly enabled?:      boolean;
     readonly calendarId?:   string | null;
     /**
-     * Sibling — display slug for the backing calendar, set
+     * Sibling -- display slug for the backing calendar, set
      * server-side by ListSchedulesProvider so the FE doesn't need a
      * separate `/calendar` round-trip to resolve calendarId -> slug.
      */
     readonly calendarSlug?: string | null;
     readonly ownerId?:      string | null;
-    /** Display label for the owner — set by ListSchedulesProvider. */
+    /** Display label for the owner -- set by ListSchedulesProvider. */
     readonly ownerLabel?:   string | null;
     readonly lastRunAt?:    string | null;
     readonly nextRunAt?:    string | null;
@@ -639,7 +639,7 @@ export interface ScheduleDto {
 }
 
 /**
- * One row from `GET /api/v1/scheduler/handlers` — a class registered
+ * One row from `GET /api/v1/scheduler/handlers` -- a class registered
  * with `#[ScheduledHandler]`. The dropdown stores the `key` in
  * `ScheduleDto.handler`; `label` + `description` are shown to the
  * admin; `fqcn` is informational.
@@ -660,7 +660,7 @@ export interface ScheduleTriggerNowDto {
 }
 
 /**
- * Unified Definitions catalog DTO — mirrors the backend
+ * Unified Definitions catalog DTO -- mirrors the backend
  * {@link DefinitionCatalogResource} shape returned by
  * `GET /api/v1/definitions`. Cross-module read surface fed by
  * Workflow + Decision (today; future Form) providers via the
@@ -668,7 +668,7 @@ export interface ScheduleTriggerNowDto {
  *
  * `id` is the synthetic composite `'{module}:{definitionId}'`
  * minted server-side for Hydra IRI uniqueness; the FE list page
- * does NOT use it for drill-down — instead, the `module` + the raw
+ * does NOT use it for drill-down -- instead, the `module` + the raw
  * `definitionKey` route to the per-module Designer
  * (`/admin/designer/bpmn/{key}` for Workflow,
  * `/admin/designer/dmn/{key}` for Decision).
@@ -733,7 +733,7 @@ export interface CalendarHolidayPreviewDto {
 // `id`; the canonical row is `originalItemId`. For owned single
 // occurrences this is the same UUID; for occurrences of a
 // recurring rule the id is `{uuid}@{YmdHis}` while
-// `originalItemId` is the bare canonical UUID — this lets the
+// `originalItemId` is the bare canonical UUID -- this lets the
 // editor target the right row on edit/delete.
 
 export type CalendarItemTypeCode =
@@ -775,26 +775,26 @@ export interface CalendarItemDto {
     readonly createdAt?:      string;
     readonly updatedAt?:      string;
     /**
-     * Phase 2 — soft-grouping id of the recurring series. Non-null
+     * Phase 2 -- soft-grouping id of the recurring series. Non-null
      * for base recurring items + their overrides; null for one-shot
      * items. The FE keys "is this part of a series?" off this, NOT
-     * off `recurrence` — flat occurrence projections strip the rule
+     * off `recurrence` -- flat occurrence projections strip the rule
      * to prevent client-side re-expansion.
      */
     readonly seriesId?:       string | null;
     /**
-     * Phase 2 — parent base id on override rows; null otherwise.
+     * Phase 2 -- parent base id on override rows; null otherwise.
      * Lets the FE distinguish editing an override row vs editing a
      * base occurrence.
      */
     readonly parentItemId?:   string | null;
     /**
-     * — non-working-day policy. Controls what the expander
+     * -- non-working-day policy. Controls what the expander
      * does when a recurring occurrence lands on a holiday or other
      * non-working day of the host calendar:
-     *   - `off` (default) — yield every iterator candidate.
-     *   - `skip` — drop non-working candidates.
-     *   - `shift_forward` — bump to next working day, same time-of-day.
+     *   - `off` (default) -- yield every iterator candidate.
+     *   - `skip` -- drop non-working candidates.
+     *   - `shift_forward` -- bump to next working day, same time-of-day.
      * Only meaningful for recurring items; ignored on one-shot rows.
      */
     readonly nwdPolicy?:      NonWorkingDayPolicy | null;
@@ -830,11 +830,11 @@ export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto>;
  * on the same instant updates rather than creates a duplicate.
  */
 export interface CalendarItemExceptionRequest {
-    /** ISO 8601 — the ORIGINAL occurrence start, before any drag. */
+    /** ISO 8601 -- the ORIGINAL occurrence start, before any drag. */
     readonly recurrenceInstant: string;
-    /** ISO 8601 — the new occurrence start (often == recurrenceInstant when only title/desc/status changed). */
+    /** ISO 8601 -- the new occurrence start (often == recurrenceInstant when only title/desc/status changed). */
     readonly newStart:          string;
-    /** ISO 8601 — the new occurrence end. NULL for point-in-time items. */
+    /** ISO 8601 -- the new occurrence end. NULL for point-in-time items. */
     readonly newEnd?:           string | null;
     readonly title?:            string | null;
     readonly description?:      string | null;
@@ -859,7 +859,7 @@ export interface CalendarItemExceptionResponse {
  *
  * Drops one occurrence by appending EXDATE to the base item's RRULE. The
  * server also clears any prior reschedule override for the same instant
- * (EXDATE supersedes). Idempotent — repeat calls with the same instant
+ * (EXDATE supersedes). Idempotent -- repeat calls with the same instant
  * are no-ops once the EXDATE is in place.
  */
 export interface CalendarItemSkipResponse {
@@ -1121,7 +1121,7 @@ export class ApiService {
         return this.identity.me();
     }
 
-    /** Full current-user object — same endpoint as me() but typed as IdentityUserDto. */
+    /** Full current-user object -- same endpoint as me() but typed as IdentityUserDto. */
     getMe(): Observable<IdentityUserDto> {
         return this.http.get<IdentityUserDto>(this.manifest.identity!.meUrl);
     }
@@ -1156,7 +1156,7 @@ export class ApiService {
     updateSettings(section: string, data: Record<string, unknown>): Observable<Record<string, unknown>> {
         const url = resolvePattern(this.manifest.identity!.settingsSectionUrl, { section });
 
-        // Accept: application/json for the same reason getSettings() forces it —
+        // Accept: application/json for the same reason getSettings() forces it --
         // and this response needs it just as badly. A settings section is a MAP,
         // and API Platform's ld+json turns a map into a Hydra Collection whose
         // `member` array carries the values with the KEYS STRIPPED:
@@ -1164,7 +1164,7 @@ export class ApiService {
         // `updated['theme']` off an object that has no such property.
         //
         // It failed silently because every caller merges the result into a
-        // cache — the calendar and call preference services included — so the
+        // cache -- the calendar and call preference services included -- so the
         // save persisted correctly on the server and only the in-memory echo was
         // wrong, which looks like nothing until something READS it.
         return this.http.patch<Record<string, unknown>>(url, data, {
@@ -1195,7 +1195,7 @@ export class ApiService {
     }
 
     /**
-     * POST /api/v1/sections/_apply — regenerate per-section nginx vhost configs.
+     * POST /api/v1/sections/_apply -- regenerate per-section nginx vhost configs.
      * Returns a summary; the FE still has to surface `reloadCommand` to the
      * operator (nginx is NOT auto-reloaded). Admin-only on the backend.
      */
@@ -1217,7 +1217,7 @@ export class ApiService {
     // matching the existing `getThemeTemplates` pattern.
 
     /**
-     * GET /api/v1/web/sites — list of composed Site views (admin-gated).
+     * GET /api/v1/web/sites -- list of composed Site views (admin-gated).
      * Each row carries `currentUserMembership` inline for per-section
      * gating without a second round-trip.
      */
@@ -1229,7 +1229,7 @@ export class ApiService {
     }
 
     /**
-     * GET /api/v1/web/sites/{slug} — single composed Site view with
+     * GET /api/v1/web/sites/{slug} -- single composed Site view with
      * `currentUserMembership` embedded. Used by the Site Detail page
      * (Layer 3d.1). 404 when the slug doesn't match a SiteSection.
      */
@@ -1239,7 +1239,7 @@ export class ApiService {
     }
 
     /**
-     * GET /api/v1/web/sites/{slug}/members — owner + editor-group members.
+     * GET /api/v1/web/sites/{slug}/members -- owner + editor-group members.
      * Used by the Site Detail page (Members card + "View all" modal).
      * Backend is admin-only today; FE callers should still surface 403
      * gracefully.
@@ -1252,7 +1252,7 @@ export class ApiService {
     }
 
     /**
-     * DELETE /api/v1/web/sites/{slug} — Web-composition delete (not the
+     * DELETE /api/v1/web/sites/{slug} -- Web-composition delete (not the
      * Section module's `/sections/{id}` delete). Backend forbids deletion
      * when NaviTree FKs still reference the SiteSection. Reserved for
      * future Site Detail wiring; not consumed in Layer 3d.1.
@@ -1290,14 +1290,14 @@ export class ApiService {
     }
 
     /**
-     * — paged variant for the admin Calendars list. Round-trips
+     * -- paged variant for the admin Calendars list. Round-trips
      * RQL filters + sort to the server so we never load 100k+ rows
      * into the browser. The lazy-mode DataGrid emits page/sort/filter
      * on every `loadMore`; the page calls into this method and feeds
      * the returned envelope to the grid via `[externalData]`.
      *
      * `filters` is a list of RQL clauses (e.g. `slug cn "foo"`,
-     * `currentUserAccess eq "owned"`) — each becomes its own
+     * `currentUserAccess eq "owned"`) -- each becomes its own
      * `?filter=` query param.
      */
     listCalendarsPage(opts: {
@@ -1312,7 +1312,7 @@ export class ApiService {
         const page     = opts.page ?? 1;
         params = params.set('page',     String(page));
         // RQL parser reads `?limit=N` (see RqlParser).
-        // Sending `pageSize` was a no-op — backend silently fell back to
+        // Sending `pageSize` was a no-op -- backend silently fell back to
         // RqlQuery::DEFAULT_LIMIT (20), and the FE's offset math (built on
         // PAGE_SIZE=50) requested page 1 over and over, duplicating rows.
         params = params.set('limit', String(pageSize));
@@ -1358,7 +1358,7 @@ export class ApiService {
     }
 
     /**
-     * — download a calendar as an RFC 5545 `.ics`. Goes through
+     * -- download a calendar as an RFC 5545 `.ics`. Goes through
      * HttpClient (not a bare `<a href>`) so the Bearer interceptor attaches
      * the token; the caller turns the Blob into a download.
      */
@@ -1367,7 +1367,7 @@ export class ApiService {
         return this.http.get(url, { responseType: 'blob' as const });
     }
 
-    /** — upload an `.ics` document (raw body) into a calendar. */
+    /** -- upload an `.ics` document (raw body) into a calendar. */
     importCalendarIcs(slug: string, ics: string): Observable<CalendarImportResultDto> {
         const url = `${this.manifest.apiBase}/calendar/${encodeURIComponent(slug)}/import`;
         return this.http.post<CalendarImportResultDto>(url, ics, {
@@ -1480,7 +1480,7 @@ export class ApiService {
     }
 
     /**
-     * Phase 3 — "this and following events" save / drag-resize. Trims
+     * Phase 3 -- "this and following events" save / drag-resize. Trims
      * the base's RRULE at `recurrenceInstant` and creates a new base
      * with the patched properties starting at `newStart`. Both halves
      * share `seriesId` so the "all events" walk traverses the split.
@@ -1494,7 +1494,7 @@ export class ApiService {
     }
 
     /**
-     * Phase 3 — "delete this and following events". Truncates the
+     * Phase 3 -- "delete this and following events". Truncates the
      * base's RRULE; later overrides are removed. No new item is
      * created.
      */
@@ -1621,7 +1621,7 @@ export class ApiService {
     }
 
     /**
-     * Sibling — paged variant for the admin Schedules list.
+     * Sibling -- paged variant for the admin Schedules list.
      * Round-trips RQL filters + sort to the server so we never load
      * 100k+ rows. Mirror of {@see ApiService.listCalendarsPage}.
      */
@@ -1637,7 +1637,7 @@ export class ApiService {
         const page     = opts.page ?? 1;
         params = params.set('page',     String(page));
         // RQL parser reads `?limit=N` (see RqlParser).
-        // Sending `pageSize` was a no-op — backend silently fell back to
+        // Sending `pageSize` was a no-op -- backend silently fell back to
         // RqlQuery::DEFAULT_LIMIT (20), and the FE's offset math (built on
         // PAGE_SIZE=50) requested page 1 over and over, duplicating rows.
         params = params.set('limit', String(pageSize));
@@ -1713,7 +1713,7 @@ export class ApiService {
     /**
      * Stream a call's `.wav` recording (`GET
      * /call/records/{id}/recording`). The admin is a Bearer SPA, so a plain
-     * `<audio src>` can't carry the token — this goes through HttpClient
+     * `<audio src>` can't carry the token -- this goes through HttpClient
      * (the auth interceptor attaches the Bearer) as a Blob the caller turns
      * into an object URL (mirrors {@link exportCalendarIcs}).
      */
@@ -1750,9 +1750,9 @@ export class ApiService {
     }
 
     /**
-     * MCP tool-governance audit ( `GET /api/mcp/tools`, ROLE_ADMIN) — the
+     * MCP tool-governance audit ( `GET /api/mcp/tools`, ROLE_ADMIN) -- the
      * full inventory of tools external AI agents can call + the gate on each.
-     * The endpoint is UNVERSIONED (`/api/mcp/…`, like `/api/doc`), so it hangs off
+     * The endpoint is UNVERSIONED (`/api/mcp/...`, like `/api/doc`), so it hangs off
      * the `/api` base, not the `/api/v1` apiBase.
      */
     getMcpTools(): Observable<McpToolCatalogDto> {
@@ -1818,7 +1818,7 @@ export class ApiService {
     // -- Theme templates (Navi-node picker, Deliverable 1) ---------
 
     /**
-     * GET /api/v1/themes/{slug}/templates — flat listing of `.dtmpl` files
+     * GET /api/v1/themes/{slug}/templates -- flat listing of `.dtmpl` files
      * available under the theme's `templates/` directory. Empty when the
      * theme has no templates yet. Throws on 404 (theme slug not installed).
      *
@@ -1891,12 +1891,12 @@ export class ApiService {
     /**
      * List users using RQL query params.
      *
-     * filters — RQL filter expressions, e.g. ['isActive eq true', 'groupId eq "uuid"']
-     *           Each entry is sent as a separate `filter=…` query param; the PHP
+     * filters -- RQL filter expressions, e.g. ['isActive eq true', 'groupId eq "uuid"']
+     *           Each entry is sent as a separate `filter=...` query param; the PHP
      *           RqlParser collects them all as AND conditions.
-     * sort    — RQL sort string, e.g. '-identifier' (desc) or 'displayName' (asc).
-     * page    — 1-based page number (omit or 1 = first page).
-     * limit   — items per page.
+     * sort    -- RQL sort string, e.g. '-identifier' (desc) or 'displayName' (asc).
+     * page    -- 1-based page number (omit or 1 = first page).
+     * limit   -- items per page.
      */
     listUsers(params: {
         filters?: string[];
@@ -1909,7 +1909,7 @@ export class ApiService {
         if (params.page && params.page > 1) httpParams = httpParams.set('page', String(params.page));
         if (params.sort)               httpParams = httpParams.set('sort', params.sort);
         for (const f of params.filters ?? []) {
-            // Repeated `filter=…` keys — RqlParser collects all of them as AND conditions.
+            // Repeated `filter=...` keys -- RqlParser collects all of them as AND conditions.
             httpParams = httpParams.append('filter', f);
         }
         return this.http
@@ -1925,20 +1925,20 @@ export class ApiService {
     }
 
     /**
-     * Preview the audience an RQL filter selects — count plus a sample.
+     * Preview the audience an RQL filter selects -- count plus a sample.
      *
      * Replaces `countUsers()`, which asked `GET /auth/users` for
      * `totalItems`. That endpoint returns a BARE ARRAY, so the read was
      * `undefined` on every call, for every filter, since the wizard shipped.
      * The recipients step's `canProceed` is `count > 0`, and `undefined > 0`
-     * is false — so typing ANY filter killed the Next button and Filter mode
+     * is false -- so typing ANY filter killed the Next button and Filter mode
      * could only ever be completed with an empty filter, i.e. "send to
      * everyone". Counting the returned rows instead would have been worse: the
      * endpoint pages at 20.
      *
      * `/document/generations/preview-audience` is the right call and already
      * existed. It runs the SAME `FilterAudienceMaterializer` the submit runs,
-     * so the number the operator approves is the number that gets documents —
+     * so the number the operator approves is the number that gets documents --
      * and it returns a `sample` so they can see WHO, not just how many.
      *
      * @param rqlBody raw query string from `CmsFilterBuilder`
@@ -2010,12 +2010,12 @@ export class ApiService {
 
     /**
      * Replace the groups whose roles are granted by holding THIS group's role
-     * — the role-inheritance edges behind `DynamicRoleHierarchy`.
+     * -- the role-inheritance edges behind `DynamicRoleHierarchy`.
      *
      * An edge means "holding the parent's role also grants the child's", so this
      * is the most privilege-bearing write in the admin. The server refuses a
-     * change that would let a group grant its own role (422) — directly or
-     * through another group — and returns the edges AS PERSISTED, which differ
+     * change that would let a group grant its own role (422) -- directly or
+     * through another group -- and returns the edges AS PERSISTED, which differ
      * from what was sent whenever the request contained a duplicate.
      */
     setGroupRoleGrants(id: string, grantsGroupIds: readonly string[]): Observable<{ grantsGroupIds: string[] }> {
@@ -2078,7 +2078,7 @@ export class ApiService {
      *
      * Slugging server-side is the point: the platform slugger applies
      * national transliteration rule sets (`Счета` -> `scheta`, `Größe` ->
-     * `groesse`), which no client-side ASCII fold can do — it can only
+     * `groesse`), which no client-side ASCII fold can do -- it can only
      * drop the characters and report failure.
      */
     mkdirTitled(parentPath: string, title: string): Observable<NodeDto> {
@@ -2091,7 +2091,7 @@ export class ApiService {
      * image editor's `writeVfsFile`; `overwrite=0` makes a name clash a
      * 409 rather than a silent replacement.
      *
-     * `folderPath` is the PARENT — the endpoint's `path` field is the
+     * `folderPath` is the PARENT -- the endpoint's `path` field is the
      * full destination file path, so passing a directory there makes it
      * try to write over the directory itself (a 409 that reads like a
      * duplicate-name error and is not one).
@@ -2231,7 +2231,7 @@ export class ApiService {
     }
 
     /**
-     * Unified Definitions catalog — fetches the cross-module list of
+     * Unified Definitions catalog -- fetches the cross-module list of
      * deployed + draft definitions for the `/admin/definitions` page.
      * Reads `GET /api/v1/definitions`; query params optionally narrow
      * by `module`, `source`, `moduleLock`, free-text `q`, and paginate
@@ -2255,7 +2255,7 @@ export class ApiService {
         sources?:      readonly string[];
         /**
          * Per-column substring filters. Distinct from `q`, which spans
-         * key AND display name — the grid filters those two columns
+         * key AND display name -- the grid filters those two columns
          * independently, so folding them together would make a Key
          * filter match on the display name.
          */
@@ -2287,7 +2287,7 @@ export class ApiService {
     }
 
     /**
-     * Definition lifecycle — `POST /definitions/{module}/{key}/retire`.
+     * Definition lifecycle -- `POST /definitions/{module}/{key}/retire`.
      * Archives the definition: it drops out of the default catalog and
      * blocks new starts, while deployed history and any live instances
      * stay untouched. Idempotent.
@@ -2303,7 +2303,7 @@ export class ApiService {
         );
     }
 
-    /** Definition lifecycle — restore a retired definition. */
+    /** Definition lifecycle -- restore a retired definition. */
     unretireDefinition(module: string, key: string): Observable<void> {
         return this.http.post<void>(
             `${this.manifest.apiBase}/definitions/${module}/${encodeURIComponent(key)}/unretire`,
@@ -2312,7 +2312,7 @@ export class ApiService {
     }
 
     /**
-     * Definition lifecycle — permanent delete. Only ever succeeds for a
+     * Definition lifecycle -- permanent delete. Only ever succeeds for a
      * NEVER-DEPLOYED definition; anything with history, live instances,
      * or a module owner is refused with 409 naming the blocker.
      */
@@ -2325,7 +2325,7 @@ export class ApiService {
     // --- F5.c: Translation catalogues admin ----------------------
     //
     // The four endpoints are NOT paginated -- the platform has a
-    // small fixed set of (domain × locale) pairs (today: one entry,
+    // small fixed set of (domain x locale) pairs (today: one entry,
     // realistic ceiling ~40). Returning everything at once lets the
     // list view filter client-side without round-trips.
 

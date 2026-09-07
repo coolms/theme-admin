@@ -17,7 +17,7 @@ import { PageDto, PageTypeDto } from './page.types';
 export type PageViewMode = ExplorerViewMode;
 
 /**
- * Shared state between the Pages explorer's two slot components — the space
+ * Shared state between the Pages explorer's two slot components -- the space
  * accordion in `content.panel.left` and the tree grid in `content.main`
  *.
  *
@@ -27,7 +27,7 @@ export type PageViewMode = ExplorerViewMode;
  * explorers.
  *
  * Deliberately small. The Pages grid already owns its own tree, filter and
- * pagination state — the only thing it needs from the accordion is *which
+ * pagination state -- the only thing it needs from the accordion is *which
  * space am I listing*, so that is all this carries. Duplicating the grid's
  * state here would give two owners for one fact.
  *
@@ -55,7 +55,7 @@ export class PageSpaceStateService {
     readonly spaceKey = signal<string>('');
 
     /**
-     * VFS root of the active space. Held for display only — the breadcrumb
+     * VFS root of the active space. Held for display only -- the breadcrumb
      * and the "which ancestors are navigable" floor. Requests are keyed on
      * `spaceKey`.
      */
@@ -78,17 +78,17 @@ export class PageSpaceStateService {
      *
      * Lives here because the TOOLBAR is rendered by the host page and the
      * PROPERTIES PANEL is a third slot, while the selection belongs to
-     * the listing in `content.main` — siblings that cannot see each other.
+     * the listing in `content.main` -- siblings that cannot see each other.
      *
      * It was a bare `hasSelection` boolean while the toolbar predicate was the
      * only consumer. The panel needs the row itself, and publishing the DTO is
-     * not a second owner for the same fact — the listing still WRITES it and
+     * not a second owner for the same fact -- the listing still WRITES it and
      * nothing else does; the boolean below is now derived rather than stored,
      * so the two can no longer drift.
      */
     readonly selectedPage = signal<PageDto | null>(null);
 
-    /** Whether the listing currently has a row selected — the toolbar's `_selected`. */
+    /** Whether the listing currently has a row selected -- the toolbar's `_selected`. */
     readonly hasSelection = computed(() => null !== this.selectedPage());
 
     /**
@@ -97,12 +97,12 @@ export class PageSpaceStateService {
      * SEPARATE from the selection, and the separation is load-bearing: the
      * layout gates the panel on `activeItem`, so closing it by clearing the
      * selection would leave the grid row still highlighted while the toolbar
-     * lost its row actions — the close button silently deselecting behind the
+     * lost its row actions -- the close button silently deselecting behind the
      * user's back.
      *
      * Starts CLOSED and opens only on the explicit Properties action.
      * It used to open on selection, which put a 340px panel in front of the
-     * listing on every single click — and single-click is the first half of
+     * listing on every single click -- and single-click is the first half of
      * the double-click that opens the editor, so the pane jittered under the
      * user mid-gesture. Selection and "show me everything about this" are two
      * different intents.
@@ -123,7 +123,7 @@ export class PageSpaceStateService {
      * Which rendering the main pane uses.
      *
      * Set by the switcher the HOST renders and obeyed by the sibling slot that
-     * draws the items — the same seam the folder cursor uses.
+     * draws the items -- the same seam the folder cursor uses.
      *
      * Seeded to `details` to match the layout's `defaultViewMode`; the host
      * overwrites it from the layout config once that resolves, so this literal
@@ -133,7 +133,7 @@ export class PageSpaceStateService {
 
     /**
      * The folder both views are showing, as the chain walked down from the
-     * space root — the empty trail IS the root.
+     * space root -- the empty trail IS the root.
      *
      * A TRAIL rather than a bare path because the backend lists children by
      * Node id (`?parent=`), so walking back up needs each ancestor's id, and
@@ -142,7 +142,7 @@ export class PageSpaceStateService {
      * It lives HERE, not in the grid, because the folder tree in the left panel
      * and the listing in the main pane are sibling slots: the panel sets the
      * cursor, the listing obeys it, and neither can see the other. It was
-     * private to the listing while the grid was its own navigator —
+     * private to the listing while the grid was its own navigator --
      * moving it out is what lets navigation leave the grid entirely.
      */
     readonly trail = signal<ReadonlyArray<{ id: string; path: string }>>([]);
@@ -154,7 +154,7 @@ export class PageSpaceStateService {
         return 0 === trail.length ? null : trail[trail.length - 1].id;
     });
 
-    /** Absolute path of the folder on screen — what the breadcrumb renders. */
+    /** Absolute path of the folder on screen -- what the breadcrumb renders. */
     readonly folderPath = computed<string>(() => {
         const trail = this.trail();
 
@@ -162,7 +162,7 @@ export class PageSpaceStateService {
     });
 
     /**
-     * Enter a folder (append) — used by the tree, the tiles and the grid alike.
+     * Enter a folder (append) -- used by the tree, the tiles and the grid alike.
      * Re-entering the folder already on screen is a no-op rather than a
      * duplicate trail entry.
      */
@@ -176,7 +176,7 @@ export class PageSpaceStateService {
     /**
      * Jump to an ancestor by PATH, or to the space root when the path is the
      * root itself. Unknown paths are ignored: the trail is the only place the
-     * ids exist, so a path nobody walked down to cannot be resolved — which is
+     * ids exist, so a path nobody walked down to cannot be resolved -- which is
      * also why the breadcrumb's address bar stays off.
      */
     goToPath(path: string): void {
@@ -192,7 +192,7 @@ export class PageSpaceStateService {
         }
     }
 
-    /** Back to the space root — e.g. when the space itself changes. */
+    /** Back to the space root -- e.g. when the space itself changes. */
     resetFolder(): void {
         this.trail.set([]);
     }
@@ -211,7 +211,7 @@ export class PageSpaceStateService {
      *
      * Separate from `actionRequested$` because the target is the point: section
      * properties opens on the folder that was right-clicked, and the folder
-     * menu deliberately does not move the cursor ([]) — so the path has to
+     * menu deliberately does not move the cursor ([]) -- so the path has to
      * travel with the request rather than be read from shared state afterwards.
      */
     readonly sectionActionRequested$ = new Subject<{
@@ -241,7 +241,7 @@ export class PageSpaceStateService {
                 .subscribe(nodes => this.toolbarNodes.set(nodes));
         }
 
-        // — remember which space was open. Pages was the only explorer
+        // -- remember which space was open. Pages was the only explorer
         // that did not, so every reload dropped you back into Personal even if
         // you had spent the session in a site.
         //
@@ -249,7 +249,7 @@ export class PageSpaceStateService {
         // resolves the active space by matching the explorer's current path
         // against each space's `rootPath`, and it reads that path through a
         // getter AFTER the spaces response lands. Restoring the root here is
-        // therefore all the wiring the accordion needs — it already asks.
+        // therefore all the wiring the accordion needs -- it already asks.
         const saved = this.prefs.getPageState<{ spaceRoot?: string }>(PREFS_KEY);
         if (undefined !== saved?.spaceRoot && '' !== saved.spaceRoot) {
             this.spaceRoot.set(saved.spaceRoot);

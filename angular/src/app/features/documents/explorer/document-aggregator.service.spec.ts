@@ -8,7 +8,7 @@ import { DocumentAggregatorService } from './document-aggregator.service';
  *
  * What can go wrong here is WIRING, and it fails silently: a `convert` flag
  * that never reaches the request produces an ordinary upload and a perfectly
- * normal-looking template — just not an editable one. Nothing throws, so only
+ * normal-looking template -- just not an editable one. Nothing throws, so only
  * inspecting the body catches it.
  */
 describe('DocumentAggregatorService upload', () => {
@@ -50,7 +50,7 @@ describe('DocumentAggregatorService upload', () => {
     /**
      * Absent rather than `"0"`. The backend reads it as a boolean either way,
      * but not sending it keeps the ordinary upload's body exactly what it was
-     * before conversion existed — so nothing about the common path changed.
+     * before conversion existed -- so nothing about the common path changed.
      */
  it('omits convert entirely unless it was asked for', () => {
         expect(upload().has('convert')).toBeFalse();

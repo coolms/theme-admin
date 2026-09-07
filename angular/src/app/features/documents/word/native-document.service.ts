@@ -7,11 +7,11 @@ export interface NativeDocumentDto {
     readonly id: string;
     readonly title: string;
     readonly folderPath: string;
-    /** Full VFS path — what the editor opens. */
+    /** Full VFS path -- what the editor opens. */
     readonly path: string;
-    /** Slug plus the extension the chosen format seeds (`.dtmpl`, `.dsheet`, …). */
+    /** Slug plus the extension the chosen format seeds (`.dtmpl`, `.dsheet`, ...). */
     readonly name: string;
-    /** Which format it was actually authored in — echoed back, so an omitted one is still knowable. */
+    /** Which format it was actually authored in -- echoed back, so an omitted one is still knowable. */
     readonly format?: string;
 }
 
@@ -26,7 +26,7 @@ export class NativeDocumentService {
     /**
      * Sends the TITLE only. The slug is derived server-side by the platform
      * slugger with national transliteration, so a document can be called
-     * "Договор аренды" and still be `dogovor-arendy.dtmpl` on disk — folding it
+     * "Договор аренды" and still be `dogovor-arendy.dtmpl` on disk -- folding it
      * here is the bug fixed, since an ASCII regex cannot transliterate
      * and can only drop the characters it does not recognise.
      */

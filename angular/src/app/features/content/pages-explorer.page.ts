@@ -19,7 +19,7 @@ import {
 import { PageSpaceStateService } from './page-space-state.service';
 
 /**
- * Pages explorer — thin shell.
+ * Pages explorer -- thin shell.
  *
  * Owns nothing but the page-scoped state and the toolbar; the space accordion
  * and the tree grid are slot components resolved from the `content:pages-list`
@@ -27,7 +27,7 @@ import { PageSpaceStateService } from './page-space-state.service';
  *
  * Replaces the old routed `PagesListComponent`, which carried its own
  * `<cms-list-page>` shell. That shell had no left panel, which is why Pages
- * could not offer spaces — the change here is the shell, not the grid.
+ * could not offer spaces -- the change here is the shell, not the grid.
  *
  * `PageFooterService` is provided here because it is non-root: without it
  * `ExplorerLayoutComponent`'s footer cannot resolve its dependency and the
@@ -82,14 +82,14 @@ import { PageSpaceStateService } from './page-space-state.service';
     // Mirrors the other explorer hosts. Without these the page host collapses
     // to its content-intrinsic height instead of filling the admin shell, so
     // ExplorerLayout's flex chain cannot pin the footer to the bottom.
-    // `min-height: 0` is load-bearing — without it the inner overflow:hidden
+    // `min-height: 0` is load-bearing -- without it the inner overflow:hidden
     // wrappers leak past their parent and the whole page scrolls instead of
     // its inner panes.
     styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
 })
 export class PagesExplorerPage {
     /**
-     * Not private — the template binds `backgroundClick` straight to it, the
+     * Not private -- the template binds `backgroundClick` straight to it, the
      * way Media and Documents do. A wrapper method would be a name for
      * "set this signal to null".
      */
@@ -97,7 +97,7 @@ export class PagesExplorerPage {
 
     /**
      * Layout predicate context. `activeItem` is what `openOnSelect`
-     * gates the right panel on — the layout has no other way to know whether
+     * gates the right panel on -- the layout has no other way to know whether
      * anything is selected, because the selection belongs to a slot it merely
      * renders.
      */
@@ -116,7 +116,7 @@ export class PagesExplorerPage {
 
     readonly headerActions = signal<ToolbarAction[]>([]);
 
-    /** Current rendering — shared state, so the sibling slot obeys it. */
+    /** Current rendering -- shared state, so the sibling slot obeys it. */
     readonly viewMode = this.state.viewMode;
 
     /** Whether the layout's declared default has already been taken. */
@@ -127,7 +127,7 @@ export class PagesExplorerPage {
         // service seeds a literal for the frames before that lands; without
         // this, changing `defaultViewMode` in YAML would have no effect.
         //
-        // Once only — after the user has touched the switcher, a later config
+        // Once only -- after the user has touched the switcher, a later config
         // emission must not yank the pane back to the default under them.
         effect(() => {
             const declared = this.layout()?.defaultViewMode() ?? null;
@@ -149,7 +149,7 @@ export class PagesExplorerPage {
      * slot, invisible from here.
      *
      * `_viewMode` is still published even though no NaviGraph node reads it
-     * removed the view toggle from the tree — a module that wants
+     * removed the view toggle from the tree -- a module that wants
      * an action only in one rendering (say, "arrange" in tiles) can predicate
      * on it without the host having to grow a new context key.
      */

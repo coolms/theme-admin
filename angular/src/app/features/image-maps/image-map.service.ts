@@ -10,10 +10,10 @@ import type {
 } from './image-map.types';
 
 /**
- * CRUD client for the ImageMap API (`/api/v1/image-maps`, –).
+ * CRUD client for the ImageMap API (`/api/v1/image-maps`, -).
  * Collection reads unwrap the Hydra `member` envelope; writes use the
  * platform content-types (POST `application/ld+json`, PATCH
- * `application/merge-patch+json` — the 415 footgun).
+ * `application/merge-patch+json` -- the 415 footgun).
  */
 @Injectable({ providedIn: 'root' })
 export class ImageMapService {
@@ -36,7 +36,7 @@ export class ImageMapService {
 
     /**
      * The per-region status class map (`{ "<code>": "<css class>" }`) from any
-     * registered RegionStatusProvider — used by the authoring page for a live
+     * registered RegionStatusProvider -- used by the authoring page for a live
      * busy/free tint preview. `now` scopes to the current instant (else "today").
      */
     getRegionStatus(slug: string, now = true): Observable<Record<string, string>> {
@@ -65,7 +65,7 @@ export class ImageMapService {
     }
 
     // --- Regions (write-only sub-resource; reads stay on the map's ---
-    // --- embedded `regions[]` — refresh via getImageMap after saves) ---
+    // --- embedded `regions[]` -- refresh via getImageMap after saves) ---
 
     addRegion(slug: string, region: CreateRegionRequest): Observable<ImageMapRegionDto> {
         return this.http.post<ImageMapRegionDto>(

@@ -6,7 +6,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import { AgentConversationDto, ChatAttachmentDto, ChatMessageDto } from './dynamic-chat.types';
 
 /**
- * DynamicChat agent panel — thin API client.
+ * DynamicChat agent panel -- thin API client.
  *
  * Standalone per-feature service (the precedent set by `InboxService` /
  * `CalendarLiveEventsService`), not bolted onto the large platform
@@ -36,7 +36,7 @@ export class DynamicChatService {
     }
 
     /**
-     * GET /dynamic-chat/agent/conversations — the agent queue: every ACTIVE
+     * GET /dynamic-chat/agent/conversations -- the agent queue: every ACTIVE
      * DynamicChat conversation, most-recently-active first (NOT membership-
      * scoped, so unjoined visitor conversations show up).
      */
@@ -47,7 +47,7 @@ export class DynamicChatService {
     }
 
     /**
-     * POST /dynamic-chat/agent/conversations/{id}/join — join as an Agent
+     * POST /dynamic-chat/agent/conversations/{id}/join -- join as an Agent
      * participant (idempotent). Returns the conversation enriched with
      * `agentParticipantId` (the id we post replies as / style "mine" by).
      */
@@ -59,7 +59,7 @@ export class DynamicChatService {
     }
 
     /**
-     * POST /dynamic-chat/agent/conversations/{id}/release — un-claim (leave) a
+     * POST /dynamic-chat/agent/conversations/{id}/release -- un-claim (leave) a
      * conversation so it returns to the Unassigned queue. Body-less ->
      * 204; the panel refetches the queue afterward. Idempotent.
      */
@@ -71,7 +71,7 @@ export class DynamicChatService {
     }
 
     /**
-     * GET /chat/messages?conversationId=&afterSeq=&limit= — the in-order
+     * GET /chat/messages?conversationId=&afterSeq=&limit= -- the in-order
      * cursor catch-up read (every message with `seq > afterSeq`). Requires
      * the caller to be a participant, so call this only AFTER {@link join}.
      */
@@ -86,12 +86,12 @@ export class DynamicChatService {
     }
 
     /**
-     * POST /chat/messages — post a reply. Delegates server-side to
+     * POST /chat/messages -- post a reply. Delegates server-side to
      * `SendMessageService::sendAsUser` (row-locked seq, idempotency via
      * `clientId`, auto-resolves the agent's participant, realtime nudge).
      *
      * `attachments` carry the descriptors returned by {@link uploadAttachment};
-     * only the durable fields are sent — the server re-derives `kind` from the
+     * only the durable fields are sent -- the server re-derives `kind` from the
      * mime type.
      */
     postMessage(
@@ -113,7 +113,7 @@ export class DynamicChatService {
     }
 
     /**
-     * POST /chat/attachments — upload a file to the uploader's private VFS home
+     * POST /chat/attachments -- upload a file to the uploader's private VFS home
      * (multipart). Returns the descriptor to attach to a message. The server
      * gates the format + size (422 on a disallowed type,.
      */
@@ -126,7 +126,7 @@ export class DynamicChatService {
     }
 
     /**
-     * GET /chat/attachments/{id} — fetch the attachment bytes (authenticated,
+     * GET /chat/attachments/{id} -- fetch the attachment bytes (authenticated,
      * participation-gated,. Returned as a Blob so the caller can
      * build an object URL for an `<img>` thumbnail or a download. An `<img src>`
      * can't carry the Bearer token, so images are loaded through this fetch.

@@ -3,9 +3,9 @@ import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /**
  * Form Builder admin routes.3).
- *   `/admin/forms`        — forms list page
- *   `/admin/forms/new`    — builder, blank (author a new form)
- *   `/admin/forms/:id`    — builder, editing an existing form
+ *   `/admin/forms`        -- forms list page
+ *   `/admin/forms/new`    -- builder, blank (author a new form)
+ *   `/admin/forms/:id`    -- builder, editing an existing form
  *
  * `new` is matched before `:id` so the literal segment wins over the
  * wildcard. The builder treats the absent/`new` id as create-mode.

@@ -3,9 +3,9 @@ import { type MediaKind } from '../media/dtmpl/dtmpl-media-node';
 /**
  * Bidirectional HTML <-> dtmpl transform for the MediaWidget Tiptap node.
  *
- * On save:  htmlToDtmpl() rewrites every `<img data-widget="media" …>` back
- *           into its `{widget:media:UUID …}` source form before the content
- *           is sent to the backend. The `data-kind` attribute is dropped —
+ * On save:  htmlToDtmpl() rewrites every `<img data-widget="media" ...>` back
+ *           into its `{widget:media:UUID ...}` source form before the content
+ *           is sent to the backend. The `data-kind` attribute is dropped --
  *           the backend re-derives it from the asset's MIME type, so the
  *           dtmpl tag stays kind-agnostic and lossless across re-renders.
  * On load:  dtmplToHtml() does the inverse, resolving each uuid to a preview
@@ -21,7 +21,7 @@ import { type MediaKind } from '../media/dtmpl/dtmpl-media-node';
 const MEDIA_IMG_RE = /<img\b[^>]*\bdata-widget=(["'])media\1[^>]*>/gi;
 /**
  * Figure-wrapped marker: emitted when the node has a caption attr. The lazy
- * inner-content match keeps figure boundaries tight — figcaption text can
+ * inner-content match keeps figure boundaries tight -- figcaption text can
  * include any character except the closing `</figcaption>` sequence.
  */
 const MEDIA_FIGURE_RE = /<figure\b[^>]*>\s*<img\b[^>]*\bdata-widget=(["'])media\1[^>]*>\s*<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>\s*<\/figure>/gi;
@@ -45,7 +45,7 @@ function matchAttr(html: string, name: string): string | null {
  * "Unexpected character" -> HTTP 500 at SSR render. So string params are
  * backtick-delimited, and the lexer's only in-string escape is `\``
  * (Lexer::scanString). We therefore escape only literal backticks; every other
- * character — including double quotes, `&`, `<`, `}` — is safe verbatim. The
+ * character -- including double quotes, `&`, `<`, `}` -- is safe verbatim. The
  * stored value is RAW text: the theme partial HTML-escapes it on output via the
  * `escape` filter, so we must NOT pre-encode here.
  *
@@ -115,7 +115,7 @@ function decodeHtmlEntities(s: string): string {
 }
 
 /**
- * Build the `{widget:media:UUID …}` source for a single marker img element.
+ * Build the `{widget:media:UUID ...}` source for a single marker img element.
  * Returns null when the img doesn't carry a usable data-uuid (caller should
  * pass the original match through unchanged in that case).
  */
@@ -137,7 +137,7 @@ function buildSingleAssetTag(imgHtml: string): string | null {
     if (split.align)              params.push(`align=${split.align}`);
     // alt/class are backtick-delimited (the lexer's only string form; a
     // double-quoted value 500s at SSR). Decode the HTML-attribute entities the
-    // editor serialized so the stored value is RAW text — the theme partial
+    // editor serialized so the stored value is RAW text -- the theme partial
     // re-escapes it once on output, so storing the encoded form double-encodes.
     if (alt    && alt    !== '')  params.push(`alt=\`${escapeBacktick(decodeHtmlEntities(alt))}\``);
     if (split.class !== '')       params.push(`class=\`${escapeBacktick(decodeHtmlEntities(split.class))}\``);
@@ -148,16 +148,16 @@ function buildSingleAssetTag(imgHtml: string): string | null {
 
 /**
  * Convert editor HTML into stored dtmpl. Three replacements run, in order:
- *   1. Figure-wrapped markers `<figure><img data-widget="media">…<figcaption>` ->
- *      ``{widget:media:UUID … caption=`…`}``. Runs first so its inner img isn't
+ *   1. Figure-wrapped markers `<figure><img data-widget="media">...<figcaption>` ->
+ *      ``{widget:media:UUID ... caption=`...`}``. Runs first so its inner img isn't
  *      separately consumed by the bare-img pass.
- *   2. Bare markers `<img data-widget="media">` -> `{widget:media:UUID …}`.
+ *   2. Bare markers `<img data-widget="media">` -> `{widget:media:UUID ...}`.
  *   3. Gallery placeholder divs `<div data-widget="media-gallery">` ->
- *      `{widget:media:<collection-uuid> type=… [cols=… limit=… depth=…]}`. Only
+ *      `{widget:media:<collection-uuid> type=... [cols=... limit=... depth=...]}`. Only
  *      unquoted, lex-safe params are emitted; the display name is dropped.
  *
  * String-valued single-asset params (alt/class/caption) are BACKTICK-delimited
- * — the tag lexer's only string delimiter; a double-quoted value throws
+ * -- the tag lexer's only string delimiter; a double-quoted value throws
  * "Unexpected character" -> HTTP 500 at SSR. The gallery branch carries no
  * string params, so it stays fully unquoted. Unmarked elements (raw paste from
  * source mode) pass through.
@@ -190,9 +190,9 @@ export function htmlToDtmpl(html: string): string {
         const depth = matchAttr(match, 'data-depth');
 
         // Emit ONLY unquoted, lex-safe params. The DTMPL tag lexer's only string
-        // delimiter is the backtick; a double-quoted value (e.g. name="…") throws
+        // delimiter is the backtick; a double-quoted value (e.g. name="...") throws
         // "Unexpected character" at SSR render time. So the collection display
-        // name is NOT stored in the tag — it lives only on the in-editor node,
+        // name is NOT stored in the tag -- it lives only on the in-editor node,
         // and the card falls back to a generic label after reload. (A future
         // uuid->name resolve-on-load can restore the label without a stored param.)
         const params: string[] = [`type=${type}`];
@@ -209,12 +209,12 @@ export function htmlToDtmpl(html: string): string {
 export interface MediaResolveResult {
     /** Preview URL the editor should show inline, or null when unresolved. */
     readonly url:  string | null;
-    /** Asset kind, derived from MIME — drives video/audio/file placeholders. */
+    /** Asset kind, derived from MIME -- drives video/audio/file placeholders. */
     readonly kind: MediaKind;
 }
 
 /**
- * Convert stored dtmpl into editor HTML. Each `{widget:media:UUID …}` tag is
+ * Convert stored dtmpl into editor HTML. Each `{widget:media:UUID ...}` tag is
  * replaced with either a marker `<img>` (single asset) that the MediaWidget node
  * picks up via `parseHTML`, or a `<div data-widget="media-gallery">` placeholder
  * (collection gallery) for the MediaGalleryWidget node. The caller-supplied
@@ -231,7 +231,7 @@ export function dtmplToHtml(
         const params = parseParams(paramsStr);
 
         // Galleries (collection-mode) always carry `type=`; single assets never
-        // do. Both now share the `{widget:media:<uuid> …}` prefix, so branch on
+        // do. Both now share the `{widget:media:<uuid> ...}` prefix, so branch on
         // `type=` to keep them from cross-claiming.
         if (params['type'] !== undefined) {
             return buildGalleryDiv(uuid, params);
@@ -315,7 +315,7 @@ function buildGalleryDiv(collectionId: string, params: Record<string, string>): 
  */
 export function extractMediaUuids(content: string): string[] {
     const set = new Set<string>();
-    // Skip gallery (collection-mode) tags — they carry `type=`, and their UUID
+    // Skip gallery (collection-mode) tags -- they carry `type=`, and their UUID
     // points at a directory, not a resolvable asset, so a MediaService.get on it
     // would 404. Only single-asset UUIDs need preview resolution.
     const re = /\{widget:media:([0-9a-f-]+)\s+([^}]+)\}/gi;

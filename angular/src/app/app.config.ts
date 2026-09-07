@@ -70,17 +70,17 @@ ComponentRegistry.register('MediaLibraryPage',  MediaLibraryPage);
 ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
 // Articles' three registrations are GONE ( (d), ) along with the
 // `content:articles` layout they served.
-// — Pages became an explorer, so its grid is a slot component now
+// -- Pages became an explorer, so its grid is a slot component now
 // rather than a routed page, and it gained a space accordion beside it.
 ComponentRegistry.register('PageSpaceAccordion',    PageSpaceAccordionComponent);
 ComponentRegistry.register('PagesList',             PagesListComponent);
-// — Pages was the only explorer with no right panel, so everything a
+// -- Pages was the only explorer with no right panel, so everything a
 // page IS beyond its name was reachable only by opening the editor.
 ComponentRegistry.register('PageDetail',            PageDetailComponent);
 
 // Document Library slot components (F.13b -> F.14c-1 restructure)
 ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
-// H4 — DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
+// H4 -- DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
 // accordion (Personal / Shared / per-site). The accordion rebinds the
 // folders tree to the active space's rootPath.
 ComponentRegistry.register('DocumentSpaceAccordion',   DocumentSpaceAccordionComponent);
@@ -91,7 +91,7 @@ ComponentRegistry.register('DocumentStatusBar',        DocumentStatusBarComponen
 // F.14c-1: per-format detail components register themselves under
 // `document-detail-{format}` keys; the cross-format `DocumentDetail`
 // dispatcher dispatches to the right one via NgComponentOutlet.
-// Adding a Spreadsheet/Markdown module is purely additive — drop a
+// Adding a Spreadsheet/Markdown module is purely additive -- drop a
 // sibling `register{Format}Components()` here.
 registerWordComponents();
 
@@ -125,44 +125,44 @@ ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent
 ComponentRegistry.register('DynamicEntitiesPage',  DynamicEntitiesPageComponent);
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
 
-// File editor registry — CodeMirror for text files
+// File editor registry -- CodeMirror for text files
 FileEditorRegistry.register('text/*',           { component: CodeEditorComponent });
 FileEditorRegistry.register('application/json', { component: CodeEditorComponent });
 FileEditorRegistry.register('application/xml',  { component: CodeEditorComponent });
 
-// File editor registry — Tiptap-based DTMPL body editor for .dtmpl variants
+// File editor registry -- Tiptap-based DTMPL body editor for .dtmpl variants
 // and standalone .dtmpl files. Exact-mime match beats the `text/*` wildcard
 // in the resolver, so this takes precedence over CodeEditor for dtmpl.
 FileEditorRegistry.register('text/x-dtmpl', { component: DtmplEditorDialogComponent });
 
-// File editor registry — native documents. The SAME dialog:
-// everything around the content — the paged canvas, the split preview, the
-// download, the toolbar profile — is the same editor, and only the three calls
+// File editor registry -- native documents. The SAME dialog:
+// everything around the content -- the paged canvas, the split preview, the
+// download, the toolbar profile -- is the same editor, and only the three calls
 // that touch the FILE differ.
 //
 // The EXACT registration is required, not decoration: the resolver's wildcard
-// fallback is the mime's first segment plus `/*` — `application/*` — which
+// fallback is the mime's first segment plus `/*` -- `application/*` -- which
 // nothing registers, so `application/x-coolms-document+json` would otherwise
 // miss every lookup and a `.ddoc` would open in the code editor, which is
 // where it landed before this line existed.
 FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogComponent });
 
-// File editor registry — native spreadsheet templates. A `.dsheet`
+// File editor registry -- native spreadsheet templates. A `.dsheet`
 // is a JSON grid document, and this is the GRID surface for it; CodeMirror held
 // the mime while that was being built, which made the format authorable only by
 // someone willing to hand-edit JSON.
 //
 // The EXACT registration is required, not decoration: the resolver's wildcard
-// fallback is the mime's first segment plus `/*` — `application/*` — which
+// fallback is the mime's first segment plus `/*` -- `application/*` -- which
 // nothing registers, so `application/x-coolms-sheet+json` would otherwise miss
 // every lookup and the Documents library would show "No editor is registered
 // for this template format".
 FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogComponent });
 
-// File editor registry — PageEditor for NodeType::Package (double-click in FileManager)
+// File editor registry -- PageEditor for NodeType::Package (double-click in FileManager)
 FileEditorRegistry.register('package', { component: PageEditorComponent });
 
-// — Workflow BPMN-Lite designer, opened as a modal
+// -- Workflow BPMN-Lite designer, opened as a modal
 // dialog. Two registrations, both routing to the same component:
 //  - The Package container at `/workflows/{key}/` carries the
 //    `application/vnd.coolms.workflow` mime; double-click on the
@@ -177,7 +177,7 @@ FileEditorRegistry.register('package', { component: PageEditorComponent });
 //    `draft.bpmn.json` opens the editable draft.
 // Both register against the generic `DesignerEditorDialogComponent`
 // (the same modal the Definitions list opens), which hosts the bpmn
-// editor page embedded — replacing the retired bespoke bpmn dialog.
+// editor page embedded -- replacing the retired bespoke bpmn dialog.
 // Exact-mime registrations beat the `application/json` + `text/*`
 // fallbacks via `FileEditorRegistry.resolve`'s lookup order.
 FileEditorRegistry.register(WORKFLOW_PACKAGE_MIME, {
@@ -232,7 +232,7 @@ export const appConfig: ApplicationConfig = {
 
         // F.7 viewer federation. PDF lives in `@coolms/pdf-angular` and registers
         // itself via `provideCoolmsPdf()`. DOCX hasn't been extracted to
-        // `@coolms/word` yet, so register the component inline here —
+        // `@coolms/word` yet, so register the component inline here --
         // the bootstrap call is the only thing that has to move when
         // the Word frontend package is created.
         provideCoolmsPdf(),
@@ -268,7 +268,7 @@ export const appConfig: ApplicationConfig = {
         // Form module: registers the `form.openPicker` action handler (opens the
         // form picker) and the `formWidget` Tiptap extension factory. The backend
         // `block:form` contributor surfaces it in both the toolbar and the slash
-        // menu; inserts `{widget:form formId=…}` into the page.
+        // menu; inserts `{widget:form formId=...}` into the page.
         ...provideCoolmsEditorForm(),
         // Document module: registers the `document.openPicker` action handler
         // (opens the TEMPLATE picker) and the `documentWidget` Tiptap extension

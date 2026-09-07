@@ -1,5 +1,5 @@
 /**
- * Voice/Video— WebRTC calling DTOs + realtime nudge shapes (Slice 4a,
+ * Voice/Video-- WebRTC calling DTOs + realtime nudge shapes (Slice 4a,
  * the call-control plane). These mirror the `Rtc` backend: the REST resource
  * (`RtcCallResource`) and the three payloads the backend publishes on the Rtc
  * Centrifugo channels (`rtc.user.{id}` ring + `rtc.call.{id}` state/signal).
@@ -41,7 +41,7 @@ export interface RtcSignal {
     readonly to?: string;
 }
 
-/** `rtc.user.{myId}` — someone is calling me (published at place time). */
+/** `rtc.user.{myId}` -- someone is calling me (published at place time). */
 export interface RtcIncomingCallNudge {
     readonly type: 'call.incoming';
     readonly callId: string;
@@ -50,14 +50,14 @@ export interface RtcIncomingCallNudge {
     readonly mediaKind: RtcMediaKind;
 }
 
-/** `rtc.call.{id}` — the call's lifecycle changed; reconcile via REST. */
+/** `rtc.call.{id}` -- the call's lifecycle changed; reconcile via REST. */
 export interface RtcCallStateNudge {
     readonly type: 'call.state';
     readonly callId: string;
     readonly state: RtcCallState;
 }
 
-/** `rtc.call.{id}` — a peer relayed an SDP/ICE envelope (media plane, Slice 4b). */
+/** `rtc.call.{id}` -- a peer relayed an SDP/ICE envelope (media plane, Slice 4b). */
 export interface RtcSignalNudge {
     readonly type: 'call.signal';
     readonly callId: string;
@@ -68,7 +68,7 @@ export interface RtcSignalNudge {
 export type RtcCallChannelNudge = RtcCallStateNudge | RtcSignalNudge;
 
 /**
- * `GET /rtc/ice-servers` (Slice 4c) — the ICE configuration for the media plane:
+ * `GET /rtc/ice-servers` (Slice 4c) -- the ICE configuration for the media plane:
  * STUN always, plus a Coturn TURN relay with a short-lived ephemeral credential
  * when TURN is configured server-side. `iceServers` is passed straight to
  * `new RTCPeerConnection({ iceServers })`; `ttlSeconds` is 0 when STUN-only.
@@ -79,7 +79,7 @@ export interface RtcIceServersDto {
 }
 
 /**
- * `GET /rtc/calls/{id}/media-token` ( Slice G2) — the join credentials for
+ * `GET /rtc/calls/{id}/media-token` ( Slice G2) -- the join credentials for
  * a GROUP call's SFU media room: the LiveKit endpoint the browser connects to, a
  * short-lived signed token scoped to this call's room + the caller, and the room
  * name + identity. Fed to the LiveKit JS client (`Room.connect(url, token)`). The
@@ -94,7 +94,7 @@ export interface RtcMediaTokenDto {
     readonly ttlSeconds: number;
 }
 
-/** One remote party in an SFU group call — a video tile the overlay renders. */
+/** One remote party in an SFU group call -- a video tile the overlay renders. */
 export interface RtcSfuParticipant {
     /** The participant identity (their user id) within the LiveKit room. */
     readonly identity: string;

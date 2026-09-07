@@ -36,13 +36,13 @@ const TREE_CODE = 'categories';
 
 /**
  * Admin page for the `categories` taxonomy tree (the picker source for the blog
- * `categoryIds` field + search faceting — W1.b).
+ * `categoryIds` field + search faceting).
  *
  * Re-skinned onto the platform convention: a `<cms-list-page>` shell +
  * a backend-config-driven `<coolms-datagrid>` in **tree mode** + `.cms-dialog`
  * modal editors, mirroring the Pages list. All CRUD maps onto the unchanged
  * Taxonomy REST API via {@see TaxonomyService}. Reparenting is an explicit
- * "Change parent" modal (no drag-drop — taxonomy has no VFS path move).
+ * "Change parent" modal (no drag-drop -- taxonomy has no VFS path move).
  *
  * Because `listNodes('categories')` returns the WHOLE nested-set tree in one
  * request, children are resolved for `(loadChildren)` from the in-memory list
@@ -97,12 +97,12 @@ export class CategoriesPageComponent implements OnInit {
 
     /** The full flat node list (nested-set ordered). Root rows + children derive from it. */
     private readonly allNodes = signal<TaxonomyNodeDto[]>([]);
-    /** Resolved `categories` tree id — required to create nodes; null if unseeded. */
+    /** Resolved `categories` tree id -- required to create nodes; null if unseeded. */
     private readonly treeId   = signal<string | null>(null);
     /**
      * False until the first `(loadMore)` resolves. Drives `gridData().hasMore`:
      * the grid emits its INITIAL `loadMore` (which triggers our data fetch) only
-     * when `externalData().hasMore !== false` at config-load — see
+     * when `externalData().hasMore !== false` at config-load -- see
      * `datagrid.component#onSentinelVisible`. A flat `hasMore: false` on mount
      * short-circuits that guard, so the fetch never fires and the grid shows
      * "No data found" forever. Mirror the Pages list's `hasMore` signal, but key
@@ -124,7 +124,7 @@ export class CategoriesPageComponent implements OnInit {
     /** Root rows feed the grid; children arrive lazily via setTreeChildren. */
     readonly gridData = computed((): DataGridData => {
         // The API OMITS `parentId` for root nodes (null skipped in serialization),
-        // so a root's `parentId` is `undefined` — treat any falsy value as root
+        // so a root's `parentId` is `undefined` -- treat any falsy value as root
         // (a strict `=== null` check silently drops every root -> empty grid).
         const roots = this.allNodes()
             .filter(n => !n.parentId)
@@ -192,7 +192,7 @@ export class CategoriesPageComponent implements OnInit {
 
     /**
      * Action-bar handler. `create`/`reload` are context-free; the row-level
-     * actions (add-child / edit / move / delete) operate on the SELECTED row —
+     * actions (add-child / edit / move / delete) operate on the SELECTED row --
      * mirrors the right-click `onRowAction`, but resolves the node from
      * `selectedRow()` rather than the event row.
      */

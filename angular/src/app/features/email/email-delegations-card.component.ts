@@ -17,12 +17,12 @@ import { EmailService } from './email.service';
 import { MailboxDelegationDto } from './email.types';
 
 /**
- * — the Gmail/Workspace "delegate access" card on the mailbox editor
+ * -- the Gmail/Workspace "delegate access" card on the mailbox editor
  * (Slice 3 of the delegation feature). Lists a mailbox's delegates and lets the
  * owner/admin grant + revoke; the backend MANAGE-gates every op and notifies the
  * owner on grant. A delegate gains read + send-as (no role tiers), so this is a
  * simplification of {@link CalendarSharesCardComponent}: no role select, no group
- * target — just a user picker + Add + Revoke.
+ * target -- just a user picker + Add + Revoke.
  */
 @Component({
     selector: 'app-email-delegations-card',
@@ -212,7 +212,7 @@ import { MailboxDelegationDto } from './email.types';
     `],
 })
 export class EmailDelegationsCardComponent implements OnInit {
-    /** The mailbox whose delegates are managed — the endpoint path segment. */
+    /** The mailbox whose delegates are managed -- the endpoint path segment. */
     mailboxId = input.required<string>();
 
     /** Whether the current user can mutate delegates (owner / admin). */

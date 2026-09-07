@@ -17,14 +17,14 @@ import {
 } from './cockpit.types';
 
 /**
- * FE — thin API client for the Process Cockpit backend
+ * FE -- thin API client for the Process Cockpit backend
  * (`/api/v1/cockpit/instances`).
  *
  * Standalone per-feature service (mirrors `InboxService`): small + read-only,
  * so it lives beside its consumer page rather than on the platform-wide
  * `ApiService`. The collection endpoint returns a Hydra envelope (API
  * Platform GetCollection); we request `application/ld+json` and unwrap
- * `member` to a plain array so the consumer page stays Hydra-agnostic —
+ * `member` to a plain array so the consumer page stays Hydra-agnostic --
  * the same shape `InboxService` uses for its array-provider collection.
  */
 @Injectable({ providedIn: 'root' })
@@ -43,7 +43,7 @@ export class CockpitService {
     }
 
     /**
-     * The paginated form — returns `totalItems` alongside the rows.
+     * The paginated form -- returns `totalItems` alongside the rows.
      *
      * The endpoint now answers the grid's whole filter surface
      * (`definition`, `businessKey`, `startedFrom`/`startedTo`, `sort`) and
@@ -88,7 +88,7 @@ export class CockpitService {
     }
 
     /**
-     * The paginated form — returns `totalItems` alongside the rows, so the list
+     * The paginated form -- returns `totalItems` alongside the rows, so the list
      * page can page lazily and its footer can describe the FILTERED set.
      */
     listExternalTasksPage(opts: ListCockpitExternalTasksOptions = {}): Observable<{ items: CockpitExternalTaskDto[]; totalItems: number }> {
@@ -130,7 +130,7 @@ export class CockpitService {
     }
 
     /**
-     * POST /cockpit/external-tasks/{id}/retry — re-open a permanently-Failed
+     * POST /cockpit/external-tasks/{id}/retry -- re-open a permanently-Failed
      * external task so a worker can attempt it again (M5 external-worker
      * cockpit steering). Returns the refreshed row (Created). 404 unknown id;
      * 409 when the task is not Failed.
@@ -144,7 +144,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/instances/{id} — the enriched single-instance detail
+     * GET /cockpit/instances/{id} -- the enriched single-instance detail
      *. Unlike the collection, the item op returns a single JSON-LD
      * object (not a Hydra envelope), so we just normalize the optional
      * engine-state arrays and return it as the detail DTO.
@@ -165,7 +165,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/report — the aggregate operator report: platform
+     * GET /cockpit/report -- the aggregate operator report: platform
      * state counts + rolling throughput + per-definition breakdown. A
      * singleton item GET (no identifier), so it returns a single JSON-LD
      * object; we normalize the optional arrays/maps defensively.
@@ -188,8 +188,8 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/task-metrics — aggregate user-task metrics: the
-     * task-level complement to the process report — count by task state, the
+     * GET /cockpit/task-metrics -- aggregate user-task metrics: the
+     * task-level complement to the process report -- count by task state, the
      * open subtotal, overdue count, mean queue-/cycle-time, and completion
      * throughput. A singleton item GET (no identifier), so it returns a single
      * JSON-LD object; we normalize defensively (API Platform omits null props,
@@ -214,7 +214,7 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/definitions/{definitionId}/timing — the per-definition
+     * GET /cockpit/definitions/{definitionId}/timing -- the per-definition
      * bottleneck report: each AST element's mean + max dwell across
      * the definition's instances, slowest-average first. A single JSON-LD
      * object; we normalize the optional `elements` array defensively. 404 if
@@ -229,10 +229,10 @@ export class CockpitService {
     }
 
     /**
-     * GET /cockpit/reports/export?kind=… (+) — a Cockpit report rendered
+     * GET /cockpit/reports/export?kind=... (+) -- a Cockpit report rendered
      * server-side as CSV, wrapped in a JSON envelope ({kind, filename, csv,
      * generatedAt}). The caller triggers the `.csv` download client-side from
-     * the returned `csv`/`filename` (a raw attachment would 401 — a plain
+     * the returned `csv`/`filename` (a raw attachment would 401 -- a plain
      * `<a download>` can't carry the bearer token). `definitionId` is required
      * for `kind='timing'`, ignored otherwise.
      */
@@ -256,30 +256,30 @@ export class CockpitService {
      * backend returns the updated instance read view. The detail page
      * re-fetches `getInstance(id)` after every successful action (so the
      * token positions + history + variables refresh too), so the returned
-     * row is informational only — callers may ignore it.
+     * row is informational only -- callers may ignore it.
      *
      * State-illegal transitions surface as a 409, an empty set-variable
-     * name as a 400, and an unknown id as a 404 — all humanized by the
+     * name as a 400, and an unknown id as a 404 -- all humanized by the
      * shared ErrorHandlerService on the consumer page.
      */
 
-    /** POST /cockpit/instances/{id}/cancel — kill running tokens, -> cancelled. */
+    /** POST /cockpit/instances/{id}/cancel -- kill running tokens, -> cancelled. */
     cancel(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'cancel');
     }
 
-    /** POST /cockpit/instances/{id}/suspend — running -> suspended. */
+    /** POST /cockpit/instances/{id}/suspend -- running -> suspended. */
     suspend(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'suspend');
     }
 
-    /** POST /cockpit/instances/{id}/resume — suspended -> running. */
+    /** POST /cockpit/instances/{id}/resume -- suspended -> running. */
     resume(id: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'resume');
     }
 
     /**
-     * POST /cockpit/instances/{id}/retry — failed -> running. Un-fails
+     * POST /cockpit/instances/{id}/retry -- failed -> running. Un-fails
      * the instance, re-activates the token parked at the failed service task,
      * and re-drives the engine; on a repeat handler failure it lands Failed
      * again. Retrying a non-failed instance surfaces as a 409.
@@ -288,13 +288,13 @@ export class CockpitService {
         return this.post(id, 'retry');
     }
 
-    /** POST /cockpit/instances/{id}/set-variable — upsert one process variable. */
+    /** POST /cockpit/instances/{id}/set-variable -- upsert one process variable. */
     setVariable(id: string, name: string, value: string): Observable<CockpitInstanceDto> {
         return this.post(id, 'set-variable', { name, value });
     }
 
     /**
-     * POST /cockpit/instances/{id}/migrate — in-flight version migration
+     * POST /cockpit/instances/{id}/migrate -- in-flight version migration
      *: re-pin a Suspended instance to a different deployed version of
      * its own definition. The backend validates same-definition + that every
      * live token's element id exists in the target AST; a violation (or a

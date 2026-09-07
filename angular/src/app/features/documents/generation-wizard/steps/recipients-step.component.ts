@@ -6,7 +6,7 @@ import { Subject, Subscription, debounceTime, switchMap, of, catchError } from '
 
 import { CmsFilterBuilderComponent } from '@coolms/ui-angular';
 import { ApiService, type AudiencePreviewDto } from '../../../../api/api.service';
-import { USER_ENTITY_FQCN } from './mode-step.component';
+import { FilterAudienceEntity } from '../filter-audience-entity';
 
 /**
  * X-2.6b step 2 (Filter mode only) -- pick the recipient cohort.
@@ -25,14 +25,14 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
  * ## The count comes from preview-audience, not the user list
  *
  * This used to call `countUsers()`, which read `totalItems` off
- * `GET /auth/users` — an endpoint that returns a BARE ARRAY. The count was
+ * `GET /auth/users` -- an endpoint that returns a BARE ARRAY. The count was
  * therefore `undefined` for every filter, and the wizard's
  * `canProceed: count > 0` made `undefined > 0` false, so entering ANY filter
  * disabled Next. Filter mode could only be completed by leaving the filter
  * empty, i.e. generating for every user on the platform.
  *
  * `preview-audience` runs the same `FilterAudienceMaterializer` the submit
- * runs, so the number shown is the number that gets documents — and its
+ * runs, so the number shown is the number that gets documents -- and its
  * `sample` finally answers "which people?", which is what an operator is
  * really asking when they build a recipient filter.
  */
@@ -149,6 +149,7 @@ import { USER_ENTITY_FQCN } from './mode-step.component';
     `],
 })
 export class CmsWizardRecipientsStepComponent implements OnDestroy {
+    private readonly recipientEntity = inject(FilterAudienceEntity);
     private readonly api = inject(ApiService);
 
     /** Two-way bound RQL body (e.g., `filter=isActive eq true`). */
@@ -176,13 +177,13 @@ export class CmsWizardRecipientsStepComponent implements OnDestroy {
                     // Don't ask about the empty filter. The preview requires a
                     // non-empty rql because the SUBMIT does, so this would 422
                     // and paint "Unable to compute count" over the step's
-                    // opening state — an error where the honest message is
+                    // opening state -- an error where the honest message is
                     // "you haven't chosen anyone yet".
                     if ('' === rql) {
                         return of<AudiencePreviewDto | null>(null);
                     }
                     this.loading.set(true);
-                    return this.api.previewDocumentAudience(USER_ENTITY_FQCN, rql).pipe(
+                    return this.api.previewDocumentAudience(this.recipientEntity.value(), rql).pipe(
                         catchError(() => {
                             this.error.set(true);
                             this.loading.set(false);

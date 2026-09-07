@@ -1,5 +1,5 @@
 /**
- * Typed contract for `/api/v1/module-settings` — mirrors ModuleSettingsResource.
+ * Typed contract for `/api/v1/module-settings` -- mirrors ModuleSettingsResource.
  *
  * Every operation on that surface is `is_granted('ROLE_ADMIN')`: settings are
  * operational configuration, not content. Who may publish an article and who may
@@ -10,7 +10,7 @@
 export interface ModuleSettingsBlockDto {
     /** The config-store id, e.g. `dynamic_chat.prechat`. Also the IRI identifier. */
     readonly key: string;
-    /** The owning module SLUG — the grouping key on the hub page, not a heading. */
+    /** The owning module SLUG -- the grouping key on the hub page, not a heading. */
     readonly module: string;
     /**
      * How the module wants to be named in a heading, e.g. `Dynamic Chat`.
@@ -31,7 +31,7 @@ export interface ModuleSettingsBlockDto {
      * The Form definition describing the block's fields, or null when the module
      * declared none.
      *
-     * Null means "no UI yet", NOT "no settings" — the block is still editable
+     * Null means "no UI yet", NOT "no settings" -- the block is still editable
      * over the API, so the page shows what is stored rather than an empty form
      * that would claim there is nothing to set.
      */
@@ -41,7 +41,7 @@ export interface ModuleSettingsBlockDto {
      * edited: the module's shipped defaults apply and the caller cannot tell the
      * difference, which is intended.
      *
-     * This is a MAP, which is why the service pins `Accept: application/json` —
+     * This is a MAP, which is why the service pins `Accept: application/json` --
      * see the note there.
      */
     readonly data: Record<string, unknown>;

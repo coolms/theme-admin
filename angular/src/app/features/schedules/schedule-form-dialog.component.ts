@@ -25,7 +25,7 @@ import {
 } from './trigger-spec-dialog.component';
 
 /**
- * — Create-schedule modal dialog (replaces the inline create panel).
+ * -- Create-schedule modal dialog (replaces the inline create panel).
  *
  * Opened from SchedulesListComponent's `create` toolbar action.
  */
@@ -229,8 +229,8 @@ export class ScheduleFormDialogComponent implements OnInit {
 
     /**
      * Open the structured trigger-spec sub-dialog. Lets the user pick a
-     * cron preset (every minute / hourly / daily at HH:MM / …) or an
-     * RRule preset (Weekly on Mo,Tu,… / Monthly on the Nth / …) without
+     * cron preset (every minute / hourly / daily at HH:MM / ...) or an
+     * RRule preset (Weekly on Mo,Tu,... / Monthly on the Nth / ...) without
      * cluttering the main New Schedule modal with a form-inside-a-form.
      */
     openTriggerDialog(): void {

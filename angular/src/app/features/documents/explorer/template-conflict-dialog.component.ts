@@ -48,7 +48,7 @@ export interface TemplateConflictDialogData {
  * ESC, which closes with `null`) leaves the original upload aborted.
  * `replace` redirects the caller to the Replace flow against the
  * existing template id. `save-as` carries the user-chosen filename
- * (which may itself collide — the caller retries and the recursion
+ * (which may itself collide -- the caller retries and the recursion
  * terminates when the user picks a free name or cancels).
  */
 export interface TemplateConflictDialogResult {

@@ -14,7 +14,7 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
 export interface EditorPeer {
     /** The peer's user UUID (Centrifugo presence `user` = JWT `sub`). */
     readonly userId: string;
-    /** Display label — the connection token's `info.displayName`, falling back to `info.username`. */
+    /** Display label -- the connection token's `info.displayName`, falling back to `info.username`. */
     readonly name: string;
 }
 
@@ -29,7 +29,7 @@ export interface PeerSaveEvent {
  * Collaborative-editing presence + activity for one open document
  *,. Wraps the singleton
  * {@see CentrifugoClientService} for the per-document channel
- * `editor.doc.{nodeId}` — the typed editor sibling of
+ * `editor.doc.{nodeId}` -- the typed editor sibling of
  * `VfsLiveEventsService`, but stateful (it owns one active channel at a
  * time and exposes reactive presence) rather than Observable-per-call.
  *
@@ -40,7 +40,7 @@ export interface PeerSaveEvent {
  * (seeded on `subscribed`) plus incremental `join`/`leave` events. The
  * connection token carries `info.displayName` (friendly label) and
  * `info.username`, so each presence entry's `connInfo` yields the
- * display label without any extra lookup — see {@link nameOf}.
+ * display label without any extra lookup -- see {@link nameOf}.
  * The local user is excluded from {@link peers} (the bar shows who
  * *else* is here) and from the save banner (own saves are suppressed by
  * comparing the broadcast `by` against the current user id).
@@ -119,7 +119,7 @@ export class EditorCollabService implements OnDestroy {
                 if (sub.state !== 'subscribed') {
                     sub.subscribe();
                 } else {
-                    // Already subscribed (shared sub) — `subscribed` won't fire again.
+                    // Already subscribed (shared sub) -- `subscribed` won't fire again.
                     this.seedPresence(sub, channel);
                 }
             })
@@ -128,7 +128,7 @@ export class EditorCollabService implements OnDestroy {
             });
     }
 
-    /** Dismiss the current peer-saved banner (Reload or ×). */
+    /** Dismiss the current peer-saved banner (Reload or x). */
     acknowledgeSaved(): void {
         this.peerSaved.set(null);
     }

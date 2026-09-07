@@ -41,7 +41,7 @@ const ENDED_LINGER_MS = 6_000;
  * ended calls linger briefly (with their final duration) then age out. The
  * board is seeded on load from the recent non-terminal CallRecords so it isn't
  * empty until the next transition. Clicking a card drills into the call detail
- *. Read-only — the wallboard never mutates state.
+ *. Read-only -- the wallboard never mutates state.
  *
  * The live push needs a running Centrifugo + a PBX producing calls; without
  * them the board shows its empty state and the "Offline" indicator.
@@ -213,7 +213,7 @@ export class CallWallboardComponent implements OnInit {
 
     /** All calls received, keyed by id (ended ones are pruned once they age out). */
     private readonly calls = signal<Map<string, LiveCall>>(new Map());
-    /** Ticks every second — drives the live duration + the ended-linger age-out. */
+    /** Ticks every second -- drives the live duration + the ended-linger age-out. */
     private readonly now = signal(Date.now());
 
     /** WebSocket connection state (passthrough to the shared Centrifugo client). */
@@ -279,7 +279,7 @@ export class CallWallboardComponent implements OnInit {
         // An `ended` transition that carries no usable end timestamp (null
         // `endedAt` in the payload) would never age out: the linger filter
         // drops it on sight AND the 1s prune skips it (both require
-        // `endedAtMs !== null`), so the entry would sit in the Map forever —
+        // `endedAtMs !== null`), so the entry would sit in the Map forever --
         // an invisible leak on a board left running all day. Anchor its linger
         // to receive-time so it shows briefly, then prunes like any ended call.
         const normalized: LiveCall = (c.state === 'ended' && c.endedAtMs === null)

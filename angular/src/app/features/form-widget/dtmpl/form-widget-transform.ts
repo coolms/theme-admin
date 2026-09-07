@@ -1,10 +1,10 @@
 /**
  * Bidirectional HTML <-> dtmpl transform for the `formWidget` Tiptap node.
  *
- * On save:  htmlToDtmpl() rewrites every `<div data-widget="form" …>…</div>`
+ * On save:  htmlToDtmpl() rewrites every `<div data-widget="form" ...>...</div>`
  *           marker into `{widget:form formId=`<id>`}`. The id is BACKTICK-quoted
  *           so dotted / colon-bearing ids (e.g. `dynamic_entity:field_definition`)
- *           tokenize cleanly — matching the FormRenderWidgetRenderer convention.
+ *           tokenize cleanly -- matching the FormRenderWidgetRenderer convention.
  * On load:  dtmplToHtml() does the inverse, rebuilding a minimal marker div the
  *           FormWidget node's parseHTML rehydrates (the node re-renders the chip).
  *
@@ -14,7 +14,7 @@
  * syntax).
  *
  * Disjoint namespace: this transform only touches `<div data-widget="form">` /
- * `{widget:form …}`, so it composes order-independently with the media, link,
+ * `{widget:form ...}`, so it composes order-independently with the media, link,
  * formField and embed transforms.
  */
 
@@ -50,7 +50,7 @@ function escapeAttr(s: string): string {
  * quotes from a positional id, unescaping the same quote inside.
  *
  * DTMPL now supports backtick LITERALS in the id slot so an id with a dot
- * (`a.b.c`) or a UUID's dashes tokenizes cleanly — so a hand-authored
+ * (`a.b.c`) or a UUID's dashes tokenizes cleanly -- so a hand-authored
  * positional tag may arrive as `` {widget:form:`a.b.c`} ``. The positional
  * capture grabs the whole `` `a.b.c` `` (quotes included); without unwrapping,
  * the chip would carry literal backticks in its id. Named-param values are
@@ -73,7 +73,7 @@ function unwrapLiteral(s: string): string {
  * Encode a form id for the positional id slot of `{widget:form:<id>}`.
  *
  * Colon-bearing ids (`calendar:list`, `dynamic_entity:field_definition`) need
- * NO quoting — the whole tail after `form:` is the id. A bare dot, though,
+ * NO quoting -- the whole tail after `form:` is the id. A bare dot, though,
  * lexes as a DOT token and breaks the tag, so an id containing a dot (or
  * whitespace / a backtick / a brace) is wrapped in a backtick LITERAL, the
  * unambiguous form the DTMPL lexer accepts for any id.

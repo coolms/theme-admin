@@ -72,7 +72,7 @@ export function previewSrcForKind(kind: MediaKind, previewUrl: string | null | u
 }
 
 /**
- * Attribute set for the {widget:media:UUID size=…} dtmpl tag, mirrored as a
+ * Attribute set for the {widget:media:UUID size=...} dtmpl tag, mirrored as a
  * Tiptap node so editor authors get an inline preview while the stored
  * content remains the original widget tag (round-tripped on save/load).
  *
@@ -98,7 +98,7 @@ export interface MediaWidgetAttrs {
     previewUrl?: string | null;
     /** Pixel width set by the inline drag-resize handles. Null = natural size. */
     width?:      number | null;
-    /** Pixel height — typically auto-derived but exposed for explicit sizing. */
+    /** Pixel height -- typically auto-derived but exposed for explicit sizing. */
     height?:     number | null;
     /** Float / centering. Renders as a CSS utility class on the marker img. */
     align?:      MediaAlign | null;
@@ -128,7 +128,7 @@ export interface MediaWidgetOptions {
 }
 
 /**
- * Custom Tiptap node that mirrors a `{widget:media:UUID …}` dtmpl tag.
+ * Custom Tiptap node that mirrors a `{widget:media:UUID ...}` dtmpl tag.
  *
  * In-editor: renders as a regular inline `<img>` so authors see the asset
  *            in place. The `data-widget="media"` marker plus `data-uuid` /
@@ -137,7 +137,7 @@ export interface MediaWidgetOptions {
  *            editor still shows a recognisable thumbnail (play icon for
  *            video, sound icon for audio, file icon for documents).
  * On save:   the page editor's `htmlToDtmpl()` post-processor swaps each
- *            marker `<img>` back into the original `{widget:media:…}` form.
+ *            marker `<img>` back into the original `{widget:media:...}` form.
  *            The dtmpl tag carries no `kind`; the backend redetects from
  *            the asset's MIME at render time.
  * On load:   `dtmplToHtml()` re-derives `kind` from MIME via MediaService

@@ -14,7 +14,7 @@ import { UploadItem, VfsDirectoryPage, VfsNodeDto, VfsViewMode } from '@coolms/u
  * loaded under the page's DI tree (VfsTree, VfsGrid, VfsFileDetail) can inject
  * it without any prop-drilling.
  *
- * Replaces VfsManagerState (NGXS) — all directory loading, selection, view mode,
+ * Replaces VfsManagerState (NGXS) -- all directory loading, selection, view mode,
  * and upload tracking now live here as plain Angular signals.
  */
 @Injectable()
@@ -106,9 +106,9 @@ export class VfsPageStateService {
      * listing lands.
      *
      * `?path=` is a DIRECTORY contract: the list endpoint answers
-     * "'…/x.docx' is not a directory" when handed a file, so a deep link
-     * that knows a FILE — a notification announcing a generated document
-     * — passes the folder in `path` and the file name in
+     * "'.../x.docx' is not a directory" when handed a file, so a deep link
+     * that knows a FILE -- a notification announcing a generated document
+     * -- passes the folder in `path` and the file name in
      * `select`. Selection has to wait for the HTTP response because the
      * node objects only exist once the page is loaded.
      */
@@ -154,7 +154,7 @@ export class VfsPageStateService {
      * Select the pending deep-link target if this page carried it.
      *
      * Directories page at 100 entries, so the target may legitimately be
-     * on a later page — keep waiting while more can arrive, and drop the
+     * on a later page -- keep waiting while more can arrive, and drop the
      * request once the listing is exhausted rather than letting a name
      * that was never here linger.
      */

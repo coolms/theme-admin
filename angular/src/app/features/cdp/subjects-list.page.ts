@@ -37,7 +37,7 @@ interface SubjectRow {
 }
 
 /**
- *Phase 3 (CDP core, ) — Subject profile explorer
+ *Phase 3 (CDP core, ) -- Subject profile explorer
  * (`/admin/cdp/subjects`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the
@@ -48,7 +48,7 @@ interface SubjectRow {
  *
  * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and on
  * every filter/sort/page change, and this page turns that into ONE server
- * request. It used to be `client` — the page fetched EVERY subject (one row per
+ * request. It used to be `client` -- the page fetched EVERY subject (one row per
  * visitor) and the grid filtered that in the browser.
  *
  * The segment "View members" deep-link (`?segment=<key>`) travels as its own
@@ -102,7 +102,7 @@ export class SubjectsListPageComponent implements OnInit {
 
     private readonly rows = signal<SubjectRow[]>([]);
 
-    /** Server's count for the CURRENT filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error). */
     readonly loaded = signal(false);
@@ -133,7 +133,7 @@ export class SubjectsListPageComponent implements OnInit {
 
     /**
      * Footer row-count strip (bottom-left). `totalItems` is the SERVER's count
-     * for the active filter, so it needs no client-side adjustment — a
+     * for the active filter, so it needs no client-side adjustment -- a
      * consequence of filtering server-side.
      */
     readonly footerLabel = computed(() => {
@@ -163,7 +163,7 @@ export class SubjectsListPageComponent implements OnInit {
     /**
      * The one place subjects are fetched. Fired by the grid on mount, on every
      * filter/sort change (`reset`, offset 0) and when the lazy sentinel scrolls
-     * in. Column filters go to the SERVER as RQL, verbatim — including the
+     * in. Column filters go to the SERVER as RQL, verbatim -- including the
      * Segments multi-select, which the provider lifts out of the query and
      * turns into a JSON membership test.
      */
@@ -229,7 +229,7 @@ export class SubjectsListPageComponent implements OnInit {
 
     /**
      * Re-runs the current query from page 1, KEEPING the grid's active filters
-     * and sort — the grid owns that state now, so it must drive the refetch.
+     * and sort -- the grid owns that state now, so it must drive the refetch.
      */
     private load(): void {
         this.grid?.reload();

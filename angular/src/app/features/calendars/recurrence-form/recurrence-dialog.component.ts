@@ -33,7 +33,7 @@ export type RecurrenceDialogResult = string | null | undefined;
 
 /**
  * Sub-dialog hosting the full `<app-recurrence-form>`. Opened from the
- * event editor when the user picks "Custom…" in the Repeats dropdown
+ * event editor when the user picks "Custom..." in the Repeats dropdown
  * (or "Edit recurrence" on a non-preset spec). Keeps the main editor
  * compact while giving the structured form the breathing room it needs.
  *

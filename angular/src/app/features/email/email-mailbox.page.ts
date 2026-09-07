@@ -55,9 +55,9 @@ interface MailboxFormModel {
     oauthProvider: string;
 }
 
-/** A saved compose/reply draft — the composer's restorable state. */
+/** A saved compose/reply draft -- the composer's restorable state. */
 interface ComposeDraft {
-    /** C.4.b: recipient chips. Pre-C.4.b drafts stored `to` as a comma-string — coerced on load. */
+    /** C.4.b: recipient chips. Pre-C.4.b drafts stored `to` as a comma-string -- coerced on load. */
     to: string[];
     cc: string[];
     bcc: string[];
@@ -69,20 +69,20 @@ interface ComposeDraft {
 
 /**
  * The Email mailbox client (`/admin/email`). A three-pane reader over
- * the read/send/reply/folders/seen APIs–):
+ * the read/send/reply/folders/seen APIs-):
  *
  *  - LEFT rail: the mailbox picker + folder list (each folder shows its unread
  *    count, `GET /email/mailboxes/{id}/folders`).
  *  - MIDDLE: the selected folder's messages, newest-sent first, offset-paginated
  *    ("Load more"). Unread rows are bold; opening one marks it read.
- *  - RIGHT: the opened message — headers + snippet + a collapsible raw RFC-822
+ *  - RIGHT: the opened message -- headers + snippet + a collapsible raw RFC-822
  *    source (the backend stores the raw `.eml`; MIME body extraction is a future
  *    refinement). "Reply" + a top-bar "Compose" open an inline composer that
  *    posts through the mailbox's own SMTP (send / reply-in-thread ).
  *
  * Read-only-friendly: with no mailboxes configured (the common dev state) the
  * body degrades to an empty state rather than erroring. Monolithic single
- * component like {@link MessagesPageComponent} — the closest two-pane analog.
+ * component like {@link MessagesPageComponent} -- the closest two-pane analog.
  */
 @Component({
     selector: 'app-email-mailbox-page',
@@ -1092,7 +1092,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * localStorage key for the last-selected mailbox, so a reload restores it instead
-     * of snapping to the first mailbox. Per-browser UI state — sits beside the list-pane
+     * of snapping to the first mailbox. Per-browser UI state -- sits beside the list-pane
      * width (`coolms.email.listWidth`, persisted by `<cms-pane-splitter>`) in the same store.
      */
     private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
@@ -1180,7 +1180,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private page = 1;
     /**
      * Monotonic request guards. Each async load captures `++seq` and
-     * ignores its own response if `seq` is no longer the latest — so a slower
+     * ignores its own response if `seq` is no longer the latest -- so a slower
      * in-flight request that resolves after a newer one (rapid message clicks,
      * folder switch mid-"Load more") can't clobber the current view/list.
      */
@@ -1247,7 +1247,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeHtml = signal<string>('');
     /**
      * Bumped to force a clean editor re-mount (clears content + undo + cursor)
-     * on open / close / after-send — mirrors MessagesPageComponent's composerKey.
+     * on open / close / after-send -- mirrors MessagesPageComponent's composerKey.
      */
     readonly composeKey = signal<string>('0');
 
@@ -1273,13 +1273,13 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly mbStep = signal(1);
     /** Step numbers for the wizard progress indicator. */
     readonly mbSteps = [1, 2, 3, 4] as const;
-    /** The mailbox currently open in the editor (edit mode) — drives the delegates card. */
+    /** The mailbox currently open in the editor (edit mode) -- drives the delegates card. */
     readonly editingMailboxId = signal<string | null>(null);
     readonly securityOptions: MailboxSecurity[] = ['none', 'ssl', 'starttls'];
     mbForm: MailboxFormModel = EmailMailboxPageComponent.blankMailboxForm();
 
     // OAuth connect: the edited mailbox's connection state + an
-    // in-flight "Connect with …" redirect.
+    // in-flight "Connect with ..." redirect.
     readonly connecting = signal<boolean>(false);
     readonly editingOauthConnected = signal<boolean>(false);
     /** After returning from the provider's consent, select this mailbox once the list loads. */
@@ -1319,7 +1319,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.pendingSelectId = null;
 
                 // Precedence: an OAuth-return target, then the persisted last mailbox,
-                // then the first mailbox — each only if it still exists in the list.
+                // then the first mailbox -- each only if it still exists in the list.
                 // `.at(0)` (not `[0]`) so the empty-list case types as `string | null`.
                 const target = (prefer !== null && list.some(m => m.id === prefer)) ? prefer
                     : (saved !== null && list.some(m => m.id === saved)) ? saved
@@ -1363,7 +1363,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * The user picked a mailbox from the switcher — select it AND remember the
+     * The user picked a mailbox from the switcher -- select it AND remember the
      * choice in localStorage (`coolms.email.lastMailboxId`) so a reload restores it
      * instead of defaulting to the first mailbox. Distinct from {@link selectMailbox}
      * so the initial restore-on-load doesn't re-persist what it just read.
@@ -1429,7 +1429,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Open a search hit — same detail path as a folder message. */
+    /** Open a search hit -- same detail path as a folder message. */
     openSearchHit(hit: EmailSearchHitDto): void {
         this.openById(hit.id, hit.seen ?? true, hit.folder ?? this.selectedFolder());
     }
@@ -1488,7 +1488,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Run a full-text search across the selected mailbox (,). */
+    /** Run a full-text search across the selected mailbox. */
     runSearch(): void {
         const q = this.searchQuery.trim();
         const mailboxId = this.selectedMailboxId();
@@ -1628,7 +1628,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.moveMenu.set(this.moveMenu() === which ? null : which);
     }
 
-    /** The mailbox's folders minus the one the message is already in — the move targets. */
+    /** The mailbox's folders minus the one the message is already in -- the move targets. */
     moveTargets(current: string): string[] {
         return this.folders()
             .map(f => f.folder)
@@ -1779,7 +1779,7 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** Download one attachment — fetch the blob (bearer-auth) and hand the browser an object URL. */
+    /** Download one attachment -- fetch the blob (bearer-auth) and hand the browser an object URL. */
     downloadAttachment(att: EmailAttachmentDto): void {
         const msg = this.selectedMessage();
         if (!msg) {
@@ -1832,7 +1832,7 @@ export class EmailMailboxPageComponent implements OnInit {
         return `${n.toFixed(1)} ${units[i]}`;
     }
 
-    /** A bootstrap-icon suffix for an attachment by MIME type (used as `bi-{{ … }}`). */
+    /** A bootstrap-icon suffix for an attachment by MIME type (used as `bi-{{ ... }}`). */
     attachmentIcon(contentType: string): string {
         const t = contentType.toLowerCase();
         if (t.startsWith('image/')) {
@@ -1876,7 +1876,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * Checkbox click: a plain toggle of this one message; never opens it. We let the
      * NATIVE checkbox toggle drive its own tick (so it always renders checked) and
-     * mirror the same flip into the selection signal — they agree for a plain toggle,
+     * mirror the same flip into the selection signal -- they agree for a plain toggle,
      * and `[checked]` re-asserts from the signal on the next change detection. Shift/Ctrl
      * range selection lives on the row body ({@link onRowClick}), so the checkbox never
      * hits a case where the signal and the native tick could drift.
@@ -2098,7 +2098,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * Map contacts to recipient options: one row per distinct email address, the
      * chip value being the bare address (what we send) and the label the
-     * Gmail-style `Name <addr>`. Contacts with no email are skipped — you can't
+     * Gmail-style `Name <addr>`. Contacts with no email are skipped -- you can't
      * address them.
      */
     private toRecipientOptions(list: ContactDto[]): TagOption[] {
@@ -2121,7 +2121,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Coerce a persisted recipient field to an address array. C.4.b stores arrays,
-     * but a draft saved before this ship holds a comma-joined string — split it so
+     * but a draft saved before this ship holds a comma-joined string -- split it so
      * old drafts still restore into the tag-inputs.
      */
     private asAddressArray(value: unknown): string[] {
@@ -2149,7 +2149,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** True when the composer differs from its fresh-open baseline (worth saving). */
     private isComposeDirty(): boolean {
-        // Recipient arrays are compared by CONTENT (join) — reference compare would
+        // Recipient arrays are compared by CONTENT (join) -- reference compare would
         // read every tag-input change as dirty since it emits a fresh array.
         return this.composeTo.join('\n') !== this.composeToInitial.join('\n')
             || this.composeCc.join('\n') !== this.composeCcInitial.join('\n')
@@ -2183,7 +2183,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.draftSaved.set(true);
     }
 
-    /** Debounced autosave hook — called from the composer field change bindings. */
+    /** Debounced autosave hook -- called from the composer field change bindings. */
     onComposeChange(): void {
         if (this.draftSaveTimer !== null) {
             clearTimeout(this.draftSaveTimer);
@@ -2246,7 +2246,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     closeCompose(): void {
         // Persist the latest edit as a draft (the debounce may not have fired), then
-        // close. The draft is KEPT — reopening the composer restores it; "Discard"
+        // close. The draft is KEPT -- reopening the composer restores it; "Discard"
         // is the explicit delete.
         if (this.draftSaveTimer !== null) {
             clearTimeout(this.draftSaveTimer);
@@ -2273,7 +2273,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Derive a plain-text fallback from the rich editor's HTML so the outgoing
-     * email always carries a text body (the backend requires ≥1 body, and
+     * email always carries a text body (the backend requires >=1 body, and
      * non-HTML clients fall back to this). Uses DOMParser to decode entities and
      * drop tags; `<br>` + block boundaries become newlines so it stays readable.
      */
@@ -2342,7 +2342,7 @@ export class EmailMailboxPageComponent implements OnInit {
         call.subscribe({
             next: () => {
                 this.sending.set(false);
-                // A sent message is no longer a draft — drop it.
+                // A sent message is no longer a draft -- drop it.
                 if (draftKey !== null) {
                     this.drafts.clear(draftKey);
                 }
@@ -2434,8 +2434,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Validate ONLY the fields owned by `step`; toast the first blank and return false.
-     * The full check still runs in {@link saveMailbox} as the final gate — this only gates
-     * "Next". Steps 1–3 have required fields; step 4's password check lives in saveMailbox.
+     * The full check still runs in {@link saveMailbox} as the final gate -- this only gates
+     * "Next". Steps 1-3 have required fields; step 4's password check lives in saveMailbox.
      * OAuth mailboxes default the IMAP/SMTP username to the email address at save (see
      * saveMailbox), so mirror that here rather than forcing the admin to type it.
      */
@@ -2559,8 +2559,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Options for the inbound-workflow `<select>`: the deployed workflows,
-     * plus — if the mailbox already stores a key that is NOT among them (a workflow
-     * since undeployed, or one set via the API/console) — a synthetic leading option
+     * plus -- if the mailbox already stores a key that is NOT among them (a workflow
+     * since undeployed, or one set via the API/console) -- a synthetic leading option
      * so the current value stays selected and visible rather than being silently blanked.
      */
     workflowChoices(): InboundWorkflowOption[] {
@@ -2626,7 +2626,7 @@ export class EmailMailboxPageComponent implements OnInit {
             request.authMethod = 'oauth';
             request.oauthProvider = f.oauthProvider || 'google';
         } else if (f.password.trim() !== '') {
-            // Send the password ONLY when the admin typed one — blank on edit keeps
+            // Send the password ONLY when the admin typed one -- blank on edit keeps
             // the stored credential (it's write-only, never read back into the form).
             request.password = f.password;
         }
@@ -2641,7 +2641,7 @@ export class EmailMailboxPageComponent implements OnInit {
             next: saved => {
                 this.savingMailbox.set(false);
                 if (!isEdit && isOauth) {
-                    // A fresh OAuth mailbox is created "pending" — keep the editor open in
+                    // A fresh OAuth mailbox is created "pending" -- keep the editor open in
                     // edit mode so the "Connect with Google" button is right there, and
                     // refresh the list behind it.
                     this.toast.success('Mailbox created — connect it with Google below.');

@@ -58,7 +58,7 @@ export interface ThemeTemplateDto {
     readonly label:     string;
 }
 
-/** One template's source, from `/themes/{slug}/template-source?path=…`. */
+/** One template's source, from `/themes/{slug}/template-source?path=...`. */
 export interface ThemeTemplateSourceDto {
     readonly slug:    string;
     readonly path:    string;
@@ -77,7 +77,7 @@ export interface ThemeTemplateSourceDto {
 export interface ThemeTemplateOverrideDto {
     readonly slug:    string;
     readonly path:    string;
-    /** Where the editable copy now lives, e.g. `/themes/coolms-default/templates/…`. */
+    /** Where the editable copy now lives, e.g. `/themes/coolms-default/templates/...`. */
     readonly vfsPath: string;
 }
 
@@ -85,7 +85,7 @@ export interface ThemeTemplateOverrideDto {
  * Themes admin surface.
  *
  * Read + activate + browse source, which is the whole of what the backend
- * exposes: there is deliberately **no POST** — themes are installed only via
+ * exposes: there is deliberately **no POST** -- themes are installed only via
  * `php bin/console coolms:theme:install <slug>`.
  *
  * `PATCH` accepts exactly one writable field (`isActive`); `null` means
@@ -107,7 +107,7 @@ export class ThemesService {
     }
 
     /**
-     * Site sections, read here for their `themeSlug` — the ONE
+     * Site sections, read here for their `themeSlug` -- the ONE
      * theme binding.
      *
      * `ThemeSubscriber` fast-paths on it: a section naming a theme never
@@ -121,7 +121,7 @@ export class ThemesService {
     }
 
     /**
-     * A theme's templates, keyed by SLUG rather than id — that is what the
+     * A theme's templates, keyed by SLUG rather than id -- that is what the
      * endpoint takes, and it is the handle `SiteSection.themeSlug` stores.
      */
     listTemplates(slug: string): Observable<ThemeTemplateDto[]> {
@@ -170,7 +170,7 @@ export class ThemesService {
     /**
      * Activating re-skins the public site, so it is ROLE_ADMIN server-side.
      *
-     * It only affects sections that name NO theme of their own — a section's
+     * It only affects sections that name NO theme of their own -- a section's
      * own `themeSlug` always wins (`ThemeSubscriber` fast-path). The page
      * withholds the button when there are no such sections rather than letting
      * an operator click something that would change nothing.
@@ -182,7 +182,7 @@ export class ThemesService {
     /*
      * There is deliberately NO setSections().
      *
-     * `Theme.sections[]` was retired in — read path gone, write group
+     * `Theme.sections[]` was retired in -- read path gone, write group
      * gone, data folded into `SiteSection.themeSlug`. Assignment lives on the
      * section, which is the only place it ever really lived.
      */
@@ -192,7 +192,7 @@ export class ThemesService {
     }
 
     /**
-     * API-Platform PATCH is merge-patch — the wrong content type is a 415, not a
+     * API-Platform PATCH is merge-patch -- the wrong content type is a 415, not a
      * validation error, so it is set here rather than at each call site.
      */
     private patch(id: string, body: Record<string, unknown>): Observable<ThemeDto> {

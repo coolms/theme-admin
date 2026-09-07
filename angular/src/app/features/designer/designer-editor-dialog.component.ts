@@ -21,7 +21,7 @@ export type DesignerSurface =
     | 'state-machine';
 
 /**
- * Explicit data — opened from the Definitions list (decision / workflow
+ * Explicit data -- opened from the Definitions list (decision / workflow
  * rows) which already know the surface + key.
  */
 export interface DesignerEditorDialogExplicitData {
@@ -37,7 +37,7 @@ export interface DesignerEditorDialogExplicitData {
 }
 
 /**
- * File-Explorer entry — the {@link FileEditorRegistry} hands the dialog the
+ * File-Explorer entry -- the {@link FileEditorRegistry} hands the dialog the
  * VFS node the user double-clicked. The surface + key (+ viewer version) are
  * derived from the node's path. Today only the Workflow (BPMN-Lite) MIMEs are
  * registered against this dialog.
@@ -59,7 +59,7 @@ export type DesignerEditorDialogData =
  * editor stack + Save/Deploy toolbar + load/serialize/deploy lifecycle.
  * Rather than clone each page into a bespoke dialog (the drift that the
  * old single-purpose `bpmn-editor-dialog` started), this ONE dialog hosts
- * the matching page component embedded — `[key]` overrides the route param,
+ * the matching page component embedded -- `[key]` overrides the route param,
  * `[version]` (bpmn-lite) selects read-only viewer mode, and `[embedded]`
  * hides the page's `<cms-page-header>` (the modal supplies its own header
  * chrome). The "surface map" is the `@switch` below.
@@ -253,7 +253,7 @@ export class DesignerEditorDialogComponent {
     constructor() {
         const raw = this.raw;
         if ('node' in raw) {
-            // File-Explorer entry — only Workflow (bpmn-lite) MIMEs route
+            // File-Explorer entry -- only Workflow (bpmn-lite) MIMEs route
             // here today, so derive that surface from the node's path; a
             // `v{N}.bpmn.json` body file opens read-only (version set).
             const key = workflowKeyFromNode(raw.node);

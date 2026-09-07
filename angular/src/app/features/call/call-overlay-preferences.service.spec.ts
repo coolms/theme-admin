@@ -13,7 +13,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
  *
  * `merge()` here rebuilds from a whitelist exactly as the calendar service
  * does, so a keyless bag could not put `undefined` into the overlay's
- * `autoDismissSeconds` — it just could not put the user's value there either.
+ * `autoDismissSeconds` -- it just could not put the user's value there either.
  */
 describe('CallOverlayPreferencesService.update()', () => {
     const STORED = { overlayEnabled: false, autoDismissSeconds: 0, sipEndpoint: 'PJSIP/2002' };
@@ -35,8 +35,8 @@ describe('CallOverlayPreferencesService.update()', () => {
 
         svc.update(STORED);
 
- // `false` and `0` are both real user choices here — popup off, and
- // "keep the card until I close it" — so neither may fall back.
+ // `false` and `0` are both real user choices here -- popup off, and
+ // "keep the card until I close it" -- so neither may fall back.
         expect(svc.overlayEnabled()).toBeFalse();
         expect(svc.autoDismissSeconds()).toBe(0);
         expect(svc.sipEndpoint()).toBe('PJSIP/2002');

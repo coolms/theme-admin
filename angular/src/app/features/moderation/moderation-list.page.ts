@@ -22,32 +22,32 @@ import {
 } from '@coolms/ui-angular';
 import { ModerationService, PendingCommentDto } from './moderation.service';
 
-/** Rows per lazy page — matches the grid YAML's `dataSource.pageSize`. */
+/** Rows per lazy page -- matches the grid YAML's `dataSource.pageSize`. */
 const PAGE_SIZE = 50;
 
 /**
- * W7.d — Comment moderation admin page (/admin/moderation).
+ * Comment moderation admin page (/admin/moderation).
  *
  * The queue of comments awaiting a decision, surfaced as a `<coolms-datagrid>` (config from
  * the `comment:moderation` YAML, data fed as `externalData`) for visual
  * consistency with Leads / Forms / Cockpit. The grid's rich cells surface the
  * commenter (avatar), the comment body (clamped snippet) and the status
  * (coloured badge); per-row Approve / Reject actions live in the right-click
- * context menu, gated by each row's `status` (house style —
+ * context menu, gated by each row's `status` (house style --
  * `showActionColumn: false`). Plain-text fields are auto-escaped by Angular
- * interpolation — no XSS sink.
+ * interpolation -- no XSS sink.
  *
- * **`loadingMode: lazy`.** It used to be `client` — the whole queue
- * in one request, filtered in the browser — but the endpoint capped that at 200
+ * **`loadingMode: lazy`.** It used to be `client` -- the whole queue
+ * in one request, filtered in the browser -- but the endpoint capped that at 200
  * rows. A drained queue hid the problem entirely; a spam flood, the one time a
  * moderator needs to filter the whole backlog, is exactly when it broke. Rows
  * now arrive a page at a time through `(loadMore)`, which is also the single
  * entry point for a filter change, a sort change and a refresh.
  *
- * The Comment backend exposes only approve/reject — there is no spam transition
- * — so those are the only two actions.
+ * The Comment backend exposes only approve/reject -- there is no spam transition
+ * -- so those are the only two actions.
  *
- * Complementary to the W7.c Inbox dogfood: the same `CommentService` backs both
+ * Complementary to the Inbox dogfood: the same `CommentService` backs both
  * this direct queue and the `comment.moderation` workflow tasks.
  */
 @Component({
@@ -88,17 +88,17 @@ export class ModerationListComponent implements OnInit {
 
     readonly comments = signal<PendingCommentDto[]>([]);
     readonly loading  = signal(true);
-    /** Server's count for the CURRENT filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded = signal(false);
 
     /** Guards against out-of-order responses; see {@link onLoadMore}. */
     private loadEpoch = 0;
-    /** Ids with an in-flight approve/reject — blocks double-submit. */
+    /** Ids with an in-flight approve/reject -- blocks double-submit. */
     private readonly busyIds = signal<ReadonlySet<string>>(new Set());
 
-    /** Selected grid row — drives the toolbar's selection-gated Approve / Reject (navi showWhen). */
+    /** Selected grid row -- drives the toolbar's selection-gated Approve / Reject (navi showWhen). */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     /**
@@ -137,7 +137,7 @@ export class ModerationListComponent implements OnInit {
     });
 
     /**
-     * Footer row-count strip (bottom-left) — the SERVER's count for the active
+     * Footer row-count strip (bottom-left) -- the SERVER's count for the active
      * filter, so it no longer silently means "rows I happened to load".
      */
     readonly footerLabel = computed(() => {
@@ -152,14 +152,14 @@ export class ModerationListComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('Comment moderation');
-        // No fetch here — the grid emits `(loadMore)` on mount, which is the
+        // No fetch here -- the grid emits `(loadMore)` on mount, which is the
         // single entry point. Fetching here too would race and double-load.
     }
 
     /**
      * The one place the queue is fetched. Fired on mount, on every filter/sort
-     * change (`reset`, offset 0), when the lazy sentinel scrolls in, and — via
-     * `grid.reload()` — on a manual refresh.
+     * change (`reset`, offset 0), when the lazy sentinel scrolls in, and -- via
+     * `grid.reload()` -- on a manual refresh.
      *
      * `columnFilters` is passed VERBATIM: the endpoint is RQL-native and its
      * allowlist comes from the same `comment:moderation` YAML that renders the
@@ -240,7 +240,7 @@ export class ModerationListComponent implements OnInit {
      *
      * Goes through `grid.reload()` rather than calling the API directly, so the
      * grid re-emits `(loadMore)` carrying its CURRENT filters and sort. Fetching
-     * here instead would quietly drop them — the page does not own that state.
+     * here instead would quietly drop them -- the page does not own that state.
      */
     private load(): void {
         this.loading.set(true);
@@ -256,7 +256,7 @@ export class ModerationListComponent implements OnInit {
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
-                // The comment left the pending queue — drop it from this view.
+                // The comment left the pending queue -- drop it from this view.
                 this.comments.update(list => list.filter(x => x.id !== c.id));
                 this.totalItems.update(n => Math.max(0, n - 1));
                 this.selectedRow.set(null);

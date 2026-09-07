@@ -11,7 +11,7 @@ import { WordTemplateService } from './word-template.service';
  * mint a `.dsheet`, render it and edit it in the grid
  *, and nothing could ask for one. Asserting the request BODY rather
  * than a 2xx, because a service that quietly re-hard-codes the format would
- * still return a template — just always the wrong kind.
+ * still return a template -- just always the wrong kind.
  */
 describe('WordTemplateService', () => {
     const ENDPOINT = '/api/v1/document/templates';

@@ -1,5 +1,5 @@
 /**
- * FE — wire DTOs for the inbound-webhook admin CRUD
+ * FE -- wire DTOs for the inbound-webhook admin CRUD
  * (`/api/v1/connector/webhooks`).
  */
 

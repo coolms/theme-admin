@@ -7,7 +7,7 @@ import { FormPickerComponent } from '../form-picker.component';
 /**
  * Handles the `form.openPicker` editor action (dispatched by the backend
  * `block:form` toolbar/slash contributor). Opens the form picker; on selection
- * inserts a `formWidget` node, which round-trips to `{widget:form formId=…}`.
+ * inserts a `formWidget` node, which round-trips to `{widget:form formId=...}`.
  *
  * Dialog is fetched lazily through `ctx.injector.get(Dialog)` so the handler
  * stays construction-light and testable (mirrors OpenLinkPickerHandler).

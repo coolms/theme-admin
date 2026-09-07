@@ -33,7 +33,7 @@ import {
 /**
  * Type guard: did the HTTP error originate from the backend's
  * template-name-conflict listener? The listener tags the response
- * `type` URL — checked against the canonical suffix rather than the
+ * `type` URL -- checked against the canonical suffix rather than the
  * full URL so the listener can move hosts without breaking the
  * frontend gate.
  */
@@ -46,7 +46,7 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
 }
 
 /**
- * F.14c-1 — unified upload dialog. Posts to F.14b's
+ * F.14c-1 -- unified upload dialog. Posts to F.14b's
  * `/api/v1/document/templates/upload`; the backend MIME-routes the
  * file to the matching format provider so this dialog stays
  * format-agnostic.
@@ -317,8 +317,8 @@ export class DocumentUploadDialog {
      *
      * Off by default, and that is the honest default: someone uploading a
      * workbook they designed in Excel usually wants it back exactly as it is,
-     * and conversion trades fidelity — borders, images and charts have no place
-     * in the grid model — for editability.
+     * and conversion trades fidelity -- borders, images and charts have no place
+     * in the grid model -- for editability.
      */
     protected convert = false;
 
@@ -327,7 +327,7 @@ export class DocumentUploadDialog {
      *
      * Defaults to a DOCUMENT: someone who ticked "make it editable here" has
      * said they want to work on the file, and a template is the answer to a
-     * different question — it was also the only answer available until the
+     * different question -- it was also the only answer available until the
      * conversion learnt to produce both.
      */
     protected target: NativeTarget = 'document';
@@ -339,7 +339,7 @@ export class DocumentUploadDialog {
      * yet, so offering the choice for those would be a promise the backend
      * would silently decline. Decided from the FILE rather than from a
      * capability endpoint because the backend already ignores the flag where it
-     * does not apply — the checkbox is an affordance, not the gate.
+     * does not apply -- the checkbox is an affordance, not the gate.
      */
     protected readonly canConvert = computed(() => {
         const name = this.selectedFile()?.name.toLowerCase() ?? '';
@@ -389,7 +389,7 @@ export class DocumentUploadDialog {
      *   - `replace`  -> close this dialog with the template returned
      *                  by the Replace flow (or `null` if the user
      *                  cancelled inside Replace);
-     *   - `save-as`  -> rename the File in-place and retry — may
+     *   - `save-as`  -> rename the File in-place and retry -- may
      *                  recurse if the new name also collides, which
      *                  terminates when the user picks a free name
      *                  or cancels;
@@ -433,7 +433,7 @@ export class DocumentUploadDialog {
      *   - `DocumentTemplate` when Replace finished and the upload
      *     dialog should close with the resulting template;
      *   - `null` when Replace was launched but the user backed out
-     *     of it — upload dialog still closes (the user opted out
+     *     of it -- upload dialog still closes (the user opted out
      *     of both the original upload and the Replace flow).
      */
     private async handleNameConflict(
@@ -471,7 +471,7 @@ export class DocumentUploadDialog {
             }
         }
 
-        // save-as: retry with the renamed file. May 409 again — the
+        // save-as: retry with the renamed file. May 409 again -- the
         // recursion terminates when the user picks a non-colliding
         // name or cancels.
         const renamed = new File([file], result.newName ?? payload.suggestedName, { type: file.type });
@@ -482,7 +482,7 @@ export class DocumentUploadDialog {
 
     private async openReplaceFlow(templateId: string, file: File): Promise<DocumentTemplate | null> {
         // The Replace dialog wants a full DocumentTemplate, not an id
-        // — fetch it via the aggregator so the dropzone-skip path
+        // -- fetch it via the aggregator so the dropzone-skip path
         // can hand off straight to preview.
         const template = await firstValueFrom(this.aggregator.getTemplate(templateId));
         const ref = this.dialog.open<DocumentTemplate | null, ReplaceTemplateDialogData>(

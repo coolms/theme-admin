@@ -16,13 +16,13 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
  * Tile view of one folder in the Pages explorer.
  *
  * The reason this component exists at all: the DataGrid is a TABLE. It renders
- * cells, and `ogImage` is not a cell — the whole point of a share image is that
+ * cells, and `ogImage` is not a cell -- the whole point of a share image is that
  * you recognise the page by it while arranging a site. So the tile view is a
  * second rendering of the same rows, not a styling option on the first.
  *
  * Deliberately dumb. It owns no data, no selection state and no navigation:
  * `PagesListComponent` loads the folder, holds the selection and decides what a
- * double-click means. That keeps ONE owner for those facts across both views —
+ * double-click means. That keeps ONE owner for those facts across both views --
  * the alternative (tiles fetching their own page) would have the table and the
  * tiles disagreeing about which folder you are in the moment either reloads.
  *
@@ -301,7 +301,7 @@ export class PageTilesComponent {
     /**
      * Which of the three non-table renderings to draw.
      *
-     * `details` never reaches here — that mode is the DataGrid, and the host
+     * `details` never reaches here -- that mode is the DataGrid, and the host
      * swaps components rather than passing it down. The input is typed as the
      * full {@link ExplorerViewMode} anyway so the host can forward its state
      * signal without narrowing it at every call site; an unexpected value just
@@ -320,7 +320,7 @@ export class PageTilesComponent {
     readonly pageTypes = input<readonly PageTypeDto[]>([]);
 
     /**
-     * Single click (after the dblclick window) — null when nothing is selected.
+     * Single click (after the dblclick window) -- null when nothing is selected.
      * Named after Media's `selectionChange` rather than `select`, which would
      * shadow the native DOM event.
      */
@@ -351,7 +351,7 @@ export class PageTilesComponent {
     }
 
     /**
-     * A stored `ogImage` can 404 — the media behind it may have been deleted,
+     * A stored `ogImage` can 404 -- the media behind it may have been deleted,
      * or the value may be an absolute URL from another environment. Hide the
      * broken image and let the tile's placeholder background stand, rather
      * than leaving the browser's broken-image glyph in a wall of tiles.
@@ -363,7 +363,7 @@ export class PageTilesComponent {
     /**
      * Human label for a stored `contentType`.
      *
-     * Falls back to the raw key when the catalogue no longer offers it — a
+     * Falls back to the raw key when the catalogue no longer offers it -- a
      * page keeps the type it was created with even if config drops the kind,
      * and showing the key beats showing nothing (it is the thing an operator
      * would search the config for).
@@ -377,7 +377,7 @@ export class PageTilesComponent {
         return (item.placements ?? []).map(p => p.surfaceKey).join(', ');
     }
 
-    /** The full site/surface pairs, for the hover — the summary drops the site. */
+    /** The full site/surface pairs, for the hover -- the summary drops the site. */
     protected placementTitle(item: PageDto): string {
         return (item.placements ?? [])
             .map(p => `${p.siteSlug} / ${p.surfaceKey}`)

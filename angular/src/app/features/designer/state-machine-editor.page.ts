@@ -33,7 +33,7 @@ import { DesignerService } from './designer.service';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
- * — State Machine designer page. Hosts the vanilla-TS
+ * -- State Machine designer page. Hosts the vanilla-TS
  * {@link StateMachineEditor} (from `@coolms/designer/state-machine`)
  * inside the shared editor shell, wired to the VFS-backed
  * draft + deploy API via {@link DesignerService}. Mirrors the BPMN-Lite
@@ -174,7 +174,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         this.title.set(`State machine: ${key}`);
 
         // Save / Deploy live in the page footer (Image-Editor chrome), so
-        // they are NOT wired into the shell toolbar — only canvas tools
+        // they are NOT wired into the shell toolbar -- only canvas tools
         // (undo/redo/zoom/fit) stay there.
         await this.i18n.ensureLoaded();
         this.shellEditor = createEditor(this.hostRef.nativeElement, {
@@ -206,7 +206,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
 
         // Create-tools. Until these existed the editor could rename,
         // re-point, property-edit and PRUNE a machine but never BUILD
-        // one — the blank canvas said "Add a place to start modelling"
+        // one -- the blank canvas said "Add a place to start modelling"
         // with no way to do it, so new machines were VFS-JSON-only.
         this.mountToolbarTools();
 
@@ -325,7 +325,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
     /**
      * Second half of the connect gesture. A transition needs a NAME (it
      * is the Symfony transition key), so the new edge is named after the
-     * pair and selected for renaming — an unnamed transition would
+     * pair and selected for renaming -- an unnamed transition would
      * serialize to a blank config key.
      */
     private onSelectionForConnect(
@@ -380,7 +380,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
             }
             this.smEditor.load(model);
             // Defer the fit past the synchronous repaint so the canvas SVG
-            // has received its initial size (getBoundingClientRect != 0×0).
+            // has received its initial size (getBoundingClientRect != 0x0).
             queueMicrotask(() => this.fitToContent());
         } catch (err) {
             this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
@@ -389,7 +389,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
-    /** UI-polish — retry the initial draft load from the shared error banner. */
+    /** UI-polish -- retry the initial draft load from the shared error banner. */
     protected retryLoad(): void {
         if (this.definitionKey === '') return;
         void this.loadDraft(this.definitionKey);
@@ -413,7 +413,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
 
     protected async onDeploy(): Promise<void> {
         if (this.smEditor === undefined || this.definitionKey === '') return;
-        // Save first — the deployer reads the persisted draft, not the
+        // Save first -- the deployer reads the persisted draft, not the
         // request body (mirrors the BPMN designer's save-then-deploy).
         const body = JSON.stringify(this.smEditor.state);
         try {

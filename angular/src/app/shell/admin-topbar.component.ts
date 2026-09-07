@@ -138,7 +138,7 @@ export class AdminTopbarComponent implements OnInit {
         const crumbs = this.rawCrumbs();
         const title  = this.pageTitleSvc.current();
         if (!title || crumbs.length === 0) return crumbs;
-        // Replace only the label of the last crumb — path stays the same.
+        // Replace only the label of the last crumb -- path stays the same.
         return [
             ...crumbs.slice(0, -1),
             { ...crumbs[crumbs.length - 1], label: title },

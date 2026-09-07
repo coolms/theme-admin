@@ -21,25 +21,25 @@ export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' |
  * The in-browser softphone.
  *
  * Makes the browser a real SIP endpoint: it REGISTERs to Asterisk `res_pjsip`
- * over a secure WebSocket (the descriptor from `GET /call/webphone/config` — C.1
+ * over a secure WebSocket (the descriptor from `GET /call/webphone/config` -- C.1
  * coordinates + the C.2 owner-only password), negotiates DTLS-SRTP media using
  * the shared Coturn ICE servers (`GET /rtc/ice-servers`, reused), and rings /
- * answers real INVITEs. Answering + audio happen in the tab — no desk phone.
+ * answers real INVITEs. Answering + audio happen in the tab -- no desk phone.
  *
  * **Dormant when disabled:** if the config isn't `enabled` (no WebRTC PBX, or the
  * user has no provisioned credential) the service never registers and shows no
- * UI — the softphone degrades invisibly where telephony WebRTC isn't deployed.
+ * UI -- the softphone degrades invisibly where telephony WebRTC isn't deployed.
  * The `calls.*` Centrifugo screen-pop + Call history stay the awareness/history
  * layer above this media plane.
  *
  * Single-call model (v1): one active SIP session at a time; a second incoming
  * INVITE while busy is rejected.
  *
- * Requires a WS(S)-capable Asterisk. The dev rig has one since —
+ * Requires a WS(S)-capable Asterisk. The dev rig has one since --
  * plain `ws://localhost:8088/ws`, legal because `http://localhost` is a secure
  * context, so no certificate is involved (docker/asterisk/pjsip.conf). A real
  * deployment must terminate TLS and serve `wss://`; browsers refuse `ws://` from
- * any non-localhost origin. Dial 600 on the rig for Asterisk's echo test — the
+ * any non-localhost origin. Dial 600 on the rig for Asterisk's echo test -- the
  * one extension that exercises DTLS-SRTP + ICE end to end.
  */
 @Injectable({ providedIn: 'root' })
@@ -163,7 +163,7 @@ export class WebPhoneService {
     }
 
     private onInvite(invitation: Invitation): void {
-        // One call at a time — a second incoming INVITE while busy is rejected.
+        // One call at a time -- a second incoming INVITE while busy is rejected.
         if (this.session) {
             void invitation.reject();
             return;
@@ -207,7 +207,7 @@ export class WebPhoneService {
         const el = this.audioSink();
         el.srcObject = remote;
         void el.play().catch(() => {
-            /* autoplay may be blocked until a user gesture — the Answer click covers it */
+            /* autoplay may be blocked until a user gesture -- the Answer click covers it */
         });
     }
 

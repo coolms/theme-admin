@@ -52,7 +52,7 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
 /**
  * Generic body-editor for `.dtmpl` VFS files (variants and standalone).
  *
- * Uses the same `<coolms-editor>` bridge as PageEditor — the dtmpl ↔ HTML
+ * Uses the same `<coolms-editor>` bridge as PageEditor -- the dtmpl <-> HTML
  * translation lives in `DtmplContentAdapter`, so this dialog is a thin
  * read-content / show-editor / save-content shell with no widget knowledge.
  *
@@ -446,7 +446,7 @@ export class DtmplEditorDialogComponent {
     private readonly ddocs      = inject(DdocDocumentService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly authoringContext = inject(AuthoringContextService);
-    /** Wires dtmpl ↔ HTML for the bridge. Public so the template can bind it. */
+    /** Wires dtmpl <-> HTML for the bridge. Public so the template can bind it. */
     readonly dtmplAdapter       = inject(DtmplContentAdapter);
 
     readonly node = this.data.node;
@@ -459,7 +459,7 @@ export class DtmplEditorDialogComponent {
     readonly loading       = signal(true);
     readonly fullscreen    = signal(false);
 
-    /** Split live preview — off by default; it costs a fetch and a frame. */
+    /** Split live preview -- off by default; it costs a fetch and a frame. */
     readonly preview = signal(false);
 
     /** Theme stylesheets + content width for the preview frame. */
@@ -482,17 +482,17 @@ export class DtmplEditorDialogComponent {
     );
 
     /**
-     * Editor profile (, extended in ).
+     * Editor profile.
      *
-     * One dialog serves every `.dtmpl` in the VFS — it is registered against
-     * the MIME type, not against a caller — so it has to work out for itself
+     * One dialog serves every `.dtmpl` in the VFS -- it is registered against
+     * the MIME type, not against a caller -- so it has to work out for itself
      * whether this file is a DOCUMENT. Two signals, because documents arrive
      * two ways:
      *
      *   - a template always lives under its space's `.templates/`, which is a
      *     path the Document module owns and an admin-gated one;
      *   - an authored document can be filed in any folder the operator
-     *     makes, so path proves nothing — it carries an explicit `extras`
+     *     makes, so path proves nothing -- it carries an explicit `extras`
      *     marker stamped at creation instead.
      *
      * The split exists so the page-break button and the paged canvas appear
@@ -502,7 +502,7 @@ export class DtmplEditorDialogComponent {
     readonly profileName = computed<string>(() => {
         const isTemplate = (this.node.path ?? '').includes('/.templates/');
         // `extras` is absent on plenty of nodes and the flag is absent on every
-        // node predating — read it as "true only when truly present".
+        // node predating -- read it as "true only when truly present".
         const isAuthoredDocument = true === this.node.extras?.['documentNative'];
 
         // A `.ddoc` needs no marker and no path convention: its MIME says it is
@@ -514,8 +514,8 @@ export class DtmplEditorDialogComponent {
      * Native document source, not a DTMPL fragment.
      *
      * The dialog is registered against both mimes because everything around
-     * the content — the paged canvas, the split preview, the download, the
-     * toolbar profile — is the same editor. Only the three things that touch
+     * the content -- the paged canvas, the split preview, the download, the
+     * toolbar profile -- is the same editor. Only the three things that touch
      * the FILE differ, and each branches on this.
      */
     readonly isDdoc = computed<boolean>(() => DDOC_DOCUMENT_MIME === (this.node.mimeType ?? ''));
@@ -539,7 +539,7 @@ export class DtmplEditorDialogComponent {
      *
      *  The only source of a measurement in this component. Every handler
      * below looks a row up and copies its numbers; none of them works out what
-     * A4 is, or what rotating it does — that table lives once, on the server
+     * A4 is, or what rotating it does -- that table lives once, on the server
      * (`PageSizeResolver`), and a second copy here is the drift the `.ddoc`
      * paper seam was shaped to avoid.
      */
@@ -550,7 +550,7 @@ export class DtmplEditorDialogComponent {
      * the twips.
      *
      * Deriving them would mean matching numbers against the catalog on every
-     * change — the same lookup the server already did once, and the first place
+     * change -- the same lookup the server already did once, and the first place
      * a rounding difference would show up as a select that jumps to Custom
      * after the author picked A4.
      */
@@ -562,7 +562,7 @@ export class DtmplEditorDialogComponent {
      * Whether a save should carry the paper at all.
      *
      *  Absent means "unchanged" to the server's merge, so a save that only
-     * touched the text must leave `page` out — that is what lets somebody
+     * touched the text must leave `page` out -- that is what lets somebody
      * else's paper edit survive it.
      */
     private readonly ddocPaperDirty = signal(false);
@@ -585,7 +585,7 @@ export class DtmplEditorDialogComponent {
     readonly ddocFootnotes = signal<Record<string, string>>({});
 
     /**
-     * What a save should say about the notes — only what the author touched.
+     * What a save should say about the notes -- only what the author touched.
      *
      *  Absent means unchanged to the merge, so sending every note back would
      * overwrite somebody else's edit to a note this author never opened.
@@ -611,8 +611,8 @@ export class DtmplEditorDialogComponent {
 
     /**
      * The template's paper, or null for "no sheets". Null is the right
-     * default for everything that is not a document template — an HTML page has
-     * no pages — and also for a template that opted into no page size, since
+     * default for everything that is not a document template -- an HTML page has
+     * no pages -- and also for a template that opted into no page size, since
      * the renderer then uses PHPWord's own default and drawing A4 would be a
      * claim we cannot honour.
      */
@@ -637,7 +637,7 @@ export class DtmplEditorDialogComponent {
      * Which preview this file deserves.
      *
      * A document template becomes a .docx, so showing it inside the site's
-     * stylesheets would answer a question nobody asked — the theme styles a web
+     * stylesheets would answer a question nobody asked -- the theme styles a web
      * page, and this content will never be one. Everything else IS web content,
      * where the theme CSS is the entire point. One toggle, and the pane shows
      * whichever preview means something; no mode picker for a choice that only
@@ -668,7 +668,7 @@ export class DtmplEditorDialogComponent {
         this.loadSheet();
         this.wireDocumentPreview();
 
-        // Fetch the theme context once, the first time the preview is opened —
+        // Fetch the theme context once, the first time the preview is opened --
         // an editor nobody previews should not pay for it. The service
         // caches, so reopening is free. Document templates never take this
         // path: their preview is the PDF, and the theme has nothing to say
@@ -686,7 +686,7 @@ export class DtmplEditorDialogComponent {
 
         // Opening the pane must render what is already on screen; the feed only
         // carries EDITS, so without this the first thing an author sees after
-        // clicking preview is "Rendering document…" until they type.
+        // clicking preview is "Rendering document..." until they type.
         effect(() => {
             if (this.preview() && this.documentPreview()) {
                 untracked(() => this.docFeed$.next(this.editorContent()));
@@ -710,7 +710,7 @@ export class DtmplEditorDialogComponent {
      * a render whose input is already stale is cancelled rather than raced to
      * the finish.
      *
-     * Blob URLs are revoked as they are replaced — one per render, and a
+     * Blob URLs are revoked as they are replaced -- one per render, and a
      * document being edited produces a great many.
      */
     private wireDocumentPreview(): void {
@@ -748,7 +748,7 @@ export class DtmplEditorDialogComponent {
      * Render and save the document as a file.
      *
      * Sends the CURRENT editor content, so what downloads is what is on screen
-     * — unsaved edits included. That is the useful behaviour for an authored
+     * -- unsaved edits included. That is the useful behaviour for an authored
      * document: the alternative, rendering the last SAVED bytes, would hand
      * back a file that silently disagrees with the editor.
      */
@@ -780,7 +780,7 @@ export class DtmplEditorDialogComponent {
         const link = document.createElement('a');
         link.href = url;
         // The server sets Content-Disposition with the Node's own name, but a
-        // blob download cannot see it — the name has to be rebuilt here. Same
+        // blob download cannot see it -- the name has to be rebuilt here. Same
         // rule as the server's: replace the extension, never append to it.
         link.download = (this.node.name ?? 'document').replace(/\.(dtmpl|ddoc)$/i, '') + '.' + format;
         link.click();
@@ -803,7 +803,7 @@ export class DtmplEditorDialogComponent {
      *
      * Only for templates: the endpoint resolves a DOCUMENT template Node, and
      * asking it about a theme fragment would be a 404 per open. Failure is
-     * silent and leaves the canvas unpaged — an author who cannot write because
+     * silent and leaves the canvas unpaged -- an author who cannot write because
      * the paper lookup failed is worse off than one writing on a plain canvas.
      */
     private loadSheet(): void {
@@ -816,7 +816,7 @@ export class DtmplEditorDialogComponent {
 
         this.pageSizes.fetch(this.node.id).pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                // `sheet` is ABSENT rather than null when unset — API Platform
+                // `sheet` is ABSENT rather than null when unset -- API Platform
                 // omits null properties, so `?? null` and never `null ===`.
                 next: dto => this.applyPaper(dto),
                 error: () => this.sheet.set(null),
@@ -837,7 +837,7 @@ export class DtmplEditorDialogComponent {
      * Persist the paper and re-read the geometry.
      *
      * Both keys go in ONE patch even though only one select moved: they are two
-     * halves of the same paper, and a patch carrying one clears the other —
+     * halves of the same paper, and a patch carrying one clears the other --
      * the trap [[feedback_node_extras_lost_update]] records.
      *
      * The new sheet is RE-FETCHED rather than computed here. The mm-per-preset
@@ -881,7 +881,7 @@ export class DtmplEditorDialogComponent {
      * A `.ddoc` is a LIST of sections and the editor holds one flow, so they
      * are joined with a section-break atom and split apart again on save.
      * Showing only the first would leave the rest invisible while still saving
-     * it — an author would see a document shorter than the one they have.
+     * it -- an author would see a document shorter than the one they have.
      */
     private loadDdoc(): void {
         this.ddocs.read(this.node.path).pipe(takeUntilDestroyed(this.destroyRef))
@@ -908,7 +908,7 @@ export class DtmplEditorDialogComponent {
         //  Guarded even though the compiler says it need not be: indexing an
         // array yields the element type here, so TypeScript believes a section
         // is always there. The server refuses a document with no sections, so
-        // this is belt and braces — but the belt is what turns a malformed
+        // this is belt and braces -- but the belt is what turns a malformed
         // payload into empty controls rather than a crash inside them.
         const page: DdocPage | undefined = payload.sections[0]?.page;
 
@@ -929,8 +929,8 @@ export class DtmplEditorDialogComponent {
     /**
      * The canvas's sheet, from the paper the document states.
      *
-     *  Twips to millimetres is arithmetic on the document's own numbers —
-     * 1440 to the inch — not a second copy of `PageSizeResolver`'s table of
+     *  Twips to millimetres is arithmetic on the document's own numbers --
+     * 1440 to the inch -- not a second copy of `PageSizeResolver`'s table of
      * presets. Re-deriving THAT here is what would make the canvas and the
      * .docx disagree.
      *
@@ -959,7 +959,7 @@ export class DtmplEditorDialogComponent {
      * A different paper size, at whichever way up is currently chosen.
      *
      * Both come off the SAME catalog row, so the dimensions and the marker can
-     * never disagree — which is the failure a landscape-labelled portrait page
+     * never disagree -- which is the failure a landscape-labelled portrait page
      * is.
      */
     onDdocSize(value: string): void {
@@ -974,7 +974,7 @@ export class DtmplEditorDialogComponent {
         });
     }
 
-    /** The same paper the other way up — the row already carries both. */
+    /** The same paper the other way up -- the row already carries both. */
     onDdocOrientation(value: string): void {
         const row = this.ddocPaper()?.sizes.find(size => this.ddocSize() === size.value);
         const pair = undefined === row ? null : this.pairFor(row, value);
@@ -1018,7 +1018,7 @@ export class DtmplEditorDialogComponent {
      * Fold a paper change into the pending page and show it immediately.
      *
      * Marks the document dirty rather than saving: the paper lives in the FILE,
-     * and the seam requires every section's body alongside it — so a
+     * and the seam requires every section's body alongside it -- so a
      * paper-only save would quietly write the author's unsaved text too. It
      * goes with the next Save, which is what a word processor does anyway.
      */
@@ -1047,7 +1047,7 @@ export class DtmplEditorDialogComponent {
     }
 
     /**
-     * The notes to send — the ones the author edited or deleted, and no others.
+     * The notes to send -- the ones the author edited or deleted, and no others.
      *
      * Undefined when there are none, so the payload does not mention the notes
      * at all. Same contract as the paper, for the same reason.
@@ -1078,7 +1078,7 @@ export class DtmplEditorDialogComponent {
      *
      *  The MARKERS stay. Removing them would mean rewriting the body the
      * author is editing from under their caret, and a marker whose note has
-     * gone is not broken — the server hands it an empty note back, which is
+     * gone is not broken -- the server hands it an empty note back, which is
      * something an author can see and fill in.
      */
     onFootnoteRemove(id: number): void {
@@ -1121,7 +1121,7 @@ export class DtmplEditorDialogComponent {
         // Bridge emits the post-adapter editor HTML; the adapter's
         // `toStorage()` will run on save to turn it back into dtmpl.
         this.editorContent.set(html);
-        // Same HTML feeds whichever preview this file gets — the theme frame
+        // Same HTML feeds whichever preview this file gets -- the theme frame
         // or the rendered PDF. Only the open one is fed: a
         // closed pane should not be costing a Gotenberg conversion per pause.
         if (this.preview()) {
@@ -1159,7 +1159,7 @@ export class DtmplEditorDialogComponent {
             },
             // A bare 'Save failed' hides the one thing the author needs. The
             // seeded templates under `.templates/` are mode 0444, so the real
-            // answer is "Permission denied: cannot write <path>" — and without
+            // answer is "Permission denied: cannot write <path>" -- and without
             // it the dialog just keeps saying "unsaved changes" forever with
             // no reason given.
             error: (err: unknown) => {
@@ -1178,7 +1178,7 @@ export class DtmplEditorDialogComponent {
                 next: () => {
                     this.dirty.set(false);
                     // The paper is on disk now, so the next save has nothing to
-                    // say about it — and leaving `page` out is what lets
+                    // say about it -- and leaving `page` out is what lets
                     // somebody else's paper edit survive that save.
                     this.ddocPaperDirty.set(false);
                     // Same contract for the notes: what was sent is stored, so

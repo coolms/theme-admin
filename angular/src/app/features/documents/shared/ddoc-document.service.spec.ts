@@ -75,7 +75,7 @@ describe('the ddoc section join and split', () => {
      *  The serializer writes the marker with an empty VALUE, which is not
      * the literal the join emits. A split that matched only the literal would
      * silently stop splitting the moment the content had been through the
-     * editor — which is every save.
+     * editor -- which is every save.
      */
  it('splits on the marker as the editor serialises it', () => {
         const asSerialised = '<p>one</p><hr data-section-break=""><p>two</p>';
@@ -94,7 +94,7 @@ describe('the ddoc section join and split', () => {
         expect(splitDdocSections('').map(s => s.html)).toEqual(['']);
     });
 
-    /** Sends only the bodies — the merge on the server keeps the rest. */
+    /** Sends only the bodies -- the merge on the server keeps the rest. */
  it('sends nothing but the html', () => {
         const [first] = splitDdocSections('<p>only</p>');
 
@@ -119,7 +119,7 @@ describe('the ddoc section join and split', () => {
     });
 
     /**
-     * The dialog only passes the paper when the author moved it — this is the
+     * The dialog only passes the paper when the author moved it -- this is the
      * other half of that contract, and the one that keeps a text-only save
      * from overwriting somebody else's page setup.
      */
@@ -200,7 +200,7 @@ describe('the ddoc section join and split', () => {
 
         /**
          *  Compared on the TWIPS, never on `preset`. Two sections can both be
-         * off-catalog — `preset: null` on each — and still be different paper,
+         * off-catalog -- `preset: null` on each -- and still be different paper,
          * and calling that agreement is exactly the case an author would be
          * misled by.
          */

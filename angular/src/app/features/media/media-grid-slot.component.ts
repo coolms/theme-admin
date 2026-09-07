@@ -144,7 +144,7 @@ export class MediaGridSlotComponent implements AfterViewInit, OnDestroy {
      * by the synthetic surface / context bucket here, but keeps
      * any node whose showWhen also references per-asset fields
      * (e.g., the Edit Image action gated by `mimeType startsWith
-     * image/`) — those get re-evaluated by the grid against the
+     * image/`) -- those get re-evaluated by the grid against the
      * actual right-clicked asset, since we can't know the asset
      * at this stage.
      */
@@ -212,7 +212,7 @@ export class MediaGridSlotComponent implements AfterViewInit, OnDestroy {
         const target = event.target as HTMLElement;
         // A Details-grid ROW joins `.media-tile` as "not background".
         // The escape hatch was written when tiles were the only thing in this
-        // pane, so a right-click on a grid row fell through here — and it fired
+        // pane, so a right-click on a grid row fell through here -- and it fired
         // AFTER the asset menu the row handler had just opened, replacing
         // "Properties / Download / Move / Delete" with "New Collection /
         // Upload". Matching the ROW rather than the grid host on purpose: the
@@ -235,7 +235,7 @@ export class MediaGridSlotComponent implements AfterViewInit, OnDestroy {
     /**
      * Inline dispatcher for background context-menu actions. Routes
      * to the existing state-service subjects the inline menu used
-     * before this migration — no new state plumbing needed.
+     * before this migration -- no new state plumbing needed.
      */
     private dispatchBackgroundAction(action: string): void {
         switch (action) {

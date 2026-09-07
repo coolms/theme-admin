@@ -197,7 +197,7 @@ export class MediaDetailComponent {
     /** True when the active locale's fields differ from what was last loaded/saved. */
     readonly dirty = signal(false);
 
-    /** Single-value controls — each holds the value RESOLVED for {@link activeLocale}.
+    /** Single-value controls -- each holds the value RESOLVED for {@link activeLocale}.
      *  title doubles as the image's alt text, description as its caption. */
     readonly titleControl       = new FormControl<string>('', { nonNullable: true });
     readonly descriptionControl = new FormControl<string>('', { nonNullable: true });
@@ -209,7 +209,7 @@ export class MediaDetailComponent {
     /** Seed HTML for the rich Description editor (set on populate; the editor owns
      *  its doc thereafter and writes back via (contentChange)). */
     readonly descriptionHtml = signal<string>('');
-    /** Remount key — bumps on asset/locale change so the editor re-seeds. */
+    /** Remount key -- bumps on asset/locale change so the editor re-seeds. */
     readonly descMountKey = computed<string>(() => `${this.asset()?.id ?? 'none'}:${this.activeLocale()}`);
 
     readonly svc        = inject(MediaService);
@@ -219,7 +219,7 @@ export class MediaDetailComponent {
     private readonly toast     = inject(ToastService);
     private readonly pageState = inject(MediaPageStateService);
 
-    /** Distinct tags already used across the loaded library — the tag-input's
+    /** Distinct tags already used across the loaded library -- the tag-input's
      *  search vocabulary (there's no Tag module / central tag store yet). */
     readonly tagSuggestions = computed<string[]>(() => {
         const set = new Set<string>();
@@ -229,7 +229,7 @@ export class MediaDetailComponent {
         return [...set].sort();
     });
 
-    /** Default (canonical) locale — used to hint the fallback on non-default tabs. */
+    /** Default (canonical) locale -- used to hint the fallback on non-default tabs. */
     readonly defaultLocale = computed((): string => {
         const m = this.store.selectSnapshot(AppConfigState.manifest);
         return m?.platformDefaults?.locale ?? m?.supportedLocales?.[0]?.code ?? 'en';
@@ -305,7 +305,7 @@ export class MediaDetailComponent {
         return !!this.asset()?.mimeType?.startsWith('image/');
     }
 
-    /** The preview <img alt> — the title IS the alt text in the merged model. */
+    /** The preview <img alt> -- the title IS the alt text in the merged model. */
     assetAlt(): string {
         return this.titleControl.value;
     }
@@ -386,7 +386,7 @@ export class MediaDetailComponent {
      * Visibility is gated by `isImage()` in the template; backend voter
      * (ImageEditPermissionVoter) enforces VFS_WRITE before the save
      * lands. Authors without write permission see a 403 -> toast error
-     * inside the dialog rather than a hidden button — keeps the UI
+     * inside the dialog rather than a hidden button -- keeps the UI
      * affordance discoverable.
      */
     async openImageEditor(): Promise<void> {

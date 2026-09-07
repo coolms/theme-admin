@@ -73,7 +73,7 @@ export class VfsClipboardService {
     }
 
     /**
-     * Direct move (from DnD) — no clipboard involved.
+     * Direct move (from DnD) -- no clipboard involved.
      */
     async move(sourcePath: string, targetDirPath: string): Promise<void> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
@@ -129,7 +129,7 @@ export class VfsClipboardService {
                                 .subscribe({ next: () => resolve(), error: () => resolve() });
                         } else if (resolution.action === 'rename' && resolution.pattern) {
                             const newTarget = this.applyPattern(resolution.pattern, target, source);
-                            // Retry with new target — may recurse if the new name also conflicts
+                            // Retry with new target -- may recurse if the new name also conflicts
                             await this.executeTransfer(mode, source, newTarget, base);
                             resolve();
                         }

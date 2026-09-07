@@ -15,7 +15,7 @@ import { SiteSectionDto } from '../../../api/api.service';
  * to user preferences; downstream the section interceptor stamps every
  * `/api/v1/*` request with `X-CoolMS-Section: <slug>`.
  *
- * ⚠️ SCOPE, MEASURED RATHER THAN CLAIMED, BECAUSE THIS DOCBLOCK USED TO CLAIM
+ * !! SCOPE, MEASURED RATHER THAN CLAIMED, BECAUSE THIS DOCBLOCK USED TO CLAIM
  * MORE THAN THE CONTROL DID. It said the header "decides which site a NEWLY
  * CREATED page or collection lands in". A sweep of 75 API collection endpoints
  * under every section found ZERO whose contents change, so it filters nothing;

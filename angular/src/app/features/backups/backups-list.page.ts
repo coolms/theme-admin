@@ -29,7 +29,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
  * The read/create surface over the per-module backup seam: the on-disk bundles
  * under `var/backups/` (name, when, tiers, module + record counts, size), a
  * "Create backup" toolbar action (tier picker), and a per-bundle "Preview
- * restore" that opens the DRY-RUN plan. All three ops are non-destructive —
+ * restore" that opens the DRY-RUN plan. All three ops are non-destructive --
  * download / upload / apply-restore are out of scope (apply stays on the CLI).
  * The whole surface is gated server-side by the `root:backup 0o770` VFS node
  * (backup-group members only).
@@ -94,10 +94,10 @@ export class BackupsListPageComponent implements OnInit {
     }));
 
     /**
-     * Grid payload — the whole bundle list in one shot.
+     * Grid payload -- the whole bundle list in one shot.
      *
      * `id` is the bundle NAME: datagrid selection is keyed on `row['id']`, so
-     * without it every row shares key `''` — clicking highlights but never
+     * without it every row shares key `''` -- clicking highlights but never
      * selects, and the toolbar's `_selected` gating never fires. Bundle names
      * are unique on disk, so they are a sound key.
      */

@@ -29,7 +29,7 @@ import { CockpitExternalTaskDto } from './cockpit.types';
 const PAGE_SIZE = 50;
 
 /**
- * Decodes a multi-select filter value — a JSON array string, the shape
+ * Decodes a multi-select filter value -- a JSON array string, the shape
  * `columnFilterRql` splices into an `in (...)`.
  */
 function decodeTokens(value: string): string[] {
@@ -37,7 +37,7 @@ function decodeTokens(value: string): string[] {
         const parsed: unknown = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed.map(String);
     } catch {
-        // Not JSON — a plain scalar filter value.
+        // Not JSON -- a plain scalar filter value.
     }
 
     return value === '' ? [] : [value];
@@ -55,19 +55,19 @@ interface CockpitExternalTaskRow {
 }
 
 /**
- * M4 — Cockpit External Tasks list page (`/admin/cockpit/external-tasks`).
+ * M4 -- Cockpit External Tasks list page (`/admin/cockpit/external-tasks`).
  *
  * A read-only operator table of Camunda-style external worker tasks the
  * engine has parked for external workers to lock + complete, backed by
  * `GET /api/v1/cockpit/external-tasks` (ROLE_ADMIN). Mirrors the cockpit
- * instance list exactly — `<cms-list-page>` (icon + Reload action) +
- * `<coolms-datagrid>` driven by the `cockpit:external-tasks` config YAML —
+ * instance list exactly -- `<cms-list-page>` (icon + Reload action) +
+ * `<coolms-datagrid>` driven by the `cockpit:external-tasks` config YAML --
  * so it matches the rest of the operator surfaces (sortable columns,
  * per-column filter row incl. the state dropdown, column-visibility).
  *
  * `loadingMode: lazy`: the grid emits `(loadMore)` on mount and
  * on every filter/sort/page change, and this page turns that into ONE server
- * request. It used to be `client` — one perPage=200 block filtered and sorted
+ * request. It used to be `client` -- one perPage=200 block filtered and sorted
  * in the browser. There is no external-task detail page;
  * the toolbar offers Reload, and Failed rows expose a `retry` row action
  * that re-opens the task for another worker attempt via
@@ -119,7 +119,7 @@ export class CockpitExternalTasksPageComponent implements OnInit {
 
     private readonly rows = signal<CockpitExternalTaskRow[]>([]);
 
-    /** Server's count for the CURRENT filter — drives the footer and `hasMore`. */
+    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error). */
     readonly loaded = signal(false);
@@ -138,7 +138,7 @@ export class CockpitExternalTasksPageComponent implements OnInit {
 
     /**
      * Footer row-count strip. `totalItems` is the SERVER's count for the
-     * active filter, so it needs no client-side adjustment — a consequence of
+     * active filter, so it needs no client-side adjustment -- a consequence of
      * filtering server-side.
      */
     readonly footerLabel = computed(() => {
@@ -149,7 +149,7 @@ export class CockpitExternalTasksPageComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('External Tasks');
-        // Re-fetch when the drill-in filter changes — callers may link here
+        // Re-fetch when the drill-in filter changes -- callers may link here
         // with `?topic=` / `?state=` / `?processInstanceId=`. The FIRST load is
         // the grid's own `(loadMore)` on mount, so skip the initial emission
         // rather than racing it.
@@ -211,7 +211,7 @@ export class CockpitExternalTasksPageComponent implements OnInit {
     /**
      * Maps the grid's structured column filters to the endpoint's named query
      * params. A drill-in `?topic=` from the URL is overridden by the column
-     * filter when both are present — the operator's explicit input wins.
+     * filter when both are present -- the operator's explicit input wins.
      */
     private toQueryFilters(filters: ReadonlyArray<ActiveFilter>): {
         state?: string; topic?: string; activityId?: string; worker?: string;
@@ -274,7 +274,7 @@ export class CockpitExternalTasksPageComponent implements OnInit {
 
     /**
      * Re-runs the current query from page 1, KEEPING the grid's active filters
-     * and sort — the grid owns that state now, so it must drive the refetch.
+     * and sort -- the grid owns that state now, so it must drive the refetch.
      */
     private load(): void {
         this.grid?.reload();

@@ -23,7 +23,7 @@ import { OpenGalleryPickerHandler } from '../actions/open-gallery-picker.handler
  *        - `mediaGalleryWidget`  -> bare node (no NodeView, no overlay)
  *
  * Module-supplied handlers register exactly the way `provideCoolmsEditor()`
- * registers built-ins — the `multi: true` APP_INITIALIZER plurality means
+ * registers built-ins -- the `multi: true` APP_INITIALIZER plurality means
  * everything composes additively without ordering rules between modules.
  */
 export function provideCoolmsEditorMedia(): Provider[] {

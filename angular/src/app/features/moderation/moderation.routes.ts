@@ -1,8 +1,8 @@
 import { type Routes } from '@angular/router';
 
 /**
- * W7.d — Comment moderation admin routes.
- * `/admin/moderation` — the pending-comment queue (approve / reject).
+ * Comment moderation admin routes.
+ * `/admin/moderation` -- the pending-comment queue (approve / reject).
  */
 export const MODERATION_ROUTES: Routes = [
     {

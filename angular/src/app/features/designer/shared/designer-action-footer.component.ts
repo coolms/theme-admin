@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { DateTimePipe } from '@coolms/ui-angular';
 
 /**
- * UI-polish — the shared bottom bar for all four designer surfaces
+ * UI-polish -- the shared bottom bar for all four designer surfaces
  * (BPMN-Lite / DMN-table / DMN-DRD / state-machine).
  *
  * Mirrors the Image Editor's chrome: ONE bottom bar carries both the
@@ -126,7 +126,7 @@ export class DesignerActionFooterComponent {
     /**
      * Raw ISO "saved at" instant; null hides the indicator. Rendered via the
      * pref-aware `appDateTime` pipe so it honours the user's tz +
-     * 12h/24h + date-format pref (today -> time, older -> date + time) — the
+     * 12h/24h + date-format pref (today -> time, older -> date + time) -- the
      * same seam every other surface uses. (Was a pre-formatted locale string.)
      */
     readonly savedAt = input<string | null>(null);

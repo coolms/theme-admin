@@ -237,7 +237,7 @@ export class MediaGridComponent {
      *
      * The grid emits `rowSelected` and then `rowContextMenu` synchronously
      * from one handler, so at right-click time `selectedIds()` still holds the
-     * PREVIOUS selection — the parent has not re-rendered yet. Reading it gave
+     * PREVIOUS selection -- the parent has not re-rendered yet. Reading it gave
      * the wrong asset, or none at all on the first right-click, and the
      * context menu silently did not open.
      */
@@ -263,7 +263,7 @@ export class MediaGridComponent {
         }
     }
 
-    /** The grid hands back the FLATTENED row, not the DTO — map back by id. */
+    /** The grid hands back the FLATTENED row, not the DTO -- map back by id. */
     private assetFor(row: Record<string, unknown>): MediaAssetDto | undefined {
         const id = row['id'];
 
@@ -310,7 +310,7 @@ export class MediaGridComponent {
         // pattern.
         this.selectionChange.emit([asset.id]);
         if (!asset.mimeType.startsWith('image/')) return;
-        // Gate dblclick when the asset isn't fully processed —
+        // Gate dblclick when the asset isn't fully processed --
         // pending / failed assets shouldn't open in the editor
         // (URL may still be re-pointed by the processing pipeline,
         // dimensions may be unknown). Page-level `openImageEditor`
@@ -356,7 +356,7 @@ export class MediaGridComponent {
 
     private dispatchAction(action: string, focused: MediaAssetDto): void {
         switch (action) {
-            // `'edit'` retired alongside Media's `/edit` NaviGraph node —
+            // `'edit'` retired alongside Media's `/edit` NaviGraph node --
             // Properties owns the panel-open path now.
             case 'permissions':
             case 'perms':       this.permissionsClick.emit(focused); break;

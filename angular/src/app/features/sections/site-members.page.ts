@@ -32,7 +32,7 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Layer 3d.3 — Members management page.
+ * Layer 3d.3 -- Members management page.
  *
  * Routed at `/admin/sections/:slug/members`. Self-contained
  * page that lets an admin (anyone with
@@ -49,7 +49,7 @@ import {
  * - "transfer owner"  = chown the Node to a new uid
  *                       (`PATCH /api/v1/vfs/files/owner`)
  *
- * No new backend endpoints — this ship consumes only existing ones.
+ * No new backend endpoints -- this ship consumes only existing ones.
  *
  * Note on `assignUserGroups` semantics: the Identity endpoint
  * replaces the whole group list, so add/remove operations fetch
@@ -556,7 +556,7 @@ export class SiteMembersPageComponent implements OnInit {
     });
 
     /**
-     * Navigation actions for the cms-page-header bar — declared in the
+     * Navigation actions for the cms-page-header bar -- declared in the
      * `web:section-members` layout config, not hardcoded. The
      * generic `back` action is re-labelled at runtime with the loaded
      * site's name so it reads as the natural up-one-level destination.
@@ -665,7 +665,7 @@ export class SiteMembersPageComponent implements OnInit {
         return this.currentUserId() === userId;
     }
 
-    /** Shortens a UUID to `abc12345…` for inline display. */
+    /** Shortens a UUID to `abc12345...` for inline display. */
     shortenId(id: string | null | undefined): string {
         if (!id) return this.noneText;
         return id.length > 8 ? id.slice(0, 8) + '…' : id;
@@ -774,7 +774,7 @@ export class SiteMembersPageComponent implements OnInit {
         this.api.chownNode({
             path: cr.path,
             uid:  newOwner,
-            // Keep gid stable — the editor group should not change
+            // Keep gid stable -- the editor group should not change
             // when ownership changes (use the "Change editor group"
             // flow on a dedicated screen if that ever lands).
             gid:  cr.editorGroupId,
@@ -783,7 +783,7 @@ export class SiteMembersPageComponent implements OnInit {
                 this.busy.set(false);
                 this.transferOpen.set(false);
                 this.toast.success('Ownership transferred');
-                // The caller may have lost admin rights — reloading
+                // The caller may have lost admin rights -- reloading
                 // pulls a fresh `currentUserMembership` so UX gates
                 // reflect the new state. We stay on this page; if
                 // canAdminister is now false, the buttons hide.

@@ -33,13 +33,13 @@ import type { FormDefinitionDto } from './form.types';
  *
  * Self-contained: renders its own `<cms-page-header>` (New Form + Reload) and
  * an `<coolms-datagrid>` whose YAML-declared row actions (Edit / Delete) handle
- * per-row operations — no layout-slot wrapper or navi toolbar tree needed
+ * per-row operations -- no layout-slot wrapper or navi toolbar tree needed
  * (mirrors the self-rendered header on the sibling form-builder page).
  *
  * `loadingMode: client`: `/forms` returns the whole catalogue in one shot, so
  * we load it once, project each row to `{ id, name, fieldCount, source }`, and
  * let the grid filter / sort / paginate in memory. `name` is the backend's
- * friendly label (`formOptions.title` else a humanized id) — the primary column;
+ * friendly label (`formOptions.title` else a humanized id) -- the primary column;
  * `id` stays visible as the canonical identifier.
  */
 @Component({
@@ -85,7 +85,7 @@ export class FormsListPageComponent implements OnInit {
     /** All forms, projected to grid rows. */
     private readonly rows = signal<Array<{ id: string; name: string; fieldCount: number; source: string }>>([]);
 
-    /** Selected grid row — drives the toolbar's selection-gated Edit/Delete (navi showWhen). */
+    /** Selected grid row -- drives the toolbar's selection-gated Edit/Delete (navi showWhen). */
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     /**
@@ -114,7 +114,7 @@ export class FormsListPageComponent implements OnInit {
     });
 
     /**
-     * Footer row-count strip — mirrors the other cms-list-page consumers
+     * Footer row-count strip -- mirrors the other cms-list-page consumers
      * (Definitions / Cockpit / NaviNodes). Blank until the first load so the
      * footer stays hidden (cms-list-page only renders it when set).
      */
@@ -149,7 +149,7 @@ export class FormsListPageComponent implements OnInit {
     onToolbarAction(id: string): void {
         if (id === 'create') { void this.router.navigate(['/forms', 'new']); return; }
         if (id === 'reload') { this.load(); return; }
-        // Selection-gated toolbar actions (Edit / Delete) operate on the selected row —
+        // Selection-gated toolbar actions (Edit / Delete) operate on the selected row --
         // same handlers as the right-click context menu.
         const row = this.selectedRow();
         const formId = row?.['id'] as string | undefined;

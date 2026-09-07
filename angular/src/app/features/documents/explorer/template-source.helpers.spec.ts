@@ -16,14 +16,14 @@ import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '../shared/sheet-documen
  *
  * The bug these pin: the Document Library named every source download
  * `<slug>.docx`, whatever the template's format or source half. A native Word
- * template's source is a `.dtmpl` and a native spreadsheet's is a `.dsheet` —
+ * template's source is a `.dtmpl` and a native spreadsheet's is a `.dsheet` --
  * neither is a Word document, and calling them one hands the operator a file
  * Word refuses to open.
  *
  * The extension comes from the backend's `format-info` payload, so the specs
  * below drive `advertisedExtension` rather than asserting a map here: the
  * point is that a format module names its own extension. The fallback maps
- * are exercised separately, through a lookup that answers `null` — the state
+ * are exercised separately, through a lookup that answers `null` -- the state
  * the page is in before the payload lands.
  */
 describe('template-source helpers', () => {
@@ -158,7 +158,7 @@ describe('template-source helpers', () => {
         });
 
  it('has no native answer for a format with no native authoring', () => {
- // Presentation's provider returns no native source mime — there is
+ // Presentation's provider returns no native source mime -- there is
  // nothing to author, so there is nothing to name.
             expect(inferTemplateSourceMime('presentation', true)).toBeNull();
         });
@@ -184,7 +184,7 @@ describe('template-source helpers', () => {
      * The mime the Replace dialog filters its picker to.
      *
      * `replaceSource()` runs the bytes through `validateUpload()`, which opens
-     * them as an Office file in every provider — so the NATIVE half of the
+     * them as an Office file in every provider -- so the NATIVE half of the
      * axis is not replaceable source, however loudly `format-info` advertises
      * it beside the imported half.
      */
@@ -220,7 +220,7 @@ describe('template-source helpers', () => {
         });
 
  it('has no answer for a format nothing here has heard of', () => {
- // Leaves the picker unfiltered rather than filtered to a guess —
+ // Leaves the picker unfiltered rather than filtered to a guess --
  // the backend still rejects a file it cannot read.
             expect(
                 importedSourceMime(template({ format: 'markdown', native: true, sourceMimeType: null })),
@@ -265,7 +265,7 @@ describe('template-source helpers', () => {
 
  it('answers null when the pairing does not hold for that entry', () => {
  // A short `extensions` list. Taking SOME extension would be worse
- // than none — the caller's fallback is at least honest.
+ // than none -- the caller's fallback is at least honest.
             expect(extensionForMimeIn([entry({ extensions: ['.docx'] })], DTMPL_MIME)).toBeNull();
         });
     });

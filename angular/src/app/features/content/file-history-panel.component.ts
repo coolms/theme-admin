@@ -23,15 +23,15 @@ import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 type HistoryTab = 'revisions' | 'diff' | 'blame';
 
 /**
- * File-history panel ( W6.3) for the content/page editor: lists a VFS
+ * File-history panel for the content/page editor: lists a VFS
  * file's revision timeline, previews a revision's body, diffs any two points
  * (or a revision vs. the live content), shows per-line blame, and restores a
  * past version forward (non-destructive, behind a confirm + write gate).
  *
  * Self-contained and path-addressed: bind `[path]` to the variant's VFS path
  * and listen to `(restored)` to reload the editor body. The restore gate
- * (`canWrite`) comes from the log response — the backend is the source of
- * truth — so the panel needs no permission input.
+ * (`canWrite`) comes from the log response -- the backend is the source of
+ * truth -- so the panel needs no permission input.
  */
 @Component({
     selector: 'app-file-history-panel',
@@ -413,7 +413,7 @@ export class FileHistoryPanelComponent {
                     next: log => {
                         this.restoring.set(false);
                         this.applyLog(log.revisions, log.canWrite);
-                        // Invalidate derived views — content changed.
+                        // Invalidate derived views -- content changed.
                         this.blame.set(null);
                         this.diff.set(null);
                         this.viewing.set('');

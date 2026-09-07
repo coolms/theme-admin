@@ -50,7 +50,7 @@ const MAX_VISIBLE_CHIPS = 10;
 type InsertMode = 'widget' | 'plain';
 
 /**
- * Media picker (Prompts 1–3).
+ * Media picker (Prompts 1-3).
  *
  * Adaptive UI:
  *   - Default: CDK Overlay dropdown attached to the trigger button.
@@ -910,7 +910,7 @@ export class MediaPickerComponent implements OnDestroy {
     cardinality = input<'one' | 'many'>('one');
     /**
      * 'inline' (default) renders trigger + dropdown.
-     * 'embedded' renders only the panel — the host owns chrome and sizing.
+     * 'embedded' renders only the panel -- the host owns chrome and sizing.
      */
     mode        = input<MediaPickerMode>('inline');
     /**
@@ -999,7 +999,7 @@ export class MediaPickerComponent implements OnDestroy {
     readonly newCollectionPreset = signal<'public' | 'members' | 'private'>('public');
     readonly createCollectionError = signal<string | null>(null);
     readonly creatingInFlight    = signal(false);
-    /** Path of the collection just created — used to auto-select after upload. */
+    /** Path of the collection just created -- used to auto-select after upload. */
     private justCreatedPath: string | null = null;
 
     // Hover preview
@@ -1312,7 +1312,7 @@ export class MediaPickerComponent implements OnDestroy {
 
     onAssetHover(event: MouseEvent, a: MediaAssetDto): void {
         if (!(this.options().hoverPreview ?? false)) return;
-        // Skip on coarse pointers (touch) — hover previews are pointer-only.
+        // Skip on coarse pointers (touch) -- hover previews are pointer-only.
         if (window.matchMedia('(hover: none)').matches) return;
         if (this.hoverTimer !== null) clearTimeout(this.hoverTimer);
         const target = event.currentTarget as HTMLElement;
@@ -1605,7 +1605,7 @@ export class MediaPickerComponent implements OnDestroy {
             search:   this.debouncedSearch().trim() || undefined,
             mimeType: mimePrefix || undefined,
             dir:      dir,
-            // Hide assets that aren't fully processed — selecting a
+            // Hide assets that aren't fully processed -- selecting a
             // pending / failed asset would hand the consumer a URL
             // that may still be re-pointed by the processing
             // pipeline. Cleaner than showing disabled tiles.
@@ -1639,7 +1639,7 @@ export class MediaPickerComponent implements OnDestroy {
                 next: list => {
                     this.uploadCollections.set(list);
                     // The last-used destination (from localStorage) may now be
-                    // forbidden for this user — shift to the first writable
+                    // forbidden for this user -- shift to the first writable
                     // option so the dropzone isn't stuck disabled on open.
                     this.ensureWritableDestination();
                 },

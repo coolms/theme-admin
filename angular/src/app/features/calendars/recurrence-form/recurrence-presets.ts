@@ -1,5 +1,5 @@
 /**
- * Smart recurrence presets derived from a DTSTART instant — the
+ * Smart recurrence presets derived from a DTSTART instant -- the
  * Google-Calendar pattern. The 6 common shapes appear as ready-made
  * options in the event editor's `Repeats` dropdown so 80% of recurrences
  * pick in one click without opening the full structured form.
@@ -50,7 +50,7 @@ export function buildPresetOptions(dtstart: Date): RecurrencePresetOption[] {
 
 /**
  * Build the RFC 5545 spec string for a preset key. Returns null for
- * `none` (no recurrence sent). The `custom` key never reaches this —
+ * `none` (no recurrence sent). The `custom` key never reaches this --
  * the caller opens the sub-dialog instead.
  */
 export function buildPresetSpec(key: RecurrencePresetKey, dtstart: Date): string | null {
@@ -74,7 +74,7 @@ export function buildPresetSpec(key: RecurrencePresetKey, dtstart: Date): string
 }
 
 /**
- * Reverse direction — given an existing spec string and the event's
+ * Reverse direction -- given an existing spec string and the event's
  * DTSTART, detect which preset it matches. Anything outside the preset
  * shapes falls through to `custom`.
  *
@@ -145,7 +145,7 @@ export function detectPreset(spec: string | null, dtstart: Date): RecurrencePres
 }
 
 /**
- * One-line summary of an arbitrary spec — shown under the dropdown
+ * One-line summary of an arbitrary spec -- shown under the dropdown
  * when the current value lives outside the preset shapes. Best-effort
  * parse of the most common bits (FREQ, BYDAY, INTERVAL, UNTIL/COUNT,
  * EXDATE count); falls back to the spec string itself when we can't

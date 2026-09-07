@@ -37,7 +37,7 @@ import {
 import { InboxTab, InboxTaskDto, TaskState } from './inbox.types';
 
 /**
- * FE — Inbox admin list page (/admin/inbox).
+ * FE -- Inbox admin list page (/admin/inbox).
  *
  * **3-tab UX**: My / Claimable / Recent. Tab state lives in the URL
  * (`?tab=`) so refresh + deep-link work; the strip below the toolbar
@@ -120,7 +120,7 @@ export class InboxListComponent implements OnInit {
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
-    /** Current user UUID — drives both realtime channel + ownedByMe sentinel. */
+    /** Current user UUID -- drives both realtime channel + ownedByMe sentinel. */
     readonly currentUserId = computed<string | null>(() => {
         const u = this.store.selectSnapshot(AuthState.currentUser);
         return u?.id ?? null;

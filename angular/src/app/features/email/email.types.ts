@@ -1,6 +1,6 @@
 /**
  * DTOs for the Email mailbox client, mirroring the backend read/write
- * resources–). Fields are optional/nullable to tolerate the
+ * resources-). Fields are optional/nullable to tolerate the
  * partial shapes each endpoint returns.
  */
 
@@ -23,11 +23,11 @@ export interface EmailMailboxDto {
     /** Workflow-definition key started on a new-conversation inbound email. */
     inboundWorkflowKey?: string | null;
     hasCredential?: boolean;
-    /** How the mailbox authenticates: `password` (default) or `oauth` (, ). */
+    /** How the mailbox authenticates: `password` (default) or `oauth`. */
     authMethod?: string;
     /** OAuth provider key (e.g. `google`) when `authMethod` is `oauth`; null otherwise. */
     oauthProvider?: string | null;
-    /** True when an OAuth mailbox has a sealed token grant — i.e. it is connected. */
+    /** True when an OAuth mailbox has a sealed token grant -- i.e. it is connected. */
     oauthConnected?: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -78,7 +78,7 @@ export interface MailboxConnectResultDto {
 
 /**
  * A registered OAuth mail provider (`GET /email/oauth/providers`, ). The
- * mailbox editor's provider picker lists these — a new backend provider appears with
+ * mailbox editor's provider picker lists these -- a new backend provider appears with
  * no FE change. `key` is what `oauthProvider` stores (e.g. `google`, `microsoft`).
  */
 export interface EmailOAuthProviderDto {
@@ -156,7 +156,7 @@ export interface EmailDeleteResultDto {
 /**
  * The write payload for send / reply. `to`/`cc`/`bcc` are
  * address arrays; the body is `text` and/or `html`. For a reply, `to` + `subject`
- * are optional — the backend defaults them from the parent.
+ * are optional -- the backend defaults them from the parent.
  */
 export interface OutgoingEmailRequest {
     to?: string[];
@@ -200,7 +200,7 @@ export interface InboundWorkflowOption {
 
 /**
  * One full-text search hit (`GET /email/search`, ). Mirrors the backend
- * `EmailSearchResource` — it never carries the message body (the searchable body
+ * `EmailSearchResource` -- it never carries the message body (the searchable body
  * stays in the index). `sentAt` is a Unix timestamp in **seconds** (or null).
  */
 export interface EmailSearchHitDto {
@@ -241,7 +241,7 @@ export interface EmailImportResultDto {
 /**
  * A mailbox delegate grant (`GET /email/mailboxes/{mailboxId}/delegations`, ).
  * The Gmail/Workspace "delegate access" model: `delegateUserId` may read + send-as
- * the mailbox. Soft-ref uuids — the FE shows shortened ids (no name resolution).
+ * the mailbox. Soft-ref uuids -- the FE shows shortened ids (no name resolution).
  */
 export interface MailboxDelegationDto {
     id: string;

@@ -38,11 +38,11 @@ interface RuleRow {
 }
 
 /**
- *Phase 4 (CDP personalization, P4.admin.c) — personalization-rule list
+ *Phase 4 (CDP personalization, P4.admin.c) -- personalization-rule list
  * (`/admin/cdp/rules`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the
- * `analytics:personalization-rules` config YAML) — a sibling of the Segments list.
+ * `analytics:personalization-rules` config YAML) -- a sibling of the Segments list.
  * Create / Edit open the {@link RuleEditorDialogComponent} modal; Delete removes
  * after a confirm. `loadingMode: client`: the rule set is small (hand-authored),
  * so the FE loads it once and the grid filters / sorts / paginates in memory.
@@ -109,7 +109,7 @@ export class RulesListPageComponent implements OnInit {
         };
     });
 
-    /** Footer row-count strip (bottom-left) — mirrors the other cms-list-page consumers. */
+    /** Footer row-count strip (bottom-left) -- mirrors the other cms-list-page consumers. */
     readonly footerLabel = computed(() => {
         if (!this.loaded()) {
             return '';

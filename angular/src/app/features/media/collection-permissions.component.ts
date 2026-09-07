@@ -300,7 +300,7 @@ export class CollectionPermissionsComponent implements OnInit {
 
     // Group gets EDIT (rw) on the non-secret presets: collections are
     // group-writable so media_library members (incl. the creator) can manage
-    // them — matching the backend CollectionPreset (setgid + group-write).
+    // them -- matching the backend CollectionPreset (setgid + group-write).
     presets = [
         { key: 'public',  label: 'Public',   groupAccess: 'rw', othersAccess: 'r'  },
         { key: 'members', label: 'Members',  groupAccess: 'rw', othersAccess: ''   },
@@ -312,7 +312,7 @@ export class CollectionPermissionsComponent implements OnInit {
     activePreset = signal<string>('public');
 
     // setgid (0o2000) keeps the media_library group inherited by children, the
-    // same as the backend CollectionPreset — every mode the dialog writes
+    // same as the backend CollectionPreset -- every mode the dialog writes
     // carries it so an Apply never strips group inheritance.
     private static readonly SETGID = 0o2000;
 
@@ -339,7 +339,7 @@ export class CollectionPermissionsComponent implements OnInit {
         this.activePreset.set(preset.key);
         this.groupAccess.set((preset.groupAccess as 'r' | 'rw') || 'r');
         this.othersAccess.set(preset.othersAccess as 'r' | '');
-        // Secret is owner-only (0o700) — no group access at all.
+        // Secret is owner-only (0o700) -- no group access at all.
         // Save the current group first so it can be restored when switching back to a
         // group-aware preset (e.g. Secret -> Private -> Members).
         if (preset.key === 'secret') {
@@ -365,7 +365,7 @@ export class CollectionPermissionsComponent implements OnInit {
             if (info.ownerIsMe) this.owner.set('You');
             this.canManage.set(info.canManage ?? true);
             if (!info.preset) return;
-            // Direct assignment — no transformation. activePreset always reflects
+            // Direct assignment -- no transformation. activePreset always reflects
             // the exact value stored in node.extras.preset, even for future keys.
             this.activePreset.set(info.preset);
             // Update the mode-bit controls only when a known preset matches.

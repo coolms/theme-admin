@@ -30,7 +30,7 @@ import { formatCallDuration } from './call-format';
  * Read-only view of one tracked call (`GET /call/records/{id}`) with
  * an inline player for its `.wav` recording (`GET
  * /call/records/{id}/recording`). CallRecords are minted + mutated only by
- * the AMI event stream, so there is nothing to edit — the page is
+ * the AMI event stream, so there is nothing to edit -- the page is
  * a set of read-only cards + the recording card.
  *
  * The recording is Bearer-gated, so a plain `<audio src>` can't reach it;
@@ -287,7 +287,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
                 this.record.set(c);
                 this.loading.set(false);
                 if (c.recordingNodeRef && c.id) this.loadRecording(c.id);
-                // The agent name is resolved server-side (M9) — no extra round-trip.
+                // The agent name is resolved server-side (M9) -- no extra round-trip.
                 this.agentLabel.set(c.assignedUserName ?? null);
             },
             error: (err: unknown) => {

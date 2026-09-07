@@ -12,14 +12,14 @@ import { FormsModule } from '@angular/forms';
  *
  * Behaviour (matches prompt-tiptap-alt-editor.md):
  *   - Auto-focuses the input on open.
- *   - Save fires on blur OR Enter — emits `save` with the current value.
+ *   - Save fires on blur OR Enter -- emits `save` with the current value.
  *   - Esc reverts to the initial value and emits `cancel` (parent closes
  *     the overlay without applying changes).
  *   - Empty alt is allowed; the renderer then falls back to the asset's
  *     translation, so we just emit the empty string.
  *
  * The component is presentational. The NodeView owns the Tiptap node update
- * via `editor.chain().command(({ tr }) => tr.setNodeAttribute(pos, 'alt', …))`
+ * via `editor.chain().command(({ tr }) => tr.setNodeAttribute(pos, 'alt', ...))`
  * and the overlay lifecycle.
  */
 @Component({

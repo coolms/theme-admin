@@ -1,9 +1,9 @@
 import { dtmplToHtml, htmlToDtmpl } from './image-map-widget-transform';
 
 /**
- * The `{widget:imagemap:<slug>}` ↔ marker-div transform.
+ * The `{widget:imagemap:<slug>}` <-> marker-div transform.
  *
- * The interesting cases are not the happy path — they are the ones that lose
+ * The interesting cases are not the happy path -- they are the ones that lose
  * an author's work quietly: a parameter the picker never sets, a slug shape
  * the tokenizer could split, and a marker that should not become a tag at all.
  */
@@ -14,7 +14,7 @@ describe('imagemap widget transform', () => {
  it('emits the slug POSITIONALLY, backtick-quoted', () => {
             const out = htmlToDtmpl(marker('data-slug="restaurant-floor" data-name="Restaurant floor"'));
 
- // Positional `_id`, not `slug=` — the renderer reads the second
+ // Positional `_id`, not `slug=` -- the renderer reads the second
  // `:` segment. A dashed slug must survive tokenizing, hence backticks.
             expect(out).toContain('{widget:imagemap:`restaurant-floor`}');
  // The human name is chip-only and must never reach storage.

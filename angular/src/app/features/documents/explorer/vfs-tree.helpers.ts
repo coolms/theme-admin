@@ -20,14 +20,14 @@ import { type DocumentTemplate } from '../shared/document-explorer.types';
  */
 
 export interface VfsTreeNode {
-    /** Stable id — VFS path, used for selection state and trackBy. */
+    /** Stable id -- VFS path, used for selection state and trackBy. */
     readonly path: string;
     /** Display name (last path segment). */
     readonly name: string;
     /** True for nodes the user can expand to fetch children. */
     readonly hasChildren: boolean;
     /**
-     * `null` until the node is expanded — children are loaded lazily
+     * `null` until the node is expanded -- children are loaded lazily
      * via a follow-up `listDirectory()` call. An empty array means
      * "expanded but no children" (rendered as a leaf at runtime).
      */
@@ -52,13 +52,13 @@ export function filterTreeDirectories(nodes: readonly NodeDto[]): NodeDto[] {
 
 /**
  * Build a single tree node from a VFS directory payload. Children
- * stay `null` so the caller can decide when to load them — typically
+ * stay `null` so the caller can decide when to load them -- typically
  * on the user's first click on the row's expand chevron.
  */
 export function nodeFromDto(dto: NodeDto): VfsTreeNode {
     return {
         path: dto.path,
-        // — `Node.title` when the folder carries one, so a folder
+        // -- `Node.title` when the folder carries one, so a folder
         // created as "Счета" reads that way instead of showing its
         // `scheta` slug. Falls back to the on-disk name, which is what
         // every pre-existing folder has.
@@ -91,7 +91,7 @@ export function transformVfsToTree(nodes: readonly NodeDto[]): VfsTreeNode[] {
  *     here (the caller flattens by listing both `path` and
  *     `path/.templates/` and merging)
  *   - rendered instances or stray files in the same directory are
- *     not shown here — they belong on the template-detail panel
+ *     not shown here -- they belong on the template-detail panel
  *
  * If the explorer ever wants to surface raw files that aren't
  * registered templates (e.g. an "uploaded but not yet processed"

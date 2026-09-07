@@ -41,7 +41,7 @@ interface RegionMeta {
 const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strokeWidth: 2 };
 
 /**
- * ImageMap region authoring (`/admin/image-maps/:slug/regions`) — the
+ * ImageMap region authoring (`/admin/image-maps/:slug/regions`) -- the
  * Fabric.js surface over `@coolms/image-editor-angular`'s engine (NOT the pixel
  * editor shell/host: regions are vector geometry saved through the
  * region API; the raster is never exported, so drawings are never baked
@@ -54,7 +54,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
  *
  * Save is a diff against the loaded map: new shapes POST, moved/edited
  * shapes PATCH (geometry as a `shape`+`points` unit), removed
- * codes DELETE — then the map is re-fetched and the canvas rebuilt.
+ * codes DELETE -- then the map is re-fetched and the canvas rebuilt.
  */
 @Component({
     selector: 'coolms-admin-image-map-regions',
@@ -346,7 +346,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
 
             engine.on('activeObjectChanged', ({ id }) => {
                 // Selecting away from the polygon under vertex edit ends
-                // the edit (entering it re-selects the SAME id — no-op).
+                // the edit (entering it re-selects the SAME id -- no-op).
                 const editing = this.vertexEditing();
                 if (editing !== null && id !== editing) this.stopVertexEdit();
                 this.selectedLayerId.set(id !== null && this.metaByLayer.has(id) ? id : null);
@@ -419,7 +419,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Toggle grid-snap. When on, {@link save}'s normalization quantizes
-     * every region coordinate to a 1%-of-frame grid — so a hand-drawn
+     * every region coordinate to a 1%-of-frame grid -- so a hand-drawn
      * polygon commits with clean, aligned edges (right-angle rooms /
      * aligned rows). Applied at the normalize boundary (the grid is
      * DEFINED in the 0..1 frame), so it is exact regardless of zoom.
@@ -430,7 +430,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
 
     /**
      * Preview each subject-bound region's LIVE busy/free status by tinting it
-     * (red = busy, green = free) — the same class map the public overlay bakes
+     * (red = busy, green = free) -- the same class map the public overlay bakes
      * in, fetched on demand. The tint is transient style only (never touches the
      * saved geometry); toggling off restores default fills. Unbound regions or
      * ones no provider resolves keep the default fill.
@@ -467,7 +467,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
     private stopVertexEdit(): void {
         const id = this.vertexEditing();
         if (id === null) return;
-        // Clear the signal FIRST — setVertexEditing re-fires
+        // Clear the signal FIRST -- setVertexEditing re-fires
         // activeObjectChanged, and the handler must not re-enter.
         this.vertexEditing.set(null);
         this.engine?.setVertexEditing(id, false);
@@ -579,7 +579,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
 
     private finishPolygon(): void {
         // The closing double-click fires regular clicks first, appending
-        // the final vertex again (twice) — collapse consecutive
+        // the final vertex again (twice) -- collapse consecutive
         // duplicates so degenerate points never reach the geometry.
         const pts = this.polygonDraft().filter((p, i, all) =>
             i === 0 || Math.abs(p.x - all[i - 1].x) > 1 || Math.abs(p.y - all[i - 1].y) > 1);
@@ -741,7 +741,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
             }
             case 'polygon': {
                 // Grid-snap (when on) quantizes each vertex to a 1%-of-frame
-                // grid — the grid is DEFINED in this 0..1 frame, so it is
+                // grid -- the grid is DEFINED in this 0..1 frame, so it is
                 // exact regardless of canvas zoom. Only polygons snap (the
                 // feature is vertex-scoped; rect/circle keep full precision
                 // so a sub-1% shape can't collapse to a zero dimension).
@@ -846,7 +846,7 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
 
             const fresh = await firstValueFrom(this.api.getImageMap(map.slug));
             this.map = fresh;
-            // reset() wipes the layers AND the viewport — re-fit before
+            // reset() wipes the layers AND the viewport -- re-fit before
             // re-rendering so the rebuilt canvas stays framed.
             await engine.reset();
             const container = this.canvasWrap().nativeElement;

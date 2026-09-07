@@ -28,7 +28,7 @@ export interface TemplateSourceData {
  *
  * That component is the VFS file editor: it takes a `VfsNodeDto`, saves back
  * through the VFS API and owns dirty/save state. A theme template is a file
- * inside an installed PACKAGE — there is no node, and nothing here may be
+ * inside an installed PACKAGE -- there is no node, and nothing here may be
  * written (editing a package in place is what slice 3's override-to-VFS
  * exists to avoid). Threading a second source-and-save contract through a
  * working editor to get a read-only pane would make both harder to follow, so
@@ -37,7 +37,7 @@ export interface TemplateSourceData {
  * ## Fixed body height, on purpose
  *
  * Templates range from a two-line partial to several hundred lines. A dialog
- * sized to its content jumps every time you open a different one — the same
+ * sized to its content jumps every time you open a different one -- the same
  * complaint the VFS picker drew. The body is pinned so the frame never moves
  * and the editor scrolls inside it. `min-height: 0` on the flex child is what
  * actually lets CodeMirror scroll rather than push the dialog taller.
@@ -181,7 +181,7 @@ export class TemplateSourceDialog implements AfterViewInit, OnDestroy {
             },
             error: err => {
                 this.loading.set(false);
-                // `detail` or the toast is generic — the API sends the reason
+                // `detail` or the toast is generic -- the API sends the reason
                 // there, and "Template not found in this theme." is the whole
                 // point of asking.
                 this.error.set(err?.error?.detail ?? 'Could not read this template.');
@@ -219,7 +219,7 @@ export class TemplateSourceDialog implements AfterViewInit, OnDestroy {
                 extensions: [
                     lineNumbers(),
                     highlightActiveLine(),
-                    // DTMPL is HTML with `{...}` tags — HTML highlighting is
+                    // DTMPL is HTML with `{...}` tags -- HTML highlighting is
                     // the closest honest fit, and beats none at all.
                     html(),
                     oneDark,

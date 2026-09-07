@@ -29,7 +29,7 @@ interface WidgetGroup {
  * The request was for a picker AND a prompt when one module offers more than
  * one widget. They turned out to be the same screen: a list grouped by module
  * answers both, because choosing from "VFS: Files stored / Storage used" is
- * exactly the choice a prompt would have asked for — without a second dialog
+ * exactly the choice a prompt would have asked for -- without a second dialog
  * appearing after the first.
  *
  * ## Grouping falls back to the id prefix, and that is honest rather than lazy
@@ -118,7 +118,7 @@ export class WidgetPickerDialogComponent {
             }
         }
 
-        // Insertion order, which is catalogue order — the order modules chose
+        // Insertion order, which is catalogue order -- the order modules chose
         // to offer their widgets in, not an alphabetisation of it.
         return [...byName.entries()].map(([name, widgets]) => ({ name, widgets }));
     });

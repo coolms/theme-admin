@@ -182,7 +182,7 @@ export class MediaService {
     /**
      * Base for the generic VFS node stat/update endpoint (`/api/v1/vfs/files`).
      * `fileContentUrl` is a PATTERN (`/api/v1/vfs/files/content?path={path}`), so we
-     * strip everything from `/content` onward — NOT just a trailing `/content`.
+     * strip everything from `/content` onward -- NOT just a trailing `/content`.
      */
     private get vfsFilesUrl(): string {
         return this.vfsManifest.fileContentUrl.replace(/\/content.*$/, '');
@@ -230,8 +230,8 @@ export class MediaService {
 
     /**
      * Resolve a collection (directory) path to its VFS Node UUID via the generic
-     * `GET /vfs/files?path=` stat — the identity the media gallery widget stores
-     * (`{widget:media:<uuid> type=…}`). Mirrors the File Explorer / Media Library
+     * `GET /vfs/files?path=` stat -- the identity the media gallery widget stores
+     * (`{widget:media:<uuid> type=...}`). Mirrors the File Explorer / Media Library
      * folder stat. Returns null on any error (missing path, permission denied,
      * transport) so the caller can abort the gallery insert cleanly.
      */
@@ -254,7 +254,7 @@ export class MediaService {
 
     /**
      * `canWrite` mirrors the backend's preset policy (`MediaUploadService::canUploadTo`).
-     * Older API responses without this field default to `true` — see
+     * Older API responses without this field default to `true` -- see
      * "Backward compat" in prompt-upload-permission-precheck.md (deny-by-default
      * would block uploads on a fresh install before the field was added). The
      * server still enforces the real check on POST.
@@ -305,7 +305,7 @@ export class MediaService {
     }
 
     getCollectionInfo(path: string): Observable<CollectionInfo> {
-        // Derive from collectionsUrl (/api/v1/media/collections) + /info — NOT by
+        // Derive from collectionsUrl (/api/v1/media/collections) + /info -- NOT by
         // stripping listUrl's last segment, which dropped the `/media` prefix.
         const url = `${this.manifest.collectionsUrl}/info?path=${encodeURIComponent(path)}`;
         return this.http.get<CollectionInfo>(url);
@@ -318,7 +318,7 @@ export class MediaService {
 
     /**
      * Move/rename a VFS node BY PATH via the generic
-     * `POST /api/v1/vfs/files/move` — collections (directories) included,
+     * `POST /api/v1/vfs/files/move` -- collections (directories) included,
      * which the by-id `move()` above cannot address (collections are not
      * media assets). The VFS manifest carries no dedicated move key;
      * derive from `binaryWriteUrl` (same convention as the by-path

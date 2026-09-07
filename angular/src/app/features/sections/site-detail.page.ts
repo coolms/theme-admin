@@ -34,7 +34,7 @@ import { SectionFormComponent } from './section-form.component';
 import { LoadSections } from './section.actions';
 
 /**
- * Layer 3d.1 — Site Detail admin page.
+ * Layer 3d.1 -- Site Detail admin page.
  *
  * Routed at `/admin/sections/:slug`. Read-mostly composition view that
  * surfaces the four pieces a SiteSection ties together (Settings,
@@ -469,7 +469,7 @@ export class SiteDetailPageComponent implements OnInit {
 
     /**
      * Gates the "Delete Site" action. Requires admin AND a non-default
-     * slug — the catch-all `default` SiteSection cannot be deleted
+     * slug -- the catch-all `default` SiteSection cannot be deleted
      * (mirrors `DeleteSiteSectionProcessor::DEFAULT_SLUG` guard).
      */
     readonly canDelete = computed(() => {
@@ -480,7 +480,7 @@ export class SiteDetailPageComponent implements OnInit {
     });
 
     /**
-     * Navigation actions for the cms-page-header bar — declared in the
+     * Navigation actions for the cms-page-header bar -- declared in the
      * `web:section-detail` layout config, not hardcoded here.
      */
     readonly headerActions = computed<ToolbarAction[]>(() =>
@@ -488,7 +488,7 @@ export class SiteDetailPageComponent implements OnInit {
     );
 
     /**
-     * Primary / destructive actions for the fixed footer — declared in the
+     * Primary / destructive actions for the fixed footer -- declared in the
      * same layout config + gated per-item by `requires` against the loaded
      * site's membership (runtime state, not static config).
      */
@@ -642,7 +642,7 @@ export class SiteDetailPageComponent implements OnInit {
         });
     }
 
-    /** Shortens a UUID to `abc12345…` for display; full UUID surfaces in the tooltip. */
+    /** Shortens a UUID to `abc12345...` for display; full UUID surfaces in the tooltip. */
     shortenId(id: string | null): string {
         if (!id) return this.noneText;
         return id.length > 8 ? id.slice(0, 8) + '…' : id;

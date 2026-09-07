@@ -7,7 +7,7 @@
  * trigger being typed, and turning a handle in a stored body into a reference.
  *
  * Kept out of the page component because they are the parts worth testing, and
- * because the linkifier writes markup — logic that decides what reaches
+ * because the linkifier writes markup -- logic that decides what reaches
  * `[innerHTML]` should be readable on its own.
  */
 
@@ -25,7 +25,7 @@ export interface ChannelRef {
  *
  * Deliberately narrow: a handle is lowercase kebab-case, so `#Heading`, `#1`,
  * `#FF00AA` and a mid-word `a#b` are NOT references and must not pop a menu
- * over what someone is writing. An empty string (a bare `#`) IS a trigger — it
+ * over what someone is writing. An empty string (a bare `#`) IS a trigger -- it
  * opens the menu listing every channel, which is how you discover handles you
  * do not know yet.
  */
@@ -39,7 +39,7 @@ export function channelTriggerAt(textBeforeCaret: string | null): string | null 
 }
 
 /**
- * Channels offered for a `#query` — matched on HANDLE first, then name, so
+ * Channels offered for a `#query` -- matched on HANDLE first, then name, so
  * typing what you SEE ("Release Notes") or what you TYPE ("release-notes")
  * both find it. Only channels that have a handle can be offered: a reference
  * must resolve to exactly one room, and one without a handle has nothing to
@@ -59,12 +59,12 @@ export function matchChannels<T extends ChannelRef>(channels: readonly T[], quer
  * page's delegated click handler picks up.
  *
  *  A handle that matches no known channel is left as plain text. A reference
- * that looks live and goes nowhere is worse than one that was never offered —
+ * that looks live and goes nowhere is worse than one that was never offered --
  * and it keeps the injected markup built entirely from the channel LIST, never
  * from message content, so nothing an author writes reaches the DOM this way.
  *
  *  No `data-` attribute carries the handle: Angular's HTML sanitizer keeps
- * `class` but STRIPS `data-*`, so the obvious `data-chan="…"` arrives as null
+ * `class` but STRIPS `data-*`, so the obvious `data-chan="..."` arrives as null
  * and every click silently does nothing. The handle is the element's own text.
  */
 export function linkifyChannelRefs(html: string, channels: readonly ChannelRef[]): string {

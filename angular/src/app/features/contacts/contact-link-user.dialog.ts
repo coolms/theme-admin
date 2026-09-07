@@ -6,7 +6,7 @@ import { ModalComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
 
 /** Data passed into the dialog from the consumer page. */
 export interface LinkUserDialogData {
-    /** Display name of the contact being linked — for the dialog title. */
+    /** Display name of the contact being linked -- for the dialog title. */
     readonly contactName: string;
 }
 
@@ -16,7 +16,7 @@ export interface LinkUserDialogResult {
 }
 
 /**
- * C.6.a FE — "Link platform user" dialog.
+ * C.6.a FE -- "Link platform user" dialog.
  *
  * Thin wrapper around `<app-user-search-select>` + a Confirm/Cancel footer,
  * mirroring {@link InboxTaskDelegateDialogComponent}. The consumer
@@ -70,10 +70,10 @@ export class ContactLinkUserDialogComponent {
     readonly picked = signal<string>('');
 
     /**
-     * The users list/search URL — resolved from the boot manifest
+     * The users list/search URL -- resolved from the boot manifest
      * (`identity.usersUrl` = `GET /api/v1/auth/users`), the same source the
      * working pickers use (site-members, vfs-chown). RQL-searchable per
-     * LazySelect's `'rql'` searchStyle. (A hardcoded `/identity/users` 404s —
+     * LazySelect's `'rql'` searchStyle. (A hardcoded `/identity/users` 404s --
      * there is no such route; only `/auth/users` exists.)
      */
     readonly usersApiUrl: string = (() => {

@@ -41,14 +41,14 @@ import { EditorPresenceBarComponent } from './editor-presence-bar.component';
 import { AppConfigState } from '@coolms/core-angular';
 
 /**
- * Which side-rail panel is open (null = collapsed). A panel *id* — the set of
+ * Which side-rail panel is open (null = collapsed). A panel *id* -- the set of
  * available ids is no longer a fixed union: it's whatever the installed modules
  * contribute via `GET /editor/panels` (the editor-panel registry).
  */
 type RailTab = string;
 
 /**
- * Page editor — multi-locale, multi-variant rich-text editor for pages.
+ * Page editor -- multi-locale, multi-variant rich-text editor for pages.
  *
  * Sub-prompt B3 cut: previously hosted Tiptap directly + a hardcoded
  * toolbar. The Tiptap mount, source-mode toggle, link dialog, and toolbar
@@ -61,7 +61,7 @@ type RailTab = string;
  *   - Save draft / publish flow
  *   - Fullscreen + close lifecycle
  *
- * Storage form (dtmpl) ↔ editor HTML translation lives in DtmplContentAdapter
+ * Storage form (dtmpl) <-> editor HTML translation lives in DtmplContentAdapter
  * (Content module concern). The bridge is dtmpl-agnostic.
  *
  * Temporary regression vs B2: media insert button is missing from the
@@ -172,8 +172,8 @@ type RailTab = string;
                             {{ statusLabel(v.status) }}
                         </span>
 
-                        <!-- -- Editorial review actions (W6.a) --------------- -->
-                        <!-- W6.c: only collections that opt into review show
+                        <!-- -- Editorial review actions ---------------------- -->
+                        <!-- Only collections that opt into review show
                              "Submit for review"; elsewhere the author publishes
                              directly via the Publish button. -->
                         @if ((v.status === 'draft' || v.status === 'changes_requested') && page()?.requiresReview) {
@@ -226,7 +226,7 @@ type RailTab = string;
             </div>
 
             @if (activeVariant(); as variant) {
-                <!-- -- Changes-requested callout (W6.c) -------------------- -->
+                <!-- -- Changes-requested callout --------------------------- -->
                 <!-- Surfaces the reviewer's note to the author so the
                      request-changes round-trip is actionable, not just a badge. -->
                 @if (variant.status === 'changes_requested') {
@@ -554,7 +554,7 @@ type RailTab = string;
         .page-editor__add-tab { padding: 4px 8px; }
         .page-editor__tab-actions { display: flex; align-items: center; gap: 8px; }
 
-        /* Changes-requested callout (W6.c) */
+        /* Changes-requested callout */
         .page-editor__review-note {
             display: flex; align-items: flex-start; gap: 10px;
             margin: 10px 16px 0;
@@ -584,7 +584,7 @@ type RailTab = string;
         .page-editor__peer-saved > i { color: var(--cms-accent); }
         .page-editor__peer-saved-msg { flex: 1; }
 
-        /* Scheduled publish/unpublish actions (W6.d) */
+        /* Scheduled publish/unpublish actions */
         .page-editor__schedule-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
         /* Title row */
@@ -726,7 +726,7 @@ export class PageEditorComponent implements OnInit {
     /** Live presence + peer-save signal for the active variant's doc channel.
      *  Public so the template binds `collab.peers()` / `collab.peerSaved()`. */
     readonly collab              = inject(EditorCollabService);
-    /** Wires dtmpl ↔ HTML for the bridge. Public on the component so the
+    /** Wires dtmpl <-> HTML for the bridge. Public on the component so the
      *  template can `[contentAdapter]="dtmplAdapter"`-bind it directly. */
     readonly dtmplAdapter        = inject(DtmplContentAdapter);
 
@@ -738,14 +738,14 @@ export class PageEditorComponent implements OnInit {
     readonly exporting     = signal(false);
     readonly fullscreen    = signal(false);
     readonly addingVariant = signal(false);
-    /** W6.d scheduled publish/unpublish inputs (datetime-local
+    /** Scheduled publish/unpublish inputs (datetime-local
      *  `YYYY-MM-DDTHH:mm` local strings; converted to/from ISO). */
     readonly publishAtInput  = signal('');
     readonly unpublishAtInput = signal('');
     /**
      * Editor side-rail (right dock): which panel is open, or null = collapsed.
      * Consolidates the former Meta / Schedule / History expand-below toggles
-     * plus the post-level Fields set into one tabbed panel — better use of the
+     * plus the post-level Fields set into one tabbed panel -- better use of the
      * horizontal space on wide screens. The vertical icon strip stays visible;
      * clicking the active tab collapses the panel.
      */
@@ -753,13 +753,13 @@ export class PageEditorComponent implements OnInit {
     /**
      * True when the open page is a landing page. Drives a layout swap: the
      * rich-text body editor (a hidden placeholder for landing pages) is dropped
-     * and the block list becomes the scrollable main area — otherwise the tall
+     * and the block list becomes the scrollable main area -- otherwise the tall
      * block editor, stuck in the fixed footer, gets clipped by the dialog and
      * can't be scrolled to.
      *
      * Seeded synchronously from the page's `contentType` the moment the page
      * loads ({@see seedLandingMode}) so the prose `<coolms-editor>` never mounts
-     * for a landing page — avoiding a wasted TipTap init plus a peer-visible
+     * for a landing page -- avoiding a wasted TipTap init plus a peer-visible
      * presence join/leave on the doc channel. The block editor's async
      * {@see BlockEditorComponent.activeChange} still corrects the rare legacy
      * page whose `extras.contentType` was never stamped.
@@ -769,10 +769,10 @@ export class PageEditorComponent implements OnInit {
     /** Configured page kinds for the Type picker. */
     readonly pageTypes = signal<PageTypeDto[]>([]);
 
-    /** The Type picker's displayed value — see {@see seedLandingMode}. */
+    /** The Type picker's displayed value -- see {@see seedLandingMode}. */
     readonly typeInput = signal<string>('');
 
-    /** True while a type change is in flight — disables the picker. */
+    /** True while a type change is in flight -- disables the picker. */
     readonly typeSaving = signal(false);
 
     readonly dirtyLocales = signal<Set<string>>(new Set());
@@ -780,7 +780,7 @@ export class PageEditorComponent implements OnInit {
     /**
      * The side-panels the installed modules contribute for this page, fetched
      * from `GET /editor/panels` (the editor-panel registry). Drives the rail
-     * strip — so the Schedule tab appears only when the Scheduler module is
+     * strip -- so the Schedule tab appears only when the Scheduler module is
      * installed and Fields only for collections that opt into a field set, with
      * this host referencing neither module.
      */
@@ -792,8 +792,8 @@ export class PageEditorComponent implements OnInit {
     /** True once a Schedule field has been touched since load/save (single-Save gate). */
     readonly scheduleDirty = signal(false);
 
-    // -- Page size / content width— Layout panel) ---------------------
-    /** The preset catalog from `GET /content/page-size` (A4 / Letter / … / Custom). */
+    // -- Page size / content width-- Layout panel) ---------------------
+    /** The preset catalog from `GET /content/page-size` (A4 / Letter / ... / Custom). */
     readonly pageSizeOptions = signal<readonly PageSizeOption[]>([]);
     /** The page's selected preset (`''` = unset -> default container). */
     readonly pageSizeValue = signal('');
@@ -825,14 +825,14 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * The post-level Fields panel. Kept mounted (hidden) whenever the page
-     * contributes a field set so its dirty/save survive rail tab switches —
+     * contributes a field set so its dirty/save survive rail tab switches --
      * see the persistent render + {@see hasFieldsPanel} in the template.
      */
     private readonly fieldsPanel = viewChild(ContentFieldPanelsComponent);
 
     /**
      * The landing-page section builder. Self-contained (own merge-patch on
-     * `extras.blocks`) — driven through the window's single Save here, so its
+     * `extras.blocks`) -- driven through the window's single Save here, so its
      * own "Save sections" button is hidden via `[embedded]`. Resolves to null
      * for non-landing pages (it renders nothing) so its dirty/save are no-ops.
      */
@@ -841,7 +841,7 @@ export class PageEditorComponent implements OnInit {
     /**
      * Live count of the landing page's sections, surfaced as a quiet status in
      * the footer's (otherwise empty) left when {@see landingMode} is on. Reads
-     * the embedded block editor's `blocks` signal — null/0 until it mounts and
+     * the embedded block editor's `blocks` signal -- null/0 until it mounts and
      * loads. Reactive: a viewChild signal + a signal read inside a computed.
      */
     readonly blockCount = computed(() => this.blockEditor()?.blocks().length ?? 0);
@@ -854,7 +854,7 @@ export class PageEditorComponent implements OnInit {
     readonly hasFieldsPanel = computed(() => this.railPanels().some(p => p.id === 'fields'));
 
     /**
-     * Whether *anything* in the window has unsaved edits — body/meta in *any*
+     * Whether *anything* in the window has unsaved edits -- body/meta in *any*
      * locale (not just the active tab, since Save now flushes them all),
      * schedule, or the post fields. Gates the single footer Save button so one
      * action persists exactly the parts that changed.
@@ -869,7 +869,7 @@ export class PageEditorComponent implements OnInit {
 
     constructor() {
         // Fetch the contributed panels whenever the page (-> its path) resolves.
-        // load is async — no signal is written synchronously here, so this
+        // load is async -- no signal is written synchronously here, so this
         // never feeds back on itself.
         effect(() => {
             const path = this.postPath();
@@ -952,8 +952,8 @@ export class PageEditorComponent implements OnInit {
     );
 
     /**
-     * The page's Package node path — the target for **post-level** (locale-
-     * invariant) module field sets (, e.g. the Blog set: author /
+     * The page's Package node path -- the target for **post-level** (locale-
+     * invariant) module field sets (e.g. the Blog set: author /
      * publish date / categories / tags). The `<app-content-field-panels>`
      * instance bound to it renders nothing for plain pages and lights up for
      * posts in a collection that opts into a field set.
@@ -961,8 +961,8 @@ export class PageEditorComponent implements OnInit {
     readonly postPath = computed(() => this.page()?.vfsPath ?? '');
 
     /**
-     * The active variant's VFS file path — `{page.vfsPath}/{locale}.dtmpl` —
-     * the per-variant target for the W6.3 file-history panel. Empty until a
+     * The active variant's VFS file path -- `{page.vfsPath}/{locale}.dtmpl` --
+     * the per-variant target for the file-history panel. Empty until a
      * page + locale are resolved (the panel is gated on it being non-empty).
      */
     readonly activeVariantPath = computed(() => {
@@ -974,7 +974,7 @@ export class PageEditorComponent implements OnInit {
     /**
      * Per-variant-path write-permission cache. The collab
      * affordances (presence + the peer-saved banner) are edit features, so
-     * they're gated on the same `canWrite` notion the revision log exposes —
+     * they're gated on the same `canWrite` notion the revision log exposes --
      * fetched once per path via {@see FileHistoryService.log} and reused.
      */
     private readonly canWriteByPath = signal<Record<string, boolean>>({});
@@ -1025,7 +1025,7 @@ export class PageEditorComponent implements OnInit {
      * Per-locale meta cache: locale -> { title, seo }. The live `titleValue()` +
      * `seoValues()` signals above reflect only the *active* tab and get clobbered
      * on tab switch (activateTab re-seeds them from the next locale), so without
-     * this a meta edit on a non-active locale would be lost — both visually
+     * this a meta edit on a non-active locale would be lost -- both visually
      * (switch away and back) and on the cross-locale Save. Written on every meta
      * edit, read back by activateTab + the Save flush. Mirrors {@see contentCache}
      * for the body so the two halves of a variant stay symmetric.
@@ -1054,7 +1054,7 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * Bumped to force the `<coolms-editor>` bridge to re-mount with fresh
-     * `editorContent` when the locale (its natural mount key) hasn't changed —
+     * `editorContent` when the locale (its natural mount key) hasn't changed --
      * specifically after a revision restore, where the body changes underneath
      * the same active tab and a plain `[content]` update wouldn't refresh it.
      */
@@ -1062,7 +1062,7 @@ export class PageEditorComponent implements OnInit {
     readonly editorMountKey = computed(() => `${this.activeTab()}#${this.editorReloadNonce()}`);
 
     ngOnInit(): void {
-        // — the kinds this installation offers, for the Type picker.
+        // -- the kinds this installation offers, for the Type picker.
         // Failure leaves the list empty: the picker then shows "Default" plus
         // whatever the page already is, which is a degraded control rather
         // than a broken editor.
@@ -1108,7 +1108,7 @@ export class PageEditorComponent implements OnInit {
      * Seed the landing/prose canvas decision from the page's own content type,
      * known synchronously at load. This runs before the variants (and thus the
      * editor body) render, so for a landing page the prose `<coolms-editor>`
-     * never mounts in the first place — no wasted TipTap init, no peer-visible
+     * never mounts in the first place -- no wasted TipTap init, no peer-visible
      * presence join/leave on the `editor.doc.{variantNodeId}` channel. The
      * block editor's `activeChange` remains the correction for any legacy
      * landing page whose `extras.contentType` was never stamped.
@@ -1134,7 +1134,7 @@ export class PageEditorComponent implements OnInit {
      * Re-seeds `landingMode` from the server's answer rather than from the
      * picked value: switching to or from `landing` swaps the whole canvas
      * (block builder vs prose editor), and that swap must follow what was
-     * actually STORED — if the write is refused, the canvas must not change.
+     * actually STORED -- if the write is refused, the canvas must not change.
      */
     onTypeChange(next: string): void {
         const page = this.page();
@@ -1204,7 +1204,7 @@ export class PageEditorComponent implements OnInit {
 
     private activateTab(locale: string): void {
         // Prefer any cached (unsaved) meta edits for this locale over the
-        // persisted variant — switching away and back must not drop them.
+        // persisted variant -- switching away and back must not drop them.
         const cachedMeta = this.metaCache()[locale];
         if (cachedMeta) {
             this.titleValue.set(cachedMeta.title);
@@ -1280,13 +1280,13 @@ export class PageEditorComponent implements OnInit {
     }
 
     /**
-     * Rename the slug ([]) — the URL segment / Package filename. Guarded by
+     * Rename the slug ([]) -- the URL segment / Package filename. Guarded by
      * {@link canRename}. A published (frozen) slug requires an explicit
      * confirmation because it changes the LIVE url (and, for a published
      * article, needs re-publishing to its surfaces); the confirm's `force` is
      * what unlocks the backend freeze. On success the page's path has changed,
      * so the editor closes with a truthy result and the pages-list reopens it
-     * fresh at the new path — avoiding stale post-path / variant-path signals.
+     * fresh at the new path -- avoiding stale post-path / variant-path signals.
      */
     rename(): void {
         const page = this.page();
@@ -1428,19 +1428,19 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * Body + per-variant meta (title column + metaTitle/metaDesc extras) for a
-     * *given* locale as one Observable — not just the active tab — so the single
+     * *given* locale as one Observable -- not just the active tab -- so the single
      * Save can flush every dirty locale. Meta is sourced from the per-locale
      * {@see metaCache} (edits made while that locale was active, even after
      * switching away), falling back to the persisted variant when untouched; the
      * body comes from {@see contentCache}. Returns `null` only when page/locale
-     * is missing. It does NOT touch `saving()` — the caller owns that flag so the
+     * is missing. It does NOT touch `saving()` -- the caller owns that flag so the
      * concurrent ops don't fight over it.
      */
     private variantSave$(pageId: string, locale: string): Observable<unknown> | null {
         if (!pageId || !locale) return null;
 
         // Meta: cached unsaved edits win; otherwise the locale's untouched values
-        // come straight off the persisted variant. Title is a real Node column —
+        // come straight off the persisted variant. Title is a real Node column --
         // empty title is sent as '' so the backend clears the column back to
         // null; metaTitle/metaDesc stay in extras (per-variant SEO).
         const meta = this.metaCache()[locale] ?? this.variantMeta(locale);
@@ -1530,7 +1530,7 @@ export class PageEditorComponent implements OnInit {
     /**
      * Download the active locale's body as a `.md` file. Reads the **saved**
      * variant body server-side (the same hardened HTML->Markdown converter the
-     * round-trip test covers) — so if the locale has unsaved edits we flag that
+     * round-trip test covers) -- so if the locale has unsaved edits we flag that
      * the export reflects the last save, then proceed.
      */
     exportMarkdown(): void {
@@ -1560,7 +1560,7 @@ export class PageEditorComponent implements OnInit {
             });
     }
 
-    // -- Editorial review (W6.a) ------------------------------------------------
+    // -- Editorial review -------------------------------------------------------
 
     /** Humanize the review status for the badge ("in review", "changes requested"). */
     statusLabel(status: string): string {
@@ -1657,7 +1657,7 @@ export class PageEditorComponent implements OnInit {
         );
     }
 
-    // -- Scheduled publish/unpublish (W6.d) --------------------------------------
+    // -- Scheduled publish/unpublish ---------------------------------------------
 
     /**
      * Open the given side-rail panel, or collapse it if it's already open.
@@ -1675,12 +1675,12 @@ export class PageEditorComponent implements OnInit {
         }
     }
 
-    /** Human label for a rail tab — its contributed panel's title. */
+    /** Human label for a rail tab -- its contributed panel's title. */
     railTitle(tab: RailTab): string {
         return this.railPanels().find(p => p.id === tab)?.title ?? '';
     }
 
-    /** A Schedule datetime field changed — record the value + mark dirty. */
+    /** A Schedule datetime field changed -- record the value + mark dirty. */
     onScheduleChange(which: 'publish' | 'unpublish', value: string): void {
         if (which === 'publish') {
             this.publishAtInput.set(value);
@@ -1709,28 +1709,28 @@ export class PageEditorComponent implements OnInit {
     }
 
     /**
-     * The window's single Save: persists exactly the parts that changed —
+     * The window's single Save: persists exactly the parts that changed --
      * body/meta in EVERY dirty locale (not just the active tab), schedule
      * (touched), the post Fields panel, the landing block editor and the page
-     * size — so the user has one button instead of one per panel. Everything
+     * size -- so the user has one button instead of one per panel. Everything
      * runs under one `saving()` flag and reports through one toast. Flushing
      * all dirty locales keeps Save in step with the close-guard, which warns
      * about all of them.
      *
      * The ops split by the ROW they write, which decides what may overlap:
      *
-     *  - `nodeOps` — the Fields panel, the landing blocks and the page size all
+     *  - `nodeOps` -- the Fields panel, the landing blocks and the page size all
      *    merge-patch the page **Package** node (`p.vfsPath`), and every one of
      *    them lands in its single `extras` JSON column. The server read-modify-
      *    writes that column WHOLE, with no optimistic lock, so concurrent
      *    patches are last-writer-wins over the entire bag: whichever committed
      *    second wrote back its own stale copy of the others' keys and the toast
      *    still said "Saved". They are therefore run STRICTLY SEQUENTIAL via
-     *    `concat`, each starting only once the previous has committed — the
+     *    `concat`, each starting only once the previous has committed -- the
      *    same fix [] applied to the Edit Template dialog, and the reason
      *    the section-properties dialog dropped its `forkJoin`. Disjoint KEYS
      *    are not disjoint WRITES when the storage is one JSON document.
-     *  - `ops` — body/meta and schedule, which target the per-locale variant
+     *  - `ops` -- body/meta and schedule, which target the per-locale variant
      *    nodes (`{vfsPath}/{locale}.dtmpl`), one row each. Distinct rows, so
      *    these stay parallel.
      */
@@ -1738,9 +1738,9 @@ export class PageEditorComponent implements OnInit {
         if (this.saving()) return;
 
         const p = this.page();
-        /** Writers on the page Package node's one `extras` column — sequential. */
+        /** Writers on the page Package node's one `extras` column -- sequential. */
         const nodeOps: Observable<unknown>[] = [];
-        /** Writers on distinct per-locale variant nodes — safe in parallel. */
+        /** Writers on distinct per-locale variant nodes -- safe in parallel. */
         const ops: Observable<unknown>[] = [];
         const onSuccess: Array<() => void> = [];
         const savedLocales: string[] = [];
@@ -1757,7 +1757,7 @@ export class PageEditorComponent implements OnInit {
             nodeOps.push(be.save$());
         }
 
-        // Flush every dirty locale — body lives in the per-locale contentCache
+        // Flush every dirty locale -- body lives in the per-locale contentCache
         // and meta in the per-locale metaCache, so each dirty locale's full
         // state is recoverable here even when it's not the active tab.
         if (p) {
@@ -1793,7 +1793,7 @@ export class PageEditorComponent implements OnInit {
         }
 
         // Page size -> the Package's extras.pageSize / pageWidthLayout).
-        // Same node, same column as the two panels above — hence `nodeOps`.
+        // Same node, same column as the two panels above -- hence `nodeOps`.
         if (this.pageSizeDirty() && p?.vfsPath) {
             nodeOps.push(this.pageSizeSvc.save(p.vfsPath, this.pageSizeValue() || null, this.pageWidthValue()));
             onSuccess.push(() => this.pageSizeDirty.set(false));
@@ -1802,8 +1802,8 @@ export class PageEditorComponent implements OnInit {
         if (ops.length === 0 && nodeOps.length === 0) return;
 
         this.saving.set(true);
-        // `toArray()` emits exactly once when the sequential chain completes —
-        // including when `nodeOps` is empty — so the variant ops always follow.
+        // `toArray()` emits exactly once when the sequential chain completes --
+        // including when `nodeOps` is empty -- so the variant ops always follow.
         concat(...nodeOps)
             .pipe(
                 toArray(),
@@ -1842,7 +1842,7 @@ export class PageEditorComponent implements OnInit {
         return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }
 
-    // -- Revision history (W6.3) -------------------------------------------------
+    // -- Revision history --------------------------------------------------------
 
     /**
      * A revision was restored: the backend wrote the old body forward as the new
@@ -1855,7 +1855,7 @@ export class PageEditorComponent implements OnInit {
 
     /**
      * Refetch the active locale's body from the variant endpoint, remount the
-     * bridge, and clear the dirty flag — the server copy is now the saved state.
+     * bridge, and clear the dirty flag -- the server copy is now the saved state.
      * Mirrors the cache-miss path in `activateTab`; shared by revision-restore
      * and the peer-saved reload.
      */
@@ -1946,7 +1946,7 @@ export class PageEditorComponent implements OnInit {
         const dirtyLocales = Array.from(this.dirtyLocales());
         // Mirror the footer Save's notion of "dirty": besides per-locale
         // body/meta edits, the Schedule fields and the (now-persistent) Fields
-        // panel can hold unsaved work even when their rail tab is closed — so
+        // panel can hold unsaved work even when their rail tab is closed -- so
         // closing while only those changed must still warn, not exit silently.
         const otherDirty = this.scheduleDirty() || (this.fieldsPanel()?.dirty() ?? false);
         if (dirtyLocales.length === 0 && !otherDirty) {

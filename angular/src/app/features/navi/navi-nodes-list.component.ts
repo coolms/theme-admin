@@ -79,7 +79,7 @@ export class NaviNodesListComponent implements OnInit {
     readonly nodes    = signal<NaviNodeDto[]>([]);
     readonly hasMore  = signal(true);
 
-    /** Dynamic page-header title — "Nodes — {treeSlug}" (was set via PageActionsService). */
+    /** Dynamic page-header title -- "Nodes -- {treeSlug}" (was set via PageActionsService). */
     readonly pageTitle = computed(() => `Nodes — ${this.treeSlug()}`);
 
     /** Flips to a count after the first load; blank until then. */

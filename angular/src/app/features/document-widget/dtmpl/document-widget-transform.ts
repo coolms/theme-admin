@@ -1,22 +1,22 @@
 /**
- * Bidirectional HTML ↔ dtmpl transform for the `documentWidget` Tiptap node.
+ * Bidirectional HTML <-> dtmpl transform for the `documentWidget` Tiptap node.
  *
- * On save:  `htmlToDtmpl()` rewrites every `<div data-widget="document" …>…</div>`
+ * On save:  `htmlToDtmpl()` rewrites every `<div data-widget="document" ...>...</div>`
  *           marker into `` {widget:document:`<slug>`} ``, carrying
  *           `output_format` / `label` when the author set them.
  * On load:  `dtmplToHtml()` does the inverse, rebuilding a minimal marker div
  *           that the node's `parseHTML` rehydrates into the chip.
  *
  *  **Positional id, not a named param.** `DocumentWidgetRenderer` reads the
- * template slug from the tag's SECOND `:` segment (`$params['_id']`) — unlike
- * the form widget, which uses `formId=`. Emitting `{widget:document slug=…}`
+ * template slug from the tag's SECOND `:` segment (`$params['_id']`) -- unlike
+ * the form widget, which uses `formId=`. Emitting `{widget:document slug=...}`
  * would parse cleanly and render nothing, because `_id` would be empty.
  *
  * The slug is BACKTICK-quoted so a dotted or dashed slug tokenizes cleanly,
  * matching the convention the form transform uses for ids.
  *
  * Disjoint namespace: this only touches `<div data-widget="document">` and
- * `{widget:document…}`, so it composes order-independently with the media,
+ * `{widget:document...}`, so it composes order-independently with the media,
  * link, formField, embed and form transforms.
  */
 

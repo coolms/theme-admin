@@ -59,7 +59,7 @@ export class VfsActionsService {
             case 'VfsToggleHidden':  if (target) void this.toggleHidden(target);                break;
             case 'VfsCut':           if (target) this.clipboard.cut([target]);                  break;
             case 'VfsCopy':          if (target) this.clipboard.copy([target]);                 break;
-            // Legacy entry — kept so anything seeded against the old action
+            // Legacy entry -- kept so anything seeded against the old action
             // still dispatches. `VfsOpenEditor` is the canonical generic
             // action going forward (it's what the new NaviGraph YAML emits).
             case 'VfsEditResource':
@@ -98,7 +98,7 @@ export class VfsActionsService {
         this.state.selectNode(node);
         this.state.activeItem.set(node);
         // Right-panel decoupling: panel visibility is now an
-        // explicit signal. Properties is the canonical open path —
+        // explicit signal. Properties is the canonical open path --
         // selection alone no longer auto-opens the panel.
         this.state.panelOpen.set(true);
     }
@@ -131,7 +131,7 @@ export class VfsActionsService {
      * before the first response lands, and caching the result would fire a
      * second request that the second dialog would then wait on.
      *
-     * A failure resolves to an empty list rather than rejecting — the menu
+     * A failure resolves to an empty list rather than rejecting -- the menu
      * degrades to a plain empty file, which is what this action did before any
      * module could contribute to it. Blocking file creation on a metadata fetch
      * would be a worse answer than offering fewer options.
@@ -152,7 +152,7 @@ export class VfsActionsService {
         const kinds = await this.fileKinds();
 
         // No module offers anything: keep the plain prompt rather than a select
-        // the operator can only agree with — and keep its filename validator,
+        // the operator can only agree with -- and keep its filename validator,
         // which is correct for a path and wrong for a title.
         if (0 === kinds.length) {
             await this.createEmptyFile();
@@ -176,7 +176,7 @@ export class VfsActionsService {
             // meanings: a FILENAME for an empty file, and a human TITLE for a
             // module kind, which the server slugs with national
             // transliteration. Applying `validateFilename` to both would refuse
-            // "Договор аренды" — a perfectly good document name — so the empty
+            // "Договор аренды" -- a perfectly good document name -- so the empty
             // file branch validates below instead.
         });
         if (null === result || '' === result.value.trim()) return;
@@ -196,7 +196,7 @@ export class VfsActionsService {
             // `|| '/'` because the ROOT is the one path where stripping the
             // trailing slash empties the string, and the folder travels ALONE
             // here rather than being concatenated with a filename the way the
-            // other create actions do — so an empty one is refused by the
+            // other create actions do -- so an empty one is refused by the
             // module with "the folderPath field is required" instead of
             // quietly becoming a relative path. Caught in the browser at the
             // VFS root; no unit test would have stood there.
@@ -216,14 +216,14 @@ export class VfsActionsService {
      * Open a just-created file in whatever editor its format registered.
      *
      * A brand-new document is empty, so the only useful next step is writing
-     * it — the same reasoning the Documents explorer applies after its own
+     * it -- the same reasoning the Documents explorer applies after its own
      * create. The NODE is re-fetched rather than assembled from the create
      * response: `FileEditorRegistry.openFor()` takes a `VfsNodeDto` and keys on
      * its mime and permissions, and a hand-built stand-in would be a second
      * source of truth for both.
      *
      * Failures are SWALLOWED. The file exists and the listing already shows it,
-     * so an error here would report a problem the operator does not have — they
+     * so an error here would report a problem the operator does not have -- they
      * can open it themselves. Only the convenience is lost.
      */
     private async openCreated(path?: string): Promise<void> {

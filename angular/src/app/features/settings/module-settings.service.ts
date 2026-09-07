@@ -10,10 +10,10 @@ import { ModuleSettingsBlockDto, ModuleSettingsWireDto } from './module-settings
  * Make `data` an object even when the server sent a list.
  *
  * PHP has one array type, so an EMPTY settings map JSON-encodes as `[]`, not
- * `{}` — a block nobody has edited arrives typed as a list. Every reader here
+ * `{}` -- a block nobody has edited arrives typed as a list. Every reader here
  * happens to survive that (Object.keys of an empty array is empty either way),
  * which is exactly the problem: the DTO promises a map, and the first consumer
- * to do something array-shaped with it — spread it, hand it to a form — would be
+ * to do something array-shaped with it -- spread it, hand it to a form -- would be
  * right by the type and wrong at runtime. Normalised once, on the way in.
  *
  * `effective` is NOT composed here. It arrives composed, from the one reader
@@ -50,7 +50,7 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
         // was before per-site overrides existed and what most of them stay.
         siteScopable: true === wire.siteScopable,
         scope: orNull(wire.scope),
-        //  **The wire never sends `null` — it sends NOTHING.** API Platform
+        //  **The wire never sends `null` -- it sends NOTHING.** API Platform
         // defaults `skip_null_values` to true, so every null property is omitted
         // from the JSON and arrives here as `undefined`, while the DTO promises
         // `string | null`. A reader written to that promise with an explicit
@@ -59,7 +59,7 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
         // That is not hypothetical: it took the whole settings screen down. The
         // grouping helper guarded `moduleRoute` with `null !==` and called
         // `.replace` on it, which was harmless for as long as every block
-        // happened to declare a route — and threw the moment the first block
+        // happened to declare a route -- and threw the moment the first block
         // without one existed. Normalised here so the DTO's promise is true for
         // every consumer rather than each one having to remember.
         moduleLabel: orNull(wire.moduleLabel),
@@ -70,7 +70,7 @@ function toBlock(wire: ModuleSettingsWireDto): ModuleSettingsBlockDto {
     };
 }
 
-/** A non-empty string, or null — for a field the wire may simply omit. */
+/** A non-empty string, or null -- for a field the wire may simply omit. */
 function orNull(value: unknown): string | null {
     return 'string' === typeof value && '' !== value ? value : null;
 }
@@ -100,7 +100,7 @@ function asMap(value: unknown): Record<string, unknown> {
  * ## Why every call pins `Accept: application/json`
  *
  * A block's `data` is a keyed MAP. Left to negotiate, API Platform answers
- * `application/ld+json` and renders a map as a Hydra Collection — the values all
+ * `application/ld+json` and renders a map as a Hydra Collection -- the values all
  * arrive and **the keys are gone**:
  *
  *     {"@type":"Collection","totalItems":2,"member":[["BY","PL"],"either"]}
@@ -120,7 +120,7 @@ export class ModuleSettingsService {
     private readonly http = inject(HttpClient);
     private readonly store = inject(Store);
 
-    /** Forced on every call — see the class note. */
+    /** Forced on every call -- see the class note. */
     private static readonly JSON_HEADERS = { Accept: 'application/json' };
 
     private get apiBase(): string {
@@ -179,7 +179,7 @@ export class ModuleSettingsService {
      * Drop what is saved so the layer beneath applies again.
      *
      *  With a `site` that means the PLATFORM's values, not the module's
-     * defaults — a site sits on top of the platform row, and dropping the site's
+     * defaults -- a site sits on top of the platform row, and dropping the site's
      * override reveals what was underneath rather than what shipped.
      */
     reset(key: string, site?: string | null): Observable<void> {

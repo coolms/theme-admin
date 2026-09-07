@@ -328,13 +328,13 @@ export class CentrifugoDashboardComponent implements OnInit {
     /**
      * Namespaces panel payload for `<coolms-datagrid gridId="centrifugo:namespaces">`.
      *
-     * `id` is the namespace NAME — datagrid selection is keyed on `row['id']`,
+     * `id` is the namespace NAME -- datagrid selection is keyed on `row['id']`,
      * and namespace names are unique by construction (they are the config keys
      * modules declare via `Extension::prepend`).
      *
      * `historyTtl` is em-dashed when blank: an unset TTL is the normal state
      * for a history-less namespace, not missing data. `historySize` keeps its
-     * literal 0 — that is a real value ("history disabled"), and blanking it
+     * literal 0 -- that is a real value ("history disabled"), and blanking it
      * would make "off" indistinguishable from "unknown".
      */
     protected readonly namespaceGridData = computed((): DataGridData => {

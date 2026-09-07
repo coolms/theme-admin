@@ -28,11 +28,11 @@ interface EventBreakdownRow {
 }
 
 /**
- *Phase 3 (CDP core, ) — Subject profile detail
+ *Phase 3 (CDP core, ) -- Subject profile detail
  * (`/admin/cdp/subjects/:key`).
  *
  * Read-only view of one CDP subject: identity (kind + stitched userRef),
- * first/last-seen span, and the counts-only activity profile — a per-type event
+ * first/last-seen span, and the counts-only activity profile -- a per-type event
  * breakdown (proportional bars, mirroring the analytics dashboard) plus the
  * segments the subject currently matches.
  */
@@ -178,7 +178,7 @@ export class SubjectDetailPageComponent implements OnInit {
 
     readonly key     = signal('');
     readonly subject = signal<SubjectDto | null>(null);
-    /** C.7 reverse cross-link — the Person (Contact) behind a known subject's userRef, or null. */
+    /** C.7 reverse cross-link -- the Person (Contact) behind a known subject's userRef, or null. */
     readonly contact = signal<ContactDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal(false);
@@ -243,7 +243,7 @@ export class SubjectDetailPageComponent implements OnInit {
 
     /**
      * Resolve the Person behind a known subject's userRef (C.7 reverse link).
-     * Best-effort — a failure or no linked contact simply hides the row; it must
+     * Best-effort -- a failure or no linked contact simply hides the row; it must
      * never surface an error over the profile the page already loaded.
      */
     private loadContact(userRef: string): void {

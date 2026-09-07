@@ -11,13 +11,13 @@ interface HydraCollection<T> {
 }
 
 /**
- * F.14c-1 — cross-format Document Explorer aggregator. Wraps the
+ * F.14c-1 -- cross-format Document Explorer aggregator. Wraps the
  * F.14b unified endpoints so the explorer can list and create
  * templates without caring which format module owns the row.
  *
  * Per-format thin wrappers (`WordTemplateService` etc.) stay around
  * for format-specific call shapes (Word-only download URLs, future
- * Spreadsheet preview helpers, …); this service is the entry point
+ * Spreadsheet preview helpers, ...); this service is the entry point
  * for cross-format work.
  */
 /**
@@ -96,7 +96,7 @@ export class DocumentAggregatorService {
 
     /**
      * F.14b replace endpoint. Wired here even though the dialog
-     * lands in F.14c-3 — the aggregator API contract is complete
+     * lands in F.14c-3 -- the aggregator API contract is complete
      * for the whole F.14c phase so callers don't need to chase a
      * second wrapper.
      */
@@ -113,7 +113,7 @@ export class DocumentAggregatorService {
     /**
      * Optional `?folder=` query for future grid filtering. Kept on
      * the API even though F.14c-1 doesn't drive it from the folders
-     * tree — F.14c-3 wires the filter once the tree's selection
+     * tree -- F.14c-3 wires the filter once the tree's selection
      * propagates.
      */
     listTemplatesInFolder(folderPath: string): Observable<DocumentTemplate[]> {

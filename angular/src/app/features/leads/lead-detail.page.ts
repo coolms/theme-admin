@@ -33,7 +33,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
 };
 
 /**
- * Omnichannel convergence — Lead detail admin page (/admin/leads/:id).
+ * Omnichannel convergence -- Lead detail admin page (/admin/leads/:id).
  *
  * The list ({@link LeadsListComponent}) triages many leads at a glance; this is
  * where an agent lands to inspect ONE: the full (untruncated) message, all
@@ -44,7 +44,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
  * Reads `GET /leads/{id}`; a 404 (unknown id / deleted) surfaces as an
  * error banner rather than an empty shell. Triage actions call the existing
  * transition endpoints then re-fetch, so the header chips + gated actions stay
- * in sync with the new status. All fields are plain text — Angular
+ * in sync with the new status. All fields are plain text -- Angular
  * interpolation auto-escapes, so there is no XSS sink.
  */
 @Component({
@@ -236,7 +236,7 @@ export class LeadDetailComponent implements OnInit {
 
     readonly contactId = computed(() => this.lead()?.contactId ?? null);
 
-    /** @see LeadDetailToolbarContributor — the server owns which buttons exist. */
+    /** @see LeadDetailToolbarContributor -- the server owns which buttons exist. */
     readonly toolbarTree = 'navi.toolbar.lead.detail';
 
     /** Filled from the toolbar tree, not built here. */

@@ -36,13 +36,13 @@ export class SectionFormComponent {
     readonly isEdit       = this.data !== null;
     readonly initialValue = this.data ? { ...this.data } : {};
 
-    // formId comes from manifest — no hardcoding
+    // formId comes from manifest -- no hardcoding
     readonly formId = this.store.selectSnapshot(AppConfigState.manifest)
         ?.sections?.formId ?? 'section:site_section';
 
     /**
      * `''` from an emptied select means "no theme" and must reach the API as
-     * `null` — merge-patch treats `undefined` as "unchanged", so returning it
+     * `null` -- merge-patch treats `undefined` as "unchanged", so returning it
      * would make clearing the binding impossible.
      */
     private themeSlugFrom(value: Record<string, unknown>): string | null {
@@ -59,7 +59,7 @@ export class SectionFormComponent {
                 matchPathPrefix: value['matchPathPrefix'] as string | undefined,
                 feStack:         value['feStack'] as string | undefined,
                 matchPriority:   value['matchPriority'] as number | undefined,
-                // — was absent, so the one field that actually decides a
+                // -- was absent, so the one field that actually decides a
                 // section's theme could not be changed from the admin at all.
                 // Empty select -> null, which CLEARS the binding (fall back to the
                 // active theme); leaving it undefined would silently keep the old

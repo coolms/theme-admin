@@ -5,7 +5,7 @@ import { VfsTreeComponent } from './vfs-tree.component';
  * Slot adapter for `content.panel.left` in the VFS File Manager layout.
  *
  * Thin wrapper around VfsTreeComponent. Tree navigation stays on VfsManagerState
- * for now — full decoupling to VfsPageStateService happens in 30.7.
+ * for now -- full decoupling to VfsPageStateService happens in 30.7.
  *
  * Registered as 'VfsTree' in ComponentRegistry (matches file-manager.yaml).
  */

@@ -5,7 +5,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
  *
  * A free function, and in its own file, for the same reason
  * `settings-grouping.util.ts` is: the hub imports DynamicFormComponent, which
- * reaches `@coolms/editor-angular`, which the karma builder cannot resolve — so
+ * reaches `@coolms/editor-angular`, which the karma builder cannot resolve -- so
  * any spec that pulls the hub in fails the WHOLE suite at build time. Logic that
  * needs covering has to live outside the component.
  */
@@ -13,7 +13,7 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
 /**
  * Drop the keys this deployment pins in its environment.
  *
- *  **Not cosmetic — the save fails without it.** Pinned controls are rendered
+ *  **Not cosmetic -- the save fails without it.** Pinned controls are rendered
  * disabled, but Angular still reports a disabled control in `getRawValue()`,
  * which is what the dynamic form submits. So a pinned key would ride along, and
  * the server refuses any write carrying one (it would be stored and then ignored
@@ -41,7 +41,7 @@ export function withoutPinnedKeys(
  *  **A scoped response must NOT be written into the platform list.** That list
  * is the platform-wide view the rail renders and the scope selector returns to.
  * Folding one site's values into it makes the screen show that site's numbers
- * under "Platform (every site)" — which is not a cosmetic slip: an operator
+ * under "Platform (every site)" -- which is not a cosmetic slip: an operator
  * reads it as the platform having changed, and the next thing they do is act on
  * a value nothing is running.
  *

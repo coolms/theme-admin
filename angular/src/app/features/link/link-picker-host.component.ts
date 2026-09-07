@@ -79,7 +79,7 @@ export class LinkPickerHostComponent {
 
     /** Per-tab data sources. */
     /**
-     * Pages sub-tab: the *current view* — either the lazy tree level (children
+     * Pages sub-tab: the *current view* -- either the lazy tree level (children
      * of the deepest crumb, or the roots when crumbs are empty) or the flat
      * server-side search results when `searchQuery` is non-empty. Never the
      * whole site, so it scales to thousands of pages.
@@ -370,7 +370,7 @@ export class LinkPickerHostComponent {
         if (sub === 'pages' && this.pageNodes() === null) {
             // Lazy tree: load the deepest crumb's children (roots when empty).
             // Drilling in / searching is handled by navigatePage / the debounced
-            // search subscription — this only seeds the first level.
+            // search subscription -- this only seeds the first level.
             this.loadPageLevel(this.currentPageParentId());
         } else if (sub === 'sections' && this.sectionList() === null) {
             this.api.getSections().subscribe({

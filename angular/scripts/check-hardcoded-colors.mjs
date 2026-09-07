@@ -32,8 +32,8 @@ const SRC = join(ROOT, 'src');
 //   634 -> 290  real removals (–)
 //   290 -> 273  a COUNTING fix, no literals removed — the gap pattern
 //              had been double-counting inside JS object literals
-//   273 -> 247  real removals (, the near-white grey consolidation)
-//   247 -> 219  real removals (, the text-body and danger-text tail)
+//   273 -> 247  real removals (the near-white grey consolidation)
+//   247 -> 219  real removals (the text-body and danger-text tail)
 //   219 -> 218  a literal that lived inside a DEAD rule
 //   218 -> 213  literals inside components that were re-declaring the KIT's own
 //              classes — deleting the shadow deleted the literal
@@ -94,7 +94,7 @@ const BOOTSTRAP_BASELINE = 187;
 
 /**
  * Bootstrap colour classes that are DELIBERATELY still in the markup because a
- * bridge rule re-points them at `--cms-*` tokens (, completed in ).
+ * bridge rule re-points them at `--cms-*` tokens.
  *
  * The count above cannot express the thing that actually matters. It treats a
  * bridged `.text-muted` and an unbridged `.text-white` as one unit of debt, so
