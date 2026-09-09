@@ -1,14 +1,14 @@
 import { type Routes } from '@angular/router';
 
 /**
- *Phase 3 (CDP core, ) -- Customer Data Platform admin routes
+ * Customer Data Platform admin routes
  * under `/admin/cdp`. Surfaces:
  *  - Segments (`/cdp/segments`) -- the audience-Segment list; create/edit open a
  *    modal ({@link ./segment-editor-dialog.component}), so there is no routed
  *    editor page.
  *  - Subjects (`/cdp/subjects`) -- the profile explorer (list + read-only detail).
- *  - Rules (`/cdp/rules`) -- the content-personalization rule list
- *    Phase 4, P4.admin.c); create/edit open a modal ({@link
+ *  - Rules (`/cdp/rules`) -- the content-personalization rule list;
+ *    create/edit open a modal ({@link
  *    ./rule-editor-dialog.component}).
  */
 export const CDP_ROUTES: Routes = [

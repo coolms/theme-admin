@@ -1,5 +1,5 @@
 /**
- *Phase 3 (CDP core, ) -- admin FE wire shapes.
+ * Admin FE wire shapes.
  *
  * Mirror the backend Analytics resources:
  *  - `AnalyticsSegmentResource`      -> {@link SegmentDto}

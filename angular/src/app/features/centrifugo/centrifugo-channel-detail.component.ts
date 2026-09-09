@@ -22,7 +22,7 @@ import {
 } from '@coolms/ui-angular';
 
 /**
- * Phase 1.5 sub-phase 1.5b -- per-channel admin view at
+ * Per-channel admin view at
  * `/centrifugo/channel/:name` (rendered under the SPA's `/admin/`
  * base-href). Two panels share the channel
  * name from the URL:

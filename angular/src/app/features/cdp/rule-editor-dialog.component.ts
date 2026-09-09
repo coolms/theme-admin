@@ -20,7 +20,7 @@ export interface RuleEditorDialogData {
 }
 
 /**
- *Phase 4 (CDP personalization, P4.admin.c) -- create / edit modal for a
+ * Create / edit modal for a
  * content-personalization rule.
  *
  * A plain platform modal (`app-modal` + `cms-btn`/`cms-btn-primary`), simpler than

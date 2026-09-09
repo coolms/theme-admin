@@ -128,7 +128,7 @@ import { DesignerI18nService } from './designer-i18n.service';
             }
 
             <!--
-              Ship A Phase 5+ (FE polish) -- contributor-source banner.
+              contributor-source banner.
               Renders when the draft GET returns 409 with
               X-CoolMS-Workflow-Source: contributor. The editor itself
               does NOT mount in this state; the user must fork-to-VFS
@@ -215,7 +215,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                     (cancel)="cancel.emit()"
                 >
                     <!--
-                      Ship A Phase 5+ (FE polish) — forked-from-module
+                      forked-from-module
                       chip + Revert button. Visible only when the draft we
                       loaded sits atop a contributor row with moduleLock=true.
                     -->
@@ -402,7 +402,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     readonly connectActive = signal<boolean>(false);
     readonly panActive = signal<boolean>(false);
     /**
-     * Ship A Phase 5+ (FE polish) -- when non-null, the editor mount
+     * When non-null, the editor mount
      * is suppressed and the "shipped by module" banner is rendered
      * instead. Set by the 409 detection path in `ngAfterViewInit`.
      */
@@ -475,7 +475,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     /** Disables the Revert button while the POST is in flight. */
     readonly revertPending = signal<boolean>(false);
     /**
-     * Ship A Phase 5+ (FE polish) -- true when the loaded draft sits
+     * True when the loaded draft sits
      * atop a contributor-source row with `moduleLock=true`. Drives
      * the "Forked from module" chip + Revert button in the toolbar.
      */
@@ -676,7 +676,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Ship A Phase 5+ (FE polish) -- extracted from `ngAfterViewInit`
+     * Extracted from `ngAfterViewInit`
      * so the post-fork flow can re-invoke it without re-mounting the
      * shell / palette / panel chrome.
      *
@@ -706,7 +706,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             );
             this.lastSavedAt.set(payload.lastModifiedAt);
 
-            // Phase 5+ -- the forked-from-module chip is keyed off the
+            // The forked-from-module chip is keyed off the
             // latest version row's (source, moduleLock) tuple, both
             // surfaced on the draft resource.
             this.forkedFromModule.set(
@@ -717,7 +717,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             this.loadBody(payload.body, key);
         } catch (err) {
             if (isContributorSource409(err)) {
-                // Ship A Phase 5+ -- the backend signalled a
+                // The backend signalled a
                 // contributor-source definition with no editable
                 // draft. Render the banner; the editor stays unmounted
                 // until the user forks or navigates away.
@@ -837,7 +837,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Ship A Phase 5+ (FE polish) -- Fork-to-VFS click handler.
+     * Fork-to-VFS click handler.
      * POSTs the lifecycle action + on success reloads the draft (now
      * editable). The backend returns the freshly-minted draft body
      * in the same response, but reusing `loadDraft` keeps the
@@ -862,7 +862,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * Ship A Phase 5+ (FE polish) -- Revert-to-module click handler.
+     * Revert-to-module click handler.
      * POSTs the lifecycle action + navigates the user back to the
      * contributor-banner state (the canonical body is now the
      * module's again, so the draft they were editing is orphan

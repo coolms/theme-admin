@@ -11,13 +11,13 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '@coolms/ui-angular';
 
 /**
- * Phase 2 -- scope choice when editing / deleting / dragging an
+ * Scope choice when editing / deleting / dragging an
  * occurrence of a recurring CalendarItem.
  *
  * Three options, matching Google Calendar's wording:
  *  - **only this event** -> backend `POST /exception` (reschedule)
  *    or `POST /skip` (delete)
- *  - **this and following events** -> Phase 3; disabled here with a
+ *  - **this and following events** -> not yet available; disabled here with a
  *    "(coming soon)" hint
  *  - **all events** -> backend PATCH or DELETE on the canonical base
  *    row (existing single-row write paths)

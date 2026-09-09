@@ -426,7 +426,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
         }
 
-        /* Phase 2 VFS live -- 2s fade flash on a grid item whose
+        /* VFS live updates -- 2s fade flash on a grid item whose
            node received a live change event from Centrifugo.
            Matches the VFS tree row flash and the DataGrid row
            flash so all three live surfaces look the same. */
@@ -457,7 +457,7 @@ export class VfsFilesComponent {
     private readonly destroyRef      = inject(DestroyRef);
 
     /**
-     * Phase 2 VFS live -- ids of currently flashing grid items.
+     * VFS live updates -- ids of currently flashing grid items.
      * Each entry stays for ~2s while the row-flash CSS animation
      * runs; re-receiving an event for the same id restarts the
      * timer by re-adding it to a fresh Set instance.
@@ -465,7 +465,7 @@ export class VfsFilesComponent {
     protected readonly flashingNodeIds = signal<ReadonlySet<string>>(new Set());
 
     constructor() {
-        // Phase 2 VFS live -- subscribe to the channel for the
+        // VFS live updates -- subscribe to the channel for the
         // current directory's UUID. Re-binds whenever
         // `currentPath()` changes: switchMap tears down the
         // previous channel subscription before starting the new

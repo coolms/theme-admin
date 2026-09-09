@@ -46,7 +46,7 @@ interface EditorRow {
 }
 
 /**
- * F5.d -- Translation detail slot (`TranslationDetail`).
+ * Translation detail slot (`TranslationDetail`).
  *
  * Mounted inside `<cms-list-layout layoutId="i18n:translation-detail">`.
  * The layout shell renders cms-page-header (icon, title, header

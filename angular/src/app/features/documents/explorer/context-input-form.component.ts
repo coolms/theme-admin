@@ -36,7 +36,7 @@ import {
  * F.14c-2 scope:
  *   - Scalar variables render `<input type="text">`. Type detection
  *     (date / number / boolean) is deferred.
- *   - Variables flagged as entity references (Phase 2 --
+ *   - Variables flagged as entity references (entity references --
  *     `entityType` non-null on the schema variable) render
  *     `<cms-entity-picker>` instead, persisting the entity id (or
  *     list of ids when `collection: true`) into the same nested-JSON
@@ -93,7 +93,7 @@ import {
 
         <!--
             Per-variable field renderer. Branches on whether the
-            variable carries a Phase 2 entityType marker:
+            variable carries a entityType marker:
               - entityType set -> <cms-entity-picker>, value flows as
                 string | string[] | null through writeField.
               - otherwise -> legacy <input type="text">.
@@ -185,7 +185,7 @@ export class ContextInputFormComponent {
         // `formData` back to `structuredClone(initialValue())` -- i.e.
         // back to `{}` when no parent passes an initial value --
         // clobbering the user's picker selection before Generate is
-        // clicked. (Phase 2 ext smoke surfaced this as `{}` POST body
+        // clicked. (a smoke test surfaced this as `{}` POST body
         // despite the picker emitting correctly.)
         effect(() => {
             const seed = this.initialValue();
@@ -226,7 +226,7 @@ export class ContextInputFormComponent {
     /**
      * Persist a field write. Accepts:
      *   - `string`          -- plain text input or single entity id.
-     *   - `string[]`        -- collection of entity ids (Phase 2 multi-
+     *   - `string[]`        -- collection of entity ids (multi-
      *                         select picker).
      *   - `null`            -- explicit clear from the entity picker
      *                         (mapped onto the path so the renderer
@@ -248,7 +248,7 @@ export class ContextInputFormComponent {
     }
 
     /**
-     * Phase 2 extension polish -- strip the leading `@` that an entity-
+     * Strip the leading `@` that an entity-
      * alias variable carries so the label reads as the alias name
      * itself (e.g., `user` rather than `@user`). The
      * persisted path keeps the `@` so the renderer's Context lookup

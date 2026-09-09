@@ -37,7 +37,7 @@ interface SubjectRow {
 }
 
 /**
- *Phase 3 (CDP core, ) -- Subject profile explorer
+ * Subject profile explorer
  * (`/admin/cdp/subjects`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the

@@ -120,7 +120,7 @@ export class SchemaService {
      * editor pre-fill panels. The single-item GET on a field definition carries
      * BOTH the field's own label translations (`labelTranslations`: `locale => text`,
      * ) and its per-option label translations (`optionLabels`:
-     * `optionValue => (locale => text)`, F5.b Phase 5); the collection list omits
+     * `optionValue => (locale => text)`); the collection list omits
      * both. Only the locales an operator actually translated appear. One GET seeds
      * both panels. Returns empty maps on any error or when the field has no
      * overrides, so the editor panels simply open blank.

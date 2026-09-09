@@ -689,7 +689,7 @@ export interface DefinitionCatalogDto {
     readonly retiredAt?:            string | null;
 }
 
-// --- Translation catalogues (F5.c admin editor) ------------------
+// --- Translation catalogues (admin editor) ------------------
 // Mirror backend `TranslationCatalogueResource`.
 // `id` is the composite `{domain}:{locale}` slug used in URI paths.
 
@@ -775,7 +775,7 @@ export interface CalendarItemDto {
     readonly createdAt?:      string;
     readonly updatedAt?:      string;
     /**
-     * Phase 2 -- soft-grouping id of the recurring series. Non-null
+     * Soft-grouping id of the recurring series. Non-null
      * for base recurring items + their overrides; null for one-shot
      * items. The FE keys "is this part of a series?" off this, NOT
      * off `recurrence` -- flat occurrence projections strip the rule
@@ -783,7 +783,7 @@ export interface CalendarItemDto {
      */
     readonly seriesId?:       string | null;
     /**
-     * Phase 2 -- parent base id on override rows; null otherwise.
+     * Parent base id on override rows; null otherwise.
      * Lets the FE distinguish editing an override row vs editing a
      * base occurrence.
      */
@@ -823,7 +823,7 @@ export interface CreateCalendarItemDto {
 export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto>;
 
 /**
- * Wire shape for `POST /api/v1/calendar/items/{itemId}/exception` (Phase 2).
+ * Wire shape for `POST /api/v1/calendar/items/{itemId}/exception`.
  *
  * Reschedules / patches one occurrence of a recurring base item. The
  * server is idempotent on (parentItemId, recurrenceInstant), so a re-edit
@@ -855,7 +855,7 @@ export interface CalendarItemExceptionResponse {
 }
 
 /**
- * Wire shape for `POST /api/v1/calendar/items/{itemId}/skip` (Phase 2).
+ * Wire shape for `POST /api/v1/calendar/items/{itemId}/skip`.
  *
  * Drops one occurrence by appending EXDATE to the base item's RRULE. The
  * server also clears any prior reschedule override for the same instant
@@ -869,7 +869,7 @@ export interface CalendarItemSkipResponse {
 }
 
 /**
- * Wire shape for `POST /api/v1/calendar/items/{itemId}/split` (Phase 3).
+ * Wire shape for `POST /api/v1/calendar/items/{itemId}/split`.
  *
  * Trims the base's RRULE at `recurrenceInstant` and creates a NEW
  * base item starting at `newStart` carrying the patched properties.
@@ -900,8 +900,8 @@ export interface CalendarItemSplitResponse {
 }
 
 /**
- * Wire shape for `POST /api/v1/calendar/items/{itemId}/delete-following`
- * (Phase 3). Truncates the base's RRULE and deletes later overrides.
+ * Wire shape for `POST /api/v1/calendar/items/{itemId}/delete-following`.
+ * Truncates the base's RRULE and deletes later overrides.
  */
 export interface CalendarItemDeleteFollowingResponse {
     readonly itemId:            string;
@@ -1455,7 +1455,7 @@ export class ApiService {
         return this.http.delete<void>(url);
     }
 
-    // -- Per-occurrence overrides (Phase 2) ----------------------------------
+    // -- Per-occurrence overrides ----------------------------------
     //
     // When the user edits / deletes / drags one occurrence of a recurring
     // event AND picks the "only this event" scope, we route to these two
@@ -1480,7 +1480,7 @@ export class ApiService {
     }
 
     /**
-     * Phase 3 -- "this and following events" save / drag-resize. Trims
+     * "this and following events" save / drag-resize. Trims
      * the base's RRULE at `recurrenceInstant` and creates a new base
      * with the patched properties starting at `newStart`. Both halves
      * share `seriesId` so the "all events" walk traverses the split.
@@ -1494,7 +1494,7 @@ export class ApiService {
     }
 
     /**
-     * Phase 3 -- "delete this and following events". Truncates the
+     * "delete this and following events". Truncates the
      * base's RRULE; later overrides are removed. No new item is
      * created.
      */
@@ -2322,7 +2322,7 @@ export class ApiService {
         );
     }
 
-    // --- F5.c: Translation catalogues admin ----------------------
+    // --- Translation catalogues admin ----------------------
     //
     // The four endpoints are NOT paginated -- the platform has a
     // small fixed set of (domain x locale) pairs (today: one entry,

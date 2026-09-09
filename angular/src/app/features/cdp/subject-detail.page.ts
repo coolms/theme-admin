@@ -28,7 +28,7 @@ interface EventBreakdownRow {
 }
 
 /**
- *Phase 3 (CDP core, ) -- Subject profile detail
+ * Subject profile detail
  * (`/admin/cdp/subjects/:key`).
  *
  * Read-only view of one CDP subject: identity (kind + stitched userRef),
