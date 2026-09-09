@@ -60,7 +60,7 @@ export interface CalendarEventEditorData {
     /** In edit-mode, gates the save / delete buttons. */
     canEdit?:      boolean;
     /**
-     * Phase 2 -- when set, the editor was opened from clicking a single
+     * When set, the editor was opened from clicking a single
      * occurrence of a recurring series (the events card supplies the
      * displayed instant via `arg.event.start`). Save / delete will
      * prompt the user for scope ("only this" vs "all events") and
@@ -76,14 +76,14 @@ export interface CalendarEventEditorData {
 export type CalendarEventEditorResult =
     | { action: 'created'; item: CalendarItemDto }
     | { action: 'updated'; item: CalendarItemDto }
-    /** Phase 2 -- "only this event" save -> an override row was written. */
+    /** "Only this event" save -> an override row was written. */
     | { action: 'overridden'; parentItemId: string; overrideId: string }
-    /** Phase 3 -- "this and following events" save -> series was split. */
+    /** "This and following events" save -> series was split. */
     | { action: 'split'; parentItemId: string; newBaseId: string; seriesId: string | null }
     | { action: 'deleted'; id: string }
-    /** Phase 2 -- "only this event" delete -> EXDATE was appended to the parent. */
+    /** "Only this event" delete -> EXDATE was appended to the parent. */
     | { action: 'occurrence-skipped'; parentItemId: string; recurrenceInstant: string }
-    /** Phase 3 -- "delete this and following events" -> series was truncated. */
+    /** "Delete this and following events" -> series was truncated. */
     | { action: 'following-deleted'; parentItemId: string; recurrenceInstant: string }
     | { action: 'cancelled' };
 
@@ -536,7 +536,7 @@ export class CalendarEventEditorComponent {
         }
         this.error.set(null);
 
-        // Phase 2/3 -- editing one occurrence of a recurring series:
+        // Editing one occurrence of a recurring series:
         // prompt for scope before committing. NULL `occurrenceInstant`
         // means we're editing the canonical row (list view, create
         // mode), so the existing PATCH/POST path applies directly.
@@ -606,7 +606,7 @@ export class CalendarEventEditorComponent {
     }
 
     /**
-     * Phase 3 -- POST /calendar/items/{itemId}/split. Trims the base's
+     * POST /calendar/items/{itemId}/split. Trims the base's
      * RRULE at the occurrence's original instant and creates a new
      * base item starting at the user-edited times. The form's
      * recurrence value is intentionally NOT sent -- the new base
@@ -642,7 +642,7 @@ export class CalendarEventEditorComponent {
     }
 
     /**
-     * Phase 2 -- POST /calendar/items/{itemId}/exception. Writes an
+     * POST /calendar/items/{itemId}/exception. Writes an
      * override row for this single occurrence. The recurrence field
      * on the form is intentionally NOT included -- overrides cover one
      * instance and never carry their own RRULE.
@@ -703,7 +703,7 @@ export class CalendarEventEditorComponent {
         if (!this.editable || this.mode !== 'edit' || !this.data.item) return;
         const item = this.data.item;
 
-        // Phase 2/3 -- deleting one occurrence of a recurring series
+        // Deleting one occurrence of a recurring series
         // prompts for scope:
         //   "only this"      -> POST /skip (append EXDATE)
         //   "this and following" -> POST /delete-following (truncate RRULE)

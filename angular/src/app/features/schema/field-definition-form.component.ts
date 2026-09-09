@@ -322,7 +322,7 @@ type TabIndex = 0 | 1 | 2;
                         </div>
                     }
 
-                    <!-- Per-locale option-label translations (F5.b Phase 5).
+                    <!-- Per-locale option-label translations.
                          Decoupled from the server-driven options widget below;
                          shown only in edit mode when >1 locale is configured. -->
                     @if (showOptionTranslations()) {
@@ -558,7 +558,7 @@ type TabIndex = 0 | 1 | 2;
         .font-mono { font-family: var(--cms-font-mono, monospace); }
         .cms-field-error { font-size: .75rem; color: var(--cms-danger-text); margin-top: 4px; }
 
-        /* -- Option-label translations panel (F5.b Phase 5) ----------------- */
+        /* -- Option-label translations panel ----------------- */
         .fdf-opt-i18n {
             margin-bottom: 16px;
             padding: 12px;
@@ -775,7 +775,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         };
     });
 
-    // -- Option-label translations (F5.b Phase 5 authoring) ---------------------
+    // -- Option-label translations (authoring) ---------------------
 
     /**
      * Per-option, per-locale label translations bound to the inputs in the

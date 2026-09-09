@@ -30,7 +30,7 @@ export interface ContextSchemaVariable {
     readonly filters: string[];
     readonly loopAlias: string | null;
     /**
-     * Phase 2 entity reference marker. When set, the
+     * Entity reference marker. When set, the
      * Generate dialog renders `<cms-entity-picker>` instead of a
      * plain text input; the persisted value is the entity id, and
      * the backend's render-time `EntityHydratingContributor` swaps
@@ -39,12 +39,12 @@ export interface ContextSchemaVariable {
      */
     readonly entityType?: string | null;
     /**
-     * Phase 2 -- when `true` the picker accepts multiple entities
+     * When `true` the picker accepts multiple entities
      * and the persisted value is a list of ids.
      */
     readonly collection?: boolean;
     /**
-     * Phase 2 -- optional allow-list passed to the backend resolver
+     * Optional allow-list passed to the backend resolver
      * to constrain which fields the hydrated projection exposes.
      * `null` / absent uses the resolver's default field set.
      */
@@ -157,7 +157,7 @@ export interface FormVariableInput {
     readonly path: string;
     readonly label: string | null;
     /**
-     * Phase 2 -- propagated from
+     * Propagated from
      * `ContextSchemaVariable.entityType`. When non-null, the form
      * renders `<cms-entity-picker>` for this variable. The picker
      * emits an entity id (string) for single refs or a list of ids

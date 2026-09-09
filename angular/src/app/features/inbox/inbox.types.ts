@@ -5,7 +5,7 @@
  * The DTO is intentionally flat: every field on the backend resource is
  * a string / nullable string / nullable ISO datetime, no nested object
  * graph. The form-bound complete dialog drives off `formKey` (resolved
- * server-side from the per-instance pinned AST, Phase 1).
+ * server-side from the per-instance pinned AST).
  */
 
 export type InboxTab = 'assigned' | 'claimable' | 'recent';
@@ -33,7 +33,7 @@ export interface InboxTaskDto {
     readonly claimedAt:            string | null;
     readonly completedAt:          string | null;
     /**
-     * AST-resolved BPMN-Lite form binding (Phase 1). Drives the
+     * AST-resolved BPMN-Lite form binding. Drives the
      * form-bound complete dialog through `<app-dynamic-form
      * [formId]="task.formKey">`. Null when the AST is unavailable -- the
      * dialog falls back to a raw-JSON formData editor.

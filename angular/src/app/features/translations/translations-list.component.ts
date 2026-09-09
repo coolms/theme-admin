@@ -26,7 +26,7 @@ import {
 import { TranslationCreateFormComponent } from './translation-create-form.component';
 
 /**
- * F5.d -- Translations list slot (`TranslationsList`).
+ * Translations list slot (`TranslationsList`).
  *
  * Mounted inside `<cms-list-layout layoutId="i18n:translations-list">` --
  * the layout shell renders `cms-page-header` + `cms-page-footer`, this

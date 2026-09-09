@@ -827,7 +827,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // is why a chosen colour never reached the chip.
             color:           item.color ?? undefined,
             classNames:      this.eventClassNames(item),
-            // Phase 2 -- recurring items are now drag/resize-enabled.
+            // Recurring items are now drag/resize-enabled.
             // On drop we prompt for scope ("only this" -> POST exception;
             // "all events" -> PATCH the canonical row).
             editable:        true,
@@ -843,7 +843,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 originalItemId: item.originalItemId,
                 type:           item.type,
                 recurrence:     item.recurrence,
-                // Phase 2 -- flat occurrence projections strip
+                // Flat occurrence projections strip
                 // `recurrence` server-side to prevent FE re-expansion,
                 // so the "is recurring?" check keys off `seriesId`
                 // instead. Non-null = part of a series (base + all
@@ -884,7 +884,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
 
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
-        // Phase 2 -- when the clicked event is an occurrence of a
+        // When the clicked event is an occurrence of a
         // recurring series, capture its instant so the editor can
         // route save/delete through the override endpoints (with a
         // scope prompt) instead of patching the canonical row.
@@ -1046,7 +1046,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * No scope prompt because status changes naturally apply to the
      * whole series -- there's no concept of "this occurrence is
      * tentative but the rest are confirmed" in our model. (If a user
-     * wants per-occurrence status, that's a Phase 2 override edit via
+     * wants per-occurrence status, that's an override edit via
      * the editor dialog, not this quick-set.)
      */
     onCmenuSetStatus(newStatus: CalendarItemStatusCode): void {
@@ -1179,7 +1179,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // for FC's row placement on the next refetch.
         const newAllDay = arg.event.allDay;
 
-        // Phase 2 -- recurring items prompt for scope ("only this" vs
+        // Recurring items prompt for scope ("only this" vs
         // "all events"). The recurrenceInstant is the PRE-drag start
         // time -- FullCalendar exposes it via arg.oldEvent. Detection
         // keys off `seriesId` (non-null = part of a series); see
@@ -1226,7 +1226,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // Same allDay-sync as onEventDrop -- see that handler for why.
         const newAllDay = arg.event.allDay;
 
-        // Phase 2 -- recurring items resize prompts for scope too.
+        // Recurring items resize prompts for scope too.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         if (seriesId) {
             const instant = arg.oldEvent.start?.toISOString();
@@ -1252,7 +1252,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * Phase 2 -- POST /exception for an "only this" drag/resize.
+     * POST /exception for an "only this" drag/resize.
      * Persists a per-occurrence override row at the new times; the
      * series rule is untouched, and the iterator-merged occurrence
      * stream picks up the override on the next refetch.
@@ -1288,7 +1288,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * Phase 3 -- POST /split on a "this and following" drag/resize.
+     * POST /split on a "this and following" drag/resize.
      * The server trims the base's RRULE at `recurrenceInstant` and
      * creates a NEW base item starting at `newStart`. Both halves
      * share the original `seriesId`. FC's optimistic update only

@@ -8,7 +8,7 @@ import { HydraCollection } from '../../api/api.service';
 import { SegmentDto, SegmentRuleCheckDto, SegmentWriteDto, SubjectDto } from './cdp.types';
 
 /**
- *Phase 3 (CDP core, ) -- admin API client for the Customer Data
+ * Admin API client for the Customer Data
  * Platform surfaces.
  *
  * Feature-local (not on the shared ApiService), mirroring {@link

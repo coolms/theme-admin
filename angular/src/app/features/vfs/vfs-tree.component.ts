@@ -155,7 +155,7 @@ type FlatItem =
             outline: 2px dashed var(--cms-primary);
         }
 
-        /* Phase 2 VFS live -- 2s fade flash on a row whose node
+        /* VFS live -- 2s fade flash on a row whose node
            received a live change event from Centrifugo. Mirrors
            the DataGrid pattern so both live surfaces look the
            same: warm-cream attention tone via the existing
@@ -214,7 +214,7 @@ export class VfsTreeComponent implements OnInit {
     readonly dragOverNode  = signal<VfsNodeDto | null>(null);
 
     /**
-     * Phase 2 VFS live -- root node UUID, resolved once on mount
+     * VFS live -- root node UUID, resolved once on mount
      * via a path-based stat. Used as the parent-id for the root
      * channel subscription (root has no listed parent of its own;
      * we treat root's own id as the channel selector so any
@@ -223,7 +223,7 @@ export class VfsTreeComponent implements OnInit {
     private readonly rootNodeId = signal<string | null>(null);
 
     /**
-     * Phase 2 VFS live -- ids of currently flashing nodes. Each
+     * VFS live -- ids of currently flashing nodes. Each
      * entry stays for ~2s while the row-flash CSS animation
      * runs; re-receiving an event for the same id restarts the
      * timer by re-adding it to a fresh Set instance.
@@ -303,7 +303,7 @@ export class VfsTreeComponent implements OnInit {
             untracked(() => this.autoExpandPath(this.currentPath()));
         });
 
-        // Phase 2 VFS live -- reconcile the live-subscription set
+        // VFS live -- reconcile the live-subscription set
         // every time the expanded folder set OR the cached
         // children change. The reconciliation step resolves each
         // expanded path to its node UUID via the parent listing
@@ -336,7 +336,7 @@ export class VfsTreeComponent implements OnInit {
     ngOnInit(): void {
         // Eagerly load root-level children so the tree isn't blank on mount.
         this.fetchPath(this.rootPath);
-        // Phase 2 VFS live -- one-shot root stat to discover the
+        // VFS live -- one-shot root stat to discover the
         // root node's UUID; subsequent live-subscription
         // reconciliation includes that id so any direct-child
         // mutation under `/` reaches subscribers.
@@ -547,7 +547,7 @@ export class VfsTreeComponent implements OnInit {
         });
     }
 
-    // -- Phase 2 VFS live ------------------------------------------------------
+    // -- VFS live ------------------------------------------------------
 
     /**
      * One-shot fetch of the root node's UUID via the `vfs/files`

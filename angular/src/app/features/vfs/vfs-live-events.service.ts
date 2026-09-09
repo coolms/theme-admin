@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 /**
- * Phase 2 VFS live -- typed wrapper over
+ * VFS live -- typed wrapper over
  * `CentrifugoClientService.getOrCreateSubscription` for the
  * `vfs.parent.{parentNodeId}` channel. Payload-aware sibling to
  * `DataGridLiveEventsService` and `CentrifugoNotificationStreamService`

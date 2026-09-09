@@ -172,7 +172,7 @@ export class UsersListComponent implements OnInit {
     }
 
     /**
-     * Phase 2 DataGrid live -- react to Centrifugo events on the
+     * DataGrid live -- react to Centrifugo events on the
      * `datagrid.user.list` channel. The DataGrid already flashes
      * any loaded row; this handler keeps the `users` signal in
      * sync. `row.updated` triggers a single-row refetch via
@@ -180,9 +180,9 @@ export class UsersListComponent implements OnInit {
      * `row.deleted` removes the row outright.
      * `grid.refresh_required` (typically after a bulk operation)
      * forces a full reload from the first page via the DataGrid's
-     * `reload()` method. `row.created` stays ignored in Phase 2:
-     * lazy-load admins scroll to see new rows for
-     * the deferred-refinement rationale.
+     * `reload()` method. `row.created` stays ignored: lazy-load
+     * admins scroll to see new rows anyway, so the refinement is
+     * deferred.
      */
     onLiveEvent(event: DataGridChangeEvent): void {
         if (event.type === 'grid.refresh_required') {
@@ -190,7 +190,7 @@ export class UsersListComponent implements OnInit {
             return;
         }
         if (event.type === 'row.created') {
-            // Phase 2 first ship: ignored. Future refinement may
+            // Ignored for now. Future refinement may
             // optionally prepend if the active sort matches and
             // the top of the list is loaded --.
             return;

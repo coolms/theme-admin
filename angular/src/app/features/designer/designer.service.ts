@@ -210,7 +210,7 @@ export class DesignerService {
     }
 
     /**
-     * Ship A Phase 5+ (FE polish) -- POST the Fork-to-VFS lifecycle
+     * POST the Fork-to-VFS lifecycle
      * action for a contributor-source workflow definition. Backend
      * mints a `/workflows/{key}/draft.bpmn.json` Node from the
      * contributor's current body + stamps `moduleLock=true` on the
@@ -237,7 +237,7 @@ export class DesignerService {
     }
 
     /**
-     * Ship A Phase 5+ (FE polish) -- POST the Revert-to-module
+     * POST the Revert-to-module
      * lifecycle action. Symmetric undo of `forkWorkflowToVfs`. Clears
      * `moduleLock` on the latest contributor row + re-points
      * `latestVersionId` back at it.
@@ -346,7 +346,7 @@ export interface WorkflowDraftPayload {
     /** ISO 8601 timestamp; surface as "saved at". */
     readonly lastModifiedAt: string;
     /**
-     * Ship A Phase 5+ (FE polish) -- lifecycle source of the active
+     * Lifecycle source of the active
      * version row at the moment this draft was loaded. `'vfs'` or
      * `null` means standard Designer flow (no badge). `'contributor'`
      * combined with `moduleLock=true` means this draft was minted by
@@ -355,7 +355,7 @@ export interface WorkflowDraftPayload {
      */
     readonly latestVersionSource?: 'vfs' | 'contributor' | null;
     /**
-     * Ship A Phase 5+ (FE polish) -- the `moduleLock` flag on the
+     * The `moduleLock` flag on the
      * latest version row. Only meaningful when
      * `latestVersionSource === 'contributor'`.
      */
@@ -392,14 +392,14 @@ export interface WorkflowVersionPayload {
     /** ISO 8601 timestamp the version row was deployed at. */
     readonly deployedAt: string;
     /**
-     * Ship A Phase 5+ (FE polish) -- the source discriminator on
+     * The source discriminator on
      * this specific version row. `'contributor'` triggers the
      * "shipped by module" badge in the viewer; `'vfs'` (or null on
      * older API responses) renders no badge.
      */
     readonly source?: 'vfs' | 'contributor' | null;
     /**
-     * Ship A Phase 5+ (FE polish) -- the `moduleLock` flag on this
+     * The `moduleLock` flag on this
      * specific version row. Used by the viewer to decide whether to
      * show the "Fork to VFS" CTA (locked rows have already been
      * forked; the fork would 409).

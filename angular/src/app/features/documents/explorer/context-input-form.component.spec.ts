@@ -7,7 +7,7 @@ import type { ContextFormValue } from './context-form.helpers';
 import { type FormVariableInput } from '../shared/document-explorer.types';
 
 /**
- * Phase 2 ext regression guard -- exercises the value-emission
+ * Entity-reference regression guard -- exercises the value-emission
  * pipeline that the Generate dialog depends on. Earlier shape of the
  * constructor effect read `this.formData()` inside the same effect
  * that called `formData.set(...)`. Angular's signal tracking
@@ -21,14 +21,14 @@ import { type FormVariableInput } from '../shared/document-explorer.types';
  *
  * The spec asserts three invariants:
  *   1. A `writeField` call propagates the value to subscribers.
- *   2. The `@`-prefixed entity-alias path (Phase 2 ext) survives
+ *   2. The `@`-prefixed entity-alias path survives
  *      the round-trip -- `getNestedValue` / `setNestedValue` do
  *      not strip or transform it.
  *   3. The most recent emit is the user's value, not a stale `{}`
  *      from the seed effect -- i.e. the effect doesn't re-fire on
  *      `formData` changes after the user types.
  */
-describe('ContextInputFormComponent — Phase 2 ext value emission', () => {
+describe('ContextInputFormComponent -- entity-reference value emission', () => {
     let component: ContextInputFormComponent;
     let emitted: ContextFormValue[];
 

@@ -218,9 +218,9 @@ export const appConfig: ApplicationConfig = {
         // observability.
         provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, authInterceptor])),
         provideStore([AppConfigState, AuthState, SectionState, NaviState, VfsState]),
-        // sub-phase 2d -- Centrifugo realtime replaces the
+        // Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
-        // in the repo as a fallback reference; remove in Phase 2 once
+        // in the repo as a fallback reference; remove once
         // confidence builds.
         { provide: NOTIFICATION_STREAM, useExisting: CentrifugoNotificationStreamService },
         {

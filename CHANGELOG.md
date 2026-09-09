@@ -5,7 +5,7 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
-## Unreleased
+## 2.0.0-alpha5 - 2026-09-09
 
 ### Added
 
@@ -19,6 +19,28 @@ withdrawn and this package follows the same rule as the rest: tests ship.
 The figures in `.gitattributes` justifying the remaining exclusions were also
 re-measured. They had drifted when 2.0.0-alpha4 put the built admin in the
 package -- the tree roughly doubled and `angular/` stopped being the bulk of it.
+
+### Changed
+
+- 104 internal identifiers are out of the admin sources, and the sentences an
+  earlier mechanical strip broke are repaired.
+- The application's namespace is out of the last three places that named it.
+- The admin asks the server which entity a filter audience is built from,
+  instead of comparing against a constant compiled into the published bundle --
+  which put a consuming application's class name inside an npm package.
+- The space URLs are read from the manifest rather than assembled by the client
+  from a URL shape the router owns.
+- Three `var()` fallbacks are aligned with the tokens they fall back to.
+- "Default" and "Unused" replace "Active" and "Fallback", which described a
+  state the UI does not have.
+- The admin shell tells crawlers not to index it.
+- The shipped admin is rebuilt from the committed source, and a backtick guard
+  runs before it can build.
+
+### Removed
+
+- `forgetLastPath` is deleted rather than wired up, and what nothing covers is
+  written down instead.
 
 ## 2.0.0-alpha4 - 2026-09-04
 

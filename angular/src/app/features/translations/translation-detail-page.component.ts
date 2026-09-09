@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ListLayoutComponent, PageActionsService, PageFooterService } from '@coolms/ui-angular';
 
 /**
- * F5.d -- Translation detail page wrapper.
+ * Translation detail page wrapper.
  *
  * Mirrors the Navigation precedent (`NaviNodesPageComponent`):
  * a thin wrapper that mounts the platform `cms-list-layout` shell

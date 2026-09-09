@@ -3,7 +3,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 
 /**
- * F5.d -- "+ New translation" form wrapper.
+ * "+ New translation" form wrapper.
  *
  * Thin adapter between CDK Dialog and the platform's `<app-dynamic-form>`.
  * Mirrors {@link NaviTreeFormComponent} exactly: the form definition,
