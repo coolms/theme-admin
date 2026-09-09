@@ -5,7 +5,7 @@ import { type Subscription } from 'rxjs';
 import { VfsLiveEventsService, type VfsNodeChangeEvent } from './vfs-live-events.service';
 
 /**
- * Phase 2 VFS live -- manages the Map of concurrent Centrifugo
+ * VFS live -- manages the Map of concurrent Centrifugo
  * subscriptions backing `VfsTreeComponent`'s expanded-folder
  * set. Component-scoped (provided in the tree component's
  * `providers` array, NOT `providedIn: 'root'`) so the

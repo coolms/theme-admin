@@ -11,7 +11,7 @@
  * string we cannot confidently round-trip (e.g. BYSETPOS, multiple
  * BYDAY ordinals, RDATE lines, RDATE-with-TZID), we drop into
  * `mode: 'raw'` -- a textarea fallback that submits the user's literal
- * spec unchanged. Phase 1 scope: cover Daily / Weekly+BYDAY /
+ * spec unchanged. Current scope: cover Daily / Weekly+BYDAY /
  * Monthly+BYMONTHDAY / Monthly+BYDAY(+ordinal) / Yearly+BYMONTH+BYMONTHDAY
  * cleanly via the structured form; everything else uses the raw fallback.
  */

@@ -38,7 +38,7 @@ interface RuleRow {
 }
 
 /**
- *Phase 4 (CDP personalization, P4.admin.c) -- personalization-rule list
+ * Personalization-rule list
  * (`/admin/cdp/rules`).
  *
  * Platform list-page shell (`<cms-list-page>` + `<coolms-datagrid>` driven by the

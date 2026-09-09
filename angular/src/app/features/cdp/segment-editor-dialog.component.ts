@@ -27,7 +27,7 @@ export interface SegmentEditorDialogData {
 }
 
 /**
- *Phase 3 (CDP core, ; datagrid retrofit) -- create / edit modal for
+ * Create / edit modal for
  * an audience Segment.
  *
  * A specialized modal (mirrors {@link

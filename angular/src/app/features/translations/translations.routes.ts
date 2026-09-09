@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * F5.d -- Translation catalogues admin routes.
+ * Translation catalogues admin routes.
  *
  * `/admin/i18n/translations`      -- list of every (domain, locale)
  *                                    catalogue (TranslationsPage shell)

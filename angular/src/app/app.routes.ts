@@ -161,7 +161,7 @@ export const routes: Routes = [
                     import('./features/analytics/analytics.routes').then(m => m.ANALYTICS_ROUTES),
                 data: { activeNav: '/analytics' },
             },
-            //Phase 3 (CDP core) -- Customer Data Platform admin: the
+            // Customer Data Platform admin: the
             // audience Segment builder (EL rules, linted live) + the Subject
             // profile explorer, over /analytics/segments + /analytics/subjects.
             // Sibling of the analytics dashboard (same event substrate).
@@ -234,10 +234,10 @@ export const routes: Routes = [
                     import('./features/image-maps/image-maps.routes').then(m => m.IMAGE_MAP_ROUTES),
                 data: { activeNav: '/image-maps' },
             },
-            // F5.d -- Translations admin: list of (domain, locale) catalogues
+            // Translations admin: list of (domain, locale) catalogues
             // plus per-catalogue editor. Backend ships at
-            // /api/v1/i18n/catalogues (F5.c). VFS overrides flow through
-            // VfsOverlayingTranslator (F5.b) so saves take effect on next
+            // /api/v1/i18n/catalogues. VFS overrides flow through
+            // VfsOverlayingTranslator so saves take effect on next
             // request without restart.
             {
                 path: 'i18n/translations',
@@ -314,7 +314,7 @@ export const routes: Routes = [
                         .then(m => m.DocumentGenerationDetailPageComponent),
                 data: { activeNav: '/documents/generations' },
             },
-            // Phase 1.5 sub-phase 1.5b -- Centrifugo admin
+            // Centrifugo admin
             // dashboard. Three pages: list (info / namespaces / channels),
             // per-channel detail, debug publish. ROLE_ADMIN is enforced
             // server-side by API Platform `security:` expressions on

@@ -31,7 +31,7 @@ import { SendNotificationDialogComponent } from '../notification/send-notificati
 import { CentrifugoPublishDialogComponent } from './centrifugo-publish-dialog.component';
 
 /**
- * Phase 1.5 sub-phase 1.5b -- the dashboard at
+ * The dashboard at
  * `/centrifugo` (rendered under the SPA's `/admin/` base-href).
  * Three independent panels: node info,
  * backend-declared namespaces, currently active channels (with
