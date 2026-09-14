@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
 import { ElevationService } from '@coolms/core-angular';
-import { ConfirmDialogService } from '@coolms/ui-angular';
+import { ConfirmDialogService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { of } from 'rxjs';
 
 import { ElevationBadgeComponent } from './elevation-badge.component';
@@ -32,6 +32,9 @@ import { ElevationBadgeComponent } from './elevation-badge.component';
 describe('ElevationBadgeComponent', () => {
     const ELEVATION = '/api/v1/auth/elevation';
 
+    /** Deliberately not the container's zone, so a browser-zone render cannot pass. */
+    const PROFILE_TZ = 'Asia/Tokyo';
+
     let fixture: ComponentFixture<ElevationBadgeComponent>;
     let httpMock: HttpTestingController;
     let elevation: ElevationService;
@@ -59,6 +62,18 @@ describe('ElevationBadgeComponent', () => {
                     useValue: { selectSnapshot: () => ({ apiBase: '/api/v1', identity: { elevationUrl: ELEVATION } }) },
                 },
                 { provide: ConfirmDialogService, useValue: { open: () => of(false) } },
+                // The profile this person actually has: 24h, and a timezone
+                // that is NOT the browser's. Both halves matter -- the old
+                // code took the browser's locale AND the browser's zone.
+                {
+                    provide:  UserCalendarPreferencesService,
+                    useValue: {
+                        ensureLoaded: () => undefined,
+                        tz:           () => PROFILE_TZ,
+                        dateFormat:   () => 'yyyy-MM-dd',
+                        timeFormat:   () => '24h',
+                    },
+                },
             ],
         });
 
@@ -78,10 +93,38 @@ describe('ElevationBadgeComponent', () => {
         return endsAt;
     };
 
+    it('renders the PROFILE time, not the browser locale and not the browser zone', () => {
+        // 01:30 UTC is 10:30 in Tokyo. A 24h profile in Tokyo must say 10:30.
+        const iso = '2026-09-15T01:30:00.000Z';
+
+        fixture.detectChanges();
+        httpMock.expectOne(ELEVATION).flush(state(true, iso));
+        fixture.detectChanges();
+
+        // What the code did before: browser locale, browser zone.
+        const browserWould = new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Without this the case can pass while proving nothing -- a browser
+        // already in Tokyo would render 10:30 by accident, and the assertion
+        // below would be satisfied by the very behaviour it exists to reject.
+        expect(browserWould)
+            .withContext('this spec is vacuous unless the browser renders it differently')
+            .not.toBe('10:30');
+
+        expect(text()).toContain('Elevated until 10:30');
+        expect(text()).not.toContain(browserWould);
+        expect(text()).not.toMatch(/AM|PM/);
+    });
+
     it('names the time the elevation ends while it is live', () => {
         const endsAt = renderGranted(900);
 
-        const shown = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        // The expectation is built the way the PROFILE says, not the way the
+        // browser would: the profile's zone, and 24h with no meridiem.
+        const shown = new Intl.DateTimeFormat('en-GB', {
+            timeZone: PROFILE_TZ, hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(new Date(endsAt));
+
         expect(text()).toContain(`Elevated until ${shown}`);
     });
 

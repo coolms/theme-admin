@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { ElevationService } from '@coolms/core-angular';
-import { ConfirmDialogService } from '@coolms/ui-angular';
+import { ConfirmDialogService, DateTimeFormatService } from '@coolms/ui-angular';
 
 /**
  * "Elevated until 14:47" in the topbar while the session is elevated, with
@@ -43,13 +43,22 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
 export class ElevationBadgeComponent implements OnInit {
     private readonly elevation = inject(ElevationService);
     private readonly confirm   = inject(ConfirmDialogService);
+    private readonly dtf       = inject(DateTimeFormatService);
 
-    /** The clock time the current elevation ends at, or null when not elevated. */
+    /**
+     * The clock time the current elevation ends at, or null when not elevated.
+     *
+     * Through {@link DateTimeFormatService}, not `toLocaleTimeString([])`. The
+     * bare call takes the BROWSER's locale and the BROWSER's timezone, so it
+     * rendered `01:47 AM` to someone whose profile says 24h -- and 12-hour
+     * time on a fifteen-minute grant is not a cosmetic error: `01:47` read as
+     * 13:47 says the elevation has twelve more hours to run.
+     */
     readonly until = (): string | null => {
-        const at = this.elevation.expiresAt();
-        return this.elevation.elevated() && at
-            ? at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : null;
+        const state = this.elevation.state();
+        if (!state?.elevated || !state.expiresAt) return null;
+
+        return this.dtf.time(state.expiresAt) || null;
     };
 
     ngOnInit(): void {

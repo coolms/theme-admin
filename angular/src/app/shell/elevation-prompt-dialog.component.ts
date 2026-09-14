@@ -15,7 +15,7 @@ import {
     ELEVATION_WARNING_FACTOR_MISSING, ELEVATION_WARNING_MFA_OFF, ELEVATION_WARNING_PASSWORD_NOT_SET,
     ElevationService, type ElevationPromptRequest, type ElevationState, ErrorHandlerService,
 } from '@coolms/core-angular';
-import { ModalComponent } from '@coolms/ui-angular';
+import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
 
 /**
  * The elevation prompt: elevation is session state, asked for at the 403.
@@ -130,6 +130,7 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
     private readonly dialogRef = inject<DialogRef<boolean>>(DialogRef);
     private readonly elevation = inject(ElevationService);
     private readonly errors    = inject(ErrorHandlerService);
+    private readonly dtf       = inject(DateTimeFormatService);
     readonly data = inject<ElevationPromptRequest>(DIALOG_DATA);
 
     @ViewChild('passwordEl') private readonly passwordEl?: ElementRef<HTMLInputElement>;
@@ -149,8 +150,15 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
 
     readonly lifetimeMinutes = computed(() => Math.max(1, Math.round(this.data.state.lifetimeSeconds / 60)));
 
-    /** The ADR's sentence for how the last elevation ended, rendered first. */
-    readonly endedLine = computed(() => endedSentence(this.data.state));
+    /**
+     * The ADR's sentence for how the last elevation ended, rendered first.
+     *
+     * The clock comes in from here rather than being formatted inside the
+     * sentence: the estate's formatter is a service, the sentence is a pure
+     * function, and the person's 12h/24h and timezone preferences belong to
+     * the former.
+     */
+    readonly endedLine = computed(() => endedSentence(this.data.state, iso => this.dtf.time(iso)));
 
     /** A warning that means the installation cannot elevate yet, or null. */
     readonly blocker = computed<string | null>(() =>
@@ -223,8 +231,11 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
  * First, the way the last elevation ended, before the password is asked
  * for. The `closed` sentence is the design's own; the others follow its shape.
  */
-export function endedSentence(state: ElevationState): string {
-    const at = state.ended.at !== null && state.ended.at !== '' ? ` at ${clock(state.ended.at)}` : '';
+export function endedSentence(state: ElevationState, clock: (iso: string) => string): string {
+    // An unformattable instant yields '' from the estate's formatter, and
+    // " at " with nothing after it is worse than no clause at all.
+    const shown = state.ended.at !== null && state.ended.at !== '' ? clock(state.ended.at) : '';
+    const at = shown !== '' ? ` at ${shown}` : '';
     const again = 'Enter the admin password to elevate again.';
 
     switch (state.ended.reason) {
@@ -242,10 +253,3 @@ export function endedSentence(state: ElevationState): string {
     }
 }
 
-/** 14:32 in the person's locale; the ADR's sentence carries a clock time, not a date. */
-function clock(iso: string): string {
-    const d = new Date(iso);
-    return Number.isNaN(d.getTime())
-        ? iso
-        : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
