@@ -14,7 +14,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, map, of, switchMap } from 'rxjs';
-import { AuthoringContextDto, AuthoringContextService, CmsContextFrameComponent, ConfirmDialogService, ToastService, UnsavedChangesService, VfsNodeDto } from '@coolms/ui-angular';
+import { AuthoringContextDto, AuthoringContextService, CmsContextFrameComponent, ConfirmDialogService, ToastService, VfsWriteAccessService, UnsavedChangesService, VfsNodeDto } from '@coolms/ui-angular';
 import { CoolmsEditorComponent, type PageGeometry } from '@coolms/editor-angular';
 import {
     DDOC_CUSTOM_SIZE,
@@ -271,12 +271,23 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
                     </div>
                 }
 
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <!-- The signal BEFORE they type. The flag is the server's;
+                         nothing here reads a mode bit or a membership. -->
+                    @if (!access.writable()) {
+                        <span class="dtmpl-editor-dialog__readonly"
+                              title="The server reports this file as read-only for you. Save will ask to elevate first.">
+                            <i class="bi bi-lock-fill"></i> Read-only
+                        </span>
+                    }
                     <button class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
+                    <!-- NOT disabled on the write flag: a control that cannot be
+                         pressed teaches nothing. Unwritable, Save opens the same
+                         elevation prompt the interceptor raises on a 403. -->
                     <button class="cms-btn cms-btn-primary cms-btn-sm"
                             [disabled]="saving() || !dirty()"
                             (click)="save()">
-                        {{ saving() ? 'Saving…' : 'Save' }}
+                        {{ saving() ? 'Saving…' : (access.writable() ? 'Save' : 'Elevate and save') }}
                     </button>
                 </div>
             </div>
@@ -429,6 +440,10 @@ import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms
             font-size: .8125rem;
         }
         .dtmpl-editor-dialog__dirty { color: var(--cms-warning-text); font-size: .75rem; }
+        .dtmpl-editor-dialog__readonly {
+            display: inline-flex; align-items: center; gap: 4px;
+            color: var(--cms-text-secondary); font-size: .75rem; white-space: nowrap;
+        }
         .dtmpl-editor-dialog__status { color: var(--cms-text-muted); }
     `],
 })
@@ -445,7 +460,15 @@ export class DtmplEditorDialogComponent {
     private readonly previews   = inject(DocumentPreviewService);
     private readonly ddocs      = inject(DdocDocumentService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly writeAccess = inject(VfsWriteAccessService);
     private readonly authoringContext = inject(AuthoringContextService);
+    /**
+     * Whether the server says this node is writable, re-asked on every change
+     * of elevation state (ADR-184). Read by the Save control below, so the
+     * editor and the listing it was opened from cannot disagree.
+     */
+    protected readonly access = this.writeAccess.forNode(this.data.node, this.destroyRef);
+
     /** Wires dtmpl <-> HTML for the bridge. Public so the template can bind it. */
     readonly dtmplAdapter       = inject(DtmplContentAdapter);
 
@@ -1136,6 +1159,21 @@ export class DtmplEditorDialogComponent {
 
     save(): void {
         if (this.saving()) return;
+
+        // The server says this file is not writable for this session. Offer
+        // elevation rather than sending a request that is already known to be
+        // refused; on a grant `access.writable()` flips on its own, because
+        // the grant re-states the node.
+        if (!this.access.writable()) {
+            this.access.request().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: granted => {
+                    if (granted) this.save();
+                },
+                error: () => undefined,
+            });
+
+            return;
+        }
 
         if (this.isDdoc()) {
             this.saveDdoc();

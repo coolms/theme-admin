@@ -39,3 +39,4 @@ import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';
 import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';
 import '../../../ui-angular/src/util/user-calendar-preferences.service.spec';
+import '../../../ui-angular/src/vfs/vfs-write-access.service.spec';
