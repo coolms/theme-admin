@@ -8,12 +8,15 @@ import {
     signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
+import { of } from 'rxjs';
+import { catchError, debounceTime, map, switchMap } from 'rxjs/operators';
 import {
     CmsDetailFooterComponent,
     CmsPageHeaderComponent,
     DynamicFormComponent,
+    FormRenderService,
     LayoutActionsService,
     LayoutTreeEditorComponent,
     OrderedBuilderComponent,
@@ -26,7 +29,7 @@ import {
     type OrderedPaletteEntry,
     type ToolbarAction,
 } from '@coolms/ui-angular';
-import { ConfigService, type LayoutConfig, ErrorHandlerService } from '@coolms/core-angular';
+import { ConfigService, type FormRenderDefinition, type LayoutConfig, ErrorHandlerService } from '@coolms/core-angular';
 import { FormService } from './form.service';
 import type { FormFieldEntry, FormFieldsMap, FormFieldTypeDto } from './form.types';
 
@@ -64,9 +67,12 @@ type FieldModel = Record<string, unknown>;
  *
  * Save routes through the.2 chained writer (`POST`/`PATCH /forms`):
  * editing a module-shipped form mints a DB override; user-created forms land
- * file-when-writable else DB. After a successful save the right pane renders a
- * **live preview** via `<app-dynamic-form [formId]>` (it fetches the persisted
- * `/forms/{id}/render`), so the author sees the real rendered form.
+ * file-when-writable else DB. The right pane renders a **live preview of the
+ * draft**: every fields/layout change is debounced, sent to
+ * `POST /forms/{id}/preview` (the server's own render builder, nothing
+ * persisted) and handed to `<app-dynamic-form [draft]>`, so the author sees
+ * the real rendered form before saving. Until 2026-09-11 the pane fetched the
+ * persisted `/forms/{id}/render` and so showed only the last save.
  */
 @Component({
     selector: 'coolms-admin-form-builder',
@@ -335,21 +341,32 @@ type FieldModel = Record<string, unknown>;
                     }
                 </section>
 
-                <!-- RIGHT: live preview -->
+                <!-- RIGHT: live preview -- of the DRAFT, not of the last save.
+                     Every fields/layout change is debounced and rendered by the
+                     server (POST /forms/{id}/preview), then handed to the form as
+                     [draft], which re-applies it in place without a remount. -->
                 <section class="fb__pane fb__pane--preview">
                     <h3 class="fb__pane-title"><i class="bi bi-eye"></i> Live preview</h3>
-                    @if (!isNew() && currentId()) {
-                        @for (k of [previewNonce()]; track k) {
-                            <app-dynamic-form
-                                [formId]="currentId()"
-                                context="create"
-                                [declaredActions]="true"
-                                [submitDisabled]="true" />
-                        }
+                    @if (draftDefinition(); as draft) {
+                        <app-dynamic-form
+                            [formId]="previewId()"
+                            [draft]="draft"
+                            context="create"
+                            [declaredActions]="true"
+                            [submitDisabled]="true" />
                     } @else {
                         <div class="fb__preview-empty">
-                            Save the form to see a live preview of the rendered fields.
+                            @if (previewError()) {
+                                {{ previewError() }}
+                            } @else if (fields().length === 0) {
+                                Add a field to see it rendered here.
+                            } @else {
+                                Rendering…
+                            }
                         </div>
+                    }
+                    @if (draftDefinition() && previewError(); as err) {
+                        <div class="fb__preview-error" role="status">{{ err }}</div>
                     }
                 </section>
             </div>
@@ -381,6 +398,12 @@ type FieldModel = Record<string, unknown>;
             padding: 18px; text-align: center; font-size: .8125rem;
             color: var(--cms-text-muted); border: 1px dashed var(--cms-border);
             border-radius: var(--cms-radius, 6px);
+        }
+        /* The last good render stays up; the reason the newest one failed sits under it. */
+        .fb__preview-error {
+            margin-top: 8px; padding: 8px 10px; font-size: .75rem;
+            color: var(--cms-danger, #dc2626); border: 1px solid var(--cms-danger, #dc2626);
+            border-radius: var(--cms-radius, 6px); background: var(--cms-surface);
         }
         .fb__id {
             display: flex; flex-direction: column; gap: 3px;
@@ -434,6 +457,7 @@ type FieldModel = Record<string, unknown>;
 })
 export class FormBuilderPageComponent implements OnInit {
     private readonly forms      = inject(FormService);
+    private readonly renderService = inject(FormRenderService);
     private readonly config     = inject(ConfigService);
     private readonly layoutActions = inject(LayoutActionsService);
 
@@ -505,8 +529,28 @@ export class FormBuilderPageComponent implements OnInit {
     readonly formOptions = signal<Record<string, unknown>>({});
     readonly dataClass = signal<string | null>(null);
     readonly saving = signal(false);
-    /** Bumped after each save to remount the live-preview <app-dynamic-form>. */
-    readonly previewNonce = signal(0);
+
+    /**
+     * The draft as the server would render it -- what the preview pane shows.
+     * Set by the pipeline in the constructor: every change to fields / layout /
+     * carried-through options is debounced, POSTed to `/forms/{id}/preview`
+     * (nothing persisted) and the resulting definition lands here. Null until
+     * the first render; a later failure keeps the last good render up and
+     * puts its reason in {@link previewError}.
+     */
+    readonly draftDefinition = signal<FormRenderDefinition | null>(null);
+    readonly previewError = signal<string | null>(null);
+
+    /**
+     * The id the preview is rendered under. An existing form's own id; for a
+     * new form the id typed so far, or a placeholder until one is typed. The
+     * server needs SOME id to build a FormConfig and the layout addresses
+     * relation / sub-form fetches by it; none of that persists anything.
+     */
+    readonly previewId = computed(() => {
+        const id = (this.isNew() ? this.formId() : this.currentId()).trim();
+        return id !== '' ? id : '__draft__';
+    });
 
     /** Which builder tab is active: the flat Fields editor or the Layout tree. */
     readonly activeTab = signal<'fields' | 'layout'>('fields');
@@ -592,6 +636,41 @@ export class FormBuilderPageComponent implements OnInit {
 
     constructor() {
         this.destroyRef.onDestroy(this.unsaved.watch(this, () => this.dirty()));
+
+        // The live preview. One pipeline: a signal that changes whenever any
+        // part of the draft does, debounced so typing a label is one request
+        // rather than one per keystroke, switchMap so a stale render can never
+        // overtake a newer one. The body is built at request time from the
+        // SAME serialisers the save uses, so preview and save are one payload.
+        // An empty draft renders nothing and asks the server nothing -- the
+        // page opens that way until the load lands, and returns to it if the
+        // operator removes every field.
+        toObservable(computed(() => ({
+            fields:  this.fields(),
+            layout:  this.layoutNodes(),
+            options: this.formOptions(),
+            data:    this.dataClass(),
+            id:      this.previewId(),
+        }))).pipe(
+            debounceTime(400),
+            switchMap(s => s.fields.length === 0
+                ? of({ def: null, error: null as string | null })
+                : this.renderService.preview(s.id, {
+                    fields:      this.serializeAll(),
+                    formOptions: this.buildFormOptions(),
+                    dataClass:   this.dataClass(),
+                }, 'create').pipe(
+                    map(def => ({ def, error: null as string | null })),
+                    catchError((e: unknown) => of({ def: null, error: this.errors.humanize(e) })),
+                )),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(({ def, error }) => {
+            // A failed render keeps the last good one up (def null, error set);
+            // an empty draft clears it (both null).
+            if (def) this.draftDefinition.set(def);
+            else if (error === null) this.draftDefinition.set(null);
+            this.previewError.set(error);
+        });
     }
 
     ngOnInit(): void {
@@ -653,7 +732,8 @@ export class FormBuilderPageComponent implements OnInit {
                 // shared/default layout; per-context `layouts.{ctx}` is a follow-up).
                 const layout = dto.formOptions?.['layout'];
                 this.layoutNodes.set(Array.isArray(layout) ? (layout as LayoutNode[]) : []);
-                this.previewNonce.update(n => n + 1);
+                // The preview follows from these signals (constructor pipeline);
+                // nothing to remount.
                 // Baseline AFTER the fields land, or the page reports
                 // dirty from the moment it opens.
                 this.markSaved();
@@ -713,12 +793,12 @@ export class FormBuilderPageComponent implements OnInit {
                 this.markSaved();
                 if (create) {
                     // Re-route to the edit URL so subsequent saves PATCH; the
-                    // component recreates and loads the persisted form (and its
-                    // live preview) from the server.
+                    // component recreates and loads the persisted form from
+                    // the server.
                     void this.router.navigate(['/forms', id], { replaceUrl: true });
-                } else {
-                    this.previewNonce.update(n => n + 1);
                 }
+                // No preview remount on save: the preview shows the draft, and
+                // the draft is what was just saved.
             },
             error: (e: unknown) => {
                 this.saving.set(false);

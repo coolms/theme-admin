@@ -95,10 +95,12 @@ export interface ConflictDialogData {
                 Apply this action to all remaining conflicts
             </label>
 
-            <div footer>
+            <!-- ng-container, not a div: see vfs-chmod-dialog -- a wrapper makes
+                 both buttons one flex child and defeats the footer's gap. -->
+            <ng-container footer>
                 <button type="button" class="cms-btn" (click)="cancel()">Cancel</button>
                 <button type="button" class="cms-btn cms-btn-primary" (click)="confirm()">Apply</button>
-            </div>
+            </ng-container>
         </app-modal>
     `,
     styles: [`

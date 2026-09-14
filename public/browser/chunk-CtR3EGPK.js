@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-DnfK3h0G2.js`).then(o=>o.SchedulesListComponent)},{path:`:slug`,loadComponent:()=>import(`./chunk-ln6tYklv.js`).then(o=>o.ScheduleDetailPageComponent)}];export{t as SCHEDULE_ROUTES};

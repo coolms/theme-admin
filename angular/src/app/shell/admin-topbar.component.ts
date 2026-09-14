@@ -11,6 +11,7 @@ import { MessagesQuickAccessComponent } from '../features/messages/messages-quic
 import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
 import { CallDialQuickAccessComponent } from '../features/call/call-dial-quick-access.component';
 import { NotificationBellComponent } from '../features/notification/notification-bell.component';
+import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
 
 interface Breadcrumb {
@@ -26,7 +27,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent],
+    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -109,6 +110,10 @@ interface Breadcrumb {
 
                 <!-- Click-to-dial pad -->
                 <app-call-dial-quick-access />
+
+                <!-- Elevated until HH:MM: shown only while the
+                     session is elevated; the hover note says how it ends. -->
+                <app-elevation-badge />
 
                 <!-- Notification bell -->
                 <app-notification-bell />

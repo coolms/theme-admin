@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
-import { AppConfigState, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
+import { AppConfigState, ElevationService, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
 import { VfsHomeLabelService } from './vfs-home-label.service';
 import { UploadItem, VfsDirectoryPage, VfsNodeDto, VfsViewMode } from '@coolms/ui-angular';
 
@@ -24,6 +24,18 @@ export class VfsPageStateService {
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly homeLabels = inject(VfsHomeLabelService);
+    private readonly elevation  = inject(ElevationService);
+
+    constructor() {
+        // The listing's rule: every entry's read/write/execute flags are the
+        // server's reading of the elevation state AT FETCH TIME. A grant, a
+        // drop (this tab, another tab, the beacon, the tripwire) or the
+        // expiry read at `expiresAt` changes what the server would now say,
+        // so the listing is fetched again -- a `write: true` must not outlive
+        // the state that produced it. The service emits only on a real
+        // change, never on a same-state refresh.
+        this.elevation.changes$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.reload());
+    }
 
     // -- Navigation & directory state ------------------------------------------
 

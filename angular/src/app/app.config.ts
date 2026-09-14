@@ -28,7 +28,8 @@ import { MediaFieldWidgetComponent } from './features/media/media-field-widget.c
 import { MediaPickerFieldWidgetComponent } from './features/media/media-picker-field-widget.component';
 import { SchemaService } from './features/schema/schema.service';
 import { routes } from './app.routes';
-import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, sectionInterceptor, AppInitService, ComponentRegistry } from '@coolms/core-angular';
+import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry } from '@coolms/core-angular';
+import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
 import { NaviState } from './features/navi/navi.state';
 import { VfsState } from './features/vfs/vfs.state';
@@ -216,7 +217,15 @@ export const appConfig: ApplicationConfig = {
         // queues the request behind initService.ready$. Both are pure
         // request-mutators; ordering does not affect correctness, only
         // observability.
-        provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, authInterceptor])),
+        //
+        // Elevation sits BEFORE auth on purpose: on a 403 it opens
+        // the prompt and, on a grant, sends the refused request again through
+        // , which re-enters auth -- so the retry carries the token that
+        // is current THEN, not the one stamped before a prompt the person may
+        // have left open across a refresh.
+        provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
+        // The prompt core asks for through its port: a CDK dialog here.
+        provideElevationPrompt(),
         provideStore([AppConfigState, AuthState, SectionState, NaviState, VfsState]),
         // Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
