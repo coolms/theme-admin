@@ -27,7 +27,7 @@ import { Store } from '@ngxs/store';
 import { EMPTY, Observable, of, switchMap } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { VfsLiveEventsService, type VfsNodeChangeEvent } from './vfs-live-events.service';
-import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
+import { AppConfigState, CmsLoaderComponent, ElevationService } from '@coolms/core-angular';
 import { VfsPageStateService } from './vfs-page-state.service';
 import { VfsActionsService } from './vfs-actions.service';
 import { VfsUploadService } from './vfs-upload.service';
@@ -455,6 +455,7 @@ export class VfsFilesComponent {
     private readonly liveEvents      = inject(VfsLiveEventsService);
     private readonly http            = inject(HttpClient);
     private readonly destroyRef      = inject(DestroyRef);
+    private readonly elevation       = inject(ElevationService);
 
     /**
      * VFS live -- ids of currently flashing grid items.
@@ -759,17 +760,44 @@ export class VfsFilesComponent {
         // 1. Container + execute -> navigate inside.
         //    Containers with a registered editor: prefer the editor on dbl-click.
         //    Drill-in stays accessible via the 'Open as folder' context-menu entry.
-        if (node.isContainer && node.permissions.execute && !this.editorRegistry.resolve(node)) {
+        if (node.isContainer && !this.editorRegistry.resolve(node)) {
             const path = node.path.startsWith('/') ? node.path : '/' + node.path;
-            this.state.navigateTo(path);
+            if (node.permissions.execute) {
+                this.state.navigateTo(path);
+                return;
+            }
+            // The flag says no: offer elevation instead of doing nothing
+            // (ADR-184, point 2). The flag was computed by the server when
+            // the listing was fetched; the grant refetches it (point 3), and
+            // the navigation asks the server again -- a 403 there is real.
+            this.offerElevationThen(() => this.state.navigateTo(path));
             return;
         }
 
-        // 2. No read permission -> silent return
+        // 2. No read permission -> the same offer, then the open itself
         if (!node.permissions.read) {
+            this.offerElevationThen(() => this.openReadable(node));
             return;
         }
 
+        this.openReadable(node);
+    }
+
+    /**
+     * Ask the server whether this session is elevated and, when it is not,
+     * open the prompt; run `then` on a grant. Nothing runs on a decline, and
+     * nothing here reads a mode bit or a membership: the flag that brought us
+     * here was the server's, and so is the answer.
+     */
+    private offerElevationThen(then: () => void): void {
+        this.elevation.offerFor().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next:  granted => { if (granted) then(); },
+            error: () => undefined,
+        });
+    }
+
+    /** Steps 3..7 of open(): the node is readable, or the server just said so. */
+    private openReadable(node: VfsNodeDto): void {
         // 3. Resource node -> open Resource Meta Dialog
         if (node.type === 'resource') {
             this.dialog.open(VfsResourceMetaDialogComponent, {
@@ -845,7 +873,9 @@ export class VfsFilesComponent {
      * Open the headless image editor against a VFS image file.
      * Branches `Save` on `permissions.write`: read-only files allow
      * Save as (creates a copy in the same directory if write
-     * permission exists there) but disable Save.
+     * permission exists there); Save, instead of sitting dead, offers
+     * elevation (ADR-184, point 2) and proceeds on a grant -- the write
+     * itself is the server's to refuse, and a 403 then is a real one.
      */
     private async openImageEditor(node: VfsNodeDto): Promise<void> {
         const data: CoolmsImageEditorHostData = {
@@ -853,6 +883,7 @@ export class VfsFilesComponent {
             node: {
                 path:       node.path,
                 canWrite:   node.permissions.write,
+                requestWrite: () => firstValueFrom(this.elevation.offerFor()),
                 sourceUrl:  this.thumbnailUrl(node),
                 filename:   node.name,
                 mimeType:   node.mimeType ?? 'application/octet-stream',
