@@ -1401,6 +1401,24 @@ body.cms-resizing {
     &--danger  { background: var(--cms-danger-light);  color: var(--cms-danger-text); }
     &--muted   { background: var(--cms-border-light);  color: var(--cms-text-muted); }
     &--info    { background: var(--cms-info-light);    color: var(--cms-info-text); }
+
+    // A STATE the person asked for, not a warning about one. The elevation
+    // badge wore `--warning`: amber, uppercase, the same treatment as a thing
+    // that has gone wrong. Elevating is deliberate and normal, and a normal
+    // state shouting at its owner is how people learn to stop reading it.
+    //
+    // A new modifier rather than an edit to the shared rules above, so no
+    // other badge in the admin moves. Sentence case and normal tracking
+    // because this one carries a TIME ("Elevated until 14:47") and uppercase
+    // digits with extra letter-spacing are slower to read at a glance --
+    // which is the one thing this badge must be good at.
+    &--session {
+        background: var(--cms-border-light);
+        color: var(--cms-text-secondary);
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 500;
+    }
 }
 
 // --- Typography utilities -----------------------------------------------------
