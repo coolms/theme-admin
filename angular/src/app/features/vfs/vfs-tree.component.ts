@@ -643,11 +643,19 @@ export class VfsTreeComponent implements OnInit {
         return null;
     }
 
+    /**
+     * Same contract as the files panel: the stat operation is keyed
+     * by PATH and `?id=` is a 400, so the row is refetched by the
+     * path this tree already holds for the UUID. A UUID nobody has
+     * loaded has no row to replace and is skipped.
+     */
     private refetchSingleNode(nodeId: string): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
         if (!baseUrl) return;
-        const url = `${baseUrl}/vfs/files?id=${encodeURIComponent(nodeId)}`;
+        const path = this.findPathByUuid(nodeId);
+        if (path === null) return;
+        const url = `${baseUrl}/vfs/files?path=${encodeURIComponent(path)}`;
         this.http.get<VfsNodeDto>(url, {
             headers: { Accept: 'application/ld+json' },
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

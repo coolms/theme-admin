@@ -514,11 +514,25 @@ export class VfsFilesComponent {
         }
     }
 
+    /**
+     * VFS live -- replace one row after a `metadata_changed` /
+     * `content_updated` event, without re-listing the directory.
+     *
+     * The stat operation (`GET /vfs/files`) is keyed by PATH; there
+     * is no by-id lookup on the server and a `?id=` query is a 400
+     * before it reaches the provider. The event carries only the
+     * UUID, so the path comes from the row already in the listing --
+     * a node that is not in it has nothing to update anyway, and a
+     * path that went stale between the event and the fetch 404s,
+     * which the structural event for that rename / move covers.
+     */
     private refetchSingleNode(nodeId: string): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
         if (!baseUrl) return;
-        const url = `${baseUrl}/vfs/files?id=${encodeURIComponent(nodeId)}`;
+        const path = this.state.nodes().find(n => n.id === nodeId)?.path;
+        if (path === undefined) return;
+        const url = `${baseUrl}/vfs/files?path=${encodeURIComponent(path)}`;
         this.http.get<VfsNodeDto>(url, {
             headers: { Accept: 'application/ld+json' },
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
