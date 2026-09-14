@@ -781,8 +781,8 @@ export class VfsFilesComponent {
                 return;
             }
             // The flag says no: offer elevation instead of doing nothing
-            // (ADR-184, point 2). The flag was computed by the server when
-            // the listing was fetched; the grant refetches it (point 3), and
+            // (the control stays live). The flag was computed by the server when
+            // the listing was fetched; the grant refetches it, and
             // the navigation asks the server again -- a 403 there is real.
             this.offerElevationThen(() => this.state.navigateTo(path));
             return;
@@ -888,7 +888,7 @@ export class VfsFilesComponent {
      * Branches `Save` on `permissions.write`: read-only files allow
      * Save as (creates a copy in the same directory if write
      * permission exists there); Save, instead of sitting dead, offers
-     * elevation (ADR-184, point 2) and proceeds on a grant -- the write
+     * elevation (the control stays live) and proceeds on a grant -- the write
      * itself is the server's to refuse, and a 403 then is a real one.
      */
     private async openImageEditor(node: VfsNodeDto): Promise<void> {

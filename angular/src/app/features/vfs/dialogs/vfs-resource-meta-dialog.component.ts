@@ -58,7 +58,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
 
             <div class="cms-dialog-footer">
                 <button type="button" class="cms-btn" (click)="cancel()" [disabled]="saving()">Cancel</button>
-                <!-- Not disabled on the write flag (ADR-184, point 2): a flag
+                <!-- Not disabled on the write flag (the client keeps no decider): a flag
                      that says no makes Save ask for elevation, not go dead. -->
                 <button type="button" class="cms-btn cms-btn-primary" (click)="save()" [disabled]="saving()"
                         [title]="node.permissions.write ? '' : 'Read-only for you: Save asks for the admin password first'">
@@ -140,7 +140,7 @@ export class VfsResourceMetaDialogComponent {
         if (this.saving()) return;
 
         // The flag said read-only: offer elevation rather than a dead button
-        // (ADR-184, point 2). The flag is the server's reading at listing
+        // (the control stays live). The flag is the server's reading at listing
         // time; on a grant the PATCH asks the server again, which decides.
         if (!this.node.permissions.write) {
             this.elevation.offerFor().subscribe(granted => { if (granted) this.write(); });

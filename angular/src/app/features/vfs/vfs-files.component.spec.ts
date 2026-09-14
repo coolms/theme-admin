@@ -29,7 +29,7 @@ import { VfsUploadService } from './vfs-upload.service';
  * refreshes a row on those two event types: the structural events reload
  * the listing and in-SPA mutations reload after their own request, but a
  * content change made elsewhere reached this grid as a flash on a stale
- * row. It was found in the network trail of the ADR-184 elevation walk,
+ * row. It was found in the network trail of the live elevation walk,
  * where `elevation.changes$` happened to reload the listing alongside.
  *
  * !! The first case is the contract: exactly one request, keyed by the

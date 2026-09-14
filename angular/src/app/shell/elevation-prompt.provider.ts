@@ -5,7 +5,7 @@ import { ELEVATION_PROMPT, type ElevationPromptPort, type ElevationPromptRequest
 import { ElevationPromptDialogComponent } from './elevation-prompt-dialog.component';
 
 /**
- * Binds core's `ELEVATION_PROMPT` port to the admin's dialog (ADR-184).
+ * Binds core's `ELEVATION_PROMPT` port to the admin's dialog.
  *
  * Core decides WHEN to ask (a 403 on a gated URL while the server says
  * unelevated) and shares one in-flight question; this is the HOW -- a CDK

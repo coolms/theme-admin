@@ -218,7 +218,7 @@ export const appConfig: ApplicationConfig = {
         // request-mutators; ordering does not affect correctness, only
         // observability.
         //
-        // Elevation sits BEFORE auth on purpose (ADR-184): on a 403 it opens
+        // Elevation sits BEFORE auth on purpose: on a 403 it opens
         // the prompt and, on a grant, sends the refused request again through
         // , which re-enters auth -- so the retry carries the token that
         // is current THEN, not the one stamped before a prompt the person may

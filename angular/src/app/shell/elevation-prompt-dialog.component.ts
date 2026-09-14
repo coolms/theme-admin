@@ -18,7 +18,7 @@ import {
 import { ModalComponent } from '@coolms/ui-angular';
 
 /**
- * The elevation prompt (ADR-184 s.8 and the client requirement).
+ * The elevation prompt: elevation is session state, asked for at the 403.
  *
  * Opened by the `ELEVATION_PROMPT` port -- from the interceptor on a refused
  * VFS action, or from a control that a false capability flag disabled -- and
@@ -220,8 +220,8 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
 }
 
 /**
- * ADR-184 s.8: the way the last elevation ended, before the password is asked
- * for. The `closed` sentence is the ADR's own; the others follow its shape.
+ * First, the way the last elevation ended, before the password is asked
+ * for. The `closed` sentence is the design's own; the others follow its shape.
  */
 export function endedSentence(state: ElevationState): string {
     const at = state.ended.at !== null && state.ended.at !== '' ? ` at ${clock(state.ended.at)}` : '';

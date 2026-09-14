@@ -27,7 +27,7 @@ export class VfsPageStateService {
     private readonly elevation  = inject(ElevationService);
 
     constructor() {
-        // ADR-184, point 3: every entry's read/write/execute flags are the
+        // The listing's rule: every entry's read/write/execute flags are the
         // server's reading of the elevation state AT FETCH TIME. A grant, a
         // drop (this tab, another tab, the beacon, the tripwire) or the
         // expiry read at `expiresAt` changes what the server would now say,

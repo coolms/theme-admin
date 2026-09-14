@@ -4,7 +4,7 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
 
 /**
  * "Elevated until 14:47" in the topbar while the session is elevated, with
- * the hover note ADR-184 s.8 asks for: the elevation ends at that time OR
+ * the hover note the elevation design asks for: the elevation ends at that time OR
  * when the panel is closed or reloaded. Clicking it drops the elevation now.
  *
  * Renders nothing while not elevated: the state that matters to an

@@ -111,7 +111,7 @@ interface Breadcrumb {
                 <!-- Click-to-dial pad -->
                 <app-call-dial-quick-access />
 
-                <!-- Elevated until HH:MM (ADR-184): shown only while the
+                <!-- Elevated until HH:MM: shown only while the
                      session is elevated; the hover note says how it ends. -->
                 <app-elevation-badge />
 

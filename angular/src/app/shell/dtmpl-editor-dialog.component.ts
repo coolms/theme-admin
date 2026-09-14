@@ -464,7 +464,7 @@ export class DtmplEditorDialogComponent {
     private readonly authoringContext = inject(AuthoringContextService);
     /**
      * Whether the server says this node is writable, re-asked on every change
-     * of elevation state (ADR-184). Read by the Save control below, so the
+     * of elevation state. Read by the Save control below, so the
      * editor and the listing it was opened from cannot disagree.
      */
     protected readonly access = this.writeAccess.forNode(this.data.node, this.destroyRef);
