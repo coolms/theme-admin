@@ -150,7 +150,9 @@ import { ApplyNginxChanges, CreateSection, LoadSections } from './section.action
                 <p class="wiz-error" role="alert">{{ e }}</p>
             }
 
-            <div footer>
+            <!-- ng-container, not a div: see vfs-chmod-dialog -- a wrapper makes
+                 both buttons one flex child and defeats the footer's gap. -->
+            <ng-container footer>
                 <button type="button" class="cms-btn cms-btn-sm"
                         [disabled]="0 === step() || saving()"
                         (click)="back()">Back</button>
@@ -163,7 +165,7 @@ import { ApplyNginxChanges, CreateSection, LoadSections } from './section.action
                             [disabled]="saving() || !stepValid()"
                             (click)="create()">{{ saving() ? 'Creating…' : 'Create site' }}</button>
                 }
-            </div>
+            </ng-container>
         </app-modal>
     `,
     styles: [`

@@ -32,6 +32,7 @@ import '../../../ui-angular/src/ui/explorer-accordion/space-selection.store.spec
 import '../../../ui-angular/src/ui/filter-builder/cms-filter-builder.component.spec';
 import '../../../ui-angular/src/ui/item-interactions/cms-item-interactions.directive.spec';
 import '../../../ui-angular/src/ui/layout-actions.service.spec';
+import '../../../ui-angular/src/ui/layout-tree-editor/layout-tree-editor.component.spec';
 import '../../../ui-angular/src/ui/lazy-select/lazy-select.component.spec';
 import '../../../ui-angular/src/ui/page-toolbar.component.spec';
 import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';

@@ -23,9 +23,23 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
  * Experiments admin page (/admin/experiments).
  *
  * The read/control surface over the A/B experiment store. Each experiment is
- * a card: its status, exposure + conversion totals, and a per-variant
- * **conversion-rate** bar (conversions / exposures -- the outcome that actually
- * decides a winner, not the exposure share which mostly mirrors the weights).
+ * a card: its status, exposure + conversion totals, a per-variant conversion
+ * rate (conversions / exposures -- the outcome that actually decides a winner,
+ * not the exposure share which mostly mirrors the weights), and a bar beside it.
+ *
+ * !! THE BAR IS RELATIVE TO THE LEADING ARM, NOT THE RATE. {@link barWidth}
+ * divides by the best arm's rate, so the leader always draws full whatever its
+ * rate is -- an arm converting at 33.3% fills the track when nothing beats it.
+ * This docblock previously described the bar as the conversion rate, which is
+ * what the adjacent `Rate` column shows, and the two are different quantities.
+ *
+ * !! THE COLUMN HEADER STILL SAYS "CONVERSION RATE" AND IS THE REMAINING
+ * DISAGREEMENT. Either the header names what the bar draws (relative to the
+ * leader -- good for comparing arms, and it is what the code does), or the bar
+ * is renormalised to the rate itself (honest with two arms, useless with five
+ * where every bar collapses toward the axis). Which one is right is a product
+ * decision; that the label and the drawing disagree is not, and this note exists
+ * so the next reader meets the disagreement rather than the wrong half of it.
  * The backend's significance verdict drives a "Winner" / "Leading" hint with a
  * confidence figure. Per-card controls: Start/Stop (`/status`), Edit
  * (`/update`) and Delete (`/delete`); the "New experiment" toolbar action opens
@@ -150,7 +164,14 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             flex: 1;
             min-height: 0;
             gap: 0.85rem;
-            padding: 1rem;
+            /* Vertical only. The shell body owns the horizontal edge; a gutter
+               here stacked a second one on it and pushed the card 12.8px past
+               the page header text above it. Same fix and same reason as
+               .dashboard__grid, which records it. */
+            padding: 1rem 0;
+            /* An inner scroller is anticipated: .coolms-main own note says
+               pages that manage one bound themselves to its box. With a single
+               card the region is simply short, not an unfilled block. */
             overflow-y: auto;
         }
         .cms-exp__hint { color: var(--cms-text-muted, #848b96); }
@@ -273,7 +294,10 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
         .cms-exp__bar {
             display: block;
             height: 100%;
-            min-width: 2px;
+            /* NO min-width. barWidth() returns 0 for a zero conversion rate --
+               its only deliberate zero -- and a 2px floor here overrode it, so
+               an arm that converted nobody still drew a mark. Non-zero rates
+               keep their own floor, Math.max(2, ...) in barWidth(). */
             border-radius: 999px;
             background: var(--cms-primary, #2563eb);
         }

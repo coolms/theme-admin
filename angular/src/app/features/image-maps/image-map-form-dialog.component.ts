@@ -71,8 +71,16 @@ export interface ImageMapFormDialogData {
                 The coordinate frame regions are normalized against (raster: pixels; SVG: viewBox units).
             </div>
             <div class="field">
-                <label class="cms-checkbox">
-                    <input type="checkbox" [(ngModel)]="enabled"> Enabled
+                <!-- .cms-checkbox is the 16x16 SQUARE, not a row: putting it on
+                     the label squeezed a native input and its text into a
+                     16px inline-flex box, which is what rendered off the left
+                     edge. This is the platform's own checkbox idiom, the same
+                     as vfs-chown-dialog's .chk-row (19 other uses). -->
+                <label class="chk-row" (click)="enabled = !enabled">
+                    <span class="cms-checkbox" [class.cms-checkbox--checked]="enabled">
+                        <i class="bi bi-check"></i>
+                    </span>
+                    Enabled
                 </label>
             </div>
             <ng-container footer>
@@ -90,6 +98,7 @@ export interface ImageMapFormDialogData {
         .size-row { display: flex; gap: 12px; }
         .size-row > div { flex: 1; }
         .size-hint { margin: -6px 0 12px; }
+        .chk-row { display: flex; align-items: center; gap: 8px; font-size: .875rem; color: var(--cms-text, #111827); cursor: pointer; user-select: none; }
     `],
 })
 export class ImageMapFormDialogComponent {

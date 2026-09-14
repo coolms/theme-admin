@@ -212,10 +212,13 @@ function rowsToOctal(rows: [PermRow, PermRow, PermRow], special = 0): string {
                 }
             }
 
-            <div footer>
+            <!-- ng-container, not a div: .cms-dialog-footer is the flex row that
+                 spaces the buttons (gap: 8px), and a wrapping element makes both
+                 buttons ONE flex child, so the gap never applies between them. -->
+            <ng-container footer>
                 <button type="button" class="cms-btn" (click)="cancel()">Cancel</button>
                 <button type="button" class="cms-btn cms-btn-primary" (click)="confirm()">Apply</button>
-            </div>
+            </ng-container>
         </app-modal>
     `,
     styles: [`
