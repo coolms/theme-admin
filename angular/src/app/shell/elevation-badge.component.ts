@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { ElevationService } from '@coolms/core-angular';
 import { ConfirmDialogService } from '@coolms/ui-angular';
 
@@ -12,7 +12,13 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
  *
  * One read on init, so a tab that opens elevated (a sibling granted it)
  * shows it; after that the service moves the badge -- a grant, a drop from
- * anywhere, the expiry read at `expiresAt`, another tab's announcement.
+ * anywhere, another tab's announcement, and the grant simply running out.
+ *
+ * That last one is why `until` is a plain method rather than a `computed`: a
+ * cached derivation is recomputed when a dependency changes, and nothing
+ * changes when time passes. The service reports an elapsed grant as expired
+ * on any read of its state, so this asks it again rather than keeping the
+ * answer it was given while the grant was still live.
  */
 @Component({
     selector: 'app-elevation-badge',
@@ -39,12 +45,12 @@ export class ElevationBadgeComponent implements OnInit {
     private readonly confirm   = inject(ConfirmDialogService);
 
     /** The clock time the current elevation ends at, or null when not elevated. */
-    readonly until = computed<string | null>(() => {
+    readonly until = (): string | null => {
         const at = this.elevation.expiresAt();
         return this.elevation.elevated() && at
             ? at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : null;
-    });
+    };
 
     ngOnInit(): void {
         if (this.elevation.available) {
