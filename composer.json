@@ -8,6 +8,10 @@
             "name": "CoolMS Team"
         }
     ],
+    "support": {
+        "issues": "https://github.com/coolms/theme-admin/issues",
+        "source": "https://github.com/coolms/theme-admin"
+    },
     "require": {
         "coolms/core": "^2.0",
         "coolms/document-fonts": "^0.1@dev",

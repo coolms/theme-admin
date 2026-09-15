@@ -8,6 +8,10 @@ major number means here.
 ## Unreleased
 
 ### Added
+- Declares `support` -- `issues` and `source` -- so a page imported from this
+  package, and the catalogue, know where a correction is filed. Packagist filled
+  the gap from GitHub when the manifest was silent; the declared field is the
+  one that holds on any registry.
 - `npm run lint:fallbacks` (`scripts/check-token-fallbacks.mjs`): every
   `var(--cms-x, fallback)` under `src/` is checked against `styles.scss`. It
   fails on a fallback for a token nothing defines, and on a fallback whose value
