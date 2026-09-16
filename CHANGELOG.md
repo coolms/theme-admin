@@ -5,6 +5,14 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
+## Unreleased
+
+### Changed
+- CDP: the subject `kind` is `anonymous | recognised | known` -- the recognised
+  browser (a durable identifier issued on the `recognition` consent rung) gets
+  its own badge on the subject page, and the segment editor's example
+  expression selects on `subject['kind']`.
+
 ## 2.0.0-alpha5 - 2026-09-09
 
 ### Added
