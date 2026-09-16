@@ -8,7 +8,7 @@ import { FolderContentComponent } from './folder-content.component';
 import { InstancesBrowserComponent } from './instances-browser.component';
 
 /**
- * F.14c-3 +.1a -- main-panel router.
+ * Main-panel router.
  *
  * Despite the legacy `DocumentGrid` slot key (kept because the backend
  * layout YAML still references it), this component dispatches by

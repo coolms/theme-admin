@@ -28,7 +28,7 @@ import {
 } from './template-source.helpers';
 
 /**
- * F.14c-3b -- Replace template source file. Two-phase dialog:
+ * Replace template source file. Two-phase dialog:
  *   1. Selection -- dropzone + click-to-browse, show file info on pick.
  *   2. Preview   -- backend's classification (compatible / extended /
  *                  different) plus per-variable diff. User confirms via

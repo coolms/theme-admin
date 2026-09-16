@@ -1,9 +1,9 @@
 /**
- * F.14c-1 -- wire-shape types shared across the Document Explorer
+ * wire-shape types shared across the Document Explorer
  * (cross-format) and per-format modules (Word today, future
- * Spreadsheet/Presentation/Markdown). Migrated from the F.13b
- * `document-library.types.ts` and extended with the F.14a/b
- * polymorphic fields (`format`) and the F.14d-3 naming-model fields
+ * Spreadsheet/Presentation/Markdown). Migrated from the earlier
+ * `document-library.types.ts` and extended with the
+ * polymorphic fields (`format`) and the naming-model fields
  * (`instanceNameSuffix`).
  *
  * The shape mirrors the backend `AbstractTemplate` / `AbstractInstance`
@@ -75,7 +75,7 @@ export interface ContextSchema {
 /**
  * Every concrete format module's template (WordTemplate today,
  * future SpreadsheetTemplate, etc.) projects to this shape via the
- * F.14a/b polymorphic provider read. The `format` field
+ * Polymorphic provider read. The `format` field
  * discriminates so the explorer can dispatch to the right
  * format-specific detail component (Word, Spreadsheet, ...) without a
  * hardcoded switch.
@@ -97,16 +97,16 @@ export interface DocumentTemplate {
     readonly contextSchema: ContextSchema | null;
     readonly defaultOutputFormat: string;
     /**
-     * F.14a/b: format discriminator key. Matches a registered
+ * Format discriminator key. Matches a registered
      * `DocumentFormatProviderInterface::getFormat()` on the backend
      * (`'word'` today; future `'spreadsheet'`, `'presentation'`,
      * `'markdown'`). Drives the UI's per-format dispatch.
      */
     readonly format: string;
     /**
-     * F.14d-3: optional DTMPL suffix appended to `name` when minting
+ * optional DTMPL suffix appended to `name` when minting
      * an instance display name. `null` / empty leaves the display
-     * equal to `name`. Editable in F.14c-3's template-edit form.
+ * equal to `name`. Editable in the template-edit form.
      */
     readonly instanceNameSuffix: string | null;
     /**
@@ -146,10 +146,10 @@ export interface DocumentFolder {
 }
 
 /**
- * F.14c-2 -- minimal variable shape the input form consumes. Today
+ * minimal variable shape the input form consumes. Today
  * derived 1-to-1 from `ContextSchemaVariable.path`; `label` is left
- * `null` because the F.13a schema extractor doesn't carry one yet.
- * When F.9's Form Builder lands the input form keeps the same
+ * `null` because the schema extractor doesn't carry one yet.
+ * When the Form Builder lands the input form keeps the same
  * `(variables, initialValue) -> submit(nested JSON)` contract -- only
  * the source of `FormVariableInput[]` swaps.
  */
@@ -169,7 +169,7 @@ export interface FormVariableInput {
 }
 
 /**
- * F.14c-2 -- recursive group tree the form template walks. A node with
+ * recursive group tree the form template walks. A node with
  * `path === ''` is the synthetic root that holds top-level scalars
  * (rendered without a fieldset); every other node renders as a
  * fieldset with `label` as its legend.
@@ -182,7 +182,7 @@ export interface ContextVariableGroup {
 }
 
 /**
- * F.14c-2 -- option in the dialog's output-format `<select>`. Sourced
+ * option in the dialog's output-format `<select>`. Sourced
  * from a small per-format mapping today (`word -> docx | pdf`); a
  * future backend `format-info` field can supersede it without
  * touching the dialog.

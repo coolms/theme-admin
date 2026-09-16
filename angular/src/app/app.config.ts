@@ -79,7 +79,7 @@ ComponentRegistry.register('PagesList',             PagesListComponent);
 // page IS beyond its name was reachable only by opening the editor.
 ComponentRegistry.register('PageDetail',            PageDetailComponent);
 
-// Document Library slot components (F.13b -> F.14c-1 restructure)
+// Document Library slot components (the per-format restructure)
 ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
 // H4 -- DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
 // accordion (Personal / Shared / per-site). The accordion rebinds the
@@ -89,7 +89,7 @@ ComponentRegistry.register('DocumentGrid',             DocumentGridComponent);
 ComponentRegistry.register('DocumentDetail',           DocumentDetailComponent);
 ComponentRegistry.register('DocumentStatusBar',        DocumentStatusBarComponent);
 
-// F.14c-1: per-format detail components register themselves under
+// per-format detail components register themselves under
 // `document-detail-{format}` keys; the cross-format `DocumentDetail`
 // dispatcher dispatches to the right one via NgComponentOutlet.
 // Adding a Spreadsheet/Markdown module is purely additive -- drop a
@@ -239,7 +239,7 @@ export const appConfig: ApplicationConfig = {
             multi: true,
         },
 
-        // F.7 viewer federation. PDF lives in `@coolms/pdf-angular` and registers
+ // the viewer federation. PDF lives in `@coolms/pdf-angular` and registers
         // itself via `provideCoolmsPdf()`. DOCX hasn't been extracted to
         // `@coolms/word` yet, so register the component inline here --
         // the bootstrap call is the only thing that has to move when

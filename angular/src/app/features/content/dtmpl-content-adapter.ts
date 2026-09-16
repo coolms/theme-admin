@@ -131,14 +131,14 @@ export class DtmplContentAdapter implements ContentAdapter {
 
 /**
  * Wrap a bare `<div class="row">` (no `cms-grid` ancestor) in
- * `<div class="cms-grid">` so F.1 documents -- which emitted gridLayout as
- * a flat row + cols structure -- fit the F.1.1 schema (`gridLayout >
+ * `<div class="cms-grid">` so the first documents -- which emitted gridLayout as
+ * a flat row + cols structure -- fit the current schema (`gridLayout >
  * gridRow+ > gridColumn+`). Idempotent: rows already inside a `cms-grid`
  * wrapper are left alone, so a second pass over migrated content is a
  * no-op.
  *
  * Implementation walks the string with a depth counter so a nested
- * `cms-grid` (theoretically possible if F.6's DOCX adapter starts emitting
+ * `cms-grid` (theoretically possible if the DOCX adapter starts emitting
  * one) doesn't double-wrap. Pure regex would either over-wrap or under-wrap
  * for non-trivial nesting.
  */
