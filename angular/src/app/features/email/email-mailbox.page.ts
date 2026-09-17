@@ -20,6 +20,7 @@ import {
 } from '@coolms/ui-angular';
 import { EmailDelegationsCardComponent } from './email-delegations-card.component';
 import { EmailService } from './email.service';
+import { folderCount, folderCountTitle, importedFraction } from './folder-fraction.util';
 import { buildReplyQuote } from './reply-quote.util';
 import {
     EmailAttachmentDto,
@@ -156,12 +157,19 @@ interface ComposeDraft {
                             @for (f of folders(); track f.folder) {
                                 <button type="button" class="mbx__folder"
                                         [class.mbx__folder--active]="f.folder === selectedFolder()"
+                                        [title]="folderCountTitle(f)"
                                         (click)="selectFolder(f.folder)">
                                     <span class="mbx__folder-name">{{ f.folder }}</span>
                                     @if (f.unseen > 0) {
                                         <span class="mbx__badge">{{ f.unseen }}</span>
                                     }
-                                    <span class="mbx__folder-total">{{ f.total }}</span>
+                                    <span class="mbx__folder-total">{{ folderCount(f) }}</span>
+                                    @if (importedFraction(f) !== null) {
+                                        <span class="mbx__folder-progress" aria-hidden="true">
+                                            <span class="mbx__folder-progress-bar"
+                                                  [style.width.%]="importedFraction(f)"></span>
+                                        </span>
+                                    }
                                 </button>
                             }
                             @if (folders().length === 0) {
@@ -813,6 +821,7 @@ interface ComposeDraft {
         }
         .mbx__folders { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
         .mbx__folder {
+            position: relative;
             display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
             padding: 7px 9px; border: 0; border-radius: var(--cms-radius, 6px); background: transparent; cursor: pointer;
             color: var(--cms-text); font-size: .875rem;
@@ -820,7 +829,15 @@ interface ComposeDraft {
         .mbx__folder:hover { background: var(--cms-surface-hover); }
         .mbx__folder--active { background: var(--cms-accent-light, #FEF7E6); font-weight: 600; }
         .mbx__folder-name { flex: 1; }
-        .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; }
+        .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
+        /* A half-imported folder shows how far the backfill has walked it. */
+        .mbx__folder-progress {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+            background: var(--cms-border, #E5E7EB); border-radius: 0 0 4px 4px; overflow: hidden;
+        }
+        .mbx__folder-progress-bar {
+            display: block; height: 100%; background: var(--cms-text-muted, #6B7280); opacity: .55;
+        }
         .mbx__badge {
             background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
             font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
@@ -1636,6 +1653,21 @@ export class EmailMailboxPageComponent implements OnInit {
         return this.folders()
             .map(f => f.folder)
             .filter(f => f !== current);
+    }
+
+    /** How much of a folder is here (percent), or null when it is whole or unmeasured. */
+    importedFraction(f: EmailFolderDto): number | null {
+        return importedFraction(f);
+    }
+
+    /** `1,314 / 5,512` while a folder is part-imported, otherwise just the count. */
+    folderCount(f: EmailFolderDto): string {
+        return folderCount(f);
+    }
+
+    /** The sentence the rail's fraction stands for, as a tooltip. */
+    folderCountTitle(f: EmailFolderDto): string {
+        return folderCountTitle(f);
     }
 
     /** Move the open message to a folder (remote IMAP); on success it leaves the current list. */

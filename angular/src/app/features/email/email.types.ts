@@ -89,8 +89,16 @@ export interface EmailOAuthProviderDto {
 /** Per-folder counts for the folder rail (`GET /email/mailboxes/{id}/folders`, ). */
 export interface EmailFolderDto {
     folder: string;
+    /** How many messages have been IMPORTED into this folder. */
     total: number;
     unseen: number;
+    /**
+     * How many the SERVER holds, as of the last sync, or null/absent when no sync has
+     * recorded it. `total` can be far smaller while the backfill is still walking the
+     * older mail, so the rail shows the fraction rather than letting `total` stand in
+     * for the whole folder.
+     */
+    serverTotal?: number | null;
 }
 
 /** A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). */
