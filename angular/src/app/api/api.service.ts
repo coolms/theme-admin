@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { Store } from '@ngxs/store';
 import {
     AppConfigState, ApiManifest, resolvePattern,
@@ -340,6 +340,81 @@ export interface IdentityGroupDto {
      * nothing", and the editor must not confuse the two.
      */
     grantsGroupIds?: string[];
+}
+
+/** A legal hold as the deletions list describes it: who placed it and why, whether it still stands. */
+export interface AccountDeletionHoldDto {
+    id:               string;
+    reason:           string;
+    placedBy:         string;
+    placedByLabel:    string;
+    placedAt:         string;
+    active:           boolean;
+    releasedAt?:      string | null;
+    releasedBy?:      string | null;
+    releasedByLabel?: string | null;
+}
+
+/** The last fire of a deletion's schedule row: the four coverage lists on a success, the hold's name on a skip. */
+export interface AccountDeletionRunDto {
+    outcome:     'success' | 'skipped' | 'failed';
+    at:          string;
+    detail?:     string | null;
+    error?:      string | null;
+    erased:      string[];
+    minimised:   string[];
+    kept:        string[];
+    uncovered:   string[];
+    listsParsed: boolean;
+}
+
+export type AccountDeletionState = 'pending' | 'held' | 'cancelled' | 'executed';
+
+/** One row of GET /auth/deletions, and the body of GET /auth/users/{id}/deletion. */
+export interface AccountDeletionDto {
+    id:               string;
+    userId:           string;
+    accountLabel:     string;
+    requestedByKind:  'person' | 'administrator';
+    requestedBy?:     string | null;
+    requestedByLabel: string;
+    requestedAt:      string;
+    dueAt:            string;
+    daysLeft?:        number | null;
+    state:            AccountDeletionState;
+    cancelledAt?:     string | null;
+    cancelledByKind?: string | null;
+    executedAt?:      string | null;
+    heldByHoldId?:    string | null;
+    hold?:            AccountDeletionHoldDto | null;
+    nextAttemptAt?:   string | null;
+    run?:             AccountDeletionRunDto | null;
+}
+
+/** One hold of GET /auth/users/{id}/legal-holds. */
+export interface LegalHoldDto {
+    id:          string;
+    userId:      string;
+    placedBy:    string;
+    reason:      string;
+    placedAt:    string;
+    active:      boolean;
+    releasedAt?: string | null;
+    releasedBy?: string | null;
+}
+
+/** One declaration of GET /auth/footprints, with the holds register's values for a category that can hold. */
+export interface FootprintDto {
+    category:       string;
+    label:          string;
+    module:         string;
+    tables:         string[];
+    action:         'delete' | 'minimise' | 'keep';
+    canHold:        boolean;
+    obligation?:    string | null;
+    durationDays?:  number | null;
+    obligationKey?: string | null;
+    durationKey?:   string | null;
 }
 
 export interface IdentityUserDto {
@@ -1969,6 +2044,86 @@ export class ApiService {
     assignUserGroups(id: string, groupIds: string[]): Observable<void> {
         const url = resolvePattern(this.manifest.identity!.assignGroupsUrl, { id });
         return this.http.post<void>(url, { groups: groupIds });
+    }
+
+    // -- Account deletions and legal holds ----------------------------------
+    //
+    // Every URL comes from the manifest; an older server sends none of them
+    // and the surfaces stay away. Cancel, place and release are elevated
+    // acts: the 403 is handled by the elevation interceptor, which prompts
+    // and re-sends, so a caller only reloads on success.
+
+    /** Whether the server exposes the deletion screens at all. */
+    get hasDeletionScreens(): boolean {
+        const m = this.manifest.identity;
+        return !!(m?.deletionsUrl && m?.footprintsUrl && m?.userDeletionUrl && m?.userLegalHoldsUrl);
+    }
+
+    /** The settings block the holds register lives in, for the link from the screen. */
+    get holdsSettingsBlock(): string | null {
+        return this.manifest.identity?.holdsSettingsBlock || null;
+    }
+
+    /** The server-declared form for placing a hold (its one field: the reason). */
+    get legalHoldFormId(): string | null {
+        return this.manifest.identity?.legalHoldFormId || null;
+    }
+
+    listDeletions(params: {
+        filters?: string[];
+        sort?:    string;
+        page?:    number;
+        limit?:   number;
+    } = {}): Observable<{ members: AccountDeletionDto[]; total: number }> {
+        let httpParams = new HttpParams();
+        if (params.limit)                   httpParams = httpParams.set('limit', String(params.limit));
+        if (params.page && params.page > 1) httpParams = httpParams.set('page', String(params.page));
+        if (params.sort)                    httpParams = httpParams.set('sort', params.sort);
+        for (const f of params.filters ?? []) {
+            httpParams = httpParams.append('filter', f);
+        }
+        return this.http
+            .get<HydraCollection<AccountDeletionDto>>(this.manifest.identity!.deletionsUrl!, {
+                headers: this.collectionHeaders.headers,
+                params:  httpParams,
+            })
+            .pipe(map(r => ({ members: r['member'], total: r['totalItems'] })));
+    }
+
+    listFootprints(): Observable<FootprintDto[]> {
+        return this.http
+            .get<HydraCollection<FootprintDto>>(this.manifest.identity!.footprintsUrl!, this.collectionHeaders)
+            .pipe(map(r => r['member']));
+    }
+
+    /** The pending deletion of an account; a 404 means none is pending and is mapped to null. */
+    getPendingDeletion(userId: string): Observable<AccountDeletionDto | null> {
+        const url = resolvePattern(this.manifest.identity!.userDeletionUrl!, { id: userId });
+        return this.http.get<AccountDeletionDto>(url).pipe(
+            catchError((e: { status?: number }) => e?.status === 404 ? of(null) : throwError(() => e)),
+        );
+    }
+
+    cancelDeletion(userId: string): Observable<void> {
+        const url = resolvePattern(this.manifest.identity!.userDeletionUrl!, { id: userId });
+        return this.http.delete<void>(url);
+    }
+
+    listLegalHolds(userId: string): Observable<LegalHoldDto[]> {
+        const url = resolvePattern(this.manifest.identity!.userLegalHoldsUrl!, { id: userId });
+        return this.http
+            .get<HydraCollection<LegalHoldDto>>(url, this.collectionHeaders)
+            .pipe(map(r => r['member']));
+    }
+
+    placeLegalHold(userId: string, reason: string): Observable<LegalHoldDto> {
+        const url = resolvePattern(this.manifest.identity!.userLegalHoldsUrl!, { id: userId });
+        return this.http.post<LegalHoldDto>(url, { reason });
+    }
+
+    releaseLegalHold(userId: string, holdId: string): Observable<void> {
+        const url = resolvePattern(this.manifest.identity!.userLegalHoldsUrl!, { id: userId }) + '/' + encodeURIComponent(holdId);
+        return this.http.delete<void>(url);
     }
 
     // -- Identity Groups -----------------------------------------------------
