@@ -1013,7 +1013,7 @@ interface ComposeDraft {
         .mbx__remote-load {
             margin-left: auto; padding: 4px 10px; border: 1px solid var(--cms-border);
             border-radius: var(--cms-radius-md, 8px); background: var(--cms-surface);
-            color: var(--cms-accent, #2563eb); cursor: pointer; font-size: .8125rem;
+            color: var(--cms-accent); cursor: pointer; font-size: .8125rem;
         }
         .mbx__remote-load:hover { background: var(--cms-surface-alt, var(--cms-surface)); }
 
