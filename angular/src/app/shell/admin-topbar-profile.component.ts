@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { AuthState, AppConfigState, NaviGraphService, NaviGraphNode, Logout } from '@coolms/core-angular';
 import { UserAvatarComponent } from '@coolms/ui-angular';
+import { ElevationDisplay } from './elevation-display.service';
+import { EndElevationAction } from './end-elevation.action';
 
 /**
  * Topbar profile dropdown driven by the navi.admin.topbar NaviGraph tree.
@@ -48,6 +50,24 @@ import { UserAvatarComponent } from '@coolms/ui-angular';
                      style="min-width: 180px; z-index: 1050; top: 100%">
                     <div class="px-3 py-2 border-bottom">
                         <div class="small fw-semibold text-truncate">{{ userEmail() }}</div>
+
+                        <!-- The session's STATE, beside who it belongs to. The
+                             badge says the same thing in the topbar; this is
+                             the menu no longer being silent about it. Present
+                             only while elevated, so it stays something that
+                             appeared rather than a permanent row reading
+                             "not elevated". -->
+                        @if (elevatedUntil(); as until) {
+                            <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                                <span class="small text-secondary text-truncate">
+                                    <i class="bi bi-shield-lock-fill" style="font-size:.8rem"></i>
+                                    Elevated until {{ until }}
+                                </span>
+                                <button type="button"
+                                        class="btn btn-link btn-sm p-0 text-decoration-none small"
+                                        (click)="endElevation()">End</button>
+                            </div>
+                        }
                     </div>
                     @for (node of sortedProfileActions(); track node.id) {
                         <button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
@@ -69,6 +89,8 @@ export class AdminTopbarProfileComponent implements OnInit {
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly display    = inject(ElevationDisplay);
+    private readonly end        = inject(EndElevationAction);
 
     @ViewChild('container') container?: ElementRef;
 
@@ -81,6 +103,18 @@ export class AdminTopbarProfileComponent implements OnInit {
     readonly sortedProfileActions = computed(() =>
         [...this.profileActions()].sort((a, b) => a.sortOrder - b.sortOrder),
     );
+
+    /**
+     * The same sentence the badge shows, from the same place -- so the two
+     * cannot disagree by construction rather than by anyone remembering to
+     * keep them in step.
+     */
+    readonly elevatedUntil = (): string | null => this.display.until();
+
+    endElevation(): void {
+        this.isOpen.set(false);
+        this.end.run();
+    }
 
     @HostListener('document:click', ['$event.target'])
     onOutsideClick(target: EventTarget | null): void {

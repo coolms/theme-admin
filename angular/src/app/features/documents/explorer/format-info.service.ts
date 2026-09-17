@@ -7,7 +7,7 @@ import { type FormatDisplayInfo, type FormatInfoResponse } from '../shared/forma
 import { extensionForMimeIn } from './template-source.helpers';
 
 /**
- * F.14c-1 -- wraps `GET /api/v1/document/format-info` (F.14b backend).
+ * wraps `GET /api/v1/document/format-info`.
  * The Document Library page calls `loadFormatInfo()` once on mount
  * and slot components read the cached signal synchronously to drive
  * format icons / colours / labels and the upload dialog's `accept`

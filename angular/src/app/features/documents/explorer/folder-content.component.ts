@@ -41,7 +41,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
  * Click selects (drives the right detail panel via
  * `state.selectTemplate(id)`). Double-click opens the Generate
  * wizard by routing through `state.actionDispatched$` with the
- * `'generate'` action, mirroring the F.13b grid's UX.
+ * `'generate'` action, mirroring the grid's UX.
  */
 @Component({
     selector: 'cms-folder-content',

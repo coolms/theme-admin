@@ -5,17 +5,17 @@ import { DocumentPageStateService } from '../explorer/document-page-state.servic
 import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/document-explorer.types';
 
 /**
- * F.14c-1 -- Word-specific detail panel. Surfaces the template's
- * metadata + the F.13a extracted DTMPL schema. The cross-format
+ * Word-specific detail panel. Surfaces the template's
+ * metadata + the extracted DTMPL schema. The cross-format
  * `DocumentDetailComponent` dispatches to this component via
  * `ComponentRegistry` keyed by `'document-detail-word'`; future
  * formats register their own under
  * `'document-detail-{format}'` and the explorer never has to
  * change.
  *
- * F.14c-2 will add the variable-input form + generate flow; F.14c-3
+ * A later pass adds the variable-input form + generate flow; another
  * will add the edit form for `name` / `instanceNameSuffix` / suffix
- * preview. F.14c-1 keeps the panel read-only with a Generate button
+ * preview. This one keeps the panel read-only with a Generate button
  * that emits an alert (real flow in the next sub-phase).
  *
  * Receives the template via the `@Input` projected through

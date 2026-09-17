@@ -14,7 +14,7 @@ interface HydraCollection<T> {
 /**
  * Word-format thin CRUD wrapper over `/api/v1/document/templates`.
  *
- * F.14c-1 renamed this from `DocumentTemplateService` (F.13b) to
+ * Renamed from `DocumentTemplateService` to
  * `WordTemplateService` and parked it in the Word feature module so
  * future format modules (Spreadsheet, Markdown) can each ship their
  * own equivalent without colliding with this one -- even though the
@@ -98,7 +98,7 @@ export class WordTemplateService {
     }
 
     /**
-     * F.14c-3a -- PATCH editable metadata. Backend whitelists fields
+ * PATCH editable metadata. Backend whitelists fields
      * and validates `instanceNameSuffix` as DTMPL syntax (422 on parse
      * failure) + `defaultOutputFormat` against the template format's
      * allow list.
@@ -112,7 +112,7 @@ export class WordTemplateService {
     }
 
     /**
-     * F.14c-3b -- parses the uploaded replacement WITHOUT committing.
+ * parses the uploaded replacement WITHOUT committing.
      * Backend MIME-checks against template format and returns the
      * schema-diff classification + per-variable lists so the Replace
      * dialog can render its preview.
@@ -127,7 +127,7 @@ export class WordTemplateService {
     }
 
     /**
-     * F.14c-3b -- commits the replacement: writes new file to VFS
+ * commits the replacement: writes new file to VFS
      * (overwrites the template's source) and applies the adaptive
      * contextSchema policy (no-op / merge / full replace) based on the
      * server's classification. Returns the updated template.
@@ -152,7 +152,7 @@ export class WordTemplateService {
 }
 
 /**
- * F.14c-3a -- partial-update payload for the Edit Template form.
+ * partial-update payload for the Edit Template form.
  * Fields are optional; backend whitelists `name` / `description` /
  * `instanceNameSuffix` / `defaultOutputFormat` / `publiclyAccessible`
  * for this caller.
@@ -171,7 +171,7 @@ export interface UpdateTemplatePayload {
 }
 
 /**
- * F.14c-3b -- Replace-preview endpoint response shape.
+ * Replace-preview endpoint response shape.
  */
 export interface ReplacePreviewResponse {
     classification: 'compatible' | 'extended' | 'different';

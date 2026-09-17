@@ -9,6 +9,7 @@ import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
+    DateTimeFormatService,
     DateTimePipe,
     DraftStoreService,
     EmptyStateComponent,
@@ -20,6 +21,7 @@ import {
 } from '@coolms/ui-angular';
 import { EmailDelegationsCardComponent } from './email-delegations-card.component';
 import { EmailService } from './email.service';
+import { buildReplyQuote } from './reply-quote.util';
 import {
     EmailAttachmentDto,
     EmailFolderDto,
@@ -1124,6 +1126,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly toast = inject(ToastService);
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
+    private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly domSanitizer = inject(DomSanitizer);
 
@@ -2121,7 +2124,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // resets + bumps composeKey (forces the editor re-mount); the quote is set
         // after, so the editor mounts with it.
         this.clearComposeBody();
-        const quote = this.buildReplyQuote(msg);
+        const quote = buildReplyQuote(msg, this.dtf);
         this.composeText = quote.text;
         this.composeHtml.set(quote.html);
         // Baseline = the pre-filled quote (so an untouched reply isn't "dirty"),
@@ -2290,25 +2293,6 @@ export class EmailMailboxPageComponent implements OnInit {
         this.draftSaved.set(false);
         this.composeOpen.set(false);
         this.clearComposeBody();
-    }
-
-    /**
-     * Build the "On {date}, {sender} wrote:" quoted-original block for a reply, from
-     * what the detail pane actually shows (the sender + snippet). A leading blank
-     * line/paragraph puts the caret above the quote so the user types on top.
-     */
-    private buildReplyQuote(msg: EmailMessageDetailDto): { html: string; text: string } {
-        const who = (msg.fromName ?? '').trim() !== '' ? `${msg.fromName} <${msg.fromAddress ?? ''}>` : (msg.fromAddress ?? 'the sender');
-        const when = msg.sentAt !== undefined && msg.sentAt !== null ? new Date(msg.sentAt).toLocaleString() : '';
-        const attribution = when !== '' ? `On ${when}, ${who} wrote:` : `${who} wrote:`;
-        const body = (msg.snippet ?? '').trim();
-
-        const esc = (s: string): string =>
-            s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const html = `<p></p><p>${esc(attribution)}</p><blockquote>${esc(body).replace(/\n/g, '<br>')}</blockquote>`;
-        const text = `\n\n${attribution}\n${body.split('\n').map(l => `> ${l}`).join('\n')}`;
-
-        return { html, text };
     }
 
     closeCompose(): void {

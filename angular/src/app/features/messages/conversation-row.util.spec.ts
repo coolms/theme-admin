@@ -1,9 +1,13 @@
+import { TestBed } from '@angular/core/testing';
+import { DateTimeFormatService, UserCalendarPreferencesService } from '@coolms/ui-angular';
+
 import {
     conversationLabel,
     counterpartOf,
     lastActivityTs,
     presenceDot,
     rowPreview,
+    rowWhen,
     unreadFor,
 } from './conversation-row.util';
 import { ChatConversationDto } from './messages.types';
@@ -177,6 +181,95 @@ describe('conversation row', () => {
 
  it('is undefined when the viewer is alone', () => {
             expect(counterpartOf(conv({ participants: [participant(me, 'Me')] }), me)).toBeUndefined();
+        });
+    });
+
+    /**
+     * The row's "when" through the estate's formatter. Each case that names a
+     * clock or a day also asserts the browser's own rendering DIFFERS -- without
+     * that the case is vacuous on a machine already in the profile's zone,
+     * satisfied by the very behaviour it exists to reject.
+     */
+ describe('rowWhen', () => {
+        /** Deliberately not the container's zone, so a browser-zone render cannot pass. */
+        const PROFILE_TZ = 'Asia/Tokyo';
+
+        /** Noon on Tuesday 15 September 2026 in Tokyo; 03:00 of the same day in UTC. */
+        const NOW = new Date('2026-09-15T03:00:00.000Z');
+
+        const weekdayOf = (utcDay: Date): string =>
+            utcDay.toLocaleDateString([], { weekday: 'short', timeZone: 'UTC' });
+
+        let dtf: DateTimeFormatService;
+
+        beforeEach(() => {
+            TestBed.configureTestingModule({
+                providers: [{
+                    provide:  UserCalendarPreferencesService,
+                    useValue: {
+                        ensureLoaded: () => undefined,
+                        tz:           () => PROFILE_TZ,
+                        dateFormat:   () => 'yyyy-MM-dd',
+                        timeFormat:   () => '24h',
+                    },
+                }],
+            });
+            dtf = TestBed.inject(DateTimeFormatService);
+        });
+
+ it('renders today\'s clock the PROFILE\'s way, not the browser locale and not the browser zone', () => {
+            // 01:30 UTC is 10:30 in Tokyo, and still Tuesday there. A 24h
+            // profile in Tokyo must say 10:30.
+            const iso = '2026-09-15T01:30:00.000Z';
+
+            // What the page did before: browser locale, browser zone.
+            const browserWould = new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            expect(browserWould)
+                .withContext('this spec is vacuous unless the browser renders it differently')
+                .not.toBe('10:30');
+
+            expect(rowWhen(iso, dtf, NOW)).toBe('10:30');
+            expect(rowWhen(iso, dtf, NOW)).not.toMatch(/AM|PM/);
+        });
+
+ it('takes TODAY from the profile\'s zone, so an instant the browser still files under yesterday is a clock', () => {
+            // 16:30 UTC on Monday the 14th is 01:30 on Tuesday the 15th in Tokyo.
+            const iso = '2026-09-14T16:30:00.000Z';
+
+            expect(new Date(iso).getDate())
+                .withContext('this spec is vacuous unless the browser puts the instant on another day')
+                .not.toBe(15);
+
+            expect(rowWhen(iso, dtf, NOW)).toBe('01:30');
+        });
+
+ it('says Yesterday for the profile\'s previous day', () => {
+            expect(rowWhen('2026-09-14T01:30:00.000Z', dtf, NOW)).toBe('Yesterday');
+        });
+
+ it('names the weekday within the week, on the profile\'s day', () => {
+            // 16:30 UTC on Thursday the 10th is Friday the 11th in Tokyo.
+            const iso = '2026-09-10T16:30:00.000Z';
+
+            expect(new Date(iso).getDate())
+                .withContext('this spec is vacuous unless the browser puts the instant on another day')
+                .not.toBe(11);
+
+            expect(rowWhen(iso, dtf, NOW)).toBe(weekdayOf(new Date(Date.UTC(2026, 8, 11))));
+            expect(rowWhen(iso, dtf, NOW)).not.toBe(weekdayOf(new Date(Date.UTC(2026, 8, 10))));
+        });
+
+ it('names the date beyond a week, on the profile\'s day', () => {
+            // 16:30 UTC on 31 August is 1 September in Tokyo.
+            const shown = rowWhen('2026-08-31T16:30:00.000Z', dtf, NOW);
+
+            expect(shown).not.toContain('31');
+            expect(shown).toMatch(/\b1\b/);
+        });
+
+ it('says now within a minute and nothing for an unparseable instant', () => {
+            expect(rowWhen(new Date(NOW.getTime() - 30_000).toISOString(), dtf, NOW)).toBe('now');
+            expect(rowWhen('not a date', dtf, NOW)).toBe('');
         });
     });
 });

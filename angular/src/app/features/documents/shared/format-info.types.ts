@@ -1,5 +1,5 @@
 /**
- * F.14c-1 -- wire shape for the F.14b `GET /api/v1/document/format-info`
+ * wire shape for the `GET /api/v1/document/format-info`
  * endpoint. The response is the authoritative source for per-format
  * UI metadata (icons, colours, labels) AND the file-picker `accept`
  * string; the frontend never hard-codes it.

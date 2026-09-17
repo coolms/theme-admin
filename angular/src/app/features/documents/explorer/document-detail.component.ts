@@ -6,7 +6,7 @@ import { DocumentPageStateService } from './document-page-state.service';
 import { InstanceDetailComponent } from './instance-detail.component';
 
 /**
- * F.14c-1 +.1b -- right-panel detail dispatcher.
+ * Right-panel detail dispatcher.
  *
  * Branches by the page's right-panel mode:
  *

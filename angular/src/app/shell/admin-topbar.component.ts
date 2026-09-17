@@ -111,12 +111,15 @@ interface Breadcrumb {
                 <!-- Click-to-dial pad -->
                 <app-call-dial-quick-access />
 
-                <!-- Elevated until HH:MM: shown only while the
-                     session is elevated; the hover note says how it ends. -->
-                <app-elevation-badge />
-
                 <!-- Notification bell -->
                 <app-notification-bell />
+
+                <!-- "Elevated until HH:MM", shown only while the session is
+                     elevated. It sits AGAINST the profile block and behind its
+                     own separator, not among the icons: the icons are places
+                     to go, and this is what state you are in. It renders its
+                     own separator so the divider cannot outlive it. -->
+                <app-elevation-badge />
 
                 <!-- Profile dropdown -->
                 <app-admin-topbar-profile />
