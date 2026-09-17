@@ -699,8 +699,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.fc?.refetchEvents();
     }
 
-    /** Programmatic navigation -- parent (mini-cal click, toolbar arrow). */
-    gotoDate(d: Date): void { this.fc?.gotoDate(d); }
+    /**
+     * Programmatic navigation -- parent (mini-cal click, toolbar arrow). A
+     * Date is an instant, resolved in the grid's zone; a zone-less ISO day
+     * (`YYYY-MM-DD`) is that calendar day in the grid's zone.
+     */
+    gotoDate(d: Date | string): void { this.fc?.gotoDate(d); }
     prev(): void  { this.fc?.prev(); }
     next(): void  { this.fc?.next(); }
     today(): void { this.fc?.today(); }

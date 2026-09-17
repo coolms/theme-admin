@@ -45,10 +45,15 @@ export interface SegmentRuleCheckDto {
 
 /** One CDP subject profile -- counts only. */
 export interface SubjectDto {
-    /** `known:<userId>` (durable) or `anon:<visitorRef>` (ephemeral). */
+    /**
+     * `known:<userId>` (a person, as long as the account), `rec:<id>` (a browser
+     * that granted the `recognition` consent rung and was issued a durable id --
+     * kept while that consent is current), or `anon:<visitorRef>` (a day's ref,
+     * rotates at UTC midnight). The consent ladder decides which.
+     */
     readonly key:         string;
-    readonly kind:        'anonymous' | 'known';
-    /** The stitched user UUID (RFC 4122) for known subjects; null for anonymous. */
+    readonly kind:        'anonymous' | 'recognised' | 'known';
+    /** The stitched user UUID (RFC 4122) for known subjects; null for anonymous and recognised. */
     readonly userRef:     string | null;
     readonly eventCount:  number;
     readonly totalEvents: number;

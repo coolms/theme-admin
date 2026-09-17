@@ -46,7 +46,7 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
 }
 
 /**
- * F.14c-1 -- unified upload dialog. Posts to F.14b's
+ * unified upload dialog. Posts to the unified
  * `/api/v1/document/templates/upload`; the backend MIME-routes the
  * file to the matching format provider so this dialog stays
  * format-agnostic.

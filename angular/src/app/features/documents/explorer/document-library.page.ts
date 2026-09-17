@@ -77,7 +77,7 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
 }
 
 /**
- * Document Library admin page -- F.13b shell.
+ * Document Library admin page -- the shell.
  *
  * Thin orchestrator: provides DocumentPageStateService at the page
  * subtree, mounts ExplorerLayoutComponent + PageToolbarComponent, and
@@ -90,9 +90,9 @@ function isTemplateNameConflict(err: unknown): err is { status: 409; error: Temp
  * ActionHandlerRegistry" doesn't exist in the codebase. Adding new
  * actions = editing the switch below.
  *
- * F.13b ships the action *plumbing* end-to-end but leaves three
+ * The shell ships the action *plumbing* end-to-end but leaves three
  * dialogs as no-op alerts (Upload, New Folder, Delete confirmation).
- * F.13c lands those with the matching UI work.
+ * The folder-actions pass lands those with the matching UI work.
  */
 @Component({
     selector: 'app-document-library-page',
@@ -387,7 +387,7 @@ export class DocumentLibraryPage implements OnInit {
     });
 
     ngOnInit(): void {
-        // F.14c-1: load format-info early so the grid + upload dialog
+ // load format-info early so the grid + upload dialog
         // can render icons / accept-strings against the canonical
         // backend payload. Errors are swallowed -- the format-icons
         // fallback constants keep the UI usable while we re-attempt
@@ -648,7 +648,7 @@ export class DocumentLibraryPage implements OnInit {
 
     private refresh(): void {
         this.state.loading.set(true);
-        // F.14c-1: list via the cross-format aggregator so future
+ // list via the cross-format aggregator so future
         // format modules surface in the grid the moment they ship --
         // no per-format `templatesSvc.list()` plumbing needed.
         this.aggregator
@@ -854,7 +854,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3a -- open the Edit Template metadata dialog. On save the
+ * open the Edit Template metadata dialog. On save the
      * template list is refreshed so the new label / suffix / default
      * format surface immediately in folder content + the Generate
      * dialog. Existing rendered instances are unaffected (Option A's
@@ -877,7 +877,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3b -- open the 2-phase Replace Template dialog. On commit
+ * open the 2-phase Replace Template dialog. On commit
      * the template list refreshes so the new schema (if changed via
      * the adaptive policy) surfaces in the Generate dialog without
      * a page reload. Existing rendered instances are unchanged per
@@ -968,7 +968,7 @@ export class DocumentLibraryPage implements OnInit {
     }
 
     /**
-     * F.14c-3 -- Preview Latest opens the most recently rendered
+ * Preview Latest opens the most recently rendered
      * instance for the selected template. Drives off the new
      * `?filter=templateId eq ...` collection: pick the freshest
      * `rendered` row by `generatedAt`. Falls back to a toast when
@@ -995,7 +995,7 @@ export class DocumentLibraryPage implements OnInit {
      *: source-aware double-click viewer dispatch.
      *
      * Imported templates (`native: false`) preview through ViewerModal
-     * keyed by `sourceMimeType`; the existing F.7 ViewerHost picks the
+ * keyed by `sourceMimeType`; the existing ViewerHost picks the
      * right format (DocxViewer for DOCX, PdfViewer for PDF, ...).
      *
      * Native templates (`native: true`) open whatever editor the

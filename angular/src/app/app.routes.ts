@@ -465,6 +465,12 @@ export const routes: Routes = [
                     import('./features/identity/groups-list.component').then(m => m.GroupsListComponent),
                 data: { activeNav: '/identity/groups', fullHeight: true },
             },
+            {
+                path: 'identity/deletions',
+                loadComponent: () =>
+                    import('./features/identity/deletions-list.component').then(m => m.DeletionsListComponent),
+                data: { activeNav: '/identity/deletions', fullHeight: true },
+            },
             // Protected by the parent canActivate: [authGuard] above.
             // DynamicRecordListComponent fires forkJoin(schema + records) in
             // ngOnInit -- both requests carry the token restored by RestoreSession

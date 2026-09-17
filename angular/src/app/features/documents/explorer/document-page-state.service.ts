@@ -72,7 +72,7 @@ export interface InstanceFilters {
  * `providedIn: 'root'` like its Media sibling so slot components and
  * the page component all see the same instance.
  *
- * F.14c-3 swapped the explorer's slot contents to a VFS-tree-driven
+ * The VFS-tree pass swapped the explorer's slot contents to a VFS-tree-driven
  * layout. The state service now distinguishes between "a folder is
  * selected" (shows a folder content view) and "a template is
  * selected" (shows the template-detail panel). Both selections are
@@ -183,9 +183,9 @@ export class DocumentPageStateService {
     // -- State signals ------------------------------------------------
     readonly templates = signal<DocumentTemplate[]>([]);
 
-    /** Legacy "shared / personal" folder lists; F.14c-3 replaced
+ /** Legacy "shared / personal" folder lists; the VFS tree replaced
      *  consumers with the VFS-tree slot but kept the signals so the
-     *  pre-F.14c-3 status bar / detail panels keep compiling until
+ * pre-tree status bar / detail panels keep compiling until
      *  they're swept in a follow-up. */
     readonly sharedFolders = signal<DocumentFolder[]>([]);
     readonly personalFolders = signal<DocumentFolder[]>([]);
@@ -304,7 +304,7 @@ export class DocumentPageStateService {
     readonly selectedInstance = signal<DocumentInstance | null>(null);
 
     /**
-     * F.14c-3: paths of tree nodes whose children have been fetched
+ * paths of tree nodes whose children have been fetched
      * and should render expanded. The folders-tree component owns
      * mutations -- it adds the path on first expand and removes it on
      * collapse. Living on the state service means the page-level
@@ -348,7 +348,7 @@ export class DocumentPageStateService {
     /** Slots dispatch a focused action up to the page (deletion, generation, etc.). */
     readonly deleteRequested$ = new Subject<DocumentTemplate>();
     readonly previewLatestRequested$ = new Subject<DocumentTemplate>();
-    /** F.14c-3: emitted when the user double-clicks a row in the
+ /** emitted when the user double-clicks a row in the
      *  template-detail's instances list. The page opens the viewer
      *  modal -- keeps the detail component free of dialog deps. */
     readonly openInstanceRequested$ = new Subject<OpenInstanceRequest>();

@@ -11,8 +11,8 @@ interface HydraCollection<T> {
 }
 
 /**
- * F.14c-1 -- cross-format Document Explorer aggregator. Wraps the
- * F.14b unified endpoints so the explorer can list and create
+ * cross-format Document Explorer aggregator. Wraps the
+ * the unified endpoints so the explorer can list and create
  * templates without caring which format module owns the row.
  *
  * Per-format thin wrappers (`WordTemplateService` etc.) stay around
@@ -32,7 +32,7 @@ export class DocumentAggregatorService {
     private readonly http = inject(HttpClient);
 
     /**
-     * Unified create-from-upload (F.14b). MIME-routes the multipart
+ * Unified create-from-upload. MIME-routes the multipart
      * body to the matching backend `DocumentFormatProviderInterface`.
      */
     uploadTemplate(
@@ -95,9 +95,9 @@ export class DocumentAggregatorService {
     }
 
     /**
-     * F.14b replace endpoint. Wired here even though the dialog
-     * lands in F.14c-3 -- the aggregator API contract is complete
-     * for the whole F.14c phase so callers don't need to chase a
+ * the replace endpoint. Wired here even though the dialog
+ * lands in the VFS-tree pass -- the aggregator API contract is complete
+ * for the whole explorer phase so callers don't need to chase a
      * second wrapper.
      */
     replaceTemplateSource(id: string, file: File): Observable<DocumentTemplate> {
@@ -112,8 +112,8 @@ export class DocumentAggregatorService {
 
     /**
      * Optional `?folder=` query for future grid filtering. Kept on
-     * the API even though F.14c-1 doesn't drive it from the folders
-     * tree -- F.14c-3 wires the filter once the tree's selection
+ * the API even though this pass doesn't drive it from the folders
+ * tree -- the VFS-tree pass wires the filter once the tree's selection
      * propagates.
      */
     listTemplatesInFolder(folderPath: string): Observable<DocumentTemplate[]> {
