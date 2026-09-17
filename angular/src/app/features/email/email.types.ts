@@ -89,8 +89,27 @@ export interface EmailOAuthProviderDto {
 /** Per-folder counts for the folder rail (`GET /email/mailboxes/{id}/folders`, ). */
 export interface EmailFolderDto {
     folder: string;
+    /** How many messages have been IMPORTED into this folder. */
     total: number;
     unseen: number;
+    /**
+     * How many MESSAGES the server holds, as of the last sync, or null/absent when no
+     * sync has recorded it. `total` can be far smaller while the backfill is still
+     * walking the older mail, so the rail shows the fraction rather than letting
+     * `total` stand in for the whole folder.
+     *
+     * The unit is messages, not conversations. A webmail that groups by conversation
+     * shows a smaller number for the same folder, which is a different unit rather
+     * than a disagreement -- the rail says so, or an operator comparing the two reads
+     * a defect that is not there.
+     */
+    serverTotal?: number | null;
+    /**
+     * How many of them are UNREAD on the server, or null/absent when unknown. `unseen`
+     * counts only the imported unread messages and understates the truth badly on a
+     * part-imported folder.
+     */
+    serverUnseen?: number | null;
 }
 
 /** A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). */
