@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-7CB705482.js`).then(o=>o.ThemesListComponent)}];export{t as THEME_ROUTES};
