@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, com
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, catchError, debounceTime, forkJoin, map, of, switchMap } from 'rxjs';
+import { Store } from '@ngxs/store';
+import { AuthState } from '@coolms/core-angular';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
@@ -18,6 +20,7 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailDelegationsCardComponent } from './email-delegations-card.component';
+import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { EmailService } from './email.service';
 import {
     EmailAttachmentDto,
@@ -1089,6 +1092,14 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly emailLive = inject(EmailLiveEventsService);
+    private readonly store = inject(Store);
+
+    /** Current user UUID (rfc4122) -- the per-user realtime channel `email.user.{id}`. */
+    readonly currentUserId = computed<string | null>(() => {
+        const u = this.store.selectSnapshot(AuthState.currentUser);
+        return u?.id ?? null;
+    });
 
     /**
      * localStorage key for the last-selected mailbox, so a reload restores it instead
@@ -1350,6 +1361,37 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
             },
             error: () => { /* keep the default provider list */ },
+        });
+
+        // The list moves on its own. Subscribe to the per-user
+        // mailbox channel; every nudge (ids/counts only, never content) refetches
+        // over REST. Non-fatal: on any realtime error the page still works via
+        // manual reload, so we swallow rather than toast on a stale token.
+        const uid = this.currentUserId();
+        if (uid !== null) {
+            this.emailLive.watch(uid)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: evt => this.onMailReceived(evt),
+                    error: () => { /* swallow -- manual reload still works */ },
+                });
+        }
+    }
+
+    /**
+     * A realtime nudge that a mailbox the current user can see gained new mail. The
+     * payload carries ids and a count only, so we refetch over REST: the OPEN mailbox
+     * reloads its folders + list (new mail + counts); any OTHER mailbox just refreshes
+     * its switcher badge. Owner-only channel auth is enforced server-side.
+     */
+    private onMailReceived(evt: EmailLiveEvent): void {
+        if (evt.mailboxId === this.selectedMailboxId()) {
+            this.loadFolders();
+            return;
+        }
+        this.email.listFolders(evt.mailboxId).subscribe({
+            next: folders => this.patchMailboxUnread(evt.mailboxId, folders),
+            error: () => { /* leave the badge as-is on a transient failure */ },
         });
     }
 
