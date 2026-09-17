@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-Zhc17QBN2.js`).then(o=>o.WebhooksListPageComponent)}];export{t as CONNECTOR_ROUTES};

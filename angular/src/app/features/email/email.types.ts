@@ -138,6 +138,12 @@ export interface EmailMessageDto {
 /** A message with its raw RFC-822 source (`GET /email/messages/{id}`, detail group). */
 export interface EmailMessageDetailDto extends EmailMessageDto {
     rawBody?: string | null;
+    /** Server-sanitised HTML body for safe display in a sandboxed iframe. */
+    bodyHtml?: string | null;
+    /** Plain-text body alternative, shown when there is no HTML. */
+    bodyText?: string | null;
+    /** Whether the sanitised HTML still references remote content (gated behind "Load images"). */
+    hasRemoteContent?: boolean | null;
 }
 
 /**
