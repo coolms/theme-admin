@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-BU7sgyLu.js`).then(o=>o.ModerationListComponent)}];export{t as MODERATION_ROUTES};
