@@ -20,7 +20,7 @@ import {
 } from '@coolms/ui-angular';
 import { EmailDelegationsCardComponent } from './email-delegations-card.component';
 import { EmailService } from './email.service';
-import { folderCount, folderCountTitle, importedFraction } from './folder-fraction.util';
+import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { buildReplyQuote } from './reply-quote.util';
 import {
     EmailAttachmentDto,
@@ -160,8 +160,8 @@ interface ComposeDraft {
                                         [title]="folderCountTitle(f)"
                                         (click)="selectFolder(f.folder)">
                                     <span class="mbx__folder-name">{{ f.folder }}</span>
-                                    @if (f.unseen > 0) {
-                                        <span class="mbx__badge">{{ f.unseen }}</span>
+                                    @if (folderUnread(f) > 0) {
+                                        <span class="mbx__badge">{{ folderUnread(f) }}</span>
                                     }
                                     <span class="mbx__folder-total">{{ folderCount(f) }}</span>
                                     @if (importedFraction(f) !== null) {
@@ -1419,14 +1419,14 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         forkJoin(list.map(mb => this.email.listFolders(mb.id).pipe(
-            map(folders => [mb.id, folders.reduce((sum, f) => sum + f.unseen, 0)] as const),
+            map(folders => [mb.id, folders.reduce((sum, f) => sum + folderUnread(f), 0)] as const),
             catchError(() => of([mb.id, 0] as const)),
         ))).subscribe(pairs => this.mailboxUnread.set(Object.fromEntries(pairs)));
     }
 
     /** Patch a single mailbox's unread badge from a freshly-loaded folder list. */
     private patchMailboxUnread(id: string, folders: EmailFolderDto[]): void {
-        const unread = folders.reduce((sum, f) => sum + f.unseen, 0);
+        const unread = folders.reduce((sum, f) => sum + folderUnread(f), 0);
         this.mailboxUnread.update(prev => ({ ...prev, [id]: unread }));
     }
 
@@ -1668,6 +1668,11 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The sentence the rail's fraction stands for, as a tooltip. */
     folderCountTitle(f: EmailFolderDto): string {
         return folderCountTitle(f);
+    }
+
+    /** The unread badge: the SERVER's count when known, else the imported one. */
+    folderUnread(f: EmailFolderDto): number {
+        return folderUnread(f);
     }
 
     /** Move the open message to a folder (remote IMAP); on success it leaves the current list. */
@@ -1995,7 +2000,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
                 const delta = seen ? -targets.length : targets.length;
                 this.folders.set(this.folders().map(f =>
-                    f.folder === folder ? { ...f, unseen: Math.max(0, f.unseen + delta) } : f));
+                    f.folder === folder ? applyUnreadDelta(f, delta) : f));
                 const mbId = this.selectedMailboxId();
                 if (mbId !== null) {
                     this.patchMailboxUnread(mbId, this.folders());
@@ -2786,7 +2791,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
                 const delta = seen ? -1 : 1;
                 this.folders.set(this.folders().map(f =>
-                    f.folder === folder ? { ...f, unseen: Math.max(0, f.unseen + delta) } : f));
+                    f.folder === folder ? applyUnreadDelta(f, delta) : f));
                 const mbId = this.selectedMailboxId();
                 if (mbId !== null) {
                     this.patchMailboxUnread(mbId, this.folders());

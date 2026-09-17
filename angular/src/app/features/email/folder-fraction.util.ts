@@ -35,16 +35,60 @@ export function folderCount(f: EmailFolderDto): string {
     return `${imported} / ${(f.serverTotal as number).toLocaleString()}`;
 }
 
-/** The rail is tight, so the sentence the fraction stands for lives in the tooltip. */
+/**
+ * The unread badge. The server's figure when we have it, because the local one
+ * counts only the unread messages we have IMPORTED -- 1,507 against 2,549 actually
+ * unread on a real part-imported INBOX. Falls back to the local count, which is
+ * exact once a folder is fully imported.
+ */
+export function folderUnread(f: EmailFolderDto): number {
+    return typeof f.serverUnseen === 'number' ? f.serverUnseen : f.unseen;
+}
+
+/**
+ * The rail is tight, so the sentence the fraction stands for lives in the tooltip --
+ * including the UNIT, because a webmail that groups by conversation shows a smaller
+ * number for the same folder and an operator comparing the two should not read that
+ * as a defect.
+ */
 export function folderCountTitle(f: EmailFolderDto): string {
     const percent = importedFraction(f);
     const imported = f.total.toLocaleString();
+    const unread = unreadClause(f);
 
     if (percent === null) {
         return typeof f.serverTotal === 'number'
-            ? `${imported} messages, all of them imported`
-            : `${imported} messages imported (the server's own count is not known yet)`;
+            ? `${imported} messages, all of them imported.${unread} Counts messages, not conversations.`
+            : `${imported} messages imported (the server's own count is not known yet).${unread}`;
     }
 
-    return `${imported} of ${(f.serverTotal as number).toLocaleString()} imported (${percent}%) -- the rest is still being copied`;
+    return `${imported} of ${(f.serverTotal as number).toLocaleString()} messages imported (${percent}%) -- the rest is still being copied.${unread} Counts messages, not conversations: a mail app that groups by conversation will show fewer.`;
+}
+
+/**
+ * Apply an optimistic unread change to a folder after messages are marked read or
+ * unread locally.
+ *
+ * It moves BOTH counts. Marking a message read sets the flag on the server too, so
+ * the server's unread figure really does drop by one -- and if only the local count
+ * moved, the badge (which prefers the server's) would sit still while the reader
+ * watched their unread messages disappear.
+ */
+export function applyUnreadDelta(f: EmailFolderDto, delta: number): EmailFolderDto {
+    return {
+        ...f,
+        unseen: Math.max(0, f.unseen + delta),
+        serverUnseen: typeof f.serverUnseen === 'number'
+            ? Math.max(0, f.serverUnseen + delta)
+            : f.serverUnseen,
+    };
+}
+
+/** " 2,549 unread on the server." -- omitted when the server did not say. */
+function unreadClause(f: EmailFolderDto): string {
+    if (typeof f.serverUnseen !== 'number') {
+        return '';
+    }
+
+    return ` ${f.serverUnseen.toLocaleString()} unread on the server.`;
 }
