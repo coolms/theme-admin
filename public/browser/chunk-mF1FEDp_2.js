@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";import"./chunk-B_m5Yd57.js";import"./chunk-COXa3hGE.js";import"./chunk-56_Aze2z.js";import"./chunk-Bsj8EW4T.js";import"./chunk-BgjWCWRg.js";import"./chunk-BL-x-6kU.js";import"./chunk-BZd4xebm.js";import"./chunk-CvoPKfdI.js";import{M as Fe}from"./main-STDTIJE4.js";export{Fe as BpmnEditorPage};

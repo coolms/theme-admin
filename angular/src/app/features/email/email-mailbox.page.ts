@@ -833,10 +833,10 @@ interface ComposeDraft {
         /* A half-imported folder shows how far the backfill has walked it. */
         .mbx__folder-progress {
             position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-            background: var(--cms-border, #E5E7EB); border-radius: 0 0 4px 4px; overflow: hidden;
+            background: var(--cms-border); border-radius: 0 0 4px 4px; overflow: hidden;
         }
         .mbx__folder-progress-bar {
-            display: block; height: 100%; background: var(--cms-text-muted, #6B7280); opacity: .55;
+            display: block; height: 100%; background: var(--cms-text-muted); opacity: .55;
         }
         .mbx__badge {
             background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
