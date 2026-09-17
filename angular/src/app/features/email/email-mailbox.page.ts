@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, com
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, catchError, debounceTime, forkJoin, map, of, switchMap } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
@@ -415,7 +416,20 @@ interface ComposeDraft {
                                 </div>
                             }
                             <div class="mbx__detail-body">
-                                @if (msg.snippet) {
+                                @if (msg.bodyHtml) {
+                                    @if (msg.hasRemoteContent && !loadRemoteImages()) {
+                                        <div class="mbx__remote-note">
+                                            <i class="bi bi-shield-lock"></i>
+                                            <span>Remote images are blocked for your privacy.</span>
+                                            <button type="button" class="mbx__remote-load" (click)="loadRemoteImages.set(true)">Load images</button>
+                                        </div>
+                                    }
+                                    <iframe class="mbx__body-frame" [srcdoc]="bodyFrameDoc()"
+                                            sandbox="allow-popups allow-popups-to-escape-sandbox"
+                                            referrerpolicy="no-referrer" title="Message body"></iframe>
+                                } @else if (msg.bodyText) {
+                                    <pre class="mbx__body-text">{{ msg.bodyText }}</pre>
+                                } @else if (msg.snippet) {
                                     <p class="mbx__detail-snippet">{{ msg.snippet }}</p>
                                 }
                                 @if (loadingAttachments() || attachments().length > 0) {
@@ -961,6 +975,28 @@ interface ComposeDraft {
             border-radius: var(--cms-radius, 6px); max-height: 400px; overflow: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
         }
 
+        /* Rendered message body (sandboxed iframe) + its remote-image gate. */
+        .mbx__body-frame {
+            display: block; width: 100%; min-height: 320px; height: 60vh;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: #fff;
+        }
+        .mbx__body-text {
+            margin: 0 0 12px; padding: 12px; background: var(--cms-surface-alt, var(--cms-surface));
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
+            font-size: .8125rem; white-space: pre-wrap; word-break: break-word;
+        }
+        .mbx__remote-note {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 12px;
+            background: var(--cms-surface-alt, var(--cms-surface)); border: 1px solid var(--cms-border);
+            border-radius: var(--cms-radius, 6px); font-size: .8125rem; color: var(--cms-text-secondary);
+        }
+        .mbx__remote-load {
+            margin-left: auto; padding: 4px 10px; border: 1px solid var(--cms-border);
+            border-radius: var(--cms-radius-md, 8px); background: var(--cms-surface);
+            color: var(--cms-accent, #2563eb); cursor: pointer; font-size: .8125rem;
+        }
+        .mbx__remote-load:hover { background: var(--cms-surface-alt, var(--cms-surface)); }
+
         /* Attachment chip row (backlog slice 6b). */
         .mbx__attachments { margin-top: 14px; border-top: 1px solid var(--cms-border); padding-top: 12px; }
         .mbx__attachments-head { display: flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; color: var(--cms-text-secondary); margin-bottom: 8px; }
@@ -1092,6 +1128,36 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly contacts = inject(ContactsService);
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly domSanitizer = inject(DomSanitizer);
+
+    /** Per-message opt-in to load the remote images the server flagged; reset on open. */
+    readonly loadRemoteImages = signal(false);
+
+    /**
+     * The `srcdoc` for the message-body iframe: the server-sanitised HTML wrapped in a
+     * minimal document whose CSP blocks EVERY remote fetch until the reader loads
+     * images. The iframe itself is `sandbox`ed (no scripts, no same-origin), so this is
+     * defence in depth over the server sanitiser -- and `bypassSecurityTrustHtml` is
+     * safe here precisely because the content is already sanitised AND contained.
+     */
+    readonly bodyFrameDoc = computed<SafeHtml | null>(() => {
+        const html = this.selectedMessage()?.bodyHtml;
+        if (html === null || html === undefined || html === '') {
+            return null;
+        }
+        // No remote by default: data: images (inlined cid:) and inline styles only.
+        // "Load images" widens img-src to http(s); scripts/objects/frames stay blocked.
+        const imgSrc = this.loadRemoteImages() ? 'data: https: http:' : 'data:';
+        const csp = `default-src 'none'; img-src ${imgSrc}; style-src 'unsafe-inline'; font-src data:`;
+        const doc = '<!doctype html><html><head><meta charset="utf-8">'
+            + `<meta http-equiv="Content-Security-Policy" content="${csp}">`
+            + '<base target="_blank">'
+            + '<style>html,body{margin:0;padding:8px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;'
+            + 'font-size:14px;line-height:1.5;color:#1f2937;word-break:break-word;overflow-wrap:anywhere;}'
+            + 'img{max-width:100%;height:auto;}a{color:#2563eb;}</style>'
+            + `</head><body>${html}</body></html>`;
+        return this.domSanitizer.bypassSecurityTrustHtml(doc);
+    });
 
     /**
      * localStorage key for the last-selected mailbox, so a reload restores it instead
@@ -1445,6 +1511,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.thread.set([]);
         this.moveMenu.set(null);
         this.deletePrompt.set(null);
+        this.loadRemoteImages.set(false);
         this.loadingDetail.set(true);
         this.email.getMessage(id).subscribe({
             next: detail => {
