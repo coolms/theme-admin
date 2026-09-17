@@ -1,6 +1,6 @@
 /**
- * F.14c-2 -- pure helpers for the variable-input form. Kept Angular-
- * free so they can be unit-tested directly and so the future F.9 Form
+ * pure helpers for the variable-input form. Kept Angular-
+ * free so they can be unit-tested directly and so the future Form
  * Builder swap can reuse the same nested-JSON encoding.
  *
  * Three responsibilities:

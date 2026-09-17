@@ -22,6 +22,7 @@ import {
     CmsDetailFooterComponent,
     CmsPageHeaderComponent,
     ConfirmDialogService,
+    DateTimeFormatService,
     LayoutActionsService,
     PageTitleService,
     ToastService,
@@ -29,9 +30,9 @@ import {
 } from '@coolms/ui-angular';
 import { CalendarEventsCardComponent } from './calendar-events-card.component';
 import { CalendarSettingsSidePanelComponent } from './calendar-settings-side-panel.component';
+import { localDateOf, localDayKey } from './day-key.util';
 import { MiniCalendarComponent } from './mini-calendar.component';
-
-type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
+import { type FcViewName, viewTitle } from './view-title.util';
 
 /**
  * -- Calendar Detail admin page, redesigned (/admin/calendars/:slug).
@@ -387,6 +388,7 @@ export class CalendarDetailPageComponent implements OnInit {
     private readonly destroyRef  = inject(DestroyRef);
     private readonly store       = inject(Store);
     private readonly config      = inject(ConfigService);
+    private readonly dtf         = inject(DateTimeFormatService);
 
     /** Backend-defined page chrome (`calendar:detail` layout config). */
     readonly layout    = signal<LayoutConfig | null>(null);
@@ -679,7 +681,12 @@ export class CalendarDetailPageComponent implements OnInit {
 
     // -- Mini-cal interactions ------------------------------------------------
     onMiniDateSelect(d: Date): void {
-        this.eventsCard?.gotoDate(d);
+        // The mini-calendar names a CALENDAR DAY with a browser-local Date.
+        // Handed over as a Date, FullCalendar reads it as an instant and
+        // resolves it in the PERSON's zone -- local midnight of the 11th is
+        // still the 10th there for any browser east of that zone. As a
+        // zone-less ISO day it is read as that day in the grid's own zone.
+        this.eventsCard?.gotoDate(localDayKey(d));
     }
 
     onMiniMonthChange(_: { year: number; month: number }): void {
@@ -699,7 +706,13 @@ export class CalendarDetailPageComponent implements OnInit {
         // period), NOT `activeStart` (first cell of the rendered grid,
         // which is often the previous month's tail). See the JSDoc on
         // `viewRangeChanged` in calendar-events-card.component.ts.
-        const cs = range.currentStart;
+        // FullCalendar 7 resolves the named timeZone itself, so `currentStart`
+        // is a TRUE INSTANT: the moment the period begins in the PERSON's
+        // zone. Read through the browser's `getMonth()` it names the previous
+        // month for any browser west of that zone, so it is projected into
+        // the profile's calendar day first, and the mini-calendar gets a
+        // local Date carrying that day.
+        const cs = localDateOf(this.dtf.dayKey(range.currentStart.toISOString()));
 
         // Task -- sync the Month/Week/Day toggle whenever FC's view
         // changes internally (e.g. clicking a weekday header in Week
@@ -715,7 +728,7 @@ export class CalendarDetailPageComponent implements OnInit {
         // Without this, every view showed just the month + year, which
         // was useless context in Day view (the user couldn't tell
         // which day they were looking at).
-        this.activeMonthLabel.set(this.formatTitle(range.viewType, cs, range.currentEnd));
+        this.activeMonthLabel.set(viewTitle(range.viewType, range.currentStart, range.currentEnd, this.dtf));
 
         // Sync the mini-cal's displayed month directly via setMonth() so
         // it always tracks the main grid. For Month view we deliberately
@@ -728,40 +741,6 @@ export class CalendarDetailPageComponent implements OnInit {
         this.activeDate.set(
             range.viewType === 'dayGridMonth' ? null : cs,
         );
-    }
-
-    /**
-     * Compose the toolbar title for the displayed view.
-     * `currentEnd` is FullCalendar's exclusive end (e.g. for the week
-     * Mon May 25 - Sun May 31 it points at Mon Jun 1), so we always
-     * subtract one day for the visible "to" date.
-     */
-    private formatTitle(view: FcViewName, start: Date, end: Date): string {
-        if (view === 'timeGridDay') {
-            return start.toLocaleString(undefined, {
-                weekday: 'long',
-                month:   'long',
-                day:     'numeric',
-                year:    'numeric',
-            });
-        }
-        if (view === 'timeGridWeek') {
-            // FC's currentEnd is exclusive -- drop one day to get the
-            // visible last day of the week.
-            const lastVisible = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-            const sameMonth = start.getMonth() === lastVisible.getMonth()
-                && start.getFullYear() === lastVisible.getFullYear();
-            if (sameMonth) {
-                // "May 25 - 31, 2026"
-                const month = start.toLocaleString(undefined, { month: 'long' });
-                return `${month} ${start.getDate()} – ${lastVisible.getDate()}, ${start.getFullYear()}`;
-            }
-            // Month-crossing or year-crossing -- show both ends explicitly.
-            const fmt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-            return `${start.toLocaleString(undefined, fmt)} – ${lastVisible.toLocaleString(undefined, fmt)}`;
-        }
-        // dayGridMonth -- "May 2026"
-        return start.toLocaleString(undefined, { month: 'long', year: 'numeric' });
     }
 
     onEventsChanged(): void {

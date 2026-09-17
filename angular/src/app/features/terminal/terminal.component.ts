@@ -7,8 +7,9 @@ import { Terminal, type ITheme } from '@xterm/xterm';
 import { FitAddon }      from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Store } from '@ngxs/store';
-import { AuthState, ThemeService, UserPreferencesService, type ResolvedTheme } from '@coolms/core-angular';
+import { AuthState, ElevationService, ThemeService, UserPreferencesService, type ResolvedTheme } from '@coolms/core-angular';
 import { TerminalService } from './terminal.service';
+import { TerminalRefusedError } from './terminal.types';
 import { TerminalHistoryService } from './terminal-history.service';
 
 /** Where a fresh shell starts, and the server's own default. */
@@ -118,6 +119,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     private readonly store      = inject(Store);
     private readonly destroyRef = inject(DestroyRef);
     private readonly theme      = inject(ThemeService);
+    private readonly elevation  = inject(ElevationService);
 
     constructor() {
         // Re-themes a LIVE terminal: xterm re-renders from options.theme, so
@@ -260,7 +262,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // -- Execution ----------------------------------------------------------
 
-    private execute(line: string): void {
+    /**
+     * @param afterGrant true when this is the one re-send after an elevation
+     *                   grant: a second refusal is then printed, not prompted for.
+     */
+    private execute(line: string, afterGrant = false): void {
         this.executing = true;
 
         this.svc.execute(line, this.cwd).pipe(
@@ -283,6 +289,23 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             error: err => {
                 this.term.writeln(`\x1b[31m✗ ${(err as Error).message ?? 'Command failed'}\x1b[0m`);
+                // A member refused for want of an elevated session: the refusal
+                // came as a status before any output, so the same prompt every
+                // gated action uses hangs off it here, and the line is sent
+                // again once -- on a grant, as the person, never as anyone else.
+                if (err instanceof TerminalRefusedError && err.status === 403 && !afterGrant) {
+                    this.elevation.offerFor(err.detail).pipe(
+                        takeUntilDestroyed(this.destroyRef),
+                    ).subscribe(granted => {
+                        if (granted) {
+                            this.execute(line, true);
+                        } else {
+                            this.executing = false;
+                            this.writePrompt();
+                        }
+                    });
+                    return;
+                }
                 this.executing = false;
                 this.writePrompt();
             },

@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
 import { AppConfigState, AuthState, Logout, SetTokens } from '@coolms/core-angular';
 import { ApiService } from '../../api/api.service';
-import { TerminalCompleteResponse, TerminalExecuteEvent } from './terminal.types';
+import { TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
 @Injectable({ providedIn: 'root' })
 export class TerminalService {
@@ -48,7 +48,10 @@ export class TerminalService {
                     }
 
                     if (!res.ok || !res.body) {
-                        subscriber.error(new Error(`HTTP ${res.status}`));
+                        // A refusal is decided before the stream opens, and it says
+                        // why: the problem detail is the line the terminal prints and
+                        // the reason the elevation prompt shows.
+                        subscriber.error(new TerminalRefusedError(res.status, await this.detailOf(res)));
                         return;
                     }
 
@@ -78,6 +81,15 @@ export class TerminalService {
             body:   JSON.stringify({ input, cwd }),
             signal,
         });
+    }
+
+    /** The problem detail of a refused request, or the bare status when the body has none. */
+    private async detailOf(res: Response): Promise<string> {
+        try {
+            const body = await res.json() as { detail?: unknown };
+            if (typeof body.detail === 'string' && body.detail !== '') return body.detail;
+        } catch { /* not a problem document */ }
+        return `HTTP ${res.status}`;
     }
 
     /** Attempt a token refresh. Returns true and updates the store on success. */

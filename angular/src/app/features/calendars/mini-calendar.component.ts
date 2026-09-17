@@ -10,7 +10,9 @@ import {
     untracked,
 } from '@angular/core';
 
-import { UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { DateTimeFormatService, UserCalendarPreferencesService } from '@coolms/ui-angular';
+
+import { localDateOf } from './day-key.util';
 
 interface MiniCell {
     readonly date:       Date;
@@ -178,6 +180,7 @@ export class MiniCalendarComponent {
     monthChange = output<{ year: number; month: number }>();
 
     private readonly userPrefs = inject(UserCalendarPreferencesService);
+    private readonly dtf       = inject(DateTimeFormatService);
 
     /**
      * Weekday header labels -- re-orderable based on the user's week-start
@@ -192,16 +195,19 @@ export class MiniCalendarComponent {
     /**
      * Cursor: year + 0-based month displayed by this mini-cal.
      *
-     * Initialised lazily via a factory so we evaluate `new Date()` at
+     * Initialised lazily via a factory so we evaluate the clock at
      * construction time rather than at module-load time -- the latter
      * was the root cause of the "shows April when today is May 30"
      * bug, because module-level signal initialisers were captured
      * when Vite first imported the file (often the prior month).
+     *
+     * It opens on the PERSON's month: the one today falls in for the
+     * profile's timezone, which near midnight is not the browser's.
      */
     private readonly cursor = signal<{ year: number; month: number }>(
         (() => {
-            const now = new Date();
-            return { year: now.getFullYear(), month: now.getMonth() };
+            const today = localDateOf(this.todayKey());
+            return { year: today.getFullYear(), month: today.getMonth() };
         })(),
     );
 
@@ -285,11 +291,11 @@ export class MiniCalendarComponent {
     }
 
     goToday(): void {
-        const now = new Date();
-        const next = { year: now.getFullYear(), month: now.getMonth() };
+        const today = localDateOf(this.todayKey());
+        const next = { year: today.getFullYear(), month: today.getMonth() };
         this.cursor.set(next);
         this.monthChange.emit(next);
-        this.dateSelect.emit(now);
+        this.dateSelect.emit(today);
     }
 
     onSelect(cell: MiniCell): void {
@@ -315,7 +321,13 @@ export class MiniCalendarComponent {
         return `${y}-${m}-${day}`;
     }
 
+    /**
+     * The PERSON's today -- the calendar day now falls on in the profile's
+     * timezone, through the estate's formatter. `new Date()` read with the
+     * browser's getters ringed the browser's day, which for a profile in
+     * Tokyo and a browser in Europe is yesterday's cell every evening.
+     */
     private todayKey(): string {
-        return this.dateKey(new Date())!;
+        return this.dtf.dayKey(new Date().toISOString());
     }
 }

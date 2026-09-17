@@ -21,7 +21,7 @@ import { DocumentPageStateService } from './document-page-state.service';
 import { transformVfsToTree, type VfsTreeNode } from './vfs-tree.helpers';
 
 /**
- * F.14c-3 -- VFS-tree folders sidebar. Replaces the F.13b
+ * VFS-tree folders sidebar. Replaces the earlier
  * `DocumentFoldersService`-driven flat list with a real lazy-expand
  * tree backed by `ApiService.listDirectory()`.
  *

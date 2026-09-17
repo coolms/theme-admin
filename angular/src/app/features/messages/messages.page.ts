@@ -25,7 +25,7 @@ import { VfsSecureImgDirective } from '../vfs/vfs-secure-img.directive';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
-import { conversationLabel, lastActivityTs, presenceDot, rowPreview as rowPreviewOf, unreadFor } from './conversation-row.util';
+import { conversationLabel, lastActivityTs, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
@@ -1516,30 +1516,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /**
      * A compact "when" for an inbox row: `now` (< 1 min), the clock time for
      * today, `Yesterday`, a weekday within the last week, else a short date.
+     *
+     * Through {@link rowWhen} and the estate's formatter, so today and the
+     * clock are the PERSON's -- the profile's timezone and 12h/24h choice --
+     * where the page used to hand both to the browser.
      */
     relativeTime(iso: string): string {
-        const then = new Date(iso);
-        const ts = then.getTime();
-        if (Number.isNaN(ts)) {
-            return '';
-        }
-        const now = new Date();
-        const diffMs = now.getTime() - ts;
-        if (diffMs < 60_000) {
-            return 'now';
-        }
-        if (then.toDateString() === now.toDateString()) {
-            return then.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        const yesterday = new Date(now);
-        yesterday.setDate(now.getDate() - 1);
-        if (then.toDateString() === yesterday.toDateString()) {
-            return 'Yesterday';
-        }
-        if (diffMs < 7 * 86_400_000) {
-            return then.toLocaleDateString([], { weekday: 'short' });
-        }
-        return then.toLocaleDateString([], { day: 'numeric', month: 'short' });
+        return rowWhen(iso, this.dtf);
     }
 
     /** The selected conversation is a `group` (only groups have a members panel). */

@@ -14,7 +14,7 @@ interface HydraCollection<T> {
  * spaces from the same endpoint; the `space` query param picks the
  * root and the `path` param navigates within it.
  *
- * Create / Delete / Rename land in F.13c.
+ * Create / Delete / Rename land with the folder actions.
  */
 @Injectable({ providedIn: 'root' })
 export class DocumentFoldersService {

@@ -1,4 +1,7 @@
+import { type DateTimeFormatService } from '@coolms/ui-angular';
+
 import { ChatConversationDto, ConversationParticipantDto } from './messages.types';
+import { calendarDaysBetween, monthDayName, weekdayName } from '../calendars/day-key.util';
 
 /**
  * How a conversation ROW is projected for display -- its label, its
@@ -134,4 +137,40 @@ export function counterpartOf(
     meId: Viewer,
 ): ConversationParticipantDto | undefined {
     return (conversation?.participants ?? []).find(p => p.userId !== null && p.userId !== meId);
+}
+
+/**
+ * A compact "when" for an inbox row: `now` (< 1 min), the clock time for
+ * today, `Yesterday`, a weekday within the last week, else a short date.
+ *
+ * Today and the clock are the PERSON's. The day an instant falls on is taken
+ * in the profile's timezone through `DateTimeFormatService.dayKey()`, and the
+ * clock through `time()`, which carries the profile's 12h/24h choice. The page
+ * used to ask `toLocaleTimeString([])` and `toDateString()`, which take the
+ * BROWSER's locale and the BROWSER's zone: 13:05 read `01:05 PM` to someone
+ * whose profile says 24h, and a message sent at 00:30 in Tokyo sat under
+ * "Yesterday" for a browser still in Europe.
+ *
+ * The weekday and the short date name a calendar day, not an instant: the DAY
+ * is the profile's, the language of its name is the browser's.
+ */
+export function rowWhen(iso: string, dtf: DateTimeFormatService, now: Date = new Date()): string {
+    const ts = new Date(iso).getTime();
+    if (Number.isNaN(ts)) {
+        return '';
+    }
+    if (now.getTime() - ts < 60_000) {
+        return 'now';
+    }
+
+    const day = dtf.dayKey(iso);
+    const daysAgo = calendarDaysBetween(day, dtf.dayKey(now.toISOString()));
+    if (daysAgo === 0) {
+        return dtf.time(iso);
+    }
+    if (daysAgo === 1) {
+        return 'Yesterday';
+    }
+
+    return daysAgo < 7 ? weekdayName(day) : monthDayName(day);
 }

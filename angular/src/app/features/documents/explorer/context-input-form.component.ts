@@ -21,7 +21,7 @@ import {
 } from './context-form.helpers';
 
 /**
- * F.14c-2 -- schema-driven variable input. Walks a flat
+ * schema-driven variable input. Walks a flat
  * `FormVariableInput[]` (extracted from a `DocumentTemplate`'s
  * DTMPL contextSchema) into a recursive group tree and renders one
  * text input per variable. Submits as **nested JSON**: dotted paths
@@ -29,11 +29,11 @@ import {
  * resolve them without flat-key reshaping.
  *
  * Replaceable. The contract -- `(variables, initialValue) -> emit
- * nested JSON` -- is intentionally narrow so the future F.9 Form
+ * nested JSON` -- is intentionally narrow so the future Form
  * Builder can swap this implementation without touching the dialog
  * or the page-level wire-up.
  *
- * F.14c-2 scope:
+ * Scope of this form:
  *   - Scalar variables render `<input type="text">`. Type detection
  *     (date / number / boolean) is deferred.
  *   - Variables flagged as entity references (

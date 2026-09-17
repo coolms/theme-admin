@@ -15,7 +15,7 @@ export const CONTENT_ROUTES: Routes = [
             import('./pages-explorer.page').then(m => m.PagesExplorerPage),
         data: { fullHeight: true, activeNav: '/admin/content/pages' },
     },
-    // F.13b: Document Library lives under /content/documents to match
+ // Document Library lives under /content/documents to match
     // its sidebar placement in the Content group.
     {
         path: 'documents',

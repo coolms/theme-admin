@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { ElevationService } from '@coolms/core-angular';
-import { ConfirmDialogService } from '@coolms/ui-angular';
+import { ElevationDisplay } from './elevation-display.service';
+import { EndElevationAction } from './end-elevation.action';
 
 /**
  * "Elevated until 14:47" in the topbar while the session is elevated, with
@@ -12,7 +13,13 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
  *
  * One read on init, so a tab that opens elevated (a sibling granted it)
  * shows it; after that the service moves the badge -- a grant, a drop from
- * anywhere, the expiry read at `expiresAt`, another tab's announcement.
+ * anywhere, another tab's announcement, and the grant simply running out.
+ *
+ * That last one is why `until` is a plain method rather than a `computed`: a
+ * cached derivation is recomputed when a dependency changes, and nothing
+ * changes when time passes. The service reports an elapsed grant as expired
+ * on any read of its state, so this asks it again rather than keeping the
+ * answer it was given while the grant was still live.
  */
 @Component({
     selector: 'app-elevation-badge',
@@ -20,8 +27,12 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (until(); as until) {
+            <!-- The separator belongs to the badge, not to the topbar: it must
+                 appear and vanish with the badge, and one element owning both
+                 is why a stray divider cannot be left behind in the icon run. -->
+            <span class="eb-sep" aria-hidden="true"></span>
             <button type="button"
-                    class="cms-badge cms-badge--warning eb-badge"
+                    class="cms-badge cms-badge--session eb-badge"
                     [title]="'Ends at ' + until + ', or when you close or reload the panel. Click to end it now.'"
                     (click)="drop()">
                 <i class="bi bi-shield-lock-fill"></i>
@@ -30,21 +41,35 @@ import { ConfirmDialogService } from '@coolms/ui-angular';
         }
     `,
     styles: [`
+        :host         { display: contents; }
+        .eb-sep       { width: 1px; height: 20px; margin: 0 2px; background: var(--cms-border-light); display: inline-block; vertical-align: middle; }
         .eb-badge     { cursor: pointer; border: 0; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
         .eb-badge i   { font-size: .85em; }
+        /* Appearing is the event worth noticing. Expiry needs no animation of
+           its own: the badge VANISHES, which the eye catches without help --
+           and an interval kept only to restyle a final minute would put back
+           the timer this path deliberately has none of. */
+        .eb-badge     { animation: eb-in 180ms ease-out; }
+        @keyframes eb-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .eb-badge { animation: none; } }
     `],
 })
 export class ElevationBadgeComponent implements OnInit {
     private readonly elevation = inject(ElevationService);
-    private readonly confirm   = inject(ConfirmDialogService);
+    private readonly display   = inject(ElevationDisplay);
+    private readonly end       = inject(EndElevationAction);
 
-    /** The clock time the current elevation ends at, or null when not elevated. */
-    readonly until = computed<string | null>(() => {
-        const at = this.elevation.expiresAt();
-        return this.elevation.elevated() && at
-            ? at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : null;
-    });
+    /**
+     * The clock time the current elevation ends at, or null when not elevated.
+     *
+     * Asked of {@link ElevationDisplay}, which the profile menu also asks, so
+     * the two surfaces cannot drift. It formats through the estate's seam and
+     * not `toLocaleTimeString([])`: the bare call takes the BROWSER's locale
+     * and the BROWSER's timezone, so it rendered `01:47 AM` to someone whose
+     * profile says 24h -- and on a fifteen-minute grant that is not cosmetic,
+     * because `01:47` read as 13:47 says it has twelve more hours to run.
+     */
+    readonly until = (): string | null => this.display.until();
 
     ngOnInit(): void {
         if (this.elevation.available) {
@@ -53,13 +78,6 @@ export class ElevationBadgeComponent implements OnInit {
     }
 
     drop(): void {
-        this.confirm.open({
-            title:        'End elevation now?',
-            message:      'Actions the mode bits forbid will ask for the admin password again.',
-            confirmLabel: 'End elevation',
-            cancelLabel:  'Keep it',
-        }).subscribe(yes => {
-            if (yes) this.elevation.drop('dropped_by_user').subscribe({ error: () => undefined });
-        });
+        this.end.run();
     }
 }

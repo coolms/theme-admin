@@ -17,12 +17,13 @@ import { filter } from 'rxjs/operators';
 
 import { ApiService, CalendarItemDto } from '../../api/api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { DrawerService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { DateTimeFormatService, DrawerService, ToastService } from '@coolms/ui-angular';
 import {
     CalendarEventEditorComponent,
     CalendarEventEditorData,
     CalendarEventEditorResult,
 } from './calendar-event-editor.component';
+import { calendarDaysBetween, localDateOf, localDayKey, monthDayName, shiftDayKey, weekdayName } from './day-key.util';
 import { MiniCalendarComponent } from './mini-calendar.component';
 
 interface DayBucket {
@@ -44,7 +45,9 @@ const LOOKAHEAD_DAYS = 14;
  *  - Header: title, open-full link, close button (drawer-owned)
  *  - Mini-calendar (reuses MiniCalendarComponent -- same widget the
  *    full Calendar Detail sidebar uses)
- *  - Upcoming events list, grouped by day for the next 14 days
+ *  - Upcoming events list, grouped by day for the next 14 days -- the
+ *    PERSON's days and clock, through DateTimeFormatService (the profile's
+ *    timezone and 12h/24h choice), not the browser's
  *  - Footer: "+ New event" CTA
  *
  * Data source: ApiService.listCalendarItems({ calendarSlug, from, to }).
@@ -261,7 +264,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     private readonly errors     = inject(ErrorHandlerService);
     private readonly drawer     = inject(DrawerService);
     private readonly router     = inject(Router);
-    private readonly userPrefs  = inject(UserCalendarPreferencesService);
+    private readonly dtf        = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly lookaheadDays = LOOKAHEAD_DAYS;
@@ -270,52 +273,57 @@ export class CalendarQuickPanelComponent implements OnInit {
     readonly items   = signal<CalendarItemDto[]>([]);
     readonly loading = signal<boolean>(true);
     readonly error   = signal<string | null>(null);
-    readonly selectedDate = signal<Date>(new Date());
+    /**
+     * The day the list starts on, as the browser-local Date the mini-calendar
+     * speaks (only its Y-M-D is read). It opens on the PERSON's today -- the
+     * calendar day now falls on in the profile's timezone.
+     */
+    readonly selectedDate = signal<Date>(localDateOf(this.dtf.dayKey(new Date().toISOString())));
 
-    /** Group items by day, starting at selectedDate. */
+    /**
+     * Items grouped by the day they start on IN THE PERSON'S TIMEZONE, for
+     * LOOKAHEAD_DAYS days from the selected day. The day comes from the
+     * estate's formatter (`dayKey`), not from the browser's Date getters: an
+     * event at 01:00 in Tokyo is tomorrow's for a person whose profile says
+     * Tokyo, whichever zone their browser sits in -- and the clock printed
+     * beside it, also the profile's, has to agree with the heading above it.
+     */
     readonly buckets = computed<DayBucket[]>(() => {
-        const all = this.items();
-        const start = this.startOfDay(this.selectedDate());
-        const horizon = new Date(start);
-        horizon.setDate(horizon.getDate() + LOOKAHEAD_DAYS);
+        const all        = this.items();
+        const startKey   = localDayKey(this.selectedDate());
+        const horizonKey = shiftDayKey(startKey, LOOKAHEAD_DAYS);
 
-        // Bucket all items in [start, horizon) by their start-day local
-        // key. Items whose start < panel selection are skipped (they're
-        // in the past relative to the user's current focus).
+        // Keys are canonical YYYY-MM-DD, so the window test is a string
+        // compare. Items before the panel's selection are skipped (they are
+        // in the past relative to the person's current focus).
         const map = new Map<string, CalendarItemDto[]>();
         for (const item of all) {
-            const itemStart = new Date(item.start);
-            if (itemStart < start || itemStart >= horizon) continue;
-            const key = this.dateKey(itemStart);
+            const key = this.dtf.dayKey(item.start);
+            if (key < startKey || key >= horizonKey) continue;
             if (!map.has(key)) map.set(key, []);
             map.get(key)!.push(item);
         }
 
         const out: DayBucket[] = [];
-        const today = this.startOfDay(new Date());
-        const cursor = new Date(start);
-        while (cursor < horizon) {
-            const key = this.dateKey(cursor);
+        const today = this.dtf.dayKey(new Date().toISOString());
+        for (let key = startKey; key < horizonKey; key = shiftDayKey(key, 1)) {
             const items = map.get(key);
             if (items && items.length > 0) {
                 items.sort((a, b) => a.start.localeCompare(b.start));
                 out.push({
                     key,
-                    date: new Date(cursor),
-                    label: this.dayLabel(cursor, today),
+                    date: localDateOf(key),
+                    label: this.dayLabel(key, today),
                     items,
                 });
             }
-            cursor.setDate(cursor.getDate() + 1);
         }
         return out;
     });
 
-    readonly horizonLabel = computed(() => {
-        const d = new Date(this.selectedDate());
-        d.setDate(d.getDate() + LOOKAHEAD_DAYS - 1);
-        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    });
+    readonly horizonLabel = computed(() =>
+        monthDayName(shiftDayKey(localDayKey(this.selectedDate()), LOOKAHEAD_DAYS - 1)),
+    );
 
     constructor() {
         // Refetch whenever the slug or the selectedDate moves.
@@ -335,9 +343,15 @@ export class CalendarQuickPanelComponent implements OnInit {
         this.loading.set(true);
         this.error.set(null);
 
+        // The window is asked in browser-local days, two wider than the list
+        // on each side: the list keeps an item by the day it starts on in the
+        // PERSON's timezone, and that day can lie a calendar day either side
+        // of the browser's (26 hours separate UTC-12 from UTC+14). What the
+        // window over-fetches, `buckets` drops by key.
         const from = this.startOfDay(selected);
-        const to   = new Date(from);
-        to.setDate(to.getDate() + LOOKAHEAD_DAYS);
+        from.setDate(from.getDate() - 2);
+        const to   = this.startOfDay(selected);
+        to.setDate(to.getDate() + LOOKAHEAD_DAYS + 2);
 
         this.api.listCalendarItems({
             calendarSlug: slug,
@@ -427,21 +441,15 @@ export class CalendarQuickPanelComponent implements OnInit {
         void this.router.navigate(['/calendars', slug]);
     }
 
+    /**
+     * The event's clock through the estate's formatter: the profile's
+     * timezone and 12h/24h choice, presented the way every other surface
+     * presents a time. The panel used to feed those two preferences into
+     * `toLocaleTimeString(undefined, ...)`, which still left the rendering to
+     * the BROWSER's locale.
+     */
     formatTime(item: CalendarItemDto): string {
-        if (item.allDay) return 'All day';
-        try {
-            // Task -- honour user's chosen timezone + 12/24h preference
-            // for the event-time hint in the quick panel.
-            const opts: Intl.DateTimeFormatOptions = {
-                hour:   'numeric',
-                minute: '2-digit',
-                hour12: this.userPrefs.timeFormat() === '12h',
-                timeZone: this.userPrefs.tz() || undefined,
-            };
-            return new Date(item.start).toLocaleTimeString(undefined, opts);
-        } catch {
-            return '';
-        }
+        return item.allDay ? 'All day' : this.dtf.time(item.start);
     }
 
     private startOfDay(d: Date): Date {
@@ -450,20 +458,12 @@ export class CalendarQuickPanelComponent implements OnInit {
         return out;
     }
 
-    private dateKey(d: Date): string {
-        const y  = d.getFullYear();
-        const m  = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${dd}`;
-    }
-
-    private dayLabel(d: Date, today: Date): string {
-        const diffMs = this.startOfDay(d).getTime() - today.getTime();
-        const days   = Math.round(diffMs / 86400000);
-        const wd     = d.toLocaleDateString(undefined, { weekday: 'short' });
-        const md     = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    /** "Today, Mar 10" / "Tomorrow, Mar 11" / "Mon, Mar 11" -- days of the person's calendar. */
+    private dayLabel(key: string, today: string): string {
+        const days = calendarDaysBetween(today, key);
+        const md   = monthDayName(key);
         if (days === 0) return `Today, ${md}`;
         if (days === 1) return `Tomorrow, ${md}`;
-        return `${wd}, ${md}`;
+        return `${weekdayName(key)}, ${md}`;
     }
 }

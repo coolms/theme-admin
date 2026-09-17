@@ -1,5 +1,5 @@
 /**
- * F.14c-1 -- fallback icons used while the format-info endpoint is
+ * fallback icons used while the format-info endpoint is
  * still loading or when a template advertises a format the backend
  * doesn't know. The runtime always prefers `FormatInfoService`'s
  * payload; these constants exist solely so the very first paint of

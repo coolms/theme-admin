@@ -72,7 +72,7 @@ export interface SegmentEditorDialogData {
                     <label class="cms-label">Rule</label>
                     <textarea class="cms-input" rows="4" [(ngModel)]="rule"
                               (ngModelChange)="onRuleChange()"
-                              placeholder="eventCount('pageview') >= 3 and subject['known']"></textarea>
+                              placeholder="eventCount('pageview') >= 3 and subject['kind'] in ['recognised', 'known']"></textarea>
                     <div class="cms-field-hint">
                         Boolean Expression-Language over <code>subject</code>. Sugar:
                         <code>eventCount('type')</code>, <code>attr('name')</code>, <code>daysSinceSeen()</code>.
