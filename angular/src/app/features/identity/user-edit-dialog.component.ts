@@ -15,6 +15,7 @@ import { Store } from '@ngxs/store';
 import { forkJoin } from 'rxjs';
 import { ApiService, CreateUserDto, IdentityUserDto } from '../../api/api.service';
 import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms/core-angular';
+import { UserDeletionPanelComponent } from './user-deletion-panel.component';
 
 interface UserEditDialogData {
     readonly userId?:       string;
@@ -26,7 +27,7 @@ interface UserEditDialogData {
     selector: 'app-user-edit-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, DynamicFormComponent],
+    imports: [CmsLoaderComponent, DynamicFormComponent, UserDeletionPanelComponent],
     template: `
         <div class="cms-dialog ued-dialog">
             <div class="cms-dialog-header">
@@ -56,6 +57,17 @@ interface UserEditDialogData {
                         [submitLabel]="isCreateMode ? 'Create' : 'Save'"
                         (submitted)="onSubmit($event)"
                         (cancelled)="close()" />
+
+                    <!-- Level two of "Legal holds": the pending deletion and the
+                         holds of this one person, with cancel / place / release. Edit mode only. -->
+                    @if (!isCreateMode && user(); as u) {
+                        <div class="ued-deletion">
+                            <app-user-deletion-panel
+                                [userId]="u.id"
+                                [accountLabel]="u.fullName || u.identifier"
+                                (changed)="deletionChanged = true" />
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -65,6 +77,7 @@ interface UserEditDialogData {
         .ued-dialog { width: 520px; max-height: 90vh; display: flex; flex-direction: column; }
         .ued-loading-user { display: flex; justify-content: center; align-items: center; padding: 60px; }
         .ued-body { overflow-y: auto; flex: 1; padding: 20px; }
+        .ued-deletion { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cms-border, #e5e7eb); }
     `],
 })
 export class UserEditDialogComponent implements OnInit {
@@ -217,7 +230,10 @@ export class UserEditDialogComponent implements OnInit {
         });
     }
 
-    close(): void { this.dialogRef.close(null); }
+    /** A cancel, a hold or a release happened in the panel: the list behind the dialog reloads on close. */
+    deletionChanged = false;
+
+    close(): void { this.dialogRef.close(this.deletionChanged ? true : null); }
 
     private groupsListChangedFromValue(u: IdentityUserDto, submitted: string[]): boolean {
         const original = new Set(u.groups.map(g => g.id));
