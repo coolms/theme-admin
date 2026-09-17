@@ -355,17 +355,20 @@ export interface AccountDeletionHoldDto {
     releasedByLabel?: string | null;
 }
 
-/** The last fire of a deletion's schedule row: the four coverage lists on a success, the hold's name on a skip. */
+/** The last fire of a deletion's schedule row: the hold's name on a skip, the sentence on a success. */
 export interface AccountDeletionRunDto {
     outcome:     'success' | 'skipped' | 'failed';
     at:          string;
     detail?:     string | null;
     error?:      string | null;
-    erased:      string[];
-    minimised:   string[];
-    kept:        string[];
-    uncovered:   string[];
-    listsParsed: boolean;
+}
+
+/** What an executed deletion reached, from the record: four lists, whether or not a schedule row fired. */
+export interface AccountDeletionCoverageDto {
+    erased:    string[];
+    minimised: string[];
+    kept:      string[];
+    uncovered: string[];
 }
 
 export type AccountDeletionState = 'pending' | 'held' | 'cancelled' | 'executed';
@@ -389,6 +392,7 @@ export interface AccountDeletionDto {
     hold?:            AccountDeletionHoldDto | null;
     nextAttemptAt?:   string | null;
     run?:             AccountDeletionRunDto | null;
+    coverage?:        AccountDeletionCoverageDto | null;
 }
 
 /** One hold of GET /auth/users/{id}/legal-holds. */

@@ -11,11 +11,11 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
 };
 
 /**
- * One deletion, in full: the record, the hold that stopped it, and the last
- * fire of its schedule row -- on a success the four lists the run wrote
- * (erased, minimised, kept, not covered), read from the same sentence the
- * log carries. Opened in the drawer from a row of the deletions list.
- * Presentation only: every fact here is the server's.
+ * One deletion, in full: the record, the hold that stopped it, what the
+ * deletion reached (the four lists the record stores: erased, minimised,
+ * kept, not covered -- structure, never a sentence parsed back), and the
+ * last fire of its schedule row. Opened in the drawer from a row of the
+ * deletions list. Presentation only: every fact here is the server's.
  */
 @Component({
     selector: 'app-deletion-detail-panel',
@@ -60,38 +60,45 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
                 </p>
             }
 
+            @if (d.coverage; as c) {
+                <h6 class="ddp-heading"><i class="bi bi-list-check me-1"></i>What the deletion reached</h6>
+                <div class="ddp-lists">
+                    <section>
+                        <h6>Erased <span class="text-muted">({{ c.erased.length }})</span></h6>
+                        <ul>@for (t of c.erased; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash;</li> }</ul>
+                    </section>
+                    <section>
+                        <h6>Minimised <span class="text-muted">({{ c.minimised.length }})</span></h6>
+                        <p class="small text-muted mb-1">The person's copied fields scrubbed; the record and its uuid kept.</p>
+                        <ul>@for (t of c.minimised; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash;</li> }</ul>
+                    </section>
+                    <section>
+                        <h6>Kept by declaration <span class="text-muted">({{ c.kept.length }})</span></h6>
+                        <ul>@for (t of c.kept; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash;</li> }</ul>
+                    </section>
+                    <section class="ddp-uncovered">
+                        <h6>Not covered <span class="text-muted">({{ c.uncovered.length }})</span></h6>
+                        <p class="small text-muted mb-1">These survived this deletion undeclared.</p>
+                        <ul>@for (t of c.uncovered; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash; nothing</li> }</ul>
+                    </section>
+                </div>
+            } @else if (d.state === 'executed') {
+                <p class="text-muted small">Executed before the record kept what a deletion reaches; the run row below, if any, carries it as a sentence.</p>
+            }
+
             @if (d.run; as run) {
                 <h6 class="ddp-heading"><i class="bi bi-alarm me-1"></i>Last run &mdash; {{ run.outcome }} on {{ dtf.dateTime(run.at) }}</h6>
-                @if (run.outcome === 'success' && run.listsParsed) {
-                    <div class="ddp-lists">
-                        <section>
-                            <h6>Erased <span class="text-muted">({{ run.erased.length }})</span></h6>
-                            <ul>@for (t of run.erased; track t) { <li>{{ t }}</li> }</ul>
-                        </section>
-                        <section>
-                            <h6>Minimised <span class="text-muted">({{ run.minimised.length }})</span></h6>
-                            <p class="small text-muted mb-1">The person's copied fields scrubbed; the record and its uuid kept.</p>
-                            <ul>@for (t of run.minimised; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash;</li> }</ul>
-                        </section>
-                        <section>
-                            <h6>Kept by declaration <span class="text-muted">({{ run.kept.length }})</span></h6>
-                            <ul>@for (t of run.kept; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash;</li> }</ul>
-                        </section>
-                        <section class="ddp-uncovered">
-                            <h6>Not covered <span class="text-muted">({{ run.uncovered.length }})</span></h6>
-                            <p class="small text-muted mb-1">These survived this deletion undeclared.</p>
-                            <ul>@for (t of run.uncovered; track t) { <li>{{ t }}</li> } @empty { <li class="text-muted">&ndash; nothing</li> }</ul>
-                        </section>
-                    </div>
-                } @else if (run.outcome === 'skipped') {
+                @if (run.outcome === 'skipped') {
                     <p class="ddp-reason">{{ run.error }}</p>
                 } @else if (run.outcome === 'failed') {
                     <p class="ddp-reason text-danger">{{ run.error }}</p>
+                } @else if (!d.coverage) {
+                    <p class="ddp-reason">{{ run.detail ?? 'The run reported nothing.' }}</p>
                 } @else {
-                    <p class="ddp-reason">{{ run.detail ?? run.error ?? 'The run reported nothing.' }}</p>
+                    <p class="text-muted small mb-1">The run row carries the lists above as a sentence.</p>
                 }
             } @else if (d.state === 'executed') {
-                <p class="text-muted small">Executed at once (no grace period): no schedule row fired, so there is no run to show. The coverage sentence is in the application log.</p>
+                <p class="text-muted small">Executed at once (no grace period): no schedule row fired.</p>
             }
         </div>
     `,
