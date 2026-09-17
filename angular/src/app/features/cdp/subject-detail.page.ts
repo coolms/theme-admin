@@ -146,7 +146,7 @@ interface EventBreakdownRow {
         .cms-subj__link:hover { text-decoration: underline; }
         .cms-subj__badge { font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; text-transform: capitalize; }
         .cms-subj__badge--known      { background: var(--cms-info-light, #eff6ff); color: var(--cms-primary, #2563eb); }
-        .cms-subj__badge--recognised { background: var(--cms-success-light, #ecfdf5); color: var(--cms-success, #047857); }
+        .cms-subj__badge--recognised { background: var(--cms-success-light, #f0fdf4); color: var(--cms-success, #16a34a); }
         .cms-subj__badge--anon       { background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #848b96); }
         .cms-subj__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
         .cms-subj__row { display: grid; grid-template-columns: minmax(0, 14rem) 1fr auto; align-items: center; gap: 0.75rem; }

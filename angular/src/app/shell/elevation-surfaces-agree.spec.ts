@@ -25,6 +25,18 @@ import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
  * become furniture), and both name the END TIME (an indicator saying only
  * "elevated" cannot tell a live grant from a forgotten one).
  */
+/**
+ * Tomorrow at 01:30 UTC -- 10:30 in Tokyo -- so the instant is always in the
+ * future: an elevation is expired when it is READ, and a fixed date in a spec
+ * is a time bomb (this one went off two days after it was written).
+ */
+const tomorrowAt0130Z = (): string => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 1);
+    d.setUTCHours(1, 30, 0, 0);
+    return d.toISOString();
+};
+
 describe('the elevation surfaces agree', () => {
     const ELEVATION = '/api/v1/auth/elevation';
     const PROFILE_TZ = 'Asia/Tokyo';
@@ -97,7 +109,7 @@ describe('the elevation surfaces agree', () => {
 
         // Elevated: both name the SAME time, and it is the profile's.
         elevation.refresh().subscribe();
-        httpMock.expectOne(ELEVATION).flush(state(true, '2026-09-15T01:30:00.000Z'));
+        httpMock.expectOne(ELEVATION).flush(state(true, tomorrowAt0130Z()));
         badge.detectChanges();
         menu.detectChanges();
 

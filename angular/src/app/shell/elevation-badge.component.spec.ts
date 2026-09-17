@@ -29,6 +29,18 @@ import { ElevationBadgeComponent } from './elevation-badge.component';
  * make `state()` hand back the stored answer unexamined and the second case
  * fails while everything else stays green.
  */
+/**
+ * Tomorrow at 01:30 UTC -- 10:30 in Tokyo -- so the instant is always in the
+ * future: an elevation is expired when it is READ, and a fixed date in a spec
+ * is a time bomb (this one went off two days after it was written).
+ */
+const tomorrowAt0130Z = (): string => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 1);
+    d.setUTCHours(1, 30, 0, 0);
+    return d.toISOString();
+};
+
 describe('ElevationBadgeComponent', () => {
     const ELEVATION = '/api/v1/auth/elevation';
 
@@ -95,7 +107,7 @@ describe('ElevationBadgeComponent', () => {
 
     it('renders the PROFILE time, not the browser locale and not the browser zone', () => {
         // 01:30 UTC is 10:30 in Tokyo. A 24h profile in Tokyo must say 10:30.
-        const iso = '2026-09-15T01:30:00.000Z';
+        const iso = tomorrowAt0130Z();
 
         fixture.detectChanges();
         httpMock.expectOne(ELEVATION).flush(state(true, iso));
