@@ -248,57 +248,6 @@ export interface ListDocumentInstancesOptions {
     limit?:        number;
 }
 
-/** -- Scheduler trigger kind code, lowercase enum. */
-export type TriggerKindCode = 'cron' | 'rrule';
-
-/** Snapshot of a Schedule for list / detail / form. */
-export interface ScheduleDto {
-    readonly id?:           string;
-    readonly slug?:         string;
-    readonly name?:         string;
-    readonly triggerKind?:  TriggerKindCode;
-    readonly triggerSpec?:  string;
-    readonly tz?:           string;
-    readonly handler?:      string;
-    readonly payload?:      Record<string, unknown>;
-    readonly enabled?:      boolean;
-    readonly calendarId?:   string | null;
-    /**
-     * Sibling -- display slug for the backing calendar, set
-     * server-side by ListSchedulesProvider so the FE doesn't need a
-     * separate `/calendar` round-trip to resolve calendarId -> slug.
-     */
-    readonly calendarSlug?: string | null;
-    readonly ownerId?:      string | null;
-    /** Display label for the owner -- set by ListSchedulesProvider. */
-    readonly ownerLabel?:   string | null;
-    readonly lastRunAt?:    string | null;
-    readonly nextRunAt?:    string | null;
-    readonly createdAt?:    string;
-    readonly updatedAt?:    string;
-}
-
-/**
- * One row from `GET /api/v1/scheduler/handlers` -- a class registered
- * with `#[ScheduledHandler]`. The dropdown stores the `key` in
- * `ScheduleDto.handler`; `label` + `description` are shown to the
- * admin; `fqcn` is informational.
- */
-export interface ScheduledHandlerDto {
-    readonly key:          string;
-    readonly label:        string;
-    readonly description?: string | null;
-    readonly fqcn?:        string | null;
-}
-
-/** Status DTO returned by `POST /api/v1/schedules/{slug}/trigger-now`. */
-export interface ScheduleTriggerNowDto {
-    readonly slug:       string;
-    readonly dispatched: boolean;
-    readonly firedAt:    string | null;
-    readonly nextRunAt:  string | null;
-}
-
 /**
  * Unified Definitions catalog DTO -- mirrors the backend
  * {@link DefinitionCatalogResource} shape returned by
@@ -478,79 +427,6 @@ export class ApiService {
         return this.identity.me();
     }
 
-    // -- Scheduled handler catalog ------------------------------------------
-
-    /**
-     * Returns every #[ScheduledHandler]-decorated class registered with
-     * the container. Feeds the admin "Handler" dropdown in the Schedule
-     * create / edit dialog so admins pick a stable label instead of
-     * typing an FQCN.
-     */
-    listScheduledHandlers(q?: string): Observable<ScheduledHandlerDto[]> {
-        const url = `${this.manifest.apiBase}/scheduler/handlers`;
-        let params = new HttpParams();
-        if (q && q.trim() !== '') {
-            params = params.set('q', q.trim());
-        }
-        return this.http
-            .get<HydraCollection<ScheduledHandlerDto>>(url, {
-                headers: this.collectionHeaders.headers,
-                params,
-            })
-            .pipe(map(r => r['member']));
-    }
-
-    // -- Schedules () ---------------------------------------------------
-
-    listSchedules(): Observable<ScheduleDto[]> {
-        const url = `${this.manifest.apiBase}/schedules`;
-        return this.http
-            .get<HydraCollection<ScheduleDto>>(url, this.collectionHeaders)
-            .pipe(map(r => r['member']));
-    }
-
-    /**
-     * Sibling -- paged variant for the admin Schedules list.
-     * Round-trips RQL filters + sort to the server so we never load
-     * 100k+ rows. Mirror of {@see ApiService.listCalendarsPage}.
-     */
-    listSchedulesPage(opts: {
-        page?:     number;
-        pageSize?: number;
-        sort?:     string | null;
-        filters?:  ReadonlyArray<string>;
-    } = {}): Observable<{ items: ScheduleDto[]; totalItems: number; page: number; pageSize: number }> {
-        const url = `${this.manifest.apiBase}/schedules`;
-        let params = new HttpParams();
-        const pageSize = opts.pageSize ?? 50;
-        const page     = opts.page ?? 1;
-        params = params.set('page',     String(page));
-        // RQL parser reads `?limit=N` (see RqlParser).
-        // Sending `pageSize` was a no-op -- backend silently fell back to
-        // RqlQuery::DEFAULT_LIMIT (20), and the FE's offset math (built on
-        // PAGE_SIZE=50) requested page 1 over and over, duplicating rows.
-        params = params.set('limit', String(pageSize));
-        if (opts.sort) {
-            params = params.set('sort', opts.sort);
-        }
-        for (const f of opts.filters ?? []) {
-            if (f && f.trim() !== '') {
-                params = params.append('filter', f);
-            }
-        }
-        return this.http
-            .get<HydraCollection<ScheduleDto>>(url, {
-                headers: this.collectionHeaders.headers,
-                params,
-            })
-            .pipe(map(r => ({
-                items:      r['member'],
-                totalItems: r['totalItems'],
-                page,
-                pageSize,
-            })));
-    }
-
     /**
      * Page the read-only call history (`GET /call/records`).
      * A verbatim shape-copy of {@link listSchedulesPage}: server-side paginated +
@@ -647,31 +523,6 @@ export class ApiService {
     getMcpTools(): Observable<McpToolCatalogDto> {
         const base = this.manifest.apiBase.replace(/\/v1\/?$/, '');
         return this.http.get<McpToolCatalogDto>(`${base}/mcp/tools`);
-    }
-
-    getSchedule(slug: string): Observable<ScheduleDto> {
-        const url = `${this.manifest.apiBase}/schedules/${encodeURIComponent(slug)}`;
-        return this.http.get<ScheduleDto>(url);
-    }
-
-    createSchedule(dto: Partial<ScheduleDto>): Observable<ScheduleDto> {
-        const url = `${this.manifest.apiBase}/schedules`;
-        return this.http.post<ScheduleDto>(url, dto);
-    }
-
-    updateSchedule(slug: string, patch: Partial<ScheduleDto>): Observable<ScheduleDto> {
-        const url = `${this.manifest.apiBase}/schedules/${encodeURIComponent(slug)}`;
-        return this.http.patch<ScheduleDto>(url, patch, this.patchHeaders);
-    }
-
-    deleteSchedule(slug: string): Observable<void> {
-        const url = `${this.manifest.apiBase}/schedules/${encodeURIComponent(slug)}`;
-        return this.http.delete<void>(url);
-    }
-
-    triggerScheduleNow(slug: string): Observable<ScheduleTriggerNowDto> {
-        const url = `${this.manifest.apiBase}/schedules/${encodeURIComponent(slug)}/trigger-now`;
-        return this.http.post<ScheduleTriggerNowDto>(url, {});
     }
 
     // -- Navi Trees ----------------------------------------------------------

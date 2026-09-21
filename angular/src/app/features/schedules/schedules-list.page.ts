@@ -14,7 +14,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { ScheduleFormDialogComponent } from './schedule-form-dialog.component';
-import { ApiService, ScheduleDto } from '../../api/api.service';
+import { ScheduleDto } from './schedules.types';
+import { SchedulesApiService } from './schedules-api.service';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
@@ -64,8 +65,7 @@ import {
 })
 export class SchedulesListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api         = inject(ApiService);
+    private readonly schedulesApi = inject(SchedulesApiService);
     private readonly store       = inject(Store);
     private readonly router      = inject(Router);
     private readonly dialog      = inject(Dialog);
@@ -157,7 +157,7 @@ export class SchedulesListComponent implements OnInit {
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
-        this.api.listSchedulesPage({
+        this.schedulesApi.listSchedulesPage({
             page,
             pageSize: this.PAGE_SIZE,
             sort:     event.sort,
@@ -236,7 +236,7 @@ export class SchedulesListComponent implements OnInit {
             confirmLabel: 'Trigger now',
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.triggerScheduleNow(s.slug!)),
+            switchMap(() => this.schedulesApi.triggerScheduleNow(s.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  res => {
@@ -254,7 +254,7 @@ export class SchedulesListComponent implements OnInit {
         if (!s.slug) return;
         this.confirmSvc.confirmDelete(s.name ?? s.slug).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteSchedule(s.slug!)),
+            switchMap(() => this.schedulesApi.deleteSchedule(s.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Schedule deleted'); this.grid.reload(); },

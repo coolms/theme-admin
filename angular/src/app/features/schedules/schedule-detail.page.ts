@@ -11,7 +11,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
-import { ApiService, ScheduleDto, TriggerKindCode } from '../../api/api.service';
+import { ScheduleDto, TriggerKindCode } from './schedules.types';
+import { SchedulesApiService } from './schedules-api.service';
 import { CalendarDto } from '../calendars/calendars.types';
 import { CalendarsApiService } from '../calendars/calendars-api.service';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
@@ -301,7 +302,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
 })
 export class ScheduleDetailPageComponent implements OnInit {
     private readonly layoutActions = inject(LayoutActionsService);
-    private readonly api        = inject(ApiService);
+    private readonly schedulesApi = inject(SchedulesApiService);
     private readonly calendarsApi = inject(CalendarsApiService);
     private readonly router     = inject(Router);
     private readonly route      = inject(ActivatedRoute);
@@ -413,7 +414,7 @@ export class ScheduleDetailPageComponent implements OnInit {
                 this.titleSvc.set('Schedule: ' + slug);
                 this.loading.set(true);
                 this.error.set(null);
-                return this.api.getSchedule(slug);
+                return this.schedulesApi.getSchedule(slug);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -450,7 +451,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         const s = this.schedule();
         if (!s?.slug) return;
         this.savingSettings.set(true);
-        this.api.updateSchedule(s.slug, {
+        this.schedulesApi.updateSchedule(s.slug, {
             name:    this.formName,
             tz:      this.formTz,
             enabled: this.formEnabled,
@@ -471,7 +472,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         const s = this.schedule();
         if (!s?.slug) return;
         this.savingTrigger.set(true);
-        this.api.updateSchedule(s.slug, {
+        this.schedulesApi.updateSchedule(s.slug, {
             triggerKind: this.formKind,
             triggerSpec: this.formSpec,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -491,7 +492,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         const s = this.schedule();
         if (!s?.slug) return;
         this.savingCalendar.set(true);
-        this.api.updateSchedule(s.slug, {
+        this.schedulesApi.updateSchedule(s.slug, {
             calendarId: this.formCalendarId,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: updated => {
@@ -524,7 +525,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         }
 
         this.savingHandler.set(true);
-        this.api.updateSchedule(s.slug, {
+        this.schedulesApi.updateSchedule(s.slug, {
             handler: this.formHandler,
             payload,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -544,7 +545,7 @@ export class ScheduleDetailPageComponent implements OnInit {
         const s = this.schedule();
         if (!s?.slug) return;
         this.triggering.set(true);
-        this.api.triggerScheduleNow(s.slug).pipe(
+        this.schedulesApi.triggerScheduleNow(s.slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: result => {
@@ -553,7 +554,7 @@ export class ScheduleDetailPageComponent implements OnInit {
                     + (result.nextRunAt ? ' • next run ' + this.formatDateTime(result.nextRunAt) : ''),
                 );
                 // Refresh schedule so history reflects the new lastRunAt.
-                this.api.getSchedule(s.slug!).pipe(
+                this.schedulesApi.getSchedule(s.slug!).pipe(
                     takeUntilDestroyed(this.destroyRef),
                 ).subscribe(updated => this.populate(updated));
                 this.triggering.set(false);
@@ -575,7 +576,7 @@ export class ScheduleDetailPageComponent implements OnInit {
             danger: true,
         }).pipe(
             filter(ok => ok),
-            switchMap(() => this.api.deleteSchedule(s.slug!)),
+            switchMap(() => this.schedulesApi.deleteSchedule(s.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
