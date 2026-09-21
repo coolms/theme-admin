@@ -57,3 +57,49 @@ describe('CallOverlayPreferencesService.update()', () => {
         expect(svc.sipEndpoint()).toBe('PJSIP/2002');
     });
 });
+
+/**
+ * The write half, since the Calls pane on My Profile became Call's own
+ * (Identity's `profile.tab` slot): the pane no longer hands a `(saved)` value
+ * to a page handler, it saves here, and here is where the echo must land.
+ */
+describe('CallOverlayPreferencesService.save()', () => {
+    const STORED = { overlayEnabled: false, autoDismissSeconds: 0, sipEndpoint: 'PJSIP/2002' };
+
+    function setup(echo: unknown): { svc: CallOverlayPreferencesService; updateSettings: jasmine.Spy } {
+        const updateSettings = jasmine.createSpy('updateSettings').and.returnValue(of(echo));
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                CallOverlayPreferencesService,
+                { provide: IdentityApiService, useValue: { getSettings: () => of({ call: {} }), updateSettings } },
+            ],
+        });
+
+        return { svc: TestBed.inject(CallOverlayPreferencesService), updateSettings };
+    }
+
+ it('PATCHes the named section and applies the echo to the live signals', () => {
+        const { svc, updateSettings } = setup({ ...STORED });
+
+        let emitted: unknown;
+        svc.save('call', STORED).subscribe(v => (emitted = v));
+
+        expect(updateSettings).toHaveBeenCalledWith('call', STORED);
+        expect(svc.overlayEnabled()).toBeFalse();
+        expect(svc.autoDismissSeconds()).toBe(0);
+        expect(svc.sipEndpoint()).toBe('PJSIP/2002');
+ // What the caller gets back is what the overlay now runs on.
+        expect(emitted).toEqual(STORED);
+    });
+
+ it('a keyless echo lands nothing, and the value emitted says so', () => {
+        const { svc } = setup({ member: Object.values(STORED), totalItems: 3 });
+
+        let emitted: { sipEndpoint: string } | undefined;
+        svc.save('call', STORED).subscribe(v => (emitted = v));
+
+        expect(svc.sipEndpoint()).toBe('');
+        expect(emitted?.sipEndpoint).toBe('');
+    });
+});

@@ -19,6 +19,16 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The profile page opens a `profile.tab` slot: a module binds a component under
+  `profile.tab:<settings section>` in `ComponentRegistry` (app.config.ts holds
+  the bindings) and the page renders it for that section instead of the
+  generic form, handing it one input, `section`. The guest owns its pane --
+  load, form, footer and save. Call's "Calls" pane is the first guest, moved
+  from `features/identity` to `features/call`: it loads and saves through
+  `CallOverlayPreferencesService` (`refresh()`, and `save()`, new), so Identity
+  imports nothing from Call. The page no longer seeds the call overlay prefs
+  when it loads; the shell refreshes them at boot and the pane again when it
+  opens.
 - The shell's `api/api.service.ts` (2,538 lines, 128 members, reached from 33 of
   47 features) is cut along module lines: each group of methods now lives in the
   feature that owns the endpoint (`features/<feature>/<feature>-api.service.ts`
@@ -44,6 +54,17 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
+  into the scrolling body, and clicking a half-visible tab scrolled the whole
+  body sideways -- the sidebar disappeared to the left. The page now uses the
+  shared `app-tab-strip`, which keeps one row and puts the tabs that do not fit
+  behind a "more" menu (ui-angular, same day); the active tab is always in the
+  row, underlined in the accent as before -- and so, from now on, are the tabs
+  on Inbox, Leads, Newsletter, Dashboard, Analytics and Deletions, which were
+  blue.
+- The profile menu in the light theme: the panel inherited the top bar's light
+  ink onto a white surface and could not be read. It paints the page's surface
+  and ink (`--cms-surface`, `--cms-text`).
 - 27 `var()` fallbacks that disagreed with their own token, in 15 files: eleven
   radii (`--cms-radius` is 6px and was written as 4px, 8px and 10px;
   `--cms-radius-sm` is 4px and was written as 6px) and sixteen colours written
