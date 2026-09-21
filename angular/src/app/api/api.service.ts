@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
 import { Store } from '@ngxs/store';
 import { AppConfigState, ApiManifest, IdentityApiClient, RealtimeTokenClient, type TokenResponse, type UserDto, type HydraCollection, type HydraView, type CentrifugoConnectionTokenDto, type CentrifugoSubscriptionTokenDto } from '@coolms/core-angular';
 // Re-exported so the feature files importing these from here keep working;
@@ -56,29 +55,6 @@ export class ApiService {
 
     me(): Observable<UserDto> {
         return this.identity.me();
-    }
-
-    /**
-     * sub-phase 2b -- exchange the user's auth session for a
-     * short-lived Centrifugo connection token signed with the
-     * backend's HMAC secret. Returned shape carries `token` (the JWT
-     * to hand to centrifuge-js), `expiresAt` (Unix seconds) for
-     * refresh scheduling, `ttl` for convenience, and `wsUrl` so the
-     * caller has everything needed to connect in one response.
-     */
-    getCentrifugoConnectionToken(): Observable<CentrifugoConnectionTokenDto> {
-        return this.realtime.connectionToken();
-    }
-
-    /**
-     * Sub-phase O -- fetch a per-channel subscription token for a
-     * `private`-namespace channel. The centrifuge SDK invokes this
-     * through its `getToken` callback at subscribe time and again
-     * before expiry. The backend validates channel ownership against
-     * the current user before signing.
-     */
-    getCentrifugoSubscriptionToken(channel: string): Observable<CentrifugoSubscriptionTokenDto> {
-        return this.realtime.subscriptionToken(channel);
     }
 
 }
