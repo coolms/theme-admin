@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var n=[{path:``,loadComponent:()=>import(`./chunk-kZMt5Mc72.js`).then(t=>t.TranslationsListComponent)},{path:`:id`,loadComponent:()=>import(`./chunk-B2nS4oVl.js`).then(t=>t.TranslationDetailPageComponent),data:{layoutId:`i18n:translation-detail`}}];export{n as TRANSLATION_ROUTES};
