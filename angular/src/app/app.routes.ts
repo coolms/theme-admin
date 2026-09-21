@@ -44,14 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // -- Scheduler admin (list + detail with cron/RRule editor,
-            // calendar attachment, payload editor, trigger-now CTA).
-            {
-                path: 'schedules',
-                loadChildren: () =>
-                    import('./features/schedules/schedules.routes').then(m => m.SCHEDULE_ROUTES),
-                data: { activeNav: '/schedules' },
-            },
             // Inbox: 3-tab user-task queue (My / Claimable / Recent)
             // for workflow user tasks. URL-driven tabs via ?tab=...
             // Realtime updates via the inbox.{userId} channel.
