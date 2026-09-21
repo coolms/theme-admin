@@ -56,7 +56,11 @@ major number means here.
 ### Fixed
 - My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
   into the scrolling body, and clicking a half-visible tab scrolled the whole
-  body sideways -- the sidebar disappeared to the left. The strip wraps.
+  body sideways -- the sidebar disappeared to the left. The page now uses the
+  shared `app-tab-strip`, which keeps one row and puts the tabs that do not fit
+  behind a "more" menu (ui-angular, same day); the active tab is always in the
+  row. The active tab's colour is the platform's tab colour, as on Inbox, Leads
+  and Newsletter, instead of the accent.
 - The profile menu in the light theme: the panel inherited the top bar's light
   ink onto a white surface and could not be read. It paints the page's surface
   and ink (`--cms-surface`, `--cms-text`).

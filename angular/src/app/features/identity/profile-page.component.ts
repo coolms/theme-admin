@@ -9,7 +9,7 @@ import {
     viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { CalendarPrefs, CmsPageHeaderComponent, DynamicFormComponent, PageTitleService, SlotComponent, ToastService, UserAvatarComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { CalendarPrefs, CmsPageHeaderComponent, DynamicFormComponent, PageTitleService, SlotComponent, TabStripComponent, TabStripItem, ToastService, UserAvatarComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
@@ -50,6 +50,7 @@ type Tab = 'personal' | string;
         UserAvatarComponent,
         ProfileCalendarTabComponent,
         SlotComponent,
+        TabStripComponent,
     ],
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -154,34 +155,11 @@ type Tab = 'personal' | string;
             flex-direction: column;
         }
 
-        .profile-tabs {
-            display: flex;
-            /* Six tabs are wider than the content column below ~1000px. Unwrapped
-               they overflowed into .profile-body, whose overflow-y: auto makes it
-               scroll horizontally too, and clicking a half-visible tab focused it
-               and scrolled the whole body -- the sidebar disappeared to the left.
-               Wrapping keeps every tab reachable and the body unscrolled. */
-            flex-wrap: wrap;
-            border-bottom: 1px solid var(--cms-border);
-            flex-shrink: 0;
-        }
-        .profile-tab {
-            background: none;
-            border: none;
-            padding: 10px 16px;
-            cursor: pointer;
-            color: var(--cms-text-muted);
-            font-size: .875rem;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -1px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .profile-tab--active {
-            color: var(--cms-accent);
-            border-bottom-color: var(--cms-accent);
-        }
+        /* The tab bar is the shared app-tab-strip: one row, with the tabs
+           that do not fit behind its "more" menu. Six tabs are wider than
+           this column below ~1000px; a hand-rolled strip here overflowed into
+           .profile-body and scrolled it sideways, then wrapped onto two rows. */
+        .profile-content app-tab-strip { flex-shrink: 0; }
 
         .profile-tab-body {
             padding: 20px;
@@ -276,20 +254,9 @@ type Tab = 'personal' | string;
                 <div class="profile-content">
 
                     <!-- Tab bar -->
-                    <div class="profile-tabs">
-                        <button class="profile-tab"
-                                [class.profile-tab--active]="activeTab() === 'personal'"
-                                (click)="activeTab.set('personal')">
-                            <i class="bi bi-person"></i> Personal
-                        </button>
-                        @for (sec of sections(); track sec.section) {
-                            <button class="profile-tab"
-                                    [class.profile-tab--active]="activeTab() === sec.section"
-                                    (click)="activeTab.set(sec.section)">
-                                <i class="bi bi-{{ sec.icon }}"></i> {{ sec.label }}
-                            </button>
-                        }
-                    </div>
+                    <app-tab-strip [tabs]="tabItems()"
+                                   [activeId]="activeTab()"
+                                   (selected)="activeTab.set($event)" />
 
                     <!-- Personal tab -->
                     @if (activeTab() === 'personal') {
@@ -412,6 +379,11 @@ export class ProfilePageComponent implements OnInit {
 
     readonly user           = signal<IdentityUserDto | null>(null);
     readonly sections       = signal<ProfileSection[]>([]);
+    /** The tab bar: Personal, then one tab per section the server listed. */
+    readonly tabItems       = computed<TabStripItem[]>(() => [
+        { id: 'personal', label: 'Personal', icon: 'person' },
+        ...this.sections().map(sec => ({ id: sec.section, label: sec.label, icon: sec.icon })),
+    ]);
     readonly settings       = signal<Record<string, Record<string, unknown> | undefined>>({});
     readonly activeTab      = signal<Tab>('personal');
     readonly savingProfile  = signal(false);
