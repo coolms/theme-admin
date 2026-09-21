@@ -12,7 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { ApiService } from '../../api/api.service';
+import { VfsApiService } from '../vfs/vfs-api.service';
 import { SiteDto, SiteMemberDto } from './sections.types';
 import { SectionsApiService } from './sections-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
@@ -485,7 +485,7 @@ export class SiteMembersPageComponent implements OnInit {
 
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
-    private readonly api         = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly sectionsApi = inject(SectionsApiService);
     private readonly identityApi = inject(IdentityApiService);
     private readonly store       = inject(Store);
@@ -772,7 +772,7 @@ export class SiteMembersPageComponent implements OnInit {
         if (newOwner === cr.ownerId)              return;
 
         this.busy.set(true);
-        this.api.chownNode({
+        this.vfsApi.chownNode({
             path: cr.path,
             uid:  newOwner,
             // Keep gid stable -- the editor group should not change

@@ -3,7 +3,7 @@ import {
     filterTreeDirectories,
     transformVfsToTree,
 } from './vfs-tree.helpers';
-import type { NodeDto } from '../../../api/api.service';
+import type { NodeDto } from '../../vfs/vfs.types';
 import { type DocumentTemplate } from '../shared/document-explorer.types';
 
 /**

@@ -3,7 +3,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, of, switchMap, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, resolvePattern } from '@coolms/core-angular';
-import { ApiService, HydraCollection, NodeDto } from '../../api/api.service';
+import { HydraCollection } from '../../api/api.service';
+import { NodeDto } from '../vfs/vfs.types';
+import { VfsApiService } from '../vfs/vfs-api.service';
 import { SpaceDto } from '@coolms/ui-angular';
 import { PageDto, PageSurfaceDto, PageTypeDto, PageVariantDto, PageVariantSummaryDto } from './page.types';
 
@@ -40,7 +42,7 @@ interface VfsNodeWithExtras extends NodeDto {
 @Injectable({ providedIn: 'root' })
 export class PageService {
     private readonly http  = inject(HttpClient);
-    private readonly api   = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly store = inject(Store);
 
     private get manifest() {
@@ -270,7 +272,7 @@ export class PageService {
                 if (!page.vfsPath) {
                     return throwError(() => new Error(`Page "${id}" has no vfsPath; cannot delete.`));
                 }
-                return this.api.deleteNode(page.vfsPath, true);
+                return this.vfsApi.deleteNode(page.vfsPath, true);
             }),
         );
     }
@@ -303,7 +305,7 @@ export class PageService {
                 if (!page.vfsPath) {
                     return throwError(() => new Error(`Page "${page.id}" has no vfsPath; cannot list variants.`));
                 }
-                return this.api.listDirectory(page.vfsPath).pipe(
+                return this.vfsApi.listDirectory(page.vfsPath).pipe(
                     map(nodes => nodes
                         .filter(n => n.mimeType === VARIANT_MIME)
                         .map(n => this.toVariantDto(n as VfsNodeWithExtras, page.id)),

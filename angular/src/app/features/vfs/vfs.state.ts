@@ -2,7 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { Action, Selector, State, StateContext } from '@ngxs/store';
 import { catchError, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
-import { ApiService, NodeDto } from '../../api/api.service';
+import { NodeDto } from './vfs.types';
+import { VfsApiService } from './vfs-api.service';
 import { ChmodNode, ChownNode, ClearVfsNode, LoadNode } from './vfs.actions';
 
 export interface VfsStateModel {
@@ -18,12 +19,11 @@ export interface VfsStateModel {
 })
 @Injectable()
 export class VfsState {
-    private readonly api = inject(ApiService);
-
+    private readonly vfsApi = inject(VfsApiService);
     @Action(LoadNode)
     loadNode(ctx: StateContext<VfsStateModel>, action: LoadNode) {
         ctx.patchState({ loading: true, error: null });
-        return this.api.statNode(action.path).pipe(
+        return this.vfsApi.statNode(action.path).pipe(
             tap(node => ctx.patchState({ node, loading: false })),
             catchError(err => {
                 const msg = err?.error?.detail ?? err?.error?.['hydra:description'] ?? 'Failed to load node.';
@@ -36,7 +36,7 @@ export class VfsState {
     @Action(ChmodNode)
     chmodNode(ctx: StateContext<VfsStateModel>, action: ChmodNode) {
         ctx.patchState({ saving: true, error: null });
-        return this.api.chmodNode({ path: action.path, mode: action.mode }).pipe(
+        return this.vfsApi.chmodNode({ path: action.path, mode: action.mode }).pipe(
             tap(node => ctx.patchState({ node, saving: false })),
             catchError(err => {
                 const msg = err?.error?.detail ?? err?.error?.['hydra:description'] ?? 'Failed to change permissions.';
@@ -49,7 +49,7 @@ export class VfsState {
     @Action(ChownNode)
     chownNode(ctx: StateContext<VfsStateModel>, action: ChownNode) {
         ctx.patchState({ saving: true, error: null });
-        return this.api.chownNode({ path: action.path, uid: action.uid, gid: action.gid }).pipe(
+        return this.vfsApi.chownNode({ path: action.path, uid: action.uid, gid: action.gid }).pipe(
             tap(node => ctx.patchState({ node, saving: false })),
             catchError(err => {
                 const msg = err?.error?.detail ?? err?.error?.['hydra:description'] ?? 'Failed to change ownership.';
