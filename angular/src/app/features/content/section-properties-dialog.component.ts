@@ -273,7 +273,7 @@ export interface SectionPropertiesDialogData {
             font-size: .95em;
             padding: 0 3px;
             border-radius: 2px;
-            background: var(--cms-border-light, rgba(0,0,0,.05));
+            background: var(--cms-border-light, #f0f2f5);
         }
     `],
 })

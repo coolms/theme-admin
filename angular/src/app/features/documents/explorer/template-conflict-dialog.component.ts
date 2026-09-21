@@ -134,7 +134,7 @@ export interface TemplateConflictDialogResult {
 
         .cms-template-conflict-dialog {
             background: var(--cms-bg-surface, #ffffff);
-            border-radius: var(--cms-radius, 8px);
+            border-radius: var(--cms-radius, 6px);
             box-shadow: var(--cms-shadow-lg);
             display: flex;
             flex-direction: column;
@@ -183,7 +183,7 @@ export interface TemplateConflictDialogResult {
             width: 100%;
             text-align: left;
             padding: 10px 12px;
-            border-radius: var(--cms-radius-sm, 6px);
+            border-radius: var(--cms-radius-sm, 4px);
             border: 1.5px solid var(--cms-border, #e5e7eb);
             background: transparent;
             cursor: pointer;
@@ -225,7 +225,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__name-field input {
             padding: 6px 10px;
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: var(--cms-radius-sm, 6px);
+            border-radius: var(--cms-radius-sm, 4px);
             font: inherit;
             font-size: 0.875rem;
         }

@@ -337,7 +337,7 @@ import {
         }
         input, select, textarea {
             border: 1px solid var(--cms-btn-border, #d1d5db);
-            border-radius: var(--cms-radius, 4px);
+            border-radius: var(--cms-radius, 6px);
             padding: 5px 10px;
             font-size: .8125rem;
             font-family: inherit;
@@ -390,7 +390,7 @@ import {
         /* Anchor + End fieldsets — flat radio rows */
         .anchor, .end {
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: var(--cms-radius, 4px);
+            border-radius: var(--cms-radius, 6px);
             padding: 6px 12px 8px;
             margin: 0;
         }
@@ -445,7 +445,7 @@ import {
         /* Preview */
         .preview {
             border: 1px solid var(--cms-border, #e5e7eb);
-            border-radius: var(--cms-radius, 4px);
+            border-radius: var(--cms-radius, 6px);
             padding: 6px 12px 8px;
             background: var(--cms-surface-muted);
         }

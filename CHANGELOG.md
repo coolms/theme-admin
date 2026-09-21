@@ -7,11 +7,30 @@ Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
 ## Unreleased
 
+### Added
+- `npm run lint:fallbacks` (`scripts/check-token-fallbacks.mjs`): every
+  `var(--cms-x, fallback)` under `src/` is checked against `styles.scss`. It
+  fails on a fallback for a token nothing defines, and on a fallback whose value
+  disagrees with the token's -- colours compared as r,g,b, lengths and keywords
+  as text; a fallback that is itself `var()` or that abbreviates a multi-part
+  token (font stack, shadow list) is left alone. Three fallbacks reached
+  `develop` in two weeks with nothing here to refuse them; the local pre-push
+  hook now runs this on the tree of every commit being pushed, and refuses when
+  that tree has a `styles.scss` and the script is missing.
+
 ### Changed
 - CDP: the subject `kind` is `anonymous | recognised | known` -- the recognised
   browser (a durable identifier issued on the `recognition` consent rung) gets
   its own badge on the subject page, and the segment editor's example
   expression selects on `subject['kind']`.
+
+### Fixed
+- 27 `var()` fallbacks that disagreed with their own token, in 15 files: eleven
+  radii (`--cms-radius` is 6px and was written as 4px, 8px and 10px;
+  `--cms-radius-sm` is 4px and was written as 6px) and sixteen colours written
+  as `transparent`, `inherit` or a translucent `rgba()` under a solid token.
+  None of them painted inside the admin, where the theme is always present;
+  each would have painted wherever it is not. `lint:tokens` baseline 25 -> 1.
 
 ## 2.0.0-alpha5 - 2026-09-09
 

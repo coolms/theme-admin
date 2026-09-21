@@ -414,7 +414,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
         }
         .domain-field-row td {
             padding: 6px 10px;
-            border-bottom: 1px solid var(--cms-border-color, rgba(0,0,0,.07));
+            border-bottom: 1px solid var(--cms-border-color, #e5e7eb);
             vertical-align: middle;
         }
         .domain-field-row:last-child td { border-bottom: none; }

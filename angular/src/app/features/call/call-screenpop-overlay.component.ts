@@ -134,7 +134,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             background: var(--cms-surface, #fff);
             border: 1px solid var(--cms-border, #e5e7eb);
             border-left: 4px solid var(--cms-text-muted);
-            border-radius: var(--cms-radius, 10px);
+            border-radius: var(--cms-radius, 6px);
             box-shadow: var(--cms-shadow-md, 0 6px 24px rgba(0, 0, 0, .12));
             animation: callpop-in .18s ease;
         }

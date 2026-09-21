@@ -308,7 +308,7 @@ interface StateTile {
             display: inline-flex; align-items: center; gap: 6px;
             font-size: .8rem; color: var(--cms-text-muted, #848b96);
         }
-        .state-chip__count { font-weight: 600; color: var(--cms-text, inherit); font-variant-numeric: tabular-nums; }
+        .state-chip__count { font-weight: 600; color: var(--cms-text, #111827); font-variant-numeric: tabular-nums; }
         .tbl--mt { margin-top: 4px; }
     `],
 })

@@ -12,6 +12,7 @@
     "lint:fix": "eslint --fix 'src/**/*.{ts,html}'",
     "lint:colors": "node scripts/check-hardcoded-colors.mjs",
     "lint:tokens": "node scripts/check-undefined-tokens.mjs",
+    "lint:fallbacks": "node scripts/check-token-fallbacks.mjs",
     "lint:styles": "node scripts/check-inline-styles.mjs",
     "lint:specs": "node scripts/check-package-specs.mjs"
   },

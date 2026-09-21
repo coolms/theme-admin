@@ -562,7 +562,7 @@ type RailTab = string;
             border: 1px solid var(--cms-danger);
             border-left-width: 3px;
             border-radius: var(--cms-radius);
-            background: var(--cms-danger-light, rgba(220, 53, 69, .08));
+            background: var(--cms-danger-light, #fef2f2);
             color: var(--cms-text);
             font-size: .8125rem;
             flex-shrink: 0;
@@ -616,7 +616,7 @@ type RailTab = string;
             border: 1px solid var(--cms-border); border-radius: var(--cms-radius-sm, 4px);
             padding: 3px 8px;
             font-size: .8125rem; font-family: var(--cms-font-mono, monospace);
-            background: var(--cms-surface, transparent); color: var(--cms-text);
+            background: var(--cms-surface, #ffffff); color: var(--cms-text);
         }
         .page-editor__slug-lock {
             display: inline-flex; align-items: center; gap: 4px;

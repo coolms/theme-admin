@@ -236,8 +236,8 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
             max-height: 320px; overflow: auto; font-family: 'Courier New', monospace; font-size: .75rem;
         }
         .fh__dline { display: flex; align-items: baseline; gap: 0; white-space: pre-wrap; word-break: break-word; }
-        .fh__dline--insert { background: var(--cms-success-light, rgba(40, 167, 69, .12)); }
-        .fh__dline--delete { background: var(--cms-danger-light, rgba(220, 53, 69, .10)); }
+        .fh__dline--insert { background: var(--cms-success-light, #f0fdf4); }
+        .fh__dline--delete { background: var(--cms-danger-light, #fef2f2); }
         .fh__lno { flex: 0 0 38px; text-align: right; padding: 0 6px; color: var(--cms-text-muted); user-select: none; }
         .fh__sign { flex: 0 0 14px; text-align: center; color: var(--cms-text-muted); user-select: none; }
         .fh__dtext { flex: 1; padding-right: 8px; }

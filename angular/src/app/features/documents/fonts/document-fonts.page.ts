@@ -148,7 +148,7 @@ import {
         '.catalogue h2 { font-size: 1rem; margin: 0 0 .5rem; }',
         '.catalogue .close { background: none; border: 0; color: inherit; font-size: 1.25rem; cursor: pointer; }',
         '.catalogue input[type=search] { width: 100%; padding: .4rem .6rem; margin-bottom: .75rem;'
-            + ' background: var(--cms-input-bg, transparent); color: inherit;'
+            + ' background: var(--cms-input-bg, #ffffff); color: inherit;'
             + ' border: 1px solid var(--cms-border); border-radius: .25rem; }',
         '.catalogue ul { list-style: none; margin: 0; padding: 0; }',
         '.catalogue li { display: flex; align-items: center; gap: .5rem; padding: .4rem 0;'

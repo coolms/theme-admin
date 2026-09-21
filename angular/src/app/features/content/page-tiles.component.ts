@@ -267,7 +267,7 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
             border-radius: var(--cms-radius-sm);
             border: 1px solid var(--cms-border);
             color: var(--cms-text-secondary);
-            background: var(--cms-surface-alt, transparent);
+            background: var(--cms-surface-alt, #f3f4f6);
             text-transform: uppercase;
             letter-spacing: .02em;
         }

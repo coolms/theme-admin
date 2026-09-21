@@ -34,7 +34,11 @@ const SRC = join(ROOT, 'src');
 // 27 -> 26: --cms-input-bg was referenced by two components and defined
 //                  by nobody; dark mode forced it to be named for real.
 // 26 -> 25: another name that existed only as a fallback got defined.
-const WITH_FALLBACK_BASELINE = 25;
+// 25 -> 1: measured 2026-09-21 when check-token-fallbacks.mjs was added; the
+//                  one left is --cms-widget-span, set per card by a
+//                  [style.--cms-widget-span] binding, which this scan does not
+//                  read as a definition (only setProperty). Not a defect.
+const WITH_FALLBACK_BASELINE = 1;
 
 const defined = new Set();
 for (const [, name] of readFileSync(join(SRC, 'styles.scss'), 'utf8')

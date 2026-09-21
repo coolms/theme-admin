@@ -223,7 +223,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
             font-size: .8rem;
         }
         .cms-output-step__help code {
-            background: var(--cms-hover-bg, rgba(0, 0, 0, .04));
+            background: var(--cms-hover-bg, #f3f4f6);
             padding: 1px 4px;
             border-radius: 3px;
             font-family: var(--cms-font-mono, monospace);
