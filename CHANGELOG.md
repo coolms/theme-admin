@@ -54,6 +54,12 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
+  into the scrolling body, and clicking a half-visible tab scrolled the whole
+  body sideways -- the sidebar disappeared to the left. The strip wraps.
+- The profile menu in the light theme: the panel inherited the top bar's light
+  ink onto a white surface and could not be read. It paints the page's surface
+  and ink (`--cms-surface`, `--cms-text`).
 - 27 `var()` fallbacks that disagreed with their own token, in 15 files: eleven
   radii (`--cms-radius` is 6px and was written as 4px, 8px and 10px;
   `--cms-radius-sm` is 4px and was written as 6px) and sixteen colours written

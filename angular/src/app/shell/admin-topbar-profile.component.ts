@@ -44,10 +44,15 @@ import { EndElevationAction } from './end-elevation.action';
                 </svg>
             </button>
 
-            <!-- Dropdown panel -->
+            <!-- Dropdown panel. It hangs below the bar but it is a page
+                 surface, so it paints the page's surface and the page's ink:
+                 as a child of the topbar it would otherwise inherit the bar's
+                 light ink (--cms-sidebar-text) onto a white panel in the light
+                 theme -- the menu was there and could not be read. -->
             @if (isOpen()) {
-                <div class="position-absolute end-0 mt-1 py-1 bg-white rounded shadow"
-                     style="min-width: 180px; z-index: 1050; top: 100%">
+                <div class="position-absolute end-0 mt-1 py-1 rounded shadow"
+                     style="min-width: 180px; z-index: 1050; top: 100%;
+                            background: var(--cms-surface); color: var(--cms-text)">
                     <div class="px-3 py-2 border-bottom">
                         <div class="small fw-semibold text-truncate">{{ userEmail() }}</div>
 
