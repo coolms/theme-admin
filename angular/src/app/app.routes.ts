@@ -44,14 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // Lead inbox: the lead triage queue (New / Handled / Spam),
-            // backed by the LeadsService. Sibling of the moderation queue.
-            {
-                path: 'leads',
-                loadChildren: () =>
-                    import('./features/leads/leads.routes').then(m => m.LEADS_ROUTES),
-                data: { activeNav: '/leads' },
-            },
             // C.3 -- Contacts: the generic Person directory / address
             // book (/admin/contacts). cms-list-page + coolms-datagrid (client
             // mode) + a create/edit modal, over the C.2 /contacts CRUD API.
