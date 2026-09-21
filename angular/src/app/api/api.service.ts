@@ -13,17 +13,6 @@ export type {
     CentrifugoConnectionTokenDto, CentrifugoSubscriptionTokenDto,
 };
 
-// --- Theme template DTOs (Navi-node picker, Deliverable 1) ---------
-
-export interface ThemeTemplateDto {
-    /** Relative path under the theme's `templates/`, e.g. `pages/home.html.dtmpl`. */
-    path:      string;
-    /** Theme slug this template belongs to (mirrors the path param). */
-    themeSlug: string;
-    /** Display label -- the file basename, e.g. `home.html.dtmpl`. */
-    label:     string;
-}
-
 // --- VFS Node DTOs -----------------------------------------------------------
 
 export interface NodeDto {
@@ -265,25 +254,6 @@ export class ApiService {
 
     me(): Observable<UserDto> {
         return this.identity.me();
-    }
-
-    // -- Theme templates (Navi-node picker, Deliverable 1) ---------
-
-    /**
-     * GET /api/v1/themes/{slug}/templates -- flat listing of `.dtmpl` files
-     * available under the theme's `templates/` directory. Empty when the
-     * theme has no templates yet. Throws on 404 (theme slug not installed).
-     *
-     * Not registered in the API manifest because consumers are scoped to
-     * the Navi-node form; URL is built from `manifest.apiBase`.
-     */
-    getThemeTemplates(themeSlug: string): Observable<ThemeTemplateDto[]> {
-        const url = `${this.manifest.apiBase}/themes/${encodeURIComponent(themeSlug)}/templates`;
-        return this.http
-            .get<HydraCollection<ThemeTemplateDto>>(url, {
-                headers: this.collectionHeaders.headers,
-            })
-            .pipe(map(r => r['member']));
     }
 
     /**
