@@ -77,6 +77,28 @@ export interface MailboxConnectResultDto {
 }
 
 /**
+ * The body of `POST /email/mailboxes/connect` -- an authorize-first connect. The
+ * server stashes this as a short-lived draft and answers with the consent URL; the
+ * mailbox row is built only after the provider callback has proven the grant, so
+ * nothing is created for a consent that is refused or abandoned.
+ *
+ * There is no username here on purpose: an OAuth mailbox authenticates as its
+ * address. `kind` is `personal` when absent.
+ */
+export interface MailboxDraftRequest {
+    label: string;
+    emailAddress: string;
+    oauthProvider: string;
+    kind?: 'personal' | 'shared';
+    imapHost: string;
+    imapPort: number;
+    imapSecurity: MailboxSecurity;
+    smtpHost: string;
+    smtpPort: number;
+    smtpSecurity: MailboxSecurity;
+}
+
+/**
  * A registered OAuth mail provider (`GET /email/oauth/providers`, ). The
  * mailbox editor's provider picker lists these -- a new backend provider appears with
  * no FE change. `key` is what `oauthProvider` stores (e.g. `google`, `microsoft`).

@@ -19,6 +19,16 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The mailbox wizard connects an OAuth account BEFORE anything is created. The last
+  step of a new OAuth mailbox is "Connect with <provider>": the intended mailbox goes
+  to `POST /email/mailboxes/connect`, the browser leaves for the consent screen, and
+  the mailbox exists only once the server has proven the grant -- a refused or
+  abandoned consent leaves nothing behind, where the previous flow committed a
+  "pending" row first and the scheduler then tried to fetch it. Two rules ride
+  along: an OAuth mailbox has no username fields at all (it signs in as its
+  address); on the password path the username is the address for everyone, and
+  only an administrator sees an alias field. The rules are pure functions
+  (`mailbox-wizard.util.ts`) with their own spec.
 - CDP: the subject `kind` is `anonymous | recognised | known` -- the recognised
   browser (a durable identifier issued on the `recognition` consent rung) gets
   its own badge on the subject page, and the segment editor's example

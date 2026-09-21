@@ -25,6 +25,7 @@ import { EmailDelegationsCardComponent } from './email-delegations-card.componen
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
+import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
 import {
     EmailAttachmentDto,
@@ -642,8 +643,10 @@ interface ComposeDraft {
                                                 }
                                             </select>
                                             <small class="mbx__field-hint">
-                                                The IMAP/SMTP servers are pre-filled for {{ providerLabel(mbForm.oauthProvider) }};
-                                                after creating you'll authorize the account (no password stored).
+                                                The IMAP/SMTP servers are pre-filled for {{ providerLabel(mbForm.oauthProvider) }}.
+                                                The last step opens {{ providerLabel(mbForm.oauthProvider) }}'s consent screen;
+                                                the mailbox is created only once the account is authorized. It signs in as its
+                                                address, and no password is stored.
                                             </small>
                                         </label>
                                     }
@@ -671,10 +674,24 @@ interface ComposeDraft {
                                             </select>
                                         </label>
                                     </div>
-                                    <label class="mbx__field">
-                                        <span>Username</span>
-                                        <input type="text" [(ngModel)]="mbForm.imapUsername" placeholder="support@example.com" />
-                                    </label>
+                                    @if (usernameEditable()) {
+                                        <label class="mbx__field">
+                                            <span>Username</span>
+                                            <input type="text" [(ngModel)]="mbForm.imapUsername"
+                                                   [placeholder]="mbForm.emailAddress.trim() || 'support@example.com'" />
+                                            @if (mailboxEditorMode() === 'create') {
+                                                <small class="mbx__field-hint">
+                                                    Leave blank to sign in as the address. An alias that differs is an administrator's setting.
+                                                </small>
+                                            }
+                                        </label>
+                                    } @else {
+                                        <div class="mbx__field">
+                                            <span>Username</span>
+                                            <span class="mbx__static">{{ mbForm.emailAddress.trim() || '—' }}</span>
+                                            <small class="mbx__field-hint">{{ usernameRuleHint() }}</small>
+                                        </div>
+                                    }
                                 </fieldset>
                             }
 
@@ -699,14 +716,43 @@ interface ComposeDraft {
                                             </select>
                                         </label>
                                     </div>
-                                    <label class="mbx__field">
-                                        <span>Username</span>
-                                        <input type="text" [(ngModel)]="mbForm.smtpUsername" placeholder="support@example.com" />
-                                    </label>
+                                    @if (usernameEditable()) {
+                                        <label class="mbx__field">
+                                            <span>Username</span>
+                                            <input type="text" [(ngModel)]="mbForm.smtpUsername"
+                                                   [placeholder]="mbForm.emailAddress.trim() || 'support@example.com'" />
+                                            @if (mailboxEditorMode() === 'create') {
+                                                <small class="mbx__field-hint">
+                                                    Leave blank to sign in as the address. An alias that differs is an administrator's setting.
+                                                </small>
+                                            }
+                                        </label>
+                                    } @else {
+                                        <div class="mbx__field">
+                                            <span>Username</span>
+                                            <span class="mbx__static">{{ mbForm.emailAddress.trim() || '—' }}</span>
+                                            <small class="mbx__field-hint">{{ usernameRuleHint() }}</small>
+                                        </div>
+                                    }
                                 </fieldset>
                             }
 
-                            @if (mbStep() === 4) {
+                            @if (mbStep() === 4 && isOauthCreate()) {
+                                <div class="mbx__oauth">
+                                    <span class="mbx__oauth-label">{{ providerLabel(mbForm.oauthProvider) }} connection</span>
+                                    <p class="mbx__oauth-text">
+                                        Connecting opens {{ providerLabel(mbForm.oauthProvider) }}'s consent screen for
+                                        <strong>{{ mbForm.emailAddress.trim() }}</strong> and returns here. The mailbox is created only
+                                        after the account is authorized and the connection is proven; nothing is saved if the consent
+                                        is refused or abandoned. No password is stored.
+                                    </p>
+                                    <small class="mbx__field-hint">
+                                        Automation and enabling are set afterwards, in the mailbox's settings.
+                                    </small>
+                                </div>
+                            }
+
+                            @if (mbStep() === 4 && !isOauthCreate()) {
                                 @if (mbForm.authMethod === 'password') {
                                     <label class="mbx__field">
                                         <span>Password</span>
@@ -783,6 +829,12 @@ interface ComposeDraft {
                                 @if (mbStep() < 4) {
                                     <button type="button" class="mbx__btn mbx__btn--primary" (click)="nextStep()">
                                         Next <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                } @else if (isOauthCreate()) {
+                                    <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="connecting()"
+                                            (click)="connectDraft()">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                        {{ connecting() ? 'Redirecting…' : 'Connect with ' + providerLabel(mbForm.oauthProvider) }}
                                     </button>
                                 } @else {
                                     <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="savingMailbox()"
@@ -1129,6 +1181,8 @@ interface ComposeDraft {
 
         .mbx__oauth { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); }
         .mbx__oauth-label { font-size: .75rem; color: var(--cms-text-muted); text-transform: uppercase; }
+        .mbx__oauth-text { margin: 0; font-size: .8125rem; line-height: 1.45; color: var(--cms-text); }
+        .mbx__static { padding: 6px 0; font-size: .8125rem; color: var(--cms-text); }
         .mbx__oauth-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .mbx__oauth-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .8125rem; color: var(--cms-text-muted); }
         .mbx__oauth-badge--ok { color: var(--cms-success, #16a34a); }
@@ -1155,6 +1209,17 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly currentUserId = computed<string | null>(() => {
         const u = this.store.selectSnapshot(AuthState.currentUser);
         return u?.id ?? null;
+    });
+
+    /**
+     * Whether the caller holds `ROLE_ADMIN` -- the same question the server puts to
+     * `isGranted()` when it applies the username rule. Presentation only: the wizard
+     * shows an alias field to an administrator and the derived address to everyone
+     * else; the server derives or accepts on its own account whatever is sent.
+     */
+    readonly callerIsAdmin = computed<boolean>(() => {
+        const u = this.store.selectSnapshot(AuthState.currentUser);
+        return (u?.roles ?? []).includes('ROLE_ADMIN');
     });
 
     private readonly domSanitizer = inject(DomSanitizer);
@@ -2545,9 +2610,26 @@ export class EmailMailboxPageComponent implements OnInit {
             case 1: return 'Mailbox';
             case 2: return 'Incoming (IMAP)';
             case 3: return 'Outgoing (SMTP)';
-            case 4: return 'Credentials & automation';
+            case 4: return this.isOauthCreate() ? 'Connect' : 'Credentials & automation';
             default: return '';
         }
+    }
+
+    /** A NEW OAuth mailbox: the wizard ends in a connect, not a create. */
+    isOauthCreate(): boolean {
+        return this.mailboxEditorMode() === 'create' && this.mbForm.authMethod === 'oauth';
+    }
+
+    /** Whether the IMAP/SMTP username fields are shown editable -- see the wizard rules. */
+    usernameEditable(): boolean {
+        return usernameFieldsEditable(this.mailboxEditorMode(), this.mbForm.authMethod, this.callerIsAdmin());
+    }
+
+    /** Why the username is shown rather than asked for. */
+    usernameRuleHint(): string {
+        return this.mbForm.authMethod === 'oauth'
+            ? `Signs in as the address -- ${this.providerLabel(this.mbForm.oauthProvider)} authenticates the account itself.`
+            : 'Signs in as the address. An alias that differs is an administrator\'s setting.';
     }
 
     /** Advance one wizard step if the current step's required fields pass validation. */
@@ -2565,30 +2647,22 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Validate ONLY the fields owned by `step`; toast the first blank and return false.
-     * The full check still runs in {@link saveMailbox} as the final gate -- this only gates
-     * "Next". Steps 1-3 have required fields; step 4's password check lives in saveMailbox.
-     * OAuth mailboxes default the IMAP/SMTP username to the email address at save (see
-     * saveMailbox), so mirror that here rather than forcing the admin to type it.
+     * The full check still runs in {@link saveMailbox} / {@link connectDraft} as the
+     * final gate -- this only gates "Next". Usernames are on no step: they are derived
+     * from the address (password) or absent (OAuth), see the wizard rules.
      */
     private validateStep(step: number): boolean {
-        const f = this.mbForm;
-        const isOauth = f.authMethod === 'oauth';
-        let checks: [string, string][] = [];
-        if (step === 1) {
-            checks = [['Label', f.label], ['Email address', f.emailAddress]];
-        } else if (step === 2) {
-            const imapUser = isOauth && f.imapUsername.trim() === '' ? f.emailAddress : f.imapUsername;
-            checks = [['IMAP host', f.imapHost], ['IMAP username', imapUser]];
-        } else if (step === 3) {
-            const smtpUser = isOauth && f.smtpUsername.trim() === '' ? f.emailAddress : f.smtpUsername;
-            checks = [['SMTP host', f.smtpHost], ['SMTP username', smtpUser]];
-        }
-        const blank = checks.find(([, v]) => v.trim() === '');
+        const blank = requiredOnStep(step, this.mbForm).find(([, v]) => v.trim() === '');
         if (blank) {
             this.toast.error(`${blank[0]} is required.`);
             return false;
         }
         return true;
+    }
+
+    /** Steps 1-3 together, the final gate before a create or a connect. */
+    private validateAllSteps(): boolean {
+        return [1, 2, 3].every(step => this.validateStep(step));
     }
 
     /**
@@ -2669,9 +2743,40 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Handle a redirect back from Google's consent (`?oauth=connected|error&mailbox=`,
-     * ): toast the outcome, remember which mailbox to select, and strip the
-     * query so a page refresh doesn't re-toast.
+     * Authorize first: hand the intended NEW OAuth mailbox to the server as a draft and
+     * leave for the provider's consent screen. No mailbox exists until the callback has
+     * proven the grant; the callback bounces to `?oauth=connected&mailbox=<new id>`
+     * (handled by {@link consumeOAuthReturn}), so the editor is not kept open here --
+     * there is nothing to edit yet.
+     */
+    connectDraft(): void {
+        if (!this.validateAllSteps()) {
+            return;
+        }
+        const provider = this.providerLabel(this.mbForm.oauthProvider);
+        this.connecting.set(true);
+        this.email.connectMailboxDraft(draftRequestFromForm(this.mbForm)).subscribe({
+            next: res => {
+                const url = res.authorizationUrl;
+                if (url !== undefined && url !== '') {
+                    window.location.href = url; // leave the SPA for the provider's consent screen
+                } else {
+                    this.connecting.set(false);
+                    this.toast.error(`Could not start the ${provider} connection.`);
+                }
+            },
+            error: () => {
+                this.connecting.set(false);
+                this.toast.error(`Could not start the ${provider} connection.`);
+            },
+        });
+    }
+
+    /**
+     * Handle a redirect back from the provider's consent (`?oauth=connected|error&mailbox=`):
+     * toast the outcome, remember which mailbox to select, and strip the query so a page
+     * refresh doesn't re-toast. A connected `mailbox` may be one that did not exist when
+     * the browser left (authorize-first), so the list is what shows it.
      */
     private consumeOAuthReturn(): void {
         const params = new URLSearchParams(window.location.search);
@@ -2681,9 +2786,9 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         if (outcome === 'connected') {
             this.pendingSelectId = params.get('mailbox');
-            this.toast.success('Mailbox connected to Google.');
+            this.toast.success('Mailbox connected.');
         } else {
-            this.toast.error('Could not connect the mailbox — please try again.');
+            this.toast.error('The account was not connected — nothing was saved. Please try again.');
         }
         history.replaceState(null, '', window.location.pathname + window.location.hash);
     }
@@ -2703,36 +2808,28 @@ export class EmailMailboxPageComponent implements OnInit {
         return opts;
     }
 
+    /**
+     * Save an edit, or create a PASSWORD mailbox. A new OAuth mailbox never comes
+     * through here: it is connected first ({@link connectDraft}) and exists only once
+     * the grant has proven.
+     */
     saveMailbox(): void {
+        if (this.isOauthCreate()) {
+            this.connectDraft();
+            return;
+        }
         const f = this.mbForm;
         const isEdit = this.mailboxEditorMode() === 'edit';
-        const isOauth = f.authMethod === 'oauth';
 
-        // For a Google (OAuth) mailbox the username IS the email address; default it so
-        // the admin typically only types a label + address.
-        if (isOauth) {
-            if (f.imapUsername.trim() === '') {
-                f.imapUsername = f.emailAddress.trim();
-            }
-            if (f.smtpUsername.trim() === '') {
-                f.smtpUsername = f.emailAddress.trim();
-            }
-        }
-
-        // Required-field checks mirror the backend CreateMailboxProcessor (an OAuth
-        // mailbox needs a provider instead of a password).
+        // Required-field checks mirror the backend CreateMailboxProcessor. Usernames are
+        // not among them: the server derives both from the address, and only an
+        // administrator may send an alias (the wizard rules).
         if (!isEdit) {
-            const missing: [string, string][] = [
-                ['Label', f.label], ['Email address', f.emailAddress],
-                ['IMAP host', f.imapHost], ['IMAP username', f.imapUsername],
-                ['SMTP host', f.smtpHost], ['SMTP username', f.smtpUsername],
-            ];
-            if (!isOauth) {
-                missing.push(['Password', f.password]);
+            if (!this.validateAllSteps()) {
+                return;
             }
-            const blank = missing.find(([, v]) => v.trim() === '');
-            if (blank) {
-                this.toast.error(`${blank[0]} is required.`);
+            if (f.password.trim() === '') {
+                this.toast.error('Password is required.');
                 return;
             }
         }
@@ -2743,22 +2840,22 @@ export class EmailMailboxPageComponent implements OnInit {
             imapHost: f.imapHost.trim(),
             imapPort: f.imapPort,
             imapSecurity: f.imapSecurity,
-            imapUsername: f.imapUsername.trim(),
             smtpHost: f.smtpHost.trim(),
             smtpPort: f.smtpPort,
             smtpSecurity: f.smtpSecurity,
-            smtpUsername: f.smtpUsername.trim(),
             enabled: f.enabled,
             // Present '' clears the trigger; a value sets it (merge-patch convention).
             inboundWorkflowKey: f.inboundWorkflowKey.trim(),
         };
-        if (!isEdit && isOauth) {
-            // The auth method is chosen at CREATE only (the backend keeps it fixed after).
-            request.authMethod = 'oauth';
-            request.oauthProvider = f.oauthProvider || 'google';
-        } else if (f.password.trim() !== '') {
-            // Send the password ONLY when the admin typed one -- blank on edit keeps
-            // the stored credential (it's write-only, never read back into the form).
+        if (isEdit) {
+            request.imapUsername = f.imapUsername.trim();
+            request.smtpUsername = f.smtpUsername.trim();
+        } else {
+            Object.assign(request, usernamesForCreate(this.callerIsAdmin(), f.imapUsername, f.smtpUsername));
+        }
+        if (f.password.trim() !== '') {
+            // Send the password ONLY when one was typed -- blank on edit keeps the
+            // stored credential (it's write-only, never read back into the form).
             request.password = f.password;
         }
 
@@ -2771,18 +2868,9 @@ export class EmailMailboxPageComponent implements OnInit {
         call.subscribe({
             next: saved => {
                 this.savingMailbox.set(false);
-                if (!isEdit && isOauth) {
-                    // A fresh OAuth mailbox is created "pending" -- keep the editor open in
-                    // edit mode so the "Connect with Google" button is right there, and
-                    // refresh the list behind it.
-                    this.toast.success('Mailbox created — connect it with Google below.');
-                    this.beginEdit(saved);
-                    this.reloadMailboxes(saved.id);
-                } else {
-                    this.mailboxEditorOpen.set(false);
-                    this.toast.success(isEdit ? 'Mailbox saved.' : 'Mailbox created.');
-                    this.reloadMailboxes(saved.id);
-                }
+                this.mailboxEditorOpen.set(false);
+                this.toast.success(isEdit ? 'Mailbox saved.' : 'Mailbox created.');
+                this.reloadMailboxes(saved.id);
             },
             error: () => {
                 this.savingMailbox.set(false);
