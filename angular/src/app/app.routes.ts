@@ -1,7 +1,8 @@
 import { type Routes } from '@angular/router';
-import { authGuard, loginPageGuard, LoginComponent } from '@coolms/core-angular';
+import { authGuard, consoleChildren, loginPageGuard, LoginComponent } from '@coolms/core-angular';
 import { AdminLayoutComponent } from './shell/admin-layout.component';
 import { RoutingInspectorStateService } from './features/routing-inspector/routing-inspector-state.service';
+import { CONSOLE_ENTRIES } from './console.registry';
 
 export const routes: Routes = [
     // Redirect authenticated callers away from /login so a stale tab
@@ -491,6 +492,10 @@ export const routes: Routes = [
                     breadcrumb: { label: 'Dynamic Records', routerLink: '/system/entities' },
                 },
             },
+            // The modules' mounts, from their console entries (console@1): one
+            // child per mount, lazy, activated by the manifest. Everything
+            // above this line is the shell's own or not yet moved.
+            ...consoleChildren(CONSOLE_ENTRIES),
         ],
     },
     { path: '**', redirectTo: '' },

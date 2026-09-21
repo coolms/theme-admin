@@ -1,7 +1,7 @@
 import { type ApplicationConfig, APP_INITIALIZER, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
-import { provideStore, Store } from '@ngxs/store';
+import { Store } from '@ngxs/store';
 import { ViewerComponentRegistry, DocxViewerComponent } from '@coolms/document-viewer-angular';
 import { provideCoolmsPdf } from '@coolms/pdf-angular';
 import { provideCoolmsPdfMedia } from './features/media/providers/provide-coolms-pdf-media';
@@ -28,7 +28,8 @@ import { MediaFieldWidgetComponent } from './features/media/media-field-widget.c
 import { MediaPickerFieldWidgetComponent } from './features/media/media-picker-field-widget.component';
 import { SchemaService } from './features/schema/schema.service';
 import { routes } from './app.routes';
-import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry } from '@coolms/core-angular';
+import { CONSOLE_ENTRIES } from './console.registry';
+import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
 import { NaviState } from './features/navi/navi.state';
@@ -232,7 +233,6 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
-        provideStore([AppConfigState, AuthState, SectionState, NaviState, VfsState]),
         // Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
         // in the repo as a fallback reference; remove once
@@ -346,5 +346,11 @@ export const appConfig: ApplicationConfig = {
                 };
             },
         },
+        // console@1: the store (the shell's states and every module's), the
+        // modules' registry bindings, and their provisions -- from the entries
+        // scripts/assemble-console.mjs collected. LAST, because a module's
+        // provision extends a library registry provided above (the editor
+        // bridge, the PDF viewer), as the hand-written lines did.
+        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState, NaviState, VfsState] }),
     ],
 };

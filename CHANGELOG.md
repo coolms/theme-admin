@@ -8,6 +8,19 @@ major number means here.
 ## Unreleased
 
 ### Added
+- The theme implements `console@1` (ADR-194 decision 6): `theme.yaml` declares
+  `contracts: { console: "1.0" }`, and the declaration has three readers from
+  the day it lands -- the build (`scripts/assemble-console.mjs`, run on
+  `prebuild` and `pretest`, refuses when core-angular's contract version
+  differs), the installer (`coolms:theme:install` / `activate` and
+  `coolms:install` refuse a module whose range this version does not meet, by
+  name) and the app-config manifest (`ui.contracts`, `ui.modules`), which is
+  what activates a module in the console. The assembler discovers the modules'
+  entry files (`src/app/features/*/entries/console*.ts`) and generates
+  `src/app/console.registry.ts` (not tracked), which `app.routes.ts` mounts
+  through `consoleChildren()` and `app.config.ts` provides through
+  `provideConsole()`; `npm run test:scripts` runs the assembler's own tests over
+  fixture trees. With no entries yet the six compiled-in lists are unchanged.
 - `npm run lint:fallbacks` (`scripts/check-token-fallbacks.mjs`): every
   `var(--cms-x, fallback)` under `src/` is checked against `styles.scss`. It
   fails on a fallback for a token nothing defines, and on a fallback whose value
