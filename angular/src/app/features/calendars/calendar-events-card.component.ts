@@ -171,9 +171,9 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             --fc-classic-muted-foreground:    var(--cms-text-muted);
             --fc-classic-faint-foreground:    var(--cms-text-secondary, var(--cms-text-muted));
 
-            --fc-classic-faint:               var(--cms-surface-muted, transparent);
-            --fc-classic-muted:               var(--cms-surface-hover, transparent);
-            --fc-classic-strong:              var(--cms-surface-alt, transparent);
+            --fc-classic-faint:               var(--cms-surface-muted, #f3f4f6);
+            --fc-classic-muted:               var(--cms-surface-hover, #f3f4f6);
+            --fc-classic-strong:              var(--cms-surface-alt, #f3f4f6);
 
             --fc-classic-primary:             var(--cms-accent);
             --fc-classic-primary-foreground:  var(--cms-accent-fg, #1a1a1a);

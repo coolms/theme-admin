@@ -96,7 +96,7 @@ interface WidgetGroup {
         }
         .picker__item:hover {
             border-color: var(--cms-border);
-            background: var(--cms-hover, rgba(127,127,127,.12));
+            background: var(--cms-hover, #f3f4f6);
         }
         .picker__item i { color: var(--cms-accent); font-size: 1.05rem; }
     `],

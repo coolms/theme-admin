@@ -111,7 +111,7 @@ export interface GroupRoleGrantsDialogData {
         .grg__lead code {
             padding: 0 4px;
             border-radius: 2px;
-            background: var(--cms-border-light, rgba(0,0,0,.05));
+            background: var(--cms-border-light, #f0f2f5);
         }
 
         .grg__warn {

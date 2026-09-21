@@ -284,7 +284,7 @@ The card itself drags: with
         .dashboard__grid--dropping {
             outline: 2px dashed var(--cms-accent);
             outline-offset: 4px;
-            border-radius: var(--cms-radius, 8px);
+            border-radius: var(--cms-radius, 6px);
         }
 
         .dashboard__card {
@@ -296,7 +296,7 @@ The card itself drags: with
             padding: 18px;
             background: var(--cms-surface);
             border: 1px solid var(--cms-border);
-            border-radius: var(--cms-radius, 8px);
+            border-radius: var(--cms-radius, 6px);
         }
 
         /* A FLOOR, not an override: max() leaves a card that asked for the full
@@ -365,7 +365,7 @@ The card itself drags: with
         .dashboard__card--editing:active { cursor: grabbing; }
         .dashboard__toggle { right: 10px; top: 8px; }
         .dashboard__grip:hover,
-        .dashboard__toggle:hover { color: var(--cms-text); background: var(--cms-hover, rgba(127,127,127,.15)); }
+        .dashboard__toggle:hover { color: var(--cms-text); background: var(--cms-hover, #f3f4f6); }
 
         /* A 4px BAR inside a 16px TARGET. The bar is what you see; the
            span is what you have to hit, and 4px is not something a person
@@ -412,7 +412,7 @@ The card itself drags: with
             gap: 8px;
             min-height: 76px;
             border: 1px dashed var(--cms-border);
-            border-radius: var(--cms-radius, 8px);
+            border-radius: var(--cms-radius, 6px);
             background: transparent;
             color: var(--cms-text-muted);
             font: inherit;
@@ -454,7 +454,7 @@ The card itself drags: with
         }
         .dashboard__empty i { font-size: 2.2rem; }
 
-        .cdk-drag-preview { box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12)); border-radius: var(--cms-radius, 8px); }
+        .cdk-drag-preview { box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12)); border-radius: var(--cms-radius, 6px); }
         .cdk-drag-placeholder { opacity: .35; }
         .cdk-drop-list-dragging .dashboard__card:not(.cdk-drag-placeholder) { transition: transform 180ms ease; }
     `],
