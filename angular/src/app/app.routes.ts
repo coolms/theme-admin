@@ -44,14 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // Comment moderation: the pending-comment queue
-            // (approve / reject), backed by the CommentService.
-            {
-                path: 'moderation',
-                loadChildren: () =>
-                    import('./features/moderation/moderation.routes').then(m => m.MODERATION_ROUTES),
-                data: { activeNav: '/moderation' },
-            },
             // Lead inbox: the lead triage queue (New / Handled / Spam),
             // backed by the LeadsService. Sibling of the moderation queue.
             {
