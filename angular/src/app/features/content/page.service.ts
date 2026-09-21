@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, of, switchMap, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, resolvePattern } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 import { NodeDto } from '../vfs/vfs.types';
 import { VfsApiService } from '../vfs/vfs-api.service';
 import { SpaceDto } from '@coolms/ui-angular';

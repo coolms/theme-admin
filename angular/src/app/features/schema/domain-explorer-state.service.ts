@@ -24,7 +24,7 @@ import {
 import { FieldDefinitionFormComponent } from './field-definition-form.component';
 import { DynamicTypeDialogComponent } from './dynamic-type-dialog.component';
 import { NaviGraphService, NaviGraphNode, UserPreferencesService } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 
 export interface TypeTreeNode {
     type:     DynamicEntityTypeDto;
