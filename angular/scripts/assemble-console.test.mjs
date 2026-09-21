@@ -86,11 +86,12 @@ test('two entries for one module are refused, naming both files', () => {
     } finally { f.cleanup(); }
 });
 
-test('the control: entries in feature order become the registry, and the count is printed', () => {
+test('the control: entries in feature order become the registry, a spec beside them is not one, and the count is printed', () => {
     const f = fixture({ entries: {
         'email/entries/console.ts': entry('email'),
         'call/entries/console.ts': entry('call', '^1.0'),
         'call/entries/console.phone.ts': entry('phone'),
+        'call/entries/console.spec.ts': "describe('the entry', () => {});\n",
     }, modules: ['call', 'email', 'phone'] });
     try {
         const r = f.run();

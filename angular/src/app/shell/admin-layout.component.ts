@@ -4,7 +4,7 @@ import { NgClass, NgComponentOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AppConfigState, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
+import { AppConfigState, ConsoleActivation, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
     BottomDrawerService,
     ContextMenuComponent,
@@ -15,7 +15,6 @@ import {
 import { AdminTopbarComponent } from './admin-topbar.component';
 import { TerminalPanelComponent } from '../features/terminal/terminal-panel.component';
 import { RtcCallOverlayComponent } from '../features/rtc/rtc-call-overlay.component';
-import { CallScreenpopOverlayComponent } from '../features/call/call-screenpop-overlay.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 
 /**
@@ -33,7 +32,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 @Component({
     selector: 'coolms-admin-layout',
     standalone: true,
-    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, TerminalPanelComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent, RtcCallOverlayComponent, CallScreenpopOverlayComponent],
+    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, TerminalPanelComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent, RtcCallOverlayComponent],
     styles: [`
         .coolms-admin-shell {
             display: flex;
@@ -395,12 +394,18 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <!-- Global WebRTC call overlay — incoming ring + in-call bar, above every route -->
         <app-rtc-call-overlay />
 
-        <!-- Global telephony (PBX) incoming-call screen-pop — a non-intrusive
-             card as calls ring/answer/end, driven by the calls.broadcast firehose -->
-        <app-call-screenpop-overlay />
+        <!-- The modules' overlays, from their console entries (console@1):
+             mounted once, above every route, only for the modules the
+             manifest says are installed. The tag above is a module not yet
+             moved; it leaves as it moves. -->
+        @for (overlay of console.overlays(); track overlay.id) {
+            <ng-container *ngComponentOutlet="overlay.component" />
+        }
     `,
 })
 export class AdminLayoutComponent implements OnInit {
+    /** The modules' console contributions, filtered by what the manifest says is installed. */
+    protected readonly console = inject(ConsoleActivation);
     readonly naviGraph     = inject(NaviGraphService);
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);

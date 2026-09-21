@@ -55,7 +55,6 @@ import { DesignerEditorDialogComponent } from './features/designer/designer-edit
 import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
 import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
 import { DynamicEntitiesPageComponent } from './features/schema/dynamic-entities-page.component';
-import { ProfileCallTabComponent } from './features/call/profile-call-tab.component';
 import { DocumentLibraryPage } from './features/documents/explorer/document-library.page';
 import { DocumentFoldersTreeComponent } from './features/documents/explorer/document-folders-tree.component';
 import { DocumentSpaceAccordionComponent } from './features/documents/document-space-accordion.component';
@@ -127,11 +126,9 @@ ComponentRegistry.register('DomainExplorerTree',   DomainExplorerTreeComponent);
 ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent);
 ComponentRegistry.register('DynamicEntitiesPage',  DynamicEntitiesPageComponent);
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
-
-// Identity's profile.tab slot: `profile.tab:<settings section>` -> the module's
-// pane for that section (the profile page falls back to the generic form when
-// no key is bound). Call fills it for its `call` section.
-ComponentRegistry.register('profile.tab:call', ProfileCallTabComponent);
+// Identity's profile.tab slot (`profile.tab:<settings section>`) is filled by
+// the modules' console entries -- Call binds `profile.tab:call` in
+// features/call/entries/console.ts.
 
 // File editor registry -- CodeMirror for text files
 FileEditorRegistry.register('text/*',           { component: CodeEditorComponent });

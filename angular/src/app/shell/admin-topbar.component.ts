@@ -1,15 +1,16 @@
 import {
     ChangeDetectionStrategy, Component, computed, inject, OnInit, output, signal,
 } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
+import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
 import { CalendarQuickAccessComponent } from '../features/calendars/calendar-quick-access.component';
 import { EmailQuickAccessComponent } from '../features/email/email-quick-access.component';
 import { MessagesQuickAccessComponent } from '../features/messages/messages-quick-access.component';
 import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
-import { CallDialQuickAccessComponent } from '../features/call/call-dial-quick-access.component';
 import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
@@ -27,7 +28,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -108,8 +109,13 @@ interface Breadcrumb {
                 <!-- DynamicChat agent-queue quick-access -->
                 <app-dynamic-chat-quick-access />
 
-                <!-- Click-to-dial pad -->
-                <app-call-dial-quick-access />
+                <!-- The modules' quick-access tiles, from their console entries
+                     (console@1), in their declared order and only for the
+                     modules the manifest says are installed. The tags above
+                     are the modules not yet moved; each leaves as it moves. -->
+                @for (item of console.topbar(); track item.id) {
+                    <ng-container *ngComponentOutlet="item.component" />
+                }
 
                 <!-- Notification bell -->
                 <app-notification-bell />
@@ -128,6 +134,8 @@ interface Breadcrumb {
     `,
 })
 export class AdminTopbarComponent implements OnInit {
+    /** The modules' console contributions, filtered by what the manifest says is installed. */
+    protected readonly console        = inject(ConsoleActivation);
     private readonly router           = inject(Router);
     private readonly route            = inject(ActivatedRoute);
     private readonly pageTitleSvc     = inject(PageTitleService);

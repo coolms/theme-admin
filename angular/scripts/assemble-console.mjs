@@ -92,8 +92,9 @@ if (existsSync(FEATURES)) {
     for (const feature of readdirSync(FEATURES).sort()) {
         const dir = join(FEATURES, feature, 'entries');
         if (!existsSync(dir) || !statSync(dir).isDirectory()) continue;
-        // console.ts first (the feature's own module), then the qualified ones in name order.
-        const files = readdirSync(dir).filter((f) => /^console(\.[a-z0-9-]+)?\.ts$/.test(f))
+        // console.ts first (the feature's own module), then the qualified ones in
+        // name order; a spec beside them is not an entry.
+        const files = readdirSync(dir).filter((f) => /^console(\.[a-z0-9-]+)?\.ts$/.test(f) && !/\.spec\.ts$/.test(f))
             .sort((a, b) => (a === 'console.ts' ? -1 : b === 'console.ts' ? 1 : a.localeCompare(b)));
         for (const f of files) entryFiles.push({ feature, file: join(dir, f) });
     }

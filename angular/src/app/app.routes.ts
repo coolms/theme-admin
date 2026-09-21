@@ -57,21 +57,6 @@ export const routes: Routes = [
                     import('./features/schedules/schedules.routes').then(m => m.SCHEDULE_ROUTES),
                 data: { activeNav: '/schedules' },
             },
-            // Call history admin (read-only list over the AMI-tracked
-            // CallRecord read API; detail + recording player + live card follow).
-            {
-                path: 'call/records',
-                loadChildren: () =>
-                    import('./features/call/call.routes').then(m => m.CALL_ROUTES),
-                data: { activeNav: '/call/records' },
-            },
-            // Live-call wallboard (realtime over the calls.broadcast channel)
-            {
-                path: 'call/wallboard',
-                loadComponent: () =>
-                    import('./features/call/call-wallboard.page').then(m => m.CallWallboardComponent),
-                data: { activeNav: '/call/wallboard' },
-            },
             // Inbox: 3-tab user-task queue (My / Claimable / Recent)
             // for workflow user tasks. URL-driven tabs via ?tab=...
             // Realtime updates via the inbox.{userId} channel.
