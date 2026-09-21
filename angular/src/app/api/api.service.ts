@@ -302,23 +302,6 @@ export interface TranslationCatalogueEntryDto {
     readonly override: string | null;
 }
 
-/** One MCP tool + its governance gate (`GET /api/mcp/tools`, ). */
-export interface McpToolGovernanceDto {
-    readonly name: string;
-    readonly title: string;
-    readonly description: string;
-    /** The role a caller must hold, or null when any authenticated caller may use it. */
-    readonly requiredRole: string | null;
-    /** Derived human-readable gate: `authenticated` or `role:ROLE_X`. */
-    readonly access: string;
-}
-
-/** The full MCP tool inventory + per-tool governance (admin audit endpoint). */
-export interface McpToolCatalogDto {
-    readonly count: number;
-    readonly tools: McpToolGovernanceDto[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     /**
@@ -362,17 +345,6 @@ export class ApiService {
 
     me(): Observable<UserDto> {
         return this.identity.me();
-    }
-
-    /**
-     * MCP tool-governance audit ( `GET /api/mcp/tools`, ROLE_ADMIN) -- the
-     * full inventory of tools external AI agents can call + the gate on each.
-     * The endpoint is UNVERSIONED (`/api/mcp/...`, like `/api/doc`), so it hangs off
-     * the `/api` base, not the `/api/v1` apiBase.
-     */
-    getMcpTools(): Observable<McpToolCatalogDto> {
-        const base = this.manifest.apiBase.replace(/\/v1\/?$/, '');
-        return this.http.get<McpToolCatalogDto>(`${base}/mcp/tools`);
     }
 
     // -- Navi Trees ----------------------------------------------------------
