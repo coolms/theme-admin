@@ -13,10 +13,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { CmsWizardComponent, CmsWizardStepDirective, ToastService, type WizardStepConfig } from '@coolms/ui-angular';
 import { type DocumentTemplate } from '../shared/document-explorer.types';
-import {
-    ApiService,
-    type CreateDocumentGenerationPayload,
-} from '../../../api/api.service';
+import { type CreateDocumentGenerationPayload } from '../documents.types';
+import { DocumentsApiService } from '../documents-api.service';
 import { WizardDraftService } from './wizard-draft.service';
 import {
     CmsWizardModeStepComponent,
@@ -168,7 +166,7 @@ export interface CmsDocumentGenerationWizardResult {
 export class CmsDocumentGenerationWizardComponent implements OnInit {
     private readonly recipientEntity = inject(FilterAudienceEntity);
     private readonly draft = inject(WizardDraftService);
-    private readonly api = inject(ApiService);
+    private readonly documentsApi = inject(DocumentsApiService);
     private readonly toast = inject(ToastService);
 
     private readonly dialogData = inject<CmsDocumentGenerationWizardData>(DIALOG_DATA);
@@ -331,7 +329,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
         this.submitError.set(null);
         try {
             const payload = this.buildPayload();
-            const generation = await firstValueFrom(this.api.createDocumentGeneration(payload));
+            const generation = await firstValueFrom(this.documentsApi.createDocumentGeneration(payload));
             this.toast.success('Document generation started (id: ' + generation.id + ')');
             this.draft.clear(this.template.id);
             this.dialogRef.close({ generationId: generation.id });
