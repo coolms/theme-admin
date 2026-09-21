@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Store } from '@ngxs/store';
-import { AppConfigState, ApiManifest, resolvePattern, IdentityApiClient, RealtimeTokenClient, type TokenResponse, type UserDto, type HydraCollection, type HydraView, type CentrifugoConnectionTokenDto, type CentrifugoSubscriptionTokenDto } from '@coolms/core-angular';
+import { AppConfigState, ApiManifest, IdentityApiClient, RealtimeTokenClient, type TokenResponse, type UserDto, type HydraCollection, type HydraView, type CentrifugoConnectionTokenDto, type CentrifugoSubscriptionTokenDto } from '@coolms/core-angular';
 // Re-exported so the feature files importing these from here keep working;
 // they are DECLARED in core, which owns the session, the collection envelope
 // every list response arrives in, and the realtime tokens.
@@ -12,86 +12,6 @@ export type {
     HydraCollection, HydraView,
     CentrifugoConnectionTokenDto, CentrifugoSubscriptionTokenDto,
 };
-
-// --- NaviTree / NaviNode DTOs ------------------------------------------------
-
-export interface NaviTreeDto {
-    '@id':     string;
-    id:        string;
-    slug:      string;
-    label:     string;
-    isActive:  boolean;
-    /**
-     * Owning SiteSection's UUID for `navi.public.*` trees.
-     * NULL for admin / toolbar / context trees.
-     */
-    siteSectionId?:    string | null;
-    /** Section's slug (e.g. `default`); NULL when `siteSectionId` is NULL. */
-    siteSectionSlug?:  string | null;
-    /** Section's human label (e.g. `Main Site`); NULL when `siteSectionId` is NULL. */
-    siteSectionLabel?: string | null;
-}
-
-export interface CreateNaviTreeDto {
-    /**
-     * Required unless `siteSectionId` is provided; the processor then
-     * auto-derives `navi.public.{section.slug}` from the section.
-     */
-    slug?: string;
-    label: string;
-    /**
-     * Optional. When provided, the new tree is anchored to that SiteSection
-     * via NaviTree::$siteSectionId (Layer 1). Backend
-     * validates the section exists -- 422 if not.
-     */
-    siteSectionId?: string;
-}
-
-export interface UpdateNaviTreeDto {
-    label?: string;
-}
-
-export interface NaviNodeDto {
-    '@id':      string;
-    id:         string;
-    slug:       string;
-    path:       string;
-    title:      string;
-    sortOrder:  number;
-    isVisible:  boolean;
-    isActive:   boolean;
-    parentId?:  string | null;
-    treeSlug:   string;
-    template?: string | null;
-    /**
-     * Tree datagrid Ship B -- true when this node has at least one direct
-     * child; drives the datagrid chevron under the `computed` strategy.
-     */
-    hasChildren?: boolean;
-    /**
-     * Tree datagrid Ship B -- `'group'` (has children, expandable) or
-     * `'leaf'`. Mirrors the backend `NaviNodeResource::$nodeType`.
-     */
-    nodeType?:    'group' | 'leaf';
-}
-
-export interface CreateNaviNodeDto {
-    treeSlug:          string;
-    slug:              string;
-    title:             string;
-    path:              string;   // full path, e.g. "/about" — required by CreateNaviNodeProcessor
-    parentId?:         string | null;
-    template?: string | null;
-    isVisible?:        boolean;
-    sortOrder?:        number;
-}
-
-export interface UpdateNaviNodeDto {
-    title?:            string;
-    template?: string | null;
-    isVisible?:        boolean;
-    sortOrder?:        number;
-}
 
 // --- Theme template DTOs (Navi-node picker, Deliverable 1) ---------
 
@@ -347,36 +267,6 @@ export class ApiService {
         return this.identity.me();
     }
 
-    // -- Navi Trees ----------------------------------------------------------
-
-    getNaviTrees(params: { filters?: string[]; sort?: string } = {}): Observable<NaviTreeDto[]> {
-        let httpParams = new HttpParams();
-        if (params.sort) httpParams = httpParams.set('sort', params.sort);
-        for (const f of params.filters ?? []) {
-            httpParams = httpParams.append('filter', f);
-        }
-        return this.http
-            .get<HydraCollection<NaviTreeDto>>(this.manifest.navi!.treesList, {
-                headers: this.collectionHeaders.headers,
-                params:  httpParams,
-            })
-            .pipe(map(r => r['member']));
-    }
-
-    createNaviTree(dto: CreateNaviTreeDto): Observable<NaviTreeDto> {
-        return this.http.post<NaviTreeDto>(this.manifest.navi!.treesCreate, dto);
-    }
-
-    updateNaviTree(slug: string, dto: UpdateNaviTreeDto): Observable<NaviTreeDto> {
-        const url = resolvePattern(this.manifest.navi!.treesItem, { slug });
-        return this.http.patch<NaviTreeDto>(url, dto, this.patchHeaders);
-    }
-
-    deleteNaviTree(slug: string): Observable<void> {
-        const url = resolvePattern(this.manifest.navi!.treesItem, { slug });
-        return this.http.delete<void>(url);
-    }
-
     // -- Theme templates (Navi-node picker, Deliverable 1) ---------
 
     /**
@@ -394,58 +284,6 @@ export class ApiService {
                 headers: this.collectionHeaders.headers,
             })
             .pipe(map(r => r['member']));
-    }
-
-    // -- Navi Nodes ----------------------------------------------------------
-
-    /**
-     * Tree datagrid Ship B -- NaviNode list endpoint now accepts a `parentId`
-     * to drive lazy tree expansion:
-     *
-     *   - `parentId === 'root'`       -> only nodes with `parent IS NULL`
-     *   - `parentId === '{uuid}'`     -> direct children of that node
-     *   - `parentId === undefined`    -> legacy flat listing (kept so Newman
-     *                                    and any cross-module reader keep
-     *                                    behaving the same)
-     *
-     * Every response carries `hasChildren` and a coarse `nodeType` field
-     * (`'group'` / `'leaf'`) the datagrid uses for the chevron + icon.
-     */
-    getNaviNodes(
-        treeSlug: string,
-        params: { filters?: string[]; sort?: string; parentId?: string } = {},
-    ): Observable<NaviNodeDto[]> {
-        const url = resolvePattern(this.manifest.navi!.nodesByTree, { slug: treeSlug });
-        let httpParams = new HttpParams();
-        if (params.sort)     httpParams = httpParams.set('sort',   params.sort);
-        if (params.parentId) httpParams = httpParams.set('parent', params.parentId);
-        for (const f of params.filters ?? []) {
-            httpParams = httpParams.append('filter', f);
-        }
-        return this.http
-            .get<HydraCollection<NaviNodeDto>>(url, {
-                headers: this.collectionHeaders.headers,
-                params:  httpParams,
-            })
-            .pipe(map(r => r['member']));
-    }
-
-    createNaviNode(dto: CreateNaviNodeDto): Observable<NaviNodeDto> {
-        return this.http.post<NaviNodeDto>(this.manifest.navi!.nodesCreate, dto);
-    }
-
-    updateNaviNode(id: string, dto: UpdateNaviNodeDto): Observable<NaviNodeDto> {
-        const url = resolvePattern(this.manifest.navi!.nodesItem, { id });
-        return this.http.patch<NaviNodeDto>(url, dto, this.patchHeaders);
-    }
-
-    deleteNaviNode(id: string): Observable<void> {
-        const url = resolvePattern(this.manifest.navi!.nodesItem, { id });
-        return this.http.delete<void>(url);
-    }
-
-    reorderNaviNodes(items: Array<{ id: string; sortOrder: number }>): Observable<void> {
-        return this.http.patch<void>(this.manifest.navi!.nodesReorder, { items }, this.patchHeaders);
     }
 
     /**
