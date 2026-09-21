@@ -302,12 +302,6 @@ export interface TranslationCatalogueEntryDto {
     readonly override: string | null;
 }
 
-/** ICE configuration for the softphone peer connection (`GET /rtc/ice-servers`, reused). */
-export interface CallIceServersDto {
-    readonly iceServers: RTCIceServer[];
-    readonly ttlSeconds: number;
-}
-
 /** One MCP tool + its governance gate (`GET /api/mcp/tools`, ). */
 export interface McpToolGovernanceDto {
     readonly name: string;
@@ -368,12 +362,6 @@ export class ApiService {
 
     me(): Observable<UserDto> {
         return this.identity.me();
-    }
-
-    /** ICE servers for the softphone peer connection (shared Coturn, reused). */
-    getCallIceServers(): Observable<CallIceServersDto> {
-        const url = `${this.manifest.apiBase}/rtc/ice-servers`;
-        return this.http.get<CallIceServersDto>(url);
     }
 
     /**
