@@ -6,7 +6,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateNaviNode, LoadNaviNodes, UpdateNaviNode } from './navi.actions';
-import { ApiService, NaviNodeDto, NaviTreeDto, SiteSectionDto } from '../../api/api.service';
+import { ApiService, NaviNodeDto, NaviTreeDto } from '../../api/api.service';
+import { SiteSectionDto } from '../sections/sections.types';
+import { SectionsApiService } from '../sections/sections-api.service';
 import { TemplatePickerComponent } from './template-picker.component';
 
 export interface NaviNodeFormData {
@@ -62,6 +64,7 @@ export class NaviNodeFormComponent implements AfterViewInit {
     private readonly store      = inject(Store);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly api        = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly destroyRef = inject(DestroyRef);
     readonly dialogRef      = inject(DialogRef);
     readonly data: NaviNodeFormData = inject(DIALOG_DATA);
@@ -96,7 +99,7 @@ export class NaviNodeFormComponent implements AfterViewInit {
             next: (trees: NaviTreeDto[]) => {
                 const tree = trees.find(t => t.slug === this.data.treeSlug);
                 if (!tree?.siteSectionId) return;
-                this.api.getSections().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                this.sectionsApi.getSections().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: (sections: SiteSectionDto[]) => {
                         const section = sections.find(s => s.id === tree.siteSectionId);
                         const slug = section?.themeSlug ?? '';

@@ -13,7 +13,6 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
 import { IdentityApiService } from './identity-api.service';
 import { IdentityUserDto } from './identity.types';
 import {

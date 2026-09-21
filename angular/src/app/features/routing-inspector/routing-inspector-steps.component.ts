@@ -1,10 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import {
-    RoutingStepDto,
-    RoutingStepKind,
-    RoutingStepStatus,
-    RoutingTargetKind,
-} from '../../api/api.service';
+import { RoutingStepDto, RoutingStepKind, RoutingStepStatus, RoutingTargetKind } from '../../api/api.service';
 import { RoutingInspectorStateService } from './routing-inspector-state.service';
 
 /**

@@ -12,7 +12,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { ApiService, SiteDto, SiteMemberDto } from '../../api/api.service';
+import { ApiService } from '../../api/api.service';
+import { SiteDto, SiteMemberDto } from './sections.types';
+import { SectionsApiService } from './sections-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { IdentityUserDto } from '../identity/identity.types';
 import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig, AppConfigState } from '@coolms/core-angular';
@@ -484,6 +486,7 @@ export class SiteMembersPageComponent implements OnInit {
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
     private readonly api         = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly identityApi = inject(IdentityApiService);
     private readonly store       = inject(Store);
     private readonly confirmSvc  = inject(ConfirmDialogService);
@@ -613,8 +616,8 @@ export class SiteMembersPageComponent implements OnInit {
         this.membersError.set(null);
 
         forkJoin({
-            site:    this.api.getSite(slug),
-            members: this.api.listSiteMembers(slug),
+            site:    this.sectionsApi.getSite(slug),
+            members: this.sectionsApi.listSiteMembers(slug),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ site, members }) => {
                 this.site.set(site);
@@ -636,8 +639,8 @@ export class SiteMembersPageComponent implements OnInit {
         // Also refresh the composed Site view so `contentRoot.ownerId`
         // reflects an ownership transfer immediately.
         forkJoin({
-            site:    this.api.getSite(slug),
-            members: this.api.listSiteMembers(slug),
+            site:    this.sectionsApi.getSite(slug),
+            members: this.sectionsApi.listSiteMembers(slug),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ site, members }) => {
                 this.site.set(site);

@@ -9,7 +9,8 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { debounceTime, distinctUntilChanged, firstValueFrom, map, skip } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService, SiteSectionDto } from '../../api/api.service';
+import { SiteSectionDto } from '../sections/sections.types';
+import { SectionsApiService } from '../sections/sections-api.service';
 import { PageService } from '../content/page.service';
 import { PageDto } from '../content/page.types';
 import { VfsDirectoryPage, VfsNodeDto } from '@coolms/ui-angular';
@@ -56,7 +57,7 @@ export class LinkPickerHostComponent {
     readonly data: LinkPickerHostData = inject(DIALOG_DATA, { optional: true }) ?? {};
     private readonly dialogRef = inject<DialogRef<LinkPickerHostResult | null>>(DialogRef);
     private readonly pages     = inject(PageService);
-    private readonly api       = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly http      = inject(HttpClient);
     private readonly store     = inject(Store);
     private readonly recent    = inject(LinkPickerRecentService);
@@ -373,7 +374,7 @@ export class LinkPickerHostComponent {
             // search subscription -- this only seeds the first level.
             this.loadPageLevel(this.currentPageParentId());
         } else if (sub === 'sections' && this.sectionList() === null) {
-            this.api.getSections().subscribe({
+            this.sectionsApi.getSections().subscribe({
                 next:  ss => this.sectionList.set(ss),
                 error: () => this.sectionList.set([]),
             });
