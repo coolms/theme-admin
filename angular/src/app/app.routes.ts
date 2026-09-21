@@ -44,14 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // Process Cockpit: operator read-only view over the
-            // Workflow engine state (running/finished process instances).
-            {
-                path: 'cockpit',
-                loadChildren: () =>
-                    import('./features/cockpit/cockpit.routes').then(m => m.COCKPIT_ROUTES),
-                data: { activeNav: '/cockpit' },
-            },
             // Comment moderation: the pending-comment queue
             // (approve / reject), backed by the CommentService.
             {
