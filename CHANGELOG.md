@@ -8,7 +8,7 @@ major number means here.
 ## Unreleased
 
 ### Added
-- The theme implements `console@1` (ADR-194 decision 6): `theme.yaml` declares
+- The theme implements `console@1` (the platform rule: hosts implement contracts, modules offer entries): `theme.yaml` declares
   `contracts: { console: "1.0" }`, and the declaration has three readers from
   the day it lands -- the build (`scripts/assemble-console.mjs`, run on
   `prebuild` and `pretest`, refuses when core-angular's contract version

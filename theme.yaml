@@ -6,8 +6,9 @@ description: Angular administration panel for CoolMS 2.0
 feStack: spa
 spaFramework: angular
 license: MIT
-# The host contracts this theme implements, name -> MAJOR.MINOR (ADR-194,
-# decision 6). Read by three things, or it is a placeholder: the build
+# The host contracts this theme implements, name -> MAJOR.MINOR (the platform
+# rule: hosts implement contracts, modules offer entries). Read by three
+# things, or it is a placeholder: the build
 # (angular/scripts/assemble-console.mjs refuses when core-angular's contract
 # differs), the installer (coolms:theme:install / activate and coolms:install
 # refuse a module whose range this version does not meet), and the app-config

@@ -2,7 +2,7 @@
  * The assembler, run over fixture trees: what it refuses, by name, and what
  * it writes. `node --test scripts/` (npm run test:scripts).
  *
- * The first case is the one ADR-194 exists for: a theme that declares a
+ * The first case is the one the rule exists for: a theme that declares a
  * contract version the build does not implement is refused at the build,
  * which proves the declaration is read there and not merely stored.
  */

@@ -1,7 +1,7 @@
 /**
  * Assemble the console registry from the modules' entry files.
  *
- * The build-time half of `console@1` (ADR-194, decision 6). Every module that
+ * The build-time half of `console@1` (the platform rule: hosts implement contracts, modules offer entries). Every module that
  * contributes to the administration console exports one entry,
  * `src/app/features/<feature>/entries/console.ts` (or `console.<qualifier>.ts`
  * when one feature directory serves two backend modules), and this script
@@ -75,7 +75,7 @@ if (!existsSync(THEME)) {
     themeSlug = String(theme.slug ?? '?');
     const declared = theme.contracts?.console;
     if (declared === undefined) {
-        problems.push(`theme '${themeSlug}' declares no console contract (theme.yaml: contracts.console) -- a host that reads no declaration is what ADR-194 forbids`);
+        problems.push(`theme '${themeSlug}' declares no console contract (theme.yaml: contracts.console) -- a host that reads no declaration is what the platform forbids`);
     } else if (!VERSION.test(String(declared))) {
         problems.push(`theme '${themeSlug}' declares console '${String(declared)}'; a contract version is MAJOR.MINOR`);
     } else {
