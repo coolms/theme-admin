@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var e=[{path:``,loadComponent:()=>import(`./chunk-CA-u061C.js`).then(o=>o.MessagesPageComponent)}];export{e as MESSAGES_ROUTES};
