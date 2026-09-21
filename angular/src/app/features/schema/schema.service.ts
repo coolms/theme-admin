@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, resolvePattern } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 import {
     type ConstraintMetadata,
     type ConstraintParameter,

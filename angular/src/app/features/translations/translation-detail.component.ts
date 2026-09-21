@@ -12,11 +12,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
-import {
-    ApiService,
-    type TranslationCatalogueDto,
-    type TranslationCatalogueEntryDto,
-} from '../../api/api.service';
+import { type TranslationCatalogueDto, type TranslationCatalogueEntryDto } from './translations.types';
+import { TranslationsApiService } from './translations-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -187,7 +184,7 @@ interface EditorRow {
     `],
 })
 export class TranslationDetailComponent implements OnInit {
-    private readonly api         = inject(ApiService);
+    private readonly translationsApi = inject(TranslationsApiService);
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
     private readonly errors      = inject(ErrorHandlerService);
@@ -272,7 +269,7 @@ export class TranslationDetailComponent implements OnInit {
             override: r.override.trim() === '' ? null : r.override,
         }));
 
-        this.api.saveTranslationCatalogue(cat.id, entries)
+        this.translationsApi.saveTranslationCatalogue(cat.id, entries)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -299,7 +296,7 @@ export class TranslationDetailComponent implements OnInit {
             filter(Boolean),
             switchMap(() => {
                 this.saving.set(true);
-                return this.api.deleteTranslationCatalogue(cat.id);
+                return this.translationsApi.deleteTranslationCatalogue(cat.id);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -316,7 +313,7 @@ export class TranslationDetailComponent implements OnInit {
 
     private loadCatalogue(id: string): void {
         this.loading.set(true);
-        this.api.getTranslationCatalogue(id)
+        this.translationsApi.getTranslationCatalogue(id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: c => {

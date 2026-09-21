@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateSection, LoadSections, UpdateSection } from './section.actions';
-import { SiteSectionDto } from '../../api/api.service';
+import { SiteSectionDto } from './sections.types';
 
 @Component({
     selector: 'app-section-form',

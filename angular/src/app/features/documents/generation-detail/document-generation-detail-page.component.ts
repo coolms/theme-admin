@@ -13,11 +13,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EMPTY, Subject, firstValueFrom, of } from 'rxjs';
 import { catchError, switchMap, takeWhile, tap } from 'rxjs/operators';
 
-import {
-    ApiService,
-    type DocumentGenerationDto,
-    type DocumentInstanceDto,
-} from '../../../api/api.service';
+import { type DocumentGenerationDto, type DocumentInstanceDto } from '../documents.types';
+import { DocumentsApiService } from '../documents-api.service';
 import { Dialog } from '@angular/cdk/dialog';
 import { ViewerModalComponent, ViewerModalData } from '@coolms/document-viewer-angular';
 import {
@@ -218,7 +215,7 @@ const INSTANCE_PAGE_LIMIT = 200;
 })
 export class DocumentGenerationDetailPageComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
-    private readonly api = inject(ApiService);
+    private readonly documentsApi = inject(DocumentsApiService);
     private readonly templates = inject(WordTemplateService);
     private readonly instancesSvc = inject(DocumentInstanceService);
     private readonly toast = inject(ToastService);
@@ -317,7 +314,7 @@ export class DocumentGenerationDetailPageComponent implements OnInit {
         const channel = `document.generation.${idParam}`;
         this.stream.watch(channel)
             .pipe(
-                switchMap(() => this.api.getDocumentGeneration(idParam).pipe(
+                switchMap(() => this.documentsApi.getDocumentGeneration(idParam).pipe(
                     catchError((err: Error) => {
                         this.loadError.set(err.message ?? 'Failed to load generation.');
                         this.loading.set(false);
@@ -366,7 +363,7 @@ export class DocumentGenerationDetailPageComponent implements OnInit {
 
     private dispatchRetry(generationId: string): void {
         this.retryBusy.set(true);
-        this.api.retryFailedInstances(generationId)
+        this.documentsApi.retryFailedInstances(generationId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (gen) => {
@@ -397,7 +394,7 @@ export class DocumentGenerationDetailPageComponent implements OnInit {
 
     private fetchInstancesNow$() {
         this.instancesLoading.set(true);
-        return this.api
+        return this.documentsApi
             .listDocumentInstances({
                 generationId: this.generationId(),
                 limit: INSTANCE_PAGE_LIMIT,

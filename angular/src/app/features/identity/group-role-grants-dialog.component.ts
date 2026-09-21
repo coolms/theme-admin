@@ -9,7 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
 
@@ -126,7 +126,7 @@ export interface GroupRoleGrantsDialogData {
 export class GroupRoleGrantsDialogComponent implements OnInit {
     protected readonly data = inject<GroupRoleGrantsDialogData>(DIALOG_DATA);
     private readonly ref = inject<DialogRef<boolean | null>>(DialogRef);
-    private readonly api = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast = inject(ToastService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
@@ -146,7 +146,7 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
         // rather than trusting the row it was opened from -- `undefined` there
         // means "not loaded", and treating it as "grants nothing" would let a
         // Save silently clear every edge.
-        this.api.getGroup(this.data.id).pipe(
+        this.identityApi.getGroup(this.data.id).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: group => {
@@ -162,7 +162,7 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
 
     protected save(): void {
         this.saving.set(true);
-        this.api.setGroupRoleGrants(this.data.id, this.granted()).pipe(
+        this.identityApi.setGroupRoleGrants(this.data.id, this.granted()).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

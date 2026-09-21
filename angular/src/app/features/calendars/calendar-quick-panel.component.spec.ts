@@ -5,7 +5,8 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 import { DrawerService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { of } from 'rxjs';
 
-import { ApiService, type CalendarItemDto } from '../../api/api.service';
+import { type CalendarItemDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
 
 /**
@@ -44,7 +45,7 @@ describe('CalendarQuickPanelComponent', () => {
         TestBed.configureTestingModule({
             imports: [CalendarQuickPanelComponent],
             providers: [
-                { provide: ApiService, useValue: { listCalendarItems: () => of(rows) } },
+                { provide: CalendarsApiService, useValue: { listCalendarItems: () => of(rows) } },
                 { provide: Dialog, useValue: { open: () => ({ closed: of(undefined) }) } },
                 { provide: ToastService, useValue: { error: () => undefined } },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },

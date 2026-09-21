@@ -1,4 +1,4 @@
-import { type CreateNaviTreeDto, type UpdateNaviTreeDto, type CreateNaviNodeDto, type UpdateNaviNodeDto } from '../../api/api.service';
+import { type CreateNaviTreeDto, type UpdateNaviTreeDto, type CreateNaviNodeDto, type UpdateNaviNodeDto } from './navi.types';
 
 export class LoadNaviTrees {
     static readonly type = '[Navi] Load Trees';

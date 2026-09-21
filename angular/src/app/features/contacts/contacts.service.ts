@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AppConfigState } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 
 /** C.2/C.3 -- the two ownership axes of a contact. */
 export type ContactVisibility = 'personal' | 'shared';

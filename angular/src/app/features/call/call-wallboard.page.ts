@@ -10,7 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { interval } from 'rxjs';
-import { ApiService, CallRecordDto } from '../../api/api.service';
+import { CallRecordDto } from './call.types';
+import { CallApiService } from './call-api.service';
 import { CallLiveEvent, CallLiveEventsService } from './call-live-events.service';
 import { CmsPageHeaderComponent, PageTitleService } from '@coolms/ui-angular';
 import { formatCallDuration } from './call-format';
@@ -205,7 +206,7 @@ const ENDED_LINGER_MS = 6_000;
     `],
 })
 export class CallWallboardComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly callApi = inject(CallApiService);
     private readonly liveEvents = inject(CallLiveEventsService);
     private readonly router     = inject(Router);
     private readonly titleSvc   = inject(PageTitleService);
@@ -239,7 +240,7 @@ export class CallWallboardComponent implements OnInit {
         });
 
         // Seed the board with recent non-terminal calls (don't clobber live entries).
-        this.api.listCallRecordsPage({ pageSize: 50 }).pipe(
+        this.callApi.listCallRecordsPage({ pageSize: 50 }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: result => {

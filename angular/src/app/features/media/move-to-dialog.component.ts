@@ -15,7 +15,7 @@ import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import { catchError, of } from 'rxjs';
 import { MediaService } from './media.service';
 import { MediaAssetDto } from './media.types';
-import { ApiService } from '../../api/api.service';
+import { VfsApiService } from '../vfs/vfs-api.service';
 
 interface DirItem {
     path:  string;
@@ -197,7 +197,7 @@ export class MoveToDialogComponent implements OnInit {
     readonly dialogRef  = inject(DialogRef<string | null>);
     readonly data       = inject<{ asset: MediaAssetDto; currentDir: string; icon?: string }>(DIALOG_DATA);
     private readonly svc        = inject(MediaService);
-    private readonly api        = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     readonly destroyRef = inject(DestroyRef);
 
     dirs     = signal<DirItem[]>([]);
@@ -222,7 +222,7 @@ export class MoveToDialogComponent implements OnInit {
     createAndSelect(name: string): void {
         if (!name.trim()) return;
         const newPath = this.selected() + '/' + name.trim();
-        this.api.mkdir(newPath).pipe(
+        this.vfsApi.mkdir(newPath).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe(() => {
             this.showNew.set(false);

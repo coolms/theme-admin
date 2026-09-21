@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import type { HydraCollection } from '../../api/api.service';
+import type { HydraCollection } from '@coolms/core-angular';
 
 /**
  * Notification Sub-phase E -- Angular client wrapping the seven

@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, of, ReplaySubject, shareReplay } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 
 /**
  * Reactive access to the user's incoming-call overlay
@@ -16,8 +16,10 @@ import { ApiService } from '../../api/api.service';
  * that response, cache it for the SPA lifetime, and mirror the
  * resolved-by-default values into signals the screen-pop overlay reads.
  *
- * When the Profile "Calls" tab saves it calls {@link update} so the live
- * overlay reacts without a refetch.
+ * The Profile "Calls" pane (Call's guest in Identity's `profile.tab` slot)
+ * loads through {@link refresh} and persists through {@link save}, which
+ * applies the server's echo to the live signals so the overlay reacts without
+ * a refetch.
  */
 export interface CallOverlayPrefs {
     /** Show the incoming-call screen-pop at all. */
@@ -47,8 +49,7 @@ const MAX_DISMISS_SECONDS = 600;
 
 @Injectable({ providedIn: 'root' })
 export class CallOverlayPreferencesService {
-    private readonly api = inject(ApiService);
-
+    private readonly identityApi = inject(IdentityApiService);
     private readonly _prefs = signal<CallOverlayPrefs>(DEFAULTS);
     private readonly loaded$ = new ReplaySubject<CallOverlayPrefs>(1);
     private loadOnce$?: Observable<CallOverlayPrefs>;
@@ -68,7 +69,7 @@ export class CallOverlayPreferencesService {
     ensureLoaded(): Observable<CallOverlayPrefs> {
         if (this.loadOnce$) return this.loadOnce$;
 
-        this.loadOnce$ = this.api.getSettings().pipe(
+        this.loadOnce$ = this.identityApi.getSettings().pipe(
             map(all => this.merge((all['call'] as Partial<CallOverlayPrefs> | undefined) ?? {})),
             tap(prefs => {
                 this._prefs.set(prefs);
@@ -84,10 +85,24 @@ export class CallOverlayPreferencesService {
         return this.loadOnce$;
     }
 
-    /** Called by the Profile "Calls" tab after a successful save. */
+    /** Apply a keyed section (a load or a save's echo) to the live signals. */
     update(partial: Partial<CallOverlayPrefs>): void {
         this._prefs.update(prev => this.merge({ ...prev, ...partial }));
         this.loaded$.next(this._prefs());
+    }
+
+    /**
+     * PATCH `section` and apply the server's echo to the live signals. The
+     * value emitted is what the overlay now runs on, which is what the Calls
+     * pane re-seeds its form from after a save.
+     */
+    save(section: string, prefs: CallOverlayPrefs): Observable<CallOverlayPrefs> {
+        return this.identityApi.updateSettings(section, prefs as unknown as Record<string, unknown>).pipe(
+            map(echo => {
+                this.update(echo);
+                return this._prefs();
+            }),
+        );
     }
 
     /** Force a re-fetch, bypassing the cache (e.g. a fresh login in the same tab). */

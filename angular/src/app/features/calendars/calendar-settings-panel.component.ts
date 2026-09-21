@@ -13,12 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { filter, switchMap } from 'rxjs/operators';
 
-import {
-    ApiService,
-    CalendarDto,
-    HolidayRuleDto,
-    WeekdayHoursDto,
-} from '../../api/api.service';
+import { CalendarDto, HolidayRuleDto, WeekdayHoursDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -457,7 +453,7 @@ const WEEKDAYS: ReadonlyArray<{ day: WeekdayHoursDto['day']; label: string }> = 
     `],
 })
 export class CalendarSettingsPanelComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly dialog     = inject(Dialog);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -566,7 +562,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
     private loadRules(): void {
         const slug = this.calendar().slug;
         if (!slug) return;
-        this.api.listHolidayRules(slug).pipe(
+        this.calendarsApi.listHolidayRules(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => this.rules.set(rows),
@@ -639,7 +635,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
             parentId: this.settingsParentId === '' ? null : this.settingsParentId,
         } as Partial<CalendarDto>;
 
-        this.api.updateCalendar(slug, patch).pipe(
+        this.calendarsApi.updateCalendar(slug, patch).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: cal => {
@@ -698,7 +694,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
         }
 
         this.savingHours.set(true);
-        this.api.updateCalendar(slug, { workingHours: wh }).pipe(
+        this.calendarsApi.updateCalendar(slug, { workingHours: wh }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: cal => {
@@ -748,7 +744,7 @@ export class CalendarSettingsPanelComponent implements OnInit {
         if (!rule.id) return;
         this.confirmSvc.confirmDelete(rule.label ?? 'rule').pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteHolidayRule(rule.id!)),
+            switchMap(() => this.calendarsApi.deleteHolidayRule(rule.id!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { ModalComponent } from '@coolms/ui-angular';
-import { ApiService } from '../../api/api.service';
+import { DefinitionsApiService } from '../definitions/definitions-api.service';
 import { CdpService } from './cdp.service';
 import { SegmentDto, SegmentRuleCheckDto } from './cdp.types';
 
@@ -149,7 +149,7 @@ export interface SegmentEditorDialogData {
 })
 export class SegmentEditorDialogComponent implements OnInit {
     private readonly api        = inject(CdpService);
-    private readonly definitions = inject(ApiService);
+    private readonly definitionsApi = inject(DefinitionsApiService);
     private readonly errors     = inject(ErrorHandlerService);
     readonly dialogRef          = inject<DialogRef<SegmentDto | null>>(DialogRef);
     private readonly destroyRef = inject(DestroyRef);
@@ -192,7 +192,7 @@ export class SegmentEditorDialogComponent implements OnInit {
      * API), it is preserved as its own option so saving doesn't silently drop it.
      */
     private loadWorkflows(): void {
-        this.definitions.listDefinitions({ itemsPerPage: 200 }).pipe(
+        this.definitionsApi.listDefinitions({ itemsPerPage: 200 }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: result => {

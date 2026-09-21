@@ -1,4 +1,4 @@
-import { type CreateSectionDto, type UpdateSectionDto } from '../../api/api.service';
+import { type CreateSectionDto, type UpdateSectionDto } from './sections.types';
 
 export class LoadSections {
     static readonly type = '[Section] Load';

@@ -14,7 +14,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { ApiService, CalendarDto } from '../../api/api.service';
+import { CalendarDto } from '../calendars/calendars.types';
+import { CalendarsApiService } from '../calendars/calendars-api.service';
 import {
     CalendarPrefs,
     LazySelectComponent,
@@ -42,7 +43,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
  * Renders the user's calendar preferences with a live date-format
  * preview, radio groups for binary choices (time format, week start),
  * a search-enabled timezone dropdown, and an async-loaded
- * "Default calendar" picker sourced from `api.listCalendars()`.
+ * "Default calendar" picker sourced from `calendarsApi.listCalendars()`.
  *
  * Submits via `(saved)` to the parent (`ProfilePageComponent`), which
  * calls the same `updateSettings('calendar', payload)` endpoint that
@@ -219,8 +220,7 @@ export class ProfileCalendarTabComponent implements OnInit {
 
     /** Emitted when the user clicks Save changes (parent owns the network call). */
     @Output() saved = new EventEmitter<CalendarPrefs>();
-
-    private readonly api    = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly toast  = inject(ToastService);
     private readonly prefs  = inject(UserCalendarPreferencesService);
     private readonly destroyRef = inject(DestroyRef);
@@ -278,7 +278,7 @@ export class ProfileCalendarTabComponent implements OnInit {
         this.weekStart           = init.weekStart === 'sunday' ? 'sunday' : 'monday';
         this.defaultCalendarSlug = init.defaultCalendarSlug ?? null;
 
-        this.api.listCalendars().pipe(
+        this.calendarsApi.listCalendars().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => {

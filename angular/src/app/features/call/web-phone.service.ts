@@ -13,7 +13,8 @@ import {
 } from 'sip.js';
 import { SessionDescriptionHandler as WebSessionDescriptionHandler } from 'sip.js/lib/platform/web';
 
-import { ApiService } from '../../api/api.service';
+import { RtcApiService } from '../rtc/rtc-api.service';
+import { CallApiService } from './call-api.service';
 
 export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' | 'failed';
 
@@ -44,7 +45,8 @@ export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' |
  */
 @Injectable({ providedIn: 'root' })
 export class WebPhoneService {
-    private readonly api = inject(ApiService);
+    private readonly rtcApi = inject(RtcApiService);
+    private readonly callApi = inject(CallApiService);
     private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
     /** Registration status; the overlay only shows Answer/Hangup when `registered`. */
@@ -71,7 +73,7 @@ export class WebPhoneService {
         this.started = true;
 
         try {
-            const config = await firstValueFrom(this.api.getWebPhoneConfig());
+            const config = await firstValueFrom(this.callApi.getWebPhoneConfig());
             if (!config.enabled || !config.password || !config.wssUrl || !config.authorizationUser) {
                 this.status.set('disabled');
                 return;
@@ -234,7 +236,7 @@ export class WebPhoneService {
 
     private async resolveIceServers(): Promise<RTCIceServer[]> {
         try {
-            const cfg = await firstValueFrom(this.api.getCallIceServers());
+            const cfg = await firstValueFrom(this.rtcApi.getCallIceServers());
             return cfg.iceServers ?? [];
         } catch {
             return [];

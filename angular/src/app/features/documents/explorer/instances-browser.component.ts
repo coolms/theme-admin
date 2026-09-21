@@ -27,7 +27,8 @@ import {
 
 import { Store } from '@ngxs/store';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
-import { ApiService, NodeDto } from '../../../api/api.service';
+import { VfsApiService } from '../../vfs/vfs-api.service';
+import { NodeDto } from '../../vfs/vfs.types';
 import { DocumentPageStateService, type InstanceFilters } from './document-page-state.service';
 import { filenameOf, formatLocation } from './vfs-location.helpers';
 import { filterTreeDirectories } from './vfs-tree.helpers';
@@ -517,8 +518,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
     });
 
     @ViewChild('sentinel') sentinelEl?: ElementRef<HTMLDivElement>;
-
-    private readonly api = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly instancesSvc = inject(DocumentInstanceService);
     private readonly state = inject(DocumentPageStateService);
     private readonly destroyRef = inject(DestroyRef);
@@ -603,7 +603,7 @@ export class InstancesBrowserComponent implements AfterViewInit, OnDestroy {
 
                 return;
             }
-            this.api
+            this.vfsApi
                 .listDirectory(path)
                 .pipe(
                     catchError(() => of<NodeDto[]>([])),

@@ -41,7 +41,6 @@ import { MediaAssetDto, MediaViewMode } from './media.types';
 import { MediaPermissionsComponent } from './media-permissions.component';
 import { CollectionPermissionsComponent } from './collection-permissions.component';
 import { MoveToDialogComponent } from './move-to-dialog.component';
-import { ApiService } from '../../api/api.service';
 import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
@@ -165,7 +164,6 @@ export class MediaLibraryPage implements OnInit {
     private readonly footer     = inject(PageFooterService);
 
     private readonly svc        = inject(MediaService);
-    private readonly api        = inject(ApiService);
     private readonly dialog     = inject(Dialog);
     private readonly prefs      = inject(UserPreferencesService);
     private readonly naviGraph  = inject(NaviGraphService);

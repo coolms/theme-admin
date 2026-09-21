@@ -3,14 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
 import { AppConfigState, AuthState, Logout, SetTokens } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
+import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
 @Injectable({ providedIn: 'root' })
 export class TerminalService {
     private readonly store = inject(Store);
     private readonly http  = inject(HttpClient);
-    private readonly api   = inject(ApiService);
+    private readonly api   = inject(ShellApiService);
     private controller: AbortController | null = null;
 
     /**

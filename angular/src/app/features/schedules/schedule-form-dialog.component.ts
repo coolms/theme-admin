@@ -10,7 +10,8 @@ import {
 import { Dialog, DialogRef } from '@angular/cdk/dialog';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ApiService, ScheduleDto, ScheduledHandlerDto, TriggerKindCode } from '../../api/api.service';
+import { ScheduleDto, ScheduledHandlerDto, TriggerKindCode } from './schedules.types';
+import { SchedulesApiService } from './schedules-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     LazySelectComponent,
@@ -143,7 +144,7 @@ import {
     `],
 })
 export class ScheduleFormDialogComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly schedulesApi = inject(SchedulesApiService);
     private readonly errors     = inject(ErrorHandlerService);
     readonly dialogRef          = inject<DialogRef<ScheduleDto | null>>(DialogRef);
     private readonly destroyRef = inject(DestroyRef);
@@ -213,7 +214,7 @@ export class ScheduleFormDialogComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        this.api.listScheduledHandlers().pipe(
+        this.schedulesApi.listScheduledHandlers().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => {
@@ -262,7 +263,7 @@ export class ScheduleFormDialogComponent implements OnInit {
         }
         this.submitting.set(true);
         this.error.set(null);
-        this.api.createSchedule({
+        this.schedulesApi.createSchedule({
             slug:        this.slug.trim(),
             name:        this.name.trim(),
             tz:          this.tz.trim() || 'UTC',

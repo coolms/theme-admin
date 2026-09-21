@@ -29,7 +29,7 @@ import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
 import { CmsPageHeaderComponent, ConfirmDialogService, EscCoordinatorService, ExplorerLayoutComponent, ExplorerViewMode, ExplorerViewSwitcherComponent, FileEditorRegistry, NativeDialogService, PageFooterService, PageToolbarComponent, ToastService, ToolbarAction, type VfsNodeDto } from '@coolms/ui-angular';
 import { type DocumentTemplate } from '../shared/document-explorer.types';
-import { ApiService } from '../../../api/api.service';
+import { VfsApiService } from '../../vfs/vfs-api.service';
 import { WordTemplateService } from '../word/word-template.service';
 import { NativeDocumentService } from '../word/native-document.service';
 import { DocumentAggregatorService } from './document-aggregator.service';
@@ -207,7 +207,7 @@ export class DocumentLibraryPage implements OnInit {
     private readonly editorRegistry = inject(FileEditorRegistry);
     private readonly nativeDialog = inject(NativeDialogService);
     // -- VFS mkdir + binary upload for the Documents view.
-    private readonly api = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly confirmSvc = inject(ConfirmDialogService);
     private readonly esc = inject(EscCoordinatorService);
     private readonly router = inject(Router);
@@ -1174,7 +1174,7 @@ export class DocumentLibraryPage implements OnInit {
         // create path on the platform (Page, Article) already posts a
         // title and lets the backend name the thing.
         const parent = (targetPath ?? this.state.currentPath()).replace(/\/+$/, '');
-        this.api
+        this.vfsApi
             .mkdirTitled(parent, title.trim())
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -1296,7 +1296,7 @@ export class DocumentLibraryPage implements OnInit {
         let remaining = files.length;
         let failed = 0;
         for (const file of files) {
-            this.api
+            this.vfsApi
                 .uploadBinary(file, folderPath)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({

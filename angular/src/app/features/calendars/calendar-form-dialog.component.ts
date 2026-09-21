@@ -8,7 +8,8 @@ import {
 import { DialogRef } from '@angular/cdk/dialog';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ApiService, CalendarDto } from '../../api/api.service';
+import { CalendarDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { LazySelectComponent, ModalComponent } from '@coolms/ui-angular';
 
@@ -97,7 +98,7 @@ import { LazySelectComponent, ModalComponent } from '@coolms/ui-angular';
     `],
 })
 export class CalendarFormDialogComponent {
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly errors     = inject(ErrorHandlerService);
     readonly dialogRef          = inject<DialogRef<CalendarDto | null>>(DialogRef);
     private readonly destroyRef = inject(DestroyRef);
@@ -129,7 +130,7 @@ export class CalendarFormDialogComponent {
         }
         this.submitting.set(true);
         this.error.set(null);
-        this.api.createCalendar({
+        this.calendarsApi.createCalendar({
             slug:  this.slug.trim(),
             label: this.label.trim(),
             tz:    this.tz.trim() || 'UTC',

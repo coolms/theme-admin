@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import type { DocumentGenerationDto } from '../../../api/api.service';
+import type { DocumentGenerationDto } from '../documents.types';
 
 /**
  * Read-only summary card for a `DocumentGenerationDto`. Renders the
