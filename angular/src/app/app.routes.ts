@@ -36,11 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            {
-                path: 'sections',
-                loadChildren: () =>
-                    import('./features/sections/sections.routes').then(m => m.SECTION_ROUTES),
-            },
             // -- Calendar admin (list + detail with working hours,
             // holiday rules, and year preview).
             {
