@@ -4,7 +4,8 @@ import { Store } from '@ngxs/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent, ToastService } from '@coolms/ui-angular';
-import { ApiService, IdentityGroupDto } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { IdentityGroupDto } from './identity.types';
 
 @Component({
     selector: 'app-group-create-dialog',
@@ -28,7 +29,7 @@ export class GroupCreateDialogComponent {
     @ViewChild('dynamicForm') dynamicForm!: DynamicFormComponent;
 
     private readonly store      = inject(Store);
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
@@ -47,8 +48,8 @@ export class GroupCreateDialogComponent {
         const description = (value['description'] as string | null | undefined)?.toString().trim() || null;
 
         const obs = this.isEdit
-            ? this.api.updateGroup(this.group!.id, { label, description })
-            : this.api.createGroup({
+            ? this.identityApi.updateGroup(this.group!.id, { label, description })
+            : this.identityApi.createGroup({
                 name: value['name'] as string,
                 label,
                 description,

@@ -15,7 +15,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { CmsLoaderComponent, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
-import { ApiService, IdentityUserDto, ProfileSection } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { IdentityUserDto, ProfileSection } from './identity.types';
 import { CallOverlayPrefs, CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfileCallTabComponent } from './profile-call-tab.component';
@@ -393,7 +394,7 @@ type Tab = 'personal' | string;
     `,
 })
 export class ProfilePageComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store      = inject(Store);
     private readonly toast      = inject(ToastService);
     private readonly titleSvc   = inject(PageTitleService);
@@ -441,9 +442,9 @@ export class ProfilePageComponent implements OnInit {
         this.titleSvc.set('My Profile');
 
         forkJoin([
-            this.api.getMe(),
-            this.api.getSettingsSections(),
-            this.api.getSettings(),
+            this.identityApi.getMe(),
+            this.identityApi.getSettingsSections(),
+            this.identityApi.getSettings(),
         ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ([user, sections, settings]) => {
                 this.user.set(user);
@@ -471,7 +472,7 @@ export class ProfilePageComponent implements OnInit {
 
     saveProfile(): void {
         this.savingProfile.set(true);
-        this.api.updateMe({ firstName: this.firstName || null, lastName: this.lastName || null })
+        this.identityApi.updateMe({ firstName: this.firstName || null, lastName: this.lastName || null })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -492,7 +493,7 @@ export class ProfilePageComponent implements OnInit {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
         this.avatarBusy.set(true);
-        this.api.uploadAvatar(file)
+        this.identityApi.uploadAvatar(file)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -510,7 +511,7 @@ export class ProfilePageComponent implements OnInit {
 
     removeAvatar(): void {
         this.avatarBusy.set(true);
-        this.api.deleteAvatar()
+        this.identityApi.deleteAvatar()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
@@ -530,7 +531,7 @@ export class ProfilePageComponent implements OnInit {
 
     updateColor(color: string): void {
         this.colorBusy.set(true);
-        this.api.updateAvatarColor(color)
+        this.identityApi.updateAvatarColor(color)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -558,7 +559,7 @@ export class ProfilePageComponent implements OnInit {
         // The API service strips `null` from PATCH bodies by stringify
         // serialisation -- explicit null is fine here, the backend processor
         // accepts it via the array_merge into `extras['settings'][section]`.
-        this.api.updateSettings(section, data as unknown as Record<string, unknown>)
+        this.identityApi.updateSettings(section, data as unknown as Record<string, unknown>)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -582,7 +583,7 @@ export class ProfilePageComponent implements OnInit {
      */
     saveCallSettings(section: string, data: CallOverlayPrefs): void {
         this.savingCall.set(true);
-        this.api.updateSettings(section, data as unknown as Record<string, unknown>)
+        this.identityApi.updateSettings(section, data as unknown as Record<string, unknown>)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {
@@ -599,7 +600,7 @@ export class ProfilePageComponent implements OnInit {
     }
 
     saveSection(section: string, data: Record<string, unknown>): void {
-        this.api.updateSettings(section, data)
+        this.identityApi.updateSettings(section, data)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: updated => {

@@ -2,7 +2,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 
-import { ApiService } from './api.service';
+import { IdentityApiService } from './identity-api.service';
 
 /**
  * Content negotiation on the settings endpoints.
@@ -21,8 +21,8 @@ import { ApiService } from './api.service';
  * These pin the header on both, because the bug is a missing header and a test
  * that only checked the parsed body would pass against the broken version.
  */
-describe('ApiService settings content negotiation', () => {
-    let api: ApiService;
+describe('IdentityApiService settings content negotiation', () => {
+    let api: IdentityApiService;
     let http: HttpTestingController;
 
     const manifest = {
@@ -36,11 +36,11 @@ describe('ApiService settings content negotiation', () => {
         TestBed.configureTestingModule({
             imports: [HttpClientTestingModule],
             providers: [
-                ApiService,
+                IdentityApiService,
                 { provide: Store, useValue: { selectSnapshot: () => manifest } },
             ],
         });
-        api = TestBed.inject(ApiService);
+        api = TestBed.inject(IdentityApiService);
         http = TestBed.inject(HttpTestingController);
     });
 

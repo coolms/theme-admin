@@ -13,7 +13,9 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService, IdentityUserDto } from '../../api/api.service';
+import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { IdentityUserDto } from './identity.types';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -60,8 +62,7 @@ const LIMIT = 50;
 })
 export class UsersListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store      = inject(Store);
     private readonly dialog     = inject(Dialog);
     private readonly confirmSvc = inject(ConfirmDialogService);
@@ -144,7 +145,7 @@ export class UsersListComponent implements OnInit {
 
         const page = Math.floor(event.offset / LIMIT) + 1;
 
-        this.api.listUsers({
+        this.identityApi.listUsers({
             limit:   LIMIT,
             page,
             filters: [...event.columnFilters],
@@ -199,7 +200,7 @@ export class UsersListComponent implements OnInit {
             return;
         }
         if (event.type === 'row.updated') {
-            this.api.getUser(event.entityId)
+            this.identityApi.getUser(event.entityId)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: updated => {
@@ -261,7 +262,7 @@ export class UsersListComponent implements OnInit {
         const name = user.fullName || user.identifier;
         this.confirmSvc.confirmDelete(name).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteUser(user.id)),
+            switchMap(() => this.identityApi.deleteUser(user.id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => {

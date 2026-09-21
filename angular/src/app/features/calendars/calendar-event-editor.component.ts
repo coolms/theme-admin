@@ -21,6 +21,7 @@ import {
     CreateCalendarItemDto,
     NonWorkingDayPolicy,
 } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -308,6 +309,8 @@ export class CalendarEventEditorComponent {
     readonly dialogRef: DialogRef<CalendarEventEditorResult> = inject(DialogRef);
 
     private readonly api        = inject(ApiService);
+
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly confirmSvc = inject(ConfirmDialogService);
@@ -333,7 +336,7 @@ export class CalendarEventEditorComponent {
      */
     private loadDefaultColorFromProfile(): void {
         if (this.mode !== 'create' || this.data.item?.color) return;
-        this.api.getMe().pipe(
+        this.identityApi.getMe().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: me => {

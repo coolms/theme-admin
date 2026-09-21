@@ -12,12 +12,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import {
-    ApiService,
-    IdentityUserDto,
-    SiteDto,
-    SiteMemberDto,
-} from '../../api/api.service';
+import { ApiService, SiteDto, SiteMemberDto } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
+import { IdentityUserDto } from '../identity/identity.types';
 import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig, AppConfigState } from '@coolms/core-angular';
 import {
     CmsPageHeaderComponent,
@@ -487,6 +484,7 @@ export class SiteMembersPageComponent implements OnInit {
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
     private readonly api         = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store       = inject(Store);
     private readonly confirmSvc  = inject(ConfirmDialogService);
     private readonly toast       = inject(ToastService);
@@ -685,13 +683,13 @@ export class SiteMembersPageComponent implements OnInit {
         if (!userId || !groupId || this.isAlreadyEditor(userId)) return;
 
         this.busy.set(true);
-        this.api.getUser(userId).pipe(
+        this.identityApi.getUser(userId).pipe(
             switchMap((user: IdentityUserDto) => {
                 const existing = user.groups.map(g => g.id);
                 if (existing.includes(groupId)) {
                     return of(null);
                 }
-                return this.api.assignUserGroups(userId, [...existing, groupId]);
+                return this.identityApi.assignUserGroups(userId, [...existing, groupId]);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -729,7 +727,7 @@ export class SiteMembersPageComponent implements OnInit {
         if (!groupId) return;
 
         this.busy.set(true);
-        this.api.getUser(m.userId).pipe(
+        this.identityApi.getUser(m.userId).pipe(
             switchMap((user: IdentityUserDto) => {
                 const remaining = user.groups
                     .map(g => g.id)
@@ -737,7 +735,7 @@ export class SiteMembersPageComponent implements OnInit {
                 // POST with empty array would trigger the backend's
                 // `user`-group fallback (see UserAssignGroupsProcessor).
                 // Keeping the user in *some* group is the safer default.
-                return this.api.assignUserGroups(m.userId, remaining);
+                return this.identityApi.assignUserGroups(m.userId, remaining);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({

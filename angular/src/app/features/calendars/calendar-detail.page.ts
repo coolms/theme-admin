@@ -17,6 +17,7 @@ import {
     ApiService,
     CalendarDto,
 } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import {
     CmsDetailFooterComponent,
@@ -381,6 +382,7 @@ export class CalendarDetailPageComponent implements OnInit {
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
     private readonly api         = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast       = inject(ToastService);
     private readonly errors      = inject(ErrorHandlerService);
     private readonly titleSvc    = inject(PageTitleService);
@@ -552,7 +554,7 @@ export class CalendarDetailPageComponent implements OnInit {
             this.ownerLabel.set('');
             return;
         }
-        this.api.getUser(ownerId).pipe(
+        this.identityApi.getUser(ownerId).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: user => this.ownerLabel.set(user.fullName || user.identifier || ''),
