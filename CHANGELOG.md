@@ -59,8 +59,9 @@ major number means here.
   body sideways -- the sidebar disappeared to the left. The page now uses the
   shared `app-tab-strip`, which keeps one row and puts the tabs that do not fit
   behind a "more" menu (ui-angular, same day); the active tab is always in the
-  row. The active tab's colour is the platform's tab colour, as on Inbox, Leads
-  and Newsletter, instead of the accent.
+  row, underlined in the accent as before -- and so, from now on, are the tabs
+  on Inbox, Leads, Newsletter, Dashboard, Analytics and Deletions, which were
+  blue.
 - The profile menu in the light theme: the panel inherited the top bar's light
   ink onto a white surface and could not be read. It paints the page's surface
   and ink (`--cms-surface`, `--cms-text`).
