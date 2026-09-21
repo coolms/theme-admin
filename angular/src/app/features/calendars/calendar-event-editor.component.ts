@@ -12,15 +12,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Observable, switchMap, filter } from 'rxjs';
 
-import {
-    ApiService,
-    CalendarItemDto,
-    CalendarItemStatusCode,
-    CalendarItemTypeCode,
-    CalendarItemVisibilityCode,
-    CreateCalendarItemDto,
-    NonWorkingDayPolicy,
-} from '../../api/api.service';
+import { CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CalendarItemVisibilityCode, CreateCalendarItemDto, NonWorkingDayPolicy } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
@@ -307,9 +300,7 @@ export class CalendarEventEditorComponent {
 
     readonly data: CalendarEventEditorData = inject(DIALOG_DATA);
     readonly dialogRef: DialogRef<CalendarEventEditorResult> = inject(DialogRef);
-
-    private readonly api        = inject(ApiService);
-
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -588,8 +579,8 @@ export class CalendarEventEditorComponent {
         };
 
         const obs$: Observable<CalendarItemDto> = this.mode === 'create'
-            ? this.api.createCalendarItem(payload)
-            : this.api.updateCalendarItem(this.data.item!.id, payload);
+            ? this.calendarsApi.createCalendarItem(payload)
+            : this.calendarsApi.updateCalendarItem(this.data.item!.id, payload);
 
         obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: item => {
@@ -619,7 +610,7 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.api.splitCalendarItem(item.id, {
+        this.calendarsApi.splitCalendarItem(item.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
@@ -654,7 +645,7 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.api.createCalendarItemException(item.id, {
+        this.calendarsApi.createCalendarItemException(item.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
@@ -738,7 +729,7 @@ export class CalendarEventEditorComponent {
             filter(Boolean),
             switchMap(() => {
                 this.deleting.set(true);
-                return this.api.deleteCalendarItem(item.id);
+                return this.calendarsApi.deleteCalendarItem(item.id);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -758,7 +749,7 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.api.skipCalendarItemOccurrence(item.id, instant)
+        this.calendarsApi.skipCalendarItemOccurrence(item.id, instant)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -781,7 +772,7 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.api.deleteFollowingCalendarItem(item.id, instant)
+        this.calendarsApi.deleteFollowingCalendarItem(item.id, instant)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -803,7 +794,7 @@ export class CalendarEventEditorComponent {
     private commitCanonicalDelete(): void {
         const item = this.data.item!;
         this.deleting.set(true);
-        this.api.deleteCalendarItem(item.id)
+        this.calendarsApi.deleteCalendarItem(item.id)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {

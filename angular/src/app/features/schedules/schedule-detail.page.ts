@@ -11,12 +11,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
-import {
-    ApiService,
-    CalendarDto,
-    ScheduleDto,
-    TriggerKindCode,
-} from '../../api/api.service';
+import { ApiService, ScheduleDto, TriggerKindCode } from '../../api/api.service';
+import { CalendarDto } from '../calendars/calendars.types';
+import { CalendarsApiService } from '../calendars/calendars-api.service';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import {
     CmsDetailFooterComponent,
@@ -305,6 +302,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
 export class ScheduleDetailPageComponent implements OnInit {
     private readonly layoutActions = inject(LayoutActionsService);
     private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly router     = inject(Router);
     private readonly route      = inject(ActivatedRoute);
     private readonly toast      = inject(ToastService);
@@ -440,7 +438,7 @@ export class ScheduleDetailPageComponent implements OnInit {
     }
 
     private loadCalendars(): void {
-        this.api.listCalendars().pipe(
+        this.calendarsApi.listCalendars().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => this.calendars.set(rows),

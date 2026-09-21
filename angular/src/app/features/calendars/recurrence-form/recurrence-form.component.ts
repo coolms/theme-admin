@@ -16,7 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 
-import { ApiService } from '../../../api/api.service';
+import { CalendarsApiService } from '../calendars-api.service';
 import { DateTimeFormatService } from '@coolms/ui-angular';
 import {
     type EndMode,
@@ -511,8 +511,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
 
     /** Emits the serialised spec string on every form change. `null` = no recurrence. */
     @Output() valueChange = new EventEmitter<string | null>();
-
-    private readonly api = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -583,7 +582,7 @@ export class RecurrenceFormComponent implements OnInit, OnChanges {
                     }
                     this.previewLoading.set(true);
                     this.previewError.set(null);
-                    return this.api.recurrencePreview({
+                    return this.calendarsApi.recurrencePreview({
                         rrule:        spec,
                         dtstart:      this.dtstart,
                         tz:           this.tz,

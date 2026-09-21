@@ -19,16 +19,8 @@ import type { EventApi } from 'fullcalendar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, forkJoin, of } from 'rxjs';
 
-import {
-    ApiService,
-    CalendarDto,
-    CalendarHolidayPreviewDto,
-    CalendarItemDto,
-    CalendarItemStatusCode,
-    CalendarItemTypeCode,
-    CreateCalendarItemDto,
-    HolidayPreviewItemDto,
-} from '../../api/api.service';
+import { CalendarDto, CalendarHolidayPreviewDto, CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CreateCalendarItemDto, HolidayPreviewItemDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -380,8 +372,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         currentEnd:   Date;
         viewType:     'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
     }>();
-
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly dialog     = inject(Dialog);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -736,7 +727,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         );
 
         forkJoin({
-            items:    this.api.listCalendarItems({ calendarSlug: slug, from: fromIso, to: toIso }),
+            items:    this.calendarsApi.listCalendarItems({ calendarSlug: slug, from: fromIso, to: toIso }),
             holidays: years.length === 0 ? of([] as HolidayPreviewItemDto[][]) : holidaysObs,
         }).pipe(
             takeUntilDestroyed(this.destroyRef),
@@ -772,7 +763,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         this.pendingHolidayYears.add(key);
 
         return new Promise<HolidayPreviewItemDto[]>(resolve => {
-            this.api.previewCalendarYear(slug, year).subscribe({
+            this.calendarsApi.previewCalendarYear(slug, year).subscribe({
                 next: (pv: CalendarHolidayPreviewDto) => {
                     const items = [...pv.items];
                     this.holidayCache.set(key, items);
@@ -901,7 +892,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             ? arg.event.start?.toISOString() ?? undefined
             : undefined;
 
-        this.api.getCalendarItem(canonicalId).pipe(
+        this.calendarsApi.getCalendarItem(canonicalId).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: item => this.openEditor({
@@ -1033,7 +1024,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // instance rows regardless of the source event's shape.
         };
 
-        this.api.createCalendarItem(payload).pipe(
+        this.calendarsApi.createCalendarItem(payload).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -1058,7 +1049,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         if (!menu) return;
         this.cmenu.set(null);
 
-        this.api.updateCalendarItem(menu.canonicalId, { status: newStatus }).pipe(
+        this.calendarsApi.updateCalendarItem(menu.canonicalId, { status: newStatus }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -1110,7 +1101,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteCalendarItem(menu.canonicalId)),
+            switchMap(() => this.calendarsApi.deleteCalendarItem(menu.canonicalId)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => this.onAfterDelete('Event deleted'),
@@ -1119,7 +1110,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     private deleteSkipOccurrence(parentId: string, recurrenceInstant: string): void {
-        this.api.skipCalendarItemOccurrence(parentId, recurrenceInstant)
+        this.calendarsApi.skipCalendarItemOccurrence(parentId, recurrenceInstant)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.onAfterDelete('This occurrence skipped'),
@@ -1128,7 +1119,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     private deleteFollowing(parentId: string, recurrenceInstant: string): void {
-        this.api.deleteFollowingCalendarItem(parentId, recurrenceInstant)
+        this.calendarsApi.deleteFollowingCalendarItem(parentId, recurrenceInstant)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.onAfterDelete('This and following occurrences removed'),
@@ -1149,7 +1140,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteCalendarItem(canonicalId)),
+            switchMap(() => this.calendarsApi.deleteCalendarItem(canonicalId)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => this.onAfterDelete('Event deleted'),
@@ -1274,7 +1265,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         newEnd: string | null,
         arg: { revert: () => void },
     ): void {
-        this.api.createCalendarItemException(parentItemId, {
+        this.calendarsApi.createCalendarItemException(parentItemId, {
             recurrenceInstant,
             newStart,
             newEnd,
@@ -1308,7 +1299,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         newEnd: string | null,
         arg: { revert: () => void },
     ): void {
-        this.api.splitCalendarItem(parentItemId, {
+        this.calendarsApi.splitCalendarItem(parentItemId, {
             recurrenceInstant,
             newStart,
             newEnd,
@@ -1340,7 +1331,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         arg: { revert: () => void },
         successVerb: 'rescheduled' | 'duration updated',
     ): void {
-        this.api.updateCalendarItem(canonicalId, patch).pipe(
+        this.calendarsApi.updateCalendarItem(canonicalId, patch).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

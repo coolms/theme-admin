@@ -6,7 +6,7 @@ import {
     input,
     output,
 } from '@angular/core';
-import { CalendarDto } from '../../api/api.service';
+import { CalendarDto } from './calendars.types';
 import { CalendarSettingsPanelComponent } from './calendar-settings-panel.component';
 
 type SettingsTab = 'settings' | 'hours' | 'rules' | 'shares';

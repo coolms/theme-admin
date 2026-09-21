@@ -15,7 +15,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-import { ApiService, CalendarItemDto } from '../../api/api.service';
+import { CalendarItemDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { DateTimeFormatService, DrawerService, ToastService } from '@coolms/ui-angular';
 import {
@@ -257,8 +258,7 @@ export class CalendarQuickPanelComponent implements OnInit {
      *  this for the current user). The drawer renders this panel without knowing
      *  about the calendar's owner so we trust the caller. */
     canEdit = input<boolean>(true);
-
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly dialog     = inject(Dialog);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -353,7 +353,7 @@ export class CalendarQuickPanelComponent implements OnInit {
         const to   = this.startOfDay(selected);
         to.setDate(to.getDate() + LOOKAHEAD_DAYS + 2);
 
-        this.api.listCalendarItems({
+        this.calendarsApi.listCalendarItems({
             calendarSlug: slug,
             from: from.toISOString(),
             to:   to.toISOString(),
@@ -376,7 +376,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     }
 
     openEditor(item: CalendarItemDto): void {
-        this.api.getCalendarItem(item.originalItemId ?? item.id).pipe(
+        this.calendarsApi.getCalendarItem(item.originalItemId ?? item.id).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: fullItem => this.openEditorModal({
@@ -405,7 +405,7 @@ export class CalendarQuickPanelComponent implements OnInit {
             });
             return;
         }
-        this.api.getCalendar(this.personalCalendarSlug()).pipe(
+        this.calendarsApi.getCalendar(this.personalCalendarSlug()).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: cal => this.openEditorModal({

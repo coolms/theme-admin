@@ -13,10 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import {
-    ApiService,
-    CalendarDto,
-} from '../../api/api.service';
+import { CalendarDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import {
@@ -381,7 +379,7 @@ export class CalendarDetailPageComponent implements OnInit {
     private readonly layoutActions = inject(LayoutActionsService);
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
-    private readonly api         = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly identityApi = inject(IdentityApiService);
     private readonly toast       = inject(ToastService);
     private readonly errors      = inject(ErrorHandlerService);
@@ -525,7 +523,7 @@ export class CalendarDetailPageComponent implements OnInit {
         this.loading.set(true);
         this.error.set(null);
         this.ownerLabel.set('');
-        this.api.getCalendar(slug).pipe(
+        this.calendarsApi.getCalendar(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: cal => {
@@ -563,7 +561,7 @@ export class CalendarDetailPageComponent implements OnInit {
     }
 
     private loadAll(): void {
-        this.api.listCalendars().pipe(
+        this.calendarsApi.listCalendars().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => this.allCalendars.set(rows),
@@ -599,7 +597,7 @@ export class CalendarDetailPageComponent implements OnInit {
     onExportIcs(): void {
         const cal = this.calendar();
         if (!cal?.slug) return;
-        this.api.exportCalendarIcs(cal.slug).pipe(
+        this.calendarsApi.exportCalendarIcs(cal.slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: blob => {
@@ -628,7 +626,7 @@ export class CalendarDetailPageComponent implements OnInit {
 
         const slug = cal.slug;
         file.text().then(ics => {
-            this.api.importCalendarIcs(slug, ics).pipe(
+            this.calendarsApi.importCalendarIcs(slug, ics).pipe(
                 takeUntilDestroyed(this.destroyRef),
             ).subscribe({
                 next: result => {
@@ -660,7 +658,7 @@ export class CalendarDetailPageComponent implements OnInit {
         }
         this.confirmSvc.confirmDelete(cal.label ?? cal.slug).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteCalendar(cal.slug!)),
+            switchMap(() => this.calendarsApi.deleteCalendar(cal.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
