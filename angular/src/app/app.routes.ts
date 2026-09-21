@@ -44,15 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // Inbox: 3-tab user-task queue (My / Claimable / Recent)
-            // for workflow user tasks. URL-driven tabs via ?tab=...
-            // Realtime updates via the inbox.{userId} channel.
-            {
-                path: 'inbox',
-                loadChildren: () =>
-                    import('./features/inbox/inbox.routes').then(m => m.INBOX_ROUTES),
-                data: { activeNav: '/inbox' },
-            },
             // Process Cockpit: operator read-only view over the
             // Workflow engine state (running/finished process instances).
             {
