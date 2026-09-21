@@ -20,28 +20,6 @@ final class AdminControllerTest extends TestCase
 {
     private string $dir;
 
-    protected function setUp(): void
-    {
-        $this->dir = sys_get_temp_dir() . '/admin-fixture-' . bin2hex(random_bytes(6));
-        mkdir($this->dir, 0o777, true);
-        file_put_contents($this->dir . '/index.html', '<html><body>shell</body></html>');
-        file_put_contents($this->dir . '/chunk-Real.js', 'export const a = 1;');
-    }
-
-    protected function tearDown(): void
-    {
-        // Deepest first: removing a parent before its children is a warning,
-        // and this package's phpunit config turns warnings into failures.
-        foreach (['/chunk-Real.js', '/index.html'] as $f) {
-            if (is_file($this->dir . $f)) {
-                unlink($this->dir . $f);
-            }
-        }
-        if (is_dir($this->dir)) {
-            rmdir($this->dir);
-        }
-    }
-
     #[Test]
     public function aMissingAssetIs404AndNotTheShell(): void
     {
@@ -98,5 +76,27 @@ final class AdminControllerTest extends TestCase
             $response->getStatusCode(),
             'A traversal must not be served, even though the target exists.',
         );
+    }
+
+    protected function setUp(): void
+    {
+        $this->dir = sys_get_temp_dir() . '/admin-fixture-' . bin2hex(random_bytes(6));
+        mkdir($this->dir, 0o777, true);
+        file_put_contents($this->dir . '/index.html', '<html><body>shell</body></html>');
+        file_put_contents($this->dir . '/chunk-Real.js', 'export const a = 1;');
+    }
+
+    protected function tearDown(): void
+    {
+        // Deepest first: removing a parent before its children is a warning,
+        // and this package's phpunit config turns warnings into failures.
+        foreach (['/chunk-Real.js', '/index.html'] as $f) {
+            if (is_file($this->dir . $f)) {
+                unlink($this->dir . $f);
+            }
+        }
+        if (is_dir($this->dir)) {
+            rmdir($this->dir);
+        }
     }
 }
