@@ -156,6 +156,12 @@ type Tab = 'personal' | string;
 
         .profile-tabs {
             display: flex;
+            /* Six tabs are wider than the content column below ~1000px. Unwrapped
+               they overflowed into .profile-body, whose overflow-y: auto makes it
+               scroll horizontally too, and clicking a half-visible tab focused it
+               and scrolled the whole body -- the sidebar disappeared to the left.
+               Wrapping keeps every tab reachable and the body unscrolled. */
+            flex-wrap: wrap;
             border-bottom: 1px solid var(--cms-border);
             flex-shrink: 0;
         }
