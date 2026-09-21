@@ -19,6 +19,16 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The profile page opens a `profile.tab` slot: a module binds a component under
+  `profile.tab:<settings section>` in `ComponentRegistry` (app.config.ts holds
+  the bindings) and the page renders it for that section instead of the
+  generic form, handing it one input, `section`. The guest owns its pane --
+  load, form, footer and save. Call's "Calls" pane is the first guest, moved
+  from `features/identity` to `features/call`: it loads and saves through
+  `CallOverlayPreferencesService` (`refresh()`, and `save()`, new), so Identity
+  imports nothing from Call. The page no longer seeds the call overlay prefs
+  when it loads; the shell refreshes them at boot and the pane again when it
+  opens.
 - The shell's `api/api.service.ts` (2,538 lines, 128 members, reached from 33 of
   47 features) is cut along module lines: each group of methods now lives in the
   feature that owns the endpoint (`features/<feature>/<feature>-api.service.ts`

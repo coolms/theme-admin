@@ -9,17 +9,15 @@ import {
     viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { CalendarPrefs, CmsPageHeaderComponent, DynamicFormComponent, PageTitleService, ToastService, UserAvatarComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { CalendarPrefs, CmsPageHeaderComponent, DynamicFormComponent, PageTitleService, SlotComponent, ToastService, UserAvatarComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { CmsLoaderComponent, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
+import { CmsLoaderComponent, ComponentRegistry, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
 import { IdentityApiService } from './identity-api.service';
 import { IdentityUserDto, ProfileSection } from './identity.types';
-import { CallOverlayPrefs, CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
-import { ProfileCallTabComponent } from './profile-call-tab.component';
 
 /** Marker key the Calendar contributor emits for `formId` -- matches
  *  CalendarPreferencesContributor::getFormId() on the backend. The FE
@@ -27,11 +25,16 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  *  the generic DynamicFormComponent. */
 const CALENDAR_FORM_ID = 'calendar:user_preferences';
 
-/** Marker key the Call contributor emits for `formId` -- matches
- *  CallSettingsContributor::getFormId() on the backend. Routes the
- *  section to the bespoke ProfileCallTabComponent (incoming-call
- *  overlay on/off + auto-dismiss seconds). */
-const CALL_FORM_ID = 'call:user_settings';
+/**
+ * The `profile.tab` slot. Identity owns the profile page; another module
+ * that wants its own pane for one of the settings sections registers a
+ * component under `profile.tab:<section>` (app.config.ts holds the
+ * bindings) and the page renders it in place of the generic form. The
+ * guest receives one input, `section`, and owns the rest of its pane --
+ * load, form, footer and save -- because the host cannot reach into a slot.
+ * Call's "Calls" pane is the first guest; the page knows no module by name.
+ */
+const PROFILE_TAB_SLOT = 'profile.tab';
 
 type Tab = 'personal' | string;
 
@@ -46,7 +49,7 @@ type Tab = 'personal' | string;
         DynamicFormComponent,
         UserAvatarComponent,
         ProfileCalendarTabComponent,
-        ProfileCallTabComponent,
+        SlotComponent,
     ],
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
@@ -330,7 +333,13 @@ type Tab = 'personal' | string;
                     <!-- Dynamic settings tabs -->
                     @for (sec of sections(); track sec.section) {
                         @if (activeTab() === sec.section) {
-                            @if (sec.formId === CALENDAR_FORM_ID) {
+                            @if (hasProfileTab(sec.section)) {
+                                <!-- Another module's pane for this section, through
+                                     the profile.tab slot (see PROFILE_TAB_SLOT). The
+                                     guest renders body and footer itself. -->
+                                <app-slot [key]="profileTabKey(sec.section)"
+                                          [inputs]="{ section: sec.section }" />
+                            } @else if (sec.formId === CALENDAR_FORM_ID) {
                                 <!-- Task () bespoke Calendar tab.
                                      Live previews + radios + async calendar
                                      picker don't fit the DynamicForm field
@@ -349,29 +358,6 @@ type Tab = 'personal' | string;
                                             [disabled]="savingCalendar()"
                                             (click)="calendarTab.save()">
                                         @if (savingCalendar()) {
-                                            <cms-loader [inline]="true" />
-                                        }
-                                        Save changes
-                                    </button>
-                                </div>
-                            } @else if (sec.formId === CALL_FORM_ID) {
-                                <!-- bespoke "Calls" tab — incoming-call
-                                     overlay on/off + auto-dismiss seconds. Persists
-                                     through the same updateSettings endpoint and pushes
-                                     the merged values into CallOverlayPreferencesService
-                                     so the live overlay reacts without a reload. -->
-                                <div class="profile-tab-body">
-                                    <app-profile-call-tab
-                                        #callTab
-                                        [initial]="(settings()[sec.section] ?? {})"
-                                        [saving]="savingCall()"
-                                        (saved)="saveCallSettings(sec.section, $event)" />
-                                </div>
-                                <div class="profile-footer">
-                                    <button class="cms-btn cms-btn-primary"
-                                            [disabled]="savingCall()"
-                                            (click)="callTab.save()">
-                                        @if (savingCall()) {
                                             <cms-loader [inline]="true" />
                                         }
                                         Save changes
@@ -400,15 +386,23 @@ export class ProfilePageComponent implements OnInit {
     private readonly titleSvc   = inject(PageTitleService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly calPrefs   = inject(UserCalendarPreferencesService);
-    private readonly callPrefs  = inject(CallOverlayPreferencesService);
     private readonly theme      = inject(ThemeService);
+    private readonly registry   = inject(ComponentRegistry);
 
     readonly PALETTE = ['#E8834A','#4A90E8','#7B6BE8','#4AC4A0','#E84A6B','#4ACA5A','#E8C44A','#9B59B6'];
 
     /** Sentinel marker -- see {@link CALENDAR_FORM_ID} at the top of this file. */
     readonly CALENDAR_FORM_ID = CALENDAR_FORM_ID;
-    /** Sentinel marker -- see {@link CALL_FORM_ID} at the top of this file. */
-    readonly CALL_FORM_ID = CALL_FORM_ID;
+
+    /** The registry key a guest pane for `section` is bound under -- see {@link PROFILE_TAB_SLOT}. */
+    profileTabKey(section: string): string {
+        return `${PROFILE_TAB_SLOT}:${section}`;
+    }
+
+    /** Whether some module has bound a pane for `section`; a bound pane wins over the generic form. */
+    hasProfileTab(section: string): boolean {
+        return this.registry.has(this.profileTabKey(section));
+    }
 
     readonly user           = signal<IdentityUserDto | null>(null);
     readonly sections       = signal<ProfileSection[]>([]);
@@ -416,7 +410,6 @@ export class ProfilePageComponent implements OnInit {
     readonly activeTab      = signal<Tab>('personal');
     readonly savingProfile  = signal(false);
     readonly savingCalendar = signal(false);
-    readonly savingCall     = signal(false);
     readonly avatarBusy     = signal(false);
     readonly colorBusy      = signal(false);
 
@@ -459,10 +452,8 @@ export class ProfilePageComponent implements OnInit {
                 // calendar without each running its own request.
                 const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
                 if (cal) this.calPrefs.update(cal);
-                // Seed the call-overlay prefs so the live screen-pop picks
-                // up the user's on/off + auto-dismiss without its own request.
-                const call = settings['call'] as Partial<CallOverlayPrefs> | undefined;
-                if (call) this.callPrefs.update(call);
+                // Sections another module owns a pane for (profile.tab) are
+                // not seeded here: the guest asks the server when it opens.
             },
             error: () => this.toast.error('Failed to load profile'),
         });
@@ -571,30 +562,6 @@ export class ProfilePageComponent implements OnInit {
                 error: () => {
                     this.savingCalendar.set(false);
                     this.toast.error('Failed to save calendar preferences');
-                },
-            });
-    }
-
-    /**
-     * Submit handler for the bespoke "Calls" tab. Mirrors
-     * `saveCalendarPrefs`: PATCHes the section, then pushes the merged
-     * values into `CallOverlayPreferencesService` so the live screen-pop
-     * overlay reacts immediately (no reload).
-     */
-    saveCallSettings(section: string, data: CallOverlayPrefs): void {
-        this.savingCall.set(true);
-        this.identityApi.updateSettings(section, data as unknown as Record<string, unknown>)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: updated => {
-                    this.settings.update(s => ({ ...s, [section]: updated }));
-                    this.callPrefs.update(updated);
-                    this.savingCall.set(false);
-                    this.toast.success('Call settings saved');
-                },
-                error: () => {
-                    this.savingCall.set(false);
-                    this.toast.error('Failed to save call settings');
                 },
             });
     }

@@ -1,12 +1,12 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { paginateFlow } from '@coolms/document-engine';
-import { FormRenderDefinition, ThemeService } from '@coolms/core-angular';
+import { ComponentRegistry, FormRenderDefinition, ThemeService } from '@coolms/core-angular';
 import { ProfileSection } from './identity.types';
 import { DynamicFormComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
-import { CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 import { ProfilePageComponent } from './profile-page.component';
 
@@ -65,12 +65,33 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         },
     };
 
-    /** The three sections the page routes three different ways. */
+    /**
+     * The three sections the page routes three different ways: Identity's own
+     * bespoke Calendar pane, another module's pane through the `profile.tab`
+     * slot, and the generic form. The slot's section is spec-owned (`guest`),
+     * bound below to a stub: the page must know no module by name, so this
+     * spec names none either -- Call's real pane has its own spec in
+     * features/call.
+     */
     const SECTIONS: ProfileSection[] = [
         { section: 'calendar',    label: 'Calendar',    icon: 'calendar', formId: 'calendar:user_preferences' },
-        { section: 'call',        label: 'Calls',       icon: 'telephone', formId: 'call:user_settings' },
+        { section: 'guest',       label: 'Guest',       icon: 'plug',     formId: 'guest:settings' },
         { section: 'preferences', label: 'Preferences', icon: 'sliders',  formId: 'identity:user_preferences' },
     ];
+
+    /** A module's pane, as the slot contract has it: one input, `section`, and the pane owns the rest. */
+    @Component({
+        selector: 'spec-profile-guest-pane',
+        standalone: true,
+        template: `<p class="guest-pane">pane for {{ section() }}</p><button class="guest-save">Save</button>`,
+    })
+    class SpecProfileGuestPane {
+        readonly section = input.required<string>();
+    }
+
+    // The registry is a static map shared by the whole suite, so the key is
+    // spec-owned: nothing in the app binds `profile.tab:guest`.
+    ComponentRegistry.register('profile.tab:guest', SpecProfileGuestPane);
 
     /** What GET /auth/me/settings serves -- i.e. what the user had on load. */
     const SETTINGS_ON_LOAD = {
@@ -81,10 +102,8 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
             weekStart:           'monday',
             defaultCalendarSlug: null,
         },
-        call: {
-            overlayEnabled:     true,
-            autoDismissSeconds: 8,
-            sipEndpoint:        'PJSIP/1001',
+        guest: {
+            anything: 'the page stores it and hands the pane nothing but the section name',
         },
         preferences: {
             theme:       'light',
@@ -141,7 +160,6 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
     let page:      ProfilePageComponent;
     let http:      HttpTestingController;
     let calPrefs:  UserCalendarPreferencesService;
-    let callPrefs: CallOverlayPreferencesService;
     let theme:     ThemeService;
 
     /**
@@ -193,7 +211,6 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
         http      = TestBed.inject(HttpTestingController);
         calPrefs  = TestBed.inject(UserCalendarPreferencesService);
-        callPrefs = TestBed.inject(CallOverlayPreferencesService);
         theme     = TestBed.inject(ThemeService);
 
         fixture = TestBed.createComponent(ProfilePageComponent);
@@ -239,11 +256,10 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
  // -- ngOnInit seeding -----------------------------------------------------
 
- it('seeds the calendar and call prefs from the load response', () => {
- // Both services are shared with widgets mounted elsewhere in the shell,
- // so the page loading is what saves them a request each.
+ it('seeds the calendar prefs from the load response', () => {
+ // The service is shared with widgets mounted elsewhere in the shell,
+ // so the page loading is what saves it a request.
         expect(calPrefs.tz()).toBe('UTC');
-        expect(callPrefs.sipEndpoint()).toBe('PJSIP/1001');
     });
 
  // -- saveCalendarPrefs ----------------------------------------------------
@@ -330,27 +346,39 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         expect(page.savingCalendar()).toBeFalse();
     });
 
- // -- saveCallSettings -----------------------------------------------------
+ // -- the profile.tab slot -------------------------------------------------
 
-    const CALL_SAVED = {
-        overlayEnabled:     false,
-        autoDismissSeconds: 0,
-        sipEndpoint:        'PJSIP/2002',
-    };
+ it('a section another module bound a pane for renders that pane, handed the section name', () => {
+        openTab('guest');
 
- it('saveCallSettings reaches the live overlay prefs', () => {
-        page.saveCallSettings('call', CALL_SAVED);
-        flushSave('call', { ...CALL_SAVED });
+        const pane = fixture.nativeElement.querySelector('.guest-pane') as HTMLElement | null;
+        expect(pane).withContext('the bound pane is in the DOM').not.toBeNull();
+        expect(pane!.textContent).toContain('pane for guest');
 
- // The screen-pop overlay is mounted once by the admin shell and
- // refreshes only in its own ngOnInit, so a value that fails to land
- // here outlives every route change: the user turns the popup off and it
- // keeps popping up until the tab is reloaded.
-        expect(callPrefs.overlayEnabled()).toBeFalse();
-        expect(callPrefs.autoDismissSeconds()).toBe(0);
-        expect(callPrefs.sipEndpoint()).toBe('PJSIP/2002');
-        expect(page.settings()['call']).toEqual(CALL_SAVED);
-        expect(page.savingCall()).toBeFalse();
+ // The pane owns its whole tab area. The page renders neither the generic
+ // form nor a footer of its own around it -- it cannot press a Save
+ // button inside a slot, so a footer here would be a dead button.
+        expect(fixture.debugElement.query(de => de.componentInstance instanceof DynamicFormComponent))
+            .withContext('no generic form beside the pane').toBeNull();
+        expect(fixture.nativeElement.querySelector('.profile-footer'))
+            .withContext('no page footer around the pane').toBeNull();
+        expect(fixture.nativeElement.querySelector('.guest-save'))
+            .withContext('the pane brought its own Save').not.toBeNull();
+    });
+
+ it('a bound pane is opened without the page fetching or seeding anything for it', () => {
+ // The page loaded `guest` with the other sections (SETTINGS_ON_LOAD) and
+ // keeps it, but the pane is told only which section it is: what the
+ // pane shows, it asks the server for itself. No request leaves here.
+        openTab('guest');
+        http.expectNone(() => true);
+        expect(page.settings()['guest']).toEqual(SETTINGS_ON_LOAD.guest);
+    });
+
+ it('the page decides by the registry key, not by a module name -- unbound sections take the generic form (the Preferences tests below)', () => {
+        expect(page.hasProfileTab('preferences')).toBeFalse();
+        expect(page.hasProfileTab('guest')).toBeTrue();
+        expect(page.profileTabKey('preferences')).toBe('profile.tab:preferences');
     });
 
  // -- saveSection, driven through the real DynamicForm ---------------------
