@@ -8,7 +8,8 @@
 // token. The backend's `make check-fe` caught the third, late, because it
 // measures the clones' working trees from outside -- the backend commit gate
 // builds a tree from the backend's own tracked files, and this package has
-// none there (backend ledger #3041). The check has to live where the file is.
+// none there (measured: `git ls-files '*.page.ts'` in that repository lists
+// zero). The check has to live where the file is.
 //
 // WHAT FAILS. A `var(--cms-x, fallback)` under src/ where
 //   * nothing defines `--cms-x`: not styles.scss, not a `setProperty('--cms-x')`,
@@ -42,11 +43,14 @@
 //
 // WHERE IT RUNS. `npm run lint:fallbacks` on the working tree, and the local
 // pre-push hook (release-tools/install-publish-hook.sh) on the tree of every
-// commit being pushed: `git archive <sha> angular/src` into a temp dir, then
-// `--root <that dir>/angular/src`. Subject and oracle come from the same tree,
-// so a styles.scss edited but not committed cannot make a pushed fallback look
-// right. The hook refuses when the pushed tree has a styles.scss and this
-// script is missing: an absent instrument is not a pass.
+// commit being pushed: the commit's angular/src is checked out through a
+// throwaway index into a temp dir (`git read-tree <sha>:angular/src` and
+// `checkout-index --prefix`; not `git archive`, which honours the repo's
+// `angular/ export-ignore` and yields zero files), then `--root <that dir>`.
+// Subject and oracle come from the same tree, so a styles.scss edited but not
+// committed cannot make a pushed fallback look right. The hook refuses when
+// the pushed tree has a styles.scss and this script is missing: an absent
+// instrument is not a pass.
 //
 // The fallback is read with balanced parentheses, not up to the first `)`.
 // `var(--cms-accent, rgb(37,99,235))` is a fallback too; a pattern that stops
