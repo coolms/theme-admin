@@ -13,7 +13,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService, IdentityGroupDto } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { IdentityGroupDto } from './identity.types';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -56,8 +57,7 @@ import { GroupCreateDialogComponent } from './group-create-dialog.component';
 })
 export class GroupsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store      = inject(Store);
     private readonly dialog     = inject(Dialog);
     private readonly confirmSvc = inject(ConfirmDialogService);
@@ -118,7 +118,7 @@ export class GroupsListComponent implements OnInit {
 
         const epoch = ++this._loadEpoch;
 
-        this.api.listGroups({
+        this.identityApi.listGroups({
             limit:   500,
             filters: [...event.columnFilters],
             sort:    event.sort ?? undefined,
@@ -186,7 +186,7 @@ export class GroupsListComponent implements OnInit {
     private confirmDelete(group: IdentityGroupDto): void {
         this.confirmSvc.confirmDelete(group.label || group.name).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteGroup(group.id)),
+            switchMap(() => this.identityApi.deleteGroup(group.id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Group deleted'); this.grid.reload(); },

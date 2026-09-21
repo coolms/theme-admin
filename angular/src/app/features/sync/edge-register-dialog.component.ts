@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ModalComponent, ToastService } from '@coolms/ui-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
+import { SectionsApiService } from '../sections/sections-api.service';
 import { SyncEdgeDto, SyncFleetService } from './sync-fleet.service';
 
 /** Passed when editing an existing edge; absent = register a new one. */
@@ -142,7 +142,7 @@ const ALL_TIERS = ['config', 'content', 'runtime'] as const;
 })
 export class EdgeRegisterDialogComponent {
     private readonly api = inject(SyncFleetService);
-    private readonly sectionsApi = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly toast = inject(ToastService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);

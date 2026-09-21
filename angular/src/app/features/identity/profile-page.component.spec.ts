@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { paginateFlow } from '@coolms/document-engine';
 import { FormRenderDefinition, ThemeService } from '@coolms/core-angular';
-import { ProfileSection } from '../../api/api.service';
+import { ProfileSection } from './identity.types';
 import { DynamicFormComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';

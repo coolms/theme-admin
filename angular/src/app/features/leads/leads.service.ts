@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AppConfigState } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 
 /** The three lead buckets, matching the backend `LeadStatus` enum. */
 export type LeadStatus = 'new' | 'handled' | 'spam';

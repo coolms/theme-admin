@@ -4,7 +4,8 @@ import { State, Action, Selector, Store } from '@ngxs/store';
 import type { StateContext } from '@ngxs/store';
 import { EMPTY } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { ApiService, NaviTreeDto, NaviNodeDto } from '../../api/api.service';
+import { NaviTreeDto, NaviNodeDto } from './navi.types';
+import { NaviApiService } from './navi-api.service';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import {
     LoadNaviTrees,
@@ -34,7 +35,7 @@ export interface NaviStateModel {
 })
 @Injectable()
 export class NaviState {
-    private readonly api    = inject(ApiService);
+    private readonly naviApi = inject(NaviApiService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly http   = inject(HttpClient);
     private readonly store  = inject(Store);
@@ -42,7 +43,7 @@ export class NaviState {
     @Action(LoadNaviTrees)
     loadTrees(ctx: StateContext<NaviStateModel>) {
         ctx.patchState({ loading: true, error: null });
-        return this.api.getNaviTrees().pipe(
+        return this.naviApi.getNaviTrees().pipe(
             tap(trees => ctx.patchState({ trees, loading: false })),
             catchError(err => {
                 ctx.patchState({ loading: false, error: this.errors.humanize(err) });
@@ -60,7 +61,7 @@ export class NaviState {
     @Action(LoadNaviNodes)
     loadNodes(ctx: StateContext<NaviStateModel>, { treeSlug }: LoadNaviNodes) {
         ctx.patchState({ loading: true, error: null });
-        return this.api.getNaviNodes(treeSlug).pipe(
+        return this.naviApi.getNaviNodes(treeSlug).pipe(
             tap(nodes => ctx.patchState({ nodes, loading: false })),
             catchError(err => {
                 ctx.patchState({ loading: false, error: this.errors.humanize(err) });
@@ -71,28 +72,28 @@ export class NaviState {
 
     @Action(CreateNaviTree)
     createTree(ctx: StateContext<NaviStateModel>, { payload }: CreateNaviTree) {
-        return this.api.createNaviTree(payload).pipe(
+        return this.naviApi.createNaviTree(payload).pipe(
             tap(() => ctx.dispatch(new LoadNaviTrees())),
         );
     }
 
     @Action(UpdateNaviTree)
     updateTree(ctx: StateContext<NaviStateModel>, { slug, payload }: UpdateNaviTree) {
-        return this.api.updateNaviTree(slug, payload).pipe(
+        return this.naviApi.updateNaviTree(slug, payload).pipe(
             tap(() => ctx.dispatch(new LoadNaviTrees())),
         );
     }
 
     @Action(DeleteNaviTree)
     deleteTree(ctx: StateContext<NaviStateModel>, { slug }: DeleteNaviTree) {
-        return this.api.deleteNaviTree(slug).pipe(
+        return this.naviApi.deleteNaviTree(slug).pipe(
             tap(() => ctx.dispatch(new LoadNaviTrees())),
         );
     }
 
     @Action(CreateNaviNode)
     createNode(ctx: StateContext<NaviStateModel>, { payload }: CreateNaviNode) {
-        return this.api.createNaviNode(payload).pipe(
+        return this.naviApi.createNaviNode(payload).pipe(
             tap(() => {
                 const slug = ctx.getState().selectedTreeSlug;
                 if (slug) ctx.dispatch(new LoadNaviNodes(slug));
@@ -102,7 +103,7 @@ export class NaviState {
 
     @Action(UpdateNaviNode)
     updateNode(ctx: StateContext<NaviStateModel>, { id, payload }: UpdateNaviNode) {
-        return this.api.updateNaviNode(id, payload).pipe(
+        return this.naviApi.updateNaviNode(id, payload).pipe(
             tap(() => {
                 const slug = ctx.getState().selectedTreeSlug;
                 if (slug) ctx.dispatch(new LoadNaviNodes(slug));
@@ -112,7 +113,7 @@ export class NaviState {
 
     @Action(DeleteNaviNode)
     deleteNode(ctx: StateContext<NaviStateModel>, { id }: DeleteNaviNode) {
-        return this.api.deleteNaviNode(id).pipe(
+        return this.naviApi.deleteNaviNode(id).pipe(
             tap(() => {
                 const slug = ctx.getState().selectedTreeSlug;
                 if (slug) ctx.dispatch(new LoadNaviNodes(slug));
@@ -122,7 +123,7 @@ export class NaviState {
 
     @Action(ReorderNaviNodes)
     reorderNodes(ctx: StateContext<NaviStateModel>, { items }: ReorderNaviNodes) {
-        return this.api.reorderNaviNodes(items).pipe(
+        return this.naviApi.reorderNaviNodes(items).pipe(
             tap(() => {
                 const slug = ctx.getState().selectedTreeSlug;
                 if (slug) ctx.dispatch(new LoadNaviNodes(slug));

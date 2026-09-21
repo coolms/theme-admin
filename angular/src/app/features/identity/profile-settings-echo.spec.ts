@@ -3,7 +3,7 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { ThemeService } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
 import { CallOverlayPrefs, CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
 import { CalendarPrefs, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
@@ -66,7 +66,7 @@ describe('Settings-section echo -> profile caches', () => {
         },
     };
 
-    let api:       ApiService;
+    let api:       IdentityApiService;
     let http:      HttpTestingController;
     let calPrefs:  UserCalendarPreferencesService;
     let callPrefs: CallOverlayPreferencesService;
@@ -122,7 +122,7 @@ describe('Settings-section echo -> profile caches', () => {
             ],
         });
 
-        api       = TestBed.inject(ApiService);
+        api       = TestBed.inject(IdentityApiService);
         http      = TestBed.inject(HttpTestingController);
         calPrefs  = TestBed.inject(UserCalendarPreferencesService);
         callPrefs = TestBed.inject(CallOverlayPreferencesService);

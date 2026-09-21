@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateNaviTree, LoadNaviTrees, UpdateNaviTree } from './navi.actions';
-import { NaviTreeDto } from '../../api/api.service';
+import { NaviTreeDto } from './navi.types';
 
 @Component({
     selector: 'app-navi-tree-form',

@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, of, ReplaySubject, shareReplay } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 
 /**
  * Reactive access to the user's incoming-call overlay
@@ -47,8 +47,7 @@ const MAX_DISMISS_SECONDS = 600;
 
 @Injectable({ providedIn: 'root' })
 export class CallOverlayPreferencesService {
-    private readonly api = inject(ApiService);
-
+    private readonly identityApi = inject(IdentityApiService);
     private readonly _prefs = signal<CallOverlayPrefs>(DEFAULTS);
     private readonly loaded$ = new ReplaySubject<CallOverlayPrefs>(1);
     private loadOnce$?: Observable<CallOverlayPrefs>;
@@ -68,7 +67,7 @@ export class CallOverlayPreferencesService {
     ensureLoaded(): Observable<CallOverlayPrefs> {
         if (this.loadOnce$) return this.loadOnce$;
 
-        this.loadOnce$ = this.api.getSettings().pipe(
+        this.loadOnce$ = this.identityApi.getSettings().pipe(
             map(all => this.merge((all['call'] as Partial<CallOverlayPrefs> | undefined) ?? {})),
             tap(prefs => {
                 this._prefs.set(prefs);

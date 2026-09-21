@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Observable, map } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 import type {
     CreateImageMapRequest, CreateRegionRequest, ImageMapDto, ImageMapRegionDto,
     UpdateImageMapRequest, UpdateRegionRequest,

@@ -14,7 +14,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { catchError, filter, of, switchMap } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService, NaviNodeDto } from '../../api/api.service';
+import { NaviNodeDto } from './navi.types';
+import { NaviApiService } from './navi-api.service';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -59,8 +60,7 @@ import { NaviNodeFormComponent } from './navi-node-form.component';
 })
 export class NaviNodesListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly naviApi = inject(NaviApiService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly route      = inject(ActivatedRoute);
@@ -128,7 +128,7 @@ export class NaviNodesListComponent implements OnInit {
 
         const epoch = ++this._loadEpoch;
 
-        this.api.getNaviNodes(this.treeSlug(), {
+        this.naviApi.getNaviNodes(this.treeSlug(), {
             filters:  [...event.columnFilters],
             sort:     event.sort ?? undefined,
             parentId: 'root',
@@ -152,7 +152,7 @@ export class NaviNodesListComponent implements OnInit {
      * back into the grid's per-parent children cache.
      */
     onLoadChildren(event: { parentId: string; sort: string | null }): void {
-        this.api.getNaviNodes(this.treeSlug(), {
+        this.naviApi.getNaviNodes(this.treeSlug(), {
             parentId: event.parentId,
             sort:     event.sort ?? undefined,
         }).pipe(
@@ -214,7 +214,7 @@ export class NaviNodesListComponent implements OnInit {
         const name = node.title || node.path;
         this.confirmSvc.confirmDelete(name).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteNaviNode(node.id)),
+            switchMap(() => this.naviApi.deleteNaviNode(node.id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Node deleted'); this.grid.reload(); },

@@ -12,12 +12,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import {
-    ApiService,
-    IdentityUserDto,
-    SiteDto,
-    SiteMemberDto,
-} from '../../api/api.service';
+import { VfsApiService } from '../vfs/vfs-api.service';
+import { SiteDto, SiteMemberDto } from './sections.types';
+import { SectionsApiService } from './sections-api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
+import { IdentityUserDto } from '../identity/identity.types';
 import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig, AppConfigState } from '@coolms/core-angular';
 import {
     CmsPageHeaderComponent,
@@ -486,7 +485,9 @@ export class SiteMembersPageComponent implements OnInit {
 
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
-    private readonly api         = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store       = inject(Store);
     private readonly confirmSvc  = inject(ConfirmDialogService);
     private readonly toast       = inject(ToastService);
@@ -615,8 +616,8 @@ export class SiteMembersPageComponent implements OnInit {
         this.membersError.set(null);
 
         forkJoin({
-            site:    this.api.getSite(slug),
-            members: this.api.listSiteMembers(slug),
+            site:    this.sectionsApi.getSite(slug),
+            members: this.sectionsApi.listSiteMembers(slug),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ site, members }) => {
                 this.site.set(site);
@@ -638,8 +639,8 @@ export class SiteMembersPageComponent implements OnInit {
         // Also refresh the composed Site view so `contentRoot.ownerId`
         // reflects an ownership transfer immediately.
         forkJoin({
-            site:    this.api.getSite(slug),
-            members: this.api.listSiteMembers(slug),
+            site:    this.sectionsApi.getSite(slug),
+            members: this.sectionsApi.listSiteMembers(slug),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ site, members }) => {
                 this.site.set(site);
@@ -685,13 +686,13 @@ export class SiteMembersPageComponent implements OnInit {
         if (!userId || !groupId || this.isAlreadyEditor(userId)) return;
 
         this.busy.set(true);
-        this.api.getUser(userId).pipe(
+        this.identityApi.getUser(userId).pipe(
             switchMap((user: IdentityUserDto) => {
                 const existing = user.groups.map(g => g.id);
                 if (existing.includes(groupId)) {
                     return of(null);
                 }
-                return this.api.assignUserGroups(userId, [...existing, groupId]);
+                return this.identityApi.assignUserGroups(userId, [...existing, groupId]);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -729,7 +730,7 @@ export class SiteMembersPageComponent implements OnInit {
         if (!groupId) return;
 
         this.busy.set(true);
-        this.api.getUser(m.userId).pipe(
+        this.identityApi.getUser(m.userId).pipe(
             switchMap((user: IdentityUserDto) => {
                 const remaining = user.groups
                     .map(g => g.id)
@@ -737,7 +738,7 @@ export class SiteMembersPageComponent implements OnInit {
                 // POST with empty array would trigger the backend's
                 // `user`-group fallback (see UserAssignGroupsProcessor).
                 // Keeping the user in *some* group is the safer default.
-                return this.api.assignUserGroups(m.userId, remaining);
+                return this.identityApi.assignUserGroups(m.userId, remaining);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -771,7 +772,7 @@ export class SiteMembersPageComponent implements OnInit {
         if (newOwner === cr.ownerId)              return;
 
         this.busy.set(true);
-        this.api.chownNode({
+        this.vfsApi.chownNode({
             path: cr.path,
             uid:  newOwner,
             // Keep gid stable -- the editor group should not change

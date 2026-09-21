@@ -11,7 +11,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
-import { ApiService, CallRecordDto } from '../../api/api.service';
+import { CallRecordDto } from './call.types';
+import { CallApiService } from './call-api.service';
 import { ErrorHandlerService, ConfigService, type LayoutConfig } from '@coolms/core-angular';
 import {
     CmsPageHeaderComponent,
@@ -222,7 +223,7 @@ import { formatCallDuration } from './call-format';
     `],
 })
 export class CallRecordDetailComponent implements OnInit, OnDestroy {
-    private readonly api        = inject(ApiService);
+    private readonly callApi = inject(CallApiService);
     private readonly router     = inject(Router);
     private readonly route      = inject(ActivatedRoute);
     private readonly errors     = inject(ErrorHandlerService);
@@ -279,7 +280,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
                 this.audioUrl.set(null);
                 this.audioError.set(null);
                 this.agentLabel.set(null);
-                return this.api.getCallRecord(id);
+                return this.callApi.getCallRecord(id);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -309,7 +310,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
     private loadRecording(id: string): void {
         this.audioLoading.set(true);
         this.audioError.set(null);
-        this.api.downloadCallRecording(id).pipe(
+        this.callApi.downloadCallRecording(id).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: blob => {

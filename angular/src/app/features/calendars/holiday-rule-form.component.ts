@@ -8,11 +8,8 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import {
-    ApiService,
-    HolidayRuleDto,
-    HolidayRuleTypeCode,
-} from '../../api/api.service';
+import { HolidayRuleDto, HolidayRuleTypeCode } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     LazySelectComponent,
@@ -288,7 +285,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
 export class HolidayRuleFormComponent {
     readonly data: HolidayRuleFormData = inject(DIALOG_DATA);
     readonly dialogRef: DialogRef<HolidayRuleDto | undefined> = inject(DialogRef);
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
@@ -385,7 +382,7 @@ export class HolidayRuleFormComponent {
         this.error.set(null);
 
         const obs$ = this.mode === 'create'
-            ? this.api.createHolidayRule({
+            ? this.calendarsApi.createHolidayRule({
                 calendarId: this.data.calendarId,
                 label: this.label.trim(),
                 type:  this.type,
@@ -393,7 +390,7 @@ export class HolidayRuleFormComponent {
                 isWorking: this.isWorking,
                 weekendAdjustment: this.weekendAdjustment,
             })
-            : this.api.updateHolidayRule(this.data.rule!.id!, {
+            : this.calendarsApi.updateHolidayRule(this.data.rule!.id!, {
                 label: this.label.trim(),
                 params,
                 isWorking: this.isWorking,

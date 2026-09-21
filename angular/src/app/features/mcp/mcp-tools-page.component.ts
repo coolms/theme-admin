@@ -10,8 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 
-import { ApiService } from '../../api/api.service';
-import type { McpToolCatalogDto, McpToolGovernanceDto } from '../../api/api.service';
+import { McpApiService } from './mcp-api.service';
+import type { McpToolCatalogDto, McpToolGovernanceDto } from './mcp.types';
 import { AppConfigState } from '@coolms/core-angular';
 import { CmsListPageComponent, DataGridComponent, type DataGridData } from '@coolms/ui-angular';
 
@@ -62,7 +62,7 @@ import { CmsListPageComponent, DataGridComponent, type DataGridData } from '@coo
     styles: [':host { display: flex; flex-direction: column; flex: 1; min-height: 0; }'],
 })
 export class McpToolsPageComponent implements OnInit {
-    private readonly api = inject(ApiService);
+    private readonly mcpApi = inject(McpApiService);
     private readonly store = inject(Store);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -124,7 +124,7 @@ export class McpToolsPageComponent implements OnInit {
     load(): void {
         this.loading.set(true);
         this.error.set(null);
-        this.api.getMcpTools()
+        this.mcpApi.getMcpTools()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: cat => {

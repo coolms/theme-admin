@@ -8,7 +8,8 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
-import { ApiService, ThemeTemplateDto } from '../../api/api.service';
+import { ThemeTemplateDto } from '../themes/themes.types';
+import { ThemesApiService } from '../themes/themes-api.service';
 
 /**
  * Free-text template path input enhanced with native `<datalist>` suggestions
@@ -47,9 +48,7 @@ import { ApiService, ThemeTemplateDto } from '../../api/api.service';
 export class TemplatePickerComponent {
     readonly control   = input.required<FormControl<string | null>>();
     readonly themeSlug = input<string>('');
-
-    private readonly api = inject(ApiService);
-
+    private readonly themesApi = inject(ThemesApiService);
     readonly templates = signal<ThemeTemplateDto[]>([]);
     readonly listId = `tpl-list-${this.seq()}`;
 
@@ -62,7 +61,7 @@ export class TemplatePickerComponent {
                 this.templates.set([]);
                 return;
             }
-            const sub = this.api.getThemeTemplates(slug).subscribe({
+            const sub = this.themesApi.getThemeTemplates(slug).subscribe({
                 next: list => this.templates.set(list),
                 error: () => this.templates.set([]),
             });

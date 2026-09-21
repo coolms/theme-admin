@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 
 import { CronFormComponent, ModalComponent } from '@coolms/ui-angular';
-import { TriggerKindCode } from '../../api/api.service';
+import { TriggerKindCode } from './schedules.types';
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 
 export interface TriggerSpecDialogData {

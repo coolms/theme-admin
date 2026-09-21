@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var o=[{path:``,loadComponent:()=>import(`./chunk-Bx-jwha8.js`).then(t=>t.NewsletterListComponent)}];export{o as NEWSLETTER_ROUTES};

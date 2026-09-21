@@ -14,7 +14,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
-import { ApiService, type TranslationCatalogueDto } from '../../api/api.service';
+import { type TranslationCatalogueDto } from './translations.types';
+import { TranslationsApiService } from './translations-api.service';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -72,8 +73,7 @@ import { TranslationCreateFormComponent } from './translation-create-form.compon
 })
 export class TranslationsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api         = inject(ApiService);
+    private readonly translationsApi = inject(TranslationsApiService);
     private readonly store       = inject(Store);
     private readonly router      = inject(Router);
     private readonly dialog      = inject(Dialog);
@@ -133,7 +133,7 @@ export class TranslationsListComponent implements OnInit {
     }
 
     private loadCatalogues(): void {
-        this.api.listTranslationCatalogues()
+        this.translationsApi.listTranslationCatalogues()
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: rows => {
@@ -214,7 +214,7 @@ export class TranslationsListComponent implements OnInit {
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteTranslationCatalogue(id)),
+            switchMap(() => this.translationsApi.deleteTranslationCatalogue(id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

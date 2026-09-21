@@ -19,6 +19,15 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The shell's `api/api.service.ts` (2,538 lines, 128 members, reached from 33 of
+  47 features) is cut along module lines: each group of methods now lives in the
+  feature that owns the endpoint (`features/<feature>/<feature>-api.service.ts`
+  with its DTOs in `<feature>.types.ts`), and the shell keeps a 44-line
+  `ShellApiService` with login, refresh, logout, me and the manifest getter. A
+  feature that calls another module's endpoint imports that module's service --
+  the allowed form until the module is extracted. No endpoint or behaviour
+  changes; the six core-angular types the old file re-exported are imported from
+  `@coolms/core-angular` again.
 - The mailbox wizard connects an OAuth account BEFORE anything is created. The last
   step of a new OAuth mailbox is "Connect with <provider>": the intended mailbox goes
   to `POST /email/mailboxes/connect`, the browser leaves for the consent screen, and

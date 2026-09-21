@@ -13,7 +13,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { filter, forkJoin, switchMap } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, DateTimeFormatService, ToastService } from '@coolms/ui-angular';
-import { AccountDeletionDto, ApiService, LegalHoldDto } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { AccountDeletionDto, LegalHoldDto } from './identity.types';
 import { DELETION_STATE_LABELS } from './deletion-detail-panel.component';
 import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dialog.component';
 
@@ -31,7 +32,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (api.hasDeletionScreens) {
+        @if (identityApi.hasDeletionScreens) {
             <div class="udp">
                 <h6 class="udp-heading"><i class="bi bi-person-x me-1"></i>Deletion</h6>
                 @if (loading()) {
@@ -106,8 +107,7 @@ export class UserDeletionPanelComponent implements OnInit {
     readonly accountLabel = input<string>('this account');
     /** After a cancel, a hold or a release succeeded: the host may want to refresh its own view. */
     readonly changed      = output<void>();
-
-    readonly api = inject(ApiService);
+    readonly identityApi = inject(IdentityApiService);
     readonly dtf = inject(DateTimeFormatService);
     private readonly dialog     = inject(Dialog);
     private readonly confirmSvc = inject(ConfirmDialogService);
@@ -132,14 +132,14 @@ export class UserDeletionPanelComponent implements OnInit {
     }
 
     reload(): void {
-        if (!this.api.hasDeletionScreens) {
+        if (!this.identityApi.hasDeletionScreens) {
             this.loading.set(false);
             return;
         }
         this.loading.set(true);
         forkJoin({
-            pending: this.api.getPendingDeletion(this.userId()),
-            holds:   this.api.listLegalHolds(this.userId()),
+            pending: this.identityApi.getPendingDeletion(this.userId()),
+            holds:   this.identityApi.listLegalHolds(this.userId()),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ pending, holds }) => {
                 this.pending.set(pending);
@@ -161,7 +161,7 @@ export class UserDeletionPanelComponent implements OnInit {
             cancelLabel:  'Keep it',
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.cancelDeletion(d.userId)),
+            switchMap(() => this.identityApi.cancelDeletion(d.userId)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Deletion cancelled; access restored'); this.afterChange(); },
@@ -184,7 +184,7 @@ export class UserDeletionPanelComponent implements OnInit {
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.releaseLegalHold(this.userId(), h.id)),
+            switchMap(() => this.identityApi.releaseLegalHold(this.userId(), h.id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Hold released'); this.afterChange(); },

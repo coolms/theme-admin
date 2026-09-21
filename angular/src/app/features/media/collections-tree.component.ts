@@ -13,7 +13,6 @@ import { Dialog } from '@angular/cdk/dialog';
 import { catchError, EMPTY, filter, of, switchMap } from 'rxjs';
 import { MediaPageStateService } from './media-page-state.service';
 import { MediaService } from './media.service';
-import { ApiService } from '../../api/api.service';
 import {
     CmsItemInteractionsDirective,
     ContextMenuService,
@@ -182,7 +181,6 @@ export class CollectionsTreeComponent implements OnInit {
     readonly state = inject(MediaPageStateService);
 
     private readonly svc         = inject(MediaService);
-    private readonly api         = inject(ApiService);
     private readonly contextMenu = inject(ContextMenuService);
     private readonly dialog      = inject(Dialog);
     private readonly toast       = inject(ToastService);

@@ -12,7 +12,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 
-import { ApiService, type DocumentGenerationDto } from '../../../api/api.service';
+import { type DocumentGenerationDto } from '../documents.types';
+import { DocumentsApiService } from '../documents-api.service';
 import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
@@ -63,8 +64,7 @@ import {
 })
 export class DocumentGenerationListPageComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly documentsApi = inject(DocumentsApiService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly titleSvc   = inject(PageTitleService);
@@ -134,7 +134,7 @@ export class DocumentGenerationListPageComponent implements OnInit {
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
-        this.api.listDocumentGenerations({
+        this.documentsApi.listDocumentGenerations({
             page,
             limit: this.PAGE_SIZE,
             sort:  event.sort ?? '-createdAt',

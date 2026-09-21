@@ -14,7 +14,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 
-import { ApiService, NodeDto } from '../../../api/api.service';
+import { VfsApiService } from '../../vfs/vfs-api.service';
+import { NodeDto } from '../../vfs/vfs.types';
 import { AuthState } from '@coolms/core-angular';
 import { ContextMenuService } from '@coolms/ui-angular';
 import { DocumentPageStateService } from './document-page-state.service';
@@ -226,7 +227,7 @@ import { transformVfsToTree, type VfsTreeNode } from './vfs-tree.helpers';
     `],
 })
 export class DocumentFoldersTreeComponent implements OnInit {
-    private readonly api = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly store = inject(Store);
     private readonly state = inject(DocumentPageStateService);
     private readonly contextMenu = inject(ContextMenuService);
@@ -390,7 +391,7 @@ export class DocumentFoldersTreeComponent implements OnInit {
      * children attached and the path-segment name.
      */
     private loadDirectory(path: string): void {
-        this.api
+        this.vfsApi
             .listDirectory(path)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({

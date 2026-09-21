@@ -12,12 +12,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs/operators';
 
-import {
-    ApiService,
-    CalendarShareDto,
-    CalendarShareRoleCode,
-    CreateCalendarShareDto,
-} from '../../api/api.service';
+import { CalendarShareDto, CalendarShareRoleCode, CreateCalendarShareDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService, UserSearchSelectComponent } from '@coolms/ui-angular';
 
@@ -278,8 +274,7 @@ export class CalendarSharesCardComponent implements OnInit {
 
     /** Whether current user can mutate shares (owner / admin). */
     canManage    = input<boolean>(false);
-
-    private readonly api        = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly store      = inject(Store);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -312,7 +307,7 @@ export class CalendarSharesCardComponent implements OnInit {
     private loadShares(): void {
         this.loading.set(true);
         this.loadError.set(null);
-        this.api.listCalendarShares(this.calendarSlug()).pipe(
+        this.calendarsApi.listCalendarShares(this.calendarSlug()).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => {
@@ -362,7 +357,7 @@ export class CalendarSharesCardComponent implements OnInit {
         };
 
         this.busy.set(true);
-        this.api.createCalendarShare(this.calendarSlug(), dto).pipe(
+        this.calendarsApi.createCalendarShare(this.calendarSlug(), dto).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -384,7 +379,7 @@ export class CalendarSharesCardComponent implements OnInit {
         if (newRole === s.role) return;
 
         this.busy.set(true);
-        this.api.updateCalendarShare(this.calendarSlug(), s.id, {
+        this.calendarsApi.updateCalendarShare(this.calendarSlug(), s.id, {
             role: newRole,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
@@ -415,7 +410,7 @@ export class CalendarSharesCardComponent implements OnInit {
             filter(Boolean),
             switchMap(() => {
                 this.busy.set(true);
-                return this.api.deleteCalendarShare(this.calendarSlug(), s.id);
+                return this.calendarsApi.deleteCalendarShare(this.calendarSlug(), s.id);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({

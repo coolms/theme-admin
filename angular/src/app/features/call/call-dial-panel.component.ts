@@ -12,7 +12,7 @@ import { DrawerService, ToastService } from '@coolms/ui-angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 
-import { ApiService } from '../../api/api.service';
+import { CallApiService } from './call-api.service';
 import { CallOverlayPreferencesService } from './call-overlay-preferences.service';
 
 /**
@@ -136,7 +136,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
     `],
 })
 export class CallDialPanelComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly callApi = inject(CallApiService);
     private readonly prefs      = inject(CallOverlayPreferencesService);
     private readonly toast      = inject(ToastService);
     private readonly drawer     = inject(DrawerService);
@@ -182,7 +182,7 @@ export class CallDialPanelComponent implements OnInit {
             return;
         }
         this.calling.set(true);
-        this.api.originateCall({ endpoint, extension: num }).pipe(
+        this.callApi.originateCall({ endpoint, extension: num }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

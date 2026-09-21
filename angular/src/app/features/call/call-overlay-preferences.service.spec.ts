@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 import { CallOverlayPreferencesService } from './call-overlay-preferences.service';
 
 /**
@@ -23,7 +23,7 @@ describe('CallOverlayPreferencesService.update()', () => {
         TestBed.configureTestingModule({
             providers: [
                 CallOverlayPreferencesService,
-                { provide: ApiService, useValue: { getSettings: () => of({ call: {} }) } },
+                { provide: IdentityApiService, useValue: { getSettings: () => of({ call: {} }) } },
             ],
         });
 
