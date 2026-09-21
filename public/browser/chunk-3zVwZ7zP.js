@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-DYo7pvg32.js`).then(o=>o.DynamicChatPageComponent)}];export{t as DYNAMIC_CHAT_ROUTES};
