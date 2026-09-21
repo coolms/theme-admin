@@ -1,11 +1,8 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-    ApiService,
-    RoutingStepKind,
-    RoutingTraceDto,
-} from '../../api/api.service';
+import { RoutingStepKind, RoutingTraceDto } from './routing-inspector.types';
+import { RoutingInspectorApiService } from './routing-inspector-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 /**
  * Coordinates state between the three Routing Inspector slot components.
@@ -30,8 +27,7 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 export class RoutingInspectorStateService {
     private static readonly DEFAULT_HOST = 'localhost';
     private static readonly DEFAULT_PATH = '/';
-
-    private readonly api        = inject(ApiService);
+    private readonly routingApi = inject(RoutingInspectorApiService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly route      = inject(ActivatedRoute);
     private readonly router     = inject(Router);
@@ -89,7 +85,7 @@ export class RoutingInspectorStateService {
             replaceUrl:          true,
         });
 
-        this.api.inspectRouting(host, path).pipe(
+        this.routingApi.inspectRouting(host, path).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: trace => {

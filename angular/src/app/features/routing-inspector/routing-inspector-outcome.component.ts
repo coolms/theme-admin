@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RoutingOutcome } from '../../api/api.service';
+import { RoutingOutcome } from './routing-inspector.types';
 import { RoutingInspectorStateService } from './routing-inspector-state.service';
 
 /**
