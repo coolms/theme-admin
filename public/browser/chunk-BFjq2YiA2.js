@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-Csv_13cQ.js`).then(o=>o.CalendarsListComponent)},{path:`:slug`,loadComponent:()=>import(`./chunk-B6Ito0ri.js`).then(o=>o.CalendarDetailPageComponent)}];export{t as CALENDAR_ROUTES};
