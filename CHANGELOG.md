@@ -8,6 +8,12 @@ major number means here.
 ## Unreleased
 
 ### Added
+- A capped completion says how many it is a part of. A directory here can
+  hold eighteen hundred children, and printing them all inline is a wall
+  rather than a listing, so the server answers with the first hundred and the
+  count; the terminal prints `100 of 1878; 1778 more not shown -- type more to
+  narrow` under the list. A hundred shown without a word would read as the
+  whole set. An answer that was not capped looks exactly as it did.
 - Tab completion sends the shell's PLACE with the line. A path argument is
   completed against the working directory, and the working directory is
   client-held state, so `cwd` and `home` now travel with the completion

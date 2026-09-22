@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
 import { AppConfigState, AuthState, Logout, SetTokens } from '@coolms/core-angular';
 import { ShellApiService } from '../../api/shell-api.service';
-import { TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
+import { TerminalCompletions, TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
 @Injectable({ providedIn: 'root' })
 export class TerminalService {
@@ -147,13 +147,19 @@ export class TerminalService {
      * a path argument is completed against the working directory, and without
      * them the server would answer about the root from wherever we stand.
      */
-    complete(input: string, cursorPos: number, cwd = '/', home = '/'): Observable<string[]> {
+    complete(input: string, cursorPos: number, cwd = '/', home = '/'): Observable<TerminalCompletions> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const url       = manifest?.terminal?.completeUrl ?? '';
 
         return this.http.post<TerminalCompleteResponse>(url, { input, cursorPos, cwd, home }).pipe(
-            map(r => r.suggestions ?? []),
-            catchError(() => of([])),
+            map(r => {
+                const suggestions = r.suggestions ?? [];
+
+                // An older server sends no `total`; then what arrived IS the
+                // total, and nothing claims to be capped.
+                return { suggestions, total: r.total ?? suggestions.length };
+            }),
+            catchError(() => of({ suggestions: [], total: 0 })),
         );
     }
 
