@@ -81,9 +81,11 @@ describe('TerminalService -- a refusal keeps its reason', () => {
 describe('TerminalService -- completion carries the shell location', () => {
     let service: TerminalService;
     let posted: { url: string; body: unknown } | null;
+    let response: { suggestions: string[]; total?: number };
 
     beforeEach(() => {
         posted = null;
+        response = { suggestions: ['default/'] };
         TestBed.configureTestingModule({
             providers: [
                 TerminalService,
@@ -94,7 +96,7 @@ describe('TerminalService -- completion carries the shell location', () => {
                     useValue: {
                         post: (url: string, body: unknown) => {
                             posted = { url, body };
-                            return of({ suggestions: ['default/'] });
+                            return of(response);
                         },
                     },
                 },
@@ -104,12 +106,35 @@ describe('TerminalService -- completion carries the shell location', () => {
     });
 
     it('sends the working directory and the home directory with the line', async () => {
-        const suggestions = await firstValueFrom(service.complete('cat def', 7, '/content', '/home/ada'));
+        const answer = await firstValueFrom(service.complete('cat def', 7, '/content', '/home/ada'));
 
         expect(posted).not.toBeNull();
         expect(posted!.url).toBe('/api/v1/terminal/complete');
         expect(posted!.body).toEqual({ input: 'cat def', cursorPos: 7, cwd: '/content', home: '/home/ada' });
-        expect(suggestions).toEqual(['default/']);
+        expect(answer.suggestions).toEqual(['default/']);
+    });
+
+    /**
+     * The server caps a large answer and says how many there were. The count
+     * has to survive the client, or a hundred of eighteen hundred reads as
+     * the whole set.
+     */
+    it('keeps the total the server reported, so a capped answer can say so', async () => {
+        response = { suggestions: ['a/', 'b/'], total: 1878 };
+
+        const answer = await firstValueFrom(service.complete('ls /content/', 12));
+
+        expect(answer.suggestions.length).toBe(2);
+        expect(answer.total).toBe(1878);
+    });
+
+    /** An older server sends no total: then what arrived IS the total. */
+    it('treats a missing total as "this is all of them"', async () => {
+        response = { suggestions: ['a/', 'b/'] };
+
+        const answer = await firstValueFrom(service.complete('ls /content/', 12));
+
+        expect(answer.total).toBe(2);
     });
 
     it('falls back to the root when the caller names no place', async () => {

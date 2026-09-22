@@ -325,11 +325,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.svc.complete(this.currentLine, cursorPos, this.cwd, this.homeDir() || '/').pipe(
             takeUntilDestroyed(this.destroyRef),
-        ).subscribe(suggestions => {
+        ).subscribe(({ suggestions, total }) => {
             if (suggestions.length === 0) {
                 // Bell
                 this.term.write('\x07');
-            } else if (suggestions.length === 1) {
+            } else if (suggestions.length === 1 && total === 1) {
                 // Complete immediately
                 const completion = suggestions[0];
                 const partial    = this.extractPartial(this.currentLine);
@@ -337,12 +337,18 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.currentLine += toAdd;
                 this.term.write(toAdd);
             } else {
-                // Show all options
+                // Show the options -- and, when the server capped them, say
+                // how many there were. Printing a hundred of eighteen hundred
+                // without a word would read as the whole set.
                 this.term.writeln('');
                 for (const s of suggestions) {
                     this.term.write(`  \x1b[36m${s}\x1b[0m  `);
                 }
                 this.term.writeln('');
+                if (total > suggestions.length) {
+                    const rest = total - suggestions.length;
+                    this.term.writeln(`\x1b[2m  ${suggestions.length} of ${total}; ${rest} more not shown -- type more to narrow\x1b[0m`);
+                }
                 this.writePrompt();
                 this.term.write(this.currentLine);
             }

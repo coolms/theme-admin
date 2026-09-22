@@ -14,6 +14,14 @@ export interface TerminalExecuteEvent {
 
 export interface TerminalCompleteResponse {
     suggestions: string[];
+    /** How many matched in all. More than `suggestions.length` means capped. */
+    total?: number;
+}
+
+/** A completion answer: what to show, and what it is a part of. */
+export interface TerminalCompletions {
+    suggestions: string[];
+    total: number;
 }
 
 /**
