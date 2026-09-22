@@ -109,12 +109,6 @@ export const routes: Routes = [
                 data: { activeNav: '/designer', fullHeight: true },
             },
             {
-                path: 'vfs',
-                loadChildren: () =>
-                    import('./features/vfs/vfs.routes').then(m => m.VFS_ROUTES),
-                data: { fullHeight: true },
-            },
-            {
                 path: 'media',
                 loadComponent: () =>
                     import('./features/media/media-library.page').then(m => m.MediaLibraryPage),

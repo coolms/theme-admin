@@ -32,7 +32,6 @@ import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
-import { VfsState } from './features/vfs/vfs.state';
 import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
 import { MediaLibraryPage } from './features/media/media-library.page';
 import { CollectionsTreeComponent } from './features/media/collections-tree.component';
@@ -41,9 +40,6 @@ import { MediaGridSlotComponent } from './features/media/media-grid-slot.compone
 import { MediaDetailSlotComponent } from './features/media/media-detail-slot.component';
 import { MediaPermissionsComponent } from './features/media/media-permissions.component';
 import { MoveToDialogComponent } from './features/media/move-to-dialog.component';
-import { VfsTreeSlotComponent } from './features/vfs/vfs-tree-slot.component';
-import { VfsFilesSlotComponent } from './features/vfs/vfs-files-slot.component';
-import { VfsFileDetailSlotComponent } from './features/vfs/vfs-file-detail-slot.component';
 import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
 import { TranslationDetailComponent } from './features/translations/translation-detail.component';
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
@@ -105,9 +101,6 @@ ComponentRegistry.register('MediaPermissionsComponent', MediaPermissionsComponen
 ComponentRegistry.register('MoveToDialogComponent',   MoveToDialogComponent);
 
 // VFS File Manager slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-ComponentRegistry.register('VfsTree',       VfsTreeSlotComponent);
-ComponentRegistry.register('VfsGrid',       VfsFilesSlotComponent);
-ComponentRegistry.register('VfsFileDetail', VfsFileDetailSlotComponent);
 
 // List layout slot components
 // NaviNodesList / PagesList / TranslationsList migrated to the <cms-list-page>
@@ -347,6 +340,6 @@ export const appConfig: ApplicationConfig = {
         // scripts/assemble-console.mjs collected. LAST, because a module's
         // provision extends a library registry provided above (the editor
         // bridge, the PDF viewer), as the hand-written lines did.
-        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState, VfsState] }),
+        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState] }),
     ],
 };
