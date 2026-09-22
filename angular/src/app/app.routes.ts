@@ -44,15 +44,6 @@ export const routes: Routes = [
                     import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
                 data: { activeNav: '/calendars' },
             },
-            // C.3 -- Contacts: the generic Person directory / address
-            // book (/admin/contacts). cms-list-page + coolms-datagrid (client
-            // mode) + a create/edit modal, over the C.2 /contacts CRUD API.
-            {
-                path: 'contacts',
-                loadChildren: () =>
-                    import('./features/contacts/contacts.routes').then(m => m.CONTACTS_ROUTES),
-                data: { activeNav: '/contacts' },
-            },
             // M7 -- DynamicChat agent inbox: the staff queue of open visitor
             // conversations (left pane) <-> thread + composer (right pane).
             // Joins a conversation, reads history via the generic Chat
