@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-Cae8hA5m2.js`).then(o=>o.CallRecordsListComponent)},{path:`:id`,loadComponent:()=>import(`./chunk-C4G2C55G.js`).then(o=>o.CallRecordDetailComponent)}];export{t as CALL_ROUTES};
