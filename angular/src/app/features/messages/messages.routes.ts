@@ -1,7 +1,7 @@
 import { type Routes } from '@angular/router';
 
 /**
- * Internal Messages routes (`/admin/messages`,.
+ * The Chat module's routes (`/admin/chat`; `/admin/messages` redirects).
  *
  * Single lazy two-pane page (conversation list <-> thread + composer).
  * `fullHeight` lets the admin layout hand the page the full content height

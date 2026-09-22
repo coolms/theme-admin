@@ -10,9 +10,9 @@ import { MessagesLiveEventsService } from './messages-live-events.service';
 import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
 
 /**
- * Internal Messages quick-access icon for the admin topbar.
+ * The Chat quick-access icon for the admin topbar.
  * Opens {@link MessagesQuickPanelComponent} in the global right drawer -- a
- * from-anywhere chat launcher. As of this is the PRIMARY entry (Messages
+ * from-anywhere chat launcher. As of this is the PRIMARY entry (Chat
  * no longer has a left-sidebar item); the icon carries a live unread-count
  * badge so you see new messages from anywhere without opening anything.
  *
@@ -35,8 +35,8 @@ import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
                     style="background: rgba(255,255,255,.08);
                            border: 1px solid rgba(255,255,255,.12);
                            border-radius: 20px; padding: 4px 10px"
-                    [title]="unread() > 0 ? unread() + ' unread' : 'Messages'"
-                    aria-label="Messages"
+                    [title]="unread() > 0 ? unread() + ' unread' : 'Chat'"
+                    aria-label="Chat"
                     (click)="openPanel()">
                 <i class="bi bi-chat-dots" style="font-size:.9rem"></i>
                 @if (unread() > 0) {
@@ -126,7 +126,7 @@ export class MessagesQuickAccessComponent {
     }
 
     openPanel(): void {
-        this.drawer.open(MessagesQuickPanelComponent, {}, 'Messages');
+        this.drawer.open(MessagesQuickPanelComponent, {}, 'Chat');
     }
 
 }

@@ -36,6 +36,7 @@
  // work would otherwise churn the UI kit's public surface.
             "@coolms/sheet-editor-angular": ["../../sheet-editor-angular/src/public-api.ts"],
             "@coolms/editor-angular": ["../../editor-angular/src/public-api.ts"],
+            "@coolms/dtmpl-angular": ["../../dtmpl-angular/src/public-api.ts"],
             "@coolms/image-editor-angular": ["../../image-editor-angular/src/index.ts"],
             "@coolms/document-viewer-angular": ["../../document-viewer-angular/src/public-api.ts"],
             "@coolms/document-angular": ["../../document-angular/src/public-api.ts"],

@@ -32,7 +32,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
  *    dot , unread badge ) + a ＋New picker that opens a 1:1 DM ([]).
  *  - THREAD: tap a row to read + reply INLINE without leaving the page --
  *    recent messages + a quick composer + realtime ([]) + mark-read ([]).
- *    A ↗ button still jumps to the full `/admin/messages` view (the rich composer,
+ *    A ↗ button still jumps to the full `/admin/chat` view (the rich composer,
  *    attachments, emoji live there). The {@link DrawerService} auto-closes on
  *    `NavigationEnd`, so the jump closes the drawer for free.
  */
@@ -144,7 +144,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                 }
 
                 <button type="button" class="mqp__open-full" (click)="openList()">
-                    Open Messages <i class="bi bi-box-arrow-up-right"></i>
+                    Open chat <i class="bi bi-box-arrow-up-right"></i>
                 </button>
             }
         </div>
@@ -163,7 +163,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__row-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mqp__badge { flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); font-size: .68rem; font-weight: 700; line-height: 1; }
         /* Inbox "Load more" — sits between the scrolling rows and the
-           "Open Messages" footer, so both stay reachable. */
+           "Open chat" footer, so both stay reachable. */
         .mqp__more { flex: 0 0 auto; width: 100%; border: 0; background: transparent; padding: .45rem .5rem; margin-top: .25rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius-md, 8px); cursor: pointer; }
         .mqp__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .mqp__more:disabled { cursor: default; opacity: .7; }
@@ -459,14 +459,14 @@ export class MessagesQuickPanelComponent implements OnInit {
         this.load();
     }
 
-    /** Jump to the full `/admin/messages` view (the drawer auto-closes on navigation). */
+    /** Jump to the full `/admin/chat` view (the drawer auto-closes on navigation). */
     openFull(): void {
         const id = this.openId();
-        void this.router.navigate(['/messages'], id ? { queryParams: { c: id } } : {});
+        void this.router.navigate(['/chat'], id ? { queryParams: { c: id } } : {});
     }
 
     openList(): void {
-        void this.router.navigate(['/messages']);
+        void this.router.navigate(['/chat']);
     }
 
     isMine(m: ChatMessageDto): boolean {

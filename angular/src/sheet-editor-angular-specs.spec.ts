@@ -15,5 +15,6 @@ import '../../../sheet-editor-angular/src/formula/formula-oracle.spec';
 import '../../../sheet-editor-angular/src/formula/formula.spec';
 import '../../../sheet-editor-angular/src/formula/helper.spec';
 import '../../../sheet-editor-angular/src/number-format.spec';
+import '../../../sheet-editor-angular/src/sheet-document-editor.spec';
 import '../../../sheet-editor-angular/src/sheet-document.model.spec';
 import '../../../sheet-editor-angular/src/sheet-editor-dialog.component.spec';

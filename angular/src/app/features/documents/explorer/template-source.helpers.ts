@@ -18,7 +18,7 @@
 
 import { type DocumentTemplate } from '../shared/document-explorer.types';
 import { type FormatDisplayInfo } from '../shared/format-info.types';
-import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '../shared/sheet-document.constants';
+import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '@coolms/sheet-editor-angular';
 
 /**
  * The NATIVE Word source. A native Word template is a `.dtmpl`
