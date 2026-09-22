@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-goxEZX9h.js`).then(o=>o.InboxListComponent)}];export{t as INBOX_ROUTES};
