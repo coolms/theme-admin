@@ -7,7 +7,6 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
 import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
-import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
 
@@ -24,7 +23,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -100,9 +99,6 @@ interface Breadcrumb {
                 @for (item of console.topbar(); track item.id) {
                     <ng-container *ngComponentOutlet="item.component" />
                 }
-
-                <!-- Notification bell -->
-                <app-notification-bell />
 
                 <!-- "Elevated until HH:MM", shown only while the session is
                      elevated. It sits AGAINST the profile block and behind its
