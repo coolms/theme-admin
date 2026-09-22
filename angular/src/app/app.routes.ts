@@ -201,24 +201,6 @@ export const routes: Routes = [
                         .then(m => m.DocumentGenerationDetailPageComponent),
                 data: { activeNav: '/documents/generations' },
             },
-            // Centrifugo admin
-            // dashboard. Three pages: list (info / namespaces / channels),
-            // per-channel detail, debug publish. ROLE_ADMIN is enforced
-            // server-side by API Platform `security:` expressions on
-            // every `/api/v1/centrifugo/admin/*` endpoint -- a
-            // non-admin who navigates here sees per-panel error banners
-            // rather than a hard route-level redirect.
-            //
-            // Routes are relative to the SPA's `/admin/` base-href, so
-            // the on-screen URL is `/admin/centrifugo` even though the
-            // path tokens here omit that prefix.
-            {
-                path: 'centrifugo',
-                loadComponent: () =>
-                    import('./features/centrifugo/centrifugo-dashboard.component')
-                        .then(m => m.CentrifugoDashboardComponent),
-                data: { activeNav: '/centrifugo' },
-            },
             // The admin UI kit, rendered from itself. The kit was real but
             // invisible -- ~50 `--cms-*` tokens and 47 `.cms-*` classes in one
             // stylesheet, readable only by opening it. The SSR half of "a base
@@ -256,13 +238,6 @@ export const routes: Routes = [
                     activeNav: '/routing-inspector',
                     layoutId:  'web:routing-inspector',
                 },
-            },
-            {
-                path: 'centrifugo/channel/:name',
-                loadComponent: () =>
-                    import('./features/centrifugo/centrifugo-channel-detail.component')
-                        .then(m => m.CentrifugoChannelDetailComponent),
-                data: { activeNav: '/centrifugo' },
             },
             // Redirect bare /system to its first meaningful child.
             { path: 'system', redirectTo: 'system/entities', pathMatch: 'full' },
