@@ -159,9 +159,9 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
             min-height: 0;
         }
         .cms-folder-content.cms-dropzone--active {
-            outline: 2px dashed var(--cms-accent);
+            outline: 2px dashed var(--cms-primary);
             outline-offset: -8px;
-            background: var(--cms-accent-light);
+            background: var(--cms-info-light);
         }
         .cms-folder-content__status {
             padding: var(--cms-content-padding);

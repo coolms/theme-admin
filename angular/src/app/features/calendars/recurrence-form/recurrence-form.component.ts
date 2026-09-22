@@ -383,7 +383,7 @@ import {
         }
         .weekday-picker__btn.is-selected {
             background: var(--cms-selected);
-            color: var(--cms-accent-fg, #1a1a1a);
+            color: var(--cms-selected-fg, #1a1a1a);
             border-color: var(--cms-selected);
         }
 

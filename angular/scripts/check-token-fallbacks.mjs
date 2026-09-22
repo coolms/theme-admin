@@ -56,6 +56,25 @@
 // `var(--cms-accent, rgb(37,99,235))` is a fallback too; a pattern that stops
 // at the first `)` compares `rgb(37,99,235`, cannot parse it, skips it, and the
 // exact defect this exists for passes unread.
+//
+// THE SECOND CHECK, the selected family (Dmitry, 2026-09-22). `--cms-selected`
+// has a wash (`-light`), the text on that wash (`-text`) and the foreground
+// on the solid mark (`-fg`), so a theme that moves the mark moves its tints
+// with it. Two things break that and both are refused here, per RULE, read
+// as the block between `{` and `}` (a component's CSS lives in a template
+// literal; the repository's no-backtick-inside rule makes those the odd
+// segments of a split on backticks):
+//   * a tint of `--cms-selected` mixed by hand -- `color-mix(... var(--cms-selected) ...)`
+//     anywhere: the wash is `--cms-selected-light`; an overlay that must let
+//     content through paints the mark and sets `opacity`;
+//   * a selected fill whose text names another family: a block whose
+//     background is `--cms-selected-light` and whose `color` is not
+//     `--cms-selected-text`; a block whose background is `--cms-selected` and
+//     whose `color` is not `--cms-selected-fg`; and the reverse, a
+//     `--cms-selected-text` / `-fg` on a background that is not the matching
+//     selected token. A block that declares no `color` inherits, which is
+//     allowed. MEASURED when this was added: 23 blocks put text on the wash,
+//     10 on the solid; all moved in the same commit.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -231,3 +250,108 @@ console.log(
     + ` (${declared.size} tokens): ${agree} equal, ${chained} chain to another var(),`
     + ` ${abbreviated} abbreviate a multi-part token, ${onRuntime} rest on a token a component sets.`,
 );
+
+// -- the selected family: no hand-mixed tint, and a selected fill carries selected text
+function* cssLines(path) {
+    const text = readFileSync(path, 'utf8');
+    if (!path.endsWith('.ts')) { yield* text.split('\n'); return; }
+    const out = text.split('\n').map(() => '');
+    let offset = 0;
+    text.split('`').forEach((part, k) => {
+        const start = text.slice(0, offset).split('\n').length - 1;
+        if (k % 2 === 1 && /\{[^}]*:[^}]*;/.test(part)) {
+            part.split('\n').forEach((l, j) => { out[start + j] = (out[start + j] ?? '') + l; });
+        }
+        offset += part.length + 1;
+    });
+    yield* out;
+}
+
+/** The rules of one file: { line, selector, decls }, nested SCSS followed through its stack. */
+function cssRules(path) {
+    const rules = [];
+    const stack = [];
+    const read = (frame, body) => {
+        for (const part of body.split(';')) {
+            const m = (part.trim() + ';').match(/^\s*([a-z-]+)\s*:\s*([^;]+);/);
+            if (m) frame.decls[m[1]] = m[2].trim();
+        }
+    };
+    let n = 0;
+    for (const raw of cssLines(path)) {
+        n++;
+        if (COMMENT.test(raw)) continue;
+        let text = raw.trim();
+        while (text.length) {
+            const open = text.indexOf('{');
+            const close = text.indexOf('}');
+            if (open >= 0 && (close < 0 || open < close)) {
+                const sel = text.slice(0, open).trim();
+                stack.push({ sel: /^[a-z-]+\s*:/.test(sel) && !/^&/.test(sel) ? '' : sel, line: n, decls: {} });
+                text = text.slice(open + 1).trim();
+                continue;
+            }
+            if (close >= 0) {
+                if (stack.length) read(stack[stack.length - 1], text.slice(0, close));
+                const done = stack.pop();
+                if (done && Object.keys(done.decls).length) {
+                    rules.push({ line: done.line, selector: [...stack.map((s) => s.sel), done.sel].filter(Boolean).join(' '), decls: done.decls });
+                }
+                text = text.slice(close + 1).trim();
+                continue;
+            }
+            if (stack.length) read(stack[stack.length - 1], text);
+            text = '';
+        }
+    }
+    return rules;
+}
+
+const family = [];
+let blocksOnWash = 0;
+let blocksOnSolid = 0;
+const names = (v) => v?.match(/--cms-selected(?:-[a-z]+)?\b/g) ?? [];
+for (const path of [...files, THEME]) {
+    const where = (n) => `${relative(SRC, path)}:${n}`;
+    for (const { text, n } of codeLines(path)) {
+        if (/color-mix\([^)]*--cms-selected/.test(text)) {
+            family.push(`${where(n)}  a tint of --cms-selected mixed by hand -- the wash is --cms-selected-light; an overlay paints the mark and sets opacity`);
+        }
+    }
+    for (const rule of cssRules(path)) {
+        const fill = rule.decls['background'] ?? rule.decls['background-color'];
+        const fillNames = names(fill);
+        const textNames = names(rule.decls['color']);
+        const onWash = fillNames.includes('--cms-selected-light');
+        const onSolid = fillNames.includes('--cms-selected') && !onWash;
+        if (onWash) blocksOnWash++;
+        if (onSolid) blocksOnSolid++;
+        if (rule.decls['color'] !== undefined) {
+            if (onWash && !textNames.includes('--cms-selected-text')) {
+                family.push(`${where(rule.line)}  ${rule.selector}: text on --cms-selected-light is [${rule.decls['color']}], not --cms-selected-text`);
+            }
+            if (onSolid && !textNames.includes('--cms-selected-fg')) {
+                family.push(`${where(rule.line)}  ${rule.selector}: text on --cms-selected is [${rule.decls['color']}], not --cms-selected-fg`);
+            }
+        }
+        if (fill !== undefined) {
+            if (textNames.includes('--cms-selected-text') && !onWash) {
+                family.push(`${where(rule.line)}  ${rule.selector}: --cms-selected-text sits on [${fill}], not --cms-selected-light`);
+            }
+            if (textNames.includes('--cms-selected-fg') && !onSolid) {
+                family.push(`${where(rule.line)}  ${rule.selector}: --cms-selected-fg sits on [${fill}], not --cms-selected`);
+            }
+        }
+    }
+}
+
+if (family.length > 0) {
+    console.error(`✗ ${family.length} rule(s) break the selected family:`);
+    for (const f of family) console.error(`  ${f}`);
+    console.error('  A selected fill carries selected text (-text on -light, -fg on the mark), and a tint');
+    console.error('  of the mark is --cms-selected-light, never color-mix by hand -- so a theme that moves');
+    console.error('  --cms-selected moves its tints with it.');
+    process.exit(1);
+}
+
+console.log(`✓ the selected family holds: ${blocksOnWash} block(s) on --cms-selected-light, ${blocksOnSolid} on --cms-selected, no hand-mixed tint.`);

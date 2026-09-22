@@ -147,7 +147,7 @@ type FlatItem =
             padding-bottom: 6px;
         }
         .vfs-tree-item:hover  { background: var(--cms-surface-hover); }
-        .vfs-tree-item.active { background: var(--cms-accent-light); font-weight: 600; }
+        .vfs-tree-item.active { background: var(--cms-selected-light); font-weight: 600; }
 
         .vfs-tree-drop-hover {
             background: var(--cms-info-subtle) !important;

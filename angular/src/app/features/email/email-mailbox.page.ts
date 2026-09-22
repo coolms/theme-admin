@@ -873,7 +873,7 @@ interface ComposeDraft {
             color: var(--cms-text); font: inherit;
         }
         .mbx__account:hover { background: var(--cms-surface-hover); }
-        .mbx__account--active { background: var(--cms-accent-light, #FEF7E6); }
+        .mbx__account--active { background: var(--cms-selected-light); }
         .mbx__account-avatar {
             position: relative; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
             display: inline-flex; align-items: center; justify-content: center;
@@ -896,7 +896,7 @@ interface ComposeDraft {
             color: var(--cms-text); font-size: .875rem;
         }
         .mbx__folder:hover { background: var(--cms-surface-hover); }
-        .mbx__folder--active { background: var(--cms-accent-light, #FEF7E6); font-weight: 600; }
+        .mbx__folder--active { background: var(--cms-selected-light); font-weight: 600; }
         .mbx__folder-name { flex: 1; }
         .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
         /* A half-imported folder shows how far the backfill has walked it. */
@@ -923,8 +923,8 @@ interface ComposeDraft {
             background: transparent; color: var(--cms-text);
         }
         .mbx__row:hover { background: var(--cms-surface-hover); }
-        .mbx__row--active { background: var(--cms-accent-light, #FEF7E6); }
-        .mbx__row--checked { background: var(--cms-accent-light, #FEF7E6); }
+        .mbx__row--active { background: var(--cms-selected-light); }
+        .mbx__row--checked { background: var(--cms-selected-light); }
         .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
         .mbx__row-main {
             display: flex; flex-direction: column; gap: 2px; text-align: left; flex: 1 1 auto;
@@ -1033,7 +1033,7 @@ interface ComposeDraft {
         }
         .mbx__thread-item:last-child { border-bottom: 0; }
         .mbx__thread-item:hover { background: var(--cms-surface-hover); }
-        .mbx__thread-item--active { background: var(--cms-accent-light, #FEF7E6); }
+        .mbx__thread-item--active { background: var(--cms-selected-light); }
         .mbx__thread-item--unread { font-weight: 600; }
         .mbx__thread-from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8125rem; }
         .mbx__thread-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cms-text-muted); font-size: .8125rem; }

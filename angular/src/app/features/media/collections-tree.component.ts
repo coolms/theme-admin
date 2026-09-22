@@ -165,8 +165,8 @@ interface FlatCollectionItem {
         }
         .sidebar-item:hover { background: var(--cms-border-light); }
         .sidebar-item.active {
-            background: var(--cms-accent-light); color: var(--cms-accent-text);
-            font-weight: 600; box-shadow: inset 2px 0 0 var(--cms-accent);
+            background: var(--cms-selected-light); color: var(--cms-selected-text);
+            font-weight: 600; box-shadow: inset 2px 0 0 var(--cms-selected);
         }
         .sidebar-expand-btn {
             background: none; border: none; padding: 0;

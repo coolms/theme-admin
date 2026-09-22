@@ -135,9 +135,9 @@ export interface PageMetadataDialogData {
         }
         .pmd__locale:hover { background: var(--cms-btn-hover-bg); }
         .pmd__locale--active {
-            background: var(--cms-accent-light);
+            background: var(--cms-selected-light);
             border-color: var(--cms-selected);
-            color: var(--cms-accent-text);
+            color: var(--cms-selected-text);
         }
         .pmd__locale-status {
             font-size: .6875rem;

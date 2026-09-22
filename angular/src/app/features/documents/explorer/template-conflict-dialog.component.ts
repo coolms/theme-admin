@@ -194,7 +194,7 @@ export interface TemplateConflictDialogResult {
         }
         .cms-template-conflict-dialog__option--active {
             border-color: var(--cms-selected);
-            background: var(--cms-accent-light, #FEF7E6);
+            background: var(--cms-selected-light);
         }
         .cms-template-conflict-dialog__option i { font-size: 1rem; color: var(--cms-text-secondary); padding-top: 2px; }
         .cms-template-conflict-dialog__option--active i { color: var(--cms-selected); }

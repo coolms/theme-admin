@@ -324,8 +324,8 @@ export type MediaPickerHostResult =
             }
         }
         .picker-host__mode--active {
-            background: var(--cms-accent-light);
-            color: var(--cms-accent-text);
+            background: var(--cms-selected-light);
+            color: var(--cms-selected-text);
             font-weight: 600;
         }
 
@@ -392,8 +392,8 @@ export type MediaPickerHostResult =
             }
         }
         .picker-host__seg-btn--active {
-            background: var(--cms-accent-light);
-            color: var(--cms-accent-text);
+            background: var(--cms-selected-light);
+            color: var(--cms-selected-text);
             font-weight: 600;
         }
     `],

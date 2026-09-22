@@ -116,7 +116,7 @@ export interface ConflictDialogData {
         }
         .conflict-card--active {
             border-color: var(--cms-selected);
-            background: var(--cms-accent-light, #FEF7E6);
+            background: var(--cms-selected-light);
         }
         .conflict-card-icon { font-size: 1rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; width: 20px; text-align: center; }
         .conflict-card--active .conflict-card-icon { color: var(--cms-selected); }
