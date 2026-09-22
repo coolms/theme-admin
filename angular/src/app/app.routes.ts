@@ -108,11 +108,6 @@ export const routes: Routes = [
                     import('./features/designer/designer.routes').then(m => m.DESIGNER_ROUTES),
                 data: { activeNav: '/designer', fullHeight: true },
             },
-            {
-                path: 'content',
-                loadChildren: () =>
-                    import('./features/content/content.routes').then(m => m.CONTENT_ROUTES),
-            },
             // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
             // bridge end-to-end. Removed after page-editor adopts the bridge
             // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.

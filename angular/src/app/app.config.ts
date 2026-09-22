@@ -12,7 +12,6 @@ import {
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
 import { provideCoolmsEditorFonts } from './features/documents/providers/provide-coolms-editor-fonts';
-import { provideCoolmsEditorContent } from './features/content/providers/provide-coolms-editor-content';
 import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
 import { provideCoolmsEditorDocument } from './features/document-widget/providers/provide-coolms-editor-document';
 import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
@@ -33,7 +32,6 @@ import { TranslationDetailComponent } from './features/translations/translation-
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
 import { RoutingInspectorOutcomeComponent } from './features/routing-inspector/routing-inspector-outcome.component';
 import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
-import { PageEditorComponent } from './features/content/page-editor.component';
 import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
 import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
 import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
@@ -41,9 +39,6 @@ import { DynamicEntitiesPageComponent } from './features/schema/dynamic-entities
 import { DocumentLibraryPage } from './features/documents/explorer/document-library.page';
 import { DocumentFoldersTreeComponent } from './features/documents/explorer/document-folders-tree.component';
 import { DocumentSpaceAccordionComponent } from './features/documents/document-space-accordion.component';
-import { PageSpaceAccordionComponent } from './features/content/page-space-accordion.component';
-import { PagesListComponent } from './features/content/pages-list.component';
-import { PageDetailComponent } from './features/content/page-detail.component';
 import { DocumentGridComponent } from './features/documents/explorer/document-grid.component';
 import { DocumentDetailComponent } from './features/documents/explorer/document-detail.component';
 import { DocumentStatusBarComponent } from './features/documents/explorer/document-status-bar.component';
@@ -56,11 +51,8 @@ ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
 // `content:articles` layout they served.
 // -- Pages became an explorer, so its grid is a slot component now
 // rather than a routed page, and it gained a space accordion beside it.
-ComponentRegistry.register('PageSpaceAccordion',    PageSpaceAccordionComponent);
-ComponentRegistry.register('PagesList',             PagesListComponent);
 // -- Pages was the only explorer with no right panel, so everything a
 // page IS beyond its name was reachable only by opening the editor.
-ComponentRegistry.register('PageDetail',            PageDetailComponent);
 
 // Document Library slot components (the per-format restructure)
 ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
@@ -137,8 +129,6 @@ FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogCo
 // for this template format".
 FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogComponent });
 
-// File editor registry -- PageEditor for NodeType::Package (double-click in FileManager)
-FileEditorRegistry.register('package', { component: PageEditorComponent });
 
 // -- Workflow BPMN-Lite designer, opened as a modal
 // dialog. Two registrations, both routing to the same component:
@@ -233,9 +223,6 @@ export const appConfig: ApplicationConfig = {
         // operator installed. Without it the editor falls back to the shipped
         // manifest asset and installed families are simply absent.
         ...provideCoolmsEditorFonts(),
-        // Content module: registers the `content.importMarkdown` action handler
-        // (the "Import Markdown" toolbar button in full/admin/document-builder).
-        ...provideCoolmsEditorContent(),
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
