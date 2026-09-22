@@ -37,7 +37,7 @@ import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
 
 /**
- * Internal Messages (`/admin/messages`, shell - rich composer
+ * Internal chat (`/admin/chat`, shell - rich composer
  * - attachments - realtime - emoji - self-set status -
  * connection-derived online dot) -- the user<->user chat
  * surface over the generic Chat engine. Two panes:
@@ -84,7 +84,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
     encapsulation: ViewEncapsulation.None,
     imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
     template: `
-        <cms-page-header icon="chat-dots" [title]="'Messages'">
+        <cms-page-header icon="chat-dots" [title]="'Chat'">
             <div class="msg__status" header-actions>
                 <button type="button" class="msg__status-btn" (click)="toggleStatusMenu()"
                         [title]="'Your status: ' + statusLabel(myStatus())">

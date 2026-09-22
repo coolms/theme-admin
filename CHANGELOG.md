@@ -32,6 +32,14 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The Chat module's surface is called **Chat**, and its mount is `/admin/chat`:
+  the page header, the top bar's tile (its tooltip, its label and the drawer it
+  opens) and the drawer's "Open chat" button. `/admin/messages` redirects to it,
+  query string and all, so a bookmark or a link that names the old path still
+  lands on the conversation it named. "Messages" named the surface after one of
+  the things it carries; the module has been `chat` since it had a name.
+  Renaming only what names this module: mail messages, message lists and the
+  DTOs that carry a message keep theirs.
 - The selected family, by ruling and by measurement: `--cms-selected-light`
   (the wash under a selected row or tab), `--cms-selected-text` (text on that
   wash) and `--cms-selected-fg` (the foreground on the solid mark), each an
