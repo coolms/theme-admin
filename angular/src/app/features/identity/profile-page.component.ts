@@ -124,7 +124,7 @@ type Tab = 'personal' | string;
         }
         .color-dot:hover:not(:disabled) { transform: scale(1.2); }
         .color-dot--active {
-            box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-accent);
+            box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-selected);
         }
 
         .sidebar-name {

@@ -11,3 +11,8 @@ dist/
 
 # Karma coverage reporter output (karma.conf.js -> coverageReporter.dir).
 coverage/
+
+# Generated on prebuild/pretest by scripts/assemble-console.mjs from the
+# modules' entry files (src/app/features/*/entries/console*.ts): the list is
+# discovered, never maintained by hand, so the file is not tracked.
+src/app/console.registry.ts

@@ -198,7 +198,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
             display: flex; align-items: center; gap: 5px; font-size: .8125rem;
         }
         .fh__tab:hover { background: var(--cms-border-light); }
-        .fh__tab--active { background: var(--cms-accent-light); color: var(--cms-accent-text); border-color: var(--cms-accent); }
+        .fh__tab--active { background: var(--cms-accent-light); color: var(--cms-accent-text); border-color: var(--cms-selected); }
         .fh__refresh { margin-left: auto; }
 
         .fh__msg { padding: 12px; color: var(--cms-text-muted); }
@@ -207,7 +207,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
         /* Revisions list */
         .fh__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
         .fh__rev { padding: 8px 10px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius); }
-        .fh__rev--current { border-color: var(--cms-accent); }
+        .fh__rev--current { border-color: var(--cms-selected); }
         .fh__rev-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .fh__hash { font-family: 'Courier New', monospace; font-size: .75rem; color: var(--cms-accent-text); background: var(--cms-accent-light); padding: 1px 5px; border-radius: 3px; }
         .fh__author { font-weight: 600; }

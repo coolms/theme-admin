@@ -539,7 +539,7 @@ type RailTab = string;
         .page-editor__tab--active {
             background: var(--cms-accent-light);
             color: var(--cms-accent-text);
-            border-color: var(--cms-accent);
+            border-color: var(--cms-selected);
         }
         .page-editor__tab--dirty { border-style: dashed; }
         .page-editor__dirty-dot {

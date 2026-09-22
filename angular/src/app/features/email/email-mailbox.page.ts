@@ -879,7 +879,7 @@ interface ComposeDraft {
             display: inline-flex; align-items: center; justify-content: center;
             color: var(--cms-text-inverse); font-size: .95rem; font-weight: 600; line-height: 1; user-select: none;
         }
-        .mbx__account--active .mbx__account-avatar { box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-accent, #F5A623); }
+        .mbx__account--active .mbx__account-avatar { box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-selected); }
         .mbx__account-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; }
         .mbx__account--active .mbx__account-label { font-weight: 600; }
         .mbx__account-badge {
@@ -1192,7 +1192,7 @@ interface ComposeDraft {
         .mbx__wizard-dots { display: flex; gap: 6px; }
         .mbx__wizard-dot { flex: 1; height: 4px; border-radius: 999px; background: var(--cms-border); transition: background .15s ease; }
         .mbx__wizard-dot--done { background: var(--cms-accent, #F5A623); opacity: .5; }
-        .mbx__wizard-dot--active { background: var(--cms-accent, #F5A623); opacity: 1; }
+        .mbx__wizard-dot--active { background: var(--cms-selected); opacity: 1; }
     `],
 })
 export class EmailMailboxPageComponent implements OnInit {

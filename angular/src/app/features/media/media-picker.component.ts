@@ -699,7 +699,7 @@ type InsertMode = 'widget' | 'plain';
         }
         .media-picker-card.media-picker-card--selected {
             border-width: 2px;
-            border-color: var(--cms-accent);
+            border-color: var(--cms-selected);
             padding: 3px; /* compensate for thicker border */
         }
         .media-picker-card--dim { opacity: .5; }

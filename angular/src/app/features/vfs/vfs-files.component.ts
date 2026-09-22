@@ -300,7 +300,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             transition: background 120ms, border-color 120ms;
         }
         .vfs-grid-item:hover    { background: var(--cms-surface-hover); }
-        .vfs-grid-item.selected { background: var(--cms-accent-light); border-color: var(--cms-accent); }
+        .vfs-grid-item.selected { background: var(--cms-accent-light); border-color: var(--cms-selected); }
         .vfs-grid-icon          { font-size: 2rem; line-height: 1.2; color: var(--cms-text-muted); }
         .vfs-grid-name          { max-width: 88px; margin: 4px auto 2px; }
 

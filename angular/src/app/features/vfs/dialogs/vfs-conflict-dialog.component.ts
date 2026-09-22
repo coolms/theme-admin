@@ -115,11 +115,11 @@ export interface ConflictDialogData {
             transition: border-color .12s, background .12s;
         }
         .conflict-card--active {
-            border-color: var(--cms-accent, #F5A623);
+            border-color: var(--cms-selected);
             background: var(--cms-accent-light, #FEF7E6);
         }
         .conflict-card-icon { font-size: 1rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; width: 20px; text-align: center; }
-        .conflict-card--active .conflict-card-icon { color: var(--cms-accent, #F5A623); }
+        .conflict-card--active .conflict-card-icon { color: var(--cms-selected); }
         .conflict-card-title { font-size: .875rem; font-weight: 600; color: var(--cms-text, #111827); }
         .conflict-card-desc  { font-size: .75rem; color: var(--cms-text-secondary, #6b7280); }
 

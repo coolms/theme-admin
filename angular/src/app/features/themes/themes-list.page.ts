@@ -249,7 +249,7 @@ interface TemplateGroup {
             border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px);
             padding: 0.9rem 1rem; background: var(--cms-surface, #fff);
         }
-        .theme--active { border-color: var(--cms-accent, #F5A623); }
+        .theme--active { border-color: var(--cms-selected); }
         .theme__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
         .theme__title h3 { margin: 0; font-size: 1rem; }
         .theme__slug { font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }

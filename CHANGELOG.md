@@ -8,6 +8,19 @@ major number means here.
 ## Unreleased
 
 ### Added
+- The theme implements `console@1` (the platform rule: hosts implement contracts, modules offer entries): `theme.yaml` declares
+  `contracts: { console: "1.0" }`, and the declaration has three readers from
+  the day it lands -- the build (`scripts/assemble-console.mjs`, run on
+  `prebuild` and `pretest`, refuses when core-angular's contract version
+  differs), the installer (`coolms:theme:install` / `activate` and
+  `coolms:install` refuse a module whose range this version does not meet, by
+  name) and the app-config manifest (`ui.contracts`, `ui.modules`), which is
+  what activates a module in the console. The assembler discovers the modules'
+  entry files (`src/app/features/*/entries/console*.ts`) and generates
+  `src/app/console.registry.ts` (not tracked), which `app.routes.ts` mounts
+  through `consoleChildren()` and `app.config.ts` provides through
+  `provideConsole()`; `npm run test:scripts` runs the assembler's own tests over
+  fixture trees. With no entries yet the six compiled-in lists are unchanged.
 - `npm run lint:fallbacks` (`scripts/check-token-fallbacks.mjs`): every
   `var(--cms-x, fallback)` under `src/` is checked against `styles.scss`. It
   fails on a fallback for a token nothing defines, and on a fallback whose value
@@ -19,6 +32,24 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- `--cms-selected`, the token for "this one is selected", is defined in
+  `styles.scss` as an alias of the accent, and every selection mark reads it:
+  the underline under the active tab (the form builder's own tabs included),
+  the border of the picked card or tile, the bar beside the current rail item
+  and queue item, the current wizard step, the ring on the selected node, the
+  kit's pressed `.cms-btn-active` and the sidebar's active item. The site was
+  decided by meaning, not colour: of the `--cms-primary` sites, the selection
+  marks moved to the token, text sitting on a selected wash moved to
+  `--cms-accent-text` (the domain explorer's active rows and open branch, the
+  messages toggles, which now wear the kit's pressed look), the composer's
+  resize grip to `--cms-accent` as the kit's handle; links, progress bars,
+  focus rings, drop targets, the "my message" bubble, attention accents, count
+  badges and the Bootstrap bridge keep `--cms-primary`. Checked controls keep
+  the accent. Both token checks (`lint:fallbacks`, `lint:tokens`, and the
+  pre-push hook that runs the first on the pushed tree) read the new token
+  through the alias: a blue fallback under it is refused with the token's
+  value, a misspelling by name -- measured with both mutations before any
+  site moved.
 - The profile page opens a `profile.tab` slot: a module binds a component under
   `profile.tab:<settings section>` in `ComponentRegistry` (app.config.ts holds
   the bindings) and the page renders it for that section instead of the
@@ -54,6 +85,12 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- A pasted or bookmarked module URL landed on the dashboard on a cold load
+  (measured: `/admin/identity/users` requested no chunk of its own, the
+  dashboard's instead) -- the mount's `canMatch` read the manifest while the
+  initializer was still fetching it and found no module installed. The guard
+  (core-angular) answers once the initializer signals ready; navigation from
+  inside the app never saw it, which is why the live sweep on the day did not.
 - My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
   into the scrolling body, and clicking a half-visible tab scrolled the whole
   body sideways -- the sidebar disappeared to the left. The page now uses the

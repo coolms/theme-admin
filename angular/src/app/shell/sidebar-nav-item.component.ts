@@ -298,7 +298,7 @@ export class SidebarNavItemComponent {
 
     isSpecialTarget(): boolean {
         const t = this.node().meta['target'];
-        return t === 'action.logout' || t === '_blank' || t === 'action.terminal';
+        return t === 'action.logout' || t === '_blank' || t === 'action.terminal' || (typeof t === 'string' && t.startsWith('action.panel:'));
     }
 
     private matchesPath(node: NaviGraphNode, currentPath: string): boolean {

@@ -1,10 +1,10 @@
-import { Component, computed, DestroyRef, HostListener, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, DestroyRef, HostListener, inject, Injector, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass, NgComponentOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AppConfigState, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
+import { AppConfigState, ConsoleActivation, ConsolePanelHost, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
     BottomDrawerService,
     ContextMenuComponent,
@@ -13,9 +13,6 @@ import {
     ToastOutletComponent,
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
-import { TerminalPanelComponent } from '../features/terminal/terminal-panel.component';
-import { RtcCallOverlayComponent } from '../features/rtc/rtc-call-overlay.component';
-import { CallScreenpopOverlayComponent } from '../features/call/call-screenpop-overlay.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 
 /**
@@ -33,7 +30,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 @Component({
     selector: 'coolms-admin-layout',
     standalone: true,
-    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, TerminalPanelComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent, RtcCallOverlayComponent, CallScreenpopOverlayComponent],
+    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent],
     styles: [`
         .coolms-admin-shell {
             display: flex;
@@ -289,11 +286,11 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <div class="coolms-admin-shell">
 
             <header class="coolms-topbar">
-                <app-admin-topbar (terminalToggle)="toggleTerminal()" />
+                <app-admin-topbar (panelToggle)="togglePanel($event)" />
             </header>
 
             <!-- Body: sidebar + main — collapses when terminal is maximized -->
-            <div class="coolms-body" [class.terminal-maximized]="terminalMaximized()">
+            <div class="coolms-body" [class.terminal-maximized]="panelMaximized().size > 0">
 
                 <!-- Sidebar -->
                 <nav class="coolms-sidebar"
@@ -360,11 +357,13 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
                 </aside>
             </div>
 
-            <!-- Terminal panel — self-manages its own height/flex via host bindings -->
-            @if (terminalVisible()) {
-                <app-terminal-panel
-                    (maximizedChange)="terminalMaximized.set($event)"
-                    (close)="closeTerminal()" />
+            <!-- The modules' dock panels, from their console entries (console@1):
+                 a panel self-manages its height via host bindings and talks
+                 back through ConsolePanelHost, provided per panel below. -->
+            @for (panel of console.panels(); track panel.id) {
+                @if (panelOpen().has(panel.id)) {
+                    <ng-container *ngComponentOutlet="panel.component; injector: panelInjector(panel.id)" />
+                }
             }
 
             <!-- Bottom drawer — resizable editor panel -->
@@ -392,15 +391,19 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <!-- Global context menu — rendered last so it always floats above toast and drawers -->
         <coolms-context-menu />
 
-        <!-- Global WebRTC call overlay — incoming ring + in-call bar, above every route -->
-        <app-rtc-call-overlay />
 
-        <!-- Global telephony (PBX) incoming-call screen-pop — a non-intrusive
-             card as calls ring/answer/end, driven by the calls.broadcast firehose -->
-        <app-call-screenpop-overlay />
+        <!-- The modules' overlays, from their console entries (console@1):
+             mounted once, above every route, only for the modules the
+             manifest says are installed. The tag above is a module not yet
+             moved; it leaves as it moves. -->
+        @for (overlay of console.overlays(); track overlay.id) {
+            <ng-container *ngComponentOutlet="overlay.component" />
+        }
     `,
 })
 export class AdminLayoutComponent implements OnInit {
+    /** The modules' console contributions, filtered by what the manifest says is installed. */
+    protected readonly console = inject(ConsoleActivation);
     readonly naviGraph     = inject(NaviGraphService);
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);
@@ -412,8 +415,11 @@ export class AdminLayoutComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly ctxMenuSvc = inject(ContextMenuService);
 
-    terminalVisible   = signal(false);
-    terminalMaximized = signal(false);
+    /** Which console panels are open, and which of them asked for the whole body. */
+    readonly panelOpen      = signal<ReadonlySet<string>>(new Set());
+    readonly panelMaximized = signal<ReadonlySet<string>>(new Set());
+    private readonly panelInjectors = new Map<string, Injector>();
+    private readonly injector = inject(Injector);
 
     private bdResizing = false;
     private bdStartY   = 0;
@@ -536,9 +542,12 @@ export class AdminLayoutComponent implements OnInit {
 
     @HostListener('document:keydown', ['$event'])
     onKeydown(event: KeyboardEvent): void {
-        if ((event.ctrlKey || event.metaKey) && event.key === '`') {
+        if (!(event.ctrlKey || event.metaKey)) return;
+        // A panel's declared key (the terminal's is `), with Ctrl or Cmd.
+        const panel = this.console.panels().find(p => p.toggle.key === event.key);
+        if (panel) {
             event.preventDefault();
-            this.toggleTerminal();
+            this.togglePanel(panel.id);
         }
     }
 
@@ -559,16 +568,39 @@ export class AdminLayoutComponent implements OnInit {
         event.preventDefault();
     }
 
-    toggleTerminal(): void {
-        this.terminalVisible.update(v => !v);
-        if (!this.terminalVisible()) {
-            this.terminalMaximized.set(false); // reset maximize on close
+    togglePanel(id: string): void {
+        if (this.panelOpen().has(id)) {
+            this.closePanel(id);
+            return;
         }
+        this.panelOpen.update(s => new Set([...s, id]));
     }
 
-    closeTerminal(): void {
-        this.terminalVisible.set(false);
-        this.terminalMaximized.set(false);
+    closePanel(id: string): void {
+        this.panelOpen.update(s => { const n = new Set(s); n.delete(id); return n; });
+        this.setPanelMaximized(id, false); // reset maximize on close
+    }
+
+    setPanelMaximized(id: string, on: boolean): void {
+        this.panelMaximized.update(s => { const n = new Set(s); if (on) n.add(id); else n.delete(id); return n; });
+    }
+
+    /**
+     * The injector a panel is mounted with: the layout's, plus the
+     * ConsolePanelHost this panel talks back through. One per panel id,
+     * made once, so re-renders keep the instance.
+     */
+    panelInjector(id: string): Injector {
+        let injector = this.panelInjectors.get(id);
+        if (!injector) {
+            const host: ConsolePanelHost = {
+                close:    () => this.closePanel(id),
+                maximize: (on: boolean) => this.setPanelMaximized(id, on),
+            };
+            injector = Injector.create({ providers: [{ provide: ConsolePanelHost, useValue: host }], parent: this.injector });
+            this.panelInjectors.set(id, injector);
+        }
+        return injector;
     }
 
     ngOnInit(): void {
@@ -662,7 +694,7 @@ export class AdminLayoutComponent implements OnInit {
      */
     isSpecialTarget(node: NaviGraphNode): boolean {
         const t = node.meta['target'];
-        return t === 'action.logout' || t === '_blank' || t === 'action.terminal';
+        return t === 'action.logout' || t === '_blank' || t === 'action.terminal' || (typeof t === 'string' && t.startsWith('action.panel:'));
     }
 
     onSpecialNavClick(event: MouseEvent, node: NaviGraphNode): void {
@@ -677,8 +709,15 @@ export class AdminLayoutComponent implements OnInit {
      * side effects (terminal toggle lives here).
      */
     handleSpecialNav(node: NaviGraphNode): void {
-        if (node.meta['target'] === 'action.terminal') {
-            this.toggleTerminal();
+        const target = node.meta['target'];
+        // `action.terminal` is the navigation graph's name for the terminal
+        // panel; `action.panel:<id>` is the general form for any module's panel.
+        if (target === 'action.terminal') {
+            this.togglePanel('terminal');
+            return;
+        }
+        if (typeof target === 'string' && target.startsWith('action.panel:')) {
+            this.togglePanel(target.slice('action.panel:'.length));
             return;
         }
         this.naviGraph.handleClick(node);
