@@ -48,16 +48,6 @@ export const routes: Routes = [
                     import('./features/dynamic-chat/dynamic-chat.routes').then(m => m.DYNAMIC_CHAT_ROUTES),
                 data: { activeNav: '/dynamic-chat', fullHeight: true },
             },
-            // M7 -- Internal Messages: user<->user DM/chat over the Chat engine.
-            // Two-pane conversation list <-> thread; "New" opens a 1:1 via
-            // POST /chat/conversations {withUserId}. Backend complete
-            // (DM open + rich-text body + attachments); FE shell in.
-            {
-                path: 'messages',
-                loadChildren: () =>
-                    import('./features/messages/messages.routes').then(m => m.MESSAGES_ROUTES),
-                data: { activeNav: '/messages', fullHeight: true },
-            },
             // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {

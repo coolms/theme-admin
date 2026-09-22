@@ -7,7 +7,6 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
 import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
-import { MessagesQuickAccessComponent } from '../features/messages/messages-quick-access.component';
 import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
 import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
@@ -26,7 +25,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -94,9 +93,6 @@ interface Breadcrumb {
                         (click)="terminalToggle.emit()">
                     &gt;_
                 </button>
-
-                <!-- Internal messages quick-access -->
-                <app-messages-quick-access />
 
                 <!-- DynamicChat agent-queue quick-access -->
                 <app-dynamic-chat-quick-access />
