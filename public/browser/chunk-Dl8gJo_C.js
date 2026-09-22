@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var o=[{path:``,loadComponent:()=>import(`./chunk-CK4dV8yG.js`).then(t=>t.ContactsListComponent)},{path:`:id`,loadComponent:()=>import(`./chunk-O_8lfAYU.js`).then(t=>t.ContactDetailComponent)}];export{o as CONTACTS_ROUTES};
