@@ -12,7 +12,6 @@ import {
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
 import { provideCoolmsEditorFonts } from './features/documents/providers/provide-coolms-editor-fonts';
-import { provideCoolmsEditorLink } from './features/link/providers/provide-coolms-editor-link';
 import { provideCoolmsEditorContent } from './features/content/providers/provide-coolms-editor-content';
 import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
 import { provideCoolmsEditorDocument } from './features/document-widget/providers/provide-coolms-editor-document';
@@ -234,9 +233,6 @@ export const appConfig: ApplicationConfig = {
         // operator installed. Without it the editor falls back to the shipped
         // manifest asset and installed families are simply absent.
         ...provideCoolmsEditorFonts(),
-        // Link module: registers the linkWidget Tiptap extension factory.
-        // Action handler swap (`editor.openLinkPicker`) lands in B3.
-        ...provideCoolmsEditorLink(),
         // Content module: registers the `content.importMarkdown` action handler
         // (the "Import Markdown" toolbar button in full/admin/document-builder).
         ...provideCoolmsEditorContent(),
