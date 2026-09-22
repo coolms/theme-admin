@@ -117,28 +117,6 @@ export const routes: Routes = [
                     import('./features/editor-smoke/editor-smoke.component')
                         .then(m => m.EditorSmokeComponent),
             },
-            {
-                path: 'content/document-fonts',
-                loadComponent: () =>
-                    import('./features/documents/fonts/document-fonts.page')
-                        .then(m => m.DocumentFontsPageComponent),
-                data: { activeNav: '/admin/content/document-fonts' },
-            },
-            //-2.6c -- generation list + detail.
-            {
-                path: 'documents/generations',
-                loadComponent: () =>
-                    import('./features/documents/generation-list/document-generation-list-page.component')
-                        .then(m => m.DocumentGenerationListPageComponent),
-                data: { activeNav: '/documents/generations' },
-            },
-            {
-                path: 'documents/generations/:id',
-                loadComponent: () =>
-                    import('./features/documents/generation-detail/document-generation-detail-page.component')
-                        .then(m => m.DocumentGenerationDetailPageComponent),
-                data: { activeNav: '/documents/generations' },
-            },
             // The admin UI kit, rendered from itself. The kit was real but
             // invisible -- ~50 `--cms-*` tokens and 47 `.cms-*` classes in one
             // stylesheet, readable only by opening it. The SSR half of "a base

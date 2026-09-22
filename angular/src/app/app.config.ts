@@ -2,7 +2,6 @@ import { type ApplicationConfig, APP_INITIALIZER, inject, provideAppInitializer 
 import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { Store } from '@ngxs/store';
-import { ViewerComponentRegistry, DocxViewerComponent } from '@coolms/document-viewer-angular';
 import { provideCoolmsPdf } from '@coolms/pdf-angular';
 import {
     EDITOR_MANIFEST_PROVIDER,
@@ -11,9 +10,7 @@ import {
     provideCoolmsEditor,
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
-import { provideCoolmsEditorFonts } from './features/documents/providers/provide-coolms-editor-fonts';
 import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
-import { provideCoolmsEditorDocument } from './features/document-widget/providers/provide-coolms-editor-document';
 import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, RUNTIME_TYPES_PORT, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
 import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
@@ -36,17 +33,9 @@ import { DesignerEditorDialogComponent } from './features/designer/designer-edit
 import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
 import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
 import { DynamicEntitiesPageComponent } from './features/schema/dynamic-entities-page.component';
-import { DocumentLibraryPage } from './features/documents/explorer/document-library.page';
-import { DocumentFoldersTreeComponent } from './features/documents/explorer/document-folders-tree.component';
-import { DocumentSpaceAccordionComponent } from './features/documents/document-space-accordion.component';
-import { DocumentGridComponent } from './features/documents/explorer/document-grid.component';
-import { DocumentDetailComponent } from './features/documents/explorer/document-detail.component';
-import { DocumentStatusBarComponent } from './features/documents/explorer/document-status-bar.component';
-import { registerWordComponents } from './features/documents/word/word-detail-registration';
 
 // Register NaviGraph component targets
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
-ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
 // Articles' three registrations are GONE ( (d), ) along with the
 // `content:articles` layout they served.
 // -- Pages became an explorer, so its grid is a slot component now
@@ -55,21 +44,10 @@ ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
 // page IS beyond its name was reachable only by opening the editor.
 
 // Document Library slot components (the per-format restructure)
-ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
 // H4 -- DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
 // accordion (Personal / Shared / per-site). The accordion rebinds the
 // folders tree to the active space's rootPath.
-ComponentRegistry.register('DocumentSpaceAccordion',   DocumentSpaceAccordionComponent);
-ComponentRegistry.register('DocumentGrid',             DocumentGridComponent);
-ComponentRegistry.register('DocumentDetail',           DocumentDetailComponent);
-ComponentRegistry.register('DocumentStatusBar',        DocumentStatusBarComponent);
 
-// per-format detail components register themselves under
-// `document-detail-{format}` keys; the cross-format `DocumentDetail`
-// dispatcher dispatches to the right one via NgComponentOutlet.
-// Adding a Spreadsheet/Markdown module is purely additive -- drop a
-// sibling `register{Format}Components()` here.
-registerWordComponents();
 
 // Media Library slot components (loaded by ExplorerLayoutComponent via SlotComponent)
 
@@ -211,18 +189,9 @@ export const appConfig: ApplicationConfig = {
         // the bootstrap call is the only thing that has to move when
         // the Word frontend package is created.
         provideCoolmsPdf(),
-        provideAppInitializer(() => {
-            const registry = inject(ViewerComponentRegistry);
-            registry.register('app-docx-viewer', DocxViewerComponent);
-        }),
 
         // Bridge: built-in handlers + foundation Tiptap extensions.
         ...provideCoolmsEditor(),
-        // Fonts: hands the editor this application's HTTP client, so it can
-        // read the MERGED registry -- the vendored families plus the ones an
-        // operator installed. Without it the editor falls back to the shipped
-        // manifest asset and installed families are simply absent.
-        ...provideCoolmsEditorFonts(),
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
@@ -231,12 +200,6 @@ export const appConfig: ApplicationConfig = {
         // `block:form` contributor surfaces it in both the toolbar and the slash
         // menu; inserts `{widget:form formId=...}` into the page.
         ...provideCoolmsEditorForm(),
-        // Document module: registers the `document.openPicker` action handler
-        // (opens the TEMPLATE picker) and the `documentWidget` Tiptap extension
-        // factory. The backend `block:document` contributor surfaces it in both
-        // the toolbar and the slash menu; inserts `{widget:document:<slug>}`,
-        // which renders a "Generate document" button for the reader.
-        ...provideCoolmsEditorDocument(),
         // ImageMap module: registers the `imagemap.openPicker` action handler
         // (opens the MAP picker) and the `imageMapWidget` Tiptap extension
         // factory. The backend `block:imagemap` contributor surfaces it in both
