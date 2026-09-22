@@ -170,16 +170,6 @@ export const routes: Routes = [
                 loadChildren: () =>
                     import('./features/content/content.routes').then(m => m.CONTENT_ROUTES),
             },
-            // follow-up -- Categories admin: manage the `categories`
-            // taxonomy tree (add / rename / move / delete), backed by the
-            // Taxonomy REST API. Sits in the Content sidebar section.
-            {
-                path: 'taxonomy/categories',
-                loadComponent: () =>
-                    import('./features/taxonomy/categories-page.component')
-                        .then(m => m.CategoriesPageComponent),
-                data: { activeNav: '/taxonomy/categories' },
-            },
             // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
             // bridge end-to-end. Removed after page-editor adopts the bridge
             // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.
