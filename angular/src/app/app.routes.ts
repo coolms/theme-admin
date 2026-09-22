@@ -109,12 +109,6 @@ export const routes: Routes = [
                 data: { activeNav: '/designer', fullHeight: true },
             },
             {
-                path: 'media',
-                loadComponent: () =>
-                    import('./features/media/media-library.page').then(m => m.MediaLibraryPage),
-                data: { fullHeight: true },
-            },
-            {
                 path: 'content',
                 loadChildren: () =>
                     import('./features/content/content.routes').then(m => m.CONTENT_ROUTES),

@@ -4,7 +4,6 @@ import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/ht
 import { Store } from '@ngxs/store';
 import { ViewerComponentRegistry, DocxViewerComponent } from '@coolms/document-viewer-angular';
 import { provideCoolmsPdf } from '@coolms/pdf-angular';
-import { provideCoolmsPdfMedia } from './features/media/providers/provide-coolms-pdf-media';
 import {
     EDITOR_MANIFEST_PROVIDER,
     type EditorManifestProvider,
@@ -12,7 +11,6 @@ import {
     provideCoolmsEditor,
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
-import { provideCoolmsEditorMedia } from './features/media/providers/provide-coolms-editor-media';
 import { provideCoolmsEditorFonts } from './features/documents/providers/provide-coolms-editor-fonts';
 import { provideCoolmsEditorLink } from './features/link/providers/provide-coolms-editor-link';
 import { provideCoolmsEditorContent } from './features/content/providers/provide-coolms-editor-content';
@@ -24,8 +22,6 @@ import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
 import { WORKFLOW_BPMN_LITE_BODY_MIME, WORKFLOW_PACKAGE_MIME } from './features/designer/shared/workflow-node-path';
 import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
 import { SHEET_DOCUMENT_MIME } from './features/documents/shared/sheet-document.constants';
-import { MediaFieldWidgetComponent } from './features/media/media-field-widget.component';
-import { MediaPickerFieldWidgetComponent } from './features/media/media-picker-field-widget.component';
 import { SchemaService } from './features/schema/schema.service';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
@@ -33,13 +29,6 @@ import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, au
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
 import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
-import { MediaLibraryPage } from './features/media/media-library.page';
-import { CollectionsTreeComponent } from './features/media/collections-tree.component';
-import { MediaSpaceAccordionComponent } from './features/media/media-space-accordion.component';
-import { MediaGridSlotComponent } from './features/media/media-grid-slot.component';
-import { MediaDetailSlotComponent } from './features/media/media-detail-slot.component';
-import { MediaPermissionsComponent } from './features/media/media-permissions.component';
-import { MoveToDialogComponent } from './features/media/move-to-dialog.component';
 import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
 import { TranslationDetailComponent } from './features/translations/translation-detail.component';
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
@@ -63,7 +52,6 @@ import { registerWordComponents } from './features/documents/word/word-detail-re
 
 // Register NaviGraph component targets
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
-ComponentRegistry.register('MediaLibraryPage',  MediaLibraryPage);
 ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
 // Articles' three registrations are GONE ( (d), ) along with the
 // `content:articles` layout they served.
@@ -93,12 +81,6 @@ ComponentRegistry.register('DocumentStatusBar',        DocumentStatusBarComponen
 registerWordComponents();
 
 // Media Library slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-ComponentRegistry.register('CollectionsTree',         CollectionsTreeComponent);
-ComponentRegistry.register('MediaSpaceAccordion',     MediaSpaceAccordionComponent);
-ComponentRegistry.register('MediaGrid',               MediaGridSlotComponent);
-ComponentRegistry.register('MediaDetail',             MediaDetailSlotComponent);
-ComponentRegistry.register('MediaPermissionsComponent', MediaPermissionsComponent);
-ComponentRegistry.register('MoveToDialogComponent',   MoveToDialogComponent);
 
 // VFS File Manager slot components (loaded by ExplorerLayoutComponent via SlotComponent)
 
@@ -240,9 +222,6 @@ export const appConfig: ApplicationConfig = {
         // the bootstrap call is the only thing that has to move when
         // the Word frontend package is created.
         provideCoolmsPdf(),
-        // The viewer's image tool opens the Media Library rather than the
-        // browser's upload dialog. Must follow provideCoolmsPdf().
-        provideCoolmsPdfMedia(),
         provideAppInitializer(() => {
             const registry = inject(ViewerComponentRegistry);
             registry.register('app-docx-viewer', DocxViewerComponent);
@@ -255,11 +234,6 @@ export const appConfig: ApplicationConfig = {
         // operator installed. Without it the editor falls back to the shipped
         // manifest asset and installed families are simply absent.
         ...provideCoolmsEditorFonts(),
-        // Media module: registers media.openPicker / media.openGalleryPicker
-        // action handlers and the mediaWidget / mediaGalleryWidget Tiptap
-        // extension factories. Must come after provideCoolmsEditor() so the
-        // bridge's registries exist before this initializer runs.
-        ...provideCoolmsEditorMedia(),
         // Link module: registers the linkWidget Tiptap extension factory.
         // Action handler swap (`editor.openLinkPicker`) lands in B3.
         ...provideCoolmsEditorLink(),
@@ -299,13 +273,6 @@ export const appConfig: ApplicationConfig = {
         // or a field created from the dropdown renders no control at all.
         provideFieldWidget('checkbox', CheckboxFieldWidgetComponent),
         provideFieldWidget('boolean', CheckboxFieldWidgetComponent),
-        // Media module's field-widget: a field declared `type: image` renders the
-        // Media Library picker (thumbnail preview + library browser), storing the
-        // picked asset's public URL. Backed by `MediaFieldWidgetProvider` (PHP).
-        provideFieldWidget('image', MediaFieldWidgetComponent),
-        // Relation fields declaring `widget: media-picker` resolve here, so
-        // shared/dynamic-form never imports the Media module.
-        provideFieldWidget('media-picker', MediaPickerFieldWidgetComponent),
         // Tag module's field-widget: a field declared `type: tags` renders the
         // `<app-tag-input>` badge/search input (field-widget registry). Gated on
         // the backend advertising a `widget` for the field, so it lights up only
