@@ -36,24 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // Analytics dashboard: the "Top pages" leaderboard over the
-            // consent-gated page-view, backed by AnalyticsService.
-            {
-                path: 'analytics',
-                loadChildren: () =>
-                    import('./features/analytics/analytics.routes').then(m => m.ANALYTICS_ROUTES),
-                data: { activeNav: '/analytics' },
-            },
-            // Customer Data Platform admin: the
-            // audience Segment builder (EL rules, linted live) + the Subject
-            // profile explorer, over /analytics/segments + /analytics/subjects.
-            // Sibling of the analytics dashboard (same event substrate).
-            {
-                path: 'cdp',
-                loadChildren: () =>
-                    import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
-                data: { activeNav: '/cdp' },
-            },
             // Unified Definitions admin (catalog of every deployed +
             // draft definition across Workflow, Decision, future Form).
             // Read-only surface; drill-down lands on per-module Designer
