@@ -36,14 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // -- Calendar admin (list + detail with working hours,
-            // holiday rules, and year preview).
-            {
-                path: 'calendars',
-                loadChildren: () =>
-                    import('./features/calendars/calendars.routes').then(m => m.CALENDAR_ROUTES),
-                data: { activeNav: '/calendars' },
-            },
             // M7 -- DynamicChat agent inbox: the staff queue of open visitor
             // conversations (left pane) <-> thread + composer (right pane).
             // Joins a conversation, reads history via the generic Chat

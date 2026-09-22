@@ -7,7 +7,6 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
 import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
-import { CalendarQuickAccessComponent } from '../features/calendars/calendar-quick-access.component';
 import { EmailQuickAccessComponent } from '../features/email/email-quick-access.component';
 import { MessagesQuickAccessComponent } from '../features/messages/messages-quick-access.component';
 import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
@@ -28,7 +27,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -96,9 +95,6 @@ interface Breadcrumb {
                         (click)="terminalToggle.emit()">
                     &gt;_
                 </button>
-
-                <!-- Personal calendar quick-access () -->
-                <app-calendar-quick-access />
 
                 <!-- Email mailbox quick-access -->
                 <app-email-quick-access />
