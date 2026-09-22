@@ -261,18 +261,6 @@ export const routes: Routes = [
                     import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
                 data: { activeNav: '/settings' },
             },
-            // B.3.2 -- Sync fleet admin page. Register/edit/remove edge
-            // nodes, see health/cursor/principal/scope, trigger a fleet nudge.
-            // Gated server-side by the NESTED root:sync_fleet 0o770 VFS node
-            // (a different group from the machine-facing sync node, so an edge
-            // service credential can never manage the fleet).
-            {
-                path: 'sync-fleet',
-                loadComponent: () =>
-                    import('./features/sync/sync-fleet-list.page')
-                        .then(m => m.SyncFleetListPageComponent),
-                data: { activeNav: '/sync-fleet' },
-            },
             // Routing Inspector admin page -- read-only debug tool that
             // traces the SSR pipeline for a (host, path) pair. Backed by
             // GET /api/v1/web/routing/inspect ( Layer 3b, ).
