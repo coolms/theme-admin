@@ -261,18 +261,6 @@ export const routes: Routes = [
                     import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
                 data: { activeNav: '/settings' },
             },
-            // -- Backup admin page. List on-disk backup bundles,
-            // create a new one, and DRY-RUN a restore preview. Sits in the
-            // /admin/--system ops section. The three /api/v1/backup*
-            // endpoints are gated server-side by the root:backup 0o770 VFS node
-            // (backup-group members only), so a non-member sees error banners.
-            {
-                path: 'backups',
-                loadComponent: () =>
-                    import('./features/backups/backups-list.page')
-                        .then(m => m.BackupsListPageComponent),
-                data: { activeNav: '/backups' },
-            },
             // B.3.2 -- Sync fleet admin page. Register/edit/remove edge
             // nodes, see health/cursor/principal/scope, trigger a fleet nudge.
             // Gated server-side by the NESTED root:sync_fleet 0o770 VFS node
