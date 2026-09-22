@@ -94,15 +94,6 @@ export const routes: Routes = [
                     import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
                 data: { activeNav: '/cdp' },
             },
-            // Themes Explorer -- which theme skins each site and what it
-            // overrides. The Theme endpoints predated any admin UI, so the only
-            // way to see or change the active theme was the DB or the CLI.
-            {
-                path: 'themes',
-                loadChildren: () =>
-                    import('./features/themes/themes.routes').then(m => m.THEME_ROUTES),
-                data: { activeNav: '/themes' },
-            },
             {
                 path: 'navi',
                 loadChildren: () =>
