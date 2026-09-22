@@ -36,17 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // Translations admin: list of (domain, locale) catalogues
-            // plus per-catalogue editor. Backend ships at
-            // /api/v1/i18n/catalogues. VFS overrides flow through
-            // VfsOverlayingTranslator so saves take effect on next
-            // request without restart.
-            {
-                path: 'i18n/translations',
-                loadChildren: () =>
-                    import('./features/translations/translations.routes').then(m => m.TRANSLATION_ROUTES),
-                data: { activeNav: '/i18n/translations' },
-            },
             // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
             // bridge end-to-end. Removed after page-editor adopts the bridge
             // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.

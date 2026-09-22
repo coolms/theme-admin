@@ -21,7 +21,6 @@ import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
 import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
 import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
-import { TranslationDetailComponent } from './features/translations/translation-detail.component';
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
 import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
 
@@ -48,7 +47,6 @@ ComponentRegistry.register('terminal',          TerminalPanelComponent);
 // NaviNodesList / PagesList / TranslationsList migrated to the <cms-list-page>
 // scaffold (routed directly, no slot registration). TranslationDetail still
 // renders through cms-list-layout's `i18n:translation-detail` slot.
-ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
 // reference adopter -- Routing Inspector slots rendered by
 // cms-inspector-layout (id=web:routing-inspector). The three slots
 // share state through RoutingInspectorStateService, provided at the
