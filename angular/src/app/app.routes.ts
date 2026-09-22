@@ -36,17 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // Unified Definitions admin (catalog of every deployed +
-            // draft definition across Workflow, Decision, future Form).
-            // Read-only surface; drill-down lands on per-module Designer
-            // routes. Backed by /api/v1/definitions and the tagged
-            // DefinitionCatalogProviderInterface registry.
-            {
-                path: 'definitions',
-                loadChildren: () =>
-                    import('./features/definitions/definitions.routes').then(m => m.DEFINITION_ROUTES),
-                data: { activeNav: '/definitions' },
-            },
             //.3 -- Form Builder admin: list of every registered form
             // (GET /forms) + a builder over <app-ordered-builder>. Authoring a
             // shipped form mints a DB override.2 chained writer);
