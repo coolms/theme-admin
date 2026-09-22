@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var o=[{path:``,loadComponent:()=>import(`./chunk-Kfr2uv0c.js`).then(t=>t.ExperimentsListComponent)}];export{o as EXPERIMENT_ROUTES};
