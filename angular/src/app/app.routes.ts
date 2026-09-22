@@ -36,18 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            //.3 -- Form Builder admin: list of every registered form
-            // (GET /forms) + a builder over <app-ordered-builder>. Authoring a
-            // shipped form mints a DB override.2 chained writer);
-            // user-created forms land file-when-writable else DB. Closes the
-            // workflow loop -- a non-developer can define the form a User Task
-            // renders.
-            {
-                path: 'forms',
-                loadChildren: () =>
-                    import('./features/forms/forms.routes').then(m => m.FORM_ROUTES),
-                data: { activeNav: '/forms' },
-            },
             // ImageMap admin (-backend): list + modal create/edit of
             // spatial maps (floor plans / seat maps). Region authoring comes
             // later (Fabric.js surface over the Image Editor).

@@ -10,7 +10,6 @@ import {
     provideCoolmsEditor,
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
-import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
 import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
 import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
@@ -153,11 +152,6 @@ export const appConfig: ApplicationConfig = {
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
-        // Form module: registers the `form.openPicker` action handler (opens the
-        // form picker) and the `formWidget` Tiptap extension factory. The backend
-        // `block:form` contributor surfaces it in both the toolbar and the slash
-        // menu; inserts `{widget:form formId=...}` into the page.
-        ...provideCoolmsEditorForm(),
         // ImageMap module: registers the `imagemap.openPicker` action handler
         // (opens the MAP picker) and the `imageMapWidget` Tiptap extension
         // factory. The backend `block:imagemap` contributor surfaces it in both
