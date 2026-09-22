@@ -235,18 +235,6 @@ export const routes: Routes = [
                         .then(m => m.UiKitPageComponent),
                 data: { activeNav: '/ui-kit' },
             },
-            // Module settings (ROLE_ADMIN). The hub lists every settings block an
-            // installed module DECLARED -- it is generated from the contributor
-            // registry, not a list maintained here, so an uninstalled module
-            // simply has no row. Sits in the /admin/--system section. Every
-            // /api/v1/module-settings operation is is_granted('ROLE_ADMIN'), so a
-            // non-admin reaching these URLs directly sees an error, not a screen.
-            {
-                path: 'settings',
-                loadChildren: () =>
-                    import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
-                data: { activeNav: '/settings' },
-            },
             // Routing Inspector admin page -- read-only debug tool that
             // traces the SSR pipeline for a (host, path) pair. Backed by
             // GET /api/v1/web/routing/inspect ( Layer 3b, ).
