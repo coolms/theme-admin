@@ -110,14 +110,6 @@ export const routes: Routes = [
                     import('./features/definitions/definitions.routes').then(m => m.DEFINITION_ROUTES),
                 data: { activeNav: '/definitions' },
             },
-            // Connector admin: inbound webhook triggers CRUD
-            // (/admin/webhooks), backed by /api/v1/connector/webhooks.
-            {
-                path: 'webhooks',
-                loadChildren: () =>
-                    import('./features/connector/connector.routes').then(m => m.CONNECTOR_ROUTES),
-                data: { activeNav: '/webhooks' },
-            },
             //.3 -- Form Builder admin: list of every registered form
             // (GET /forms) + a builder over <app-ordered-builder>. Authoring a
             // shipped form mints a DB override.2 chained writer);
