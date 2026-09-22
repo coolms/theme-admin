@@ -68,17 +68,6 @@ export const routes: Routes = [
                     import('./features/translations/translations.routes').then(m => m.TRANSLATION_ROUTES),
                 data: { activeNav: '/i18n/translations' },
             },
-            // -- LCAP/BPM designer feature. Vertical-slice scope: only
-            // the DMN decision-table editor (`/admin/designer/dmn/:key`) is
-            // wired today; BPMN-Lite () and state-machine () add
-            // sibling sub-routes inside `designer.routes.ts`. The lazy load
-            // shape mirrors every other feature module.
-            {
-                path: 'designer',
-                loadChildren: () =>
-                    import('./features/designer/designer.routes').then(m => m.DESIGNER_ROUTES),
-                data: { activeNav: '/designer', fullHeight: true },
-            },
             // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
             // bridge end-to-end. Removed after page-editor adopts the bridge
             // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.

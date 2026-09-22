@@ -14,7 +14,6 @@ import { provideCoolmsEditorForm } from './features/form-widget/providers/provid
 import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
 import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
-import { WORKFLOW_BPMN_LITE_BODY_MIME, WORKFLOW_PACKAGE_MIME } from './features/designer/shared/workflow-node-path';
 import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
 import { SHEET_DOCUMENT_MIME } from './features/documents/shared/sheet-document.constants';
 import { routes } from './app.routes';
@@ -27,7 +26,6 @@ import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.componen
 import { TranslationDetailComponent } from './features/translations/translation-detail.component';
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
 import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
-import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
 
 // Register NaviGraph component targets
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
@@ -97,30 +95,6 @@ FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogCo
 FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogComponent });
 
 
-// -- Workflow BPMN-Lite designer, opened as a modal
-// dialog. Two registrations, both routing to the same component:
-//  - The Package container at `/workflows/{key}/` carries the
-//    `application/vnd.coolms.workflow` mime; double-click on the
-//    package opens the dialog with the package node, the dialog
-//    derives the workflow key from the path, fetches the draft via
-//    the endpoints, and mounts the editor stack.
-//  - The body files (`draft.bpmn.json`, `v{N}.bpmn.json`) carry the
-//    `application/vnd.coolms.workflow.bpmn-lite+json` mime so a
-//    drill-in double-click on the draft also lands here. The generic
-//    dialog derives editor-vs-viewer from the path: `v{N}.bpmn.json`
-//    opens read-only (the `version` it extracts), a Package /
-//    `draft.bpmn.json` opens the editable draft.
-// Both register against the generic `DesignerEditorDialogComponent`
-// (the same modal the Definitions list opens), which hosts the bpmn
-// editor page embedded -- replacing the retired bespoke bpmn dialog.
-// Exact-mime registrations beat the `application/json` + `text/*`
-// fallbacks via `FileEditorRegistry.resolve`'s lookup order.
-FileEditorRegistry.register(WORKFLOW_PACKAGE_MIME, {
-    component: DesignerEditorDialogComponent,
-});
-FileEditorRegistry.register(WORKFLOW_BPMN_LITE_BODY_MIME, {
-    component: DesignerEditorDialogComponent,
-});
 
 export const appConfig: ApplicationConfig = {
     providers: [
