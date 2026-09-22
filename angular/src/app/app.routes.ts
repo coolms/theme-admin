@@ -76,14 +76,6 @@ export const routes: Routes = [
                     import('./features/email/email.routes').then(m => m.EMAIL_ROUTES),
                 data: { activeNav: '/email', fullHeight: true },
             },
-            // Newsletter: confirmed-subscriber list + campaign compose,
-            // backed by the NewsletterService. Sibling of the leads queue.
-            {
-                path: 'newsletter',
-                loadChildren: () =>
-                    import('./features/newsletter/newsletter.routes').then(m => m.NEWSLETTER_ROUTES),
-                data: { activeNav: '/newsletter' },
-            },
             // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {
