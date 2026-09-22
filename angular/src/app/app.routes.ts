@@ -58,16 +58,6 @@ export const routes: Routes = [
                     import('./features/messages/messages.routes').then(m => m.MESSAGES_ROUTES),
                 data: { activeNav: '/messages', fullHeight: true },
             },
-            // Email mailbox client: a three-pane reader (mailbox rail /
-            // message list / detail + composer) over the read/send/reply/
-            // folders/seen APIs (-). Full-height like the Messages
-            // two-pane. ROLE_ADMIN server-side on every endpoint.
-            {
-                path: 'email',
-                loadChildren: () =>
-                    import('./features/email/email.routes').then(m => m.EMAIL_ROUTES),
-                data: { activeNav: '/email', fullHeight: true },
-            },
             // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {
