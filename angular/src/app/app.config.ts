@@ -28,8 +28,6 @@ import { TranslationDetailComponent } from './features/translations/translation-
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
 import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
 import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
-import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
-import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
 
 // Register NaviGraph component targets
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
@@ -59,8 +57,6 @@ ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
 // cms-inspector-layout (id=web:routing-inspector). The three slots
 // share state through RoutingInspectorStateService, provided at the
 // route level in app.routes.ts.
-ComponentRegistry.register('DomainExplorerTree',   DomainExplorerTreeComponent);
-ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent);
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
 // Identity's profile.tab slot (`profile.tab:<settings section>`) is filled by
 // the modules' console entries -- Call binds `profile.tab:call` in

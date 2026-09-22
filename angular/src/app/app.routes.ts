@@ -133,14 +133,6 @@ export const routes: Routes = [
                         .then(m => m.UiKitPageComponent),
                 data: { activeNav: '/ui-kit' },
             },
-            // Redirect bare /system to its first meaningful child.
-            { path: 'system', redirectTo: 'system/entities', pathMatch: 'full' },
-            {
-                path: 'system/entities',
-                loadComponent: () =>
-                    import('./features/schema/domain-explorer.component')
-                        .then(m => m.DomainExplorerComponent),
-            },
             // The modules' mounts, from their console entries (console@1): one
             // child per mount, lazy, activated by the manifest. Everything
             // above this line is the shell's own or not yet moved.
