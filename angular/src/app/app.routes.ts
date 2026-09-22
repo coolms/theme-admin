@@ -133,28 +133,6 @@ export const routes: Routes = [
                         .then(m => m.UiKitPageComponent),
                 data: { activeNav: '/ui-kit' },
             },
-            // Routing Inspector admin page -- read-only debug tool that
-            // traces the SSR pipeline for a (host, path) pair. Backed by
-            // GET /api/v1/web/routing/inspect ( Layer 3b, ).
-            //
-            // reference adopter: page chrome + section ordering
-            // come from `config/modules/web/layout/routing-inspector.yaml`,
-            // rendered by cms-inspector-layout. The three slot components
-            // (RoutingInspectorForm / Outcome / Steps) are registered
-            // eagerly in app.config.ts and share state through the
-            // route-scoped RoutingInspectorStateService provider below
-            // (one fresh instance per navigation to /routing-inspector).
-            {
-                path: 'routing-inspector',
-                loadComponent: () =>
-                    import('@coolms/ui-angular')
-                        .then(m => m.InspectorLayoutComponent),
-                providers: [RoutingInspectorStateService],
-                data: {
-                    activeNav: '/routing-inspector',
-                    layoutId:  'web:routing-inspector',
-                },
-            },
             // Redirect bare /system to its first meaningful child.
             { path: 'system', redirectTo: 'system/entities', pathMatch: 'full' },
             {

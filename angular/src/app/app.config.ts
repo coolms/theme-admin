@@ -27,7 +27,6 @@ import { TerminalPanelComponent } from './features/terminal/terminal-panel.compo
 import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
 import { TranslationDetailComponent } from './features/translations/translation-detail.component';
 import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
-import { RoutingInspectorOutcomeComponent } from './features/routing-inspector/routing-inspector-outcome.component';
 import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
 import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
 import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
@@ -62,9 +61,6 @@ ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
 // cms-inspector-layout (id=web:routing-inspector). The three slots
 // share state through RoutingInspectorStateService, provided at the
 // route level in app.routes.ts.
-ComponentRegistry.register('RoutingInspectorForm',    RoutingInspectorFormComponent);
-ComponentRegistry.register('RoutingInspectorOutcome', RoutingInspectorOutcomeComponent);
-ComponentRegistry.register('RoutingInspectorSteps',   RoutingInspectorStepsComponent);
 ComponentRegistry.register('DomainExplorerTree',   DomainExplorerTreeComponent);
 ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent);
 ComponentRegistry.register('DynamicEntitiesPage',  DynamicEntitiesPageComponent);
