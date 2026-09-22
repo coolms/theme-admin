@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-cgWU41W4.js`).then(o=>o.WebhooksListPageComponent)}];export{t as CONNECTOR_ROUTES};
