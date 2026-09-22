@@ -94,15 +94,6 @@ export const routes: Routes = [
                     import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
                 data: { activeNav: '/cdp' },
             },
-            // Experiments: the A/B experiment list + per-variant results
-            // surface with Start/Stop controls, backed by
-            // ExperimentsService. Sibling of the analytics dashboard.
-            {
-                path: 'experiments',
-                loadChildren: () =>
-                    import('./features/experiments/experiments.routes').then(m => m.EXPERIMENT_ROUTES),
-                data: { activeNav: '/experiments' },
-            },
             // Themes Explorer -- which theme skins each site and what it
             // overrides. The Theme endpoints predated any admin UI, so the only
             // way to see or change the active theme was the DB or the CLI.
