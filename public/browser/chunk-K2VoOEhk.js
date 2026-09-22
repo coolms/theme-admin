@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-oJ2KBJO1.js`).then(o=>o.DefinitionsListPageComponent)}];export{t as DEFINITION_ROUTES};
