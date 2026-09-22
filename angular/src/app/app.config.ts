@@ -12,12 +12,11 @@ import {
 } from '@coolms/editor-angular';
 import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
 import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
-import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, RUNTIME_TYPES_PORT, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
+import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
 import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
 import { WORKFLOW_BPMN_LITE_BODY_MIME, WORKFLOW_PACKAGE_MIME } from './features/designer/shared/workflow-node-path';
 import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
 import { SHEET_DOCUMENT_MIME } from './features/documents/shared/sheet-document.constants';
-import { SchemaService } from './features/schema/schema.service';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
@@ -31,7 +30,6 @@ import { RoutingInspectorStepsComponent }   from './features/routing-inspector/r
 import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
 import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
 import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
-import { DynamicEntitiesPageComponent } from './features/schema/dynamic-entities-page.component';
 
 // Register NaviGraph component targets
 ComponentRegistry.register('terminal',          TerminalPanelComponent);
@@ -63,7 +61,6 @@ ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
 // route level in app.routes.ts.
 ComponentRegistry.register('DomainExplorerTree',   DomainExplorerTreeComponent);
 ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent);
-ComponentRegistry.register('DynamicEntitiesPage',  DynamicEntitiesPageComponent);
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
 // Identity's profile.tab slot (`profile.tab:<settings section>`) is filled by
 // the modules' console entries -- Call binds `profile.tab:call` in
@@ -141,11 +138,6 @@ export const appConfig: ApplicationConfig = {
             }),
             deps:       [Store],
         },
-        // The shared dynamic-record list needs one schema read. Binding it
-        // here keeps `shared/` from naming a feature, and the feature from
-        // knowing who consumes it -- the composition root is the only place
-        // allowed to see both.
-        { provide: RUNTIME_TYPES_PORT, useExisting: SchemaService },
         // withEnabledBlockingInitialNavigation ensures the router waits for all
         // APP_INITIALIZER promises to resolve before starting the initial
         // navigation.  Without it the router evaluates authGuard concurrently

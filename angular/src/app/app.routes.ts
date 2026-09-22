@@ -141,37 +141,6 @@ export const routes: Routes = [
                     import('./features/schema/domain-explorer.component')
                         .then(m => m.DomainExplorerComponent),
             },
-            {
-                path: 'dynamic-entities',
-                loadComponent: () =>
-                    import('./features/schema/dynamic-entities-page.component')
-                        .then(m => m.DynamicEntitiesPageComponent),
-                data: {
-                    breadcrumb: { label: 'Dynamic Entities', routerLink: '/dynamic-entities' },
-                    activeNav: '/dynamic-entities',
-                },
-            },
-            { path: 'dynamic-records', redirectTo: 'dynamic-entities', pathMatch: 'full' },
-            // Protected by the parent canActivate: [authGuard] above.
-            // DynamicRecordListComponent fires forkJoin(schema + records) in
-            // ngOnInit -- both requests carry the token restored by RestoreSession
-            // before load() completed, so no 401 on F5 for non-expired tokens.
-            // Expired-token 401s are handled transparently by the auth interceptor.
-            {
-                path: 'dynamic-records/:typeAlias',
-                loadComponent: () =>
-                    import('@coolms/ui-angular')
-                        .then(m => m.DynamicRecordPageComponent),
-                data: {
-                    // Highlights "Domain Explorer" in the sidebar while browsing
-                    // dynamic-record lists (they are configured there).
-                    activeNav: '/system/entities',
-                    // Variant B breadcrumb: injects a labelled intermediate crumb
-                    // between "Home" and the current entity-type name.
-                    // AdminTopbarComponent reads this to build the crumb chain.
-                    breadcrumb: { label: 'Dynamic Records', routerLink: '/system/entities' },
-                },
-            },
             // The modules' mounts, from their console entries (console@1): one
             // child per mount, lazy, activated by the manifest. Everything
             // above this line is the shell's own or not yet moved.
