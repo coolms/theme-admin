@@ -219,20 +219,6 @@ export const routes: Routes = [
                         .then(m => m.CentrifugoDashboardComponent),
                 data: { activeNav: '/centrifugo' },
             },
-            // -- MCP tool-governance audit. Read-only operator view
-            // over GET /api/mcp/tools (ROLE_ADMIN, McpToolCatalogController):
-            // the full inventory of tools external AI agents can invoke via
-            // POST /api/mcp/rpc plus the authorization gate on each. Sits in
-            // the /admin/--system section beside the Centrifugo dashboard --
-            // both are platform-plumbing operator surfaces. The endpoint is
-            // ROLE_ADMIN server-side, so a non-admin sees an error banner.
-            {
-                path: 'mcp/tools',
-                loadComponent: () =>
-                    import('./features/mcp/mcp-tools-page.component')
-                        .then(m => m.McpToolsPageComponent),
-                data: { activeNav: '/mcp/tools' },
-            },
             // The admin UI kit, rendered from itself. The kit was real but
             // invisible -- ~50 `--cms-*` tokens and 47 `.cms-*` classes in one
             // stylesheet, readable only by opening it. The SSR half of "a base
