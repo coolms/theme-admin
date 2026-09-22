@@ -258,31 +258,6 @@ export const routes: Routes = [
                 },
             },
             { path: 'dynamic-records', redirectTo: 'dynamic-entities', pathMatch: 'full' },
-            {
-                path: 'profile',
-                loadComponent: () =>
-                    import('./features/identity/profile-page.component').then(m => m.ProfilePageComponent),
-                data: { activeNav: '/profile' },
-            },
-            { path: 'identity', redirectTo: 'identity/users', pathMatch: 'full' },
-            {
-                path: 'identity/users',
-                loadComponent: () =>
-                    import('./features/identity/users-list.component').then(m => m.UsersListComponent),
-                data: { activeNav: '/identity/users', fullHeight: true },
-            },
-            {
-                path: 'identity/groups',
-                loadComponent: () =>
-                    import('./features/identity/groups-list.component').then(m => m.GroupsListComponent),
-                data: { activeNav: '/identity/groups', fullHeight: true },
-            },
-            {
-                path: 'identity/deletions',
-                loadComponent: () =>
-                    import('./features/identity/deletions-list.component').then(m => m.DeletionsListComponent),
-                data: { activeNav: '/identity/deletions', fullHeight: true },
-            },
             // Protected by the parent canActivate: [authGuard] above.
             // DynamicRecordListComponent fires forkJoin(schema + records) in
             // ngOnInit -- both requests carry the token restored by RestoreSession
