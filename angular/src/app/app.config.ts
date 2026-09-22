@@ -10,7 +10,6 @@ import {
     provideCoolmsEditor,
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
-import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
 import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
 import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
@@ -152,12 +151,6 @@ export const appConfig: ApplicationConfig = {
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
-        // ImageMap module: registers the `imagemap.openPicker` action handler
-        // (opens the MAP picker) and the `imageMapWidget` Tiptap extension
-        // factory. The backend `block:imagemap` contributor surfaces it in both
-        // the toolbar and the slash menu; inserts `{widget:imagemap:<slug>}`,
-        // which renders the map image with its region overlay for the reader.
-        ...provideCoolmsEditorImageMap(),
         // Built-in field widgets: the registry is the single resolution path for
         // every field-panel input. A field with no richer module widget resolves
         // to one of these by its `type` (`text` is also the fallback for unknown

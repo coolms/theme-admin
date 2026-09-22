@@ -36,15 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // ImageMap admin (-backend): list + modal create/edit of
-            // spatial maps (floor plans / seat maps). Region authoring comes
-            // later (Fabric.js surface over the Image Editor).
-            {
-                path: 'image-maps',
-                loadChildren: () =>
-                    import('./features/image-maps/image-maps.routes').then(m => m.IMAGE_MAP_ROUTES),
-                data: { activeNav: '/image-maps' },
-            },
             // Translations admin: list of (domain, locale) catalogues
             // plus per-catalogue editor. Backend ships at
             // /api/v1/i18n/catalogues. VFS overrides flow through
