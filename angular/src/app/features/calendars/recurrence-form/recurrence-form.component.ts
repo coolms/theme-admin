@@ -382,9 +382,9 @@ import {
             border-color: var(--cms-accent, #F5A623);
         }
         .weekday-picker__btn.is-selected {
-            background: var(--cms-accent, #F5A623);
+            background: var(--cms-selected);
             color: var(--cms-accent-fg, #1a1a1a);
-            border-color: var(--cms-accent, #F5A623);
+            border-color: var(--cms-selected);
         }
 
         /* Anchor + End fieldsets — flat radio rows */

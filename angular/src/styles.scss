@@ -9,6 +9,15 @@
     // (primary buttons, checked checkbox). Distinct from --cms-accent-text,
     // which is the brown used on the soft --cms-accent-light background.
     --cms-accent-fg:            #1a1a1a;
+    // "This one is selected": the underline under the active tab, the border
+    // of the picked card, the bar beside the current rail item, the ring on
+    // the selected node. Named by MEANING so a theme can move selection off
+    // the brand without touching the buttons; today it is the accent, and the
+    // dark block inherits it through the alias. Text ON a selected wash stays
+    // --cms-accent-text and a solid mark's foreground --cms-accent-fg: those
+    // are contrast tiers, not the indicator. Links and progress bars are
+    // --cms-primary, by ruling (2026-09-22).
+    --cms-selected:             var(--cms-accent);
 
     // Sidebar
     --cms-sidebar-bg:           #1a2332;
@@ -517,7 +526,7 @@ body {
     &.active {
         background: var(--cms-sidebar-active);
         color: white;
-        box-shadow: inset 3px 0 0 var(--cms-accent);
+        box-shadow: inset 3px 0 0 var(--cms-selected);
     }
 
     .bi {
@@ -866,7 +875,7 @@ input[type="radio"] {
 
 .cms-btn-active {
     background: var(--cms-accent-light);
-    border-color: var(--cms-accent);
+    border-color: var(--cms-selected);
     color: var(--cms-accent-text);
 }
 
@@ -1538,7 +1547,7 @@ figure > figcaption {
     font-size: .8125rem;
 
     &.ProseMirror-selectednode {
-        border-color: var(--cms-accent);
+        border-color: var(--cms-selected);
         box-shadow: 0 0 0 2px var(--cms-accent-light);
     }
 }
@@ -1573,7 +1582,7 @@ figure > figcaption {
     font-size: .8125rem;
 
     &.ProseMirror-selectednode {
-        border-color: var(--cms-accent);
+        border-color: var(--cms-selected);
         box-shadow: 0 0 0 2px var(--cms-accent-light);
     }
 }

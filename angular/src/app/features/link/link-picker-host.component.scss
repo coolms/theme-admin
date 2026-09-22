@@ -72,7 +72,7 @@
 .link-picker__sub-tab--active {
     background: var(--cms-accent-light);
     color: var(--cms-accent-text);
-    border-color: var(--cms-accent);
+    border-color: var(--cms-selected);
     font-weight: 600;
 }
 
@@ -130,7 +130,7 @@
 }
 .link-picker__row--selected {
     background: var(--cms-accent-light);
-    border-color: var(--cms-accent);
+    border-color: var(--cms-selected);
 
     > i { color: var(--cms-accent-text); }
 }

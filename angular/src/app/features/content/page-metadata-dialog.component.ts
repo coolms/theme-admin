@@ -136,7 +136,7 @@ export interface PageMetadataDialogData {
         .pmd__locale:hover { background: var(--cms-btn-hover-bg); }
         .pmd__locale--active {
             background: var(--cms-accent-light);
-            border-color: var(--cms-accent);
+            border-color: var(--cms-selected);
             color: var(--cms-accent-text);
         }
         .pmd__locale-status {

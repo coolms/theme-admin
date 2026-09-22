@@ -120,7 +120,7 @@ the tiles keep their own rows at content height so a
         .media-tile:not(.list-mode) { flex-direction: column; }
         .media-tile.list-mode { flex-direction: row; align-items: center; gap: 8px; padding: 4px 8px; }
         .media-tile:hover { border-color: var(--cms-btn-hover-border); }
-        .media-tile.selected { border-color: var(--cms-accent); }
+        .media-tile.selected { border-color: var(--cms-selected); }
         .media-tile-thumb {
             position: relative;
             overflow: hidden;

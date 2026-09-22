@@ -240,7 +240,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
             text-align: left;
         }
         .de-module__header:hover { background: var(--cms-hover-bg); }
-        .de-module__header--open { color: var(--cms-primary); }
+        .de-module__header--open { color: var(--cms-accent-text); }
         .de-module__chevron { font-size: .7rem; flex-shrink: 0; }
         .de-module__name { flex: 1; }
         .de-module__count {
@@ -274,7 +274,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         .de-entity-item:hover { background: var(--cms-hover-bg); }
         .de-entity-item--active {
             background: var(--cms-accent-light, #FEF7E6);
-            color: var(--cms-primary);
+            color: var(--cms-accent-text);
             font-weight: 500;
         }
         .de-entity-item__icon { font-size: .7rem; flex-shrink: 0; }
@@ -300,7 +300,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
         .de-type-row:hover { background: var(--cms-hover-bg); }
         .de-type-row--active {
             background: var(--cms-accent-light, #FEF7E6);
-            color: var(--cms-primary);
+            color: var(--cms-accent-text);
             font-weight: 500;
         }
         .de-type-row__icon { font-size: .65rem; flex-shrink: 0; color: var(--cms-meta); }

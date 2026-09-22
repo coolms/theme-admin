@@ -32,6 +32,24 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- `--cms-selected`, the token for "this one is selected", is defined in
+  `styles.scss` as an alias of the accent, and every selection mark reads it:
+  the underline under the active tab (the form builder's own tabs included),
+  the border of the picked card or tile, the bar beside the current rail item
+  and queue item, the current wizard step, the ring on the selected node, the
+  kit's pressed `.cms-btn-active` and the sidebar's active item. The site was
+  decided by meaning, not colour: of the `--cms-primary` sites, the selection
+  marks moved to the token, text sitting on a selected wash moved to
+  `--cms-accent-text` (the domain explorer's active rows and open branch, the
+  messages toggles, which now wear the kit's pressed look), the composer's
+  resize grip to `--cms-accent` as the kit's handle; links, progress bars,
+  focus rings, drop targets, the "my message" bubble, attention accents, count
+  badges and the Bootstrap bridge keep `--cms-primary`. Checked controls keep
+  the accent. Both token checks (`lint:fallbacks`, `lint:tokens`, and the
+  pre-push hook that runs the first on the pushed tree) read the new token
+  through the alias: a blue fallback under it is refused with the token's
+  value, a misspelling by name -- measured with both mutations before any
+  site moved.
 - The profile page opens a `profile.tab` slot: a module binds a component under
   `profile.tab:<settings section>` in `ComponentRegistry` (app.config.ts holds
   the bindings) and the page renders it for that section instead of the
@@ -67,6 +85,12 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- A pasted or bookmarked module URL landed on the dashboard on a cold load
+  (measured: `/admin/identity/users` requested no chunk of its own, the
+  dashboard's instead) -- the mount's `canMatch` read the manifest while the
+  initializer was still fetching it and found no module installed. The guard
+  (core-angular) answers once the initializer signals ready; navigation from
+  inside the app never saw it, which is why the live sweep on the day did not.
 - My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
   into the scrolling body, and clicking a half-visible tab scrolled the whole
   body sideways -- the sidebar disappeared to the left. The page now uses the

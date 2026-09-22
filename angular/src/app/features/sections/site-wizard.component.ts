@@ -184,7 +184,7 @@ import { ApplyNginxChanges, CreateSection, LoadSections } from './section.action
             background: var(--cms-bg-muted); font-size: .7rem;
         }
         .wiz-steps li.is-current { color: var(--cms-text); border-color: var(--cms-border); }
-        .wiz-steps li.is-current .n { background: var(--cms-accent); color: var(--cms-accent-fg); }
+        .wiz-steps li.is-current .n { background: var(--cms-selected); color: var(--cms-accent-fg); }
         .wiz-steps li.is-done .n { background: var(--cms-accent-light); }
         .wiz-intro { margin-top: 0; }
         .wiz-review { display: grid; grid-template-columns: 8rem 1fr; gap: .3rem .75rem; margin: 0 0 1rem; }

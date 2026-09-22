@@ -151,7 +151,7 @@ export interface FootnoteRow {
             font: inherit;
             cursor: pointer;
         }
-        .ddoc-notes__chip--active { border-color: var(--cms-primary); }
+        .ddoc-notes__chip--active { border-color: var(--cms-selected); }
         /* Dimmed, not hidden: an orphan is real and the author has to be able
            to reach it. NO BACKTICKS IN HERE: this is a JS template literal. */
         .ddoc-notes__chip--orphan { color: var(--cms-text-muted); font-style: italic; }

@@ -487,7 +487,7 @@ type TabIndex = 0 | 1 | 2;
 
         .fdf-tabs-nav .form-tabs__btn--active {
             color: var(--cms-accent-text);
-            border-bottom-color: var(--cms-accent);
+            border-bottom-color: var(--cms-selected);
         }
 
         /* -- Static override form body ------------------------------------ */
