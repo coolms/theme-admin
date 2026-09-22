@@ -18,7 +18,7 @@ import { WordTemplateService } from '../word/word-template.service';
 import {
     DocumentPageSizeService,
     type DocumentPageSizeOption,
-} from '../word/document-page-size.service';
+} from '@coolms/dtmpl-angular';
 
 /**
  * Edit Template dialog. Uses the shared CMS dialog shell (header / body

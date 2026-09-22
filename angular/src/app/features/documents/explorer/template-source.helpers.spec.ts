@@ -9,7 +9,7 @@ import {
     type TemplateSourceIdentity,
 } from './template-source.helpers';
 import { type FormatDisplayInfo } from '../shared/format-info.types';
-import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '../shared/sheet-document.constants';
+import { SHEET_DOCUMENT_EXT, SHEET_DOCUMENT_MIME } from '@coolms/sheet-editor-angular';
 
 /**
  * Naming a template's SOURCE download.

@@ -31,6 +31,7 @@ const BRIDGES = [
     { bridge: 'src/core-angular-specs.spec.ts', pkg: 'core-angular' },
     { bridge: 'src/ui-angular-specs.spec.ts',   pkg: 'ui-angular' },
     { bridge: 'src/editor-angular-specs.spec.ts', pkg: 'editor-angular' },
+    { bridge: 'src/dtmpl-angular-specs.spec.ts', pkg: 'dtmpl-angular' },
     { bridge: 'src/sheet-editor-angular-specs.spec.ts', pkg: 'sheet-editor-angular' },
 ];
 

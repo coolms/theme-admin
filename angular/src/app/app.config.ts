@@ -11,15 +11,13 @@ import {
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
-import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
-import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
-import { SHEET_DOCUMENT_MIME } from './features/documents/shared/sheet-document.constants';
+import { SHEET_DOCUMENT_MIME, SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
+import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
-import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
 
 // The shell's own registry binding: the shared dynamic-record list from
 // ui-angular, which the modules' server layouts name. Every module's bindings
@@ -32,22 +30,10 @@ FileEditorRegistry.register('text/*',           { component: CodeEditorComponent
 FileEditorRegistry.register('application/json', { component: CodeEditorComponent });
 FileEditorRegistry.register('application/xml',  { component: CodeEditorComponent });
 
-// File editor registry -- Tiptap-based DTMPL body editor for .dtmpl variants
-// and standalone .dtmpl files. Exact-mime match beats the `text/*` wildcard
-// in the resolver, so this takes precedence over CodeEditor for dtmpl.
-FileEditorRegistry.register('text/x-dtmpl', { component: DtmplEditorDialogComponent });
-
-// File editor registry -- native documents. The SAME dialog:
-// everything around the content -- the paged canvas, the split preview, the
-// download, the toolbar profile -- is the same editor, and only the three calls
-// that touch the FILE differ.
-//
-// The EXACT registration is required, not decoration: the resolver's wildcard
-// fallback is the mime's first segment plus `/*` -- `application/*` -- which
-// nothing registers, so `application/x-coolms-document+json` would otherwise
-// miss every lookup and a `.ddoc` would open in the code editor, which is
-// where it landed before this line existed.
-FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogComponent });
+// The DTMPL formats -- `text/x-dtmpl` and the native document -- are
+// registered by `provideDtmplEditors()` in the providers below: the dialog
+// that edits them is `@coolms/dtmpl-angular`'s, and so is the decision about
+// which mimes it answers for.
 
 // File editor registry -- native spreadsheet templates. A `.dsheet`
 // is a JSON grid document, and this is the GRID surface for it; CodeMirror held
@@ -117,6 +103,12 @@ export const appConfig: ApplicationConfig = {
 
         // Bridge: built-in handlers + foundation Tiptap extensions.
         ...provideCoolmsEditor(),
+        // The DTMPL dialog as the file editor for `text/x-dtmpl` and the
+        // native document. The widget translation it asks for through
+        // DTMPL_CONTENT_ADAPTER comes from Content's console entry, so a
+        // build without that module opens the body with its tokens visible
+        // instead of failing.
+        provideDtmplEditors(),
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
