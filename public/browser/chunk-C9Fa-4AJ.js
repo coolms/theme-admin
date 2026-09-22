@@ -1,1 +1,0 @@
-import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-CiUQ2xuI.js`).then(o=>o.LeadsListComponent)},{path:`:id`,loadComponent:()=>import(`./chunk-CTt7V9r82.js`).then(o=>o.LeadDetailComponent)}];export{t as LEADS_ROUTES};
