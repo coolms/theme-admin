@@ -8,6 +8,12 @@ major number means here.
 ## Unreleased
 
 ### Added
+- Tab completion sends the shell's PLACE with the line. A path argument is
+  completed against the working directory, and the working directory is
+  client-held state, so `cwd` and `home` now travel with the completion
+  request exactly as they already travel with a run. Without them the server
+  answered about the root from wherever the person stood, which is why
+  `cat the<TAB>` in a subdirectory offered nothing at all.
 - The theme implements `console@1` (the platform rule: hosts implement contracts, modules offer entries): `theme.yaml` declares
   `contracts: { console: "1.0" }`, and the declaration has three readers from
   the day it lands -- the build (`scripts/assemble-console.mjs`, run on

@@ -1,4 +1,6 @@
+import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { firstValueFrom, of } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalService } from './terminal.service';
@@ -67,5 +69,52 @@ describe('TerminalService -- a refusal keeps its reason', () => {
         expect(url).toBe('/api/v1/terminal/execute');
         expect((init.headers as Record<string, string>)['Accept']).toBe('text/event-stream');
         expect(JSON.parse(init.body as string)).toEqual({ input: 'sudo pwd', cwd: '/docs' });
+    });
+});
+
+/**
+ * A path argument is completed against the WORKING DIRECTORY, which only the
+ * client knows: the shell's place is client-held state, and a completion
+ * request that did not carry it would ask the server about the root from
+ * wherever the person stands.
+ */
+describe('TerminalService -- completion carries the shell location', () => {
+    let service: TerminalService;
+    let posted: { url: string; body: unknown } | null;
+
+    beforeEach(() => {
+        posted = null;
+        TestBed.configureTestingModule({
+            providers: [
+                TerminalService,
+                { provide: Store, useValue: { selectSnapshot: () => ({ terminal: { completeUrl: '/api/v1/terminal/complete' } }) } },
+                { provide: ShellApiService, useValue: {} },
+                {
+                    provide: HttpClient,
+                    useValue: {
+                        post: (url: string, body: unknown) => {
+                            posted = { url, body };
+                            return of({ suggestions: ['default/'] });
+                        },
+                    },
+                },
+            ],
+        });
+        service = TestBed.inject(TerminalService);
+    });
+
+    it('sends the working directory and the home directory with the line', async () => {
+        const suggestions = await firstValueFrom(service.complete('cat def', 7, '/content', '/home/ada'));
+
+        expect(posted).not.toBeNull();
+        expect(posted!.url).toBe('/api/v1/terminal/complete');
+        expect(posted!.body).toEqual({ input: 'cat def', cursorPos: 7, cwd: '/content', home: '/home/ada' });
+        expect(suggestions).toEqual(['default/']);
+    });
+
+    it('falls back to the root when the caller names no place', async () => {
+        await firstValueFrom(service.complete('ls', 2));
+
+        expect(posted!.body).toEqual({ input: 'ls', cursorPos: 2, cwd: '/', home: '/' });
     });
 });

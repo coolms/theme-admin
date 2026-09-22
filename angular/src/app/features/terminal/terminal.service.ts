@@ -142,12 +142,16 @@ export class TerminalService {
 
     /**
      * Request tab completion suggestions.
+     *
+     * `cwd` and `home` travel with the question exactly as they do with a run:
+     * a path argument is completed against the working directory, and without
+     * them the server would answer about the root from wherever we stand.
      */
-    complete(input: string, cursorPos: number): Observable<string[]> {
+    complete(input: string, cursorPos: number, cwd = '/', home = '/'): Observable<string[]> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const url       = manifest?.terminal?.completeUrl ?? '';
 
-        return this.http.post<TerminalCompleteResponse>(url, { input, cursorPos }).pipe(
+        return this.http.post<TerminalCompleteResponse>(url, { input, cursorPos, cwd, home }).pipe(
             map(r => r.suggestions ?? []),
             catchError(() => of([])),
         );

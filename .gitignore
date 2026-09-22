@@ -25,6 +25,11 @@
 # per karma run, which is never cleaned up. `angular/.gitignore` says the same
 # thing for anyone reading from in there.
 /angular/dist/
+# The Angular CLI writes its build cache to the PACKAGE root, not into
+# `angular/`: angular.json points `cli.cache.path` here. The next line
+# covers `angular/.angular/`; this one covers where the cache actually
+# lands, which a build otherwise offers up for commit.
+/.angular/
 /angular/.angular/
 /angular/coverage/
 
