@@ -36,18 +36,6 @@ export const routes: Routes = [
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
             },
-            // M7 -- DynamicChat agent inbox: the staff queue of open visitor
-            // conversations (left pane) <-> thread + composer (right pane).
-            // Joins a conversation, reads history via the generic Chat
-            // cursor read, replies via POST /chat/messages, live over
-            // chat.room.{id}. Sibling of the leads queue (same lead-source
-            // family). Backend shipped in.
-            {
-                path: 'dynamic-chat',
-                loadChildren: () =>
-                    import('./features/dynamic-chat/dynamic-chat.routes').then(m => m.DYNAMIC_CHAT_ROUTES),
-                data: { activeNav: '/dynamic-chat', fullHeight: true },
-            },
             // Analytics dashboard: the "Top pages" leaderboard over the
             // consent-gated page-view, backed by AnalyticsService.
             {

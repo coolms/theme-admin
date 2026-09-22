@@ -7,7 +7,6 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
 import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
-import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
 import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
@@ -25,7 +24,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, DynamicChatQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, NotificationBellComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -93,9 +92,6 @@ interface Breadcrumb {
                         (click)="terminalToggle.emit()">
                     &gt;_
                 </button>
-
-                <!-- DynamicChat agent-queue quick-access -->
-                <app-dynamic-chat-quick-access />
 
                 <!-- The modules' quick-access tiles, from their console entries
                      (console@1), in their declared order and only for the
