@@ -54,11 +54,6 @@ export const routes: Routes = [
                     import('./features/cdp/cdp.routes').then(m => m.CDP_ROUTES),
                 data: { activeNav: '/cdp' },
             },
-            {
-                path: 'navi',
-                loadChildren: () =>
-                    import('./features/navi/navi.routes').then(m => m.NAVI_ROUTES),
-            },
             // Unified Definitions admin (catalog of every deployed +
             // draft definition across Workflow, Decision, future Form).
             // Read-only surface; drill-down lands on per-module Designer

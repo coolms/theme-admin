@@ -32,7 +32,6 @@ import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
-import { NaviState } from './features/navi/navi.state';
 import { VfsState } from './features/vfs/vfs.state';
 import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
 import { MediaLibraryPage } from './features/media/media-library.page';
@@ -348,6 +347,6 @@ export const appConfig: ApplicationConfig = {
         // scripts/assemble-console.mjs collected. LAST, because a module's
         // provision extends a library registry provided above (the editor
         // bridge, the PDF viewer), as the hand-written lines did.
-        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState, NaviState, VfsState] }),
+        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState, VfsState] }),
     ],
 };
