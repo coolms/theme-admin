@@ -323,7 +323,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     private requestCompletion(): void {
         const cursorPos = this.currentLine.length;
 
-        this.svc.complete(this.currentLine, cursorPos).pipe(
+        this.svc.complete(this.currentLine, cursorPos, this.cwd, this.homeDir() || '/').pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe(suggestions => {
             if (suggestions.length === 0) {
