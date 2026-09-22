@@ -1,7 +1,6 @@
 import { type Routes } from '@angular/router';
 import { authGuard, consoleChildren, loginPageGuard, LoginComponent } from '@coolms/core-angular';
 import { AdminLayoutComponent } from './shell/admin-layout.component';
-import { RoutingInspectorStateService } from './features/routing-inspector/routing-inspector-state.service';
 import { CONSOLE_ENTRIES } from './console.registry';
 
 export const routes: Routes = [

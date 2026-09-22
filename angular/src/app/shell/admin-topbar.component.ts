@@ -83,19 +83,25 @@ interface Breadcrumb {
                      still decides something is Settings, which is where the
                      control now lives. -->
 
-                <!-- Terminal toggle -->
-                <button type="button"
-                        class="cms-btn cms-btn-sm"
-                        style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
-                        title="Toggle Terminal (Ctrl+\`)"
-                        (click)="terminalToggle.emit()">
-                    &gt;_
-                </button>
+                <!-- The modules' dock-panel toggles, from their console entries
+                     (console@1): the terminal's is the one that reads >_. -->
+                @for (panel of console.panels(); track panel.id) {
+                    <button type="button"
+                            class="cms-btn cms-btn-sm"
+                            style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
+                            [title]="panel.toggle.label"
+                            (click)="panelToggle.emit(panel.id)">
+                        @if (panel.toggle.text) {
+                            {{ panel.toggle.text }}
+                        } @else if (panel.toggle.icon) {
+                            <i class="bi bi-{{ panel.toggle.icon }}" aria-hidden="true"></i>
+                        }
+                    </button>
+                }
 
                 <!-- The modules' quick-access tiles, from their console entries
                      (console@1), in their declared order and only for the
-                     modules the manifest says are installed. The tags above
-                     are the modules not yet moved; each leaves as it moves. -->
+                     modules the manifest says are installed. -->
                 @for (item of console.topbar(); track item.id) {
                     <ng-container *ngComponentOutlet="item.component" />
                 }
@@ -122,7 +128,8 @@ export class AdminTopbarComponent implements OnInit {
 
     /** Raw URL-segment crumbs; rebuilt on every NavigationEnd. */
     private readonly rawCrumbs = signal<Breadcrumb[]>([]);
-    terminalToggle = output<void>();
+    /** A dock panel's toggle was pressed: the panel id, for the layout that owns the dock. */
+    panelToggle = output<string>();
 
     /**
      * Final breadcrumb list. When PageTitleService carries a resolved label

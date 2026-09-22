@@ -19,42 +19,13 @@ import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
-import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
 import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
-import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
-import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
 
-// Register NaviGraph component targets
-ComponentRegistry.register('terminal',          TerminalPanelComponent);
-// Articles' three registrations are GONE ( (d), ) along with the
-// `content:articles` layout they served.
-// -- Pages became an explorer, so its grid is a slot component now
-// rather than a routed page, and it gained a space accordion beside it.
-// -- Pages was the only explorer with no right panel, so everything a
-// page IS beyond its name was reachable only by opening the editor.
-
-// Document Library slot components (the per-format restructure)
-// H4 -- DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
-// accordion (Personal / Shared / per-site). The accordion rebinds the
-// folders tree to the active space's rootPath.
-
-
-// Media Library slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-
-// VFS File Manager slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-
-// List layout slot components
-// NaviNodesList / PagesList / TranslationsList migrated to the <cms-list-page>
-// scaffold (routed directly, no slot registration). TranslationDetail still
-// renders through cms-list-layout's `i18n:translation-detail` slot.
-// reference adopter -- Routing Inspector slots rendered by
-// cms-inspector-layout (id=web:routing-inspector). The three slots
-// share state through RoutingInspectorStateService, provided at the
-// route level in app.routes.ts.
+// The shell's own registry binding: the shared dynamic-record list from
+// ui-angular, which the modules' server layouts name. Every module's bindings
+// come from its console entry (features/<feature>/entries/console.ts), through
+// provideConsole() below; Identity's profile.tab slot is filled the same way.
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
-// Identity's profile.tab slot (`profile.tab:<settings section>`) is filled by
-// the modules' console entries -- Call binds `profile.tab:call` in
-// features/call/entries/console.ts.
 
 // File editor registry -- CodeMirror for text files
 FileEditorRegistry.register('text/*',           { component: CodeEditorComponent });
