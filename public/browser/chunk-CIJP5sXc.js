@@ -1,0 +1,1 @@
+import"./chunk-CD52DvrH.js";var t=[{path:``,loadComponent:()=>import(`./chunk-DWgv1caO2.js`).then(o=>o.EmailMailboxPageComponent)}];export{t as EMAIL_ROUTES};
