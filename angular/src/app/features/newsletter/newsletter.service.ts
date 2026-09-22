@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AppConfigState } from '@coolms/core-angular';
-import { HydraCollection } from '../../api/api.service';
+import { HydraCollection } from '@coolms/core-angular';
 
 /** The three subscription buckets, matching the backend `SubscriptionStatus` enum. */
 export type SubscriptionStatus = 'pending' | 'confirmed' | 'unsubscribed';

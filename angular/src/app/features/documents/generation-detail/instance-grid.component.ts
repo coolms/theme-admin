@@ -9,7 +9,7 @@ import {
     signal,
 } from '@angular/core';
 
-import type { DocumentInstanceDto } from '../../../api/api.service';
+import type { DocumentInstanceDto } from '../documents.types';
 
 /** Instance-status filter tab the grid currently surfaces. */
 export type InstanceFilterTab = 'all' | 'failed' | 'pending' | 'done';

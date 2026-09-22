@@ -121,7 +121,7 @@ interface FolderNode {
             border-radius: var(--cms-radius-sm);
         }
         .page-folders__row:hover { background: var(--cms-border-light); }
-        .page-folders__row--active { background: var(--cms-accent-light); }
+        .page-folders__row--active { background: var(--cms-selected-light); }
         .page-folders__twisty {
             flex: 0 0 auto;
             width: 18px;

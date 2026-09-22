@@ -21,6 +21,7 @@ import {
     InboundWorkflowOption,
     MailboxConnectResultDto,
     MailboxDelegationDto,
+    MailboxDraftRequest,
     MailboxWriteRequest,
     OutgoingEmailRequest,
 } from './email.types';
@@ -84,15 +85,27 @@ export class EmailService {
     }
 
     /**
-     * POST /email/mailboxes/{id}/authorize -- begin the OAuth connect flow for a
-     * pending OAuth mailbox (). Returns the provider consent URL; the
-     * caller redirects the browser there. Empty body (the mailbox is the `{id}`).
+     * POST /email/mailboxes/{id}/authorize -- begin the OAuth connect flow for an
+     * EXISTING OAuth mailbox (re-authorising one whose grant died). Returns the
+     * provider consent URL; the caller redirects the browser there. Empty body (the
+     * mailbox is the `{id}`).
      */
     authorizeMailbox(id: string): Observable<MailboxConnectResultDto> {
         return this.http.post<MailboxConnectResultDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}/authorize`,
             {},
         );
+    }
+
+    /**
+     * POST /email/mailboxes/connect -- begin an AUTHORIZE-FIRST connect for a NEW
+     * OAuth mailbox. Creates no mailbox: the server keeps the intended mailbox as a
+     * short-lived draft, answers with the consent URL, and builds the row only after
+     * the callback has proven the grant. The caller redirects the browser to
+     * `authorizationUrl`; the callback bounces to `/admin/email?oauth=connected&mailbox=`.
+     */
+    connectMailboxDraft(request: MailboxDraftRequest): Observable<MailboxConnectResultDto> {
+        return this.http.post<MailboxConnectResultDto>(`${this.apiBase}/email/mailboxes/connect`, request);
     }
 
     /** GET /email/oauth/providers -- the registered OAuth mail providers for the picker. */

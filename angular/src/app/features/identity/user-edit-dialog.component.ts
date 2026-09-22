@@ -13,7 +13,8 @@ import { DateTimeFormatService, DynamicFormComponent, ToastService } from '@cool
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { forkJoin } from 'rxjs';
-import { ApiService, CreateUserDto, IdentityUserDto } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { CreateUserDto, IdentityUserDto } from './identity.types';
 import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms/core-angular';
 import { UserDeletionPanelComponent } from './user-deletion-panel.component';
 
@@ -85,7 +86,7 @@ export class UserEditDialogComponent implements OnInit {
 
     private readonly dialogRef  = inject(DialogRef);
     private readonly dialogData = inject(DIALOG_DATA) as UserEditDialogData;
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly store      = inject(Store);
@@ -139,7 +140,7 @@ export class UserEditDialogComponent implements OnInit {
             return;
         }
 
-        this.api.getUser(this.dialogData.userId!)
+        this.identityApi.getUser(this.dialogData.userId!)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: fullUser => {
@@ -171,7 +172,7 @@ export class UserEditDialogComponent implements OnInit {
             isActive:   (value['isActive']  as boolean) ?? true,
         };
 
-        this.api.createUser(dto).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        this.identityApi.createUser(dto).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: created => {
                 this.toast.success(`User "${created.identifier}" created`);
                 this.dialogRef.close(true);
@@ -199,10 +200,10 @@ export class UserEditDialogComponent implements OnInit {
         const activeChanged  = nextIsActive !== u.isActive;
         const groupsChanged  = this.groupsListChangedFromValue(u, submittedGroupIds);
 
-        const ops: Array<ReturnType<typeof this.api.updateUser | typeof this.api.assignUserGroups>> = [];
+        const ops: Array<ReturnType<typeof this.identityApi.updateUser | typeof this.identityApi.assignUserGroups>> = [];
 
         if (profileChanged || activeChanged) {
-            ops.push(this.api.updateUser(u.id, {
+            ops.push(this.identityApi.updateUser(u.id, {
                 firstName: nextFirstName || null,
                 lastName:  nextLastName  || null,
                 isActive:  nextIsActive,
@@ -210,7 +211,7 @@ export class UserEditDialogComponent implements OnInit {
         }
 
         if (groupsChanged) {
-            ops.push(this.api.assignUserGroups(u.id, submittedGroupIds));
+            ops.push(this.identityApi.assignUserGroups(u.id, submittedGroupIds));
         }
 
         if (ops.length === 0) {

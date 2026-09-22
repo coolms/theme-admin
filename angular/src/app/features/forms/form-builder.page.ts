@@ -420,7 +420,7 @@ type FieldModel = Record<string, unknown>;
             margin-bottom: -1px;
         }
         .fb__tab:hover { color: var(--cms-text); }
-        .fb__tab--active { color: var(--cms-primary, #2563eb); border-bottom-color: var(--cms-primary, #2563eb); }
+        .fb__tab--active { color: var(--cms-text); border-bottom-color: var(--cms-selected); }
         /* Per-field inspector — rendered inside the substrate's .ob__body flex row. */
         .fb__field { flex: 1 0 100%; display: flex; flex-direction: column; gap: 8px; }
         .fb__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -444,8 +444,8 @@ type FieldModel = Record<string, unknown>;
         .fb__ds-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .fb__ds-tabs { display: inline-flex; gap: 4px; }
         .fb__ds-tab--active {
-            background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse);
-            border-color: var(--cms-primary, #2563eb);
+            background: var(--cms-selected); color: var(--cms-selected-fg);
+            border-color: var(--cms-selected);
         }
         .fb__ds .fb__choices { border: none; padding: 0; }
         /* FB-2 relation / sub-form blocks */

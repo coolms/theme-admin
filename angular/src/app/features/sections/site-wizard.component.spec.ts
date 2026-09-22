@@ -7,7 +7,7 @@ import { of } from 'rxjs';
 import { SiteWizardComponent } from './site-wizard.component';
 import { SectionState } from './section.state';
 import { ApplyNginxChanges, CreateSection } from './section.actions';
-import { ApiService } from '../../api/api.service';
+import { SectionsApiService } from './sections-api.service';
 import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
 
 describe('SiteWizardComponent', () => {
@@ -17,8 +17,8 @@ describe('SiteWizardComponent', () => {
     let closed: jasmine.Spy;
 
     function setup(): void {
-        const apiStub = jasmine.createSpyObj<ApiService>(
-            'ApiService',
+        const apiStub = jasmine.createSpyObj<SectionsApiService>(
+            'SectionsApiService',
             ['getSections', 'createSection', 'applySections'],
         );
         apiStub.getSections.and.returnValue(of([]));
@@ -41,7 +41,7 @@ describe('SiteWizardComponent', () => {
                 provideStore([SectionState]),
                 provideHttpClient(),
                 provideHttpClientTesting(),
-                { provide: ApiService, useValue: apiStub },
+                { provide: SectionsApiService, useValue: apiStub },
                 { provide: DialogRef, useValue: { close: closed } },
                 { provide: ErrorHandlerService, useValue: { humanize: (e: unknown) => String(e) } },
                 { provide: UserPreferencesService, useValue: prefs },

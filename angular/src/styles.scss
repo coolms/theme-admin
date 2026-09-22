@@ -9,6 +9,25 @@
     // (primary buttons, checked checkbox). Distinct from --cms-accent-text,
     // which is the brown used on the soft --cms-accent-light background.
     --cms-accent-fg:            #1a1a1a;
+    // "This one is selected": the underline under the active tab, the border
+    // of the picked card, the bar beside the current rail item, the ring on
+    // the selected node. Named by MEANING so a theme can move selection off
+    // the brand without touching the buttons; today it is the accent, and the
+    // dark block inherits the family through the aliases. Links and progress
+    // bars are --cms-primary, by ruling (2026-09-22), and so is every
+    // interaction AFFORDANCE -- a drop target, a resize handle: something
+    // selected is the accent, something to act on is the primary.
+    --cms-selected:             var(--cms-accent);
+    // The family, by measurement (tools/selection-marks.mjs, 2026-09-22): of
+    // the marks that paint a selected background, 23 put text on a wash and
+    // 10 put text on the solid mark. So the wash, the text on it, and the
+    // foreground on the solid have names of their own, and
+    // check-token-fallbacks.mjs refuses a selected fill whose text names
+    // another family, and a tint of --cms-selected mixed by hand: a theme
+    // that moves the mark moves its tints with it, or the tints drift.
+    --cms-selected-light:       var(--cms-accent-light);
+    --cms-selected-text:        var(--cms-accent-text);
+    --cms-selected-fg:          var(--cms-accent-fg);
 
     // Sidebar
     --cms-sidebar-bg:           #1a2332;
@@ -517,7 +536,7 @@ body {
     &.active {
         background: var(--cms-sidebar-active);
         color: white;
-        box-shadow: inset 3px 0 0 var(--cms-accent);
+        box-shadow: inset 3px 0 0 var(--cms-selected);
     }
 
     .bi {
@@ -865,9 +884,9 @@ input[type="radio"] {
 }
 
 .cms-btn-active {
-    background: var(--cms-accent-light);
-    border-color: var(--cms-accent);
-    color: var(--cms-accent-text);
+    background: var(--cms-selected-light);
+    border-color: var(--cms-selected);
+    color: var(--cms-selected-text);
 }
 
 .cms-btn-sm { padding: 3px 8px; font-size: .75rem; }
@@ -1208,7 +1227,7 @@ cdk-dialog-container {
     z-index: 1;
     transition: background .15s;
 
-    &:hover, &:active { background: var(--cms-accent); }
+    &:hover, &:active { background: var(--cms-primary); }
 
     &--vertical {
         width: 4px;
@@ -1538,7 +1557,7 @@ figure > figcaption {
     font-size: .8125rem;
 
     &.ProseMirror-selectednode {
-        border-color: var(--cms-accent);
+        border-color: var(--cms-selected);
         box-shadow: 0 0 0 2px var(--cms-accent-light);
     }
 }
@@ -1573,7 +1592,7 @@ figure > figcaption {
     font-size: .8125rem;
 
     &.ProseMirror-selectednode {
-        border-color: var(--cms-accent);
+        border-color: var(--cms-selected);
         box-shadow: 0 0 0 2px var(--cms-accent-light);
     }
 }

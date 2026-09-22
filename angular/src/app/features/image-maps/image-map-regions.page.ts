@@ -242,7 +242,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
             font-size: 12px; cursor: pointer;
         }
         .region-list li:hover { background: var(--cms-hover, #f3f4f6); }
-        .region-list li.selected { background: var(--cms-accent-light, #FEF7E6); }
+        .region-list li.selected { background: var(--cms-selected-light); }
         .region-list .code { font-weight: 600; }
         .region-list .label { color: var(--cms-text-muted, #848b96); }
     `],

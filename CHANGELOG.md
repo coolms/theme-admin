@@ -8,6 +8,19 @@ major number means here.
 ## Unreleased
 
 ### Added
+- The theme implements `console@1` (the platform rule: hosts implement contracts, modules offer entries): `theme.yaml` declares
+  `contracts: { console: "1.0" }`, and the declaration has three readers from
+  the day it lands -- the build (`scripts/assemble-console.mjs`, run on
+  `prebuild` and `pretest`, refuses when core-angular's contract version
+  differs), the installer (`coolms:theme:install` / `activate` and
+  `coolms:install` refuse a module whose range this version does not meet, by
+  name) and the app-config manifest (`ui.contracts`, `ui.modules`), which is
+  what activates a module in the console. The assembler discovers the modules'
+  entry files (`src/app/features/*/entries/console*.ts`) and generates
+  `src/app/console.registry.ts` (not tracked), which `app.routes.ts` mounts
+  through `consoleChildren()` and `app.config.ts` provides through
+  `provideConsole()`; `npm run test:scripts` runs the assembler's own tests over
+  fixture trees. With no entries yet the six compiled-in lists are unchanged.
 - Declares `support` -- `issues` and `source` -- so a page imported from this
   package, and the catalogue, know where a correction is filed. Packagist filled
   the gap from GitHub when the manifest was silent; the declared field is the
@@ -23,12 +36,105 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The Chat module's surface is called **Chat**, and its mount is `/admin/chat`:
+  the page header, the top bar's tile (its tooltip, its label and the drawer it
+  opens) and the drawer's "Open chat" button. `/admin/messages` redirects to it,
+  query string and all, so a bookmark or a link that names the old path still
+  lands on the conversation it named. "Messages" named the surface after one of
+  the things it carries; the module has been `chat` since it had a name.
+  Renaming only what names this module: mail messages, message lists and the
+  DTOs that carry a message keep theirs.
+- The selected family, by ruling and by measurement: `--cms-selected-light`
+  (the wash under a selected row or tab), `--cms-selected-text` (text on that
+  wash) and `--cms-selected-fg` (the foreground on the solid mark), each an
+  alias of the accent's tier. `tools/selection-marks.mjs` counted 23 rules
+  putting text on a selected wash and 10 on the solid mark; all moved, with
+  the 21 washes that carry no text and the editor's hand-mixed tints
+  (`color-mix` of the mark at 8, 14, 15, 18 and 35 per cent -- five tints of
+  one colour). `lint:fallbacks`, which the pre-push hook runs on the pushed
+  tree, now also refuses a tint of `--cms-selected` mixed by hand and a
+  selected fill whose text names another family, per rule; the backend's
+  `check-cms-tokens` repeats the rule over the library clones.
+- Drop targets are interaction affordances, not selections, and all of them
+  read `--cms-primary` with the `--cms-info-light` wash (the three that read
+  the accent -- the documents folder, the replace-template dialog, the media
+  picker's dropzone -- moved); by the same rule the kit's resize handle and
+  the messages composer's grip read the primary.
+- The `editor-smoke` fixture is gone: a 74-line component that exercised the
+  editor bridge, mounted twice (`/editor-test` without the auth guard and
+  `/admin/editor-test`), written to be removed once the page editor adopted
+  the bridge, which it has. The shell's own routes are `dashboard` and
+  `ui-kit`.
+- `--cms-selected`, the token for "this one is selected", is defined in
+  `styles.scss` as an alias of the accent, and every selection mark reads it:
+  the underline under the active tab (the form builder's own tabs included),
+  the border of the picked card or tile, the bar beside the current rail item
+  and queue item, the current wizard step, the ring on the selected node, the
+  kit's pressed `.cms-btn-active` and the sidebar's active item. The site was
+  decided by meaning, not colour: of the `--cms-primary` sites, the selection
+  marks moved to the token, text sitting on a selected wash moved to
+  `--cms-accent-text` (the domain explorer's active rows and open branch, the
+  messages toggles, which now wear the kit's pressed look), the composer's
+  resize grip to `--cms-accent` as the kit's handle; links, progress bars,
+  focus rings, drop targets, the "my message" bubble, attention accents, count
+  badges and the Bootstrap bridge keep `--cms-primary`. Checked controls keep
+  the accent. Both token checks (`lint:fallbacks`, `lint:tokens`, and the
+  pre-push hook that runs the first on the pushed tree) read the new token
+  through the alias: a blue fallback under it is refused with the token's
+  value, a misspelling by name -- measured with both mutations before any
+  site moved.
+- The profile page opens a `profile.tab` slot: a module binds a component under
+  `profile.tab:<settings section>` in `ComponentRegistry` (app.config.ts holds
+  the bindings) and the page renders it for that section instead of the
+  generic form, handing it one input, `section`. The guest owns its pane --
+  load, form, footer and save. Call's "Calls" pane is the first guest, moved
+  from `features/identity` to `features/call`: it loads and saves through
+  `CallOverlayPreferencesService` (`refresh()`, and `save()`, new), so Identity
+  imports nothing from Call. The page no longer seeds the call overlay prefs
+  when it loads; the shell refreshes them at boot and the pane again when it
+  opens.
+- The shell's `api/api.service.ts` (2,538 lines, 128 members, reached from 33 of
+  47 features) is cut along module lines: each group of methods now lives in the
+  feature that owns the endpoint (`features/<feature>/<feature>-api.service.ts`
+  with its DTOs in `<feature>.types.ts`), and the shell keeps a 44-line
+  `ShellApiService` with login, refresh, logout, me and the manifest getter. A
+  feature that calls another module's endpoint imports that module's service --
+  the allowed form until the module is extracted. No endpoint or behaviour
+  changes; the six core-angular types the old file re-exported are imported from
+  `@coolms/core-angular` again.
+- The mailbox wizard connects an OAuth account BEFORE anything is created. The last
+  step of a new OAuth mailbox is "Connect with <provider>": the intended mailbox goes
+  to `POST /email/mailboxes/connect`, the browser leaves for the consent screen, and
+  the mailbox exists only once the server has proven the grant -- a refused or
+  abandoned consent leaves nothing behind, where the previous flow committed a
+  "pending" row first and the scheduler then tried to fetch it. Two rules ride
+  along: an OAuth mailbox has no username fields at all (it signs in as its
+  address); on the password path the username is the address for everyone, and
+  only an administrator sees an alias field. The rules are pure functions
+  (`mailbox-wizard.util.ts`) with their own spec.
 - CDP: the subject `kind` is `anonymous | recognised | known` -- the recognised
   browser (a durable identifier issued on the `recognition` consent rung) gets
   its own badge on the subject page, and the segment editor's example
   expression selects on `subject['kind']`.
 
 ### Fixed
+- A pasted or bookmarked module URL landed on the dashboard on a cold load
+  (measured: `/admin/identity/users` requested no chunk of its own, the
+  dashboard's instead) -- the mount's `canMatch` read the manifest while the
+  initializer was still fetching it and found no module installed. The guard
+  (core-angular) answers once the initializer signals ready; navigation from
+  inside the app never saw it, which is why the live sweep on the day did not.
+- My Profile: a tab strip wider than its column (six tabs below ~1000px) overflowed
+  into the scrolling body, and clicking a half-visible tab scrolled the whole
+  body sideways -- the sidebar disappeared to the left. The page now uses the
+  shared `app-tab-strip`, which keeps one row and puts the tabs that do not fit
+  behind a "more" menu (ui-angular, same day); the active tab is always in the
+  row, underlined in the accent as before -- and so, from now on, are the tabs
+  on Inbox, Leads, Newsletter, Dashboard, Analytics and Deletions, which were
+  blue.
+- The profile menu in the light theme: the panel inherited the top bar's light
+  ink onto a white surface and could not be read. It paints the page's surface
+  and ink (`--cms-surface`, `--cms-text`).
 - 27 `var()` fallbacks that disagreed with their own token, in 15 files: eleven
   radii (`--cms-radius` is 6px and was written as 4px, 8px and 10px;
   `--cms-radius-sm` is 4px and was written as 6px) and sixteen colours written

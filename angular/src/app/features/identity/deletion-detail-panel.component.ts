@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DateTimeFormatService } from '@coolms/ui-angular';
-import { AccountDeletionDto, AccountDeletionState } from '../../api/api.service';
+import { AccountDeletionDto, AccountDeletionState } from './identity.types';
 
 /** What the state badge is called and coloured, shared by the drawer and the user panel. */
 export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { label: string; variant: string }>> = {

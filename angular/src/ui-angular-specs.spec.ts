@@ -36,6 +36,7 @@ import '../../../ui-angular/src/ui/layout-tree-editor/layout-tree-editor.compone
 import '../../../ui-angular/src/ui/lazy-select/lazy-select.component.spec';
 import '../../../ui-angular/src/ui/page-toolbar.component.spec';
 import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';
+import '../../../ui-angular/src/ui/tab-strip.component.spec';
 import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';
 import '../../../ui-angular/src/util/user-calendar-preferences.service.spec';

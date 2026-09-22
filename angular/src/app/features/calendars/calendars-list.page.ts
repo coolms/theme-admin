@@ -13,7 +13,8 @@ import { Router } from '@angular/router';
 import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import { ApiService, CalendarDto } from '../../api/api.service';
+import { CalendarDto } from './calendars.types';
+import { CalendarsApiService } from './calendars-api.service';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
@@ -68,8 +69,7 @@ import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
 })
 export class CalendarsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api         = inject(ApiService);
+    private readonly calendarsApi = inject(CalendarsApiService);
     private readonly store       = inject(Store);
     private readonly router      = inject(Router);
     private readonly dialog      = inject(Dialog);
@@ -166,7 +166,7 @@ export class CalendarsListComponent implements OnInit {
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
-        this.api.listCalendarsPage({
+        this.calendarsApi.listCalendarsPage({
             page,
             pageSize: this.PAGE_SIZE,
             sort:     event.sort,
@@ -243,7 +243,7 @@ export class CalendarsListComponent implements OnInit {
         }
         this.confirmSvc.confirmDelete(cal.label ?? cal.slug).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteCalendar(cal.slug!)),
+            switchMap(() => this.calendarsApi.deleteCalendar(cal.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Calendar deleted'); this.grid.reload(); },

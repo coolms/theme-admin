@@ -27,7 +27,8 @@
  // RUN is the matching `src/<pkg>-specs.spec.ts` bridge, because karma
  // discovers under the project root only.
         "../../editor-angular/src/**/*.spec.ts",
-        "../../sheet-editor-angular/src/**/*.spec.ts"
+        "../../sheet-editor-angular/src/**/*.spec.ts",
+        "../../dtmpl-angular/src/**/*.spec.ts"
     ],
     "angularCompilerOptions": {
       "extendedDiagnostics": {

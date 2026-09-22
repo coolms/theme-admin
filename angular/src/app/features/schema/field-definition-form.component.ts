@@ -16,7 +16,7 @@ import { catchError, of } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { FieldSchemaItem, SchemaService } from './schema.service';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from '../identity/identity-api.service';
 
 // -- Static-override tab index type -------------------------------------------
 type TabIndex = 0 | 1 | 2;
@@ -487,7 +487,7 @@ type TabIndex = 0 | 1 | 2;
 
         .fdf-tabs-nav .form-tabs__btn--active {
             color: var(--cms-accent-text);
-            border-bottom-color: var(--cms-accent);
+            border-bottom-color: var(--cms-selected);
         }
 
         /* -- Static override form body ------------------------------------ */
@@ -607,7 +607,7 @@ export class FieldDefinitionFormComponent implements OnInit {
         mode:         'create' | 'edit' | 'override';
     };
     private readonly schemaSvc  = inject(SchemaService);
-    private readonly apiSvc     = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly fb         = inject(FormBuilder);
@@ -967,7 +967,7 @@ export class FieldDefinitionFormComponent implements OnInit {
                 .subscribe(types => this.formTypes.set(types));
 
             // Load available roles for the Security tab checkboxes
-            this.apiSvc.getRoles()
+            this.identityApi.getRoles()
                 .pipe(
                     catchError(() => of([] as Array<{ value: string; label: string }>)),
                     takeUntilDestroyed(this.destroyRef),

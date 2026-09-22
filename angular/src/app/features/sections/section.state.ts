@@ -3,7 +3,8 @@ import { State, Action, Selector } from '@ngxs/store';
 import type { StateContext } from '@ngxs/store';
 import { EMPTY } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { ApiService, SectionApplyResultDto, SiteSectionDto } from '../../api/api.service';
+import { SectionApplyResultDto, SiteSectionDto } from './sections.types';
+import { SectionsApiService } from './sections-api.service';
 import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
 import {
     ApplyNginxChanges,
@@ -37,14 +38,13 @@ export interface SectionStateModel {
 @Injectable()
 export class SectionState {
     private readonly prefs = inject(UserPreferencesService);
-
-    private readonly api    = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly errors = inject(ErrorHandlerService);
 
     @Action(LoadSections)
     load(ctx: StateContext<SectionStateModel>) {
         ctx.patchState({ loading: true, error: null });
-        return this.api.getSections().pipe(
+        return this.sectionsApi.getSections().pipe(
             tap(sections => {
                 // Rehydrate currentSectionSlug from persisted preferences when
                 // the list first lands. Prevents an unknown slug (stale prefs)
@@ -72,21 +72,21 @@ export class SectionState {
 
     @Action(CreateSection)
     create(ctx: StateContext<SectionStateModel>, { payload }: CreateSection) {
-        return this.api.createSection(payload).pipe(
+        return this.sectionsApi.createSection(payload).pipe(
             tap(() => ctx.dispatch(new LoadSections())),
         );
     }
 
     @Action(UpdateSection)
     update(ctx: StateContext<SectionStateModel>, { id, payload }: UpdateSection) {
-        return this.api.updateSection(id, payload).pipe(
+        return this.sectionsApi.updateSection(id, payload).pipe(
             tap(() => ctx.dispatch(new LoadSections())),
         );
     }
 
     @Action(DeleteSection)
     delete(ctx: StateContext<SectionStateModel>, { id }: DeleteSection) {
-        return this.api.deleteSection(id).pipe(
+        return this.sectionsApi.deleteSection(id).pipe(
             tap(() => ctx.dispatch(new LoadSections())),
         );
     }
@@ -99,7 +99,7 @@ export class SectionState {
      */
     @Action(ApplyNginxChanges)
     apply(ctx: StateContext<SectionStateModel>) {
-        return this.api.applySections().pipe(
+        return this.sectionsApi.applySections().pipe(
             tap(result => {
                 ctx.patchState({ lastApplyResult: result });
                 ctx.dispatch(new LoadSections());

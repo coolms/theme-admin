@@ -3,7 +3,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent, ToastService } from '@coolms/ui-angular';
-import { ApiService } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
 
 export interface LegalHoldDialogData {
     readonly userId:       string;
@@ -36,8 +36,7 @@ export interface LegalHoldDialogData {
 })
 export class LegalHoldDialogComponent {
     @ViewChild('dynamicForm') dynamicForm!: DynamicFormComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
@@ -45,11 +44,11 @@ export class LegalHoldDialogComponent {
     readonly data               = inject<LegalHoldDialogData>(DIALOG_DATA);
 
     /** The form id travels in the manifest; the literal is only the fallback for an older server. */
-    readonly formId = this.api.legalHoldFormId ?? 'identity:legal_hold';
+    readonly formId = this.identityApi.legalHoldFormId ?? 'identity:legal_hold';
 
     onSubmit(value: Record<string, unknown>): void {
         const reason = (value['reason'] as string | null | undefined)?.toString().trim() ?? '';
-        this.api.placeLegalHold(this.data.userId, reason)
+        this.identityApi.placeLegalHold(this.data.userId, reason)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next:  () => {

@@ -24,7 +24,8 @@ import {
     type TabStripItem,
     ToastService,
 } from '@coolms/ui-angular';
-import { AccountDeletionDto, ApiService } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { AccountDeletionDto } from './identity.types';
 import { DeletionDetailPanelComponent } from './deletion-detail-panel.component';
 import { HoldsRegisterComponent } from './holds-register.component';
 import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dialog.component';
@@ -83,8 +84,7 @@ type DeletionsTab = 'deletions' | 'holds';
 })
 export class DeletionsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid?: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly store      = inject(Store);
     private readonly dialog     = inject(Dialog);
     private readonly drawer     = inject(DrawerService);
@@ -160,7 +160,7 @@ export class DeletionsListComponent implements OnInit {
         const epoch = ++this._loadEpoch;
         const page = Math.floor(event.offset / LIMIT) + 1;
 
-        this.api.listDeletions({
+        this.identityApi.listDeletions({
             limit:   LIMIT,
             page,
             filters: [...event.columnFilters],
@@ -217,7 +217,7 @@ export class DeletionsListComponent implements OnInit {
             cancelLabel:  'Keep it',
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.cancelDeletion(d.userId)),
+            switchMap(() => this.identityApi.cancelDeletion(d.userId)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Deletion cancelled; access restored'); this.reload(); },
@@ -242,7 +242,7 @@ export class DeletionsListComponent implements OnInit {
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.api.releaseLegalHold(d.userId, hold.id)),
+            switchMap(() => this.identityApi.releaseLegalHold(d.userId, hold.id)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Hold released; the deletion is re-armed'); this.reload(); },

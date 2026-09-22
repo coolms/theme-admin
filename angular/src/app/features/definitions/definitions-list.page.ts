@@ -11,7 +11,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
-import { ApiService, type DefinitionCatalogDto } from '../../api/api.service';
+import { type DefinitionCatalogDto } from './definitions.types';
+import { DefinitionsApiService } from './definitions-api.service';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
@@ -129,8 +130,7 @@ export class DefinitionsListPageComponent implements OnInit {
 
     /** Guards against out-of-order responses; see {@link onLoadMore}. */
     private loadEpoch = 0;
-
-    private readonly api         = inject(ApiService);
+    private readonly definitionsApi = inject(DefinitionsApiService);
     private readonly store       = inject(Store);
     private readonly dialog      = inject(Dialog);
     private readonly toast       = inject(ToastService);
@@ -239,7 +239,7 @@ export class DefinitionsListPageComponent implements OnInit {
         const page  = Math.floor(event.offset / PAGE_SIZE) + 1;
         const epoch = ++this.loadEpoch;
 
-        this.api.listDefinitions({
+        this.definitionsApi.listDefinitions({
             page,
             itemsPerPage: PAGE_SIZE,
             ...(event.sort ? { sort: event.sort } : {}),
@@ -376,7 +376,7 @@ export class DefinitionsListPageComponent implements OnInit {
         const { module, definitionKey } = row;
         if (!module || !definitionKey) return;
 
-        this.api.retireDefinition(module, definitionKey).pipe(
+        this.definitionsApi.retireDefinition(module, definitionKey).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -391,7 +391,7 @@ export class DefinitionsListPageComponent implements OnInit {
         const { module, definitionKey } = row;
         if (!module || !definitionKey) return;
 
-        this.api.unretireDefinition(module, definitionKey).pipe(
+        this.definitionsApi.unretireDefinition(module, definitionKey).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -420,7 +420,7 @@ export class DefinitionsListPageComponent implements OnInit {
             takeUntilDestroyed(this.destroyRef),
         ).subscribe(ok => {
             if (!ok) return;
-            this.api.deleteDefinition(module, definitionKey).pipe(
+            this.definitionsApi.deleteDefinition(module, definitionKey).pipe(
                 takeUntilDestroyed(this.destroyRef),
             ).subscribe({
                 next: () => {

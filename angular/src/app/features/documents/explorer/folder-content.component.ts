@@ -19,7 +19,8 @@ import { catchError, map } from 'rxjs/operators';
 
 import { Store } from '@ngxs/store';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
-import { ApiService, NodeDto } from '../../../api/api.service';
+import { NodeDto } from '../../vfs/vfs.types';
+import { VfsApiService } from '../../vfs/vfs-api.service';
 import { DocumentPageStateService } from './document-page-state.service';
 import { FormatInfoService } from './format-info.service';
 import { filterTemplatesForFolder } from './vfs-tree.helpers';
@@ -158,9 +159,9 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
             min-height: 0;
         }
         .cms-folder-content.cms-dropzone--active {
-            outline: 2px dashed var(--cms-accent);
+            outline: 2px dashed var(--cms-primary);
             outline-offset: -8px;
-            background: var(--cms-accent-light);
+            background: var(--cms-info-light);
         }
         .cms-folder-content__status {
             padding: var(--cms-content-padding);
@@ -319,7 +320,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
     `],
 })
 export class FolderContentComponent implements OnDestroy {
-    private readonly api = inject(ApiService);
+    private readonly vfsApi = inject(VfsApiService);
     private readonly state = inject(DocumentPageStateService);
     private readonly formatInfo = inject(FormatInfoService);
     private readonly destroyRef = inject(DestroyRef);
@@ -623,10 +624,10 @@ export class FolderContentComponent implements OnDestroy {
         this.loadingFolder.set(true);
         this.folderError.set(null);
 
-        const folder$ = this.api.listDirectory(path).pipe(
+        const folder$ = this.vfsApi.listDirectory(path).pipe(
             catchError(() => of<NodeDto[]>([])),
         );
-        const templatesDir$ = this.api.listDirectory(`${path}/.templates`).pipe(
+        const templatesDir$ = this.vfsApi.listDirectory(`${path}/.templates`).pipe(
             catchError(() => of<NodeDto[]>([])),
         );
 

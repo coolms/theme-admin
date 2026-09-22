@@ -3,7 +3,8 @@ import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { ToastService } from '@coolms/ui-angular';
-import { ApiService, FootprintDto } from '../../api/api.service';
+import { IdentityApiService } from './identity-api.service';
+import { FootprintDto } from './identity.types';
 
 /**
  * Level one of "Legal holds": every category a module declared
@@ -90,7 +91,7 @@ import { ApiService, FootprintDto } from '../../api/api.service';
     `],
 })
 export class HoldsRegisterComponent implements OnInit {
-    private readonly api        = inject(ApiService);
+    private readonly identityApi = inject(IdentityApiService);
     private readonly toast      = inject(ToastService);
     private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
@@ -102,12 +103,12 @@ export class HoldsRegisterComponent implements OnInit {
 
     /** `/settings/{module}/{block}` -- the path IS the tree; the block key comes from the manifest. */
     readonly settingsLink = computed((): string[] | null => {
-        const block = this.api.holdsSettingsBlock;
+        const block = this.identityApi.holdsSettingsBlock;
         return block ? ['/settings', 'identity', block] : null;
     });
 
     ngOnInit(): void {
-        this.api.listFootprints().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        this.identityApi.listFootprints().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: rows => { this.footprints.set(rows); this.loading.set(false); },
             error: err => { this.loading.set(false); this.toast.error(this.errors.humanize(err)); },
         });

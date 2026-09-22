@@ -37,7 +37,7 @@ import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
 
 /**
- * Internal Messages (`/admin/messages`, shell - rich composer
+ * Internal chat (`/admin/chat`, shell - rich composer
  * - attachments - realtime - emoji - self-set status -
  * connection-derived online dot) -- the user<->user chat
  * surface over the generic Chat engine. Two panes:
@@ -84,7 +84,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
     encapsulation: ViewEncapsulation.None,
     imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
     template: `
-        <cms-page-header icon="chat-dots" [title]="'Messages'">
+        <cms-page-header icon="chat-dots" [title]="'Chat'">
             <div class="msg__status" header-actions>
                 <button type="button" class="msg__status-btn" (click)="toggleStatusMenu()"
                         [title]="'Your status: ' + statusLabel(myStatus())">
@@ -752,10 +752,10 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__head-actions { display: flex; align-items: center; gap: .35rem; }
         .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__browse:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
-        .msg__browse--on { background: var(--cms-border-light, #f0f2f5); color: var(--cms-primary, #2563eb); border-color: var(--cms-primary, #2563eb); }
+        .msg__browse--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__newmode { display: flex; gap: .25rem; margin-bottom: .5rem; }
         .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
-        .msg__newmode-btn--on { background: var(--cms-border-light, #f0f2f5); color: var(--cms-primary, #2563eb); border-color: var(--cms-primary, #2563eb); font-weight: 500; }
+        .msg__newmode-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); font-weight: 500; }
         .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #848b96); }
         .msg__channels { border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         .msg__channels-head { display: flex; align-items: center; justify-content: space-between; padding: .55rem 1rem; font-size: .8rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); background: var(--cms-canvas, #f3f4f6); }
@@ -805,7 +805,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__rows { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; }
         .msg__row { display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left; border: 0; background: transparent; padding: .55rem 1rem; font: inherit; cursor: pointer; border-bottom: 1px solid var(--cms-border-light, #f0f2f5); color: var(--cms-text, #111827); }
         .msg__row:hover { background: var(--cms-hover, #f3f4f6); }
-        .msg__row--active { background: var(--cms-accent-light, #FEF7E6); }
+        .msg__row--active { background: var(--cms-selected-light); }
         /* Two-line row body: name + time on top, message preview + unread badge below. */
         .msg__row-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: .15rem; }
         .msg__row-top { display: flex; align-items: baseline; gap: .4rem; }
@@ -886,7 +886,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__call-btn:disabled { opacity: .5; cursor: default; }
         .msg__members-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .2rem .5rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
         .msg__members-btn:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
-        .msg__members-btn--on { background: var(--cms-border-light, #f0f2f5); color: var(--cms-primary, #2563eb); border-color: var(--cms-primary, #2563eb); }
+        .msg__members-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__members { padding: .7rem 1.1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); flex-shrink: 0; }
         .msg__members-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .1rem; max-height: 220px; overflow-y: auto; }
         .msg__member { display: flex; align-items: center; gap: .5rem; padding: .25rem .1rem; }
@@ -1010,13 +1010,13 @@ import { RtcMediaKind } from '../rtc/rtc.types';
          * editor's scroll ceiling (--msg-editor-h). Persisted to localStorage. */
         .msg__composer-grip { position: absolute; top: -4px; left: 0; right: 0; height: 9px; cursor: ns-resize; z-index: 6; touch-action: none; }
         .msg__composer-grip::before { content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 40px; height: 3px; border-radius: 2px; background: var(--cms-border, #e5e7eb); opacity: 0; transition: opacity .15s ease, background .15s ease; }
-        .msg__composer-grip:hover::before, .msg__composer-grip--active::before { opacity: 1; background: var(--cms-primary, #2563eb); }
+        .msg__composer-grip:hover::before, .msg__composer-grip--active::before { opacity: 1; background: var(--cms-primary); }
         /* Action bar beneath the editor, inside the shell. */
         .msg__composer-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .3rem .4rem .3rem .35rem; border-top: 1px solid var(--cms-border-light, #f0f2f5); background: var(--cms-canvas, #f3f4f6); }
         .msg__composer-tools { display: flex; align-items: center; gap: .1rem; }
         .msg__tool { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: var(--cms-radius-md, 8px); background: transparent; color: var(--cms-text-secondary, #6b7280); cursor: pointer; font-size: 1.05rem; }
         .msg__tool:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
-        .msg__tool--on { background: var(--cms-accent-light, #FEF7E6); color: var(--cms-primary, #2563eb); }
+        .msg__tool--on { background: var(--cms-selected-light); color: var(--cms-selected-text); }
         .msg__tool:disabled { opacity: .5; cursor: default; }
         .msg__send { display: inline-flex; align-items: center; gap: .4rem; border: 0; border-radius: var(--cms-radius-md, 8px); background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); padding: .4rem .85rem; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
         .msg__send:hover:not(:disabled) { background: var(--cms-primary-hover, #1d4ed8); }

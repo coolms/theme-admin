@@ -193,11 +193,11 @@ export interface TemplateConflictDialogResult {
             border-color: var(--cms-border-strong, #d1d5db);
         }
         .cms-template-conflict-dialog__option--active {
-            border-color: var(--cms-accent, #F5A623);
-            background: var(--cms-accent-light, #FEF7E6);
+            border-color: var(--cms-selected);
+            background: var(--cms-selected-light);
         }
         .cms-template-conflict-dialog__option i { font-size: 1rem; color: var(--cms-text-secondary); padding-top: 2px; }
-        .cms-template-conflict-dialog__option--active i { color: var(--cms-accent, #F5A623); }
+        .cms-template-conflict-dialog__option--active i { color: var(--cms-selected); }
         .cms-template-conflict-dialog__option strong {
             display: block;
             font-size: 0.875rem;

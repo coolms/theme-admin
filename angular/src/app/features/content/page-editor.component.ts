@@ -537,9 +537,9 @@ type RailTab = string;
         }
         .page-editor__tab:hover { background: var(--cms-border-light); }
         .page-editor__tab--active {
-            background: var(--cms-accent-light);
-            color: var(--cms-accent-text);
-            border-color: var(--cms-accent);
+            background: var(--cms-selected-light);
+            color: var(--cms-selected-text);
+            border-color: var(--cms-selected);
         }
         .page-editor__tab--dirty { border-style: dashed; }
         .page-editor__dirty-dot {
@@ -651,7 +651,7 @@ type RailTab = string;
         }
         .page-editor__rail-tab:hover { background: var(--cms-border-light); color: var(--cms-text); }
         .page-editor__rail-tab.is-active {
-            background: var(--cms-accent-light); color: var(--cms-accent-text); border-color: var(--cms-accent);
+            background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected);
         }
         .page-editor__rail-dot {
             position: absolute; top: 5px; right: 5px;

@@ -392,8 +392,8 @@ const PREFS_KEY = 'settings';
         .rail-item:hover { background: var(--cms-hover-bg); }
         .rail-item:focus-visible { outline: 2px solid var(--cms-accent); outline-offset: -2px; }
         .rail-item--active {
-            background: var(--cms-accent-light, #FEF7E6);
-            border-left-color: var(--cms-accent);
+            background: var(--cms-selected-light);
+            border-left-color: var(--cms-selected);
             font-weight: 600;
         }
 
@@ -479,9 +479,9 @@ const PREFS_KEY = 'settings';
 
         /* The selected layer, in the accent the admin uses for a chosen state. */
         .settings__scope-choice button.is-active {
-            background: var(--cms-accent);
-            border-color: var(--cms-accent);
-            color: var(--cms-accent-fg);
+            background: var(--cms-selected);
+            border-color: var(--cms-selected);
+            color: var(--cms-selected-fg);
         }
 
         /* Already spaced by the bar below it. */

@@ -4,7 +4,8 @@ import { of } from 'rxjs';
 import { SiteSelectorComponent } from './site-selector.component';
 import { SectionState } from '../section.state';
 import { LoadSections, SetCurrentSection } from '../section.actions';
-import { ApiService, SiteSectionDto } from '../../../api/api.service';
+import { SectionsApiService } from '../sections-api.service';
+import { SiteSectionDto } from '../sections.types';
 import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
 describe('SiteSelectorComponent', () => {
     let fixture: ComponentFixture<SiteSelectorComponent>;
@@ -16,7 +17,7 @@ describe('SiteSelectorComponent', () => {
     ];
 
     function setup(initialSections: SiteSectionDto[] = sections): void {
-        const apiStub = jasmine.createSpyObj<ApiService>('ApiService', ['getSections']);
+        const apiStub = jasmine.createSpyObj<SectionsApiService>('SectionsApiService', ['getSections']);
         apiStub.getSections.and.returnValue(of(initialSections));
 
         const prefs = jasmine.createSpyObj<UserPreferencesService>(
@@ -29,7 +30,7 @@ describe('SiteSelectorComponent', () => {
             imports: [SiteSelectorComponent],
             providers: [
                 provideStore([SectionState]),
-                { provide: ApiService, useValue: apiStub },
+                { provide: SectionsApiService, useValue: apiStub },
                 { provide: ErrorHandlerService, useValue: { humanize: (e: unknown) => String(e) } },
                 { provide: UserPreferencesService, useValue: prefs },
             ],

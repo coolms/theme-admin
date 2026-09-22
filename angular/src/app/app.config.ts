@@ -1,10 +1,8 @@
 import { type ApplicationConfig, APP_INITIALIZER, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, withEnabledBlockingInitialNavigation } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
-import { provideStore, Store } from '@ngxs/store';
-import { ViewerComponentRegistry, DocxViewerComponent } from '@coolms/document-viewer-angular';
+import { Store } from '@ngxs/store';
 import { provideCoolmsPdf } from '@coolms/pdf-angular';
-import { provideCoolmsPdfMedia } from './features/media/providers/provide-coolms-pdf-media';
 import {
     EDITOR_MANIFEST_PROVIDER,
     type EditorManifestProvider,
@@ -12,118 +10,19 @@ import {
     provideCoolmsEditor,
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
-import { provideCoolmsEditorMedia } from './features/media/providers/provide-coolms-editor-media';
-import { provideCoolmsEditorFonts } from './features/documents/providers/provide-coolms-editor-fonts';
-import { provideCoolmsEditorLink } from './features/link/providers/provide-coolms-editor-link';
-import { provideCoolmsEditorContent } from './features/content/providers/provide-coolms-editor-content';
-import { provideCoolmsEditorForm } from './features/form-widget/providers/provide-coolms-editor-form';
-import { provideCoolmsEditorDocument } from './features/document-widget/providers/provide-coolms-editor-document';
-import { provideCoolmsEditorImageMap } from './features/image-map-widget/providers/provide-coolms-editor-image-map';
-import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, RUNTIME_TYPES_PORT, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
-import { SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
-import { WORKFLOW_BPMN_LITE_BODY_MIME, WORKFLOW_PACKAGE_MIME } from './features/designer/shared/workflow-node-path';
-import { DDOC_DOCUMENT_MIME } from './features/documents/shared/ddoc-document.service';
-import { SHEET_DOCUMENT_MIME } from './features/documents/shared/sheet-document.constants';
-import { MediaFieldWidgetComponent } from './features/media/media-field-widget.component';
-import { MediaPickerFieldWidgetComponent } from './features/media/media-picker-field-widget.component';
-import { SchemaService } from './features/schema/schema.service';
+import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
+import { SHEET_DOCUMENT_MIME, SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
+import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
-import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry } from '@coolms/core-angular';
+import { CONSOLE_ENTRIES } from './console.registry';
+import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { SectionState } from './features/sections/section.state';
-import { NaviState } from './features/navi/navi.state';
-import { VfsState } from './features/vfs/vfs.state';
-import { TerminalPanelComponent } from './features/terminal/terminal-panel.component';
-import { MediaLibraryPage } from './features/media/media-library.page';
-import { CollectionsTreeComponent } from './features/media/collections-tree.component';
-import { MediaSpaceAccordionComponent } from './features/media/media-space-accordion.component';
-import { MediaGridSlotComponent } from './features/media/media-grid-slot.component';
-import { MediaDetailSlotComponent } from './features/media/media-detail-slot.component';
-import { MediaPermissionsComponent } from './features/media/media-permissions.component';
-import { MoveToDialogComponent } from './features/media/move-to-dialog.component';
-import { VfsTreeSlotComponent } from './features/vfs/vfs-tree-slot.component';
-import { VfsFilesSlotComponent } from './features/vfs/vfs-files-slot.component';
-import { VfsFileDetailSlotComponent } from './features/vfs/vfs-file-detail-slot.component';
-import { DtmplEditorDialogComponent } from './shell/dtmpl-editor-dialog.component';
-import { TranslationDetailComponent } from './features/translations/translation-detail.component';
-import { RoutingInspectorFormComponent }    from './features/routing-inspector/routing-inspector-form.component';
-import { RoutingInspectorOutcomeComponent } from './features/routing-inspector/routing-inspector-outcome.component';
-import { RoutingInspectorStepsComponent }   from './features/routing-inspector/routing-inspector-steps.component';
-import { PageEditorComponent } from './features/content/page-editor.component';
-import { DesignerEditorDialogComponent } from './features/designer/designer-editor-dialog.component';
-import { DomainExplorerTreeComponent } from './features/schema/domain-explorer-tree.component';
-import { DomainExplorerDetailComponent } from './features/schema/domain-explorer-detail.component';
-import { DynamicEntitiesPageComponent } from './features/schema/dynamic-entities-page.component';
-import { DocumentLibraryPage } from './features/documents/explorer/document-library.page';
-import { DocumentFoldersTreeComponent } from './features/documents/explorer/document-folders-tree.component';
-import { DocumentSpaceAccordionComponent } from './features/documents/document-space-accordion.component';
-import { PageSpaceAccordionComponent } from './features/content/page-space-accordion.component';
-import { PagesListComponent } from './features/content/pages-list.component';
-import { PageDetailComponent } from './features/content/page-detail.component';
-import { DocumentGridComponent } from './features/documents/explorer/document-grid.component';
-import { DocumentDetailComponent } from './features/documents/explorer/document-detail.component';
-import { DocumentStatusBarComponent } from './features/documents/explorer/document-status-bar.component';
-import { registerWordComponents } from './features/documents/word/word-detail-registration';
 
-// Register NaviGraph component targets
-ComponentRegistry.register('terminal',          TerminalPanelComponent);
-ComponentRegistry.register('MediaLibraryPage',  MediaLibraryPage);
-ComponentRegistry.register('DocumentLibraryPage', DocumentLibraryPage);
-// Articles' three registrations are GONE ( (d), ) along with the
-// `content:articles` layout they served.
-// -- Pages became an explorer, so its grid is a slot component now
-// rather than a routed page, and it gained a space accordion beside it.
-ComponentRegistry.register('PageSpaceAccordion',    PageSpaceAccordionComponent);
-ComponentRegistry.register('PagesList',             PagesListComponent);
-// -- Pages was the only explorer with no right panel, so everything a
-// page IS beyond its name was reachable only by opening the editor.
-ComponentRegistry.register('PageDetail',            PageDetailComponent);
-
-// Document Library slot components (the per-format restructure)
-ComponentRegistry.register('DocumentFoldersTree',      DocumentFoldersTreeComponent);
-// H4 -- DocumentSpaceAccordion wraps DocumentFoldersTree in a "spaces"
-// accordion (Personal / Shared / per-site). The accordion rebinds the
-// folders tree to the active space's rootPath.
-ComponentRegistry.register('DocumentSpaceAccordion',   DocumentSpaceAccordionComponent);
-ComponentRegistry.register('DocumentGrid',             DocumentGridComponent);
-ComponentRegistry.register('DocumentDetail',           DocumentDetailComponent);
-ComponentRegistry.register('DocumentStatusBar',        DocumentStatusBarComponent);
-
-// per-format detail components register themselves under
-// `document-detail-{format}` keys; the cross-format `DocumentDetail`
-// dispatcher dispatches to the right one via NgComponentOutlet.
-// Adding a Spreadsheet/Markdown module is purely additive -- drop a
-// sibling `register{Format}Components()` here.
-registerWordComponents();
-
-// Media Library slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-ComponentRegistry.register('CollectionsTree',         CollectionsTreeComponent);
-ComponentRegistry.register('MediaSpaceAccordion',     MediaSpaceAccordionComponent);
-ComponentRegistry.register('MediaGrid',               MediaGridSlotComponent);
-ComponentRegistry.register('MediaDetail',             MediaDetailSlotComponent);
-ComponentRegistry.register('MediaPermissionsComponent', MediaPermissionsComponent);
-ComponentRegistry.register('MoveToDialogComponent',   MoveToDialogComponent);
-
-// VFS File Manager slot components (loaded by ExplorerLayoutComponent via SlotComponent)
-ComponentRegistry.register('VfsTree',       VfsTreeSlotComponent);
-ComponentRegistry.register('VfsGrid',       VfsFilesSlotComponent);
-ComponentRegistry.register('VfsFileDetail', VfsFileDetailSlotComponent);
-
-// List layout slot components
-// NaviNodesList / PagesList / TranslationsList migrated to the <cms-list-page>
-// scaffold (routed directly, no slot registration). TranslationDetail still
-// renders through cms-list-layout's `i18n:translation-detail` slot.
-ComponentRegistry.register('TranslationDetail', TranslationDetailComponent);
-// reference adopter -- Routing Inspector slots rendered by
-// cms-inspector-layout (id=web:routing-inspector). The three slots
-// share state through RoutingInspectorStateService, provided at the
-// route level in app.routes.ts.
-ComponentRegistry.register('RoutingInspectorForm',    RoutingInspectorFormComponent);
-ComponentRegistry.register('RoutingInspectorOutcome', RoutingInspectorOutcomeComponent);
-ComponentRegistry.register('RoutingInspectorSteps',   RoutingInspectorStepsComponent);
-ComponentRegistry.register('DomainExplorerTree',   DomainExplorerTreeComponent);
-ComponentRegistry.register('DomainExplorerDetail', DomainExplorerDetailComponent);
-ComponentRegistry.register('DynamicEntitiesPage',  DynamicEntitiesPageComponent);
+// The shell's own registry binding: the shared dynamic-record list from
+// ui-angular, which the modules' server layouts name. Every module's bindings
+// come from its console entry (features/<feature>/entries/console.ts), through
+// provideConsole() below; Identity's profile.tab slot is filled the same way.
 ComponentRegistry.register('DynamicRecordList', DynamicRecordListComponent);
 
 // File editor registry -- CodeMirror for text files
@@ -131,22 +30,10 @@ FileEditorRegistry.register('text/*',           { component: CodeEditorComponent
 FileEditorRegistry.register('application/json', { component: CodeEditorComponent });
 FileEditorRegistry.register('application/xml',  { component: CodeEditorComponent });
 
-// File editor registry -- Tiptap-based DTMPL body editor for .dtmpl variants
-// and standalone .dtmpl files. Exact-mime match beats the `text/*` wildcard
-// in the resolver, so this takes precedence over CodeEditor for dtmpl.
-FileEditorRegistry.register('text/x-dtmpl', { component: DtmplEditorDialogComponent });
-
-// File editor registry -- native documents. The SAME dialog:
-// everything around the content -- the paged canvas, the split preview, the
-// download, the toolbar profile -- is the same editor, and only the three calls
-// that touch the FILE differ.
-//
-// The EXACT registration is required, not decoration: the resolver's wildcard
-// fallback is the mime's first segment plus `/*` -- `application/*` -- which
-// nothing registers, so `application/x-coolms-document+json` would otherwise
-// miss every lookup and a `.ddoc` would open in the code editor, which is
-// where it landed before this line existed.
-FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogComponent });
+// The DTMPL formats -- `text/x-dtmpl` and the native document -- are
+// registered by `provideDtmplEditors()` in the providers below: the dialog
+// that edits them is `@coolms/dtmpl-angular`'s, and so is the decision about
+// which mimes it answers for.
 
 // File editor registry -- native spreadsheet templates. A `.dsheet`
 // is a JSON grid document, and this is the GRID surface for it; CodeMirror held
@@ -160,33 +47,7 @@ FileEditorRegistry.register(DDOC_DOCUMENT_MIME, { component: DtmplEditorDialogCo
 // for this template format".
 FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogComponent });
 
-// File editor registry -- PageEditor for NodeType::Package (double-click in FileManager)
-FileEditorRegistry.register('package', { component: PageEditorComponent });
 
-// -- Workflow BPMN-Lite designer, opened as a modal
-// dialog. Two registrations, both routing to the same component:
-//  - The Package container at `/workflows/{key}/` carries the
-//    `application/vnd.coolms.workflow` mime; double-click on the
-//    package opens the dialog with the package node, the dialog
-//    derives the workflow key from the path, fetches the draft via
-//    the endpoints, and mounts the editor stack.
-//  - The body files (`draft.bpmn.json`, `v{N}.bpmn.json`) carry the
-//    `application/vnd.coolms.workflow.bpmn-lite+json` mime so a
-//    drill-in double-click on the draft also lands here. The generic
-//    dialog derives editor-vs-viewer from the path: `v{N}.bpmn.json`
-//    opens read-only (the `version` it extracts), a Package /
-//    `draft.bpmn.json` opens the editable draft.
-// Both register against the generic `DesignerEditorDialogComponent`
-// (the same modal the Definitions list opens), which hosts the bpmn
-// editor page embedded -- replacing the retired bespoke bpmn dialog.
-// Exact-mime registrations beat the `application/json` + `text/*`
-// fallbacks via `FileEditorRegistry.resolve`'s lookup order.
-FileEditorRegistry.register(WORKFLOW_PACKAGE_MIME, {
-    component: DesignerEditorDialogComponent,
-});
-FileEditorRegistry.register(WORKFLOW_BPMN_LITE_BODY_MIME, {
-    component: DesignerEditorDialogComponent,
-});
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -200,11 +61,6 @@ export const appConfig: ApplicationConfig = {
             }),
             deps:       [Store],
         },
-        // The shared dynamic-record list needs one schema read. Binding it
-        // here keeps `shared/` from naming a feature, and the feature from
-        // knowing who consumes it -- the composition root is the only place
-        // allowed to see both.
-        { provide: RUNTIME_TYPES_PORT, useExisting: SchemaService },
         // withEnabledBlockingInitialNavigation ensures the router waits for all
         // APP_INITIALIZER promises to resolve before starting the initial
         // navigation.  Without it the router evaluates authGuard concurrently
@@ -226,7 +82,6 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
-        provideStore([AppConfigState, AuthState, SectionState, NaviState, VfsState]),
         // Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
         // in the repo as a fallback reference; remove once
@@ -245,52 +100,18 @@ export const appConfig: ApplicationConfig = {
         // the bootstrap call is the only thing that has to move when
         // the Word frontend package is created.
         provideCoolmsPdf(),
-        // The viewer's image tool opens the Media Library rather than the
-        // browser's upload dialog. Must follow provideCoolmsPdf().
-        provideCoolmsPdfMedia(),
-        provideAppInitializer(() => {
-            const registry = inject(ViewerComponentRegistry);
-            registry.register('app-docx-viewer', DocxViewerComponent);
-        }),
 
         // Bridge: built-in handlers + foundation Tiptap extensions.
         ...provideCoolmsEditor(),
-        // Fonts: hands the editor this application's HTTP client, so it can
-        // read the MERGED registry -- the vendored families plus the ones an
-        // operator installed. Without it the editor falls back to the shipped
-        // manifest asset and installed families are simply absent.
-        ...provideCoolmsEditorFonts(),
-        // Media module: registers media.openPicker / media.openGalleryPicker
-        // action handlers and the mediaWidget / mediaGalleryWidget Tiptap
-        // extension factories. Must come after provideCoolmsEditor() so the
-        // bridge's registries exist before this initializer runs.
-        ...provideCoolmsEditorMedia(),
-        // Link module: registers the linkWidget Tiptap extension factory.
-        // Action handler swap (`editor.openLinkPicker`) lands in B3.
-        ...provideCoolmsEditorLink(),
-        // Content module: registers the `content.importMarkdown` action handler
-        // (the "Import Markdown" toolbar button in full/admin/document-builder).
-        ...provideCoolmsEditorContent(),
+        // The DTMPL dialog as the file editor for `text/x-dtmpl` and the
+        // native document. The widget translation it asks for through
+        // DTMPL_CONTENT_ADAPTER comes from Content's console entry, so a
+        // build without that module opens the body with its tokens visible
+        // instead of failing.
+        provideDtmplEditors(),
         // formField universal atom: registers `formField.upsert` action handler
         // (opens the picker dialog) and the `formField` Tiptap extension factory.
         ...provideCoolmsEditorFormField(),
-        // Form module: registers the `form.openPicker` action handler (opens the
-        // form picker) and the `formWidget` Tiptap extension factory. The backend
-        // `block:form` contributor surfaces it in both the toolbar and the slash
-        // menu; inserts `{widget:form formId=...}` into the page.
-        ...provideCoolmsEditorForm(),
-        // Document module: registers the `document.openPicker` action handler
-        // (opens the TEMPLATE picker) and the `documentWidget` Tiptap extension
-        // factory. The backend `block:document` contributor surfaces it in both
-        // the toolbar and the slash menu; inserts `{widget:document:<slug>}`,
-        // which renders a "Generate document" button for the reader.
-        ...provideCoolmsEditorDocument(),
-        // ImageMap module: registers the `imagemap.openPicker` action handler
-        // (opens the MAP picker) and the `imageMapWidget` Tiptap extension
-        // factory. The backend `block:imagemap` contributor surfaces it in both
-        // the toolbar and the slash menu; inserts `{widget:imagemap:<slug>}`,
-        // which renders the map image with its region overlay for the reader.
-        ...provideCoolmsEditorImageMap(),
         // Built-in field widgets: the registry is the single resolution path for
         // every field-panel input. A field with no richer module widget resolves
         // to one of these by its `type` (`text` is also the fallback for unknown
@@ -304,13 +125,6 @@ export const appConfig: ApplicationConfig = {
         // or a field created from the dropdown renders no control at all.
         provideFieldWidget('checkbox', CheckboxFieldWidgetComponent),
         provideFieldWidget('boolean', CheckboxFieldWidgetComponent),
-        // Media module's field-widget: a field declared `type: image` renders the
-        // Media Library picker (thumbnail preview + library browser), storing the
-        // picked asset's public URL. Backed by `MediaFieldWidgetProvider` (PHP).
-        provideFieldWidget('image', MediaFieldWidgetComponent),
-        // Relation fields declaring `widget: media-picker` resolve here, so
-        // shared/dynamic-form never imports the Media module.
-        provideFieldWidget('media-picker', MediaPickerFieldWidgetComponent),
         // Tag module's field-widget: a field declared `type: tags` renders the
         // `<app-tag-input>` badge/search input (field-widget registry). Gated on
         // the backend advertising a `widget` for the field, so it lights up only
@@ -340,5 +154,11 @@ export const appConfig: ApplicationConfig = {
                 };
             },
         },
+        // console@1: the store (the shell's states and every module's), the
+        // modules' registry bindings, and their provisions -- from the entries
+        // scripts/assemble-console.mjs collected. LAST, because a module's
+        // provision extends a library registry provided above (the editor
+        // bridge, the PDF viewer), as the hand-written lines did.
+        provideConsole(CONSOLE_ENTRIES, { hostStates: [AppConfigState, AuthState, SectionState] }),
     ],
 };

@@ -14,7 +14,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
-import { ApiService, NaviTreeDto } from '../../api/api.service';
+import { NaviTreeDto } from './navi.types';
+import { NaviApiService } from './navi-api.service';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -54,8 +55,7 @@ import { NaviTreeFormComponent } from './navi-tree-form.component';
 })
 export class NaviTreesListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly naviApi = inject(NaviApiService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly dialog     = inject(Dialog);
@@ -166,7 +166,7 @@ export class NaviTreesListComponent implements OnInit {
 
         const epoch = ++this._loadEpoch;
 
-        this.api.getNaviTrees({
+        this.naviApi.getNaviTrees({
             filters: [...event.columnFilters],
             sort:    event.sort ?? undefined,
         }).pipe(
@@ -234,7 +234,7 @@ export class NaviTreesListComponent implements OnInit {
     private confirmDelete(tree: NaviTreeDto): void {
         this.confirmSvc.confirmDelete(tree.label).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteNaviTree(tree.slug)),
+            switchMap(() => this.naviApi.deleteNaviTree(tree.slug)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Tree deleted'); this.grid.reload(); },

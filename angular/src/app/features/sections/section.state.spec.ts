@@ -3,7 +3,8 @@ import { provideStore, Store } from '@ngxs/store';
 import { of } from 'rxjs';
 import { SectionState } from './section.state';
 import { LoadSections, SetCurrentSection } from './section.actions';
-import { ApiService, SiteSectionDto } from '../../api/api.service';
+import { SectionsApiService } from './sections-api.service';
+import { SiteSectionDto } from './sections.types';
 import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
 describe('SectionState (H7 currentSection)', () => {
     let store: Store;
@@ -25,7 +26,7 @@ describe('SectionState (H7 currentSection)', () => {
     };
 
     beforeEach(() => {
-        const apiStub  = jasmine.createSpyObj<ApiService>('ApiService', ['getSections']);
+        const apiStub  = jasmine.createSpyObj<SectionsApiService>('SectionsApiService', ['getSections']);
         apiStub.getSections.and.returnValue(of([sectionDefault, sectionMarketing]));
         prefs = jasmine.createSpyObj<UserPreferencesService>(
             'UserPreferencesService',
@@ -36,7 +37,7 @@ describe('SectionState (H7 currentSection)', () => {
         TestBed.configureTestingModule({
             providers: [
                 provideStore([SectionState]),
-                { provide: ApiService, useValue: apiStub },
+                { provide: SectionsApiService, useValue: apiStub },
                 { provide: ErrorHandlerService, useValue: { humanize: (e: unknown) => String(e) } },
                 { provide: UserPreferencesService, useValue: prefs },
             ],

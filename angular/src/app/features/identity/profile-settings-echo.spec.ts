@@ -3,11 +3,9 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { ThemeService } from '@coolms/core-angular';
-import { ApiService } from '../../api/api.service';
-import { CallOverlayPrefs, CallOverlayPreferencesService } from '../call/call-overlay-preferences.service';
+import { IdentityApiService } from './identity-api.service';
 import { CalendarPrefs, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
-import { ProfileCallTabComponent } from './profile-call-tab.component';
 
 /**
  * downstream audit -- what the section PATCH's echo DID to the caches.
@@ -16,10 +14,13 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  * Platform answered in ld+json. A settings section is a MAP, and ld+json
  * renders a map as a Hydra Collection with the KEYS STRIPPED:
  * `{"member":["Europe/Berlin","dd.MM.yyyy","12h","sunday","team-ops"]}`. The
- * PATCH persisted correctly -- only the echo was keyless -- and all three save
- * handlers in `profile-page.component.ts` merge that echo into a cache.
+ * PATCH persisted correctly -- only the echo was keyless -- and both save
+ * handlers in `profile-page.component.ts` merge that echo into a cache. (The
+ * Calls pane is Call's guest in the page's `profile.tab` slot since 2026-09-21
+ * and saves through its own service; its echo tests moved with it to
+ * features/call.)
  *
- * The header itself is pinned by `api/api.service.settings.spec.ts`.
+ * The header itself is pinned by `identity-api.service.settings.spec.ts`.
  * What was never covered is the CONSEQUENCE, which is where a user felt it:
  *
  *  - the two preference services rebuild their VO from a whitelist, so a
@@ -43,10 +44,10 @@ import { ProfileCallTabComponent } from './profile-call-tab.component';
  * `@coolms/editor-angular` -> `@coolms/document-engine`, and the karma builder
  * (webpack) cannot resolve that package's `./x.js` specifiers to its `.ts`
  * sources the way the esbuild application builder does -- importing the page
- * fails the whole suite at build time. So the three `update(...)` calls below
+ * fails the whole suite at build time. So the `update(...)` calls below
  * are written out here exactly as the handlers make them
- * (profile-page.component.ts:571-572, :595-596, :612, :618-619); everything on
- * either side of those lines is the real thing.
+ * (`saveCalendarPrefs`, `saveSection` in profile-page.component.ts); everything
+ * on either side of those lines is the real thing.
  */
 describe('Settings-section echo -> profile caches', () => {
     const THEME_CACHE_KEY  = 'coolms_theme';
@@ -66,10 +67,9 @@ describe('Settings-section echo -> profile caches', () => {
         },
     };
 
-    let api:       ApiService;
+    let api:       IdentityApiService;
     let http:      HttpTestingController;
     let calPrefs:  UserCalendarPreferencesService;
-    let callPrefs: CallOverlayPreferencesService;
     let theme:     ThemeService;
 
     /**
@@ -122,10 +122,9 @@ describe('Settings-section echo -> profile caches', () => {
             ],
         });
 
-        api       = TestBed.inject(ApiService);
+        api       = TestBed.inject(IdentityApiService);
         http      = TestBed.inject(HttpTestingController);
         calPrefs  = TestBed.inject(UserCalendarPreferencesService);
-        callPrefs = TestBed.inject(CallOverlayPreferencesService);
         theme     = TestBed.inject(ThemeService);
     });
 
@@ -194,54 +193,6 @@ describe('Settings-section echo -> profile caches', () => {
         tab.componentInstance.save();
 
         expect(emitted).toEqual(CALENDAR_SAVED);
-    });
-
- // -- Calls tab ------------------------------------------------------------
-
-    const CALL_BEFORE: CallOverlayPrefs = {
-        overlayEnabled:     true,
-        autoDismissSeconds: 8,
-        sipEndpoint:        'PJSIP/1001',
-    };
-
-    const CALL_SAVED: CallOverlayPrefs = {
-        overlayEnabled:     false,
-        autoDismissSeconds: 0,
-        sipEndpoint:        'PJSIP/2002',
-    };
-
- it('a call-settings save reaches the live overlay prefs', () => {
-        callPrefs.update(CALL_BEFORE);
-        expect(callPrefs.overlayEnabled()).toBeTrue();
-
-        const echo = saveSection('call', { ...CALL_SAVED });
-        callPrefs.update(echo as Partial<CallOverlayPrefs>);   // profile-page.component.ts:596
-
- // The screen-pop overlay is mounted once by the admin shell and
- // refreshes only in its own ngOnInit, so a value that fails to land
- // here outlives every route change: the user turns the popup off and
- // it keeps popping up until the tab is reloaded.
-        expect(callPrefs.overlayEnabled()).toBeFalse();
-        expect(callPrefs.autoDismissSeconds()).toBe(0);
-        expect(callPrefs.sipEndpoint()).toBe('PJSIP/2002');
-    });
-
- it('re-opening the Calls tab after a save keeps the SIP endpoint', () => {
-        const echo = saveSection('call', { ...CALL_SAVED });
-
-        const tab = TestBed.createComponent(ProfileCallTabComponent);
-        tab.componentRef.setInput('initial', echo);
-
-        let emitted: CallOverlayPrefs | undefined;
-        tab.componentInstance.saved.subscribe(v => (emitted = v));
-
-        tab.componentInstance.ngOnInit();
-        tab.componentInstance.save();
-
- // The blank-string default is the dangerous one: an endpoint the tab
- // never saw is an endpoint the next Save clears, and click-to-dial
- // stops working for a user who merely visited the tab twice.
-        expect(emitted).toEqual(CALL_SAVED);
     });
 
  // -- Preferences tab ------------------------------------------------------

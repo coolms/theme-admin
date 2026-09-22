@@ -12,12 +12,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import {
-    ApiService,
-    SiteDto,
-    SiteMemberDto,
-    SiteSectionDto,
-} from '../../api/api.service';
+import { SiteDto, SiteMemberDto, SiteSectionDto } from './sections.types';
+import { SectionsApiService } from './sections-api.service';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import {
     CmsDetailFooterComponent,
@@ -422,7 +418,7 @@ export class SiteDetailPageComponent implements OnInit {
 
     private readonly route       = inject(ActivatedRoute);
     private readonly router      = inject(Router);
-    private readonly api         = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly store       = inject(Store);
     private readonly dialog      = inject(Dialog);
     private readonly confirmSvc  = inject(ConfirmDialogService);
@@ -548,7 +544,7 @@ export class SiteDetailPageComponent implements OnInit {
     private loadSite(slug: string): void {
         this.loading.set(true);
         this.error.set(null);
-        this.api.getSite(slug).pipe(
+        this.sectionsApi.getSite(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: site => {
@@ -566,7 +562,7 @@ export class SiteDetailPageComponent implements OnInit {
     private loadMembers(slug: string): void {
         this.membersLoading.set(true);
         this.membersError.set(null);
-        this.api.listSiteMembers(slug).pipe(
+        this.sectionsApi.listSiteMembers(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: members => {
@@ -630,7 +626,7 @@ export class SiteDetailPageComponent implements OnInit {
 
         this.confirmSvc.confirmDelete(s.label ?? s.slug).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteSite(s.slug!)),
+            switchMap(() => this.sectionsApi.deleteSite(s.slug!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {

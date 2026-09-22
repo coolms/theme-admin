@@ -238,8 +238,8 @@ import { NotificationStore } from './notification-store.service';
             color: var(--cms-primary, #2563eb);
         }
         .cms-notification-row--selected {
-            background-color: var(--cms-accent-light);
-            border-left: 3px solid var(--cms-accent);
+            background-color: var(--cms-selected-light);
+            border-left: 3px solid var(--cms-selected);
             padding-left: calc(1rem - 3px);
         }
         .cms-notification-row__body {

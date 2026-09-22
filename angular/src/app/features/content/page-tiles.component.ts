@@ -183,7 +183,7 @@ import { PageDto, PageTypeDto, PageVariantSummaryDto } from './page.types';
             box-shadow: var(--cms-shadow-sm);
         }
         .page-tile--selected {
-            border-color: var(--cms-accent);
+            border-color: var(--cms-selected);
             box-shadow: var(--cms-shadow-md);
         }
 

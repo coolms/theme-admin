@@ -300,7 +300,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             transition: background 120ms, border-color 120ms;
         }
         .vfs-grid-item:hover    { background: var(--cms-surface-hover); }
-        .vfs-grid-item.selected { background: var(--cms-accent-light); border-color: var(--cms-accent); }
+        .vfs-grid-item.selected { background: var(--cms-selected-light); border-color: var(--cms-selected); }
         .vfs-grid-icon          { font-size: 2rem; line-height: 1.2; color: var(--cms-text-muted); }
         .vfs-grid-name          { max-width: 88px; margin: 4px auto 2px; }
 
@@ -339,7 +339,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
             box-sizing: border-box;
         }
         .vfs-list-row:hover          { background: var(--cms-surface-muted); }
-        .vfs-list-row--selected      { background: var(--cms-accent-light) !important; }
+        .vfs-list-row--selected      { background: var(--cms-selected-light) !important; }
 
         .vfs-list-col                { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vfs-list-col--name          { flex: 1; min-width: 0; }

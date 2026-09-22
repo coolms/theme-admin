@@ -163,10 +163,10 @@ interface MiniCell {
             font-weight: 600;
         }
         .cell--selected {
-            background: var(--cms-accent, #F5A623);
-            color: var(--cms-accent-fg, #1a1a1a);
+            background: var(--cms-selected);
+            color: var(--cms-selected-fg, #1a1a1a);
         }
-        .cell--selected:hover { background: var(--cms-accent, #F5A623); }
+        .cell--selected:hover { background: var(--cms-selected); }
     `],
 })
 export class MiniCalendarComponent {

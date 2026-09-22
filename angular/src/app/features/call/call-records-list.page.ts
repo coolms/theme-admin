@@ -11,7 +11,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { ApiService, CallRecordDto } from '../../api/api.service';
+import { CallRecordDto } from './call.types';
+import { CallApiService } from './call-api.service';
 import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
@@ -60,8 +61,7 @@ import {
 })
 export class CallRecordsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly callApi = inject(CallApiService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly toast      = inject(ToastService);
@@ -131,7 +131,7 @@ export class CallRecordsListComponent implements OnInit {
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
-        this.api.listCallRecordsPage({
+        this.callApi.listCallRecordsPage({
             page,
             pageSize: this.PAGE_SIZE,
             sort:     event.sort,

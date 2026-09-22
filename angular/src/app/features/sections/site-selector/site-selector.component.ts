@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { SectionState } from '../section.state';
 import { LoadSections, SetCurrentSection } from '../section.actions';
-import { SiteSectionDto } from '../../../api/api.service';
+import { SiteSectionDto } from '../sections.types';
 
 /**
  * H7 -- admin Site Selector dropdown.

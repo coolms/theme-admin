@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
-import { UserPreferencesService } from '@coolms/core-angular';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ConsolePanelHost, UserPreferencesService } from '@coolms/core-angular';
 import { TerminalComponent } from './terminal.component';
 
 @Component({
@@ -41,7 +41,7 @@ import { TerminalComponent } from './terminal.component';
                 <button type="button"
                         class="terminal-panel-btn"
                         title="Close (Ctrl+\`)"
-                        (click)="close.emit()">
+                        (click)="host?.close()">
                     ✕
                 </button>
             </div>
@@ -97,9 +97,15 @@ import { TerminalComponent } from './terminal.component';
     `],
 })
 export class TerminalPanelComponent {
-    maximized       = signal(false);
-    maximizedChange = output<boolean>();
-    close           = output<void>();
+    maximized = signal(false);
+
+    /**
+     * The layout that mounted this panel (console@1): the panel asks it to
+     * close or to give it the whole body, instead of emitting outputs a slot
+     * cannot carry. Absent when the panel is rendered on its own, in which
+     * case both are no-ops.
+     */
+    protected readonly host = inject(ConsolePanelHost, { optional: true });
 
     private readonly prefs = inject(UserPreferencesService);
 
@@ -107,7 +113,7 @@ export class TerminalPanelComponent {
 
     toggleMaximized(): void {
         this.maximized.update(v => !v);
-        this.maximizedChange.emit(this.maximized());
+        this.host?.maximize(this.maximized());
     }
 
     onResizeStart(event: MouseEvent): void {

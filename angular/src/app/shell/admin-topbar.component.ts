@@ -1,16 +1,12 @@
 import {
     ChangeDetectionStrategy, Component, computed, inject, OnInit, output, signal,
 } from '@angular/core';
+import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
+import { ConsoleActivation } from '@coolms/core-angular';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
-import { CalendarQuickAccessComponent } from '../features/calendars/calendar-quick-access.component';
-import { EmailQuickAccessComponent } from '../features/email/email-quick-access.component';
-import { MessagesQuickAccessComponent } from '../features/messages/messages-quick-access.component';
-import { DynamicChatQuickAccessComponent } from '../features/dynamic-chat/dynamic-chat-quick-access.component';
-import { CallDialQuickAccessComponent } from '../features/call/call-dial-quick-access.component';
-import { NotificationBellComponent } from '../features/notification/notification-bell.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
 
@@ -27,7 +23,7 @@ interface Breadcrumb {
     selector: 'app-admin-topbar',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, AdminTopbarProfileComponent, CalendarQuickAccessComponent, EmailQuickAccessComponent, MessagesQuickAccessComponent, DynamicChatQuickAccessComponent, CallDialQuickAccessComponent, NotificationBellComponent, ElevationBadgeComponent],
+    imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, ElevationBadgeComponent],
     template: `
         <div class="d-flex align-items-center h-100 px-3 gap-3">
 
@@ -87,32 +83,28 @@ interface Breadcrumb {
                      still decides something is Settings, which is where the
                      control now lives. -->
 
-                <!-- Terminal toggle -->
-                <button type="button"
-                        class="cms-btn cms-btn-sm"
-                        style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
-                        title="Toggle Terminal (Ctrl+\`)"
-                        (click)="terminalToggle.emit()">
-                    &gt;_
-                </button>
+                <!-- The modules' dock-panel toggles, from their console entries
+                     (console@1): the terminal's is the one that reads >_. -->
+                @for (panel of console.panels(); track panel.id) {
+                    <button type="button"
+                            class="cms-btn cms-btn-sm"
+                            style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
+                            [title]="panel.toggle.label"
+                            (click)="panelToggle.emit(panel.id)">
+                        @if (panel.toggle.text) {
+                            {{ panel.toggle.text }}
+                        } @else if (panel.toggle.icon) {
+                            <i class="bi bi-{{ panel.toggle.icon }}" aria-hidden="true"></i>
+                        }
+                    </button>
+                }
 
-                <!-- Personal calendar quick-access () -->
-                <app-calendar-quick-access />
-
-                <!-- Email mailbox quick-access -->
-                <app-email-quick-access />
-
-                <!-- Internal messages quick-access -->
-                <app-messages-quick-access />
-
-                <!-- DynamicChat agent-queue quick-access -->
-                <app-dynamic-chat-quick-access />
-
-                <!-- Click-to-dial pad -->
-                <app-call-dial-quick-access />
-
-                <!-- Notification bell -->
-                <app-notification-bell />
+                <!-- The modules' quick-access tiles, from their console entries
+                     (console@1), in their declared order and only for the
+                     modules the manifest says are installed. -->
+                @for (item of console.topbar(); track item.id) {
+                    <ng-container *ngComponentOutlet="item.component" />
+                }
 
                 <!-- "Elevated until HH:MM", shown only while the session is
                      elevated. It sits AGAINST the profile block and behind its
@@ -128,13 +120,16 @@ interface Breadcrumb {
     `,
 })
 export class AdminTopbarComponent implements OnInit {
+    /** The modules' console contributions, filtered by what the manifest says is installed. */
+    protected readonly console        = inject(ConsoleActivation);
     private readonly router           = inject(Router);
     private readonly route            = inject(ActivatedRoute);
     private readonly pageTitleSvc     = inject(PageTitleService);
 
     /** Raw URL-segment crumbs; rebuilt on every NavigationEnd. */
     private readonly rawCrumbs = signal<Breadcrumb[]>([]);
-    terminalToggle = output<void>();
+    /** A dock panel's toggle was pressed: the panel id, for the layout that owns the dock. */
+    panelToggle = output<string>();
 
     /**
      * Final breadcrumb list. When PageTitleService carries a resolved label

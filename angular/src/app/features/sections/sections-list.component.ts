@@ -14,7 +14,8 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { AppConfigState, ErrorHandlerService } from '@coolms/core-angular';
-import { ApiService, SiteSectionDto } from '../../api/api.service';
+import { SiteSectionDto } from './sections.types';
+import { SectionsApiService } from './sections-api.service';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -56,8 +57,7 @@ import { ApplyNginxChanges } from './section.actions';
 })
 export class SectionsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid!: DataGridComponent;
-
-    private readonly api        = inject(ApiService);
+    private readonly sectionsApi = inject(SectionsApiService);
     private readonly store      = inject(Store);
     private readonly dialog     = inject(Dialog);
     private readonly router     = inject(Router);
@@ -141,7 +141,7 @@ export class SectionsListComponent implements OnInit {
 
         const epoch = ++this._loadEpoch;
 
-        this.api.getSections().pipe(
+        this.sectionsApi.getSections().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: sections => {
@@ -271,7 +271,7 @@ export class SectionsListComponent implements OnInit {
         }
         this.confirmSvc.confirmDelete(section.label).pipe(
             filter(Boolean),
-            switchMap(() => this.api.deleteSection(section.id!)),
+            switchMap(() => this.sectionsApi.deleteSection(section.id!)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  () => { this.toast.success('Section deleted'); this.grid.reload(); },

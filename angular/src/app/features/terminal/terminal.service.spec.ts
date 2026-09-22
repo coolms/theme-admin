@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
-import { ApiService } from '../../api/api.service';
+import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalService } from './terminal.service';
 import { TerminalRefusedError } from './terminal.types';
 
@@ -19,7 +19,7 @@ describe('TerminalService -- a refusal keeps its reason', () => {
             providers: [
                 TerminalService,
                 { provide: Store, useValue: { selectSnapshot: () => ({ terminal: { executeUrl: '/api/v1/terminal/execute' } }) } },
-                { provide: ApiService, useValue: {} },
+                { provide: ShellApiService, useValue: {} },
             ],
         });
         service = TestBed.inject(TerminalService);
