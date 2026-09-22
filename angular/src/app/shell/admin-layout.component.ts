@@ -14,7 +14,6 @@ import {
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
 import { TerminalPanelComponent } from '../features/terminal/terminal-panel.component';
-import { RtcCallOverlayComponent } from '../features/rtc/rtc-call-overlay.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 
 /**
@@ -32,7 +31,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 @Component({
     selector: 'coolms-admin-layout',
     standalone: true,
-    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, TerminalPanelComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent, RtcCallOverlayComponent],
+    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, TerminalPanelComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent],
     styles: [`
         .coolms-admin-shell {
             display: flex;
@@ -391,8 +390,6 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <!-- Global context menu — rendered last so it always floats above toast and drawers -->
         <coolms-context-menu />
 
-        <!-- Global WebRTC call overlay — incoming ring + in-call bar, above every route -->
-        <app-rtc-call-overlay />
 
         <!-- The modules' overlays, from their console entries (console@1):
              mounted once, above every route, only for the modules the
