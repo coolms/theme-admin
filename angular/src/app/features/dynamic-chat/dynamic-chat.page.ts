@@ -360,7 +360,7 @@ const QUEUE_POLL_MS = 12_000;
             background: var(--cms-border-light);
             color: var(--cms-text-secondary);
         }
-        .lc-tab--active .lc-tab__count { background: var(--cms-selected); color: var(--cms-accent-fg); }
+        .lc-tab--active .lc-tab__count { background: var(--cms-selected); color: var(--cms-selected-fg); }
 
         .lc-queue-list {
             flex: 1;
@@ -386,7 +386,7 @@ const QUEUE_POLL_MS = 12_000;
         }
         .lc-queue-item:hover { background: var(--cms-bg); }
         .lc-queue-item--active {
-            background: var(--cms-accent-light);
+            background: var(--cms-selected-light);
             border-left-color: var(--cms-selected);
         }
         .lc-queue-item__row {

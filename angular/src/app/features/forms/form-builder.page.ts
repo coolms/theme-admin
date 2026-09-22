@@ -444,7 +444,7 @@ type FieldModel = Record<string, unknown>;
         .fb__ds-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .fb__ds-tabs { display: inline-flex; gap: 4px; }
         .fb__ds-tab--active {
-            background: var(--cms-selected); color: var(--cms-accent-fg);
+            background: var(--cms-selected); color: var(--cms-selected-fg);
             border-color: var(--cms-selected);
         }
         .fb__ds .fb__choices { border: none; padding: 0; }

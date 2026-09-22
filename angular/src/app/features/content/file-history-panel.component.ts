@@ -198,7 +198,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
             display: flex; align-items: center; gap: 5px; font-size: .8125rem;
         }
         .fh__tab:hover { background: var(--cms-border-light); }
-        .fh__tab--active { background: var(--cms-accent-light); color: var(--cms-accent-text); border-color: var(--cms-selected); }
+        .fh__tab--active { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .fh__refresh { margin-left: auto; }
 
         .fh__msg { padding: 12px; color: var(--cms-text-muted); }

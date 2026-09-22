@@ -142,9 +142,9 @@ interface DirItem {
             &:hover:not(.move-item--current) { background: var(--cms-border-light); }
         }
         .move-item--selected {
-            background: var(--cms-accent-light) !important;
+            background: var(--cms-selected-light) !important;
             font-weight: 600;
-            color: var(--cms-accent-text);
+            color: var(--cms-selected-text);
         }
         .move-item--current { color: var(--cms-text-muted); cursor: default; }
         .move-item-icon {

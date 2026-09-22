@@ -235,8 +235,8 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
             border-color: var(--cms-text-muted);
         }
         .cms-replace-template-dialog__dropzone--active {
-            border-color: var(--cms-accent);
-            background: var(--cms-accent-light, var(--cms-border-light));
+            border-color: var(--cms-primary);
+            background: var(--cms-info-light);
         }
         .cms-replace-template-dialog__dropzone p {
             margin: 0;

@@ -7,15 +7,6 @@ export const routes: Routes = [
     // Redirect authenticated callers away from /login so a stale tab
     // parked here cannot interfere with another tab's active session.
     { path: 'login', component: LoginComponent, canActivate: [loginPageGuard] },
-    // Sub-prompt B2 smoke route -- public so we can exercise the bridge
-    // without booting an auth context. Removed in B3 once page-editor
-    // adopts the bridge.
-    {
-        path: 'editor-test',
-        loadComponent: () =>
-            import('./features/editor-smoke/editor-smoke.component')
-                .then(m => m.EditorSmokeComponent),
-    },
     {
         // canActivate: [authGuard] protects this route AND every child below.
         // authGuard waits for AppInitService.ready$ before evaluating
@@ -34,15 +25,6 @@ export const routes: Routes = [
                 loadComponent: () =>
                     import('./features/dashboard/dashboard.page').then(m => m.DashboardPageComponent),
                 data: { activeNav: '/dashboard' },
-            },
-            // Sub-prompt B2 smoke route -- exercises the @coolms/editor-angular
-            // bridge end-to-end. Removed after page-editor adopts the bridge
-            // (sub-prompt B3) or kept as a dev tool -- Dmitry decides.
-            {
-                path: 'editor-test',
-                loadComponent: () =>
-                    import('./features/editor-smoke/editor-smoke.component')
-                        .then(m => m.EditorSmokeComponent),
             },
             // The admin UI kit, rendered from itself. The kit was real but
             // invisible -- ~50 `--cms-*` tokens and 47 `.cms-*` classes in one

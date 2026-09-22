@@ -164,7 +164,7 @@ interface MiniCell {
         }
         .cell--selected {
             background: var(--cms-selected);
-            color: var(--cms-accent-fg, #1a1a1a);
+            color: var(--cms-selected-fg, #1a1a1a);
         }
         .cell--selected:hover { background: var(--cms-selected); }
     `],

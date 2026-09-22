@@ -32,6 +32,27 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The selected family, by ruling and by measurement: `--cms-selected-light`
+  (the wash under a selected row or tab), `--cms-selected-text` (text on that
+  wash) and `--cms-selected-fg` (the foreground on the solid mark), each an
+  alias of the accent's tier. `tools/selection-marks.mjs` counted 23 rules
+  putting text on a selected wash and 10 on the solid mark; all moved, with
+  the 21 washes that carry no text and the editor's hand-mixed tints
+  (`color-mix` of the mark at 8, 14, 15, 18 and 35 per cent -- five tints of
+  one colour). `lint:fallbacks`, which the pre-push hook runs on the pushed
+  tree, now also refuses a tint of `--cms-selected` mixed by hand and a
+  selected fill whose text names another family, per rule; the backend's
+  `check-cms-tokens` repeats the rule over the library clones.
+- Drop targets are interaction affordances, not selections, and all of them
+  read `--cms-primary` with the `--cms-info-light` wash (the three that read
+  the accent -- the documents folder, the replace-template dialog, the media
+  picker's dropzone -- moved); by the same rule the kit's resize handle and
+  the messages composer's grip read the primary.
+- The `editor-smoke` fixture is gone: a 74-line component that exercised the
+  editor bridge, mounted twice (`/editor-test` without the auth guard and
+  `/admin/editor-test`), written to be removed once the page editor adopted
+  the bridge, which it has. The shell's own routes are `dashboard` and
+  `ui-kit`.
 - `--cms-selected`, the token for "this one is selected", is defined in
   `styles.scss` as an alias of the accent, and every selection mark reads it:
   the underline under the active tab (the form builder's own tabs included),
