@@ -52,6 +52,8 @@ export interface ChatChannelDto {
 /** A conversation row (the Messages inbox + thread header). */
 export interface ChatConversationDto {
     readonly id: string;
+    /** This row's key in the list's order; `?after=` it to read the rows that follow. */
+    readonly cursor?: string | null;
     /** `direct` | `group` | `internal` | `dynamic_chat`. */
     readonly kind: string;
     readonly title: string | null;

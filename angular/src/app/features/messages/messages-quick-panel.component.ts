@@ -223,7 +223,7 @@ export class MessagesQuickPanelComponent implements OnInit {
     private readonly CONV_PAGE = 20;
     readonly hasMore    = signal(false);
     readonly loadingMore = signal(false);
-    private convOffset = 0;
+    private convAfter: string | null = null;
 
     /** The open thread's conversation id, or null in LIST mode. */
     readonly openId         = signal<string | null>(null);
@@ -666,7 +666,7 @@ export class MessagesQuickPanelComponent implements OnInit {
             return;
         }
         this.loadingMore.set(true);
-        this.api.listConversations(this.CONV_PAGE, this.convOffset).subscribe({
+        this.api.listConversations(this.CONV_PAGE, this.convAfter).subscribe({
             next: list => {
                 this.loadingMore.set(false);
                 this.applyInboxPage(nextInboxPage(this.inboxPage(), list, this.CONV_PAGE));
@@ -678,12 +678,12 @@ export class MessagesQuickPanelComponent implements OnInit {
 
     /** The paging state, reassembled from the signals that hold it. */
     private inboxPage(): InboxPage<ChatConversationDto> {
-        return { rows: this.conversations(), offset: this.convOffset, hasMore: this.hasMore() };
+        return { rows: this.conversations(), after: this.convAfter, hasMore: this.hasMore() };
     }
 
     private applyInboxPage(page: InboxPage<ChatConversationDto>): void {
         this.conversations.set([...page.rows]);
-        this.convOffset = page.offset;
+        this.convAfter = page.after;
         this.hasMore.set(page.hasMore);
     }
 

@@ -1126,11 +1126,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly hasMoreConversations = signal(false);
     readonly loadingMoreConversations = signal(false);
     /**
-     * Rows CONSUMED from the server's ordering -- the next page's offset, and
-     * deliberately not `conversations().length`. See `inbox-paging.util`, which
-     * holds the rules (and the quick panel's copy of this state).
+     * Where the next page resumes: the cursor of the last row read, not of the
+     * last row kept. See `inbox-paging.util`, which holds the rules (and the
+     * quick panel's copy of this state).
      */
-    private convOffset = 0;
+    private convAfter: string | null = null;
 
     /**
      * Threads T2 -- the thread side-panel. `openThreadRoot` is the (top-level)
@@ -2611,7 +2611,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
         this.loadingMoreConversations.set(true);
-        this.api.listConversations(this.CONV_PAGE, this.convOffset).subscribe({
+        this.api.listConversations(this.CONV_PAGE, this.convAfter).subscribe({
             next: list => {
                 this.loadingMoreConversations.set(false);
                 this.applyInboxPage(nextInboxPage(this.inboxPage(), list, this.CONV_PAGE));
@@ -2622,12 +2622,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /** The paging state, reassembled from the signals that hold it. */
     private inboxPage(): InboxPage<ChatConversationDto> {
-        return { rows: this.conversations(), offset: this.convOffset, hasMore: this.hasMoreConversations() };
+        return { rows: this.conversations(), after: this.convAfter, hasMore: this.hasMoreConversations() };
     }
 
     private applyInboxPage(page: InboxPage<ChatConversationDto>): void {
         this.conversations.set([...page.rows]);
-        this.convOffset = page.offset;
+        this.convAfter = page.after;
         this.hasMoreConversations.set(page.hasMore);
     }
 
