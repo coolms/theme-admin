@@ -1,25 +1,33 @@
 import {
-    ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef,
+    ChangeDetectionStrategy, Component, DestroyRef, ElementRef,
     HostListener, inject, OnInit, signal, ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { AuthState, AppConfigState, NaviGraphService, NaviGraphNode } from '@coolms/core-angular';
+import { AuthState } from '@coolms/core-angular';
 import { UserAvatarComponent } from '@coolms/ui-angular';
 import { ElevationDisplay } from './elevation-display.service';
 import { EndElevationAction } from './end-elevation.action';
 import { SignOutService } from './sign-out.service';
 
+/** One entry of the account menu. */
+interface AccountEntry {
+    readonly id: 'profile' | 'sign-out' | 'sign-out-everywhere';
+    readonly label: string;
+    readonly icon: string;
+}
+
 /**
- * Topbar profile dropdown driven by the navi.admin.topbar NaviGraph tree.
+ * The account menu in the topbar: the current user's avatar and address, and
+ * what every signed-in person may do with their own account -- their profile,
+ * "Sign out" (this session) and "Sign out everywhere" (every session and device).
  *
- * Shows the current user's avatar + email. On click opens a dropdown
- * panel listing all action nodes (sign out, profile link, etc.).
- * Nodes are sorted by sortOrder ASC. Click handling is data-driven:
- *   - meta.target === 'action.logout' -> sign out on the server, then here
- *   - meta.target === 'action.logout-everywhere' -> sign out everywhere, then here
- *   - otherwise -> router.navigate to meta.routerLink ?? '/admin' + node.path
+ * The account, not admin navigation (Dmitry, 2026-09-26). The menu used to be
+ * the navi.admin.topbar tree, which only an admin may read: a signed-in person
+ * without the admin role got a 403 and an empty menu -- no way to sign out at
+ * all (measured with the call harness's plain-user account). So the entries are
+ * the menu's own, shown to everyone signed in, and no tree is asked for.
  * Closes on outside click via HostListener.
  */
 @Component({
@@ -76,14 +84,12 @@ import { SignOutService } from './sign-out.service';
                             </div>
                         }
                     </div>
-                    @for (node of sortedProfileActions(); track node.id) {
+                    @for (entry of entries; track entry.id) {
                         <button class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
-                                (click)="onNodeClick(node, $event)">
-                            @if (node.meta['icon']) {
-                                <i class="bi bi-{{ node.meta['icon'] }}"
-                                   style="font-size:.9rem; width:16px; text-align:center"></i>
-                            }
-                            {{ node.meta['label'] ?? node.title }}
+                                (click)="onEntry(entry, $event)">
+                            <i class="bi bi-{{ entry.icon }}"
+                               style="font-size:.9rem; width:16px; text-align:center"></i>
+                            {{ entry.label }}
                         </button>
                     }
                 </div>
@@ -92,7 +98,6 @@ import { SignOutService } from './sign-out.service';
     `,
 })
 export class AdminTopbarProfileComponent implements OnInit {
-    private readonly naviGraph  = inject(NaviGraphService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
@@ -102,15 +107,15 @@ export class AdminTopbarProfileComponent implements OnInit {
 
     @ViewChild('container') container?: ElementRef;
 
-    isOpen         = signal(false);
-    userEmail      = signal('');
-    profileActions = signal<NaviGraphNode[]>([]);
-    topbarUser     = signal<{ avatarUrl?: string | null; firstName?: string | null; identifier?: string } | null>(null);
+    isOpen     = signal(false);
+    userEmail  = signal('');
+    topbarUser = signal<{ avatarUrl?: string | null; firstName?: string | null; identifier?: string } | null>(null);
 
-    /** Nodes sorted by sortOrder ASC -- ready to render. */
-    readonly sortedProfileActions = computed(() =>
-        [...this.profileActions()].sort((a, b) => a.sortOrder - b.sortOrder),
-    );
+    readonly entries: readonly AccountEntry[] = [
+        { id: 'profile', label: 'My Profile', icon: 'person-fill' },
+        { id: 'sign-out', label: 'Sign out', icon: 'box-arrow-right' },
+        { id: 'sign-out-everywhere', label: 'Sign out everywhere', icon: 'shield-lock' },
+    ];
 
     /**
      * The same sentence the badge shows, from the same place -- so the two
@@ -143,15 +148,6 @@ export class AdminTopbarProfileComponent implements OnInit {
                 this.userEmail.set(id);
                 this.topbarUser.set(user ? { avatarUrl: user.avatarUrl, firstName: user.firstName, identifier: id } : null);
             });
-
-        const url = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.topbarNavGraph;
-        if (!url) return;
-
-        this.naviGraph.loadTopbarNav(url).subscribe(nodes => {
-            // Look for a designated dropdown root node; fall back to all root nodes
-            const dropdown = nodes.find(n => n.meta['target'] === 'dropdown');
-            this.profileActions.set(dropdown?.children ?? nodes);
-        });
     }
 
     toggle(): void {
@@ -159,33 +155,28 @@ export class AdminTopbarProfileComponent implements OnInit {
     }
 
     /**
-     * Data-driven click handler for topbar dropdown nodes.
+     *   profile             -> the profile page
+     *   sign-out            -> SignOutService: this session, then /login
+     *   sign-out-everywhere -> SignOutService: every session and device, then /login
      *
-     * Routing logic based on meta.target:
-     *   'action.logout'            -> SignOutService: this session, then /login
-     *   'action.logout-everywhere' -> SignOutService: every session and device, then /login
-     *   (default)       -> router.navigate to meta.routerLink ?? '/admin' + node.path
+     * Both sign-outs reach the server (2026-09-25): until then "Sign out" only
+     * cleared this browser and the session stayed valid on the server.
      */
-    onNodeClick(node: NaviGraphNode, event: Event): void {
+    onEntry(entry: AccountEntry, event: Event): void {
         event.preventDefault();
         event.stopPropagation();
         this.isOpen.set(false);
 
-        // Both reach the server (2026-09-25): the plain one ends this session, the other
-        // every session of the account and every device it signed in from. Until then
-        // "Sign out" only cleared this browser (dispatch Logout) and the session stayed
-        // valid on the server.
-        if (node.meta?.['target'] === 'action.logout') {
-            this.signOut.signOut().subscribe();
-            return;
+        switch (entry.id) {
+            case 'sign-out':
+                this.signOut.signOut().subscribe();
+                return;
+            case 'sign-out-everywhere':
+                this.signOut.signOut({ everywhere: true }).subscribe();
+                return;
+            case 'profile':
+                void this.router.navigate(['/profile']);
+                return;
         }
-        if (node.meta?.['target'] === 'action.logout-everywhere') {
-            this.signOut.signOut({ everywhere: true }).subscribe();
-            return;
-        }
-
-        const routerLink = node.meta?.['routerLink'];
-        const route = routerLink ?? (node.path ?? '/');
-        void this.router.navigate([route]);
     }
 }
