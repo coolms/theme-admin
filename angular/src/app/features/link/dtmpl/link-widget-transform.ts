@@ -35,9 +35,16 @@ function matchAttr(html: string, name: string): string | null {
     return m[1] ?? m[2] ?? m[3] ?? null;
 }
 
-/** Quote-escape for use inside a double-quoted dtmpl param value. */
-function escapeQuote(s: string): string {
-    return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+/**
+ * A dtmpl param value, as the DTMPL lexer reads one: a backtick string, in
+ * which the only escape is `` \` `` for a backtick. Double quotes are not a
+ * string there: `label="About"` stops the DTMPL parser at the `"` (measured
+ * 2026-09-25: every link this wrote was refused, and 2 of the 54 stored page
+ * bodies could not be parsed). The media, document, image-map and form
+ * widgets were already written this way.
+ */
+function dtmplString(s: string): string {
+    return '`' + s.replace(/`/g, '\\`') + '`';
 }
 
 /** HTML-attribute escape for the inverse path. */
@@ -60,20 +67,24 @@ function decodeHtmlEntities(s: string): string {
 }
 
 /**
- * Parse a dtmpl widget params string into a plain key/value map. Mirrors
- * the parser in media-widget-transform.ts so storage conventions stay
- * consistent across widget kinds.
+ * Parse a dtmpl widget params string into a plain key/value map. Backtick
+ * strings are what is written; double- and single-quoted values are still
+ * read, so a body saved before 2026-09-25 opens and is re-saved in the form
+ * the DTMPL lexer can read.
  */
 function parseParams(raw: string): Record<string, string> {
     const out: Record<string, string> = {};
-    const re = /(\w[\w-]*)\s*=\s*(?:"((?:\\"|[^"])*)"|'((?:\\'|[^'])*)'|([^\s}]+))/g;
+    const re = /(\w[\w-]*)\s*=\s*(?:`((?:\\`|[^`])*)`|"((?:\\"|[^"])*)"|'((?:\\'|[^'])*)'|([^\s}]+))/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(raw)) !== null) {
-        const key = m[1];
-        let val = m[2] ?? m[3] ?? m[4] ?? '';
-        if (m[2] !== undefined)      val = val.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-        else if (m[3] !== undefined) val = val.replace(/\\'/g, "'").replace(/\\\\/g, '\\');
-        out[key] = val;
+        // A group that did not take part in the match is `undefined`, which
+        // RegExpExecArray's `string` elements do not say.
+        const [, key, backtick, double, single, bare]: readonly (string | undefined)[] = m;
+        if (key === undefined) continue;
+        if (backtick !== undefined)    out[key] = backtick.replace(/\\`/g, '`');
+        else if (double !== undefined) out[key] = double.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        else if (single !== undefined) out[key] = single.replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+        else                           out[key] = bare ?? '';
     }
     return out;
 }
@@ -127,24 +138,25 @@ function buildLinkTag(anchorHtml: string, label: string): string | null {
     if (isColonPathType(targetType)) {
         colonPath.push(canonicalUuidToHex(targetId));
     } else if (targetType === 'url') {
-        namedParams.push(`href="${escapeQuote(targetId)}"`);
+        namedParams.push(`href=${dtmplString(targetId)}`);
     } else if (targetType === 'route') {
-        namedParams.push(`name="${escapeQuote(targetId)}"`);
+        namedParams.push(`name=${dtmplString(targetId)}`);
         // route params with JSON braces deferred -- see file-level comment.
     }
 
     const decoded = decodeHtmlEntities(label).trim();
-    if (decoded !== '')  namedParams.push(`label="${escapeQuote(decoded)}"`);
+    if (decoded !== '')  namedParams.push(`label=${dtmplString(decoded)}`);
 
     const target    = matchAttr(anchorHtml, 'target');
     const rel       = matchAttr(anchorHtml, 'rel');
     const className = matchAttr(anchorHtml, 'class');
     const useLatest = matchAttr(anchorHtml, 'data-use-latest-label') === 'true';
 
-    if (target)    namedParams.push(`target="${escapeQuote(target)}"`);
-    if (rel)       namedParams.push(`rel="${escapeQuote(rel)}"`);
-    if (className) namedParams.push(`class="${escapeQuote(className)}"`);
-    if (useLatest) namedParams.push(`useLatestLabel="true"`);
+    if (target)    namedParams.push(`target=${dtmplString(target)}`);
+    if (rel)       namedParams.push(`rel=${dtmplString(rel)}`);
+    if (className) namedParams.push(`class=${dtmplString(className)}`);
+    // A string, not a bare `true`: the lexer reads that as a boolean.
+    if (useLatest) namedParams.push(`useLatestLabel=${dtmplString('true')}`);
 
     return namedParams.length > 0
         ? `{widget:${colonPath.join(':')} ${namedParams.join(' ')}}`
