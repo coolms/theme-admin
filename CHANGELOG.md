@@ -130,6 +130,16 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- A 1:1 call could stay "connecting" forever. The server relays every
+  `call.signal` on `rtc.call.{id}`, which both parties subscribe to, so each
+  party received its own offer, answer and candidates back, and the call
+  service passed them to the media plane as the peer's. The callee is the
+  polite side and never ignores an offer, so it applied its own offer as the
+  remote description in every call, and every call logged "Failed to set
+  remote answer sdp: Called in wrong state" from the echoed answers. Whether
+  the call then connected depended on which offer the callee applied last; in
+  the call harness about half did not. A `call.signal` from the signed-in user
+  is now dropped before the media plane sees it.
 - A pasted or bookmarked module URL landed on the dashboard on a cold load
   (measured: `/admin/identity/users` requested no chunk of its own, the
   dashboard's instead) -- the mount's `canMatch` read the manifest while the

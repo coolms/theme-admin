@@ -47,7 +47,8 @@ export interface ActiveCall {
  *    raises the ring overlay wherever the user is;
  *  - drives place / answer / decline / hangup through {@link RtcService};
  *  - subscribes to the active call's `rtc.call.{id}` channel to follow lifecycle
- *    `call.state` nudges + forward `call.signal` SDP/ICE to the media plane;
+ *    `call.state` nudges + forward the PEER's `call.signal` SDP/ICE to the media
+ *    plane (the channel echoes our own back; those are dropped);
  *  - invokes {@link RtcMediaController} at connect / signal / end (the seam the
  *    Slice-4b WebRTC media plugs into -- no `RTCPeerConnection` here yet).
  *
@@ -218,7 +219,13 @@ export class RtcCallService {
             return;
         }
         if (nudge.type === 'call.signal') {
-            this.media.handleSignal(call.callId, nudge.signal);
+            // `rtc.call.{id}` is a broadcast: the server publishes every relayed signal to
+            // every subscriber, the sender included, so our own offer / answer / candidates
+            // come back to us. Applied as the peer's, our own offer makes the polite side
+            // roll back onto its own SDP and the call never connects -- only the peer's go on.
+            if (nudge.from !== this.store.selectSnapshot(AuthState.currentUser)?.id) {
+                this.media.handleSignal(call.callId, nudge.signal);
+            }
             return;
         }
         this.applyState(nudge.state);
