@@ -13,6 +13,8 @@
  * add a spec to the package, add it here.
  */
 import '../../../core-angular/src/interceptors/section.interceptor.spec';
+import '../../../core-angular/src/auth/auth-refresh.coordinator.spec';
+import '../../../core-angular/src/auth/auth.interceptor.spec';
 import '../../../core-angular/src/auth/elevation.interceptor.spec';
 import '../../../core-angular/src/auth/elevation.service.spec';
 import '../../../core-angular/src/contracts/console/console-v1.spec';
