@@ -37,6 +37,12 @@ export interface ActiveCall {
      * while-connected state nudge (a peer toggling it).
      */
     readonly recording: boolean;
+    /**
+     * The polite peer of a 1:1 call's negotiation, as the SERVER names it
+     * ({@link RtcCallDto.politeUserId}); null until a read or a `call.state` says,
+     * and for a group call. The media plane is told whether it is this user.
+     */
+    readonly politeUserId: string | null;
 }
 
 /**
@@ -105,6 +111,7 @@ export class RtcCallService {
                     connectedAtMs: null,
                     topology: null,
                     recording: call.recordingActive,
+                    politeUserId: call.politeUserId,
                 });
                 this.watchCall(call.id);
             },
@@ -201,6 +208,7 @@ export class RtcCallService {
             connectedAtMs: null,
             topology: null,
             recording: false,
+            politeUserId: null, // the ring does not carry it; the answer's record and every call.state do
         });
         this.watchCall(nudge.callId);
     }
@@ -223,11 +231,12 @@ export class RtcCallService {
             // every subscriber, the sender included, so our own offer / answer / candidates
             // come back to us. Applied as the peer's, our own offer makes the polite side
             // roll back onto its own SDP and the call never connects -- only the peer's go on.
-            if (nudge.from !== this.store.selectSnapshot(AuthState.currentUser)?.id) {
+            if (!this.isMe(nudge.from)) {
                 this.media.handleSignal(call.callId, nudge.signal);
             }
             return;
         }
+        this.takePolite(call.callId, nudge.politeUserId);
         this.applyState(nudge.state);
     }
 
@@ -237,7 +246,27 @@ export class RtcCallService {
             return;
         }
         this.patch({ recording: dto.recordingActive });
+        this.takePolite(dto.id, dto.politeUserId);
         this.applyState(dto.state);
+    }
+
+    /**
+     * Keep the server's `politeUserId` and tell a running media plane whether it names
+     * this user. Read, never computed: the server fixes it for the call.
+     */
+    private takePolite(callId: string, politeUserId: string | null): void {
+        this.patch({ politeUserId });
+        this.media.setPolite(callId, this.isMe(politeUserId));
+    }
+
+    /**
+     * Whether a user id the server sent is the signed-in user. Case-insensitive: the
+     * server writes RFC 4122 lower case, and a spelling difference alone would make a
+     * match fail -- both sides impolite, or our own echo applied as the peer's.
+     */
+    private isMe(userId: string | null): boolean {
+        const me = this.store.selectSnapshot(AuthState.currentUser)?.id;
+        return userId !== null && me !== undefined && userId.toLowerCase() === me.toLowerCase();
     }
 
     private applyState(state: RtcCallState): void {
@@ -271,8 +300,9 @@ export class RtcCallService {
      * Start the media plane for a now-connected call, choosing the topology
      * ( hybrid): 3+ active participants -> the SFU group controller, else
      * the 1:1 P2P mesh. The roster comes from a fresh `GET /rtc/calls/{id}` read
-     * (state nudges carry only the lifecycle, not the count); on error we fall back
-     * to the mesh so a two-party call is never blocked by a failed read.
+     * (state nudges carry only the lifecycle, not the count), and so does the polite
+     * peer the mesh negotiates with; on error we fall back to the mesh, with the
+     * polite peer last read, so a two-party call is never blocked by a failed read.
      */
     private startMedia(call: ActiveCall): void {
         this.rtc.get(call.callId).subscribe({
@@ -282,13 +312,14 @@ export class RtcCallService {
                     this.patch({ topology: 'sfu' });
                     void this.sfu.start(call.callId, call.mediaKind);
                 } else {
-                    this.patch({ topology: 'mesh' });
-                    void this.media.start(call.callId, call.role, call.mediaKind);
+                    this.patch({ topology: 'mesh', politeUserId: dto.politeUserId });
+                    void this.media.start(call.callId, this.isMe(dto.politeUserId), call.mediaKind);
                 }
             },
             error: () => {
                 this.patch({ topology: 'mesh' });
-                void this.media.start(call.callId, call.role, call.mediaKind);
+                const politeUserId = this._activeCall()?.politeUserId ?? null;
+                void this.media.start(call.callId, this.isMe(politeUserId), call.mediaKind);
             },
         });
     }

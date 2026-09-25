@@ -5,7 +5,11 @@ import { ToastService } from '@coolms/ui-angular';
 import { RtcService } from './rtc.service';
 import { RtcMediaKind, RtcSignal } from './rtc.types';
 
-/** Which side of the negotiation this peer is -- drives the polite/impolite roles. */
+/**
+ * Which side of the call this peer is (placed it, or was rung) -- for the overlay.
+ * It does NOT decide the negotiation role: the server names the polite peer
+ * (`politeUserId`) and {@link RtcMediaController.start} is handed the answer.
+ */
 export type RtcCallRole = 'caller' | 'callee';
 
 /**
@@ -23,8 +27,11 @@ const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.
  * capture (mic always; a camera track too when the call's `mediaKind` is
  * `video`), builds a 1:1 {@link RTCPeerConnection}, and negotiates via the
  * **perfect-negotiation** pattern (glare-safe): both peers add their tracks, and
- * role decides who yields on a collision (the CALLER is impolite and wins, the
- * CALLEE is polite and rolls back). SDP + ICE ride the same
+ * the polite peer yields on a collision (rolls back and answers) while the
+ * impolite one keeps its offer. WHICH peer is polite is the server's to say
+ * (`politeUserId`: the callee) and the orchestrator hands it in -- this controller
+ * never derives it, because two clients each applying a rule can disagree and
+ * end up both polite or both impolite. SDP + ICE ride the same
  * `POST /rtc/calls/{id}/signal` relay that {@link RtcService.sendSignal} already
  * exposes; inbound envelopes arrive via {@link handleSignal}.
  *
@@ -79,13 +86,16 @@ export class RtcMediaController {
     /** True while this peer is sharing its screen (drives the overlay stage + button state). */
     readonly screenSharing: Signal<boolean> = this._screenSharing.asReadonly();
 
-    /** Begin the media session for a now-connected call: capture -> peer connection -> negotiate. */
-    async start(callId: string, role: RtcCallRole, mediaKind: RtcMediaKind): Promise<void> {
+    /**
+     * Begin the media session for a now-connected call: capture -> peer connection ->
+     * negotiate. `polite` is whether the server named THIS user the polite peer.
+     */
+    async start(callId: string, polite: boolean, mediaKind: RtcMediaKind): Promise<void> {
         if (this.pc !== null) {
             return; // already running
         }
         this.callId = callId;
-        this.polite = role === 'callee';
+        this.polite = polite;
         const wantsVideo = mediaKind === 'video';
 
         try {
@@ -161,6 +171,17 @@ export class RtcMediaController {
             return;
         }
         void this.applySignal(this.pc, signal);
+    }
+
+    /**
+     * The server's word on who is polite, refreshed from a later read of the call (every
+     * `call.state` carries it). Fixed for a call by the server; this only keeps the
+     * controller on what the server last said.
+     */
+    setPolite(callId: string, polite: boolean): void {
+        if (this.callId === callId) {
+            this.polite = polite;
+        }
     }
 
     /** Toggle the local microphone (mutes the outbound audio track). */

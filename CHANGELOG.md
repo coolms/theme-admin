@@ -48,6 +48,14 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The polite peer of a 1:1 call's negotiation is the server's to name (Dmitry,
+  2026-09-26). The client reads `politeUserId`, from the call record and from
+  every `call.state`, and hands the media plane whether it names this user; it
+  no longer derives politeness from being the callee. The server names the
+  callee, so nothing changes when both sides agree. What goes is the chance of
+  two clients applying a rule and disagreeing once, and ending up both polite
+  or both impolite. The id comparison ignores letter case; a null (a group
+  call, a deleted party) is not polite.
 - The Chat module's surface is called **Chat**, and its mount is `/admin/chat`:
   the page header, the top bar's tile (its tooltip, its label and the drawer it
   opens) and the drawer's "Open chat" button. `/admin/messages` redirects to it,
