@@ -36,20 +36,21 @@ export class MessagesService {
 
     /**
      * GET /chat/conversations -- the current user's conversations, newest-active
-     * first, PAGED.
+     * first, PAGED by cursor: `after` is the `cursor` of the last row already
+     * read, and the answer is the rows that come after it (request 0007).
      *
      * The response is a bare array with no total, so "is there more?" is read
      * off the LENGTH: fewer rows back than asked for means that was the last
      * page. Omitting `limit` takes the server default (30) rather than the whole
      * inbox -- an unbounded read is no longer on offer from either side.
      */
-    listConversations(limit?: number, offset = 0): Observable<ChatConversationDto[]> {
+    listConversations(limit?: number, after: string | null = null): Observable<ChatConversationDto[]> {
         let params = new HttpParams();
         if (typeof limit === 'number') {
             params = params.set('limit', String(limit));
         }
-        if (offset > 0) {
-            params = params.set('offset', String(offset));
+        if (after !== null) {
+            params = params.set('after', after);
         }
         return this.http
             .get<unknown>(`${this.apiBase}/chat/conversations`, { headers: this.jsonHeaders, params })
