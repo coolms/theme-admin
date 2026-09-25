@@ -48,6 +48,14 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
+- The polite peer of a 1:1 call's negotiation is the server's to name (Dmitry,
+  2026-09-26). The client reads `politeUserId`, from the call record and from
+  every `call.state`, and hands the media plane whether it names this user; it
+  no longer derives politeness from being the callee. The server names the
+  callee, so nothing changes when both sides agree. What goes is the chance of
+  two clients applying a rule and disagreeing once, and ending up both polite
+  or both impolite. The id comparison ignores letter case; a null (a group
+  call, a deleted party) is not polite.
 - The Chat module's surface is called **Chat**, and its mount is `/admin/chat`:
   the page header, the top bar's tile (its tooltip, its label and the drawer it
   opens) and the drawer's "Open chat" button. `/admin/messages` redirects to it,
@@ -130,6 +138,16 @@ major number means here.
   expression selects on `subject['kind']`.
 
 ### Fixed
+- A 1:1 call could stay "connecting" forever. The server relays every
+  `call.signal` on `rtc.call.{id}`, which both parties subscribe to, so each
+  party received its own offer, answer and candidates back, and the call
+  service passed them to the media plane as the peer's. The callee is the
+  polite side and never ignores an offer, so it applied its own offer as the
+  remote description in every call, and every call logged "Failed to set
+  remote answer sdp: Called in wrong state" from the echoed answers. Whether
+  the call then connected depended on which offer the callee applied last; in
+  the call harness about half did not. A `call.signal` from the signed-in user
+  is now dropped before the media plane sees it.
 - A pasted or bookmarked module URL landed on the dashboard on a cold load
   (measured: `/admin/identity/users` requested no chunk of its own, the
   dashboard's instead) -- the mount's `canMatch` read the manifest while the
