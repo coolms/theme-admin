@@ -17,6 +17,7 @@ import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
+import { CallsEndWithTheSession } from './features/rtc/calls-end-with-the-session.service';
 import { SectionState } from './features/sections/section.state';
 
 // The shell's own registry binding: the shared dynamic-record list from
@@ -82,6 +83,9 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
+        // A signed-out browser closes its own calls (2026-09-25): the server ends a 1:1
+        // call by telling the OTHER party, and this one never hears it.
+        provideAppInitializer(() => inject(CallsEndWithTheSession).start()),
         // Centrifugo realtime replaces the
         // 2 s polling stream. `PollingNotificationStreamService` stays
         // in the repo as a fallback reference; remove once

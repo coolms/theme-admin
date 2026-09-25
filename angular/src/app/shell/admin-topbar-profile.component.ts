@@ -5,10 +5,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { AuthState, AppConfigState, NaviGraphService, NaviGraphNode, Logout } from '@coolms/core-angular';
+import { AuthState, AppConfigState, NaviGraphService, NaviGraphNode } from '@coolms/core-angular';
 import { UserAvatarComponent } from '@coolms/ui-angular';
 import { ElevationDisplay } from './elevation-display.service';
 import { EndElevationAction } from './end-elevation.action';
+import { SignOutService } from './sign-out.service';
 
 /**
  * Topbar profile dropdown driven by the navi.admin.topbar NaviGraph tree.
@@ -16,7 +17,8 @@ import { EndElevationAction } from './end-elevation.action';
  * Shows the current user's avatar + email. On click opens a dropdown
  * panel listing all action nodes (sign out, profile link, etc.).
  * Nodes are sorted by sortOrder ASC. Click handling is data-driven:
- *   - meta.target === 'action.logout' -> dispatch Logout
+ *   - meta.target === 'action.logout' -> sign out on the server, then here
+ *   - meta.target === 'action.logout-everywhere' -> sign out everywhere, then here
  *   - otherwise -> router.navigate to meta.routerLink ?? '/admin' + node.path
  * Closes on outside click via HostListener.
  */
@@ -96,6 +98,7 @@ export class AdminTopbarProfileComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly display    = inject(ElevationDisplay);
     private readonly end        = inject(EndElevationAction);
+    private readonly signOut    = inject(SignOutService);
 
     @ViewChild('container') container?: ElementRef;
 
@@ -159,7 +162,8 @@ export class AdminTopbarProfileComponent implements OnInit {
      * Data-driven click handler for topbar dropdown nodes.
      *
      * Routing logic based on meta.target:
-     *   'action.logout' -> dispatch Logout + navigate to /login
+     *   'action.logout'            -> SignOutService: this session, then /login
+     *   'action.logout-everywhere' -> SignOutService: every session and device, then /login
      *   (default)       -> router.navigate to meta.routerLink ?? '/admin' + node.path
      */
     onNodeClick(node: NaviGraphNode, event: Event): void {
@@ -167,10 +171,16 @@ export class AdminTopbarProfileComponent implements OnInit {
         event.stopPropagation();
         this.isOpen.set(false);
 
+        // Both reach the server (2026-09-25): the plain one ends this session, the other
+        // every session of the account and every device it signed in from. Until then
+        // "Sign out" only cleared this browser (dispatch Logout) and the session stayed
+        // valid on the server.
         if (node.meta?.['target'] === 'action.logout') {
-            this.store.dispatch(new Logout()).subscribe(() => {
-                void this.router.navigate(['/login']);
-            });
+            this.signOut.signOut().subscribe();
+            return;
+        }
+        if (node.meta?.['target'] === 'action.logout-everywhere') {
+            this.signOut.signOut({ everywhere: true }).subscribe();
             return;
         }
 
