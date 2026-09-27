@@ -188,7 +188,11 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             private tail: Promise<void> = Promise.resolve();
             private inFlight = 0;
 
-            constructor(private readonly firstOffer: string, readonly politeUserId: string) {}
+            constructor(
+                private readonly firstOffer: string,
+                readonly politeUserId: string,
+                private readonly candidatesFirst = false,
+            ) {}
 
             get idle(): boolean {
                 return this.held === null && this.inFlight === 0;
@@ -227,7 +231,12 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 }
                 // Glare: both have offered. The chosen party's offer goes first, the rest in order.
                 const first = this.held.findIndex(h => h.signal.type === 'offer' && h.from === this.firstOffer);
-                const order = [this.held[first], ...this.held.filter((_, i) => i !== first)];
+                const rest = this.held.filter((_, i) => i !== first);
+                const order = this.candidatesFirst
+                    // Every candidate before any description -- the order a busy sender or a slow
+                    // relay produces, and the one that lost candidates before they were queued.
+                    ? [...rest.filter(h => h.signal.type === 'candidate'), this.held[first], ...rest.filter(h => h.signal.type !== 'candidate')]
+                    : [this.held[first], ...rest];
                 this.held = null;
                 for (const h of order) {
                     this.publish({ type: 'call.signal', callId: CALL_ID, from: h.from, signal: h.signal });
@@ -253,6 +262,9 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         let connections: Map<string, RTCPeerConnection>;
         let audio: AudioContext[];
         let sdpErrors: string[];
+        let candidateErrors: string[];
+        let sent: Map<string, number>;
+        let added: Map<string, number>;
         const NativePeerConnection = window.RTCPeerConnection;
 
         function party(userId: string): RtcCallService {
@@ -269,6 +281,9 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 hangup: () => of(server.record('ended')),
                 getIceServers: () => of({ iceServers: [{ urls: STUN[userId] }], ttlSeconds: 0 }),
                 sendSignal: (_callId: string, sig: RtcSignal): Observable<void> => {
+                    if (sig.type === 'candidate') {
+                        sent.set(userId, (sent.get(userId) ?? 0) + 1);
+                    }
                     server.signal(userId, sig);
                     return of(undefined);
                 },
@@ -292,8 +307,8 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         }
 
         /** Place, ring, answer -- then wait until the relay is drained and both connections are stable. */
-        async function callAndNegotiate(firstOffer: string, politeUserId: string): Promise<void> {
-            server = new FakeServer(firstOffer, politeUserId);
+        async function callAndNegotiate(firstOffer: string, politeUserId: string, candidatesFirst = false): Promise<void> {
+            server = new FakeServer(firstOffer, politeUserId, candidatesFirst);
             const a = party(USER_A);
             const b = party(USER_B);
             a.place(CONVERSATION_ID, 'audio');
@@ -313,12 +328,22 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             connections = new Map<string, RTCPeerConnection>();
             audio = [];
             sdpErrors = [];
+            candidateErrors = [];
+            sent = new Map<string, number>();
+            added = new Map<string, number>();
             // Every connection the controllers make, as the browser made it, by party.
             const Recording = function (config?: RTCConfiguration): RTCPeerConnection {
                 const pc = new NativePeerConnection(config);
                 const urls = config?.iceServers?.[0]?.urls;
                 const owner = Object.keys(STUN).find(user => STUN[user] === urls) ?? 'unknown';
                 connections.set(owner, pc);
+                // Count the candidates this connection actually took in.
+                const add = pc.addIceCandidate.bind(pc) as (c?: RTCIceCandidateInit) => Promise<void>;
+                (pc as unknown as { addIceCandidate: (c?: RTCIceCandidateInit) => Promise<void> }).addIceCandidate =
+                    async (c?: RTCIceCandidateInit): Promise<void> => {
+                        await add(c);
+                        added.set(owner, (added.get(owner) ?? 0) + 1);
+                    };
                 return pc;
             } as unknown as typeof RTCPeerConnection;
             window.RTCPeerConnection = Recording;
@@ -332,6 +357,10 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             spyOn(console, 'error').and.callFake((...args: unknown[]) => {
                 if (typeof args[0] === 'string' && args[0].startsWith('[rtc] applySignal failed')) {
                     sdpErrors.push(String(args[1]));
+                    return;
+                }
+                if (typeof args[0] === 'string' && args[0].startsWith('[rtc] addIceCandidate failed')) {
+                    candidateErrors.push(String(args[1]));
                     return;
                 }
                 consoleError(...args);
@@ -380,6 +409,26 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 // Under glare the polite side yields: it rolls its offer back and answers.
                 expect(mine.localDescription?.type).withContext('the side the server named polite is the one that answered').toBe('answer');
                 expect(theirs.localDescription?.type).withContext('the impolite side kept its offer').toBe('offer');
+                expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
+            }, 10000);
+        }
+
+        // A candidate that reaches a connection before the peer's description must be kept
+        // and applied once the description is in -- not refused and lost. Measured with the
+        // call harness in a container (one network interface): a dropped candidate was the
+        // only path, and the call never connected.
+        for (const first of [USER_A, USER_B]) {
+            const lands = first === USER_A ? 'the caller\'s' : 'the callee\'s';
+            it(`with every candidate delivered before the descriptions (${lands} offer first), each side applies every candidate the other sent`, async () => {
+                await callAndNegotiate(first, USER_B, true);
+
+                expect(connections.size).withContext('one peer connection per party').toBe(2);
+                expect(candidateErrors).withContext('a candidate refused (for arriving before the description, or at all)').toEqual([]);
+                for (const [owner, other] of [[USER_A, USER_B], [USER_B, USER_A]]) {
+                    expect(sent.get(other) ?? 0).withContext(`${other} sent candidates`).toBeGreaterThan(0);
+                    expect(added.get(owner) ?? 0).withContext(`${owner}'s connection applied every candidate ${other} sent`)
+                        .toBe(sent.get(other) ?? 0);
+                }
                 expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
             }, 10000);
         }
