@@ -69,6 +69,8 @@ export class RtcMediaController {
     private ignoreOffer = false;
     /** SDP/ICE that arrived before the peer connection existed; drained on start. */
     private readonly pending: RtcSignal[] = [];
+    /** Remote ICE candidates that arrived before the remote description; applied right after it. */
+    private readonly remoteCandidates: RTCIceCandidateInit[] = [];
 
     private readonly _remoteStream = signal<MediaStream | null>(null);
     private readonly _localStream = signal<MediaStream | null>(null);
@@ -295,6 +297,7 @@ export class RtcMediaController {
         this.makingOffer = false;
         this.ignoreOffer = false;
         this.pending.length = 0;
+        this.remoteCandidates.length = 0;
         this._localStream.set(null);
         this._micMuted.set(false);
         this._cameraOff.set(false);
@@ -322,13 +325,15 @@ export class RtcMediaController {
     private async applySignal(pc: RTCPeerConnection, signal: RtcSignal): Promise<void> {
         try {
             if (signal.type === 'candidate') {
-                try {
-                    await pc.addIceCandidate(signal.payload as RTCIceCandidateInit);
-                } catch (err) {
-                    if (!this.ignoreOffer) {
-                        console.error('[rtc] addIceCandidate failed', err);
-                    }
+                // A candidate belongs to the remote description it came with; before that is set
+                // the browser refuses it ("The remote description was null") and it is LOST. With
+                // one network interface -- a container, a phone -- it can be the only path, and the
+                // call never connects. Held, and applied as soon as the description is in.
+                if (pc.remoteDescription === null) {
+                    this.remoteCandidates.push(signal.payload as RTCIceCandidateInit);
+                    return;
                 }
+                await this.addCandidate(pc, signal.payload as RTCIceCandidateInit);
                 return;
             }
 
@@ -341,6 +346,9 @@ export class RtcMediaController {
             }
 
             await pc.setRemoteDescription(description); // implicit rollback if we had a local offer
+            for (const candidate of this.remoteCandidates.splice(0)) {
+                await this.addCandidate(pc, candidate);
+            }
             if (description.type === 'offer') {
                 await pc.setLocalDescription();
                 if (pc.localDescription !== null) {
@@ -349,6 +357,16 @@ export class RtcMediaController {
             }
         } catch (err) {
             console.error('[rtc] applySignal failed', err);
+        }
+    }
+
+    private async addCandidate(pc: RTCPeerConnection, candidate: RTCIceCandidateInit): Promise<void> {
+        try {
+            await pc.addIceCandidate(candidate);
+        } catch (err) {
+            if (!this.ignoreOffer) {
+                console.error('[rtc] addIceCandidate failed', err);
+            }
         }
     }
 

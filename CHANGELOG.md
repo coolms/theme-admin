@@ -7,6 +7,14 @@ Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
 ## Unreleased
 
+### Fixed
+
+- A call keeps the ICE candidates that arrive before the peer's description:
+  they are held and applied as soon as the description is set, instead of being
+  refused by the browser ("The remote description was null") and lost. With one
+  network interface -- a container, a phone -- a lost candidate could be the
+  only path, and the call never connected.
+
 ### Added
 - A capped completion says how many it is a part of. A directory here can
   hold eighteen hundred children, and printing them all inline is a wall
