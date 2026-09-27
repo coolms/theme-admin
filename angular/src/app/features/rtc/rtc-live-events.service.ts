@@ -99,7 +99,12 @@ export class RtcLiveEventsService {
             return null;
         }
         if (raw['type'] === 'call.state' && typeof raw['callId'] === 'string' && typeof raw['state'] === 'string') {
-            return { type: 'call.state', callId: raw['callId'], state: raw['state'] as RtcCallChannelNudge extends { state: infer S } ? S : never };
+            return {
+                type: 'call.state',
+                callId: raw['callId'],
+                state: raw['state'] as RtcCallChannelNudge extends { state: infer S } ? S : never,
+                politeUserId: typeof raw['politeUserId'] === 'string' ? raw['politeUserId'] : null,
+            };
         }
         if (raw['type'] === 'call.signal' && typeof raw['callId'] === 'string' && typeof raw['from'] === 'string' && this.isRecord(raw['signal'])) {
             const signal = raw['signal'];

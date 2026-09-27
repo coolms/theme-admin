@@ -29,6 +29,14 @@ export interface RtcCallDto {
     readonly endReason: string | null;
     /** Whether the call's media room is currently being recorded. */
     readonly recordingActive: boolean;
+    /**
+     * The peer that yields when both sides of a 1:1 call offer at once (perfect
+     * negotiation) -- named by the SERVER, fixed for the call: the callee. Null for a
+     * group call (SFU, no peer-to-peer negotiation) or when a party was deleted.
+     * Clients read it and never compute it: two clients each applying a rule need
+     * disagree only once to end up both polite or both impolite.
+     */
+    readonly politeUserId: string | null;
     readonly createdAt: string | null;
     readonly participants: readonly RtcCallParticipantDto[];
 }
@@ -55,6 +63,8 @@ export interface RtcCallStateNudge {
     readonly type: 'call.state';
     readonly callId: string;
     readonly state: RtcCallState;
+    /** The polite peer, as on {@link RtcCallDto.politeUserId}; every state event carries it. */
+    readonly politeUserId: string | null;
 }
 
 /** `rtc.call.{id}` -- a peer relayed an SDP/ICE envelope (media plane, Slice 4b). */
