@@ -23,3 +23,4 @@ import '../../../core-angular/src/theme/theme.service.spec';
 import '../../../core-angular/src/auth/auth.guard.spec';
 import '../../../core-angular/src/bootstrap/console-access.service.spec';
 import '../../../core-angular/src/auth/login/login.component.spec';
+import '../../../core-angular/src/api/realtime-token.client.spec';
