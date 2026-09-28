@@ -39,6 +39,13 @@ export interface RtcCallDto {
     readonly politeUserId: string | null;
     readonly createdAt: string | null;
     readonly participants: readonly RtcCallParticipantDto[];
+    /**
+     * The version of the call's state: 1 while ringing, one more at each change, assigned
+     * by the server's database. Every `call.state` carries the same number, so a client
+     * applies this record only when its version is not lower than the highest it has seen.
+     * Absent from a server older than the field.
+     */
+    readonly version?: number;
 }
 
 /** An SDP/ICE signalling envelope relayed via `POST /rtc/calls/{id}/signal`. */
@@ -65,6 +72,8 @@ export interface RtcCallStateNudge {
     readonly state: RtcCallState;
     /** The polite peer, as on {@link RtcCallDto.politeUserId}; every state event carries it. */
     readonly politeUserId: string | null;
+    /** The version of the state it announces, as on {@link RtcCallDto.version}. */
+    readonly version?: number;
 }
 
 /** `rtc.call.{id}` -- a peer relayed an SDP/ICE envelope (media plane, Slice 4b). */

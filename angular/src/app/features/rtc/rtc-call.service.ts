@@ -43,6 +43,13 @@ export interface ActiveCall {
      * and for a group call. The media plane is told whether it is this user.
      */
     readonly politeUserId: string | null;
+    /**
+     * The highest version of the call's state this client has seen, on a record or on a
+     * `call.state` ({@link RtcCallDto.version}); 0 until one is seen. Anything with a lower
+     * version is older than what the view already shows and is not applied: the read made on
+     * subscribing can return after the channel has moved on (Dmitry, 2026-09-28).
+     */
+    readonly version: number;
 }
 
 /**
@@ -112,6 +119,7 @@ export class RtcCallService {
                     topology: null,
                     recording: call.recordingActive,
                     politeUserId: call.politeUserId,
+                    version: call.version ?? 0,
                 });
                 this.watchCall(call.id);
             },
@@ -209,16 +217,27 @@ export class RtcCallService {
             topology: null,
             recording: false,
             politeUserId: null, // the ring does not carry it; the answer's record and every call.state do
+            version: 0,
         });
         this.watchCall(nudge.callId);
     }
 
     private watchCall(callId: string): void {
         this.callSub?.unsubscribe();
-        this.callSub = this.live.watchCall(callId).subscribe({
+        // Subscribe, THEN read. The channel keeps no history: a call.state published before
+        // this party's subscription became active -- the answer landing while the caller was
+        // still subscribing -- is never delivered, and the caller never started its media
+        // (1 of 60 call-harness runs, 2026-09-27). The read catches the call up; after it,
+        // every change arrives on the channel.
+        this.callSub = this.live.watchCall(callId, () => this.catchUp(callId)).subscribe({
             next: nudge => this.onCallNudge(nudge),
             error: () => undefined,
         });
+    }
+
+    /** The call as the server holds it now, folded into the active-call view. */
+    private catchUp(callId: string): void {
+        this.rtc.get(callId).subscribe({ next: dto => this.reconcile(dto), error: () => undefined });
     }
 
     private onCallNudge(nudge: RtcCallChannelNudge): void {
@@ -236,18 +255,38 @@ export class RtcCallService {
             }
             return;
         }
+        if (!this.isCurrent(nudge.version)) {
+            return;
+        }
         this.takePolite(call.callId, nudge.politeUserId);
         this.applyState(nudge.state);
     }
 
-    /** Fold a REST call response back into the active-call view (used after answer()). */
+    /** Fold a REST call response back into the active-call view (after answer(), and on subscribing to the call). */
     private reconcile(dto: RtcCallDto): void {
-        if (this._activeCall()?.callId !== dto.id) {
+        if (this._activeCall()?.callId !== dto.id || !this.isCurrent(dto.version)) {
             return;
         }
         this.patch({ recording: dto.recordingActive });
         this.takePolite(dto.id, dto.politeUserId);
         this.applyState(dto.state);
+    }
+
+    /**
+     * Whether a record or `call.state` at `version` may be applied: not lower than the highest
+     * this client has seen, which it then becomes. One without a version -- from a server
+     * older than the field -- is applied as before: there is nothing to order it by.
+     */
+    private isCurrent(version: number | undefined): boolean {
+        const call = this._activeCall();
+        if (call === null || version === undefined) {
+            return true;
+        }
+        if (version < call.version) {
+            return false;
+        }
+        this.patch({ version });
+        return true;
     }
 
     /**
@@ -328,7 +367,7 @@ export class RtcCallService {
     private refreshRecording(callId: string): void {
         this.rtc.get(callId).subscribe({
             next: dto => {
-                if (this._activeCall()?.callId === callId) {
+                if (this._activeCall()?.callId === callId && this.isCurrent(dto.version)) {
                     this.patch({ recording: dto.recordingActive });
                 }
             },
