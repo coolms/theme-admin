@@ -9,6 +9,12 @@ major number means here.
 
 ### Fixed
 
+- A caller learns its call connected even when the answer lands while it is still
+  subscribing to the call's channel. The channel keeps no history, so a
+  `call.state connected` published before the caller's subscription became active
+  never arrived, and the caller never started its media (1 of 60 call-harness
+  runs, 2026-09-27). The client now reads the call each time its subscription to
+  the call becomes active, and every change after that arrives on the channel.
 - A call keeps the ICE candidates that arrive before the peer's description:
   they are held and applied as soon as the description is set, instead of being
   refused by the browser ("The remote description was null") and lost. With one

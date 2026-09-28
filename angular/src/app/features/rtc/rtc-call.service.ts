@@ -215,10 +215,20 @@ export class RtcCallService {
 
     private watchCall(callId: string): void {
         this.callSub?.unsubscribe();
-        this.callSub = this.live.watchCall(callId).subscribe({
+        // Subscribe, THEN read. The channel keeps no history: a call.state published before
+        // this party's subscription became active -- the answer landing while the caller was
+        // still subscribing -- is never delivered, and the caller never started its media
+        // (1 of 60 call-harness runs, 2026-09-27). The read catches the call up; after it,
+        // every change arrives on the channel.
+        this.callSub = this.live.watchCall(callId, () => this.catchUp(callId)).subscribe({
             next: nudge => this.onCallNudge(nudge),
             error: () => undefined,
         });
+    }
+
+    /** The call as the server holds it now, folded into the active-call view. */
+    private catchUp(callId: string): void {
+        this.rtc.get(callId).subscribe({ next: dto => this.reconcile(dto), error: () => undefined });
     }
 
     private onCallNudge(nudge: RtcCallChannelNudge): void {
@@ -240,7 +250,7 @@ export class RtcCallService {
         this.applyState(nudge.state);
     }
 
-    /** Fold a REST call response back into the active-call view (used after answer()). */
+    /** Fold a REST call response back into the active-call view (after answer(), and on subscribing to the call). */
     private reconcile(dto: RtcCallDto): void {
         if (this._activeCall()?.callId !== dto.id) {
             return;

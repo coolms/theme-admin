@@ -434,3 +434,125 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         }
     });
 });
+
+/**
+ * The caller whose subscription to the call's channel became active AFTER the server
+ * published `call.state connected` -- the answer landing while the caller was still
+ * subscribing. The channel keeps no history, so that publication never reaches the caller.
+ * Measured with tools/call-harness, 2026-09-27: in 1 of 60 runs the callee connected and
+ * the caller never received `connected` and never started its media. The caller now reads
+ * the call when its subscription becomes active (RtcLiveEventsService.watchCall's
+ * `onSubscribed`), and every change after that arrives on the channel.
+ */
+describe('RtcCallService -- the caller who subscribed after the call connected', () => {
+    const CALL_ID = 'call-1';
+    const CONVERSATION_ID = 'conv-1';
+    const USER_A = 'user-a'; // the caller, this party
+    const USER_B = 'user-b';
+
+    let channel: Subject<RtcCallChannelNudge>;
+    let onSubscribed: (() => void) | null;
+    /** What the server holds when this party reads the call. */
+    let serverState: RtcCallState;
+    let media: jasmine.SpyObj<RtcMediaController>;
+    let service: RtcCallService;
+    let injector: EnvironmentInjector;
+
+    function record(state: RtcCallState): RtcCallDto {
+        return {
+            id: CALL_ID,
+            conversationId: CONVERSATION_ID,
+            initiatorUserId: USER_A,
+            mediaKind: 'audio',
+            state,
+            connectedAt: null,
+            endedAt: null,
+            endReason: null,
+            recordingActive: false,
+            politeUserId: USER_B,
+            createdAt: null,
+            participants: [
+                { userId: USER_A, state: 'joined', joinedAt: null, leftAt: null },
+                { userId: USER_B, state: state === 'ringing' ? 'invited' : 'joined', joinedAt: null, leftAt: null },
+            ],
+        };
+    }
+
+    beforeEach(() => {
+        channel = new Subject<RtcCallChannelNudge>();
+        onSubscribed = null;
+        serverState = 'ringing';
+        media = jasmine.createSpyObj<RtcMediaController>('RtcMediaController', ['start', 'handleSignal', 'setPolite', 'stop']);
+        media.start.and.returnValue(Promise.resolve());
+        const live: Partial<RtcLiveEventsService> = {
+            watchUserRing: () => new Subject<RtcIncomingCallNudge>().asObservable(),
+            watchCall: (_callId: string, told?: () => void) => {
+                onSubscribed = told ?? null;
+                return channel.asObservable();
+            },
+        };
+        injector = createEnvironmentInjector([
+            RtcCallService,
+            { provide: RtcMediaController, useValue: media },
+            { provide: RtcSfuMediaController, useValue: { start: () => Promise.resolve(), stop: () => undefined } },
+            {
+                provide: RtcService,
+                useValue: {
+                    place: () => of(record('ringing')),
+                    get: () => of(record(serverState)),
+                    hangup: () => of(record('ended')),
+                },
+            },
+            { provide: RtcLiveEventsService, useValue: live },
+            { provide: Store, useValue: { select: () => of({ id: USER_A }), selectSnapshot: () => ({ id: USER_A }) } },
+            { provide: ToastService, useValue: { error: () => undefined } },
+        ], TestBed.inject(EnvironmentInjector));
+        service = injector.get(RtcCallService);
+        service.place(CONVERSATION_ID, 'audio');
+    });
+
+    afterEach(() => injector.destroy());
+
+    it('reads the call once its subscription is active, and starts its media on the connected it never received', () => {
+        expect(service.activeCall()?.ui).withContext('placed: ringing out').toBe('ringing-out');
+        expect(onSubscribed).withContext('the watch asks to be told when it is subscribed').not.toBeNull();
+        serverState = 'connected'; // B answered while A was still subscribing: that publication is gone
+
+        onSubscribed?.();
+
+        expect(service.activeCall()?.ui).toBe('connected');
+        expect(media.start).toHaveBeenCalledOnceWith(CALL_ID, false, 'audio');
+    });
+
+    it('still ringing when it subscribes: nothing starts until the channel says connected, then once', () => {
+        onSubscribed?.();
+        expect(service.activeCall()?.ui).toBe('ringing-out');
+        expect(media.start).not.toHaveBeenCalled();
+
+        serverState = 'connected';
+        channel.next({ type: 'call.state', callId: CALL_ID, state: 'connected', politeUserId: USER_B });
+
+        expect(service.activeCall()?.ui).toBe('connected');
+        expect(media.start).toHaveBeenCalledTimes(1);
+    });
+
+    it('never starts its media twice: a resubscribe and the channel\'s connected after the read', () => {
+        serverState = 'connected';
+
+        onSubscribed?.();
+        onSubscribed?.();
+        channel.next({ type: 'call.state', callId: CALL_ID, state: 'connected', politeUserId: USER_B });
+
+        expect(media.start).toHaveBeenCalledTimes(1);
+    });
+
+    it('a call declined before it subscribed is shown ended, with the reason', () => {
+        serverState = 'declined';
+
+        onSubscribed?.();
+
+        expect(service.activeCall()?.ui).toBe('ended');
+        expect(service.activeCall()?.endReason).toBe('declined');
+        expect(media.start).not.toHaveBeenCalled();
+    });
+});

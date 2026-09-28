@@ -27,14 +27,23 @@ export class RtcLiveEventsService {
         return this.observeChannel(`rtc.user.${userId}`, raw => this.parseIncoming(raw));
     }
 
-    watchCall(callId: string): Observable<RtcCallChannelNudge> {
-        return this.observeChannel(`rtc.call.${callId}`, raw => this.parseCallNudge(raw));
+    /**
+     * `onSubscribed` runs each time the channel's subscription becomes active -- at once when
+     * it already is, and again after a resubscribe. The channel keeps no history, so what was
+     * published on it before then never reaches this subscriber: a party that must not miss a
+     * state reads it at that moment (a `call.state connected` published while the caller's
+     * subscription was still being set up was lost, and the caller never started its media --
+     * 1 of 60 call-harness runs, 2026-09-27).
+     */
+    watchCall(callId: string, onSubscribed?: () => void): Observable<RtcCallChannelNudge> {
+        return this.observeChannel(`rtc.call.${callId}`, raw => this.parseCallNudge(raw), onSubscribed);
     }
 
-    private observeChannel<T>(channel: string, parse: (raw: unknown) => T | null): Observable<T> {
+    private observeChannel<T>(channel: string, parse: (raw: unknown) => T | null, onSubscribed?: () => void): Observable<T> {
         return new Observable<T>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
+            let subscribedHandler: (() => void) | null = null;
 
             this.client
                 .connect()
@@ -50,8 +59,14 @@ export class RtcLiveEventsService {
                         }
                     };
                     sub.on('publication', publicationHandler);
+                    if (onSubscribed !== undefined) {
+                        subscribedHandler = (): void => onSubscribed();
+                        sub.on('subscribed', subscribedHandler);
+                    }
                     if (sub.state !== 'subscribed') {
                         sub.subscribe();
+                    } else {
+                        onSubscribed?.();
                     }
                 })
                 .catch((err: unknown) => subscriber.error(err));
@@ -62,6 +77,9 @@ export class RtcLiveEventsService {
                 if (sub !== null) {
                     if (publicationHandler !== null) {
                         sub.off('publication', publicationHandler);
+                    }
+                    if (subscribedHandler !== null) {
+                        sub.off('subscribed', subscribedHandler);
                     }
                     sub.unsubscribe();
                 }
