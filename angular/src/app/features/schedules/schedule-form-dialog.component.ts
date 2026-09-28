@@ -85,7 +85,7 @@ import {
                     <div class="spec-row">
                         <input class="cms-input" type="text"
                                [(ngModel)]="spec"
-                               [placeholder]="kind === 'cron' ? '0 9 * * 1-5' : 'RRULE:FREQ=DAILY'" />
+                               [placeholder]="kind() === 'cron' ? '0 9 * * 1-5' : 'RRULE:FREQ=DAILY'" />
                         <button type="button" class="cms-btn spec-row__configure"
                                 (click)="openTriggerDialog()">
                             <i class="bi bi-sliders"></i> Configure…
@@ -100,11 +100,11 @@ import {
                     <label class="cms-label">Handler</label>
                     <app-lazy-select
                             [options]="handlerOptions()"
-                            [value]="handler"
+                            [value]="handler()"
                             [allowClear]="false"
                             [entityLabel]="'handler'"
                             [placeholder]="loadingHandlers() ? 'Loading handlers…' : '— Pick a handler —'"
-                            (valueChange)="handler = $event" />
+                            (valueChange)="handler.set($event)" />
                     @if (handlerHint()) {
                         <div class="cms-field-hint">{{ handlerHint() }}</div>
                     }
@@ -151,19 +151,23 @@ export class ScheduleFormDialogComponent implements OnInit {
     private readonly dialog     = inject(Dialog);
 
     /**
-     * Manually-bound signal mirror of `spec` so a computed can summarise
-     * it without forcing the consumer onto reactive forms. Two-way
-     * binding via `[(ngModel)]` keeps the field-and-signal pair in sync.
+     * The trigger kind, spec and handler are signals, bound two-way with `[(ngModel)]`.
+     *
+     * Angular 22 renders this component OnPush. As plain fields (spec behind a setter that
+     * kept a signal mirror) they were not drawn when set outside the template: the spec the
+     * trigger sub-dialog returned stayed out of the input in RRule mode -- the template read
+     * the mirror only through the cron summary -- and the two computeds below, reading
+     * `kind` and `handler` as plain fields, never re-ran when those changed: the cron summary
+     * stayed after switching to RRule, and the picked handler's description never showed.
      */
-    readonly specSignal = signal<string>('');
-    set spec(v: string) { this._spec = v; this.specSignal.set(v); }
-    get spec(): string { return this._spec; }
-    private _spec = '';
+    readonly kind    = signal<TriggerKindCode>('cron');
+    readonly spec    = signal('');
+    readonly handler = signal('');
 
     /** Humanised cron summary shown under the input when in cron mode. */
     readonly specSummary = computed(() =>
-        this.kind === 'cron' && this.specSignal()
-            ? summariseCron(this.specSignal())
+        this.kind() === 'cron' && this.spec()
+            ? summariseCron(this.spec())
             : ''
     );
 
@@ -177,8 +181,6 @@ export class ScheduleFormDialogComponent implements OnInit {
      * to `value` (the full IANA id) so unknown rows still render.
      */
     readonly tzLabelKeys = ['label', 'value'];
-    kind: TriggerKindCode = 'cron';
-    handler = '';
 
     /**
      * Anchor instant fed to &lt;app-recurrence-form&gt; for its DTSTART /
@@ -209,7 +211,7 @@ export class ScheduleFormDialogComponent implements OnInit {
 
     /** Shows the description of the picked handler under the dropdown. */
     readonly handlerHint = computed(() => {
-        const picked = this.handlers().find(h => h.key === this.handler);
+        const picked = this.handlers().find(h => h.key === this.handler());
         return picked?.description ?? '';
     });
 
@@ -236,8 +238,8 @@ export class ScheduleFormDialogComponent implements OnInit {
      */
     openTriggerDialog(): void {
         const data: TriggerSpecDialogData = {
-            kind:    this.kind,
-            value:   this.spec,
+            kind:    this.kind(),
+            value:   this.spec(),
             dtstart: this.anchorIso,
             tz:      this.tz,
         };
@@ -247,7 +249,7 @@ export class ScheduleFormDialogComponent implements OnInit {
         );
         ref.closed.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(result => {
             if (result === undefined) return; // cancelled
-            this.spec = result;
+            this.spec.set(result);
         });
     }
 
@@ -257,7 +259,7 @@ export class ScheduleFormDialogComponent implements OnInit {
 
     submit(): void {
         if (this.slug.trim() === '' || this.name.trim() === ''
-            || this.spec.trim() === '' || this.handler.trim() === '') {
+            || this.spec().trim() === '' || this.handler().trim() === '') {
             this.error.set('Slug, name, trigger spec and handler are required.');
             return;
         }
@@ -267,9 +269,9 @@ export class ScheduleFormDialogComponent implements OnInit {
             slug:        this.slug.trim(),
             name:        this.name.trim(),
             tz:          this.tz.trim() || 'UTC',
-            triggerKind: this.kind,
-            triggerSpec: this.spec.trim(),
-            handler:     this.handler.trim(),
+            triggerKind: this.kind(),
+            triggerSpec: this.spec().trim(),
+            handler:     this.handler().trim(),
             payload:     {},
             enabled:     true,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

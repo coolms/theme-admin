@@ -209,8 +209,10 @@ export class SiteWizardComponent {
 
     slug = '';
     label = '';
-    host = '';
-    prefix = '/';
+    // A signal, not a plain field: the computed below reads it, and a computed re-runs only when
+    // a signal it read changes -- as a plain field it kept its first value (2026-09-28 sweep).
+    readonly host = signal('');
+    readonly prefix = signal('/');
     priority = 0;
     feStack = 'ssr';
     themeSlug = '';
@@ -228,8 +230,8 @@ export class SiteWizardComponent {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly addressSummary = computed(() => {
-        const h = this.host.trim() || 'any domain';
-        const p = this.prefix.trim() || '/';
+        const h = this.host().trim() || 'any domain';
+        const p = this.prefix().trim() || '/';
         return `${h} at ${p}`;
     });
 
@@ -261,7 +263,7 @@ export class SiteWizardComponent {
         if (1 === this.step()) {
             // An empty host AND an empty prefix is a section that claims
             // everything, which is what `default` already is.
-            return '' !== this.host.trim() || '' !== this.prefix.trim();
+            return '' !== this.host().trim() || '' !== this.prefix().trim();
         }
         return true;
     }
@@ -283,8 +285,8 @@ export class SiteWizardComponent {
             slug: this.slug.trim(),
             label: this.label.trim(),
             feStack: this.feStack,
-            matchHost: this.host.trim() || undefined,
-            matchPathPrefix: this.prefix.trim() || undefined,
+            matchHost: this.host().trim() || undefined,
+            matchPathPrefix: this.prefix().trim() || undefined,
             matchPriority: this.priority,
             // !! The gap this wizard closes. The plain create form omitted
             // `themeSlug` while the edit form set it, so every new site was
