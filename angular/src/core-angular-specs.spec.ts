@@ -20,3 +20,5 @@ import '../../../core-angular/src/auth/elevation.service.spec';
 import '../../../core-angular/src/contracts/console/console-v1.spec';
 import '../../../core-angular/src/navi-graph/navi-graph.service.spec';
 import '../../../core-angular/src/theme/theme.service.spec';
+import '../../../core-angular/src/auth/auth.guard.spec';
+import '../../../core-angular/src/bootstrap/console-access.service.spec';
