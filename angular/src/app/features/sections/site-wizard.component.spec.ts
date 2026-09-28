@@ -80,10 +80,10 @@ describe('SiteWizardComponent', () => {
         wizard.slug = 'marketing';
         wizard.label = 'Marketing';
         wizard.next();
-        wizard.host = '';
-        wizard.prefix = '';
+        wizard.host.set('');
+        wizard.prefix.set('');
         expect(wizard.stepValid()).toBe(false);
-        wizard.prefix = '/shop';
+        wizard.prefix.set('/shop');
         expect(wizard.stepValid()).toBe(true);
     });
 
@@ -96,8 +96,8 @@ describe('SiteWizardComponent', () => {
         const wizard = fixture.componentInstance;
         wizard.slug = 'marketing';
         wizard.label = 'Marketing';
-        wizard.host = 'shop.example.com';
-        wizard.prefix = '/';
+        wizard.host.set('shop.example.com');
+        wizard.prefix.set('/');
         wizard.themeSlug = 'coolms-site';
         wizard.applyNginx = false;
         wizard.create();
@@ -126,5 +126,51 @@ describe('SiteWizardComponent', () => {
             .map(args => args[0])
             .some(a => a instanceof ApplyNginxChanges);
         expect(applied).toBe(true);
+    });
+
+    // The review names the address as it is NOW. `addressSummary` is a computed, and it read
+    // host and prefix as plain fields: it ran when the review first showed and never again, so
+    // going back and changing the host left the review naming the old one (the 2026-09-28
+    // sweep). Done as the person does it -- the inputs and the Back/Next buttons -- and read
+    // off the page.
+    it('names the address as changed after going back from the review', async () => {
+        setup();
+        const page = fixture.nativeElement as HTMLElement;
+        const button = (label: string): HTMLButtonElement =>
+            [...page.querySelectorAll<HTMLButtonElement>('button')].find(b => b.textContent?.trim() === label)!;
+        const settle = async (): Promise<void> => {
+            await fixture.whenStable();
+            fixture.detectChanges();
+        };
+        const type = async (selector: string, value: string): Promise<void> => {
+            const input = page.querySelector<HTMLInputElement>(selector)!;
+            input.value = value;
+            input.dispatchEvent(new Event('input'));
+            await settle();
+        };
+        const wizard = fixture.componentInstance;
+        // Identity by the component (its fields are plain and not what this is about), then
+        // the address and everything after through the page.
+        wizard.slug = 'marketing';
+        wizard.label = 'Marketing';
+        wizard.next();
+        await settle();
+        await type('#wiz-host', 'shop.example.com');
+        button('Next').click();
+        await settle();
+        button('Next').click();
+        await settle();
+        expect(page.textContent).withContext('the review, first time').toContain('shop.example.com at /');
+
+        button('Back').click();
+        await settle();
+        button('Back').click();
+        await settle();
+        await type('#wiz-host', 'store.example.com');
+        button('Next').click();
+        await settle();
+        button('Next').click();
+        await settle();
+        expect(page.textContent).toContain('store.example.com at /');
     });
 });

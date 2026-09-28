@@ -255,13 +255,15 @@ export class TemplateConflictDialogComponent {
     protected  readonly data = inject<TemplateConflictDialogData>(DIALOG_DATA);
 
     protected readonly action = signal<'replace' | 'save-as'>('save-as');
-    protected newName = this.data.suggestedName;
+    // A signal, not a plain field: the computed below reads it, and a computed re-runs only when
+    // a signal it read changes -- as a plain field it kept its first value (2026-09-28 sweep).
+    protected readonly newName = signal(this.data.suggestedName);
     protected readonly newNameTouched = signal(false);
 
     protected readonly nameError = computed<string | null>(() => {
         if (this.action() !== 'save-as') return null;
         if (!this.newNameTouched()) return null;
-        const trimmed = this.newName.trim();
+        const trimmed = this.newName().trim();
         if (trimmed.length === 0) return 'Filename is required.';
         if (trimmed === this.data.existing.name) {
             return 'New name must differ from the existing template.';
@@ -271,7 +273,7 @@ export class TemplateConflictDialogComponent {
 
     protected readonly canConfirm = computed<boolean>(() => {
         if (this.action() === 'replace') return true;
-        const trimmed = this.newName.trim();
+        const trimmed = this.newName().trim();
         return trimmed.length > 0 && trimmed !== this.data.existing.name;
     });
 
@@ -293,6 +295,6 @@ export class TemplateConflictDialogComponent {
             this.dialogRef.close({ action: 'replace', newName: null });
             return;
         }
-        this.dialogRef.close({ action: 'save-as', newName: this.newName.trim() });
+        this.dialogRef.close({ action: 'save-as', newName: this.newName().trim() });
     }
 }

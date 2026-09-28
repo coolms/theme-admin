@@ -349,12 +349,14 @@ export class DocumentUploadDialog {
 
     protected readonly uploading = signal(false);
     protected readonly errorMessage = signal<string | null>(null);
-    protected folderPath = this.data?.folderPath ?? '/documents/';
+    // A signal, not a plain field: the computed below reads it, and a computed re-runs only when
+    // a signal it read changes -- as a plain field it kept its first value (2026-09-28 sweep).
+    protected readonly folderPath = signal(this.data?.folderPath ?? '/documents/');
 
     protected readonly acceptString = computed(() => this.formatInfo.acceptString());
 
     protected readonly canSubmit = computed(() => {
-        return this.selectedFile() !== null && this.folderPath.trim().length > 0;
+        return this.selectedFile() !== null && this.folderPath().trim().length > 0;
     });
 
     protected onFileSelected(event: Event): void {
@@ -378,7 +380,7 @@ export class DocumentUploadDialog {
         if (!file || this.uploading()) {
             return;
         }
-        void this.uploadWithConflictResolution(file, this.folderPath.trim());
+        void this.uploadWithConflictResolution(file, this.folderPath().trim());
     }
 
     /**

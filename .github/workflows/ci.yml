@@ -171,6 +171,16 @@ jobs:
         working-directory: sources/theme-admin/angular
         run: npm run lint:specs
 
+      # A value a view shows is drawn when it changes (Dmitry, 2026-09-28): an OnPush view's
+      # plain field written asynchronously, or a computed over a plain field that changes, stays
+      # stale until something else touches the page. Read from every package the admin compiles,
+      # so it runs here, where they are all checked out.
+      - name: Views draw what they show
+        working-directory: sources/theme-admin/angular
+        run: |
+          node --test scripts/check-redraw.test.mjs
+          npm run lint:redraw
+
       - name: Admin suite
         working-directory: sources/theme-admin/angular
         env:
