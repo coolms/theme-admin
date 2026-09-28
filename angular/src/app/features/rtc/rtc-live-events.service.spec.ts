@@ -55,6 +55,13 @@ describe('RtcLiveEventsService -- call.state carries the polite peer', () => {
         expect(received).toEqual([{ type: 'call.state', callId: 'call-1', state: 'connected', politeUserId: 'user-b' }]);
     });
 
+    it('keeps the version a call.state carries, and drops one that is not a number', () => {
+        publish({ type: 'call.state', callId: 'call-1', state: 'connected', politeUserId: 'user-b', version: 2 });
+        publish({ type: 'call.state', callId: 'call-1', state: 'ended', politeUserId: 'user-b', version: '3' });
+
+        expect(received.map(n => n.type === 'call.state' ? n.version : 'not a state')).toEqual([2, undefined]);
+    });
+
     it('reads a null, a missing or a malformed politeUserId as null', () => {
         publish({ type: 'call.state', callId: 'call-1', state: 'connected', politeUserId: null });
         publish({ type: 'call.state', callId: 'call-1', state: 'ringing' });

@@ -122,6 +122,7 @@ export class RtcLiveEventsService {
                 callId: raw['callId'],
                 state: raw['state'] as RtcCallChannelNudge extends { state: infer S } ? S : never,
                 politeUserId: typeof raw['politeUserId'] === 'string' ? raw['politeUserId'] : null,
+                ...(typeof raw['version'] === 'number' ? { version: raw['version'] } : {}),
             };
         }
         if (raw['type'] === 'call.signal' && typeof raw['callId'] === 'string' && typeof raw['from'] === 'string' && this.isRecord(raw['signal'])) {

@@ -15,6 +15,12 @@ major number means here.
   never arrived, and the caller never started its media (1 of 60 call-harness
   runs, 2026-09-27). The client now reads the call each time its subscription to
   the call becomes active, and every change after that arrives on the channel.
+  That read can return after the channel has moved on, so it is ordered by the
+  call state's `version`, which the call record and every `call.state` carry: the
+  client keeps the highest version it has seen and applies a record or an event
+  only when its version is not lower. A read taken before a hang-up no longer
+  brings the ended call back. A server that sends no version is applied as it
+  arrives.
 - A call keeps the ICE candidates that arrive before the peer's description:
   they are held and applied as soon as the description is set, instead of being
   refused by the browser ("The remote description was null") and lost. With one
