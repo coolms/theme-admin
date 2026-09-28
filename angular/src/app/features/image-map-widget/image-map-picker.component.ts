@@ -129,10 +129,12 @@ export class ImageMapPickerComponent implements OnInit {
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
 
-    query = '';
+    // A signal, not a plain field: the computed below reads it, and a computed re-runs only when
+    // a signal it read changes -- as a plain field it kept its first value (2026-09-28 sweep).
+    readonly query = signal('');
 
     readonly filtered = computed(() => {
-        const q = this.query.trim().toLowerCase();
+        const q = this.query().trim().toLowerCase();
         const maps = this.all();
         if (!q) return maps;
 

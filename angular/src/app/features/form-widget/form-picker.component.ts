@@ -77,10 +77,12 @@ export class FormPickerComponent implements OnInit {
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
     readonly all     = signal<FormDefinitionDto[]>([]);
-    query = '';
+    // A signal, not a plain field: the computed below reads it, and a computed re-runs only when
+    // a signal it read changes -- as a plain field it kept its first value (2026-09-28 sweep).
+    readonly query = signal('');
 
     readonly filtered = computed(() => {
-        const q = this.query.trim().toLowerCase();
+        const q = this.query().trim().toLowerCase();
         const list = [...this.all()].sort((a, b) => a.id.localeCompare(b.id));
         return q === '' ? list : list.filter(f => f.id.toLowerCase().includes(q));
     });
