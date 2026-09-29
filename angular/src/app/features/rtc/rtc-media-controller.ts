@@ -48,6 +48,9 @@ const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.
  */
 @Injectable({ providedIn: 'root' })
 export class RtcMediaController {
+    /** Early signals kept per controller at most: a call's offer, answer and candidates are a few dozen. */
+    private static readonly MAX_PENDING = 200;
+
     private readonly rtc = inject(RtcService);
     private readonly toast = inject(ToastService);
 
@@ -67,8 +70,16 @@ export class RtcMediaController {
     private polite = false;
     private makingOffer = false;
     private ignoreOffer = false;
-    /** SDP/ICE that arrived before the peer connection existed; drained on start. */
-    private readonly pending: RtcSignal[] = [];
+    /**
+     * Signals that arrived before this call's media was ready -- before {@link start} was even
+     * called (the orchestrator reads the call first, and the peer's offer can land during that
+     * read) or while start awaited the microphone and the ICE configuration. Each is kept with
+     * its call, and start applies that call's, in order, once the peer connection holds the
+     * local tracks. They used to be dropped when start had not been called yet: the peer's
+     * OFFER was lost, the impolite side never offers again, and the call never connected --
+     * the same defect as the ICE candidates (#50), one step earlier.
+     */
+    private readonly pending: { callId: string; signal: RtcSignal }[] = [];
     /** Remote ICE candidates that arrived before the remote description; applied right after it. */
     private readonly remoteCandidates: RTCIceCandidateInit[] = [];
 
@@ -156,23 +167,27 @@ export class RtcMediaController {
             pc.addTrack(track, this.localCapture!);
         }
 
-        // Apply any signalling that raced ahead of the peer connection.
-        const queued = this.pending.splice(0);
-        for (const signal of queued) {
+        // Apply this call's signalling that raced ahead of its media, in the order it came;
+        // another call's (an ended one's stragglers) is dropped here.
+        const queued = this.pending.splice(0).filter(held => held.callId === callId);
+        for (const { signal } of queued) {
             await this.applySignal(pc, signal);
         }
     }
 
-    /** Apply an inbound SDP/ICE envelope from the peer (queued if we're not ready yet). */
+    /** Apply an inbound SDP/ICE envelope from the peer -- kept for later if this call's media is not ready. */
     handleSignal(callId: string, signal: RtcSignal): void {
-        if (this.callId !== callId) {
-            return;
+        if (this.pc !== null) {
+            if (this.callId === callId) {
+                void this.applySignal(this.pc, signal);
+            }
+            return; // another call's, while this one runs
         }
-        if (this.pc === null) {
-            this.pending.push(signal);
-            return;
+        // Not started, or still starting: keep it for start(). Bounded, so a call whose media
+        // never starts cannot hold signals without end.
+        if (this.pending.length < RtcMediaController.MAX_PENDING) {
+            this.pending.push({ callId, signal });
         }
-        void this.applySignal(this.pc, signal);
     }
 
     /**

@@ -26,6 +26,13 @@ major number means here.
   refused by the browser ("The remote description was null") and lost. With one
   network interface -- a container, a phone -- a lost candidate could be the
   only path, and the call never connected.
+- A call keeps every signal that arrives before its media has started -- the
+  peer's offer, its answer, its ICE candidates -- and applies them, in order,
+  once the media is ready. The callee reads the call before it starts its
+  media, and a caller whose offer came during that read lost it: nothing
+  answered, both sides waited with their own offer and the call never
+  connected. It is the ICE-candidate loss above, one step earlier. Signals
+  for another call are not kept, and at most 200 are held.
 
 ### Added
 - A capped completion says how many it is a part of. A directory here can
