@@ -31,8 +31,10 @@ major number means here.
   once the media is ready. The callee reads the call before it starts its
   media, and a caller whose offer came during that read lost it: nothing
   answered, both sides waited with their own offer and the call never
-  connected. It is the ICE-candidate loss above, one step earlier. Signals
-  for another call are not kept, and at most 200 are held.
+  connected. It is the ICE-candidate loss above, one step earlier. A signal
+  that comes while the held ones are being applied waits behind them, so the
+  order holds to the last. Signals for another call are not applied; at most
+  200 are held, and a signal refused at that limit is logged, once per call.
 
 ### Added
 - A capped completion says how many it is a part of. A directory here can
