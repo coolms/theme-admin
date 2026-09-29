@@ -1,7 +1,7 @@
 import { EnvironmentInjector, createEnvironmentInjector, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject, map, of, timer } from 'rxjs';
 import { ToastService } from '@coolms/ui-angular';
 import { RtcCallService } from './rtc-call.service';
 import { RtcLiveEventsService } from './rtc-live-events.service';
@@ -200,7 +200,12 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 private readonly firstOffer: string,
                 readonly politeUserId: string,
                 private readonly candidatesFirst = false,
-            ) {}
+                // Relay every signal the moment it is sent, holding nothing for glare: the
+                // first party's offer then reaches the other before that one's media starts.
+                relayAtOnce = false,
+            ) {
+                this.held = relayAtOnce ? null : [];
+            }
 
             get idle(): boolean {
                 return this.held === null && this.inFlight === 0;
@@ -275,7 +280,8 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         let added: Map<string, number>;
         const NativePeerConnection = window.RTCPeerConnection;
 
-        function party(userId: string): RtcCallService {
+        /** A party; `readsLateMs` delays its reads of the call, as a slow request would -- media starts after one. */
+        function party(userId: string, readsLateMs = 0): RtcCallService {
             const rtc: Partial<RtcService> = {
                 place: () => {
                     server.place();
@@ -285,7 +291,9 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                     server.answer();
                     return of(server.record('connected'));
                 },
-                get: () => of(server.record('connected')),
+                get: () => readsLateMs > 0
+                    ? timer(readsLateMs).pipe(map(() => server.record('connected')))
+                    : of(server.record('connected')),
                 hangup: () => of(server.record('ended')),
                 getIceServers: () => of({ iceServers: [{ urls: STUN[userId] }], ttlSeconds: 0 }),
                 sendSignal: (_callId: string, sig: RtcSignal): Observable<void> => {
@@ -316,10 +324,15 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         }
 
         /** Place, ring, answer -- then wait until the relay is drained and both connections are stable. */
-        async function callAndNegotiate(firstOffer: string, politeUserId: string, candidatesFirst = false): Promise<void> {
-            server = new FakeServer(firstOffer, politeUserId, candidatesFirst);
+        async function callAndNegotiate(
+            firstOffer: string,
+            politeUserId: string,
+            candidatesFirst = false,
+            early: { relayAtOnce: boolean; calleeReadsLateMs: number } = { relayAtOnce: false, calleeReadsLateMs: 0 },
+        ): Promise<void> {
+            server = new FakeServer(firstOffer, politeUserId, candidatesFirst, early.relayAtOnce);
             const a = party(USER_A);
-            const b = party(USER_B);
+            const b = party(USER_B, early.calleeReadsLateMs);
             a.place(CONVERSATION_ID, 'audio');
             b.answer();
             const settled = (): boolean => server.idle
@@ -441,6 +454,32 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
             }, 10000);
         }
+
+        // The orchestrator reads the call before it starts the media, and the caller's offer
+        // can land during that read. It must be kept and applied once the media is ready --
+        // not dropped: the impolite caller never offers again, and the call never connects
+        // (the workspace client carried an offer-resend workaround for exactly this).
+        it('with the caller\'s offer and candidates delivered before the callee\'s media has started, the callee answers it and applies every candidate', async () => {
+            await callAndNegotiate(USER_A, USER_B, false, { relayAtOnce: true, calleeReadsLateMs: 400 });
+
+            const caller = connections.get(USER_A);
+            const callee = connections.get(USER_B);
+            expect(connections.size).withContext('one peer connection per party').toBe(2);
+            if (caller === undefined || callee === undefined) {
+                return;
+            }
+            expect(callee.signalingState).withContext('the callee settled').toBe('stable');
+            expect(caller.signalingState).withContext('the caller settled').toBe('stable');
+            expect(ufrag(callee.remoteDescription)).withContext('the callee holds the caller\'s early offer')
+                .toBe(ufrag(caller.localDescription));
+            expect(ufrag(caller.remoteDescription)).withContext('the caller holds the callee\'s answer')
+                .toBe(ufrag(callee.localDescription));
+            expect(callee.localDescription?.type).withContext('the callee answered the offer it had kept').toBe('answer');
+            expect(added.get(USER_B) ?? 0).withContext('the callee applied every candidate the caller sent before its media')
+                .toBe(sent.get(USER_A) ?? 0);
+            expect(candidateErrors).withContext('a candidate refused').toEqual([]);
+            expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
+        }, 10000);
     });
 });
 
