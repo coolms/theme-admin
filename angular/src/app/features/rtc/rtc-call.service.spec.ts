@@ -295,7 +295,7 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                     ? timer(readsLateMs).pipe(map(() => server.record('connected')))
                     : of(server.record('connected')),
                 hangup: () => of(server.record('ended')),
-                getIceServers: () => of({ iceServers: [{ urls: STUN[userId] }], ttlSeconds: 0 }),
+                getCallIceServers: () => of({ iceServers: [{ urls: STUN[userId] }], ttlSeconds: 0 }),
                 sendSignal: (_callId: string, sig: RtcSignal): Observable<void> => {
                     if (sig.type === 'candidate') {
                         sent.set(userId, (sent.get(userId) ?? 0) + 1);

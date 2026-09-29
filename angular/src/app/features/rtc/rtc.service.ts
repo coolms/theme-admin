@@ -60,9 +60,16 @@ export class RtcService {
         return this.http.post<void>(`${this.apiBase}/rtc/calls/${encodeURIComponent(callId)}/signal`, signal, { headers: this.jsonHeaders });
     }
 
-    /** GET /rtc/ice-servers -- the STUN/TURN configuration for the peer connection (Slice 4c). */
-    getIceServers(): Observable<RtcIceServersDto> {
-        return this.http.get<RtcIceServersDto>(`${this.apiBase}/rtc/ice-servers`, { headers: this.jsonHeaders });
+    /**
+     * GET /rtc/calls/{id}/ice-servers -- the STUN/TURN configuration for this call's peer
+     * connection. The relay credentials are issued per call, to its participants only (the
+     * server, 2026-09-29); the per-account `/rtc/ice-servers` is no longer asked for a call.
+     */
+    getCallIceServers(callId: string): Observable<RtcIceServersDto> {
+        return this.http.get<RtcIceServersDto>(
+            `${this.apiBase}/rtc/calls/${encodeURIComponent(callId)}/ice-servers`,
+            { headers: this.jsonHeaders },
+        );
     }
 
     /**
