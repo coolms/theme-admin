@@ -87,12 +87,14 @@ export interface RtcSignalNudge {
 export type RtcCallChannelNudge = RtcCallStateNudge | RtcSignalNudge;
 
 /**
- * `GET /rtc/ice-servers` (Slice 4c) -- the ICE configuration for the media plane:
- * STUN always, plus a Coturn TURN relay with a short-lived ephemeral credential
- * when TURN is configured server-side. `iceServers` is passed straight to
- * `new RTCPeerConnection({ iceServers })`; `ttlSeconds` is 0 when STUN-only.
+ * `GET /rtc/calls/{id}/ice-servers` -- the ICE configuration for one call's media plane:
+ * STUN always, plus a Coturn TURN relay with a short-lived ephemeral credential, issued to
+ * the call's participants only, when TURN is configured server-side. `iceServers` is passed
+ * straight to `new RTCPeerConnection({ iceServers })`; `ttlSeconds` is 0 when STUN-only.
  */
 export interface RtcIceServersDto {
+    /** The call the configuration was issued for; absent from the per-account form. */
+    readonly id?: string;
     readonly iceServers: RTCIceServer[];
     readonly ttlSeconds: number;
 }

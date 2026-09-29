@@ -135,10 +135,10 @@ export class RtcMediaController {
             return;
         }
 
-        // Fetch the server's ICE configuration (STUN + TURN when deployed); the
-        // ephemeral TURN credential is minted per call, so this is done here, not
-        // once at construction.
-        const iceServers = await this.resolveIceServers();
+        // Fetch the server's ICE configuration (STUN + TURN when deployed) for THIS call: the
+        // ephemeral TURN credential is issued per call, to its participants only, so this is
+        // done here, not once at construction.
+        const iceServers = await this.resolveIceServers(callId);
         if (this.callId !== callId) {
             // The call ended while we were fetching ICE config; abandon.
             this.localCapture?.getTracks().forEach(t => t.stop());
@@ -349,13 +349,14 @@ export class RtcMediaController {
     }
 
     /**
-     * Fetch the server's ICE configuration (STUN + a TURN relay with an ephemeral
-     * credential when configured); fall back to the static public STUN if the
-     * endpoint can't be reached, so a call still connects on the same network.
+     * Fetch the server's ICE configuration for this call (STUN + a TURN relay with an
+     * ephemeral credential issued to the call's participants, when configured); fall back to
+     * the static public STUN if the endpoint can't be reached -- or refuses, as for a call that
+     * ended meanwhile -- so a call still connects on the same network.
      */
-    private async resolveIceServers(): Promise<RTCIceServer[]> {
+    private async resolveIceServers(callId: string): Promise<RTCIceServer[]> {
         try {
-            const config = await firstValueFrom(this.rtc.getIceServers());
+            const config = await firstValueFrom(this.rtc.getCallIceServers(callId));
             if (config.iceServers.length > 0) {
                 return config.iceServers;
             }

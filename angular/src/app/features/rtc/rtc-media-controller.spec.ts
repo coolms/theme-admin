@@ -22,8 +22,11 @@ class FakePeerConnection {
     readonly signalingState: RTCSignalingState = 'stable';
     readonly events: string[] = [];
     release: (() => void) | null = null;
+    /** What the controller built this connection with: its ICE servers among it. */
+    readonly config: RTCConfiguration | null;
 
-    constructor() {
+    constructor(config?: RTCConfiguration) {
+        this.config = config ?? null;
         FakePeerConnection.created.push(this);
     }
 
@@ -97,7 +100,7 @@ describe('RtcMediaController -- the signals held until the media is ready', () =
         spyOn(navigator.mediaDevices, 'getUserMedia').and.callFake(() => Promise.resolve(new MediaStream()));
         TestBed.configureTestingModule({
             providers: [
-                { provide: RtcService, useValue: { getIceServers: () => of({ iceServers: [] }), sendSignal: () => of(null) } },
+                { provide: RtcService, useValue: { getCallIceServers: () => of({ iceServers: [] }), sendSignal: () => of(null) } },
                 { provide: ToastService, useValue: { error: () => undefined } },
             ],
         });
@@ -152,5 +155,53 @@ describe('RtcMediaController -- the signals held until the media is ready', () =
         expect(events.slice(0, 2)).toEqual(['remote y begins', 'remote y set']);
         expect(events.filter(e => e.startsWith('candidate')).length).withContext('the 199 candidates kept').toBe(199);
         expect(events[events.length - 1]).toBe('candidate c198');
+    });
+});
+
+/**
+ * The relay credentials are issued per call, to its participants only (the server, 2026-09-29):
+ * the controller asks for the call it is starting -- not for the account -- and builds the peer
+ * connection with what that call was issued.
+ */
+describe('RtcMediaController -- the relay credentials are asked for the call it starts', () => {
+    const NativePeerConnection = window.RTCPeerConnection;
+    const relay: RTCIceServer = { urls: ['turn:relay.example:3478'], username: '1790000000:call-y:me', credential: 'c' };
+    let controller: RtcMediaController;
+    let asked: string[];
+
+    beforeEach(() => {
+        asked = [];
+        FakePeerConnection.created = [];
+        FakePeerConnection.holdNext = false;
+        window.RTCPeerConnection = FakePeerConnection as unknown as typeof RTCPeerConnection;
+        spyOn(navigator.mediaDevices, 'getUserMedia').and.callFake(() => Promise.resolve(new MediaStream()));
+        TestBed.configureTestingModule({
+            providers: [
+                {
+                    provide: RtcService,
+                    useValue: {
+                        getCallIceServers: (callId: string) => {
+                            asked.push(callId);
+                            return of({ id: callId, iceServers: [relay], ttlSeconds: 600 });
+                        },
+                        sendSignal: () => of(null),
+                    },
+                },
+                { provide: ToastService, useValue: { error: () => undefined } },
+            ],
+        });
+        controller = TestBed.inject(RtcMediaController);
+    });
+
+    afterEach(() => {
+        controller.stop();
+        window.RTCPeerConnection = NativePeerConnection;
+    });
+
+    it('asks once, for the call it starts, and the peer connection is built with that call\'s relay', async () => {
+        await controller.start('call-y', true, 'audio');
+
+        expect(asked).withContext('asked for this call, once').toEqual(['call-y']);
+        expect(FakePeerConnection.created[0].config?.iceServers).withContext('built with the call\'s relay').toEqual([relay]);
     });
 });

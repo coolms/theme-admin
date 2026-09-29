@@ -7,6 +7,15 @@ Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
 ## Unreleased
 
+### Security
+
+- A call's relay credentials are asked for that call: the media plane reads
+  `GET /rtc/calls/{id}/ice-servers`, which the server answers for the call's
+  participants only, instead of the per-account `GET /rtc/ice-servers`, which
+  handed a TURN credential to any signed-in account. Needs a server that
+  serves the per-call route (backend, 2026-09-29); if it cannot be read the
+  call still falls back to public STUN, as before.
+
 ### Fixed
 
 - The admin subscribes to its incoming-call channel (`rtc.user.<id>`) when both
