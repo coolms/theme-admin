@@ -1,7 +1,20 @@
 import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
-import { EMPTY, Observable, Subscription, distinctUntilChanged, map, switchMap } from 'rxjs';
+import {
+    EMPTY,
+    Observable,
+    Subscription,
+    catchError,
+    combineLatest,
+    defer,
+    distinctUntilChanged,
+    map,
+    retry,
+    startWith,
+    switchMap,
+    timer,
+} from 'rxjs';
 import { AuthState } from '@coolms/core-angular';
 import { ToastService } from '@coolms/ui-angular';
 import { RtcCallRole, RtcMediaController } from './rtc-media-controller';
@@ -9,6 +22,11 @@ import { RtcSfuMediaController } from './rtc-sfu-media-controller';
 import { RtcLiveEventsService } from './rtc-live-events.service';
 import { RtcService } from './rtc.service';
 import { RtcCallChannelNudge, RtcCallDto, RtcCallState, RtcIncomingCallNudge, RtcMediaKind } from './rtc.types';
+
+/** The first wait before asking again for a realtime connection that failed; doubled each time. */
+export const RING_CONNECT_RETRY_MS = 1_000;
+/** The longest wait between two asks. */
+export const RING_CONNECT_RETRY_MAX_MS = 30_000;
 
 /** The overlay's view of what's happening -- a local UI state atop the server {@link RtcCallState}. */
 export type RtcUiState = 'ringing-out' | 'ringing-in' | 'connecting' | 'connected' | 'ended';
@@ -87,16 +105,39 @@ export class RtcCallService {
     private endTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor() {
-        // Listen for incoming calls for the whole session; re-subscribe on user change.
-        this.store
-            .select(AuthState.currentUser)
+        const userId$ = this.store.select(AuthState.currentUser).pipe(
+            map(user => user?.id ?? null),
+            distinctUntilChanged(),
+        );
+        // The ring, `rtc.user.{myId}`, for the whole session: subscribed once BOTH are ready --
+        // the signed-in user known and the realtime connection up -- and again after every
+        // reconnect (Dmitry, 2026-09-28). It was subscribed on the user alone, in one pipe:
+        // a subscribe begun before the connection was up, or lost with it, was never made again,
+        // and a single failed one ended the ring for the rest of the session. A subscribe that
+        // fails now ends only itself; the next time the connection comes up it is made again.
+        const connected$ = toObservable(this.live.isConnected).pipe(startWith(this.live.isConnected()));
+        combineLatest([userId$, connected$])
             .pipe(
-                map(user => user?.id ?? null),
+                map(([id, connected]) => (connected ? id : null)),
                 distinctUntilChanged(),
-                switchMap(id => (id !== null ? this.live.watchUserRing(id) : EMPTY)),
+                switchMap(id => (id !== null ? this.live.watchUserRing(id).pipe(catchError(() => EMPTY)) : EMPTY)),
                 takeUntilDestroyed(this.destroyRef),
             )
-            .subscribe({ next: nudge => this.onIncoming(nudge), error: () => undefined });
+            .subscribe(nudge => this.onIncoming(nudge));
+        // The connection the ring waits for: asked for as soon as the user is known, and asked
+        // again, with a doubling wait, while an attempt fails -- until it is up or the user changes.
+        userId$
+            .pipe(
+                switchMap(id => (id === null
+                    ? EMPTY
+                    : defer(() => this.live.connect()).pipe(retry({
+                        delay: (_err: unknown, attempt: number) => timer(
+                            Math.min(RING_CONNECT_RETRY_MAX_MS, RING_CONNECT_RETRY_MS * 2 ** (attempt - 1)),
+                        ),
+                    })))),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe();
     }
 
     /** Place an outgoing call into a conversation. `peerName` is the callee's label for the overlay. */

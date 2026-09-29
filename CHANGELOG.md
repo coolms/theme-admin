@@ -9,6 +9,15 @@ major number means here.
 
 ### Fixed
 
+- The admin subscribes to its incoming-call channel (`rtc.user.<id>`) when both
+  the signed-in user is known and the realtime connection is up, and again
+  after every reconnect. It was subscribed on the user alone, in one pipe: a
+  subscribe begun before the connection was up, or lost with it, was never
+  made again, and a single failed one ended the ring for the rest of the
+  session -- an admin that could be called but never rang. A failed subscribe
+  now ends only itself. The connection is asked for as soon as the user is
+  known, and asked again with a doubling wait (1 s up to 30 s) while an
+  attempt fails.
 - A caller learns its call connected even when the answer lands while it is still
   subscribing to the call's channel. The channel keeps no history, so a
   `call.state connected` published before the caller's subscription became active
