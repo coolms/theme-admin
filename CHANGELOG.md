@@ -18,6 +18,15 @@ major number means here.
 
 ### Fixed
 
+- A call that rang before the admin's incoming-call subscription was confirmed
+  still rings. That channel keeps no history, so a ring published between the
+  subscribe and the server's confirmation reached nobody, and the call was
+  never shown. Now each confirmation, reconnects included, reads
+  `GET /rtc/ringing` (the calls ringing this user now, each with its version)
+  and raises a listed call as its ring would have. The version rule applies:
+  a call already in view takes the record only if it is not older, and a call
+  this admin has seen end is not brought back by a read that returns after it
+  ended. Needs a server that serves `GET /rtc/ringing` (backend, 2026-09-30).
 - The admin subscribes to its incoming-call channel (`rtc.user.<id>`) when both
   the signed-in user is known and the realtime connection is up, and again
   after every reconnect. It was subscribed on the user alone, in one pipe: a

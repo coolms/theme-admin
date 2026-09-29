@@ -23,6 +23,15 @@ export class RtcService {
         return new HttpHeaders({ Accept: 'application/json' });
     }
 
+    /**
+     * GET /rtc/ringing -- the calls ringing the signed-in user now, oldest first, each with its
+     * version: read once the ring channel's subscription is confirmed, since that channel keeps
+     * no history and a ring published before then never arrives.
+     */
+    ringing(): Observable<RtcCallDto[]> {
+        return this.http.get<RtcCallDto[]>(`${this.apiBase}/rtc/ringing`, { headers: this.jsonHeaders });
+    }
+
     /** POST /rtc/calls -- place a call into a conversation; the backend seeds + rings the roster. */
     place(conversationId: string, mediaKind: RtcMediaKind): Observable<RtcCallDto> {
         return this.http.post<RtcCallDto>(`${this.apiBase}/rtc/calls`, { conversationId, mediaKind }, { headers: this.jsonHeaders });
