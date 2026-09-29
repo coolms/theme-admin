@@ -48,6 +48,9 @@ const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.
  */
 @Injectable({ providedIn: 'root' })
 export class RtcMediaController {
+    /** Early signals kept per controller at most: a call's offer, answer and candidates are a few dozen. */
+    private static readonly MAX_PENDING = 200;
+
     private readonly rtc = inject(RtcService);
     private readonly toast = inject(ToastService);
 
@@ -67,8 +70,23 @@ export class RtcMediaController {
     private polite = false;
     private makingOffer = false;
     private ignoreOffer = false;
-    /** SDP/ICE that arrived before the peer connection existed; drained on start. */
-    private readonly pending: RtcSignal[] = [];
+    /**
+     * Signals that arrived before this call's media was ready -- before {@link start} was even
+     * called (the orchestrator reads the call first, and the peer's offer can land during that
+     * read) or while start awaited the microphone and the ICE configuration. Each is kept with
+     * its call, and start applies that call's, in order, once the peer connection holds the
+     * local tracks. They used to be dropped when start had not been called yet: the peer's
+     * OFFER was lost, the impolite side never offers again, and the call never connected --
+     * the same defect as the ICE candidates (#50), one step earlier.
+     */
+    private readonly pending: { callId: string; signal: RtcSignal }[] = [];
+    /**
+     * True while start applies the held signals. A signal that arrives meanwhile is queued behind
+     * them rather than applied at once: an SDP applied beside the drain would race the held one.
+     */
+    private draining = false;
+    /** Whether this call has already been told, once, that the pending queue was full. */
+    private warnedFull = false;
     /** Remote ICE candidates that arrived before the remote description; applied right after it. */
     private readonly remoteCandidates: RTCIceCandidateInit[] = [];
 
@@ -156,23 +174,47 @@ export class RtcMediaController {
             pc.addTrack(track, this.localCapture!);
         }
 
-        // Apply any signalling that raced ahead of the peer connection.
-        const queued = this.pending.splice(0);
-        for (const signal of queued) {
-            await this.applySignal(pc, signal);
+        // Apply this call's signalling that raced ahead of its media, in the order it came, one
+        // at a time; what arrives meanwhile joins the end of the queue, so the order holds to the
+        // last. Another call's is dropped here -- defensive: the orchestrator's stop() has
+        // already emptied the queue before a new call starts. Ends at once if the call does.
+        this.draining = true;
+        try {
+            while (this.pc === pc) {
+                const held = this.pending.shift();
+                if (held === undefined) {
+                    break;
+                }
+                if (held.callId === callId) {
+                    await this.applySignal(pc, held.signal);
+                }
+            }
+        } finally {
+            if (this.pc === pc) {
+                this.draining = false;
+            }
         }
     }
 
-    /** Apply an inbound SDP/ICE envelope from the peer (queued if we're not ready yet). */
+    /** Apply an inbound SDP/ICE envelope from the peer -- kept for later if this call's media is not ready. */
     handleSignal(callId: string, signal: RtcSignal): void {
-        if (this.callId !== callId) {
+        if (this.pc !== null && this.callId !== callId) {
+            return; // another call's, while this one runs
+        }
+        if (this.pc !== null && !this.draining) {
+            void this.applySignal(this.pc, signal);
             return;
         }
-        if (this.pc === null) {
-            this.pending.push(signal);
-            return;
+        // Not started, still starting, or still applying what was held: queue it for start(),
+        // behind the rest. Bounded, so a call whose media never starts cannot hold signals
+        // without end -- and said once, so a runaway is visible.
+        if (this.pending.length < RtcMediaController.MAX_PENDING) {
+            this.pending.push({ callId, signal });
+        } else if (!this.warnedFull) {
+            this.warnedFull = true;
+            console.warn('[rtc] ' + RtcMediaController.MAX_PENDING + ' signals are already held for a call whose media '
+                + 'has not started; this ' + signal.type + ' and any after it are dropped');
         }
-        void this.applySignal(this.pc, signal);
     }
 
     /**
@@ -297,6 +339,8 @@ export class RtcMediaController {
         this.makingOffer = false;
         this.ignoreOffer = false;
         this.pending.length = 0;
+        this.draining = false;
+        this.warnedFull = false;
         this.remoteCandidates.length = 0;
         this._localStream.set(null);
         this._micMuted.set(false);
