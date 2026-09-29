@@ -23,6 +23,15 @@ export class RtcLiveEventsService {
     private readonly client = inject(CentrifugoClientService);
     readonly isConnected: Signal<boolean> = this.client.isConnected;
 
+    /**
+     * Ask for the realtime connection; {@link isConnected} says when it is up. Idempotent: the
+     * shared client connects once, and after that reconnects by itself. Rejects when this
+     * attempt fails (the connection token could not be had), so the caller can ask again.
+     */
+    async connect(): Promise<void> {
+        await this.client.connect();
+    }
+
     watchUserRing(userId: string): Observable<RtcIncomingCallNudge> {
         return this.observeChannel(`rtc.user.${userId}`, raw => this.parseIncoming(raw));
     }

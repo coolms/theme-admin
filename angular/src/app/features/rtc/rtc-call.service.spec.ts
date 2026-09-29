@@ -112,7 +112,15 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                         hangup: () => of(dto('ended', named)),
                     },
                 },
-                { provide: RtcLiveEventsService, useValue: { watchUserRing: () => ring.asObservable(), watchCall: () => channel.asObservable() } },
+                {
+                    provide: RtcLiveEventsService,
+                    useValue: {
+                        watchUserRing: () => ring.asObservable(),
+                        watchCall: () => channel.asObservable(),
+                        isConnected: signal(true),
+                        connect: () => Promise.resolve(),
+                    },
+                },
                 // This party is the CALLEE, B.
                 { provide: Store, useValue: { select: () => of({ id: USER_B }), selectSnapshot: () => ({ id: USER_B }) } },
                 { provide: ToastService, useValue: { error: () => undefined } },
@@ -300,6 +308,7 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 watchUserRing: (id: string) => server.ringOf(id).asObservable(),
                 watchCall: () => server.channel.asObservable(),
                 isConnected: signal(true),
+                connect: () => Promise.resolve(),
             };
             const injector = createEnvironmentInjector([
                 RtcCallService,
@@ -529,6 +538,8 @@ describe('RtcCallService -- the caller who subscribed after the call connected',
                 onSubscribed = told ?? null;
                 return channel.asObservable();
             },
+            isConnected: signal(true),
+            connect: () => Promise.resolve(),
         };
         injector = createEnvironmentInjector([
             RtcCallService,
@@ -657,6 +668,8 @@ describe('RtcCallService -- a read older than the channel is not applied', () =>
                 onSubscribed = told ?? null;
                 return channel.asObservable();
             },
+            isConnected: signal(true),
+            connect: () => Promise.resolve(),
         };
         injector = createEnvironmentInjector([
             RtcCallService,
