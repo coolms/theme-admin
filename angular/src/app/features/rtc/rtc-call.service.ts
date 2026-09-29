@@ -13,9 +13,10 @@ import {
     retry,
     startWith,
     switchMap,
+    throwError,
     timer,
 } from 'rxjs';
-import { AuthState } from '@coolms/core-angular';
+import { AuthState, RealtimeTokenClient } from '@coolms/core-angular';
 import { ToastService } from '@coolms/ui-angular';
 import { RtcCallRole, RtcMediaController } from './rtc-media-controller';
 import { RtcSfuMediaController } from './rtc-sfu-media-controller';
@@ -27,6 +28,11 @@ import { RtcCallChannelNudge, RtcCallDto, RtcCallState, RtcIncomingCallNudge, Rt
 export const RING_CONNECT_RETRY_MS = 1_000;
 /** The longest wait between two asks. */
 export const RING_CONNECT_RETRY_MAX_MS = 30_000;
+
+/** Whether a failed connect is the console's refusal, which holds for the whole sign-in. */
+function isRefused(err: unknown): boolean {
+    return err instanceof Error && err.message === RealtimeTokenClient.REFUSED;
+}
 
 /** The overlay's view of what's happening -- a local UI state atop the server {@link RtcCallState}. */
 export type RtcUiState = 'ringing-out' | 'ringing-in' | 'connecting' | 'connected' | 'ended';
@@ -126,15 +132,20 @@ export class RtcCallService {
             .subscribe(nudge => this.onIncoming(nudge));
         // The connection the ring waits for: asked for as soon as the user is known, and asked
         // again, with a doubling wait, while an attempt fails -- until it is up or the user changes.
+        // Not for an account refused the console: it stays signed in, and its refusal holds for
+        // the whole sign-in, so asking again would never end (the site's review of #57).
         userId$
             .pipe(
                 switchMap(id => (id === null
                     ? EMPTY
-                    : defer(() => this.live.connect()).pipe(retry({
-                        delay: (_err: unknown, attempt: number) => timer(
-                            Math.min(RING_CONNECT_RETRY_MAX_MS, RING_CONNECT_RETRY_MS * 2 ** (attempt - 1)),
-                        ),
-                    })))),
+                    : defer(() => this.live.connect()).pipe(
+                        retry({
+                            delay: (err: unknown, attempt: number) => (isRefused(err)
+                                ? throwError(() => err)
+                                : timer(Math.min(RING_CONNECT_RETRY_MAX_MS, RING_CONNECT_RETRY_MS * 2 ** (attempt - 1)))),
+                        }),
+                        catchError(() => EMPTY),
+                    ))),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe();

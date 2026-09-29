@@ -3,8 +3,9 @@ import { TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing
 import { Store } from '@ngxs/store';
 import { Observable, Subject, of, throwError } from 'rxjs';
 
+import { RealtimeTokenClient } from '@coolms/core-angular';
 import { ToastService } from '@coolms/ui-angular';
-import { RING_CONNECT_RETRY_MS, RtcCallService } from './rtc-call.service';
+import { RING_CONNECT_RETRY_MAX_MS, RING_CONNECT_RETRY_MS, RtcCallService } from './rtc-call.service';
 import { RtcLiveEventsService } from './rtc-live-events.service';
 import { RtcMediaController } from './rtc-media-controller';
 import { RtcSfuMediaController } from './rtc-sfu-media-controller';
@@ -140,5 +141,16 @@ describe('RtcCallService -- the ring is subscribed when the user and the connect
 
         tick(60_000);
         expect(connect).withContext('never again once it succeeded').toHaveBeenCalledTimes(3);
+    }));
+
+    it('does not ask again for an account refused the console: the refusal holds for the whole sign-in', fakeAsync(() => {
+        connect.and.callFake(() => Promise.reject(new Error(RealtimeTokenClient.REFUSED)));
+        ringService();
+        flushMicrotasks();
+        expect(connect).withContext('asked once').toHaveBeenCalledTimes(1);
+
+        tick(10 * RING_CONNECT_RETRY_MAX_MS);
+        flushMicrotasks();
+        expect(connect).withContext('never again after the refusal').toHaveBeenCalledTimes(1);
     }));
 });
