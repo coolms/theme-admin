@@ -32,8 +32,13 @@ export class RtcLiveEventsService {
         await this.client.connect();
     }
 
-    watchUserRing(userId: string): Observable<RtcIncomingCallNudge> {
-        return this.observeChannel(`rtc.user.${userId}`, raw => this.parseIncoming(raw));
+    /**
+     * `onSubscribed` runs each time the ring's subscription is confirmed by the server, reconnects
+     * included -- the moment to read the calls ringing now, as {@link watchCall}'s is to read the
+     * call: a ring published before it never arrives (Dmitry, 2026-09-29).
+     */
+    watchUserRing(userId: string, onSubscribed?: () => void): Observable<RtcIncomingCallNudge> {
+        return this.observeChannel(`rtc.user.${userId}`, raw => this.parseIncoming(raw), onSubscribed);
     }
 
     /**

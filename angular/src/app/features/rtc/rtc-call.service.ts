@@ -28,6 +28,8 @@ import { RtcCallChannelNudge, RtcCallDto, RtcCallState, RtcIncomingCallNudge, Rt
 export const RING_CONNECT_RETRY_MS = 1_000;
 /** The longest wait between two asks. */
 export const RING_CONNECT_RETRY_MAX_MS = 30_000;
+/** How many ended calls are remembered against a late ringing read. */
+const ENDED_KEPT = 32;
 
 /** Whether a failed connect is the console's refusal, which holds for the whole sign-in. */
 function isRefused(err: unknown): boolean {
@@ -110,6 +112,9 @@ export class RtcCallService {
     /** Pending auto-dismiss timer for a terminal call. */
     private endTimer: ReturnType<typeof setTimeout> | null = null;
 
+    /** Calls cleared from view, oldest first, with the version this client last held for each. */
+    private readonly ended = new Map<string, number>();
+
     constructor() {
         const userId$ = this.store.select(AuthState.currentUser).pipe(
             map(user => user?.id ?? null),
@@ -121,12 +126,18 @@ export class RtcCallService {
         // a subscribe begun before the connection was up, or lost with it, was never made again,
         // and a single failed one ended the ring for the rest of the session. A subscribe that
         // fails now ends only itself; the next time the connection comes up it is made again.
+        // Each time the server confirms the subscription the calls ringing now are read: the ring
+        // channel keeps no history, and a ring published before the confirmation is never
+        // delivered (Dmitry, 2026-09-29: "The app and the admin read it after every rtc.user
+        // subscribe confirmation, including after reconnects, and apply it under the version rule").
         const connected$ = toObservable(this.live.isConnected).pipe(startWith(this.live.isConnected()));
         combineLatest([userId$, connected$])
             .pipe(
                 map(([id, connected]) => (connected ? id : null)),
                 distinctUntilChanged(),
-                switchMap(id => (id !== null ? this.live.watchUserRing(id).pipe(catchError(() => EMPTY)) : EMPTY)),
+                switchMap(id => (id !== null
+                    ? this.live.watchUserRing(id, () => this.readRinging()).pipe(catchError(() => EMPTY))
+                    : EMPTY)),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(nudge => this.onIncoming(nudge));
@@ -250,6 +261,37 @@ export class RtcCallService {
      */
     downloadRecording(callId: string): Observable<Blob> {
         return this.rtc.downloadRecording(callId);
+    }
+
+    /** The calls ringing this user now, each applied as its ring would have been. */
+    private readRinging(): void {
+        this.rtc.ringing().subscribe({
+            next: calls => calls.forEach(call => this.onRinging(call)),
+            error: () => undefined,
+        });
+    }
+
+    /**
+     * A call the ringing read lists. With no call in view it rings, as its ring would have; for
+     * the call already in view the record is applied under the version rule; while busy with
+     * another call it is ignored, as that call's ring is. A call this client has seen end is not
+     * brought back by a read older than its end: the read can return after the channel moved on.
+     */
+    private onRinging(dto: RtcCallDto): void {
+        const ended = this.ended.get(dto.id);
+        if (ended !== undefined && (dto.version === undefined || dto.version <= ended)) {
+            return;
+        }
+        if (this._activeCall() === null && dto.state === 'ringing') {
+            this.onIncoming({
+                type: 'call.incoming',
+                callId: dto.id,
+                conversationId: dto.conversationId,
+                fromUserId: dto.initiatorUserId,
+                mediaKind: dto.mediaKind,
+            });
+        }
+        this.reconcile(dto);
     }
 
     private onIncoming(nudge: RtcIncomingCallNudge): void {
@@ -463,6 +505,15 @@ export class RtcCallService {
 
     private clear(): void {
         this.cancelDismiss();
+        const call = this._activeCall();
+        if (call !== null) {
+            // A call cleared from view has ended here; a later ringing read must not raise it again.
+            this.ended.delete(call.callId);
+            this.ended.set(call.callId, call.version);
+            if (this.ended.size > ENDED_KEPT) {
+                this.ended.delete(this.ended.keys().next().value as string);
+            }
+        }
         this.callSub?.unsubscribe();
         this.callSub = null;
         this.media.stop();
