@@ -80,8 +80,13 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
     }
 
     /** The ICE username fragment a description was generated with -- whose SDP it is. */
-    function ufrag(description: RTCSessionDescription | null): string | null {
+    function ufrag(description: RTCSessionDescriptionInit | null): string | null {
         return /a=ice-ufrag:(\S+)/.exec(description?.sdp ?? '')?.[1] ?? null;
+    }
+
+    /** The ICE username fragment a candidate belongs to -- whose description it is for. */
+    function candidateUfrag(candidate: RTCIceCandidateInit | undefined): string | null {
+        return candidate?.usernameFragment ?? / ufrag (\S+)/.exec(candidate?.candidate ?? '')?.[1] ?? null;
     }
 
     const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -184,6 +189,15 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
 
     describe('two parties over a channel that echoes to its sender', () => {
         /**
+         * The order the server publishes signals in. 'as sent'. 'candidates first': when glare
+         * releases the held signals, every held candidate before any description. 'each candidate
+         * first': every offer and answer waits for the next candidate its sender produces and is
+         * published right behind it -- a candidate BEFORE the description it belongs to, as two
+         * POSTs the server handles in parallel publish (measured with the call harness, 2026-09-25).
+         */
+        type RelayOrder = 'as sent' | 'candidates first' | 'each candidate first';
+
+        /**
          * The server: places, rings, answers, and relays signals on one broadcast
          * channel, one delivery at a time with a small gap (a network, not a
          * synchronous call). Signals are held until both parties have offered. It
@@ -193,13 +207,15 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             readonly channel = new Subject<RtcCallChannelNudge>();
             readonly rings = new Map<string, Subject<RtcIncomingCallNudge>>();
             private held: { from: string; signal: RtcSignal }[] | null = [];
+            /** 'each candidate first': per sender, the description waiting for the candidate to go ahead of it. */
+            private readonly late = new Map<string, RtcSignal>();
             private tail: Promise<void> = Promise.resolve();
             private inFlight = 0;
 
             constructor(
                 private readonly firstOffer: string,
                 readonly politeUserId: string,
-                private readonly candidatesFirst = false,
+                private readonly order: RelayOrder = 'as sent',
                 // Relay every signal the moment it is sent, holding nothing for glare: the
                 // first party's offer then reaches the other before that one's media starts.
                 relayAtOnce = false,
@@ -208,7 +224,7 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             }
 
             get idle(): boolean {
-                return this.held === null && this.inFlight === 0;
+                return this.held === null && this.inFlight === 0 && this.late.size === 0;
             }
 
             record(state: RtcCallState): RtcCallDto {
@@ -233,6 +249,26 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             }
 
             signal(from: string, sig: RtcSignal): void {
+                if (this.order !== 'each candidate first') {
+                    this.relay(from, sig);
+                    return;
+                }
+                const waiting = this.late.get(from);
+                if (sig.type !== 'candidate') {
+                    if (waiting !== undefined) {
+                        this.relay(from, waiting); // a second description with no candidate between: not lost
+                    }
+                    this.late.set(from, sig);
+                    return;
+                }
+                this.relay(from, sig);
+                if (waiting !== undefined) {
+                    this.late.delete(from);
+                    this.relay(from, waiting);
+                }
+            }
+
+            private relay(from: string, sig: RtcSignal): void {
                 if (this.held === null) {
                     this.publish({ type: 'call.signal', callId: CALL_ID, from, signal: sig });
                     return;
@@ -245,11 +281,14 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 // Glare: both have offered. The chosen party's offer goes first, the rest in order.
                 const first = this.held.findIndex(h => h.signal.type === 'offer' && h.from === this.firstOffer);
                 const rest = this.held.filter((_, i) => i !== first);
-                const order = this.candidatesFirst
+                const order = this.order === 'candidates first'
                     // Every candidate before any description -- the order a busy sender or a slow
                     // relay produces, and the one that lost candidates before they were queued.
                     ? [...rest.filter(h => h.signal.type === 'candidate'), this.held[first], ...rest.filter(h => h.signal.type !== 'candidate')]
-                    : [this.held[first], ...rest];
+                    : this.order === 'each candidate first'
+                        // The chosen party's signals first, each description still behind its candidate.
+                        ? [...this.held.filter(h => h.from === this.firstOffer), ...this.held.filter(h => h.from !== this.firstOffer)]
+                        : [this.held[first], ...rest];
                 this.held = null;
                 for (const h of order) {
                     this.publish({ type: 'call.signal', callId: CALL_ID, from: h.from, signal: h.signal });
@@ -276,8 +315,12 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         let audio: AudioContext[];
         let sdpErrors: string[];
         let candidateErrors: string[];
-        let sent: Map<string, number>;
-        let added: Map<string, number>;
+        /** By party, the ICE username fragment of each candidate it sent, in order. */
+        let sent: Map<string, (string | null)[]>;
+        /** By party, the ICE username fragment of each candidate its connection took in, in order. */
+        let added: Map<string, (string | null)[]>;
+        /** By party, the ICE username fragment of each offer it sent. */
+        let offered: Map<string, (string | null)[]>;
         const NativePeerConnection = window.RTCPeerConnection;
 
         /** A party; `readsLateMs` delays its reads of the call, as a slow request would -- media starts after one. */
@@ -298,7 +341,10 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 getCallIceServers: () => of({ iceServers: [{ urls: STUN[userId] }], ttlSeconds: 0 }),
                 sendSignal: (_callId: string, sig: RtcSignal): Observable<void> => {
                     if (sig.type === 'candidate') {
-                        sent.set(userId, (sent.get(userId) ?? 0) + 1);
+                        sent.set(userId, [...sent.get(userId) ?? [], candidateUfrag(sig.payload as RTCIceCandidateInit)]);
+                    }
+                    if (sig.type === 'offer') {
+                        offered.set(userId, [...offered.get(userId) ?? [], ufrag(sig.payload as RTCSessionDescriptionInit)]);
                     }
                     server.signal(userId, sig);
                     return of(undefined);
@@ -327,10 +373,10 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         async function callAndNegotiate(
             firstOffer: string,
             politeUserId: string,
-            candidatesFirst = false,
+            order: RelayOrder = 'as sent',
             early: { relayAtOnce: boolean; calleeReadsLateMs: number } = { relayAtOnce: false, calleeReadsLateMs: 0 },
         ): Promise<void> {
-            server = new FakeServer(firstOffer, politeUserId, candidatesFirst, early.relayAtOnce);
+            server = new FakeServer(firstOffer, politeUserId, order, early.relayAtOnce);
             const a = party(USER_A);
             const b = party(USER_B, early.calleeReadsLateMs);
             a.place(CONVERSATION_ID, 'audio');
@@ -345,14 +391,32 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             await sleep(200); // whatever the last delivery set off
         }
 
+        /**
+         * Each connection took in every candidate the other party sent for the description it
+         * holds -- and no other: none of an offer it ignored. The ICE username fragment says which
+         * description a candidate is for.
+         */
+        function expectEachAppliedTheCandidatesOfTheDescriptionItHolds(): void {
+            for (const [owner, other] of [[USER_A, USER_B], [USER_B, USER_A]]) {
+                const holds = ufrag(connections.get(owner)?.remoteDescription ?? null);
+                const forIt = (sent.get(other) ?? []).filter(u => u === holds);
+                expect(holds).withContext(`${owner} holds ${other}'s description`)
+                    .toBe(ufrag(connections.get(other)?.localDescription ?? null));
+                expect(forIt.length).withContext(`${other} sent candidates for the description ${owner} holds`).toBeGreaterThan(0);
+                expect(added.get(owner) ?? []).withContext(`${owner}'s connection took in every candidate for ${other}'s description it holds, and no other`)
+                    .toEqual(forIt);
+            }
+        }
+
         beforeEach(() => {
             injectors = [];
             connections = new Map<string, RTCPeerConnection>();
             audio = [];
             sdpErrors = [];
             candidateErrors = [];
-            sent = new Map<string, number>();
-            added = new Map<string, number>();
+            sent = new Map<string, (string | null)[]>();
+            added = new Map<string, (string | null)[]>();
+            offered = new Map<string, (string | null)[]>();
             // Every connection the controllers make, as the browser made it, by party.
             const Recording = function (config?: RTCConfiguration): RTCPeerConnection {
                 const pc = new NativePeerConnection(config);
@@ -364,7 +428,7 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
                 (pc as unknown as { addIceCandidate: (c?: RTCIceCandidateInit) => Promise<void> }).addIceCandidate =
                     async (c?: RTCIceCandidateInit): Promise<void> => {
                         await add(c);
-                        added.set(owner, (added.get(owner) ?? 0) + 1);
+                        added.set(owner, [...added.get(owner) ?? [], candidateUfrag(c)]);
                     };
                 return pc;
             } as unknown as typeof RTCPeerConnection;
@@ -441,16 +505,40 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         // only path, and the call never connected.
         for (const first of [USER_A, USER_B]) {
             const lands = first === USER_A ? 'the caller\'s' : 'the callee\'s';
-            it(`with every candidate delivered before the descriptions (${lands} offer first), each side applies every candidate the other sent`, async () => {
-                await callAndNegotiate(first, USER_B, true);
+            it(`with every candidate delivered before the descriptions (${lands} offer first), each side applies every candidate of the description it holds`, async () => {
+                await callAndNegotiate(first, USER_B, 'candidates first');
 
                 expect(connections.size).withContext('one peer connection per party').toBe(2);
                 expect(candidateErrors).withContext('a candidate refused (for arriving before the description, or at all)').toEqual([]);
-                for (const [owner, other] of [[USER_A, USER_B], [USER_B, USER_A]]) {
-                    expect(sent.get(other) ?? 0).withContext(`${other} sent candidates`).toBeGreaterThan(0);
-                    expect(added.get(owner) ?? 0).withContext(`${owner}'s connection applied every candidate ${other} sent`)
-                        .toBe(sent.get(other) ?? 0);
+                expectEachAppliedTheCandidatesOfTheDescriptionItHolds();
+                expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
+            }, 10000);
+        }
+
+        // Under glare the polite side rolls its offer back and answers, and the answer's candidates
+        // race the answer as the offer's raced the offer: they reach the impolite side while it is
+        // still ignoring that offer, and must be kept for the answer. The ignored offer's own
+        // candidates must not be: the answer comes with ICE credentials of its own, so they are
+        // dropped rather than replayed -- Chrome would take them in without a word, and use none.
+        for (const first of [USER_A, USER_B]) {
+            const lands = first === USER_A ? 'the caller\'s' : 'the callee\'s';
+            it(`with each candidate published before its description (${lands} offer first), the impolite side applies the answer's candidates and drops the ignored offer's`, async () => {
+                await callAndNegotiate(first, USER_B, 'each candidate first');
+
+                const polite = connections.get(USER_B);
+                expect(connections.size).withContext('one peer connection per party').toBe(2);
+                if (polite === undefined) {
+                    return;
                 }
+                const ignored = offered.get(USER_B)?.[0] ?? null;
+                expect(offered.get(USER_B)?.length).withContext('the polite side offered once: the offer the impolite side ignored').toBe(1);
+                expect(polite.localDescription?.type).withContext('the polite side yielded and answered').toBe('answer');
+                expect(ufrag(polite.localDescription)).withContext('its answer has ICE credentials of its own, not the rolled-back offer\'s')
+                    .not.toBe(ignored);
+                expect((sent.get(USER_B) ?? []).filter(u => u === ignored).length)
+                    .withContext('the ignored offer had candidates, each published before it').toBeGreaterThan(0);
+                expectEachAppliedTheCandidatesOfTheDescriptionItHolds();
+                expect(candidateErrors).withContext('a candidate refused').toEqual([]);
                 expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
             }, 10000);
         }
@@ -460,7 +548,7 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
         // not dropped: the impolite caller never offers again, and the call never connects
         // (the workspace client carried an offer-resend workaround for exactly this).
         it('with the caller\'s offer and candidates delivered before the callee\'s media has started, the callee answers it and applies every candidate', async () => {
-            await callAndNegotiate(USER_A, USER_B, false, { relayAtOnce: true, calleeReadsLateMs: 400 });
+            await callAndNegotiate(USER_A, USER_B, 'as sent', { relayAtOnce: true, calleeReadsLateMs: 400 });
 
             const caller = connections.get(USER_A);
             const callee = connections.get(USER_B);
@@ -475,8 +563,8 @@ describe('RtcCallService -- a call.signal is applied only when it is the peer\'s
             expect(ufrag(caller.remoteDescription)).withContext('the caller holds the callee\'s answer')
                 .toBe(ufrag(callee.localDescription));
             expect(callee.localDescription?.type).withContext('the callee answered the offer it had kept').toBe('answer');
-            expect(added.get(USER_B) ?? 0).withContext('the callee applied every candidate the caller sent before its media')
-                .toBe(sent.get(USER_A) ?? 0);
+            expect((added.get(USER_B) ?? []).length).withContext('the callee applied every candidate the caller sent before its media')
+                .toBe((sent.get(USER_A) ?? []).length);
             expect(candidateErrors).withContext('a candidate refused').toEqual([]);
             expect(sdpErrors).withContext('no description was applied in the wrong state').toEqual([]);
         }, 10000);
@@ -755,4 +843,166 @@ describe('RtcCallService -- a read older than the channel is not applied', () =>
 
         expect(service.activeCall()?.ui).withContext('nothing to order it by').toBe('ended');
     });
+});
+
+/**
+ * The media plane alone, over a real RTCPeerConnection, with the other party's connection made
+ * here and its signals handed in by the spec, in the spec's order: a candidate held for a
+ * description that is not there yet -- whose call it is, and which offer it is for.
+ */
+describe('RtcMediaController -- a remote candidate held before its description', () => {
+    const NativePeerConnection = window.RTCPeerConnection;
+    let media: RtcMediaController;
+    let injector: EnvironmentInjector;
+    /** The controller's connections, in the order it made them. */
+    let connections: RTCPeerConnection[];
+    /** Per connection, every candidate it took in. */
+    let added: Map<RTCPeerConnection, RTCIceCandidateInit[]>;
+    let remotes: RTCPeerConnection[];
+    let audio: AudioContext[];
+
+    const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+    function ufrag(description: RTCSessionDescriptionInit | null): string | null {
+        return /a=ice-ufrag:(\S+)/.exec(description?.sdp ?? '')?.[1] ?? null;
+    }
+
+    async function until(settled: () => boolean): Promise<void> {
+        const deadline = Date.now() + 3000;
+        while (Date.now() < deadline && !settled()) {
+            await sleep(20);
+        }
+        await sleep(100); // whatever the last signal set off
+    }
+
+    /** A real, silent audio stream: no device, no permission prompt. */
+    function silence(): MediaStream {
+        const context = new AudioContext();
+        audio.push(context);
+        return context.createMediaStreamDestination().stream;
+    }
+
+    /** The other party: a connection with an offer of its own, and the first candidate gathered for it. */
+    async function otherParty(): Promise<{ pc: RTCPeerConnection; offer: RTCSessionDescriptionInit; candidate: RTCIceCandidateInit }> {
+        const pc = new NativePeerConnection({ iceServers: [{ urls: 'stun:127.0.0.2:9' }] });
+        remotes.push(pc);
+        const gathered = new Promise<RTCIceCandidateInit>(resolve => {
+            pc.onicecandidate = ({ candidate }): void => {
+                if (candidate !== null) {
+                    resolve(candidate.toJSON());
+                }
+            };
+        });
+        const stream = silence();
+        pc.addTrack(stream.getAudioTracks()[0], stream);
+        await pc.setLocalDescription();
+        return { pc, offer: (pc.localDescription as RTCSessionDescription).toJSON(), candidate: await gathered };
+    }
+
+    /** The same candidate with no ICE username fragment anywhere: it cannot say which description it is for. */
+    function nameless(candidate: RTCIceCandidateInit): RTCIceCandidateInit {
+        return { candidate: (candidate.candidate ?? '').replace(/ ufrag \S+/, ''), sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex };
+    }
+
+    beforeEach(() => {
+        connections = [];
+        added = new Map<RTCPeerConnection, RTCIceCandidateInit[]>();
+        remotes = [];
+        audio = [];
+        window.RTCPeerConnection = function (config?: RTCConfiguration): RTCPeerConnection {
+            const pc = new NativePeerConnection(config);
+            connections.push(pc);
+            added.set(pc, []);
+            const add = pc.addIceCandidate.bind(pc) as (c?: RTCIceCandidateInit) => Promise<void>;
+            (pc as unknown as { addIceCandidate: (c?: RTCIceCandidateInit) => Promise<void> }).addIceCandidate =
+                async (c?: RTCIceCandidateInit): Promise<void> => {
+                    await add(c);
+                    added.get(pc)?.push(c ?? {});
+                };
+            return pc;
+        } as unknown as typeof RTCPeerConnection;
+        spyOn(navigator.mediaDevices, 'getUserMedia').and.callFake(() => Promise.resolve(silence()));
+        injector = createEnvironmentInjector([
+            RtcMediaController,
+            {
+                provide: RtcService,
+                useValue: {
+                    getCallIceServers: () => of({ iceServers: [{ urls: 'stun:127.0.0.1:9' }], ttlSeconds: 0 }),
+                    sendSignal: () => of(undefined),
+                },
+            },
+            { provide: ToastService, useValue: { error: () => undefined } },
+        ], TestBed.inject(EnvironmentInjector));
+        media = injector.get(RtcMediaController);
+    });
+
+    afterEach(async () => {
+        media.stop();
+        injector.destroy();
+        remotes.forEach(pc => pc.close());
+        window.RTCPeerConnection = NativePeerConnection;
+        await Promise.all(audio.map(context => context.close()));
+    });
+
+    it('is applied once the description it came with is set', async () => {
+        await media.start('call-1', true, 'audio');
+        const [pc] = connections;
+        const other = await otherParty();
+
+        media.handleSignal('call-1', { type: 'candidate', payload: other.candidate });
+        await sleep(50);
+        expect(added.get(pc)).withContext('held: there is no remote description yet').toEqual([]);
+        media.handleSignal('call-1', { type: 'offer', payload: other.offer });
+        await until(() => pc.remoteDescription !== null && pc.signalingState === 'stable');
+
+        expect(added.get(pc)).toEqual([other.candidate]);
+    });
+
+    it('held when its call ends, is not applied in the next call', async () => {
+        await media.start('call-1', true, 'audio');
+        const first = await otherParty();
+        media.handleSignal('call-1', { type: 'candidate', payload: first.candidate });
+        media.stop();
+
+        await media.start('call-2', true, 'audio');
+        const second = await otherParty();
+        media.handleSignal('call-2', { type: 'offer', payload: second.offer });
+        expect(connections.length).withContext('a connection per call').toBe(2);
+        const pc = connections[1];
+        await until(() => pc.remoteDescription !== null && pc.signalingState === 'stable');
+
+        expect(ufrag(pc.remoteDescription)).withContext('the second call took its offer').toBe(ufrag(second.offer));
+        expect(added.get(pc)).withContext('the first call\'s candidate is not replayed into the second').toEqual([]);
+    });
+
+    // A candidate that names no ICE session cannot say whether it is the ignored offer's. Arriving
+    // while the impolite side ignores a colliding offer and holds no description, it is taken for
+    // that offer's and dropped, as perfect negotiation does; arriving before, it is kept.
+    for (const before of [false, true]) {
+        it(before
+            ? 'naming no ICE session, is kept when it arrives before the colliding offer is ignored'
+            : 'naming no ICE session, is dropped when it arrives while a colliding offer is ignored', async () => {
+            await media.start('call-1', false, 'audio');
+            const [pc] = connections;
+            await until(() => pc.signalingState === 'have-local-offer');
+            const other = await otherParty();
+            const candidate = nameless(other.candidate);
+
+            if (before) {
+                media.handleSignal('call-1', { type: 'candidate', payload: candidate });
+            }
+            media.handleSignal('call-1', { type: 'offer', payload: other.offer }); // collides: ignored
+            if (!before) {
+                media.handleSignal('call-1', { type: 'candidate', payload: candidate });
+            }
+            // The other party yields: rolls its offer back and answers this side's.
+            await other.pc.setRemoteDescription(pc.localDescription as RTCSessionDescription);
+            await other.pc.setLocalDescription();
+            media.handleSignal('call-1', { type: 'answer', payload: (other.pc.localDescription as RTCSessionDescription).toJSON() });
+            await until(() => pc.signalingState === 'stable' && pc.remoteDescription !== null);
+
+            expect(pc.remoteDescription?.type).withContext('this side kept its offer and took the answer').toBe('answer');
+            expect(added.get(pc)).toEqual(before ? [candidate] : []);
+        });
+    }
 });
