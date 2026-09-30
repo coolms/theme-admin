@@ -21,6 +21,18 @@ export type RtcCallRole = 'caller' | 'callee';
  */
 const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
+/** The ICE username fragments a description was generated with -- one per media section, usually one. */
+function iceUfrags(sdp: string | undefined): string[] {
+    return [...(sdp ?? '').matchAll(/^a=ice-ufrag:(\S+)/gm)].map(m => m[1]);
+}
+
+/** The ICE username fragment a remote candidate belongs to: its own field, else the candidate line's `ufrag`. */
+function candidateUfrag(candidate: RTCIceCandidateInit): string | null {
+    const own = candidate.usernameFragment ?? '';
+    const named = own !== '' ? own : / ufrag (\S+)/.exec(candidate.candidate ?? '')?.[1] ?? '';
+    return named !== '' ? named : null;
+}
+
 /**
  * The MEDIA plane, Slice 4b audio - Slice 4d video) -- the real WebRTC
  * behind the seam {@link RtcCallService} drives. On connect it acquires local
@@ -89,6 +101,8 @@ export class RtcMediaController {
     private warnedFull = false;
     /** Remote ICE candidates that arrived before the remote description; applied right after it. */
     private readonly remoteCandidates: RTCIceCandidateInit[] = [];
+    /** The ICE username fragments of the offers this side ignored in a collision: their candidates are dropped. */
+    private readonly ignoredUfrags = new Set<string>();
 
     private readonly _remoteStream = signal<MediaStream | null>(null);
     private readonly _localStream = signal<MediaStream | null>(null);
@@ -342,6 +356,7 @@ export class RtcMediaController {
         this.draining = false;
         this.warnedFull = false;
         this.remoteCandidates.length = 0;
+        this.ignoredUfrags.clear();
         this._localStream.set(null);
         this._micMuted.set(false);
         this._cameraOff.set(false);
@@ -370,15 +385,20 @@ export class RtcMediaController {
     private async applySignal(pc: RTCPeerConnection, signal: RtcSignal): Promise<void> {
         try {
             if (signal.type === 'candidate') {
+                const candidate = signal.payload as RTCIceCandidateInit;
                 // A candidate belongs to the remote description it came with; before that is set
                 // the browser refuses it ("The remote description was null") and it is LOST. With
                 // one network interface -- a container, a phone -- it can be the only path, and the
-                // call never connects. Held, and applied as soon as the description is in.
+                // call never connects. Held, and applied as soon as the description is in -- the
+                // answer's too, which can arrive while the offer before it is still being ignored.
                 if (pc.remoteDescription === null) {
-                    this.remoteCandidates.push(signal.payload as RTCIceCandidateInit);
+                    if (this.ignoreOffer && candidateUfrag(candidate) === null) {
+                        return; // names no ICE session: taken for the ignored offer's, as perfect negotiation does
+                    }
+                    this.remoteCandidates.push(candidate);
                     return;
                 }
-                await this.addCandidate(pc, signal.payload as RTCIceCandidateInit);
+                await this.addCandidate(pc, candidate);
                 return;
             }
 
@@ -387,7 +407,11 @@ export class RtcMediaController {
             const collision = description.type === 'offer' && (this.makingOffer || pc.signalingState !== 'stable');
             this.ignoreOffer = !this.polite && collision;
             if (this.ignoreOffer) {
-                return; // the impolite peer keeps its own offer
+                // The impolite peer keeps its own offer. The polite one rolls its offer back and
+                // answers with ICE credentials of its own (Chrome 150, measured), so a candidate of
+                // the ignored offer can never be used: it is dropped, whether held or still to come.
+                iceUfrags(description.sdp).forEach(ufrag => this.ignoredUfrags.add(ufrag));
+                return;
             }
 
             await pc.setRemoteDescription(description); // implicit rollback if we had a local offer
@@ -406,6 +430,11 @@ export class RtcMediaController {
     }
 
     private async addCandidate(pc: RTCPeerConnection, candidate: RTCIceCandidateInit): Promise<void> {
+        // An ignored offer's candidate, unless the description now held shares its ICE session.
+        const ufrag = candidateUfrag(candidate);
+        if (ufrag !== null && this.ignoredUfrags.has(ufrag) && !iceUfrags(pc.remoteDescription?.sdp).includes(ufrag)) {
+            return;
+        }
         try {
             await pc.addIceCandidate(candidate);
         } catch (err) {
