@@ -56,3 +56,10 @@ export interface WebPhoneConfigDto {
     /** Cleartext SIP password (owner-only; present only when enabled + provisioned). */
     readonly password: string;
 }
+
+/** `GET /call/webphone/ice-servers?callId=`: one SIP call's ICE servers, to its parties only. */
+export interface SipCallIceServersDto {
+    readonly callId: string;
+    readonly iceServers: RTCIceServer[];
+    readonly ttlSeconds: number;
+}

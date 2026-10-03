@@ -96,6 +96,14 @@ const HARD_MAX_MS = 15 * 60 * 1000;
                                                 title="Hang up" aria-label="Hang up" (click)="hangup()">
                                             <i class="bi bi-telephone-x-fill"></i>
                                         </button>
+                                        <!-- A call answered without its relay says so, and why --
+                                             behind a NAT its audio may not flow. -->
+                                        @if (webphone.noRelay(); as reason) {
+                                            <span class="callpop__no-relay" role="status"
+                                                  [title]="'No relay credential for this call: ' + reason">
+                                                no relay for this call
+                                            </span>
+                                        }
                                     }
                                 }
                                 <button type="button" class="callpop__btn callpop__btn--open"
@@ -146,6 +154,12 @@ const HARD_MAX_MS = 15 * 60 * 1000;
         .callpop[data-state="answered"] { border-left-color: var(--cms-success); }
         .callpop[data-state="on_hold"]  { border-left-color: var(--cms-meta); }
         .callpop[data-state="ended"]    { border-left-color: var(--cms-text-muted); }
+        .callpop__no-relay {
+            align-self: center;
+            font-size: .75rem;
+            color: var(--cms-warning);
+            white-space: nowrap;
+        }
 
         .callpop__icon {
             flex: 0 0 auto;
