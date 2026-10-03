@@ -30,6 +30,7 @@ export type NoRelayReason =
     | 'refused (409)'
     | 'network error'
     | 'answer bound (2 s)'
+    | 'failed (client)'
     | `failed (${number})`;
 
 export interface CallRelay {
@@ -65,11 +66,17 @@ export async function resolveCallRelay(
     }
 }
 
+/**
+ * Angular's HttpClient fails with an HttpErrorResponse, status 0 when the network did: only that is a network
+ * error. Anything else thrown is a defect in this client and is named as one, not hidden behind the network.
+ */
 export function reasonOf(error: unknown): NoRelayReason {
-    if (!(error instanceof HttpErrorResponse) || 0 === error.status) {
-        return 'network error';
+    if (!(error instanceof HttpErrorResponse)) {
+        return 'failed (client)';
     }
     switch (error.status) {
+        case 0:
+            return 'network error';
         case 403:
             return 'refused (403)';
         case 404:

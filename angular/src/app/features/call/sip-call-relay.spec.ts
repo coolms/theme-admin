@@ -66,7 +66,7 @@ describe('sip-call-relay', () => {
             const failed = await resolveCallRelay('abc', () => Promise.reject(new HttpErrorResponse({ status: 500 })));
 
             expect(network.noRelay).toBe('network error');
-            expect(thrown.noRelay).toBe('network error');
+            expect(thrown.noRelay).toBe('failed (client)', 'a thrown non-HTTP error is a defect here, not the network');
             expect(failed.noRelay).toBe('failed (500)');
         });
 
