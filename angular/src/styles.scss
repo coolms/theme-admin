@@ -1,14 +1,13 @@
+@use 'tokens.generated';
+
 // --- CoolMS Brand tokens -----------------------------------------------------
 :root {
+    // The token VALUES are in tokens/coolms.tokens.json, generated into tokens.generated.scss
+    // (imported at the top of this file); the notes below explain them and stay with this block.
     // Brand accent
-    --cms-accent:               #F5A623;
-    --cms-accent-hover:         #E09200;
-    --cms-accent-light:         #FEF7E6;
-    --cms-accent-text:          #7C4D00;
     // Foreground (near-black) for text/icons on a SOLID --cms-accent fill
     // (primary buttons, checked checkbox). Distinct from --cms-accent-text,
     // which is the brown used on the soft --cms-accent-light background.
-    --cms-accent-fg:            #1a1a1a;
     // "This one is selected": the underline under the active tab, the border
     // of the picked card, the bar beside the current rail item, the ring on
     // the selected node. Named by MEANING so a theme can move selection off
@@ -17,7 +16,6 @@
     // bars are --cms-primary, by ruling (2026-09-22), and so is every
     // interaction AFFORDANCE -- a drop target, a resize handle: something
     // selected is the accent, something to act on is the primary.
-    --cms-selected:             var(--cms-accent);
     // The family, by measurement (tools/selection-marks.mjs, 2026-09-22): of
     // the marks that paint a selected background, 23 put text on a wash and
     // 10 put text on the solid mark. So the wash, the text on it, and the
@@ -25,26 +23,14 @@
     // check-token-fallbacks.mjs refuses a selected fill whose text names
     // another family, and a tint of --cms-selected mixed by hand: a theme
     // that moves the mark moves its tints with it, or the tints drift.
-    --cms-selected-light:       var(--cms-accent-light);
-    --cms-selected-text:        var(--cms-accent-text);
-    --cms-selected-fg:          var(--cms-accent-fg);
 
     // Sidebar
-    --cms-sidebar-bg:           #1a2332;
-    --cms-sidebar-hover:        #243044;
-    --cms-sidebar-active:       #2d3f57;
-    --cms-sidebar-text:         #c9d3e0;
-    --cms-sidebar-text-muted:   #6b7f96;
-    --cms-sidebar-accent:       var(--cms-accent);
 
     // Content
-    --cms-bg:                   #f8f9fa;
-    --cms-surface:              #ffffff;
     // Muted surface for inset/zebra/placeholder fills (hover rows, empty cells,
     // progress troughs). Defined here because ~7 `var(--cms-surface-muted)` usages
     // referenced it while UNDEFINED — and drifted between #f3f4f6 and #f8f9fa; one
     // definition makes them consistent.
-    --cms-surface-muted:        #f3f4f6;
     // `--cms-canvas` was REFERENCED 13 times and never DEFINED — the
     // same fault this file already records for --cms-primary and
     // --cms-surface-muted, and it had already produced drift: 10 sites
@@ -61,7 +47,6 @@
     //
     // NOT to be confused with --cms-canvas-bg below, which is the image
     // editor's deep navy work surface and is genuinely a different thing.
-    --cms-canvas:               var(--cms-surface-muted);
 
     // -- Aliases for names the app already uses --------------------
     //
@@ -86,15 +71,6 @@
     // about what they even mean (`--cms-surface-2` is a translucent overlay in
     // some places and a solid fill in others) are left undefined deliberately,
     // so they stay visible to the audit rather than being frozen wrong.
-    --cms-surface-hover:        var(--cms-surface-muted);
-    --cms-hover:                var(--cms-surface-muted);
-    --cms-hover-bg:             var(--cms-surface-muted);
-    --cms-bg-hover:             var(--cms-surface-muted);
-    --cms-surface-alt:          var(--cms-surface-muted);
-    --cms-bg-muted:             var(--cms-surface-muted);
-    --cms-bg-surface:           var(--cms-surface);
-    --cms-border-color:         var(--cms-border);
-    --cms-border-strong:        var(--cms-btn-border);
     // Selected/active ROW fill. Referenced twice with no fallback ('s
     // guard), so the domain-explorer tree's active entity and type rows were
     // rendering with NO background at all — only the blue text and bold weight
@@ -102,12 +78,8 @@
     // `.selected` already uses elsewhere in the admin, so selection now looks
     // the same wherever it appears, and it pairs with the `color:
     // var(--cms-primary)` those rules already set.
-    --cms-active-bg:            var(--cms-info-subtle);
 
     // Not a colour, same defect: 27 references, THREE different stacks.
-    --cms-font-mono:            ui-monospace, 'SFMono-Regular', Menlo, monospace;
-    --cms-border:               #e5e7eb;
-    --cms-border-light:         #f0f2f5;
 
     // Image-editor surfaces. Distinct from --cms-surface / --cms-bg
     // because the image canvas sits against a deliberately darker
@@ -120,17 +92,12 @@
     //   reads as a "tool surface" and stays clearly distinct from the
     //   typical dark image content (ish photos no longer blend
     //   into the backdrop the way they did against #2a2a2a).
-    --cms-canvas-bg:            var(--cms-sidebar-bg);
-    --cms-overlay-scrim:        rgba(0, 0, 0, .55);
     // Checkered transparency pattern. Painted behind the canvas so
     // any alpha pixels in PNG / WebP source images reveal it. Two
     // tints of subtle white-on-canvas-bg keep the pattern legible
     // without distracting from image content.
-    --cms-checker-light:        rgba(255, 255, 255, .07);
-    --cms-checker-dark:         rgba(255, 255, 255, .03);
 
     // Text
-    --cms-text:                 #111827;
     // The rung that had no name. `#374151` is used as a label/body
     // weight in 18 places — `.chip--channel`, `.ffp-row__label`,
     // `.crumb-badge--embeddable` as well as `.btn-secondary` — and the ONLY
@@ -138,20 +105,16 @@
     // token is the coupling error warned about, so the value gets its own
     // name and the button token becomes an alias of it: one value, two names,
     // each honest about what it means.
-    --cms-text-body:            #374151;
-    --cms-text-secondary:       #6b7280;
     // 3.06-3.43:1 across the four grounds muted text lands on. Was #9ca3af
     // at 2.26-2.54, which failed every floor -- and was the source of ALL
     // 194 low-contrast elements measured across 7 pages. Dark is unchanged;
     // #6b7f96 on a dark ground already passes.
-    --cms-text-muted:           #848b96;
     // Text ON a coloured fill — the single largest hard-coded value in the app
     //: `color: #fff` appears 61 times, always on a solid success /
     // danger / primary background. It had no token, which is why it stayed a
     // literal through four drain passes: there was nothing to move it to.
     // NOT --cms-surface (that is a surface, not a text colour) and NOT
     // --cms-accent-fg (near-black, for the AMBER fill specifically).
-    --cms-text-inverse:         #ffffff;
     // Foreground on the app CHROME — topbar and sidebar — as distinct from
     // --cms-text-inverse, which is foreground on a filled swatch.
     //
@@ -160,26 +123,12 @@
     // dark in EVERY theme, so text on it must not. Mapping `.text-white` at the
     // inverse token turned the CoolMS wordmark and the breadcrumb into dark
     // text on the dark topbar — 1.05:1, invisible, which is how this was found.
-    --cms-on-chrome:            #ffffff;
 
     // Status colors. Each has: base (solid — dots, borders), -light (soft
     // badge background), -text (dark on-light-bg text, mirrors --cms-accent-text).
-    --cms-success:              #16a34a;
-    --cms-success-light:        #f0fdf4;
-    --cms-success-text:         #166534;
-    --cms-danger:               #dc2626;
-    --cms-danger-light:         #fef2f2;
-    --cms-danger-text:          #991b1b;
     // Soft red border for OUTLINE-danger buttons (resting state, before the
     // hover swaps to the solid --cms-danger border). Shared by .cms-btn-danger
     // and the page-toolbar danger button.
-    --cms-danger-border:        #fca5a5;
-    --cms-warning:              #d97706;
-    --cms-warning-light:        #fffbeb;
-    --cms-warning-text:         #92400e;
-    --cms-info:                 #2563eb;
-    --cms-info-light:           #eff6ff;
-    --cms-info-text:            #1e40af;
 
     // -- Status, SUBTLE tier ---------------------------------------
     //
@@ -197,22 +146,14 @@
     // Values are exactly what those components already used, so adopting them
     // changes nothing on screen — the whole point is that they become themeable,
     // not that they change.
-    --cms-danger-subtle:        #fee2e2;
-    --cms-danger-subtle-border: #fecaca;
-    --cms-success-subtle:       #dcfce7;
     // Completes the -subtle-border rung, which danger and info already had and
     // success did not — noticed because a routing-inspector banner needed one
     // and the alternative was referencing a token nothing defines.
-    --cms-success-subtle-border: #86efac;
-    --cms-warning-subtle:       #fef3c7;
     // Completes the semantic family: danger, info and success all carry a
     // -subtle-border, warning did not, so callers hard-coded #fcd34d.
-    --cms-warning-subtle-border: #fcd34d;
-    --cms-info-subtle:          #dbeafe;
     // Added with the bridge completion: `.alert-info` needs a border to
     // map, and only danger had one. Same one-step-darker relationship as
     // #fee2e2 -> #fecaca, in the same Tailwind rung the rest of this scale uses.
-    --cms-info-subtle-border:   #bfdbfe;
 
     // -- Meta: KIND and OWNERSHIP, not status ----------------------
     //
@@ -233,8 +174,6 @@
     // A code block is chrome, not a surface: dark in EVERY theme, like the
     // topbar. Named so it can be re-pointed, and deliberately NOT overridden in
     // the dark block — the same reasoning as --cms-on-chrome.
-    --cms-code-bg:              #1e1e1e;
-    --cms-code-text:            #d4d4d4;
 
     // PAPER — the printed page inside the document editor, and the mirror image
     // of the chrome tokens above: light in EVERY theme, because a sheet of A4
@@ -248,8 +187,6 @@
     //
     // --cms-paper-text exists for the same reason: text on paper must stay dark
     // when --cms-text has inverted.
-    --cms-paper:                #ffffff;
-    --cms-paper-text:           #111827;
     // The third member, and it exists for a reason worth stating: authored
     // links were `--cms-accent`, which is theme-INVARIANT amber and therefore
     // measured 2.03 on this paper in BOTH themes — under even the 3:1 that
@@ -258,14 +195,12 @@
     // does NOT, so it would read 7.20 in one theme and ~1.9 in the other.
     // A theme-invariant surface needs a theme-invariant ink. This is the light
     // accent ink, pinned: 7.20 on white, and still recognisably the brand hue.
-    --cms-paper-link:           #7c4d00;
     // Same argument for the quieter ink. Blockquotes on paper were
     // `--cms-text-muted`, which is #848b96 light and #6b7f96 dark — so the
     // quote drew at roughly 3.3 in one theme and 4.2 in the other ON THE SAME
     // WHITE PAPER. Dim rather than broken, but varying by theme on a surface
     // that does not vary is the same defect as the link above, and a token
     // that only happens to land above 3 is one palette edit from not doing so.
-    --cms-paper-muted:          #6b7280;
 
     // Tells the BROWSER which way this theme runs, which is the only way to
     // reach the parts of the UI no stylesheet owns: scrollbars, the
@@ -278,17 +213,10 @@
     // The workspace the sheet sits ON. Kept at its exact previous value so the
     // page edge reads as paper rather than as a rendering artefact, which is
     // the distinction the editor's own comment was protecting.
-    --cms-desk:                 #e4e6ea;
 
     // File-TYPE identity (see .vfs-icon--*). Legible on both grounds, so these
     // are not re-pointed for dark either.
-    --cms-filetype-directory:   #f59e0b;
-    --cms-filetype-resource:    #6366f1;
-    --cms-filetype-package:     #10b981;
 
-    --cms-meta:                 #6d28d9;
-    --cms-meta-subtle:          #ede9fe;
-    --cms-meta-text:            #5b21b6;
 
     // "Primary action" blue — the de-facto accent these surfaces use (progress
     // bars, active tabs, selection highlights, drag targets, links). Defined here
@@ -299,8 +227,6 @@
     // intentionally distinct from the AMBER brand --cms-accent — kept blue to
     // preserve the current look; switching to the accent would be a
     // deliberate rebrand, not this fix.
-    --cms-primary:              #2563eb;
-    --cms-primary-hover:        #1d4ed8;
 
     // Neutral button
     // The input surface, named at last. Two components had already
@@ -308,39 +234,24 @@
     // `background: white` three times, so the concept existed in three places
     // and the token in none. Dark mode is what forced it: a field that cannot
     // be tuned separately from the card it sits on has no affordance left.
-    --cms-input-bg:             #ffffff;
-    --cms-btn-bg:               #ffffff;
-    --cms-btn-border:           #d1d5db;
     // Aliased to the general body weight — same value it always held,
     // now stated once. A button label IS body text; it was only spelled
     // separately because this token happened to be defined first.
-    --cms-btn-text:             var(--cms-text-body);
-    --cms-btn-hover-bg:         #f3f4f6;
-    --cms-btn-hover-border:     #9ca3af;
 
     // Spacing / radius / shadow
-    --cms-radius:               6px;
-    --cms-radius-sm:            4px;
     // 8px was the second most common radius in the app (72 components
     // chose it independently) and had no name. The vocabulary was
     // missing a step, not the components.
-    --cms-radius-md:            8px;
-    --cms-radius-lg:            10px;
-    --cms-shadow-sm:            0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-    --cms-shadow-md:            0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
-    --cms-shadow-lg:            0 8px 24px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
 
     // Layout spacing — single source of truth for content area insets
-    --cms-content-padding:      20px;   /* standard content area padding             */
-    --cms-panel-padding:        12px;
+    // --cms-content-padding: standard content area padding
     // The document viewers' modal ceiling. Was only ever the fallback
     // inside docx-viewer.component.ts, so nothing could find it.
-    --cms-viewer-max-height:    80vh;   /* compact panel / sidebar padding           */
-
+    // --cms-viewer-max-height: compact panel / sidebar padding
     // Row heights — one standard across all list / grid / tree views
-    --cms-row-height:           36px;   /* DataGrid rows, VFS list rows              */
-    --cms-row-height-sm:        28px;   /* sidebar tree items                        */
-    --cms-row-height-lg:        48px;   /* media grid cards label area               */
+    // --cms-row-height: DataGrid rows, VFS list rows
+    // --cms-row-height-sm: sidebar tree items
+    // --cms-row-height-lg: media grid cards label area
 }
 
 // ═══ Dark mode ═══════════════════════════════════════════════════════
@@ -364,6 +275,7 @@
 // names. Setting `data-theme` is left to whatever chooses the theme; this block
 // only says what dark MEANS.
 :root[data-theme='dark'] {
+    // The dark VALUES are in tokens/coolms.tokens.json too (see the note in the :root block).
     // See the note on the light value: this is what makes scrollbars, native
     // select popups and unstyled controls follow the theme too.
     color-scheme: dark;
@@ -371,88 +283,37 @@
     // Brand amber is deliberately unchanged — a brand that shifts with the mode
     // is not a brand. Its SUPPORTING tones do change, because a pale wash and a
     // dark-on-amber label both stop working on a dark ground.
-    --cms-accent-light:         #3a2f14;
-    --cms-accent-text:          #f5c173;
 
     // The sidebar is already dark in light mode, so it needs to step DOWN to
     // stay distinct from cards that have now risen to meet it.
-    --cms-sidebar-bg:           #131c28;
-    --cms-sidebar-hover:        #1f2b3d;
-    --cms-sidebar-active:       #2d3f57;
 
     // Surfaces climb as they come forward: page < card < inset. In light mode
     // that order runs the other way, which is why this is a re-ordering rather
     // than an inversion of each value.
-    --cms-bg:                   #0f1722;
-    --cms-surface:              #1a2332;
-    --cms-surface-muted:        #243044;
-    --cms-border:               #2d3f57;
-    --cms-border-light:         #212d3f;
 
-    --cms-text:                 #e8edf4;
-    --cms-text-body:            #c9d3e0;
-    --cms-text-secondary:       #9aa8bd;
-    --cms-text-muted:           #6b7f96;
     // "Inverse" means "reads against a filled swatch", not "white". On a dark
     // theme the fills are light, so this inverts with them.
-    --cms-text-inverse:         #0f1722;
 
     // A step BELOW the card, so a field reads as recessed. In light mode both
     // are #ffffff and the border does that job; on dark, equal fills would make
     // the input disappear into the card.
-    --cms-input-bg:             #131c28;
     // The desk goes dark; the paper on it does NOT (see --cms-paper). A shade
     // below --cms-bg so a white page edge still reads against it.
-    --cms-desk:                 #0b111a;
-    --cms-btn-bg:               #243044;
-    --cms-btn-border:           #3a4a63;
-    --cms-btn-hover-bg:         #2d3f57;
-    --cms-btn-hover-border:     #55688a;
 
     // Status hues brighten (a mid-weight red disappears against navy) while the
     // -light/-subtle tiers invert into dark tints and the -text tiers become
     // the LIGHT member of each family rather than the dark one.
-    --cms-success:              #22c55e;
-    --cms-success-light:        #0f2a18;
-    --cms-success-text:         #86efac;
-    --cms-success-subtle:       #14331f;
 
-    --cms-danger:               #ef4444;
-    --cms-danger-light:         #2c1416;
-    --cms-danger-text:          #fca5a5;
-    --cms-danger-border:        #7f3a40;
-    --cms-danger-subtle:        #3a1a1d;
-    --cms-danger-subtle-border: #5c2a2f;
 
-    --cms-warning:              #f59e0b;
-    --cms-warning-light:        #2e2211;
-    --cms-warning-text:         #fcd34d;
-    --cms-warning-subtle:       #33270f;
-    --cms-warning-subtle-border: #5c4318;
     //  Was defined for LIGHT ONLY, so the one caller that used it drew a
     // mint-green border on a dark panel. In family with danger (#5c2a2f) and
     // info (#24405f).
-    --cms-success-subtle-border: #2a5c39;
 
-    --cms-info:                 #3b82f6;
-    --cms-info-light:           #122036;
-    --cms-info-text:            #93c5fd;
-    --cms-info-subtle:          #16263f;
-    --cms-info-subtle-border:   #24405f;
 
-    --cms-meta:                 #a78bfa;
-    --cms-meta-subtle:          #251d3a;
-    --cms-meta-text:            #c4b5fd;
 
-    --cms-primary:              #3b82f6;
-    --cms-primary-hover:        #60a5fa;
 
     // Shadows carry no colour of their own, but a shadow tuned for white is
     // invisible on navy; these are the same geometry at usable opacity.
-    --cms-shadow-sm:            0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.30);
-    --cms-shadow-md:            0 4px 12px rgba(0,0,0,.50), 0 2px 4px rgba(0,0,0,.35);
-    --cms-shadow-lg:            0 8px 24px rgba(0,0,0,.55), 0 4px 8px rgba(0,0,0,.40);
-    --cms-overlay-scrim:        rgba(0, 0, 0, .70);
 }
 
 // --- Typography --------------------------------------------------------------
