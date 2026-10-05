@@ -96,7 +96,7 @@ interface AvailableSitesResponse {
                             <p class="cms-add-space__error small mb-2">{{ error() }}</p>
                         }
                         @for (site of available(); track site.site) {
-                            <button type="button" class="cms-btn cms-btn-sm cms-btn-ghost w-100 text-start mb-1"
+                            <button type="button" class="cms-btn cms-btn-sm cms-btn-ghost w-100 text-start text-wrap mb-1"
                                     [disabled]="busy()" (click)="enable(site.site)">
                                 {{ site.label }}
                             </button>
