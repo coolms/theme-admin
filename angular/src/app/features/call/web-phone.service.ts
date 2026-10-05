@@ -11,10 +11,21 @@ import {
     UserAgent,
     UserAgentOptions,
 } from 'sip.js';
-import { SessionDescriptionHandler as WebSessionDescriptionHandler } from 'sip.js/lib/platform/web';
+import {
+    SessionDescriptionHandler as WebSessionDescriptionHandler,
+    defaultSessionDescriptionHandlerFactory,
+} from 'sip.js/lib/platform/web';
 
-import { RtcApiService } from '../rtc/rtc-api.service';
 import { CallApiService } from './call-api.service';
+import {
+    CALL_ID_HEADER,
+    CallRelay,
+    NoRelayReason,
+    callIdOf,
+    resolveCallRelay,
+    withinBound,
+    withPerCallIceServers,
+} from './sip-call-relay';
 
 export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' | 'failed';
 
@@ -24,8 +35,11 @@ export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' |
  * Makes the browser a real SIP endpoint: it REGISTERs to Asterisk `res_pjsip`
  * over a secure WebSocket (the descriptor from `GET /call/webphone/config` -- C.1
  * coordinates + the C.2 owner-only password), negotiates DTLS-SRTP media using
- * the shared Coturn ICE servers (`GET /rtc/ice-servers`, reused), and rings /
- * answers real INVITEs. Answering + audio happen in the tab -- no desk phone.
+ * EACH CALL'S OWN relay credential ({@link ./sip-call-relay}: the
+ * INVITE's X-CoolMS-Call-Id, then `GET /call/webphone/ice-servers?callId=`; a call
+ * without one is answered without a relay and the overlay says so -- never the
+ * account-wide `/rtc/ice-servers`), and rings / answers real INVITEs. Answering +
+ * audio happen in the tab -- no desk phone.
  *
  * **Dormant when disabled:** if the config isn't `enabled` (no WebRTC PBX, or the
  * user has no provisioned credential) the service never registers and shows no
@@ -45,7 +59,6 @@ export type WebPhoneStatus = 'idle' | 'disabled' | 'connecting' | 'registered' |
  */
 @Injectable({ providedIn: 'root' })
 export class WebPhoneService {
-    private readonly rtcApi = inject(RtcApiService);
     private readonly callApi = inject(CallApiService);
     private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -57,6 +70,13 @@ export class WebPhoneService {
     readonly inCall = signal(false);
     /** The remote party's display name / user, for the in-call label. */
     readonly peerName = signal<string>('');
+    /** Why the current call was answered without a relay, or null: the overlay shows it. */
+    readonly noRelay = signal<NoRelayReason | null>(null);
+
+    /** Each ringing session's relay, asked for when its INVITE arrives, by session id. */
+    private readonly relays = new Map<string, Promise<CallRelay>>();
+    /** The ICE servers a session's media is built with, by session id; none recorded is none. */
+    private readonly iceServersBySession = new Map<string, RTCIceServer[]>();
 
     private ua: UserAgent | null = null;
     private registerer: Registerer | null = null;
@@ -80,7 +100,6 @@ export class WebPhoneService {
             }
 
             this.status.set('connecting');
-            const iceServers = await this.resolveIceServers();
             const uri = UserAgent.makeURI(`sip:${config.authorizationUser}@${config.sipDomain}`);
             if (!uri) {
                 this.status.set('failed');
@@ -94,9 +113,11 @@ export class WebPhoneService {
                 authorizationPassword: config.password,
                 displayName: config.displayName || config.authorizationUser,
                 delegate: { onInvite: invitation => this.onInvite(invitation) },
-                sessionDescriptionHandlerFactoryOptions: {
-                    peerConnectionConfiguration: { iceServers },
-                },
+                // Each session's media gets that call's ICE servers, recorded at Answer -- no account-wide set.
+                sessionDescriptionHandlerFactory: withPerCallIceServers(
+                    defaultSessionDescriptionHandlerFactory(),
+                    id => this.iceServersBySession.get(id),
+                ),
             };
 
             this.ua = new UserAgent(options);
@@ -121,6 +142,15 @@ export class WebPhoneService {
         const session = this.session;
         if (!(session instanceof Invitation)) {
             return;
+        }
+        // The call's relay, asked for at ring time; Answer waits for it within the bound, never longer.
+        const relay = await withinBound(
+            this.relays.get(session.id) ?? Promise.resolve<CallRelay>({ iceServers: [], noRelay: 'no call id' }),
+        );
+        this.iceServersBySession.set(session.id, relay.iceServers);
+        this.noRelay.set(relay.noRelay);
+        if (null !== relay.noRelay) {
+            console.warn(`[web-phone] answering without a relay: ${relay.noRelay}`);
         }
         try {
             await session.accept({
@@ -171,6 +201,12 @@ export class WebPhoneService {
             return;
         }
         this.session = invitation;
+        // Ask for this call's relay now, while it rings, so Answer rarely waits for it.
+        const callId = callIdOf(invitation.request.getHeader(CALL_ID_HEADER));
+        this.relays.set(
+            invitation.id,
+            resolveCallRelay(callId, id => firstValueFrom(this.callApi.getSipCallIceServers(id))),
+        );
         this.peerName.set(
             invitation.remoteIdentity.displayName || invitation.remoteIdentity.uri.user || 'Caller',
         );
@@ -214,6 +250,11 @@ export class WebPhoneService {
     }
 
     private cleanupSession(): void {
+        if (this.session) {
+            this.relays.delete(this.session.id);
+            this.iceServersBySession.delete(this.session.id);
+        }
+        this.noRelay.set(null);
         this.session = null;
         this.incoming.set(false);
         this.inCall.set(false);
@@ -232,14 +273,5 @@ export class WebPhoneService {
             this.audioEl = el;
         }
         return this.audioEl;
-    }
-
-    private async resolveIceServers(): Promise<RTCIceServer[]> {
-        try {
-            const cfg = await firstValueFrom(this.rtcApi.getCallIceServers());
-            return cfg.iceServers ?? [];
-        } catch {
-            return [];
-        }
     }
 }
