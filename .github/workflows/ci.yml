@@ -101,6 +101,20 @@ jobs:
           fi
           echo "confirmed: no application namespace in src/"
 
+  design-tokens:
+    # The admin's and the app's design tokens come from ONE file, tokens/coolms.tokens.json:
+    # the stylesheet's token blocks and the app's module are generated from it, never edited by
+    # hand. Plain Node, no install, no secret: it runs on every pull request.
+    name: Design tokens
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The generated files are what the token file generates
+        run: node tools/design-tokens.mjs --check
+
   admin-suite:
     # The admin's Angular suite, with the count it ran in the verdict line (Dmitry, 2026-09-27:
     # "a green that does not say what it covered is not evidence"; the 1381 specs had run only
