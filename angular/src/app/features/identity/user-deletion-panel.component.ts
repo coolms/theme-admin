@@ -55,7 +55,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
                             }
                         </p>
                     }
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelDeletion(d)">
+                    <button type="button" class="cms-btn cms-btn-sm" (click)="cancelDeletion(d)">
                         <i class="bi bi-arrow-counterclockwise me-1"></i>Cancel the deletion
                     </button>
                 } @else {
@@ -84,7 +84,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
                         }
                     </ul>
                     @if (!hasActiveHold()) {
-                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="placeHold()">
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="placeHold()">
                             <i class="bi bi-shield-lock me-1"></i>Place a hold
                         </button>
                     }
