@@ -1,16 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import {
-    ChangeDetectionStrategy,
-    Component,
-    DestroyRef,
-    OnInit,
-    Output,
-    EventEmitter,
-    computed,
-    inject,
-    input,
-    signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, Output, EventEmitter, computed, inject, input, signal, effect, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -23,6 +12,8 @@ import {
     ToastService,
     UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
+import { NaviGraphService } from '@coolms/core-angular';
+import { navOffers } from '../../shell/nav-offers';
 
 interface DateFormatChoice {
     readonly token: string;
@@ -184,7 +175,10 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
             </div>
         </div>
 
-        <!-- Default calendar — Task : lazy-select with debounced search -->
+        <!-- Default calendar — Task : lazy-select with debounced search. Only where the account's navigation
+             offers Calendar: the list is the calendar group's (Dmitry, 2026-10-06), and outside it the request is
+             refused. The preferences above are every account's and stay. -->
+        @if (offered()) {
         <div class="group-row">
             <label class="group-label" for="cal-default">Default calendar</label>
             @if (loadingCalendars()) {
@@ -203,6 +197,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
                 Leave on "Personal" to use your private calendar.
             </p>
         </div>
+        }
 
         <!-- Future i18n placeholder -->
         <div class="future-card">
@@ -224,6 +219,20 @@ export class ProfileCalendarTabComponent implements OnInit {
     private readonly toast  = inject(ToastService);
     private readonly prefs  = inject(UserCalendarPreferencesService);
     private readonly destroyRef = inject(DestroyRef);
+
+    /** Calendar's item in the admin navigation, as the server answered it to this account. */
+    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/calendar');
+    private calendarsAsked = false;
+
+    constructor() {
+        // The list is asked once, and only once Calendar is offered: the navigation may load after this tab.
+        effect(() => {
+            if (this.offered() && !this.calendarsAsked) {
+                this.calendarsAsked = true;
+                untracked(() => this.loadCalendars());
+            }
+        });
+    }
 
     readonly dateFormatChoices  = DATE_FORMAT_CHOICES;
     /**
@@ -277,7 +286,9 @@ export class ProfileCalendarTabComponent implements OnInit {
         this.timeFormat          = init.timeFormat === '12h' ? '12h' : '24h';
         this.weekStart           = init.weekStart === 'sunday' ? 'sunday' : 'monday';
         this.defaultCalendarSlug = init.defaultCalendarSlug ?? null;
+    }
 
+    private loadCalendars(): void {
         this.calendarsApi.listCalendars().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({

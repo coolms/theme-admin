@@ -2,7 +2,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
-import { ThemeService } from '@coolms/core-angular';
+import { NaviGraphService, ThemeService } from '@coolms/core-angular';
 import { IdentityApiService } from './identity-api.service';
 import { CalendarPrefs, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
@@ -182,6 +182,8 @@ describe('Settings-section echo -> profile caches', () => {
  // UTC / yyyy-MM-dd / 24h / monday / personal -- and the next Save
  // writes those over what the user actually stored, which is how a
  // mangled echo turns into data loss.
+        // The default-calendar list is asked only where the account's navigation offers Calendar.
+        TestBed.inject(NaviGraphService).adminNav.set([{ id: 'calendars', path: '/calendars', title: 'Calendars', parentId: null, sortOrder: 0, isActive: true, isVisible: true, meta: { resource: '/api/v1/calendar' }, children: [] }]);
         const tab = TestBed.createComponent(ProfileCalendarTabComponent);
         tab.componentRef.setInput('initial', echo);
 
@@ -189,6 +191,7 @@ describe('Settings-section echo -> profile caches', () => {
         tab.componentInstance.saved.subscribe(v => (emitted = v));
 
         tab.componentInstance.ngOnInit();
+        TestBed.flushEffects();
         http.expectOne(`${MANIFEST.apiBase}/calendar`).flush({ member: [] });
         tab.componentInstance.save();
 

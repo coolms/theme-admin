@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
-import { EMPTY, catchError, distinctUntilChanged, filter, map, merge, of, switchMap, timer } from 'rxjs';
-import { AuthState } from '@coolms/core-angular';
+import { catchError, combineLatest, distinctUntilChanged, EMPTY, filter, map, merge, of, switchMap, timer } from 'rxjs';
+import { AuthState, NaviGraphService } from '@coolms/core-angular';
 import { DrawerService } from '@coolms/ui-angular';
 import { countNewConversations } from './agent-queue.util';
 import { DynamicChatService } from './dynamic-chat.service';
 import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service';
 import { DynamicChatQuickPanelComponent } from './dynamic-chat-quick-panel.component';
+import { navOffers } from '../../shell/nav-offers';
 
 /**
  * DynamicChat agent-queue quick-access icon for the admin topbar,
@@ -27,7 +28,7 @@ import { DynamicChatQuickPanelComponent } from './dynamic-chat-quick-panel.compo
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (signedIn()) {
+        @if (signedIn() && offered()) {
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
@@ -55,6 +56,12 @@ export class DynamicChatQuickAccessComponent {
     private readonly live       = inject(DynamicChatLiveEventsService);
     private readonly destroyRef = inject(DestroyRef);
 
+    /**
+     * Its module's item in the admin navigation, as the server answered it to this account: outside the module's
+     * group every call this tile makes is refused, so it neither shows nor asks (Dmitry, 2026-10-06).
+     */
+    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/dynamic-chat/agent/conversations');
+
     /** WS connection state as a stream (built in the injection context). */
     private readonly connected$ = toObservable(this.live.isConnected);
 
@@ -74,9 +81,9 @@ export class DynamicChatQuickAccessComponent {
     constructor() {
         // Recompute the new-count badge while signed in; stop entirely when no
         // user is in scope (the login render before AuthState hydrates).
-        this.store.select(AuthState.currentUser)
+        combineLatest([this.store.select(AuthState.currentUser), toObservable(this.offered)])
             .pipe(
-                map(user => user?.id ?? null),
+                map(([user, offered]) => (offered ? user?.id ?? null : null)),
                 distinctUntilChanged(),
                 switchMap(meId => {
                     if (meId === null) {
