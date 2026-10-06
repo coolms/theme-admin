@@ -308,7 +308,7 @@ import {
         }
         .rrule-row__unit {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             margin-bottom: 6px;
         }
         .field {
@@ -328,7 +328,7 @@ import {
         .field__label {
             font-size: .8125rem;
             font-weight: 500;
-            color: var(--cms-text-secondary, #6b7280);
+            color: var(--cms-text-secondary, #525a66);
         }
         .field-inline {
             display: inline-flex; align-items: center;
@@ -336,7 +336,7 @@ import {
             margin-right: 12px;
         }
         input, select, textarea {
-            border: 1px solid var(--cms-btn-border, #d1d5db);
+            border: 1px solid var(--cms-border-control, #868c96);
             border-radius: var(--cms-radius, 6px);
             padding: 5px 10px;
             font-size: .8125rem;
@@ -398,7 +398,7 @@ import {
             padding: 0 6px;
             font-size: .8125rem;
             font-weight: 500;
-            color: var(--cms-text-secondary, #6b7280);
+            color: var(--cms-text-secondary, #525a66);
         }
         .anchor .field-inline, .end .field-inline {
             display: flex;
@@ -432,7 +432,7 @@ import {
         .exclude__remove {
             background: transparent;
             border: none;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             cursor: pointer;
             font-size: 1rem;
             line-height: 1;
@@ -455,7 +455,7 @@ import {
         }
         .preview__pending {
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .preview__list {
             list-style: disc;
@@ -467,7 +467,7 @@ import {
         .preview__list li { margin: 1px 0; }
 
 
-        .hint { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: 4px 0 0; }
+        .hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: 4px 0 0; }
         .hint--inline { margin: 0; }
         .error { font-size: .8rem; color: var(--cms-danger, #dc2626); margin: 4px 0 0; }
         code {

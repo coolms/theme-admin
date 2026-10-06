@@ -138,7 +138,7 @@ export interface SegmentEditorDialogData {
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
         .error { color: var(--cms-danger-text, #991b1b); margin: 0; font-size: .8125rem; }
-        .cms-label em { color: var(--cms-text-muted, #848b96); font-weight: 400; }
+        .cms-label em { color: var(--cms-text-muted, #69707c); font-weight: 400; }
         .cms-check { display: flex; align-items: center; gap: 8px; font-size: .875rem; cursor: pointer; }
         textarea.cms-input { resize: vertical; font-family: var(--cms-font-mono, monospace); }
         .validate-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

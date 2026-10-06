@@ -288,7 +288,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
 
         .form-actions { display: flex; gap: 8px; }
 
-        .hint { color: var(--cms-text-muted, #848b96); font-size: .8rem; margin: 4px 0 0; }
+        .hint { color: var(--cms-text-muted, #69707c); font-size: .8rem; margin: 4px 0 0; }
         .error { color: var(--cms-danger, #dc2626); font-size: .8rem; margin: 4px 0 0; }
         .mono { font-family: var(--cms-font-mono, monospace); }
 
@@ -296,7 +296,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        .history dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        .history dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
 
     `],
 })

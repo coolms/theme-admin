@@ -742,7 +742,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__list { flex: 0 0 280px; display: flex; flex-direction: column; min-height: 0; }
         .msg__list-head { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         .msg__title { margin: 0; font-size: 1rem; font-weight: 600; }
-        .msg__list-label { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--cms-text-secondary, #6b7280); }
+        .msg__list-label { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--cms-text-secondary, #525a66); }
         .msg__thread-presence { flex: 0 0 auto; font-size: .72rem; font-weight: 600; padding: .05rem .45rem; border-radius: 999px; background: var(--cms-canvas, #f3f4f6); }
         /* The composer placeholder and the "older messages" hint stay TEXT:
            they sit inline above a list that is already on screen, where a
@@ -750,21 +750,21 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            a placeholder that owns the whole pane, not one that shares it. */
         .msg__loading { display: flex; align-items: center; justify-content: center; padding: 24px 0; }
         .msg__head-actions { display: flex; align-items: center; gap: .35rem; }
-        .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
+        .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__browse:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
         .msg__browse--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__newmode { display: flex; gap: .25rem; margin-bottom: .5rem; }
-        .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
+        .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__newmode-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); font-weight: 500; }
-        .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #848b96); }
+        .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #69707c); }
         .msg__channels { border-bottom: 1px solid var(--cms-border, #e5e7eb); }
-        .msg__channels-head { display: flex; align-items: center; justify-content: space-between; padding: .55rem 1rem; font-size: .8rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); background: var(--cms-canvas, #f3f4f6); }
-        .msg__channels-refresh { border: 0; background: transparent; color: var(--cms-text-secondary, #6b7280); cursor: pointer; padding: .1rem .3rem; font-size: .9rem; }
+        .msg__channels-head { display: flex; align-items: center; justify-content: space-between; padding: .55rem 1rem; font-size: .8rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-canvas, #f3f4f6); }
+        .msg__channels-refresh { border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; padding: .1rem .3rem; font-size: .9rem; }
         .msg__channels-list { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
         .msg__channel { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem; border-bottom: 1px solid var(--cms-border-light, #f0f2f5); }
         .msg__channel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
         .msg__channel-join { border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
-        .msg__channel-open { border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
+        .msg__channel-open { border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
         .msg__picker { padding: .6rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         /* "Message yourself" quick-action at the top of the New composer. */
         .msg__selfnotes { display: flex; align-items: center; gap: .5rem; width: 100%; margin-bottom: .5rem; padding: .45rem .6rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); color: var(--cms-text, #111827); font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; }
@@ -774,7 +774,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
         .msg__chip { display: inline-flex; align-items: center; gap: .3rem; max-width: 100%; padding: .15rem .3rem .15rem .55rem; border-radius: 999px; background: var(--cms-border-light, #f0f2f5); color: var(--cms-text, #111827); font-size: .8rem; }
         .msg__chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12rem; }
-        .msg__chip-x { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #6b7280); font-size: 1rem; line-height: 1; cursor: pointer; padding: 0; }
+        .msg__chip-x { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #525a66); font-size: 1rem; line-height: 1; cursor: pointer; padding: 0; }
         .msg__chip-x:hover { background: var(--cms-surface-hover); color: var(--cms-text, #111827); }
         .msg__group-title { display: block; width: 100%; margin-top: .5rem; padding: .35rem .6rem; border: 1px solid var(--cms-btn-border, #d1d5db); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .85rem; }
         .msg__group-title:focus { outline: none; border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
@@ -793,14 +793,14 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__status-item:hover { background: var(--cms-hover, #f3f4f6); }
         .msg__status-item--on { font-weight: 600; }
         .msg__status-sep { height: 1px; background: var(--cms-border-light, #f0f2f5); margin: 4px 2px; }
-        .msg__status-away { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem .2rem; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); }
+        .msg__status-away { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem .2rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
         .msg__status-away-sel { font: inherit; font-size: .78rem; padding: .15rem .3rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); color: var(--cms-text, #111827); cursor: pointer; }
         .msg__search { display: flex; align-items: center; gap: .4rem; margin: .5rem .75rem; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
         .msg__search:focus-within { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.12); }
-        .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #6b7280); flex: 0 0 auto; }
+        .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #525a66); flex: 0 0 auto; }
         .msg__search-input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); }
         .msg__search-input:focus { outline: none; }
-        .msg__search-clear { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-secondary, #6b7280); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 .2rem; }
+        .msg__search-clear { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 .2rem; }
         .msg__search-clear:hover { color: var(--cms-text, #111827); }
         .msg__rows { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; }
         .msg__row { display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left; border: 0; background: transparent; padding: .55rem 1rem; font: inherit; cursor: pointer; border-bottom: 1px solid var(--cms-border-light, #f0f2f5); color: var(--cms-text, #111827); }
@@ -811,21 +811,21 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__row-top { display: flex; align-items: baseline; gap: .4rem; }
         .msg__row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
         .msg__row--active .msg__row-name { font-weight: 600; }
-        .msg__row-time { flex: 0 0 auto; font-size: .7rem; color: var(--cms-text-secondary, #6b7280); font-weight: 400; }
+        .msg__row-time { flex: 0 0 auto; font-size: .7rem; color: var(--cms-text-secondary, #525a66); font-weight: 400; }
         .msg__row-bottom { display: flex; align-items: center; gap: .4rem; }
-        .msg__row-preview { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); }
+        .msg__row-preview { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
         /* Unread conversation: strengthen the name + preview so it pops in the list. */
         .msg__row--unread .msg__row-name { font-weight: 700; }
         .msg__row--unread .msg__row-preview { color: var(--cms-text, #111827); font-weight: 500; }
         /* Muted conversation: dim the row + a small bell-slash marker. */
         .msg__row--muted { opacity: .62; }
-        .msg__row-mute { flex: 0 0 auto; font-size: .72rem; color: var(--cms-text-secondary, #6b7280); }
+        .msg__row-mute { flex: 0 0 auto; font-size: .72rem; color: var(--cms-text-secondary, #525a66); }
         /* Unread count badge on a conversation row. */
         .msg__badge { flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); font-size: .68rem; font-weight: 700; line-height: 1; }
-        .msg__hint { padding: 1rem; color: var(--cms-text-secondary, #6b7280); font-size: .85rem; }
+        .msg__hint { padding: 1rem; color: var(--cms-text-secondary, #525a66); font-size: .85rem; }
         /* Inbox "Load more" — a footer under the scrolling row list, so it
            stays reachable while the rows above it scroll. */
-        .msg__more { flex: 0 0 auto; width: 100%; border: 0; border-top: 1px solid var(--cms-border-light, #f0f2f5); background: transparent; padding: .5rem 1rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); cursor: pointer; }
+        .msg__more { flex: 0 0 auto; width: 100%; border: 0; border-top: 1px solid var(--cms-border-light, #f0f2f5); background: transparent; padding: .5rem 1rem; font: inherit; font-size: .78rem; color: var(--cms-text-secondary, #525a66); cursor: pointer; }
         .msg__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .msg__more:disabled { cursor: default; opacity: .7; }
         .msg__thread { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -834,7 +834,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__threadcount { display: inline-flex; align-items: center; gap: .3rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 600; color: var(--cms-primary, #2563eb); padding: 0; }
         .msg__threadcount:hover { text-decoration: underline; }
         .msg__bubble--me .msg__threadcount { color: #dbeafe; }
-        .msg__threadreply { display: inline-flex; align-items: center; gap: .25rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; color: var(--cms-text-secondary, #6b7280); padding: 0; opacity: 0; transition: opacity .12s ease; }
+        .msg__threadreply { display: inline-flex; align-items: center; gap: .25rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; color: var(--cms-text-secondary, #525a66); padding: 0; opacity: 0; transition: opacity .12s ease; }
         .msg__bubble:hover .msg__threadreply { opacity: 1; }
         .msg__bubble--me .msg__threadreply { color: rgba(255,255,255,.75); }
         /* Reactions: per-emoji chips below the bubble + a quick-react palette. */
@@ -859,9 +859,9 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__tp { flex: 0 0 340px; display: flex; flex-direction: column; min-height: 0; background: var(--cms-canvas, #f3f4f6); }
         .msg__tp-head { display: flex; align-items: center; justify-content: space-between; padding: .7rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); font-weight: 600; flex-shrink: 0; background: var(--cms-surface); }
         .msg__tp-title { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; }
-        .msg__tp-close { border: 0; background: transparent; cursor: pointer; font-size: 1.3rem; line-height: 1; color: var(--cms-text-secondary, #6b7280); padding: 0 .2rem; }
+        .msg__tp-close { border: 0; background: transparent; cursor: pointer; font-size: 1.3rem; line-height: 1; color: var(--cms-text-secondary, #525a66); padding: 0 .2rem; }
         .msg__tp-body { flex: 1 1 auto; overflow-y: auto; padding: .7rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
-        .msg__tp-empty { color: var(--cms-text-secondary, #6b7280); font-size: .8rem; font-style: italic; margin: .2rem 0; }
+        .msg__tp-empty { color: var(--cms-text-secondary, #525a66); font-size: .8rem; font-style: italic; margin: .2rem 0; }
         .msg__tp-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding: .6rem .8rem; border-top: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); }
         .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
         .msg__tp-input:focus { outline: none; border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
@@ -871,7 +871,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            --cms-danger-text is #991b1b, so it darkens a shade; that is the point,
            since it now follows a theme instead of pinning one snapshot of it. */
         .msg__err { margin: 0; padding: .5rem 1rem; background: var(--cms-danger-light); color: var(--cms-danger-text); font-size: .82rem; cursor: pointer; }
-        .msg__empty { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; color: var(--cms-text-secondary, #6b7280); }
+        .msg__empty { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; color: var(--cms-text-secondary, #525a66); }
         .msg__thread-head { display: flex; align-items: center; gap: .6rem; padding: .7rem 1.1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); font-weight: 600; flex-shrink: 0; }
         .msg__thread-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
         /* Audio / video call actions in the thread header. These carried NO
@@ -881,37 +881,37 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            admin and, being the UA's hard-coded colours rather than tokens, stayed
            light-grey-on-black in dark mode. Same vocabulary as the members button
            below, sized square because they are icon-only. */
-        .msg__call-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .9rem; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
+        .msg__call-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .9rem; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
         .msg__call-btn:hover:not(:disabled) { border-color: var(--cms-btn-hover-border, #9ca3af); color: var(--cms-text, #111827); }
         .msg__call-btn:disabled { opacity: .5; cursor: default; }
-        .msg__members-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #6b7280); border-radius: var(--cms-radius, 6px); padding: .2rem .5rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
+        .msg__members-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .2rem .5rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
         .msg__members-btn:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
         .msg__members-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__members { padding: .7rem 1.1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); flex-shrink: 0; }
         .msg__members-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .1rem; max-height: 220px; overflow-y: auto; }
         .msg__member { display: flex; align-items: center; gap: .5rem; padding: .25rem .1rem; }
         .msg__member-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
-        .msg__member-role { font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #848b96); background: var(--cms-border-light, #f0f2f5); border-radius: 999px; padding: .05rem .4rem; }
-        .msg__member-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #6b7280); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0; }
+        .msg__member-role { font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #69707c); background: var(--cms-border-light, #f0f2f5); border-radius: 999px; padding: .05rem .4rem; }
+        .msg__member-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #525a66); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0; }
         .msg__member-x:hover { background: rgba(220,38,38,.1); color: var(--cms-danger); }
         .msg__members-add { display: flex; flex-direction: column; gap: .4rem; }
-        .msg__members-share { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); cursor: pointer; user-select: none; }
+        .msg__members-share { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); cursor: pointer; user-select: none; }
         .msg__members-share input { margin: 0; cursor: pointer; }
         .msg__leave { width: 100%; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-danger); border-radius: var(--cms-radius, 6px); padding: .4rem; font: inherit; font-size: .85rem; cursor: pointer; }
         .msg__leave:hover { background: rgba(220,38,38,.06); border-color: var(--cms-danger); }
         /* Membership semantics: an excluded (read-only) row + its banner. */
         .msg__row--readonly { opacity: .72; }
-        .msg__readonly { display: flex; align-items: center; gap: .5rem; margin: .4rem .8rem .8rem; padding: .55rem .7rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); color: var(--cms-text-secondary, #6b7280); font-size: .82rem; }
+        .msg__readonly { display: flex; align-items: center; gap: .5rem; margin: .4rem .8rem .8rem; padding: .55rem .7rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); color: var(--cms-text-secondary, #525a66); font-size: .82rem; }
         .msg__readonly i { flex: 0 0 auto; }
         /* Conversation-row context menu. */
         .msg__ctx-backdrop { position: fixed; inset: 0; z-index: 40; }
         .msg__ctx { position: fixed; z-index: 41; min-width: 180px; background: var(--cms-surface, #fff); border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12)); padding: .3rem; display: flex; flex-direction: column; }
         .msg__ctx-item { display: flex; align-items: center; gap: .55rem; width: 100%; border: 0; background: transparent; border-radius: var(--cms-radius, 6px); padding: .45rem .55rem; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); cursor: pointer; text-align: left; }
         .msg__ctx-item:hover { background: var(--cms-hover, #f3f4f6); }
-        .msg__ctx-item i { flex: 0 0 auto; width: 1rem; text-align: center; color: var(--cms-text-secondary, #6b7280); }
+        .msg__ctx-item i { flex: 0 0 auto; width: 1rem; text-align: center; color: var(--cms-text-secondary, #525a66); }
         .msg__ctx-item--danger { color: var(--cms-danger); }
         .msg__ctx-item--danger i { color: var(--cms-danger); }
-        .msg__ctx-empty { padding: .45rem .55rem; font-size: .8rem; color: var(--cms-text-secondary, #6b7280); }
+        .msg__ctx-empty { padding: .45rem .55rem; font-size: .8rem; color: var(--cms-text-secondary, #525a66); }
         /* 'overflow-x: hidden' is explicit: a bare 'overflow-y: auto' computes the
            x-axis to 'auto' (CSS: one non-visible axis forces the other from
            'visible' to 'auto'), so any stray horizontal overflow — a wide embed, a
@@ -921,7 +921,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         /* Pinned-messages bar (pinning) — a collapsible strip above the timeline
          * holding the conversation's curated pins, most-recently-pinned first. */
         .msg__pins { flex: 0 0 auto; border-bottom: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-canvas, #f3f4f6); }
-        .msg__pins-head { display: flex; align-items: center; gap: .4rem; width: 100%; border: 0; background: transparent; padding: .45rem 1rem; font: inherit; font-size: .82rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); cursor: pointer; }
+        .msg__pins-head { display: flex; align-items: center; gap: .4rem; width: 100%; border: 0; background: transparent; padding: .45rem 1rem; font: inherit; font-size: .82rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); cursor: pointer; }
         .msg__pins-head i:first-child { color: var(--cms-primary, #2563eb); }
         .msg__pins-head span { flex: 1 1 auto; text-align: left; }
         .msg__pins-list { list-style: none; margin: 0; padding: 0 0 .3rem; max-height: 30vh; overflow-y: auto; }
@@ -929,7 +929,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__pin-jump { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; border: 0; background: transparent; padding: .3rem .4rem; font: inherit; font-size: .82rem; color: var(--cms-text, #111827); cursor: pointer; text-align: left; border-radius: var(--cms-radius, 6px); }
         .msg__pin-jump:hover { background: var(--cms-hover, #f3f4f6); }
         .msg__pin-snippet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .msg__pin-x { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #6b7280); font-size: 1.05rem; line-height: 1; cursor: pointer; padding: 0; }
+        .msg__pin-x { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #525a66); font-size: 1.05rem; line-height: 1; cursor: pointer; padding: 0; }
         .msg__pin-x:hover { background: var(--cms-surface-hover); color: var(--cms-text, #111827); }
         /* Pin marker on a pinned bubble's meta line + a brief highlight when
          * jumped-to from the pinned bar. */
@@ -948,7 +948,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__line--grouped { margin-top: -.25rem; }
         .msg__avatar-spacer { flex: 0 0 auto; width: 24px; }
         /* Sender name above an incoming bubble in a group/channel (first of a run). */
-        .msg__sender { display: block; margin-bottom: .12rem; font-size: .7rem; font-weight: 600; line-height: 1.2; color: var(--cms-text-secondary, #6b7280); }
+        .msg__sender { display: block; margin-bottom: .12rem; font-size: .7rem; font-weight: 600; line-height: 1.2; color: var(--cms-text-secondary, #525a66); }
         .msg__bubble { max-width: 100%; min-width: 0; background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; border-bottom-left-radius: 3px; padding: .45rem .7rem; font-size: .9rem; line-height: 1.4; word-wrap: break-word; }
         .msg__bubble--me { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-color: transparent; border-bottom-left-radius: 12px; border-bottom-right-radius: 3px; }
         /* A message that @-mentions YOU. The class binding was live and
@@ -970,17 +970,17 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__body p + p { margin-top: .4rem; }
         .msg__body a { color: inherit; text-decoration: underline; }
         .msg__bubble--me .msg__body a { color: var(--cms-text-inverse); }
-        .msg__sys { align-self: center; display: inline-flex; align-items: center; gap: .5rem; color: var(--cms-text-secondary, #6b7280); font-size: .78rem; font-style: italic; }
+        .msg__sys { align-self: center; display: inline-flex; align-items: center; gap: .5rem; color: var(--cms-text-secondary, #525a66); font-size: .78rem; font-style: italic; }
         .msg__sys-dl { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-primary, #2563eb); border-radius: var(--cms-radius, 6px); padding: .15rem .5rem; font: inherit; font-size: .78rem; font-style: normal; cursor: pointer; }
         .msg__sys-dl:hover { background: var(--cms-border-light, #f0f2f5); border-color: var(--cms-primary, #2563eb); }
         /* Per-day separator chip — one date pill above each day's run of
          * messages (Today / Yesterday / a formatted date), so the bubbles only
          * need to carry the time. */
-        .msg__daysep { align-self: center; margin: .5rem 0 .25rem; padding: .16rem .7rem; font-size: .7rem; font-weight: 600; color: var(--cms-text-secondary, #6b7280); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
+        .msg__daysep { align-self: center; margin: .5rem 0 .25rem; padding: .16rem .7rem; font-size: .7rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
         /* In-bubble meta line: the message time + (own messages) the
          * sent/read tick, grouped bottom-right WhatsApp-style. "Read" is the
          * tinted double-check; "Sent" the single check. */
-        .msg__meta { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; margin-top: .15rem; font-size: .66rem; line-height: 1; color: var(--cms-text-secondary, #6b7280); }
+        .msg__meta { display: flex; align-items: center; justify-content: flex-end; gap: .25rem; margin-top: .15rem; font-size: .66rem; line-height: 1; color: var(--cms-text-secondary, #525a66); }
         .msg__bubble--me .msg__meta { color: rgba(255, 255, 255, .8); }
         .msg__metatime { font-variant-numeric: tabular-nums; }
         .msg__tick { font-size: .74rem; }
@@ -988,9 +988,9 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__bubble--me .msg__tick--read { color: #bae6fd; }
         .msg__hint--older { text-align: center; padding: .4rem; }
         /* "X is typing…" hint above the composer. */
-        .msg__typing { display: flex; align-items: center; gap: .45rem; padding: .25rem 1.1rem .1rem; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; }
+        .msg__typing { display: flex; align-items: center; gap: .45rem; padding: .25rem 1.1rem .1rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); flex-shrink: 0; }
         .msg__typing-dots { display: inline-flex; gap: 3px; }
-        .msg__typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--cms-text-secondary, #6b7280); display: inline-block; animation: msg-typing-bounce 1.2s infinite ease-in-out both; }
+        .msg__typing-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--cms-text-secondary, #525a66); display: inline-block; animation: msg-typing-bounce 1.2s infinite ease-in-out both; }
         .msg__typing-dots i:nth-child(2) { animation-delay: .15s; }
         .msg__typing-dots i:nth-child(3) { animation-delay: .3s; }
         @keyframes msg-typing-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-3px); opacity: 1; } }
@@ -1014,7 +1014,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         /* Action bar beneath the editor, inside the shell. */
         .msg__composer-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .3rem .4rem .3rem .35rem; border-top: 1px solid var(--cms-border-light, #f0f2f5); background: var(--cms-canvas, #f3f4f6); }
         .msg__composer-tools { display: flex; align-items: center; gap: .1rem; }
-        .msg__tool { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: var(--cms-radius-md, 8px); background: transparent; color: var(--cms-text-secondary, #6b7280); cursor: pointer; font-size: 1.05rem; }
+        .msg__tool { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: var(--cms-radius-md, 8px); background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; font-size: 1.05rem; }
         .msg__tool:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .msg__tool--on { background: var(--cms-selected-light); color: var(--cms-selected-text); }
         .msg__tool:disabled { opacity: .5; cursor: default; }
@@ -1036,12 +1036,12 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__mention-opt--active { background: var(--cms-border-light, #f0f2f5); }
         .msg__mention-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
         /* "not in chat" tag on a directory (non-member) mention candidate. */
-        .msg__mention-tag { flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .02em; color: var(--cms-text-muted, #848b96); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: .05rem .3rem; }
+        .msg__mention-tag { flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .02em; color: var(--cms-text-muted, #69707c); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: .05rem .3rem; }
         /* "Add {name} to conversation?" prompt after mentioning a non-member. */
         .msg__mention-addbar { position: absolute; bottom: calc(100% - .3rem); left: 1.1rem; right: 1.1rem; z-index: 21; display: flex; align-items: center; gap: .5rem; padding: .4rem .6rem; background: var(--cms-surface, #fff); border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12)); font-size: .82rem; }
         .msg__mention-addtxt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cms-text, #111827); }
         .msg__mention-addbtn { flex: 0 0 auto; border: 0; border-radius: var(--cms-radius, 6px); padding: .3rem .6rem; font: inherit; font-size: .8rem; font-weight: 600; color: var(--cms-text-inverse); background: var(--cms-primary, #2563eb); cursor: pointer; }
-        .msg__mention-dismiss { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-muted, #848b96); font-size: .9rem; line-height: 1; cursor: pointer; padding: .2rem; }
+        .msg__mention-dismiss { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-muted, #69707c); font-size: .9rem; line-height: 1; cursor: pointer; padding: .2rem; }
         /* An @-mention token inside a rendered message body. */
         .msg__mention { color: var(--cms-primary, #2563eb); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: 0 .2rem; font-weight: 600; }
         .msg__bubble--me .msg__mention { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
@@ -1050,14 +1050,14 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__chanref:hover { text-decoration: underline; }
         .msg__bubble--me .msg__chanref { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
         /* The leading hash in a #channel typeahead row. */
-        .msg__chan-hash { flex: 0 0 auto; width: 1.4rem; text-align: center; font-weight: 700; color: var(--cms-text-muted, #848b96); }
+        .msg__chan-hash { flex: 0 0 auto; width: 1.4rem; text-align: center; font-weight: 700; color: var(--cms-text-muted, #69707c); }
         /* Pending attachment chips (composer, above the input row). */
         .msg__pending { display: flex; flex-wrap: wrap; gap: .4rem; padding: .5rem 1.1rem 0; flex-shrink: 0; background: var(--cms-surface); }
         .msg__chip { display: inline-flex; align-items: center; gap: .35rem; max-width: 220px; padding: .25rem .5rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 16px; background: var(--cms-bg, #f8f9fa); font-size: .8rem; }
         .msg__chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .msg__chip-x { border: 0; background: transparent; color: var(--cms-text-secondary, #6b7280); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
+        .msg__chip-x { border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
         .msg__chip-x:hover { color: var(--cms-danger-text); }
-        .msg__chip--loading { color: var(--cms-text-secondary, #6b7280); font-style: italic; }
+        .msg__chip--loading { color: var(--cms-text-secondary, #525a66); font-style: italic; }
         /* Attachment rendering inside a bubble. */
         .msg__atts { display: flex; flex-direction: column; gap: .35rem; margin-top: .35rem; }
         .msg__att-img { padding: 0; border: 0; background: transparent; cursor: pointer; line-height: 0; }
@@ -2209,7 +2209,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     statusColor(status: string | null): string {
-        return this.STATUSES.find(s => s.value === status)?.color ?? 'var(--cms-text-muted, #848b96)';
+        return this.STATUSES.find(s => s.value === status)?.color ?? 'var(--cms-text-muted, #69707c)';
     }
 
     statusLabel(status: string | null): string {

@@ -246,7 +246,7 @@ interface StateTile {
         .tile--total { background: var(--cms-surface-muted); }
         .tile__count { font-size: 1.6rem; font-weight: 700; line-height: 1; }
         .tile__label {
-            font-size: .78rem; color: var(--cms-text-muted, #848b96);
+            font-size: .78rem; color: var(--cms-text-muted, #69707c);
             display: inline-flex; align-items: center; gap: 6px;
         }
         .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cms-text-muted); }
@@ -268,15 +268,15 @@ interface StateTile {
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .count {
             font-size: .7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96);
+            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #69707c);
         }
-        .avg-note { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin-left: auto; }
+        .avg-note { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin-left: auto; }
         .card__body { padding: 12px 16px; }
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .82rem; }
 
         .tbl { width: 100%; border-collapse: collapse; font-size: .85rem; }
         .tbl th {
-            text-align: left; font-weight: 600; color: var(--cms-text-muted, #848b96);
+            text-align: left; font-weight: 600; color: var(--cms-text-muted, #69707c);
             padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); white-space: nowrap;
         }
         .tbl td {
@@ -285,12 +285,12 @@ interface StateTile {
         .tbl tr:last-child td { border-bottom: none; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         .strong { font-weight: 600; }
-        .row-head { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        .row-head { color: var(--cms-text-muted, #69707c); font-weight: 500; }
 
         .def-row { cursor: pointer; }
         .def-row:hover td { background: var(--cms-surface-muted); }
         .def-name { font-weight: 500; }
-        .def-key { display: block; color: var(--cms-text-muted, #848b96); }
+        .def-key { display: block; color: var(--cms-text-muted, #69707c); }
 
         .timing-link {
             display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
@@ -306,7 +306,7 @@ interface StateTile {
         .state-row { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 2px 0 4px; }
         .state-chip {
             display: inline-flex; align-items: center; gap: 6px;
-            font-size: .8rem; color: var(--cms-text-muted, #848b96);
+            font-size: .8rem; color: var(--cms-text-muted, #69707c);
         }
         .state-chip__count { font-weight: 600; color: var(--cms-text, #111827); font-variant-numeric: tabular-nums; }
         .tbl--mt { margin-top: 4px; }

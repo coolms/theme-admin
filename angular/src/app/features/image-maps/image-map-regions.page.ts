@@ -208,7 +208,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
            dark theme, carried light text at 1.24:1 — the SELECTED tool was the
            one you could not read. NO BACKTICKS IN HERE. */
         .toolbar-sep { width: 1px; height: 24px; background: var(--cms-border-color, #e5e7eb); }
-        .draw-hint { font-size: 12px; color: var(--cms-text-muted, #848b96); }
+        .draw-hint { font-size: 12px; color: var(--cms-text-muted, #69707c); }
         .regions-body { display: flex; flex: 1; min-height: 0; }
         .canvas-wrap {
             position: relative; flex: 1; min-width: 0; overflow: hidden; outline: none;
@@ -217,7 +217,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
         }
         .canvas-overlay-msg {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; color: var(--cms-text-muted, #848b96); z-index: 3;
+            font-size: 14px; color: var(--cms-text-muted, #69707c); z-index: 3;
         }
         .canvas-overlay-msg.error { color: var(--cms-danger-text); }
         .draw-preview {
@@ -234,7 +234,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
             padding: 12px 16px; background: var(--cms-surface, #fff);
         }
         .panel-title { font-size: 13px; font-weight: 600; margin: 8px 0; }
-        .panel-empty { font-size: 12px; color: var(--cms-text-muted, #848b96); }
+        .panel-empty { font-size: 12px; color: var(--cms-text-muted, #69707c); }
         .field { margin-bottom: 10px; }
         .region-list { list-style: none; margin: 0; padding: 0; }
         .region-list li {
@@ -244,7 +244,7 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
         .region-list li:hover { background: var(--cms-hover, #f3f4f6); }
         .region-list li.selected { background: var(--cms-selected-light); }
         .region-list .code { font-weight: 600; }
-        .region-list .label { color: var(--cms-text-muted, #848b96); }
+        .region-list .label { color: var(--cms-text-muted, #69707c); }
     `],
 })
 export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {

@@ -192,7 +192,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
         .callpop__chip[data-state="answered"] { background: rgba(22, 163, 74, .14);  color: var(--cms-success-text); }
         .callpop__chip[data-state="on_hold"]  { background: rgba(99, 102, 241, .14); color: var(--cms-meta-text); }
         .callpop__sub {
-            font-size: .75rem; color: var(--cms-text-secondary, #6b7280);
+            font-size: .75rem; color: var(--cms-text-secondary, #525a66);
             font-variant-numeric: tabular-nums;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
@@ -202,7 +202,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             width: 30px; height: 30px;
             display: flex; align-items: center; justify-content: center;
             border: none; border-radius: var(--cms-radius-md, 8px);
-            background: transparent; color: var(--cms-text-muted, #848b96);
+            background: transparent; color: var(--cms-text-muted, #69707c);
             cursor: pointer; font-size: .9rem;
             transition: background .12s ease, color .12s ease;
         }

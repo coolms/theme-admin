@@ -636,7 +636,7 @@ type RailTab = string;
         .page-editor--landing .page-editor__post { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         /* Layout panel: a page-size max-width caps + centers the editing canvas. */
         .page-editor__canvas { width: 100%; margin-inline: auto; }
-        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: .5rem 0 0; }
+        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: .5rem 0 0; }
 
         /* Right side-rail (History / Meta / Schedule / Fields) */
         .page-editor__rail { display: flex; flex-shrink: 0; border-left: 1px solid var(--cms-border); }

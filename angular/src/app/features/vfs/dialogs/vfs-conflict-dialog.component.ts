@@ -118,10 +118,10 @@ export interface ConflictDialogData {
             border-color: var(--cms-selected);
             background: var(--cms-selected-light);
         }
-        .conflict-card-icon { font-size: 1rem; color: var(--cms-text-secondary, #6b7280); flex-shrink: 0; width: 20px; text-align: center; }
+        .conflict-card-icon { font-size: 1rem; color: var(--cms-text-secondary, #525a66); flex-shrink: 0; width: 20px; text-align: center; }
         .conflict-card--active .conflict-card-icon { color: var(--cms-selected); }
         .conflict-card-title { font-size: .875rem; font-weight: 600; color: var(--cms-text, #111827); }
-        .conflict-card-desc  { font-size: .75rem; color: var(--cms-text-secondary, #6b7280); }
+        .conflict-card-desc  { font-size: .75rem; color: var(--cms-text-secondary, #525a66); }
 
         .rename-panel       { padding: 10px 12px; border-radius: var(--cms-radius, 6px); background: var(--cms-surface-muted, #f3f4f6); margin-bottom: 4px; border: 1px solid var(--cms-border, #e5e7eb); }
         .rename-panel-label { font-size: .8rem; font-weight: 600; margin-bottom: 6px; color: var(--cms-text, #111827); }

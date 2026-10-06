@@ -142,7 +142,7 @@ import { MailboxDelegationDto } from './email.types';
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             background: var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
@@ -183,14 +183,14 @@ import { MailboxDelegationDto } from './email.types';
         }
 
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
-        .mono--muted { color: var(--cms-text-muted, #848b96); }
+        .mono--muted { color: var(--cms-text-muted, #69707c); }
 
-        .empty { color: var(--cms-text-muted, #848b96); margin: 0 0 8px; }
+        .empty { color: var(--cms-text-muted, #69707c); margin: 0 0 8px; }
         .error { color: var(--cms-danger, #dc2626); margin: 0 0 8px; }
         .hint {
             margin: 8px 0 0;
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .hint--warn { color: var(--cms-warning-text); }
 

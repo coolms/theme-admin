@@ -265,19 +265,19 @@
         },
         "text-secondary": {
             "$type": "color",
-            "$value": "#6b7280",
+            "$value": "#525a66",
             "$extensions": {
                 "org.coolms": {
-                    "dark": "#9aa8bd"
+                    "dark": "#a9b6c9"
                 }
             }
         },
         "text-muted": {
             "$type": "color",
-            "$value": "#848b96",
+            "$value": "#69707c",
             "$extensions": {
                 "org.coolms": {
-                    "dark": "#6b7f96"
+                    "dark": "#8a99b0"
                 }
             }
         },

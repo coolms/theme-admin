@@ -65,7 +65,7 @@ import { FormsModule } from '@angular/forms';
             margin: 0;
         }
         .alt-editor__input {
-            border: 1px solid var(--cms-btn-border);
+            border: 1px solid var(--cms-border-control);
             border-radius: var(--cms-radius-sm);
             padding: 4px 8px;
             font-size: .8125rem;

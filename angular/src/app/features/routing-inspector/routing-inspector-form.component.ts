@@ -78,7 +78,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
         .inspector-form__field--grow { flex: 1; min-width: 240px; }
         .inspector-form__field label {
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             text-transform: uppercase;
             letter-spacing: .03em;
         }

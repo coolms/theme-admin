@@ -75,7 +75,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             display: block;
             font-size: .78rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: .04em;

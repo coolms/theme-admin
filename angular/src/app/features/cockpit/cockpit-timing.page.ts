@@ -145,19 +145,19 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .count {
             font-size: .7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96);
+            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #69707c);
         }
         .card__body { padding: 12px 16px; }
-        .empty { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .empty { color: var(--cms-text-muted, #69707c); font-size: .85rem; margin: 0; }
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .82rem; }
 
         .kv { display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px; font-size: .9rem; margin: 0; }
-        .kv dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        .kv dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
         .kv dd { margin: 0; word-break: break-all; }
 
         .tbl { width: 100%; border-collapse: collapse; font-size: .85rem; }
         .tbl th {
-            text-align: left; font-weight: 600; color: var(--cms-text-muted, #848b96);
+            text-align: left; font-weight: 600; color: var(--cms-text-muted, #69707c);
             padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb); white-space: nowrap;
         }
         .tbl td {
@@ -168,7 +168,7 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         .strong { font-weight: 600; }
 
         .el-name { font-weight: 500; }
-        .el-id { display: block; color: var(--cms-text-muted, #848b96); }
+        .el-id { display: block; color: var(--cms-text-muted, #69707c); }
         .kind {
             font-size: .72rem; padding: 1px 8px; border-radius: 999px;
             background: var(--cms-border-light); color: var(--cms-text-secondary);

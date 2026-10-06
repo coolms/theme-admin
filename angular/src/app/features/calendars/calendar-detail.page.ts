@@ -233,7 +233,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             align-items: center;
             gap: 12px;
             padding: 48px 24px;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .detail-status--error { color: var(--cms-danger, #dc2626); }
 
@@ -257,7 +257,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             text-decoration: none;
             font-size: .8rem;
         }
@@ -334,7 +334,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             margin: 0 0 8px;
             font-size: .75rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             text-transform: uppercase;
             letter-spacing: .03em;
             display: flex;
@@ -348,7 +348,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             margin: 0 0 8px;
             font-size: .8rem;
         }
-        .meta dt { color: var(--cms-text-muted, #848b96); }
+        .meta dt { color: var(--cms-text-muted, #69707c); }
         .meta dd { margin: 0; color: var(--cms-text); }
         .side-card__btn {
             display: flex;

@@ -108,11 +108,11 @@ export interface TemplateSourceData {
            lead with :host (same rule as the VFS code editor). */
         :host ::ng-deep .cm-editor { height: 100%; }
 
-        .src__state { margin: 0; padding: 12px 2px; color: var(--cms-text-secondary, #6b7280); font-size: 13px; }
+        .src__state { margin: 0; padding: 12px 2px; color: var(--cms-text-secondary, #525a66); font-size: 13px; }
         .src__state--error { color: var(--cms-danger, #dc2626); }
 
         .src__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
-        .src__meta { color: var(--cms-text-secondary, #6b7280); font-size: 12px; }
+        .src__meta { color: var(--cms-text-secondary, #525a66); font-size: 12px; }
         .src__badge { color: var(--cms-primary, #2563eb); }
         .src__actions { display: flex; gap: 8px; flex-shrink: 0; }
     `],

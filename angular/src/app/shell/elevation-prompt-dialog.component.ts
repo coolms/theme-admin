@@ -115,15 +115,15 @@ import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
     `,
     styles: [`
         .ep-ended         { margin: 0 0 12px; font-size: .9rem; color: var(--cms-text, #111827); }
-        .ep-refusal       { margin: 0 0 12px; font-size: .85rem; color: var(--cms-text-secondary, #6b7280); }
+        .ep-refusal       { margin: 0 0 12px; font-size: .85rem; color: var(--cms-text-secondary, #525a66); }
         .ep-refusal i     { margin-right: 4px; }
         .ep-label         { display: block; font-size: .8rem; font-weight: 600; color: var(--cms-text); margin: 10px 0 5px; }
         .cms-input        { display: block; width: 100%; }
         .ep-code          { letter-spacing: .3em; font-family: var(--cms-font-mono, monospace); }
         .cms-input--invalid { border-color: var(--cms-danger) !important; }
         .ep-error         { margin-top: 6px; font-size: .8rem; color: var(--cms-danger-text); }
-        .ep-note          { margin: 14px 0 0; font-size: .78rem; color: var(--cms-text-secondary, #6b7280); }
-        .ep-note--muted   { margin-top: 6px; color: var(--cms-text-muted, #848b96); }
+        .ep-note          { margin: 14px 0 0; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
+        .ep-note--muted   { margin-top: 6px; color: var(--cms-text-muted, #69707c); }
     `],
 })
 export class ElevationPromptDialogComponent implements AfterViewInit {
