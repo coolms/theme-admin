@@ -33,7 +33,7 @@ import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
-                           border: 1px solid rgba(255,255,255,.12);
+                           border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
                     [title]="unread() > 0 ? unread() + ' unread' : 'Chat'"
                     aria-label="Chat"

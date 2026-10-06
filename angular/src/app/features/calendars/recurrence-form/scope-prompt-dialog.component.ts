@@ -120,7 +120,7 @@ export interface ScopePromptDialogData {
         }
         .choice:hover:not(.choice--disabled) {
             background: var(--cms-btn-hover-bg, #f3f4f6);
-            border-color: var(--cms-btn-hover-border, #9ca3af);
+            border-color: var(--cms-btn-hover-border, #6b7280);
         }
         .choice input { margin-top: 2px; }
         .choice span { display: flex; flex-direction: column; gap: 2px; }

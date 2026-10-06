@@ -90,7 +90,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
             font-family: var(--cms-font-mono, monospace);
         }
         .inspector-form__field input:focus {
-            outline: 2px solid var(--cms-accent, #F5A623);
+            outline: 2px solid var(--cms-focus-ring);
             outline-offset: -1px;
             border-color: transparent;
         }

@@ -198,7 +198,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
         }
         .cms-output-step__custom:focus {
             outline: none;
-            border-color: var(--cms-accent);
+            border-color: var(--cms-focus-ring);
         }
         .cms-output-step__picker {
             margin-top: .5rem;

@@ -22,6 +22,8 @@ export const light = {
     textMuted: "#69707c",
     textInverse: "#ffffff",
     onChrome: "#ffffff",
+    chromeEdge: "#6b7f96",
+    focusRingOnChrome: "#f5c173",
     success: "#16a34a",
     successLight: "#f0fdf4",
     successText: "#166534",
@@ -60,9 +62,9 @@ export const light = {
     primaryHover: "#1d4ed8",
     inputBg: "#ffffff",
     btnBg: "#ffffff",
-    btnBorder: "#d1d5db",
+    btnBorder: "#868c96",
     btnHoverBg: "#f3f4f6",
-    btnHoverBorder: "#9ca3af",
+    btnHoverBorder: "#6b7280",
 } as const;
 
 export const dark = {
@@ -86,6 +88,8 @@ export const dark = {
     textMuted: "#8a99b0",
     textInverse: "#0f1722",
     onChrome: "#ffffff",
+    chromeEdge: "#6b7f96",
+    focusRingOnChrome: "#f5c173",
     success: "#22c55e",
     successLight: "#0f2a18",
     successText: "#86efac",
@@ -124,9 +128,9 @@ export const dark = {
     primaryHover: "#60a5fa",
     inputBg: "#131c28",
     btnBg: "#243044",
-    btnBorder: "#3a4a63",
+    btnBorder: "#6b7f96",
     btnHoverBg: "#2d3f57",
-    btnHoverBorder: "#55688a",
+    btnHoverBorder: "#8a9bb3",
 } as const satisfies Record<keyof typeof light, string>;
 
 export const radius = {

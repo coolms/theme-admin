@@ -431,6 +431,30 @@ body {
     white-space: nowrap;
 }
 
+// --- Focus -------------------------------------------------------------------
+//
+// One indicator for every interactive element that draws none of its own: a 2px ring in --cms-focus-ring, 3:1 or
+// more against what surrounds it (Dmitry, 2026-10-06, (a); B, the accent-text token). It replaces the browser's own
+// ring, whose colour is the operating system's. :where() keeps it at zero specificity, so a control's own rule wins.
+:where(button, a, [tabindex], summary):focus-visible {
+    outline: 2px solid var(--cms-focus-ring);
+    outline-offset: 2px;
+}
+
+// The chrome (the top bar, the sidebar) is navy in both schemes: on it the ring is the light one, which a server's
+// own accent cannot darken into the navy.
+.coolms-topbar,
+.coolms-sidebar {
+    --cms-focus-ring: var(--cms-focus-ring-on-chrome);
+}
+
+// The top bar's quick-access tiles are Bootstrap buttons, whose focus draws no outline: theirs is the ring too.
+.coolms-topbar .btn:focus-visible {
+    outline: 2px solid var(--cms-focus-ring);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
 // --- Buttons -----------------------------------------------------------------
 .cms-btn {
     display: inline-flex;
@@ -460,7 +484,7 @@ body {
     }
 
     &:focus-visible {
-        outline: 2px solid var(--cms-accent);
+        outline: 2px solid var(--cms-focus-ring);
         outline-offset: 2px;
     }
 
@@ -533,10 +557,11 @@ input[type="radio"] {
         border-color: var(--cms-accent);
     }
 
-    // One focus ring for both, in the brand rather than the browser's blue.
+    // One focus ring for both: a 2px gap in the surface, then a 2px ring in --cms-focus-ring, 3:1 or more
+    // against what surrounds it (Dmitry, 2026-10-06, (a)); the box keeps its own edge.
     &:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 3px var(--cms-accent-light);
+        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
         border-color: var(--cms-accent);
     }
 
@@ -613,7 +638,7 @@ input[type="radio"] {
 
     &:focus {
         border-color: var(--cms-accent);
-        box-shadow: 0 0 0 3px var(--cms-accent-light);
+        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
     }
 }
 
@@ -679,7 +704,7 @@ input[type="radio"] {
     }
 
     input:focus-visible + &__slider {
-        box-shadow: 0 0 0 3px var(--cms-accent-light);
+        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
     }
 
     input:disabled + &__slider {
@@ -701,8 +726,10 @@ input[type="radio"] {
 }
 
 .cms-btn-danger {
-    color: var(--cms-danger);
-    border-color: var(--cms-danger-border);
+    // Its edge shows it is a button, so the danger red itself (3:1 or more on every ground); its label the
+    // danger TEXT colour, 4.5:1 or more (Dmitry, 2026-10-06, (a)). --cms-danger-border stays the banners'.
+    color: var(--cms-danger-text);
+    border-color: var(--cms-danger);
 
     &:hover:not(:disabled) {
         background: var(--cms-danger-light);
@@ -746,7 +773,8 @@ input[type="radio"] {
 
 .cms-btn-active {
     background: var(--cms-selected-light);
-    border-color: var(--cms-selected);
+    // The edge is what shows the state: the selection's text colour, 6.54:1 or more (the brand amber was 1.84:1).
+    border-color: var(--cms-selected-text);
     color: var(--cms-selected-text);
 }
 
@@ -786,8 +814,8 @@ input[type="radio"] {
 
     &:focus {
         outline: none;
-        border-color: var(--cms-accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+        border-color: var(--cms-focus-ring);
+        box-shadow: 0 0 0 1px var(--cms-focus-ring);
     }
 }
 
@@ -804,8 +832,8 @@ input[type="radio"] {
 
     &:focus {
         outline: none;
-        border-color: var(--cms-accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+        border-color: var(--cms-focus-ring);
+        box-shadow: 0 0 0 1px var(--cms-focus-ring);
     }
 }
 
@@ -840,8 +868,8 @@ input[type="radio"] {
 
     &:focus {
         outline: none;
-        border-color: var(--cms-accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+        border-color: var(--cms-focus-ring);
+        box-shadow: 0 0 0 1px var(--cms-focus-ring);
     }
 }
 
@@ -1029,8 +1057,8 @@ cdk-dialog-container {
 
         &:focus {
             outline: none;
-            border-color: var(--cms-accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+            border-color: var(--cms-focus-ring);
+            box-shadow: 0 0 0 1px var(--cms-focus-ring);
         }
 
         &.invalid { border-color: var(--cms-danger); }
@@ -1144,8 +1172,8 @@ body.cms-resizing {
 
     &:focus {
         outline: none;
-        border-color: var(--cms-accent);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+        border-color: var(--cms-focus-ring);
+        box-shadow: 0 0 0 1px var(--cms-focus-ring);
     }
 }
 

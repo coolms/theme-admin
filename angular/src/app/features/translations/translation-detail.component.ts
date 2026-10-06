@@ -179,7 +179,7 @@ interface EditorRow {
         .editor__input:focus {
             outline: 0;
             border-color: var(--bs-primary, #0d6efd);
-            box-shadow: 0 0 0 0.2rem var(--cms-accent-light);
+            box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
         }
     `],
 })

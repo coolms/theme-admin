@@ -105,7 +105,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             outline: none;
             box-sizing: border-box;
         }
-        .rmd-textarea:focus { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px var(--cms-info-subtle); }
+        .rmd-textarea:focus { border-color: var(--cms-focus-ring); box-shadow: 0 0 0 2px var(--cms-info-subtle); }
         .rmd-chips {
             display: flex;
             gap: 6px;

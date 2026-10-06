@@ -683,7 +683,7 @@ const QUEUE_POLL_MS = 12_000;
         }
         .lc-composer__input:focus {
             outline: none;
-            border-color: var(--cms-accent);
+            border-color: var(--cms-focus-ring);
         }
         .lc-composer__input:disabled { background: var(--cms-bg); cursor: not-allowed; }
         .lc-composer__send { flex-shrink: 0; }

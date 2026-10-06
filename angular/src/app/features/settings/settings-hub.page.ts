@@ -348,7 +348,7 @@ const PREFS_KEY = 'settings';
             cursor: pointer;
         }
         .rail-group__head:hover { color: var(--cms-text); }
-        .rail-group__head:focus-visible { outline: 2px solid var(--cms-accent); outline-offset: 2px; }
+        .rail-group__head:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
         .rail-group__head .bi { font-size: .8125rem; }
 
         .rail-group__chevron { margin-left: auto; opacity: .7; }
@@ -390,7 +390,7 @@ const PREFS_KEY = 'settings';
            rail's top level and align with the page header like everything else. */
         .settings__rail--rooted .rail-item { padding-left: 8px; }
         .rail-item:hover { background: var(--cms-hover-bg); }
-        .rail-item:focus-visible { outline: 2px solid var(--cms-accent); outline-offset: -2px; }
+        .rail-item:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: -2px; }
         .rail-item--active {
             background: var(--cms-selected-light);
             border-left-color: var(--cms-selected);

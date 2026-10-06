@@ -4,6 +4,7 @@
     --cms-accent-hover: #E09200;
     --cms-accent-light: #FEF7E6;
     --cms-accent-text: #7C4D00;
+    --cms-focus-ring: var(--cms-accent-text);
     --cms-accent-fg: #1a1a1a;
     --cms-selected: var(--cms-accent);
     --cms-selected-light: var(--cms-accent-light);
@@ -43,6 +44,8 @@
     --cms-text-muted: #69707c;
     --cms-text-inverse: #ffffff;
     --cms-on-chrome: #ffffff;
+    --cms-chrome-edge: #6b7f96;
+    --cms-focus-ring-on-chrome: #f5c173;
     --cms-success: #16a34a;
     --cms-success-light: #f0fdf4;
     --cms-success-text: #166534;
@@ -81,10 +84,10 @@
     --cms-primary-hover: #1d4ed8;
     --cms-input-bg: #ffffff;
     --cms-btn-bg: #ffffff;
-    --cms-btn-border: #d1d5db;
+    --cms-btn-border: #868c96;
     --cms-btn-text: var(--cms-text-body);
     --cms-btn-hover-bg: #f3f4f6;
-    --cms-btn-hover-border: #9ca3af;
+    --cms-btn-hover-border: #6b7280;
     --cms-radius: 6px;
     --cms-radius-sm: 4px;
     --cms-radius-md: 8px;
@@ -147,9 +150,9 @@
     --cms-primary-hover: #60a5fa;
     --cms-input-bg: #131c28;
     --cms-btn-bg: #243044;
-    --cms-btn-border: #3a4a63;
+    --cms-btn-border: #6b7f96;
     --cms-btn-hover-bg: #2d3f57;
-    --cms-btn-hover-border: #55688a;
+    --cms-btn-hover-border: #8a9bb3;
     --cms-shadow-sm: 0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.30);
     --cms-shadow-md: 0 4px 12px rgba(0,0,0,.50), 0 2px 4px rgba(0,0,0,.35);
     --cms-shadow-lg: 0 8px 24px rgba(0,0,0,.55), 0 4px 8px rgba(0,0,0,.40);

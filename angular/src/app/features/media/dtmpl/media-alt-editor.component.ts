@@ -74,8 +74,8 @@ import { FormsModule } from '@angular/forms';
             transition: border-color .1s, box-shadow .1s;
 
             &:focus {
-                border-color: var(--cms-accent);
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
+                border-color: var(--cms-focus-ring);
+                box-shadow: 0 0 0 1px var(--cms-focus-ring);
             }
         }
         .alt-editor__hint {

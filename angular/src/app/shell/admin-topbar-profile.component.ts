@@ -40,7 +40,7 @@ interface AccountEntry {
 
             <!-- Avatar trigger -->
             <button class="btn btn-sm d-flex align-items-center gap-2 text-white"
-                    style="background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+                    style="background: rgba(255,255,255,.08); border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px 4px 6px"
                     (click)="toggle()">
                 <app-user-avatar [user]="topbarUser()" size="sm" />

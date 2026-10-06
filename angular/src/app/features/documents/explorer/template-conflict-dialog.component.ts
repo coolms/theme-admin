@@ -190,7 +190,7 @@ export interface TemplateConflictDialogResult {
             transition: border-color .12s, background .12s;
         }
         .cms-template-conflict-dialog__option:hover {
-            border-color: var(--cms-border-strong, #d1d5db);
+            border-color: var(--cms-border-strong, #868c96);
         }
         .cms-template-conflict-dialog__option--active {
             border-color: var(--cms-selected);
@@ -230,8 +230,8 @@ export interface TemplateConflictDialogResult {
             font-size: 0.875rem;
         }
         .cms-template-conflict-dialog__name-field input:focus {
-            border-color: var(--cms-accent, #F5A623);
-            outline: 2px solid var(--cms-accent-light, #FEF7E6);
+            border-color: var(--cms-focus-ring);
+            outline: 2px solid var(--cms-focus-ring);
             outline-offset: -1px;
         }
 
