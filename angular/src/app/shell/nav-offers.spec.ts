@@ -21,6 +21,12 @@ describe('navOffers', () => {
         expect(navOffers(nav, '/api/v1/chat/conversations')()).toBeFalse();
     });
 
+    it('reads the normalised resource the server adds too', () => {
+        const item = { ...node('/calendars', undefined), resource: 'GET /api/v1/calendar' } as unknown as NaviGraphNode;
+
+        expect(navOffers(signal<NaviGraphNode[]>([item]), '/api/v1/calendar')()).toBeTrue();
+    });
+
     it('follows the navigation when it changes', () => {
         const nav = signal<NaviGraphNode[]>([node('/email', '/api/v1/email/mailboxes')]);
         const offered = navOffers(nav, '/api/v1/chat/conversations');

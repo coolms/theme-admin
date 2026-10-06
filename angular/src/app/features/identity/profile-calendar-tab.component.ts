@@ -1,5 +1,8 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, Output, EventEmitter, computed, inject, input, signal, effect, untracked } from '@angular/core';
+import {
+    ChangeDetectionStrategy, Component, DestroyRef, OnInit, Output, EventEmitter, computed, effect, inject, input,
+    signal, untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -286,6 +289,13 @@ export class ProfileCalendarTabComponent implements OnInit {
         this.timeFormat          = init.timeFormat === '12h' ? '12h' : '24h';
         this.weekStart           = init.weekStart === 'sunday' ? 'sunday' : 'monday';
         this.defaultCalendarSlug = init.defaultCalendarSlug ?? null;
+
+        // Offered already (the usual case: the layout loaded the navigation first): asked now. The effect above
+        // asks it when the navigation arrives later.
+        if (this.offered() && !this.calendarsAsked) {
+            this.calendarsAsked = true;
+            this.loadCalendars();
+        }
     }
 
     private loadCalendars(): void {

@@ -3,7 +3,7 @@ import { type NaviGraphNode } from '@coolms/core-angular';
 
 /**
  * Whether the admin's navigation, AS THE SERVER ANSWERED IT TO THIS ACCOUNT, offers an item that reads
- * `resource` (its `meta.resource`, e.g. `/api/v1/chat/conversations`).
+ * `resource` (its `meta.resource`, e.g. `/api/v1/chat/conversations`, or the normalised `GET <path>`).
  *
  * The server lists an item only when the caller may call its resource, so this is the account's own grant, asked
  * once with the navigation the layout loads anyway (Dmitry, 2026-10-06: "an account sees in any theme exactly what
@@ -19,7 +19,10 @@ export function navOffers(nav: Signal<readonly NaviGraphNode[]>, resource: strin
 
 function offers(nodes: readonly NaviGraphNode[], resource: string): boolean {
     for (const node of nodes) {
-        if (node.meta?.['resource'] === resource || offers(node.children ?? [], resource)) {
+        // The item's own declaration (a bare path), or the server's normalised form beside it ('GET <path>').
+        const normalised = (node as unknown as Record<string, unknown>)['resource'];
+        if (node.meta?.['resource'] === resource || normalised === 'GET ' + resource
+            || offers(node.children ?? [], resource)) {
             return true;
         }
     }

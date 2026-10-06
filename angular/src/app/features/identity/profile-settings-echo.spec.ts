@@ -191,7 +191,6 @@ describe('Settings-section echo -> profile caches', () => {
         tab.componentInstance.saved.subscribe(v => (emitted = v));
 
         tab.componentInstance.ngOnInit();
-        TestBed.flushEffects();
         http.expectOne(`${MANIFEST.apiBase}/calendar`).flush({ member: [] });
         tab.componentInstance.save();
 
