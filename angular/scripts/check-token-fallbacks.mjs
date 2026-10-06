@@ -108,10 +108,16 @@ function codeLines(path) {
         .filter((l) => !COMMENT.test(l.text));
 }
 
-// -- the oracle: styles.scss, light block only (dark re-declares the same names)
-const theme = readFileSync(THEME, 'utf8');
-const darkAt = theme.indexOf("[data-theme='dark']");
-const light = darkAt < 0 ? theme : theme.slice(0, darkAt);
+// -- the oracle: the light block of the token file the generator writes (tokens.generated.scss,
+//    from tokens/coolms.tokens.json) and of styles.scss, which keeps what is not a token. Dark
+//    re-declares the same names.
+const GENERATED = join(SRC, 'tokens.generated.scss');
+function lightOf(text) {
+    const darkAt = text.indexOf("[data-theme='dark']");
+    return darkAt < 0 ? text : text.slice(0, darkAt);
+}
+const light = lightOf(readFileSync(THEME, 'utf8'))
+    + '\n' + (existsSync(GENERATED) ? lightOf(readFileSync(GENERATED, 'utf8')) : '');
 const declared = new Map();
 for (const line of light.split('\n')) {
     if (COMMENT.test(line)) continue;
@@ -238,15 +244,15 @@ for (const path of files) {
 }
 
 if (findings.length > 0) {
-    console.error(`✗ ${findings.length} var() fallback(s) disagree with styles.scss (${sites} checked in ${files.length} files):`);
+    console.error(`✗ ${findings.length} var() fallback(s) disagree with the theme's tokens (${sites} checked in ${files.length} files):`);
     for (const f of findings) console.error(`  ${f}`);
     console.error('  A fallback paints wherever the theme is absent. Make it the token\'s own value,');
-    console.error('  or define the token in styles.scss if it is new.');
+    console.error('  or define the token in tokens/coolms.tokens.json if it is new.');
     process.exit(1);
 }
 
 console.log(
-    `✓ ${sites} var(--cms-*, fallback) sites in ${files.length} files agree with styles.scss`
+    `✓ ${sites} var(--cms-*, fallback) sites in ${files.length} files agree with the theme's tokens`
     + ` (${declared.size} tokens): ${agree} equal, ${chained} chain to another var(),`
     + ` ${abbreviated} abbreviate a multi-part token, ${onRuntime} rest on a token a component sets.`,
 );
