@@ -5,7 +5,13 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
-## Unreleased
+## 2.0.0-alpha6 - 2026-10-07
+
+### Deprecated
+- `theme.yaml` still declares its host contract under the deprecated name,
+  `contracts: { console: "1.0" }`. coolms/core reads `console` as an alias of
+  `admin` (and `desk` of `workspace`), so the theme matches modules written
+  either way. The declaration moves to `admin` before the aliases are removed.
 
 ### Changed
 
@@ -17,7 +23,7 @@ major number means here.
   `GET /rtc/calls/{id}/ice-servers`, which the server answers for the call's
   participants only, instead of the per-account `GET /rtc/ice-servers`, which
   handed a TURN credential to any signed-in account. Needs a server that
-  serves the per-call route (backend, 2026-09-29); if it cannot be read the
+  serves the per-call route (available since 2026-09-29); if it cannot be read the
   call still falls back to public STUN, as before.
 
 ### Fixed
@@ -30,7 +36,7 @@ major number means here.
   and raises a listed call as its ring would have. The version rule applies:
   a call already in view takes the record only if it is not older, and a call
   this admin has seen end is not brought back by a read that returns after it
-  ended. Needs a server that serves `GET /rtc/ringing` (backend, 2026-09-30).
+  ended. Needs a server that serves `GET /rtc/ringing` (available since 2026-09-30).
 - The admin subscribes to its incoming-call channel (`rtc.user.<id>`) when both
   the signed-in user is known and the realtime connection is up, and again
   after every reconnect. It was subscribed on the user alone, in one pipe: a
@@ -43,7 +49,7 @@ major number means here.
 - A caller learns its call connected even when the answer lands while it is still
   subscribing to the call's channel. The channel keeps no history, so a
   `call.state connected` published before the caller's subscription became active
-  never arrived, and the caller never started its media (1 of 60 call-harness
+  never arrived, and the caller never started its media (1 of 60 automated call
   runs, 2026-09-27). The client now reads the call each time its subscription to
   the call becomes active, and every change after that arrives on the channel.
   That read can return after the channel has moved on, so it is ordered by the
@@ -108,7 +114,7 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
-- The polite peer of a 1:1 call's negotiation is the server's to name (Dmitry,
+- The polite peer of a 1:1 call's negotiation is the server's to name (decided
   2026-09-26). The client reads `politeUserId`, from the call record and from
   every `call.state`, and hands the media plane whether it names this user; it
   no longer derives politeness from being the callee. The server names the
@@ -133,8 +139,7 @@ major number means here.
   (`color-mix` of the mark at 8, 14, 15, 18 and 35 per cent -- five tints of
   one colour). `lint:fallbacks`, which the pre-push hook runs on the pushed
   tree, now also refuses a tint of `--cms-selected` mixed by hand and a
-  selected fill whose text names another family, per rule; the backend's
-  `check-cms-tokens` repeats the rule over the library clones.
+  selected fill whose text names another family, per rule.
 - Drop targets are interaction affordances, not selections, and all of them
   read `--cms-primary` with the `--cms-info-light` wash (the three that read
   the accent -- the documents folder, the replace-template dialog, the media
@@ -206,7 +211,7 @@ major number means here.
   remote description in every call, and every call logged "Failed to set
   remote answer sdp: Called in wrong state" from the echoed answers. Whether
   the call then connected depended on which offer the callee applied last; in
-  the call harness about half did not. A `call.signal` from the signed-in user
+  automated call runs about half did not. A `call.signal` from the signed-in user
   is now dropped before the media plane sees it.
 - A pasted or bookmarked module URL landed on the dashboard on a cold load
   (measured: `/admin/identity/users` requested no chunk of its own, the
