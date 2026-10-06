@@ -146,7 +146,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                         </div>
 
                         @if (newMode() === 'channel') {
-                            <input #chanInput type="text" class="msg__group-title"
+                            <input #chanInput type="text" class="msg__group-title cms-field"
                                    placeholder="Channel name"
                                    [value]="channelName()"
                                    (input)="channelName.set(chanInput.value)"
@@ -176,7 +176,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                             </div>
 
                             @if (groupMembers().length > 1) {
-                                <input #titleInput type="text" class="msg__group-title"
+                                <input #titleInput type="text" class="msg__group-title cms-field"
                                        placeholder="Group name (optional)"
                                        [value]="groupTitle()"
                                        (input)="groupTitle.set(titleInput.value)" />
@@ -224,7 +224,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                 } @else if (conversations().length === 0) {
                     <p class="msg__hint">No conversations yet. Start one with ＋ New.</p>
                 } @else {
-                    <div class="msg__search">
+                    <div class="msg__search cms-field-box">
                         <i class="bi bi-search msg__search-icon"></i>
                         <input type="text" class="msg__search-input" placeholder="Search conversations…"
                                [value]="convQuery()" (input)="convQuery.set($any($event.target).value)" />
@@ -513,7 +513,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
 
                         <!-- One unified input shell: the rich editor fills the width,
                              with an action bar (emoji · attach | Send) beneath it. -->
-                        <div class="msg__composer-shell">
+                        <div class="msg__composer-shell cms-field-box">
                             <coolms-editor class="msg__editor"
                                            profile="comment"
                                            [content]="composerHtml()"
@@ -567,7 +567,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                         }
                     </div>
                     <div class="msg__tp-composer">
-                        <textarea #tpInput class="msg__tp-input" rows="1" placeholder="Reply in thread…"
+                        <textarea #tpInput class="msg__tp-input cms-field" rows="1" placeholder="Reply in thread…"
                                   [value]="threadReply()"
                                   (input)="threadReply.set(tpInput.value)"
                                   (keydown)="onThreadKeydown($event)"></textarea>
@@ -750,11 +750,11 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            a placeholder that owns the whole pane, not one that shares it. */
         .msg__loading { display: flex; align-items: center; justify-content: center; padding: 24px 0; }
         .msg__head-actions { display: flex; align-items: center; gap: .35rem; }
-        .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
-        .msg__browse:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
+        .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
+        .msg__browse:hover { border-color: var(--cms-btn-hover-border, #6b7280); }
         .msg__browse--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__newmode { display: flex; gap: .25rem; margin-bottom: .5rem; }
-        .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
+        .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__newmode-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); font-weight: 500; }
         .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #69707c); }
         .msg__channels { border-bottom: 1px solid var(--cms-border, #e5e7eb); }
@@ -764,7 +764,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__channel { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem; border-bottom: 1px solid var(--cms-border-light, #f0f2f5); }
         .msg__channel-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .88rem; }
         .msg__channel-join { border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
-        .msg__channel-open { border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
+        .msg__channel-open { border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .25rem .6rem; font: inherit; font-size: .78rem; cursor: pointer; flex-shrink: 0; }
         .msg__picker { padding: .6rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         /* "Message yourself" quick-action at the top of the New composer. */
         .msg__selfnotes { display: flex; align-items: center; gap: .5rem; width: 100%; margin-bottom: .5rem; padding: .45rem .6rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); color: var(--cms-text, #111827); font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; }
@@ -776,8 +776,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12rem; }
         .msg__chip-x { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #525a66); font-size: 1rem; line-height: 1; cursor: pointer; padding: 0; }
         .msg__chip-x:hover { background: var(--cms-surface-hover); color: var(--cms-text, #111827); }
-        .msg__group-title { display: block; width: 100%; margin-top: .5rem; padding: .35rem .6rem; border: 1px solid var(--cms-btn-border, #d1d5db); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .85rem; }
-        .msg__group-title:focus { outline: none; border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+        .msg__group-title { display: block; width: 100%; margin-top: .5rem; padding: .35rem .6rem; border: 1px solid var(--cms-btn-border, #868c96); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .85rem; }
         .msg__start { margin-top: .55rem; width: 100%; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius, 6px); padding: .4rem .7rem; font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer; }
         .msg__start:disabled { opacity: .6; cursor: default; }
         /* Self set-status control under the list header. */
@@ -796,7 +795,6 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__status-away { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem .2rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
         .msg__status-away-sel { font: inherit; font-size: .78rem; padding: .15rem .3rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); color: var(--cms-text, #111827); cursor: pointer; }
         .msg__search { display: flex; align-items: center; gap: .4rem; margin: .5rem .75rem; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
-        .msg__search:focus-within { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px rgba(37,99,235,.12); }
         .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #525a66); flex: 0 0 auto; }
         .msg__search-input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); }
         .msg__search-input:focus { outline: none; }
@@ -864,7 +862,6 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__tp-empty { color: var(--cms-text-secondary, #525a66); font-size: .8rem; font-style: italic; margin: .2rem 0; }
         .msg__tp-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding: .6rem .8rem; border-top: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); }
         .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
-        .msg__tp-input:focus { outline: none; border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
         .msg__tp-send { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 0; border-radius: var(--cms-radius-lg, 10px); background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); cursor: pointer; font-size: 1rem; }
         .msg__tp-send:disabled { background: var(--cms-text-muted); cursor: default; }
         /* Error strip on the palette's own danger pair. The text was #b91c1c and
@@ -881,11 +878,11 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            admin and, being the UA's hard-coded colours rather than tokens, stayed
            light-grey-on-black in dark mode. Same vocabulary as the members button
            below, sized square because they are icon-only. */
-        .msg__call-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .9rem; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
-        .msg__call-btn:hover:not(:disabled) { border-color: var(--cms-btn-hover-border, #9ca3af); color: var(--cms-text, #111827); }
+        .msg__call-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 30px; height: 30px; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); font: inherit; font-size: .9rem; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
+        .msg__call-btn:hover:not(:disabled) { border-color: var(--cms-btn-hover-border, #6b7280); color: var(--cms-text, #111827); }
         .msg__call-btn:disabled { opacity: .5; cursor: default; }
-        .msg__members-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .2rem .5rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
-        .msg__members-btn:hover { border-color: var(--cms-btn-hover-border, #9ca3af); }
+        .msg__members-btn { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .2rem .5rem; font: inherit; font-size: .8rem; font-weight: 500; cursor: pointer; flex-shrink: 0; }
+        .msg__members-btn:hover { border-color: var(--cms-btn-hover-border, #6b7280); }
         .msg__members-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__members { padding: .7rem 1.1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); flex-shrink: 0; }
         .msg__members-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .1rem; max-height: 220px; overflow-y: auto; }
@@ -897,7 +894,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__members-add { display: flex; flex-direction: column; gap: .4rem; }
         .msg__members-share { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); cursor: pointer; user-select: none; }
         .msg__members-share input { margin: 0; cursor: pointer; }
-        .msg__leave { width: 100%; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-danger); border-radius: var(--cms-radius, 6px); padding: .4rem; font: inherit; font-size: .85rem; cursor: pointer; }
+        .msg__leave { width: 100%; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-danger); border-radius: var(--cms-radius, 6px); padding: .4rem; font: inherit; font-size: .85rem; cursor: pointer; }
         .msg__leave:hover { background: rgba(220,38,38,.06); border-color: var(--cms-danger); }
         /* Membership semantics: an excluded (read-only) row + its banner. */
         .msg__row--readonly { opacity: .72; }
@@ -971,7 +968,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__body a { color: inherit; text-decoration: underline; }
         .msg__bubble--me .msg__body a { color: var(--cms-text-inverse); }
         .msg__sys { align-self: center; display: inline-flex; align-items: center; gap: .5rem; color: var(--cms-text-secondary, #525a66); font-size: .78rem; font-style: italic; }
-        .msg__sys-dl { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #d1d5db); background: var(--cms-surface); color: var(--cms-primary, #2563eb); border-radius: var(--cms-radius, 6px); padding: .15rem .5rem; font: inherit; font-size: .78rem; font-style: normal; cursor: pointer; }
+        .msg__sys-dl { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-primary, #2563eb); border-radius: var(--cms-radius, 6px); padding: .15rem .5rem; font: inherit; font-size: .78rem; font-style: normal; cursor: pointer; }
         .msg__sys-dl:hover { background: var(--cms-border-light, #f0f2f5); border-color: var(--cms-primary, #2563eb); }
         /* Per-day separator chip — one date pill above each day's run of
          * messages (Today / Yesterday / a formatted date), so the bubbles only
@@ -1000,7 +997,6 @@ import { RtcMediaKind } from '../rtc/rtc.types';
          * relatively-positioned padding wrapper so the emoji popover anchors to it. */
         .msg__composer { position: relative; padding: .7rem 1.1rem; border-top: 1px solid var(--cms-border, #e5e7eb); flex-shrink: 0; background: var(--cms-surface); }
         .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
-        .msg__composer-shell:focus-within { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
         /* The rich editor now spans the full shell width (was flex:0 0 auto -> cramped). */
         .msg__editor { display: block; width: 100%; }
         .msg__composer .cms-editor { min-height: 0; border: 0; background: transparent; }

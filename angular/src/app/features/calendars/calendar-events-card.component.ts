@@ -193,7 +193,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             --fc-classic-button-foreground:   var(--cms-btn-text);
             --fc-classic-button-strong:       var(--cms-accent);
             --fc-classic-button-strong-border: var(--cms-accent);
-            --fc-classic-button-outline:      var(--cms-accent-light, #FEF7E6);
+            --fc-classic-button-outline:      var(--cms-focus-ring);
         }
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .fc-host {

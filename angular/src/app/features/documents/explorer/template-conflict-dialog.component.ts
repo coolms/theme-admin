@@ -103,6 +103,7 @@ export interface TemplateConflictDialogResult {
                                 <span>New filename</span>
                                 <input #nameInput
                                        type="text"
+                                       class="cms-field"
                                        [(ngModel)]="newName"
                                        (ngModelChange)="newNameTouched.set(true)"
                                        autocomplete="off"
@@ -190,7 +191,7 @@ export interface TemplateConflictDialogResult {
             transition: border-color .12s, background .12s;
         }
         .cms-template-conflict-dialog__option:hover {
-            border-color: var(--cms-border-strong, #d1d5db);
+            border-color: var(--cms-border-strong, #868c96);
         }
         .cms-template-conflict-dialog__option--active {
             border-color: var(--cms-selected);
@@ -228,11 +229,6 @@ export interface TemplateConflictDialogResult {
             border-radius: var(--cms-radius-sm, 4px);
             font: inherit;
             font-size: 0.875rem;
-        }
-        .cms-template-conflict-dialog__name-field input:focus {
-            border-color: var(--cms-accent, #F5A623);
-            outline: 2px solid var(--cms-accent-light, #FEF7E6);
-            outline-offset: -1px;
         }
 
         .cms-template-conflict-dialog__error {

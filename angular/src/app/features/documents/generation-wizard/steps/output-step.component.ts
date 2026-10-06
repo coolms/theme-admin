@@ -113,7 +113,7 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
                          fills it in for the ordinary case of pointing at a
                          folder that already exists. -->
                     <input type="text"
-                           class="cms-output-step__custom"
+                           class="cms-output-step__custom cms-field"
                            placeholder="/docs/generated/"
                            [ngModel]="basePath()"
                            (ngModelChange)="basePath.set($event)" />
@@ -195,10 +195,6 @@ const USER_FIELD_PATHS: readonly string[] = ['id', 'email', 'username', 'display
             background: var(--cms-surface);
             color: var(--cms-text);
             font: inherit;
-        }
-        .cms-output-step__custom:focus {
-            outline: none;
-            border-color: var(--cms-accent);
         }
         .cms-output-step__picker {
             margin-top: .5rem;

@@ -37,6 +37,11 @@
                 }
             }
         },
+        "focus-ring": {
+            "$type": "color",
+            "$value": "{cms.accent-text}",
+            "$description": "The focus indicator, a 2px ring (Dmitry, 2026-10-06, (a): B): the accent-text token, at least 6.54:1 against every light ground and 8.07:1 against every dark one, whatever the accent. On the navy chrome, --cms-focus-ring-on-chrome."
+        },
         "accent-fg": {
             "$type": "color",
             "$value": "#1a1a1a",
@@ -293,6 +298,26 @@
         "on-chrome": {
             "$type": "color",
             "$value": "#ffffff",
+            "$extensions": {
+                "org.coolms": {
+                    "invariant": "the chrome is navy in both schemes"
+                }
+            }
+        },
+        "chrome-edge": {
+            "$type": "color",
+            "$value": "#6b7f96",
+            "$description": "The edge of a control on the navy chrome (the top bar's tiles): 3.83:1 on it, 3.23:1 on its hover. Not for a control on the sidebar's active row (--cms-sidebar-active), where it is 2.60:1; none sits there today.",
+            "$extensions": {
+                "org.coolms": {
+                    "invariant": "the chrome is navy in both schemes"
+                }
+            }
+        },
+        "focus-ring-on-chrome": {
+            "$type": "color",
+            "$value": "#f5c173",
+            "$description": "The focus indicator on the navy chrome, in both schemes: accent-text's dark value, 9.59:1 on it. Not the accent itself: a server's own accent may be dark, and its ring would vanish on navy.",
             "$extensions": {
                 "org.coolms": {
                     "invariant": "the chrome is navy in both schemes"
@@ -643,10 +668,11 @@
         },
         "btn-border": {
             "$type": "color",
-            "$value": "#d1d5db",
+            "$value": "#868c96",
+            "$description": "A button's edge: an outline button's edge is what shows it is a button, so it meets 3:1 against every surface it sits on, the value of --cms-border-control (Dmitry, 2026-10-06, (a)). A literal, not an alias: the app's module carries no aliases.",
             "$extensions": {
                 "org.coolms": {
-                    "dark": "#3a4a63"
+                    "dark": "#6b7f96"
                 }
             }
         },
@@ -665,10 +691,11 @@
         },
         "btn-hover-border": {
             "$type": "color",
-            "$value": "#9ca3af",
+            "$value": "#6b7280",
+            "$description": "A hovered button's edge: a step further from the ground than the resting edge, darker in light and lighter in dark (4.59:1 light, 5.58:1 dark).",
             "$extensions": {
                 "org.coolms": {
-                    "dark": "#55688a"
+                    "dark": "#8a9bb3"
                 }
             }
         },

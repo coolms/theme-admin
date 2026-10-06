@@ -23,7 +23,7 @@ import { CallDialPanelComponent } from './call-dial-panel.component';
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
-                           border: 1px solid rgba(255,255,255,.12);
+                           border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
                     title="Dial a number" aria-label="Dial a number"
                     (click)="open()">

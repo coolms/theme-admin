@@ -23,7 +23,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
         <form class="inspector-form" (ngSubmit)="onSubmit()">
             <div class="inspector-form__field">
                 <label for="rinsp-host">Host</label>
-                <input id="rinsp-host" name="host" type="text"
+                <input id="rinsp-host" name="host" type="text" class="cms-field"
                        [ngModel]="state.hostInput()"
                        (ngModelChange)="state.hostInput.set($event)"
                        placeholder="localhost"
@@ -31,7 +31,7 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
             </div>
             <div class="inspector-form__field inspector-form__field--grow">
                 <label for="rinsp-path">Path</label>
-                <input id="rinsp-path" name="path" type="text"
+                <input id="rinsp-path" name="path" type="text" class="cms-field"
                        [ngModel]="state.pathInput()"
                        (ngModelChange)="state.pathInput.set($event)"
                        placeholder="/"
@@ -88,11 +88,6 @@ import { PageActionsService, PageTitleService } from '@coolms/ui-angular';
             border-radius: var(--cms-radius-sm, 4px);
             font-size: .9rem;
             font-family: var(--cms-font-mono, monospace);
-        }
-        .inspector-form__field input:focus {
-            outline: 2px solid var(--cms-accent, #F5A623);
-            outline-offset: -1px;
-            border-color: transparent;
         }
         .inspector-form__submit { display: flex; align-items: center; }
 
