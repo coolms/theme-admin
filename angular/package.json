@@ -18,7 +18,8 @@
     "lint:fallbacks": "node scripts/check-token-fallbacks.mjs",
     "lint:styles": "node scripts/check-inline-styles.mjs",
     "lint:specs": "node scripts/check-package-specs.mjs",
-    "lint:redraw": "node scripts/check-redraw.mjs"
+    "lint:redraw": "node scripts/check-redraw.mjs",
+    "lint:focus": "node scripts/check-focus-indicators.mjs"
   },
   "dependencies": {
     "@angular/animations": "^22.1.3",

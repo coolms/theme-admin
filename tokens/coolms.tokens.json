@@ -307,7 +307,7 @@
         "chrome-edge": {
             "$type": "color",
             "$value": "#6b7f96",
-            "$description": "The edge of a control on the navy chrome (the top bar's tiles, the sidebar's toggle): 3.83:1 on it, 3.23:1 on its hover.",
+            "$description": "The edge of a control on the navy chrome (the top bar's tiles): 3.83:1 on it, 3.23:1 on its hover. Not for a control on the sidebar's active row (--cms-sidebar-active), where it is 2.60:1; none sits there today.",
             "$extensions": {
                 "org.coolms": {
                     "invariant": "the chrome is navy in both schemes"

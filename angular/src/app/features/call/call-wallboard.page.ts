@@ -181,7 +181,6 @@ const ENDED_LINGER_MS = 6_000;
             transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
         }
         .card:hover { transform: translateY(-2px); box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10)); }
-        .card:focus-visible { outline: 2px solid var(--cms-success); outline-offset: 2px; }
         .card[data-state="ringing"]  { border-left-color: var(--cms-warning); }
         .card[data-state="answered"] { border-left-color: var(--cms-success); }
         .card[data-state="on_hold"]  { border-left-color: var(--cms-meta); }

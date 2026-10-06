@@ -119,7 +119,6 @@ type Tab = 'personal' | string;
             border: 2px solid transparent;
             cursor: pointer;
             padding: 0;
-            outline: none;
             transition: transform .1s, box-shadow .1s;
         }
         .color-dot:hover:not(:disabled) { transform: scale(1.2); }

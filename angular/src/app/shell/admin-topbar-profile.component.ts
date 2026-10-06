@@ -60,7 +60,7 @@ interface AccountEntry {
                  light ink (--cms-sidebar-text) onto a white panel in the light
                  theme -- the menu was there and could not be read. -->
             @if (isOpen()) {
-                <div class="position-absolute end-0 mt-1 py-1 rounded shadow"
+                <div class="cms-page-surface position-absolute end-0 mt-1 py-1 rounded shadow"
                      style="min-width: 180px; z-index: 1050; top: 100%;
                             background: var(--cms-surface); color: var(--cms-text)">
                     <div class="px-3 py-2 border-bottom">

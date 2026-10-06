@@ -106,7 +106,7 @@ interface EditorRow {
                                 </td>
                                 <td class="editor__col-override">
                                     <textarea
-                                        class="editor__input"
+                                        class="editor__input cms-field"
                                         [(ngModel)]="row.override"
                                         (ngModelChange)="onRowChange(row)"
                                         [placeholder]="row.baseline || '(no baseline)'"
@@ -175,11 +175,6 @@ interface EditorRow {
             box-sizing: border-box;
             background: var(--bs-body-bg, #fff);
             color: var(--bs-body-color, #212529);
-        }
-        .editor__input:focus {
-            outline: 0;
-            border-color: var(--bs-primary, #0d6efd);
-            box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
         }
     `],
 })

@@ -14,7 +14,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
     imports: [CmsLoaderComponent, ],
     template: `
         <!-- Filter bar -->
-        <div class="de-filter-bar">
+        <div class="de-filter-bar cms-field-box">
             <i class="bi bi-search de-filter-bar__icon"></i>
             <input type="text"
                    class="de-filter-bar__input"
