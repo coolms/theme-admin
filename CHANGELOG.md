@@ -28,6 +28,18 @@ major number means here.
 
 ### Fixed
 
+- In a call where both sides offered at once, the side that kept its own offer
+  no longer replays the ignored offer's ICE candidates once the answer is in.
+  The other side rolls that offer back and answers with ICE credentials of its
+  own (measured in Chrome 150), so those candidates could never be used. Chrome
+  took them in without a word; the WebRTC specification has `addIceCandidate`
+  reject a candidate whose username fragment no applied description carries,
+  which the call would log as a failure. They are dropped, held or not, told by
+  the ICE username fragment they carry.
+  The answer's own candidates are still held when they arrive before it, even
+  while the offer before it is being ignored. A candidate that names no ICE
+  session is dropped if it arrives while a colliding offer is ignored and
+  nothing is applied yet, as perfect negotiation does.
 - A call that rang before the admin's incoming-call subscription was confirmed
   still rings. That channel keeps no history, so a ring published between the
   subscribe and the server's confirmation reached nobody, and the call was
