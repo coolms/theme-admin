@@ -204,6 +204,16 @@
                 }
             }
         },
+        "border-control": {
+            "$type": "color",
+            "$value": "#868c96",
+            "$description": "The edge of a control a person must find to use it (an input, a select, a checkbox): at least 3:1 against every surface it sits on and its own fill, in both schemes (WCAG 1.4.11). --cms-border is a divider and stays light.",
+            "$extensions": {
+                "org.coolms": {
+                    "dark": "#6b7f96"
+                }
+            }
+        },
         "canvas-bg": {
             "$type": "color",
             "$value": "{cms.sidebar-bg}"
