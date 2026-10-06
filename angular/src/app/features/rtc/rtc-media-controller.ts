@@ -13,11 +13,12 @@ import { RtcMediaKind, RtcSignal } from './rtc.types';
 export type RtcCallRole = 'caller' | 'callee';
 
 /**
- * Fallback ICE servers if `GET /rtc/ice-servers` (Slice 4c) can't be reached -- a
- * public STUN, enough for same-network / dev (host + server-reflexive
- * candidates). Normal operation fetches the server's configuration, which adds
- * the authenticated Coturn TURN relay (ephemeral creds from the F1 secret store)
- * for cross-NAT when it is deployed; this keeps calls working if that fetch fails.
+ * Fallback ICE servers if the call's own `GET /rtc/calls/{id}/ice-servers` can't
+ * be reached -- a public STUN, enough for same-network / dev (host +
+ * server-reflexive candidates). Normal operation fetches that call's
+ * configuration, which adds the authenticated Coturn TURN relay (a credential
+ * minted for this call and this party) for cross-NAT when it is deployed; this
+ * keeps calls working if that fetch fails.
  */
 const RTC_FALLBACK_ICE_SERVERS: readonly RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
