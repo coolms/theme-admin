@@ -40,10 +40,14 @@ const SRC = join(ROOT, 'src');
 //                  read as a definition (only setProperty). Not a defect.
 const WITH_FALLBACK_BASELINE = 1;
 
+// The tokens are defined in tokens.generated.scss (written from tokens/coolms.tokens.json by
+// tools/design-tokens.mjs) and in styles.scss, which keeps what is not a token.
+const DEFINING = ['styles.scss', 'tokens.generated.scss'];
 const defined = new Set();
-for (const [, name] of readFileSync(join(SRC, 'styles.scss'), 'utf8')
-    .matchAll(/^\s*(--cms-[a-z0-9-]+)\s*:/gm)) {
-    defined.add(name);
+for (const file of DEFINING) {
+    for (const [, name] of readFileSync(join(SRC, file), 'utf8').matchAll(/^\s*(--cms-[a-z0-9-]+)\s*:/gm)) {
+        defined.add(name);
+    }
 }
 
 /**
@@ -83,7 +87,7 @@ const noFallback = new Map();
 const withFallback = new Set();
 
 for (const file of walk(SRC)) {
-    if (file.endsWith('styles.scss')) continue;
+    if (DEFINING.some((name) => file.endsWith(name))) continue;
     const text = readFileSync(file, 'utf8');
     for (const [, name, comma] of text.matchAll(REF)) {
         if (defined.has(name) || runtimeDefined.has(name)) continue;

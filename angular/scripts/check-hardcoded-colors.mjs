@@ -58,7 +58,10 @@ const SRC = join(ROOT, 'src');
 //              `--dynamic` / `--key` share the amber value but label a KIND,
 //              not a state, so they stay literal rather than be filed under
 //              warning for looking like it.
-const BASELINE = 193;
+//   193 -> 42   locked to what was measured (2026-10-05): the slack had let the
+//              generated token file add 16 unseen (42 -> 58) until it was
+//              masked like styles.scss's token blocks.
+const BASELINE = 42;
 
 /**
  * References to BOOTSTRAP colour class names — a second, independent way for a
@@ -90,7 +93,8 @@ const BASELINE = 193;
 // call sites moved to the kit, including the LOGIN button — the first screen in
 // the product, and it was rendering Bootstrap blue against an amber brand.
 // 188 -> 187: excluding `placeholder` values, which are prose about classes.
-const BOOTSTRAP_BASELINE = 187;
+// 187 -> 154: locked to what was measured (2026-10-05); the slack was 33.
+const BOOTSTRAP_BASELINE = 154;
 
 /**
  * Bootstrap colour classes that are DELIBERATELY still in the markup because a
@@ -191,7 +195,9 @@ let total = 0;
 
 for (const file of walk(SRC)) {
     const raw = readFileSync(file, 'utf8');
-    const text = file.endsWith('styles.scss') ? maskTokenBlocks(raw) : raw;
+    // tokens.generated.scss is nothing but token-definition blocks (written from tokens/coolms.tokens.json).
+    const defining = file.endsWith('styles.scss') || file.endsWith('tokens.generated.scss');
+    const text = defining ? maskTokenBlocks(raw) : raw;
 
     for (const [, value] of text.matchAll(DECLARATION)) {
         for (const hex of value.match(HEX) ?? []) {
