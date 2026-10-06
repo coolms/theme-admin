@@ -461,6 +461,15 @@ body {
     --cms-focus-gap: var(--cms-sidebar-bg);
 }
 
+// A page surface that hangs inside the chrome -- the profile menu below the top bar -- is the page's, not the bar's:
+// its controls draw the page's ring over the page's gap. Without it they inherited the bar's light ring, 1.65:1 on the
+// white panel (found in review). Bootstrap's colour is named again here because it was resolved on the chrome.
+.cms-page-surface {
+    --cms-focus-ring: var(--cms-accent-text);
+    --cms-focus-gap: var(--cms-surface);
+    --bs-focus-ring-color: var(--cms-focus-ring);
+}
+
 // Bootstrap draws its controls' focus from its own variables: a translucent blue, .25rem wide. They are bound here,
 // once, to the ring -- 2px, opaque, --cms-focus-ring -- so every Bootstrap button and close button, and any added
 // later, draws it with no rule of its own (Dmitry, 2026-10-06, from the review of theme-admin#69). Declared on the
@@ -847,21 +856,26 @@ html .was-validated .form-check-input:is(:valid, :invalid):focus {
 
 // --- Field focus -------------------------------------------------------------
 //
-// One focus for every field (Dmitry, 2026-10-06): its edge turns --cms-focus-ring and a 1px ring of the same colour
-// sits outside it. The kit's fields and Bootstrap's take it by their own classes; any other field by `cms-field`,
-// and a box holding a borderless input or an editor by `cms-field-box` (on :focus-within). No component draws a
-// focus of its own for a field. `html` lifts it above a component's own edge rule (a class and its scoping
-// attribute) and the validated lines above Bootstrap's `.form-control.is-invalid:focus` and its kin, whose
-// translucent halos would otherwise win. The `.form-group` line stays below `.form-group ... .invalid`, so an
-// invalid field keeps its danger edge when focused, with the ring outside it.
+// One focus for every field (Dmitry, 2026-10-06): a 2px ring in --cms-focus-ring laid over the field's edge -- an
+// outline pulled in by the edge's 1px, so the edge itself is ring and a 1px of ring sits outside it. The kit's fields
+// and Bootstrap's take it by their own classes; any other field by `cms-field`, and a box holding a borderless input
+// or an editor by `cms-field-box` (on :focus-within). No component draws a focus of its own for a field.
+//
+// An outline and not the edge's colour: a component's edge rule is often more specific than any global rule can be
+// (`.form__field input` scoped is 0,3,1), and an edge colour set there would stay grey under the ring (the routing
+// inspector's and the template-conflict dialog's, found in review). Nothing a component writes for its edge reaches
+// an outline. It also survives forced colours, where a box-shadow is dropped. `html` lifts it above a component's
+// own `outline: none` at rest, and the validated lines above Bootstrap's `.form-control.is-invalid:focus` and its
+// kin; `box-shadow: none` takes away their translucent halos. An invalid field's danger edge is under the ring
+// while it is focused, and back when it is not; its message says why.
 html :is(.cms-input, .cms-select, .cms-select-native, .form-control, .form-select, .cms-field):focus,
 html :is(.form-control, .form-select):is(.is-valid, .is-invalid):focus,
 html .was-validated :is(.form-control, .form-select):is(:valid, :invalid):focus,
 html .cms-field-box:focus-within,
-.form-group :is(input[type="text"], input[type="number"], select, textarea):focus {
-    outline: none;
-    border-color: var(--cms-focus-ring);
-    box-shadow: 0 0 0 1px var(--cms-focus-ring);
+html .form-group :is(input[type="text"], input[type="number"], select, textarea):focus {
+    outline: 2px solid var(--cms-focus-ring);
+    outline-offset: -1px;
+    box-shadow: none;
 }
 
 .cms-input {

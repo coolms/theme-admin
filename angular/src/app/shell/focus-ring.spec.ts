@@ -11,6 +11,8 @@ interface Ground {
     name: string;
     host: string;
     bg: string;
+    /** A page surface hanging inside the host (the profile menu below the top bar): the controls sit in it. */
+    panel?: boolean;
 }
 
 interface Control {
@@ -18,7 +20,9 @@ interface Control {
     html: string;
     /** The element given focus, when not the root of `html`. */
     focus?: string;
-    /** A field: its edge turns the ring, and a 1px ring sits outside it. */
+    /** The element whose drawing is measured, when not the root of `html`. */
+    measure?: string;
+    /** A field: a 2px ring laid over its edge, so the edge is ring and 1px of ring sits outside it. */
     field?: boolean;
     /** A button or link: it must match :focus-visible, the state its ring is drawn in. */
     visible?: boolean;
@@ -43,6 +47,7 @@ const GROUNDS: Ground[] = [
     { name: 'sidebar', host: 'coolms-sidebar', bg: 'var(--cms-sidebar-bg)' },
     { name: 'sidebar hover', host: 'coolms-sidebar', bg: 'var(--cms-sidebar-hover)' },
     { name: 'sidebar active', host: 'coolms-sidebar', bg: 'var(--cms-sidebar-active)' },
+    { name: 'panel in the bar', host: 'coolms-topbar', bg: 'var(--cms-sidebar-bg)', panel: true },
 ];
 
 const CONTROLS: Control[] = [
@@ -65,6 +70,15 @@ const CONTROLS: Control[] = [
     // A component's field: its edge in the component's own scoped rule, as Angular emits one (a class and the
     // scoping attribute, specificity 0,2,0 -- see COMPONENT_RULES).
     { name: 'component field', html: '<input class="x-edge cms-field" _ngcontent-focus-ring>', field: true },
+    // A field whose component writes its edge MORE specifically than any global rule (a scoped `.form__field input`,
+    // 0,3,1): the routing inspector's and the template-conflict dialog's. The ring must still cover that edge.
+    {
+        name: 'component field, deep edge',
+        html: '<div class="x-wrap" _ngcontent-focus-ring><input class="cms-field" _ngcontent-focus-ring></div>',
+        focus: 'input',
+        measure: 'input',
+        field: true,
+    },
     {
         name: 'component field box',
         html: '<div class="x-edge cms-field-box" _ngcontent-focus-ring><input class="x-bare" _ngcontent-focus-ring></div>',
@@ -77,6 +91,7 @@ const CONTROLS: Control[] = [
 
 // What a component's scoped stylesheet says for those fields, at the specificity Angular gives it.
 const COMPONENT_RULES = '.x-edge[_ngcontent-focus-ring] { border: 1px solid var(--cms-border-control); }'
+    + ' .x-wrap[_ngcontent-focus-ring] input[_ngcontent-focus-ring] { border: 1px solid var(--cms-border); }'
     + ' .x-bare[_ngcontent-focus-ring] { border: 0; background: transparent; }'
     + ' .x-bare[_ngcontent-focus-ring]:focus { outline: none; }';
 
@@ -131,10 +146,16 @@ function measure(scheme: string, ground: Ground, control: Control, stage: HTMLEl
     if (ground.host !== '') host.className = ground.host;
     host.style.background = ground.bg;
     host.style.padding = '12px';
-    host.innerHTML = control.html + '<i class="focus-ring-probe" style="color: var(--cms-focus-ring)"></i>';
+    const inner = control.html + '<i class="focus-ring-probe" style="color: var(--cms-focus-ring)"></i>';
+    // The ground the ring stands on: the host, or the page panel inside it.
+    host.innerHTML = ground.panel
+        ? `<div class="cms-page-surface" style="background: var(--cms-surface); padding: 12px">${inner}</div>`
+        : inner;
     stage.appendChild(host);
-    const drawn = host.firstElementChild as HTMLElement;
-    const target = (control.focus ? drawn.querySelector(control.focus) : drawn) as HTMLElement;
+    const surface = (ground.panel ? host.firstElementChild : host) as HTMLElement;
+    const root = surface.firstElementChild as HTMLElement;
+    const drawn = (control.measure ? root.querySelector(control.measure) : root) as HTMLElement;
+    const target = (control.focus ? root.querySelector(control.focus) : root) as HTMLElement;
     target.focus({ focusVisible: true } as FocusOptions);
 
     const problems: string[] = [];
@@ -143,11 +164,11 @@ function measure(scheme: string, ground: Ground, control: Control, stage: HTMLEl
     if (control.visible && !target.matches(':focus-visible')) problems.push('UNEVALUABLE: not :focus-visible');
 
     const style = getComputedStyle(drawn);
-    const expected = parseColour(getComputedStyle(host.querySelector('.focus-ring-probe') as HTMLElement).color);
-    const groundColour = parseColour(getComputedStyle(host).backgroundColor);
+    const expected = parseColour(getComputedStyle(surface.querySelector('.focus-ring-probe') as HTMLElement).color);
+    const groundColour = parseColour(getComputedStyle(surface).backgroundColor);
     const layers = shadows(style.boxShadow);
     const outline = style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0
-        ? { colour: parseColour(style.outlineColor), width: parseFloat(style.outlineWidth) }
+        ? { colour: parseColour(style.outlineColor), width: parseFloat(style.outlineWidth), offset: parseFloat(style.outlineOffset) }
         : null;
 
     for (const l of layers) if (l.colour !== null && l.colour[3] < 1) problems.push(`a translucent shadow ${hex(l.colour)}`);
@@ -164,21 +185,26 @@ function measure(scheme: string, ground: Ground, control: Control, stage: HTMLEl
 
     // What the ring touches on its inner side. An outline with an offset touches the ground through the gap it
     // leaves; a box-shadow ring touches the layer under it, else the control's edge (when it has one); a field's ring
-    // is its edge and a 1px layer, so it touches the field's own background.
-    let inner: Rgba | null = null;
+    // is laid over its edge, so it touches the field's own background.
+    let inside: Rgba | null = null;
     let innerName = '';
     if (control.field) {
-        const edge = parseColour(style.borderTopColor);
-        if (!same(edge, expected)) problems.push(`the edge is ${hex(edge)}, not the ring`);
-        if (width < 1) problems.push(`a ring ${width}px outside the edge`);
-        inner = parseColour(style.backgroundColor);
+        // The ring must COVER the edge -- whatever colour a component gave it -- and reach 1px past it.
+        const edgeWidth = parseFloat(style.borderTopWidth) || 0;
+        if (outline === null) problems.push('no outline over the edge');
+        else {
+            if (outline.offset > -edgeWidth) problems.push(`the outline starts ${outline.offset}px out, the edge ${edgeWidth}px`);
+            if (outline.width + outline.offset < 1) problems.push(`the outline reaches ${outline.width + outline.offset}px past the edge`);
+        }
+        if (layers.length > 0) problems.push(`a shadow beside the ring: ${style.boxShadow}`);
+        inside = parseColour(style.backgroundColor);
         innerName = 'field';
     } else {
         if (width < 2) problems.push(`a ring ${width}px wide`);
         const gap = layers.filter((l) => l !== widest).sort((a, b) => b.spread - a.spread)[0]?.colour ?? null;
         const edge = parseFloat(style.borderTopWidth) > 0 ? parseColour(style.borderTopColor) : null;
         if (outline === null) {
-            inner = gap ?? edge;
+            inside = gap ?? edge;
             innerName = gap ? 'gap' : 'edge';
         }
     }
@@ -186,10 +212,10 @@ function measure(scheme: string, ground: Ground, control: Control, stage: HTMLEl
     // thickened: what surrounds it is the ground, as the field edges were measured (3:1 against the surface they sit
     // on); its own fill is inside it, printed but not held.
     let beside = '';
-    if (ring !== null && inner !== null && inner[3] === 1) {
-        const ri = ratio(ring, inner);
-        beside = `${ri.toFixed(2)} beside its ${innerName} ${hex(inner)}`;
-        if (ri < 3 && !control.field) problems.push(`${ri.toFixed(2)}:1 against its ${innerName} ${hex(inner)}`);
+    if (ring !== null && inside !== null && inside[3] === 1) {
+        const ri = ratio(ring, inside);
+        beside = `${ri.toFixed(2)} beside its ${innerName} ${hex(inside)}`;
+        if (ri < 3 && !control.field) problems.push(`${ri.toFixed(2)}:1 against its ${innerName} ${hex(inside)}`);
     }
     const r = ring !== null && groundColour !== null ? ratio(ring, groundColour) : 0;
     if (r < 3) problems.push(`${r.toFixed(2)}:1 against the ground`);
@@ -231,7 +257,7 @@ describe('the focus ring, as drawn', () => {
 
     afterAll(() => {
         // The measurement, printed: every pair, so a reader sees the margin and not only the verdict.
-        const lines = rows.map((r) => `${r.scheme.padEnd(5)} ${r.ground.padEnd(14)} ${r.control.padEnd(24)} `
+        const lines = rows.map((r) => `${r.scheme.padEnd(5)} ${r.ground.padEnd(16)} ${r.control.padEnd(27)} `
             + `ring ${r.ring} on ${r.groundColour}: ${r.ratio.toFixed(2)}:1${r.beside ? ' (' + r.beside + ')' : ''}`);
         const min = rows.length ? Math.min(...rows.map((r) => r.ratio)) : 0;
         console.log(`FOCUS RING: ${rows.length} pairs measured, lowest ${min.toFixed(2)}:1\n` + lines.join('\n'));

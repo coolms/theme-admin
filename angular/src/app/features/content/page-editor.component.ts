@@ -246,7 +246,7 @@ type RailTab = string;
                 <!-- -- Title field --------------------------------------- -->
                 <div class="page-editor__title-row">
                     <label class="page-editor__title-label">Title</label>
-                    <input class="page-editor__title-input"
+                    <input class="page-editor__title-input cms-field"
                            type="text"
                            [ngModel]="titleValue()"
                            (ngModelChange)="onTitleChange($event)"
@@ -596,7 +596,7 @@ type RailTab = string;
         }
         .page-editor__title-label { font-size: .75rem; font-weight: 600; white-space: nowrap; color: var(--cms-text-muted); }
         .page-editor__title-input {
-            flex: 1; border: none; outline: none;
+            flex: 1; border: none;
             font-size: 1.125rem; font-weight: 600;
             background: transparent;
             color: var(--cms-text);

@@ -211,10 +211,11 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
         .draw-hint { font-size: 12px; color: var(--cms-text-muted, #69707c); }
         .regions-body { display: flex; flex: 1; min-height: 0; }
         .canvas-wrap {
-            position: relative; flex: 1; min-width: 0; overflow: hidden; outline: none;
+            position: relative; flex: 1; min-width: 0; overflow: hidden;
             background:
                 repeating-conic-gradient(var(--cms-surface-muted) 0% 25%, var(--cms-surface) 0% 50%) 50% / 24px 24px;
         }
+        .canvas-wrap:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: -2px; }
         .canvas-overlay-msg {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             font-size: 14px; color: var(--cms-text-muted, #69707c); z-index: 3;
