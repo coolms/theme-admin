@@ -2,6 +2,9 @@
 // Run: node --test scripts/check-focus-indicators.test.mjs
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { bindingsMissing, check, focusRules, judge, translucentIn } from './check-focus-indicators.mjs';
 
@@ -58,14 +61,37 @@ test('a ring in another colour is found; the ring, a surface gap and forced colo
 test('an edge in another colour passes beside the ring, and is found without it', () => {
     assert.deepEqual(found('.c:focus { border-color: var(--cms-accent); box-shadow: 0 0 0 2px var(--cms-focus-ring); }'),
         []);
-    assert.deepEqual(found('.s:focus { outline: none; border-color: var(--bs-primary, #0d6efd); }'), ['OFF-TOKEN 1']);
+    assert.deepEqual(found('.s:focus { outline: none; border-color: var(--bs-primary, #0d6efd); }'), ['REMOVED 1', 'OFF-TOKEN 1']);
 });
 
-test('a component rule that only takes the ring away is found, unless it names where the ring is', () => {
+test('a component rule that takes the ring away is found in every spelling, whatever else it sets', () => {
     assert.deepEqual(found('.page-editor__title-input:focus { outline: none; }'), ['REMOVED 1']);
+    assert.deepEqual(found('.rmd-textarea:focus { outline-style: none; }'), ['REMOVED 1']);
+    assert.deepEqual(found('.x:focus { outline-style: hidden; }'), ['REMOVED 1']);
+    assert.deepEqual(found('.x:focus { outline-width: 0; }'), ['REMOVED 1']);
+    assert.deepEqual(found('.x:focus { outline: none; border-color: var(--cms-focus-ring); }'), ['REMOVED 1'],
+        'an edge in the ring colour is not a ring');
+    assert.deepEqual(found('.x:focus { outline: none; box-shadow: 0 0 0 1px var(--cms-focus-ring); }'), [],
+        'a ring drawn as a shadow instead');
+    assert.deepEqual(found('.x:focus-visible { outline-style: solid; outline-width: 2px; outline-color: var(--cms-focus-ring); }'),
+        [], 'the ring in longhands');
+});
+
+test('a removal that names where the ring is drawn is waived, and every waiver is listed', () => {
     assert.deepEqual(found('.msg__search-input:focus { outline: none; /* ring: its .cms-field-box */ }'), []);
     const inStyles = focusRules('.i:focus { outline: none; box-shadow: none; }', 'styles.scss').flatMap(judge);
     assert.deepEqual(inStyles, [], 'the global stylesheet removes Bootstrap\'s own and draws the ring in the same rule set');
+    const dir = mkdtempSync(join(tmpdir(), 'focus-check-'));
+    try {
+        writeFileSync(join(dir, 'styles.scss'), BOUND);
+        writeFileSync(join(dir, 'search.component.ts'), 'const styles = [\x60\n.a { color: red; }\n'
+            + '.s-input:focus { outline: none; /* ring: its .cms-field-box */ }\n\x60];\n');
+        const r = check(dir);
+        assert.deepEqual(r.found, []);
+        assert.deepEqual(r.waived, [{ file: 'search.component.ts', line: 3, selector: '.s-input:focus', note: 'its .cms-field-box' }]);
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
 });
 
 test('removing an indicator is not drawing one; comments are not rules', () => {
