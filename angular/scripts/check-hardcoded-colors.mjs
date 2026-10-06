@@ -94,7 +94,8 @@ const BASELINE = 42;
 // the product, and it was rendering Bootstrap blue against an amber brand.
 // 188 -> 187: excluding `placeholder` values, which are prose about classes.
 // 187 -> 154: locked to what was measured (2026-10-05); the slack was 33.
-const BOOTSTRAP_BASELINE = 154;
+// 154 -> 151: three buttons moved to the kit's classes (#65), so every class in use is bridged.
+const BOOTSTRAP_BASELINE = 151;
 
 /**
  * Bootstrap colour classes that are DELIBERATELY still in the markup because a
