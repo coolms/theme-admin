@@ -19,9 +19,18 @@
 //     --cms-focus-gap (or --cms-surface) band; forced colours may use the system's;
 //     a border colour of another token is the control's own edge only when the same
 //     rule draws the ring beside it.
+//   * a REMOVED ring: a component's focus rule (anywhere but styles.scss) that takes
+//     the outline or the box-shadow away -- `outline: none`, `outline-style: none` or
+//     `hidden`, `outline-width: 0`, `box-shadow: none` -- and draws no outline or
+//     box-shadow ring instead, whatever else it sets (an edge colour is not a ring). A
+//     component rule outranks the global field rule, so on a field it leaves no
+//     indicator. WAIVED when the rule says where the ring is drawn instead, in a
+//     comment in the rule: `/* ring: <where> */` (an input inside a `cms-field-box`).
+//     Every waiver is listed, with its file, line and note, and counted.
 // And in styles.scss: Bootstrap's focus variables not bound to the ring
 // (--bs-focus-ring-color on :root, --bs-btn-focus-box-shadow on .btn,
-// --bs-btn-close-focus-shadow on .btn-close).
+// --bs-btn-close-focus-shadow on .btn-close), and the field rule (the one naming
+// `.cms-field`) not drawing the ring as an outline.
 //
 // WHAT IT CANNOT SEE: a rule Bootstrap or a package stylesheet ships. The rendered
 // half is src/app/shell/focus-ring.spec.ts, which focuses Bootstrap's controls in a
@@ -36,8 +45,12 @@ import { fileURLToPath } from 'node:url';
 const RING = /var\(\s*--(cms-focus-ring|bs-focus-ring-color)\b/;
 const SYSTEM = /\b(CanvasText|Highlight|ButtonText|LinkText)\b/;
 const GAP = /var\(\s*--cms-(surface|focus-gap)\s*\)/g;
-const DRAWS = /(?:^|[;{\s])(outline(?:-color)?|box-shadow|border(?:-color)?)\s*:\s*([^;{}]+)/g;
-const REMOVES = /^\s*(none|0|transparent)\s*(!important)?\s*$/;
+const DRAWS = /(?:^|[;{\s])(outline(?:-color|-style|-width)?|box-shadow|border(?:-color)?)\s*:\s*([^;{}]+)/g;
+const REMOVES = /^\s*(none|hidden|0|0px|transparent)\s*(!important)?\s*$/;
+/** The properties a focus ring is drawn with: the outline, its longhands, and the box-shadow. */
+const RING_PROP = (prop) => prop.startsWith('outline') || prop === 'box-shadow';
+/** Longhands that carry no colour: judged only as removals. */
+const NO_COLOUR = new Set(['outline-style', 'outline-width']);
 
 /** The translucent colour in a value, or null. */
 export function translucentIn(value) {
@@ -89,22 +102,42 @@ export function focusRules(text, file) {
         while (/\{[^{}]*\}/.test(own)) own = own.replace(/\{[^{}]*\}/g, '');
         const draws = [];
         for (const d of own.matchAll(DRAWS)) draws.push({ prop: d[1], value: d[2].trim() });
+        // Comments were blanked in `src`; the same span of the original says where a removed ring is drawn.
+        const rawBody = text.slice(m.index + m[0].length, k - 1);
         rules.push({
             file,
             line: src.slice(0, m.index + m[0].length).split('\n').length,
             selector: m[1].trim().replace(/\s+/g, ' '),
             draws,
+            ringNote: rawBody.match(/\/\*\s*ring:\s*([^*]+?)\s*\*\//)?.[1] ?? null,
         });
     }
     return rules;
 }
 
+/**
+ * Whether a rule takes the ring away with nothing drawn instead: the removing declaration, or null. A rule in
+ * styles.scss is the global one and is judged by what it draws.
+ */
+export function removal(rule) {
+    if (/(^|\/)styles\.scss$/.test(rule.file)) return null;
+    const away = rule.draws.find((d) => RING_PROP(d.prop) && REMOVES.test(d.value));
+    if (!away) return null;
+    const drawn = rule.draws.some((d) => RING_PROP(d.prop) && !REMOVES.test(d.value)
+        && (RING.test(d.value) || SYSTEM.test(d.value)));
+    return drawn ? null : away;
+}
+
 /** FOUND rows for one rule. */
 export function judge(rule) {
     const found = [];
+    const away = removal(rule);
+    if (away !== null && rule.ringNote === null) {
+        found.push({ kind: 'REMOVED', ...away, detail: 'takes the ring away; draws none, names none elsewhere' });
+    }
     const ringDrawn = rule.draws.some((d) => !d.prop.startsWith('border') && RING.test(d.value));
     for (const d of rule.draws) {
-        if (REMOVES.test(d.value)) continue;
+        if (REMOVES.test(d.value) || NO_COLOUR.has(d.prop)) continue;
         const halo = translucentIn(d.value);
         if (halo !== null) {
             found.push({ kind: 'HALO', ...d, detail: halo });
@@ -148,6 +181,9 @@ export function bindingsMissing(styles) {
     if (!btn || !ringShadow.test(btn[1])) missing.push('.btn: --bs-btn-focus-box-shadow is not the ring');
     const close = block('\\.btn-close').match(/--bs-btn-close-focus-shadow\s*:\s*([^;]+)/);
     if (!close || !ringShadow.test(close[1])) missing.push('.btn-close: --bs-btn-close-focus-shadow is not the ring');
+    const field = [...src.matchAll(/([^{}]*\.cms-field\b[^{}]*:focus[^{}]*)\{([^{}]*)\}/g)];
+    const fieldDraws = field.some((f) => /outline\s*:\s*2px\s+solid\s+var\(--cms-focus-ring\)/.test(f[2]));
+    if (!fieldDraws) missing.push('the field rule (.cms-field:focus) does not draw `outline: 2px solid var(--cms-focus-ring)`');
     return missing;
 }
 
@@ -171,6 +207,8 @@ export function check(srcDir) {
     }
     const rules = files.flatMap((f) => focusRules(readFileSync(f, 'utf8'), relative(srcDir, f)));
     const found = rules.flatMap(judge);
+    const waived = rules.filter((r) => r.ringNote !== null && removal(r) !== null)
+        .map((r) => ({ file: r.file, line: r.line, selector: r.selector, note: r.ringNote }));
     let styles = null;
     try {
         styles = readFileSync(join(srcDir, 'styles.scss'), 'utf8');
@@ -178,7 +216,7 @@ export function check(srcDir) {
         styles = null;
     }
     const bindings = styles === null ? null : bindingsMissing(styles);
-    return { files: files.length, rules: rules.length, found, bindings };
+    return { files: files.length, rules: rules.length, found, bindings, waived };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
@@ -190,9 +228,13 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
         process.exit(2);
     }
     const n = r.found.length + r.bindings.length;
+    const waivers = () => {
+        for (const w of r.waived) console.log(`  WAIVED ${w.file}:${w.line} ${w.selector.slice(0, 70)} -- ring: ${w.note}`);
+    };
     if (n === 0) {
-        console.log(`CLEAR: 0 of ${r.rules} focus rules in ${r.files} sources draw a halo or another colour;`
-            + ' Bootstrap\'s focus variables are bound to the ring');
+        console.log(`CLEAR: 0 of ${r.rules} focus rules in ${r.files} sources draw a halo, another colour or no ring;`
+            + ` Bootstrap's focus variables are bound to the ring; ${r.waived.length} removal(s) waived`);
+        waivers();
         process.exit(0);
     }
     console.log(`FOUND ${n}: ${r.found.length} of ${r.rules} focus rules' declarations, `
@@ -202,5 +244,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
             + ` (${f.detail.slice(0, 60)})`);
     }
     for (const b of r.bindings) console.log(`  BINDING styles.scss ${b}`);
+    console.log(`  ${r.waived.length} removal(s) waived:`);
+    waivers();
     process.exit(1);
 }

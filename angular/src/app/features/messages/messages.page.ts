@@ -797,7 +797,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__search { display: flex; align-items: center; gap: .4rem; margin: .5rem .75rem; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
         .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #525a66); flex: 0 0 auto; }
         .msg__search-input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); }
-        .msg__search-input:focus { outline: none; }
+        .msg__search-input:focus { outline: none; /* ring: its box, .msg__search.cms-field-box */ }
         .msg__search-clear { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 .2rem; }
         .msg__search-clear:hover { color: var(--cms-text, #111827); }
         .msg__rows { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; }
