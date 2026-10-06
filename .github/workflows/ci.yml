@@ -102,9 +102,9 @@ jobs:
           echo "confirmed: no application namespace in src/"
 
   design-tokens:
-    # The admin's and the app's design tokens come from ONE file, tokens/coolms.tokens.json:
-    # the stylesheet's token blocks and the app's module are generated from it, never edited by
-    # hand. Plain Node, no install, no secret: it runs on every pull request.
+    # The design tokens come from coolms/design-tokens at a tagged version: angular/src/tokens.generated.scss
+    # is a copy of its dist/coolms-tokens.scss, and design-tokens.lock.json records the tag, its commit
+    # and the copy's sha256. Plain Node, no install, no secret: the package is public.
     name: Design tokens
     runs-on: ubuntu-latest
     steps:
@@ -112,9 +112,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: The generated files are what the token file generates
-        run: node tools/design-tokens.mjs --check
-      # Every focus indicator draws the ring (Dmitry, 2026-10-06, from the review of #69): no
+      - name: The token copy is what the lock records
+        run: node tools/design-tokens-lock.mjs
+      - name: The lock's tag and commit, and the file at that commit, are what the package holds
+        run: node tools/design-tokens-lock.mjs --network
+      # Every focus indicator draws the ring (2026-10-06, from the review of #69): no
       # component's halo or off-token ring, and Bootstrap's focus variables bound to the token. The
       # rendered half -- what Bootstrap draws, and its contrast -- is src/app/shell/focus-ring.spec.ts
       # in the Admin suite.
@@ -124,7 +126,7 @@ jobs:
           node angular/scripts/check-focus-indicators.mjs angular/src
 
   admin-suite:
-    # The admin's Angular suite, with the count it ran in the verdict line (Dmitry, 2026-09-27:
+    # The admin's Angular suite, with the count it ran in the verdict line (2026-09-27:
     # "a green that does not say what it covered is not evidence"; the 1381 specs had run only
     # on one machine).
     name: Admin suite
@@ -193,7 +195,7 @@ jobs:
         working-directory: sources/theme-admin/angular
         run: npm run lint:specs
 
-      # A value a view shows is drawn when it changes (Dmitry, 2026-09-28): an OnPush view's
+      # A value a view shows is drawn when it changes (2026-09-28): an OnPush view's
       # plain field written asynchronously, or a computed over a plain field that changes, stays
       # stale until something else touches the page. Read from every package the admin compiles,
       # so it runs here, where they are all checked out.
