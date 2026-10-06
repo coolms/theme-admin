@@ -252,20 +252,20 @@ interface TemplateGroup {
         .theme--active { border-color: var(--cms-selected); }
         .theme__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
         .theme__title h3 { margin: 0; font-size: 1rem; }
-        .theme__slug { font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }
+        .theme__slug { font-size: 0.75rem; color: var(--cms-text-muted, #69707c); }
         .theme__badges { display: flex; gap: 4px; flex-wrap: wrap; }
         .badge {
             font-size: 0.7rem; padding: 1px 7px; border-radius: 999px;
             background: var(--cms-border-light, #f0f2f5); color: var(--cms-text, #111827); white-space: nowrap;
         }
         .badge--ok { background: var(--cms-success-subtle); color: var(--cms-success-text); }
-        .badge--muted { background: transparent; border: 1px dashed var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96); }
-        .theme__desc { margin: 0.5rem 0 0.6rem; font-size: 0.85rem; color: var(--cms-text-secondary, #6b7280); }
+        .badge--muted { background: transparent; border: 1px dashed var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #69707c); }
+        .theme__desc { margin: 0.5rem 0 0.6rem; font-size: 0.85rem; color: var(--cms-text-secondary, #525a66); }
         .theme__meta {
             display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;
             margin: 0 0 0.75rem; font-size: 0.78rem;
         }
-        .theme__meta dt { color: var(--cms-text-muted, #848b96); }
+        .theme__meta dt { color: var(--cms-text-muted, #69707c); }
         .theme__meta dd { margin: 0; overflow-wrap: anywhere; }
         .path { font-size: 0.72rem; }
         .theme__actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -284,7 +284,7 @@ interface TemplateGroup {
         .tpl__group + .tpl__group { margin-top: 0.6rem; }
         .tpl__group h4 { margin: 0 0 0.25rem; font-size: 0.8rem; }
         .tpl__group ul { margin: 0; padding-left: 1.1rem; }
-        .tpl__group li { font-size: 0.75rem; color: var(--cms-text-secondary, #6b7280); }
+        .tpl__group li { font-size: 0.75rem; color: var(--cms-text-secondary, #525a66); }
         /*
          * A button, not a bare <li> with a click handler: these open a dialog,
          * so they must be reachable and activatable from the keyboard. Styled
@@ -297,12 +297,12 @@ interface TemplateGroup {
         .tpl__open:hover code, .tpl__open:focus-visible code {
             text-decoration: underline; color: var(--cms-primary, #2563eb);
         }
-        .hint { font-weight: 400; font-size: 0.72rem; color: var(--cms-text-muted, #848b96); }
+        .hint { font-weight: 400; font-size: 0.72rem; color: var(--cms-text-muted, #69707c); }
         .warn {
             margin: 0 0 0.6rem; padding: 6px 8px; border-radius: var(--cms-radius, 6px);
             background: var(--cms-warning-subtle); color: var(--cms-warning-text); font-size: 0.76rem;
         }
-        .state { font-size: 0.85rem; color: var(--cms-text-muted, #848b96); }
+        .state { font-size: 0.85rem; color: var(--cms-text-muted, #69707c); }
         .state--foot { margin-top: 1rem; }
     `],
 })

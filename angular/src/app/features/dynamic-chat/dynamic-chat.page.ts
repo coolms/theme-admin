@@ -447,7 +447,7 @@ const QUEUE_POLL_MS = 12_000;
             margin-left: 3px;
             font-size: .625rem;
             font-weight: 600;
-            color: var(--cms-text-secondary, #6b7280);
+            color: var(--cms-text-secondary, #525a66);
         }
 
         /* - Thread pane - */

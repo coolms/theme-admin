@@ -56,7 +56,7 @@ import { WebPhoneService } from './web-phone.service';
         .group { display: flex; flex-direction: column; gap: 6px; max-width: 480px; }
         .group + .group { margin-top: 18px; }
         .group-label { font-size: .85rem; font-weight: 600; color: var(--cms-text, #111827); }
-        .group-help { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: 0; }
+        .group-help { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: 0; }
 
         .switch-row { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .875rem; }
         .switch-row input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
@@ -64,7 +64,7 @@ import { WebPhoneService } from './web-phone.service';
         .seconds-row { display: flex; align-items: center; gap: 8px; }
         .seconds-row input[type="number"] { width: 96px; }
         .seconds-row input[disabled] { opacity: .55; }
-        .seconds-unit { font-size: .8rem; color: var(--cms-text-secondary, #6b7280); }
+        .seconds-unit { font-size: .8rem; color: var(--cms-text-secondary, #525a66); }
 
         .group input[type="text"].form-control { max-width: 260px; font-family: var(--cms-font-mono, monospace); }
 
@@ -73,7 +73,7 @@ import { WebPhoneService } from './web-phone.service';
             padding: 12px 14px;
             border: 1px dashed var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-md, 8px);
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             background: var(--cms-surface-muted, #f3f4f6);
             max-width: 480px;

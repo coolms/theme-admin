@@ -179,10 +179,10 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #848b96); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #69707c); }
         .field { display: flex; flex-direction: column; margin-bottom: 0.85rem; }
-        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #848b96); }
-        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #848b96); }
+        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #69707c); }
+        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #69707c); }
         app-locale-switcher { display: block; margin-bottom: 0.6rem; }
         .attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.5rem; }
         .attachment {
@@ -193,7 +193,7 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         .attachment__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .attachment__remove {
             border: 0; background: transparent; cursor: pointer; line-height: 1;
-            font-size: 1rem; color: var(--cms-text-muted, #848b96); padding: 0 2px;
+            font-size: 1rem; color: var(--cms-text-muted, #69707c); padding: 0 2px;
         }
         .attachment__remove:hover { color: var(--cms-danger, #dc2626); }
         /* The editor sizes to its content; cap it so a long campaign scrolls
@@ -202,7 +202,7 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         .recipients {
             margin-right: auto;
             font-size: 0.82rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
     `],
 })

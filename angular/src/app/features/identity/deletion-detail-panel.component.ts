@@ -106,9 +106,9 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
         :host { display: block; }
         .ddp { padding: 12px 16px; font-size: 0.9rem; }
         .ddp-facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0 0 12px; }
-        .ddp-facts dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        .ddp-facts dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
         .ddp-facts dd { margin: 0; }
-        .ddp-heading { margin: 14px 0 6px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #848b96); }
+        .ddp-heading { margin: 14px 0 6px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #69707c); }
         .ddp-reason { white-space: pre-wrap; margin: 0 0 6px; }
         .ddp-lists section { margin-bottom: 10px; }
         .ddp-lists h6 { font-size: 0.85rem; margin: 0 0 2px; }

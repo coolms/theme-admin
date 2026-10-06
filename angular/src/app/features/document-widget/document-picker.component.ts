@@ -96,8 +96,8 @@ export interface DocumentPickerResult {
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #848b96); }
-        .note { margin: 0.5rem 0 0; font-size: 0.8125rem; color: var(--cms-text-muted, #848b96); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #69707c); }
+        .note { margin: 0.5rem 0 0; font-size: 0.8125rem; color: var(--cms-text-muted, #69707c); }
         .note--error { color: var(--cms-danger, #dc2626); }
         .note--warn { color: var(--cms-accent-text, #7C4D00); }
         .list { max-height: 18rem; overflow-y: auto; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px); }
@@ -111,9 +111,9 @@ export interface DocumentPickerResult {
         .row__name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .row__fmt {
             flex: 0 0 auto; font-size: .6875rem; padding: 1px 5px; border-radius: var(--cms-radius-sm, 4px);
-            background: var(--cms-surface-alt, #f3f4f6); color: var(--cms-text-muted, #848b96);
+            background: var(--cms-surface-alt, #f3f4f6); color: var(--cms-text-muted, #69707c);
         }
-        .row__private { flex: 0 0 auto; font-size: .6875rem; color: var(--cms-text-muted, #848b96); }
+        .row__private { flex: 0 0 auto; font-size: .6875rem; color: var(--cms-text-muted, #69707c); }
     `],
 })
 export class DocumentPickerComponent {

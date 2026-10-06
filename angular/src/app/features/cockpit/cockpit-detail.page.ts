@@ -306,23 +306,23 @@ import type {
         .card__title { margin: 0; font-size: .9rem; font-weight: 600; }
         .count {
             font-size: .7rem; padding: 1px 7px; border-radius: 999px;
-            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #848b96);
+            background: var(--cms-border, #e5e7eb); color: var(--cms-text-muted, #69707c);
         }
         .card__body { padding: 12px 16px; }
 
-        .empty { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .empty { color: var(--cms-text-muted, #69707c); font-size: .85rem; margin: 0; }
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .82rem; }
 
         .kv {
             display: grid; grid-template-columns: 160px 1fr; gap: 6px 12px;
             font-size: .9rem; margin: 0;
         }
-        .kv dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        .kv dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
         .kv dd { margin: 0; word-break: break-all; }
 
         .tbl { width: 100%; border-collapse: collapse; font-size: .85rem; }
         .tbl th {
-            text-align: left; font-weight: 600; color: var(--cms-text-muted, #848b96);
+            text-align: left; font-weight: 600; color: var(--cms-text-muted, #69707c);
             padding: 6px 10px; border-bottom: 1px solid var(--cms-border, #e5e7eb);
             white-space: nowrap;
         }
@@ -360,12 +360,12 @@ import type {
         .timeline__marker--success { background: var(--cms-success-text, #166534); }
         .timeline__marker--warning { background: var(--cms-warning-text, #92400e); }
         .timeline__marker--danger  { background: var(--cms-danger-text, #991b1b); }
-        .timeline__marker--muted   { background: var(--cms-text-secondary, #6b7280); }
+        .timeline__marker--muted   { background: var(--cms-text-secondary, #525a66); }
         .timeline__head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
         .timeline__summary { font-weight: 600; }
         /* — raw stable code, kept as a secondary debug line under the summary. */
-        .timeline__code { color: var(--cms-text-muted, #848b96); font-size: .72rem; margin-top: 1px; }
-        .timeline__time { color: var(--cms-text-muted, #848b96); font-size: .78rem; margin-left: auto; }
+        .timeline__code { color: var(--cms-text-muted, #69707c); font-size: .72rem; margin-top: 1px; }
+        .timeline__time { color: var(--cms-text-muted, #69707c); font-size: .78rem; margin-left: auto; }
         .timeline__payload {
             margin: 4px 0 0; padding: 6px 8px; border-radius: var(--cms-radius-sm, 4px);
             background: var(--cms-surface-muted); border: 1px solid var(--cms-border, #e5e7eb);

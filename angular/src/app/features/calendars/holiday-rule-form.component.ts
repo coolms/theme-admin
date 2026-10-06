@@ -247,7 +247,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             font-family: inherit;
         }
         .params { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .hint { color: var(--cms-text-muted, #848b96); font-size: .8rem; margin: 4px 0; }
+        .hint { color: var(--cms-text-muted, #69707c); font-size: .8rem; margin: 4px 0; }
         .error { color: var(--cms-danger, #dc2626); font-size: .85rem; }
 
         /* One-off date row — keep the year/month/day inputs reasonably
@@ -265,7 +265,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             background: transparent;
             border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .icon-btn:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
         .icon-btn--danger:hover { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }

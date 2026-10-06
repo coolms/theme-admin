@@ -104,7 +104,7 @@ const ENDED_LINGER_MS = 6_000;
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .board { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 0 32px; }
 
-        .conn { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--cms-text-muted, #848b96); }
+        .conn { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--cms-text-muted, #69707c); }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cms-text-muted); }
         .dot--on { background: var(--cms-success); }
 
@@ -117,7 +117,7 @@ const ENDED_LINGER_MS = 6_000;
             justify-content: center;
             text-align: center;
             padding: 48px 24px;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .empty__badge {
             position: relative;
@@ -150,7 +150,7 @@ const ENDED_LINGER_MS = 6_000;
             border-radius: 999px;
             font-size: .75rem;
             background: var(--cms-surface-muted, #f3f4f6);
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .empty__pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--cms-text-muted); }
         .empty__status--on { background: var(--cms-success-light); color: var(--cms-success-text); }
@@ -189,7 +189,7 @@ const ENDED_LINGER_MS = 6_000;
 
         .card__top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
         .who { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .state { display: inline-flex; align-items: center; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #848b96); white-space: nowrap; }
+        .state { display: inline-flex; align-items: center; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #69707c); white-space: nowrap; }
 
         /* Small pulsing indicator on live (non-ended) cards. */
         .livedot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; background: var(--cms-text-muted); }
@@ -197,7 +197,7 @@ const ENDED_LINGER_MS = 6_000;
         .livedot[data-state="answered"] { background: var(--cms-success); animation: wb-blink 1.6s ease-in-out infinite; }
         .livedot[data-state="on_hold"]  { background: var(--cms-meta); }
 
-        .card__nums { display: flex; gap: 8px; align-items: baseline; font-size: .8rem; color: var(--cms-text-muted, #848b96); }
+        .card__nums { display: flex; gap: 8px; align-items: baseline; font-size: .8rem; color: var(--cms-text-muted, #69707c); }
         .dir { text-transform: capitalize; }
 
         .card__timer { font-size: 1.25rem; font-variant-numeric: tabular-nums; }

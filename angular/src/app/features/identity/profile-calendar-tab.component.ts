@@ -77,7 +77,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
         }
         .group-help {
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             margin: 0;
         }
         .preview {
@@ -113,7 +113,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
             padding: 12px 14px;
             border: 1px dashed var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-md, 8px);
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             background: var(--cms-surface-muted, #f3f4f6);
         }

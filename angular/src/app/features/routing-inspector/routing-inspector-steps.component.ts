@@ -161,7 +161,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             background: var(--cms-surface-muted);
             border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
@@ -200,7 +200,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         .step-row__name { font-weight: 500; color: var(--cms-text, #111827); }
         .step-row__note {
             margin-top: 4px;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .85rem;
         }
         .step-row__details { display: flex; align-items: center; }
@@ -247,7 +247,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
             gap: 6px 16px;
         }
         .kv dt {
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             align-self: center;
         }
@@ -262,7 +262,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         }
 
         .mono  { font-family: var(--cms-font-mono, monospace); }
-        .muted { color: var(--cms-text-muted, #848b96); }
+        .muted { color: var(--cms-text-muted, #69707c); }
 
     `],
 })

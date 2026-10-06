@@ -272,7 +272,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             display: flex; align-items: center; gap: 8px;
             margin-top: 4px;
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .recurrence-summary__text { flex: 1; }
         .recurrence-summary__edit {

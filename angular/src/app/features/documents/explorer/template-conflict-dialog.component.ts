@@ -207,7 +207,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__option small {
             display: block;
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             line-height: 1.4;
         }
 
@@ -219,7 +219,7 @@ export interface TemplateConflictDialogResult {
         }
         .cms-template-conflict-dialog__name-field span {
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-weight: 500;
         }
         .cms-template-conflict-dialog__name-field input {

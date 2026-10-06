@@ -441,7 +441,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             padding: 2px 4px;
             border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             line-height: 1;
         }

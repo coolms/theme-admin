@@ -83,7 +83,7 @@ import { FootprintDto } from './identity.types';
         :host { display: block; overflow: auto; flex: 1; min-height: 0; }
         .hr { padding: 12px 16px; font-size: 0.9rem; }
         .hr-intro { max-width: 70ch; }
-        .hr-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #848b96); margin: 0 0 6px; }
+        .hr-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #69707c); margin: 0 0 6px; }
         .hr-table td, .hr-table th { vertical-align: top; }
         .hr-label { max-width: 34ch; }
         .hr-obligation { max-width: 30ch; white-space: pre-wrap; }

@@ -268,11 +268,11 @@ const ROW_LIMIT = 20;
         .cms-analytics__lede {
             margin: -0.4rem 0 0.75rem;
             font-size: 0.82rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
-        .cms-analytics__total { font-size: 0.8rem; color: var(--cms-text-muted, #848b96); }
+        .cms-analytics__total { font-size: 0.8rem; color: var(--cms-text-muted, #69707c); }
         .cms-analytics__hint,
-        .cms-analytics__empty { color: var(--cms-text-muted, #848b96); }
+        .cms-analytics__empty { color: var(--cms-text-muted, #69707c); }
         .cms-analytics__error { color: var(--cms-danger, #dc2626); font-size: 0.88rem; }
         .cms-analytics__empty {
             display: flex;
