@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
-import { EMPTY, catchError, distinctUntilChanged, filter, map, merge, of, switchMap, timer } from 'rxjs';
-import { AuthState } from '@coolms/core-angular';
+import { catchError, combineLatest, distinctUntilChanged, EMPTY, filter, map, merge, of, switchMap, timer } from 'rxjs';
+import { AuthState, NaviGraphService } from '@coolms/core-angular';
 import { DrawerService } from '@coolms/ui-angular';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { MessagesService } from './messages.service';
 import { MessagesLiveEventsService } from './messages-live-events.service';
 import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
+import { navOffers } from '../../shell/nav-offers';
 
 /**
  * The Chat quick-access icon for the admin topbar.
@@ -29,7 +30,7 @@ import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (signedIn()) {
+        @if (signedIn() && offered()) {
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
@@ -58,6 +59,12 @@ export class MessagesQuickAccessComponent {
     private readonly presence   = inject(ChatPresenceLiveService);
     private readonly destroyRef = inject(DestroyRef);
 
+    /**
+     * Its module's item in the admin navigation, as the server answered it to this account: outside the module's
+     * group every call this tile makes is refused, so it neither shows nor asks (Dmitry, 2026-10-06).
+     */
+    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/chat/conversations');
+
     readonly signedIn = computed<boolean>(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
     /** Total unread across all of the current user's conversations. */
@@ -72,9 +79,9 @@ export class MessagesQuickAccessComponent {
         // online to everyone else, and "online" has to keep meaning "has the
         // admin shell open", not "is looking at Messages right now": started on
         // the page, your dot would blink off the moment you opened Pages.
-        this.store.select(AuthState.currentUser)
+        combineLatest([this.store.select(AuthState.currentUser), toObservable(this.offered)])
             .pipe(
-                map(user => user?.id ?? null),
+                map(([user, offered]) => (offered ? user?.id ?? null : null)),
                 distinctUntilChanged(),
                 takeUntilDestroyed(this.destroyRef),
             )
@@ -82,9 +89,9 @@ export class MessagesQuickAccessComponent {
 
         // Re-derive the badge whenever the signed-in user changes; for a signed-in
         // user, recompute on a poll tick OR a live `chat.user.{uid}` nudge ([]).
-        this.store.select(AuthState.currentUser)
+        combineLatest([this.store.select(AuthState.currentUser), toObservable(this.offered)])
             .pipe(
-                map(user => user?.id ?? null),
+                map(([user, offered]) => (offered ? user?.id ?? null : null)),
                 distinctUntilChanged(),
                 switchMap(meId => {
                     if (meId === null) {

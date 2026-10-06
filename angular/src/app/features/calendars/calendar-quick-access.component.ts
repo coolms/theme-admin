@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@a
 
 import { DrawerService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
+import { NaviGraphService } from '@coolms/core-angular';
+import { navOffers } from '../../shell/nav-offers';
 
 /**
  * / / Task -- Personal calendar quick-access icon
@@ -28,7 +30,7 @@ import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (slug()) {
+        @if (offered() && slug()) {
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
@@ -45,6 +47,12 @@ import { CalendarQuickPanelComponent } from './calendar-quick-panel.component';
 export class CalendarQuickAccessComponent implements OnInit {
     private readonly drawer    = inject(DrawerService);
     private readonly userPrefs = inject(UserCalendarPreferencesService);
+
+    /**
+     * Its module's item in the admin navigation, as the server answered it to this account: outside the module's
+     * group every call this tile makes is refused, so it neither shows nor asks (Dmitry, 2026-10-06).
+     */
+    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/calendar');
 
     /** User's chosen default calendar, or `personal-{uid}` fallback. */
     readonly slug = computed<string | null>(() => this.userPrefs.defaultCalendarSlug());
