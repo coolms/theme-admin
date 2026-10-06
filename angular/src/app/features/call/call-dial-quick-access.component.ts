@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { AuthState } from '@coolms/core-angular';
+import { AuthState, NaviGraphService } from '@coolms/core-angular';
 import { DrawerService } from '@coolms/ui-angular';
 import { CallDialPanelComponent } from './call-dial-panel.component';
+import { navOffers } from '../../shell/nav-offers';
 
 /**
  * The topbar "dial a number" launcher. A phone-outbound icon in
@@ -19,7 +20,7 @@ import { CallDialPanelComponent } from './call-dial-panel.component';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (signedIn()) {
+        @if (signedIn() && offered()) {
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
@@ -35,6 +36,12 @@ import { CallDialPanelComponent } from './call-dial-panel.component';
 export class CallDialQuickAccessComponent {
     private readonly drawer = inject(DrawerService);
     private readonly store  = inject(Store);
+
+    /**
+     * Its module's item in the admin navigation, as the server answered it to this account: outside the module's
+     * group every call this tile makes is refused, so it neither shows nor asks (Dmitry, 2026-10-06).
+     */
+    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/call/records');
 
     readonly signedIn = computed(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
