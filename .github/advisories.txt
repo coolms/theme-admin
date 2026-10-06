@@ -1,0 +1,63 @@
+# Advisories known in this repository's committed lockfile (angular/) and not yet cleared.
+# The advisories job (coolms/.github, npm-advisories.yml) fails on an advisory that is not here, and on a line here
+# whose advisory is no longer reported, so this list only shrinks: take a line off when an update clears it.
+#
+#   <package> <advisory id> <severity> <why it stays>
+#
+# Started 2026-10-07 with what `npm audit` reported then: 54 advisory(ies) over 53 package(s). Each stays until an
+# update clears it; an update is a change of its own, made and reviewed as one.
+
+@angular/router            GHSA-ff3f-86qr-9cv3  high      present when the list was started; awaiting an update
+@modelcontextprotocol/sdk  GHSA-6qxp-vccf-f47h  high      present when the list was started; awaiting an update
+@tiptap/core               GHSA-cp6q-959q-f8rh  moderate  present when the list was started; awaiting an update
+@tiptap/core               GHSA-j95f-988m-3j2f  high      present when the list was started; awaiting an update
+basic-ftp                  GHSA-c475-qrg2-pj4r  high      present when the list was started; awaiting an update
+brace-expansion            GHSA-3jxr-9vmj-r5cp  high      present when the list was started; awaiting an update
+brace-expansion            GHSA-6j4f-fj2g-mc7p  high      present when the list was started; awaiting an update
+brace-expansion            GHSA-mh99-v99m-4gvg  high      present when the list was started; awaiting an update
+brace-expansion            GHSA-q2hr-2g5m-vwhr  moderate  present when the list was started; awaiting an update
+brace-expansion            GHSA-qhr7-859c-m2p7  high      present when the list was started; awaiting an update
+brace-expansion            GHSA-rgw5-rvv9-x895  high      present when the list was started; awaiting an update
+braces                     GHSA-vfj7-8cjw-p6xm  high      present when the list was started; awaiting an update
+compression                GHSA-vc2v-76pw-4v95  high      present when the list was started; awaiting an update
+engine.io                  GHSA-2gc4-cqfq-p2gv  high      present when the list was started; awaiting an update
+extract-zip                GHSA-7pqw-9j4j-h8q3  high      present when the list was started; awaiting an update
+extract-zip                GHSA-jmr9-qjv8-65gv  high      present when the list was started; awaiting an update
+fabric                     GHSA-w22m-hvvm-xmwx  moderate  present when the list was started; awaiting an update
+fast-uri                   GHSA-4c8g-83qw-93j6  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-7p8r-x3mc-p8w7  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-f65p-4m7j-42xc  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-hrr3-gc8f-f4qj  moderate  present when the list was started; awaiting an update
+fast-uri                   GHSA-jqff-g426-hqxp  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-q3j6-qgpj-74h6  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-qw65-cvwx-89v3  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-v2hh-gcrm-f6hx  high      present when the list was started; awaiting an update
+fast-uri                   GHSA-v39h-62p7-jpjc  high      present when the list was started; awaiting an update
+follow-redirects           GHSA-r4q5-vmmm-2653  moderate  present when the list was started; awaiting an update
+hono                       GHSA-crvj-82cr-hjcx  moderate  present when the list was started; awaiting an update
+hono                       GHSA-g6gw-c38x-mqfc  moderate  present when the list was started; awaiting an update
+hono                       GHSA-gqvv-2mrq-wpjv  moderate  present when the list was started; awaiting an update
+hono                       GHSA-hxh3-vqpv-xpqv  moderate  present when the list was started; awaiting an update
+ip-address                 GHSA-2vr4-cq9g-pvrc  moderate  present when the list was started; awaiting an update
+ip-address                 GHSA-h3mg-xc3c-68pw  moderate  present when the list was started; awaiting an update
+ip-address                 GHSA-j6r3-76f7-8jcv  moderate  present when the list was started; awaiting an update
+ip-address                 GHSA-rpw4-54j3-4h4q  moderate  present when the list was started; awaiting an update
+js-yaml                    GHSA-2883-xcg3-v3hh  high      present when the list was started; awaiting an update
+js-yaml                    GHSA-52cp-r559-cp3m  high      present when the list was started; awaiting an update
+js-yaml                    GHSA-5p4m-2wfm-xmqj  high      present when the list was started; awaiting an update
+js-yaml                    GHSA-h67p-54hq-rp68  moderate  present when the list was started; awaiting an update
+katex                      GHSA-238p-pmpm-9mq7  low       present when the list was started; awaiting an update
+pdfjs-dist                 GHSA-hq66-cqwq-w95j  high      present when the list was started; awaiting an update
+piscina                    GHSA-67c8-pqhq-4rmx  critical  present when the list was started; awaiting an update
+postcss-selector-parser    GHSA-rj75-hqrm-r3gf  moderate  present when the list was started; awaiting an update
+prosemirror-view           GHSA-c8x8-7fp4-3x9w  high      present when the list was started; awaiting an update
+protobufjs                 GHSA-f38q-mgvj-vph7  moderate  present when the list was started; awaiting an update
+protobufjs                 GHSA-j3f2-48v5-ccww  moderate  present when the list was started; awaiting an update
+protobufjs                 GHSA-wcpc-wj8m-hjx6  high      present when the list was started; awaiting an update
+proxy-addr                 GHSA-jqcg-44mw-7w3h  critical  present when the list was started; awaiting an update
+qs                         GHSA-4mjr-xmp4-gh2g  moderate  present when the list was started; awaiting an update
+qs                         GHSA-x5fp-wj9c-mxmx  moderate  present when the list was started; awaiting an update
+shell-quote                GHSA-pqg4-j6r4-53mv  critical  present when the list was started; awaiting an update
+source-map-js              GHSA-68fv-2mgg-jv7q  high      present when the list was started; awaiting an update
+uuid                       GHSA-w5hq-g745-h8pq  moderate  present when the list was started; awaiting an update
+webpack-dev-middleware     GHSA-g84c-rxfj-3j2c  high      present when the list was started; awaiting an update
