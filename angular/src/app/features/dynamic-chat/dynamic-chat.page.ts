@@ -279,7 +279,7 @@ const QUEUE_POLL_MS = 12_000;
                                 </button>
                                 <input #fileInput type="file" multiple hidden (change)="onFilesSelected($event)">
                                 <textarea
-                                    class="lc-composer__input"
+                                    class="lc-composer__input cms-field"
                                     rows="1"
                                     placeholder="Type a reply…  (Enter to send, Shift+Enter for a new line, or drop a file)"
                                     [value]="draft()"
@@ -680,10 +680,6 @@ const QUEUE_POLL_MS = 12_000;
             line-height: 1.4;
             color: var(--cms-text);
             background: var(--cms-surface);
-        }
-        .lc-composer__input:focus {
-            outline: none;
-            border-color: var(--cms-focus-ring);
         }
         .lc-composer__input:disabled { background: var(--cms-bg); cursor: not-allowed; }
         .lc-composer__send { flex-shrink: 0; }

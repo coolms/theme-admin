@@ -103,6 +103,7 @@ export interface TemplateConflictDialogResult {
                                 <span>New filename</span>
                                 <input #nameInput
                                        type="text"
+                                       class="cms-field"
                                        [(ngModel)]="newName"
                                        (ngModelChange)="newNameTouched.set(true)"
                                        autocomplete="off"
@@ -228,11 +229,6 @@ export interface TemplateConflictDialogResult {
             border-radius: var(--cms-radius-sm, 4px);
             font: inherit;
             font-size: 0.875rem;
-        }
-        .cms-template-conflict-dialog__name-field input:focus {
-            border-color: var(--cms-focus-ring);
-            outline: 2px solid var(--cms-focus-ring);
-            outline-offset: -1px;
         }
 
         .cms-template-conflict-dialog__error {

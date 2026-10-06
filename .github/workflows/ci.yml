@@ -114,6 +114,14 @@ jobs:
           node-version: 22
       - name: The generated files are what the token file generates
         run: node tools/design-tokens.mjs --check
+      # Every focus indicator draws the ring (Dmitry, 2026-10-06, from the review of #69): no
+      # component's halo or off-token ring, and Bootstrap's focus variables bound to the token. The
+      # rendered half -- what Bootstrap draws, and its contrast -- is src/app/shell/focus-ring.spec.ts
+      # in the Admin suite.
+      - name: Every focus indicator draws the ring
+        run: |
+          node --test angular/scripts/check-focus-indicators.test.mjs
+          node angular/scripts/check-focus-indicators.mjs angular/src
 
   admin-suite:
     # The admin's Angular suite, with the count it ran in the verdict line (Dmitry, 2026-09-27:

@@ -448,11 +448,52 @@ body {
     --cms-focus-ring: var(--cms-focus-ring-on-chrome);
 }
 
-// The top bar's quick-access tiles are Bootstrap buttons, whose focus draws no outline: theirs is the ring too.
-.coolms-topbar .btn:focus-visible {
-    outline: 2px solid var(--cms-focus-ring);
-    outline-offset: 2px;
-    box-shadow: none;
+// The band between a control and its ring, in the colour of the ground it stands on, so the ring never touches the
+// control's own edge: the kit's outline leaves it with outline-offset, and a ring drawn as a box-shadow (Bootstrap's,
+// the check inputs', the toggle's) paints it as the layer under the ring. Measured by src/app/shell/focus-ring.spec.ts:
+// without it the top bar's tiles had the ring at 2.50:1 against their own edge.
+:root {
+    --cms-focus-gap: var(--cms-surface);
+}
+
+.coolms-topbar,
+.coolms-sidebar {
+    --cms-focus-gap: var(--cms-sidebar-bg);
+}
+
+// Bootstrap draws its controls' focus from its own variables: a translucent blue, .25rem wide. They are bound here,
+// once, to the ring -- 2px, opaque, --cms-focus-ring -- so every Bootstrap button and close button, and any added
+// later, draws it with no rule of its own (Dmitry, 2026-10-06, from the review of theme-admin#69). Declared on the
+// chrome too: a custom property that names another is resolved where it is declared, so a :root declaration alone
+// would carry the light ring onto the navy.
+:root,
+.coolms-topbar,
+.coolms-sidebar {
+    --bs-focus-ring-width: 2px;
+    --bs-focus-ring-opacity: 1;
+    --bs-focus-ring-color: var(--cms-focus-ring);
+}
+
+// Bootstrap declares these two on the control itself, so they are bound there, each to the ring above, with the
+// gap below under it.
+.btn {
+    --bs-btn-focus-box-shadow: 0 0 0 2px var(--cms-focus-gap),
+        0 0 0 calc(2px + var(--bs-focus-ring-width)) var(--bs-focus-ring-color);
+}
+
+.btn-close {
+    --bs-btn-close-focus-shadow: 0 0 0 2px var(--cms-focus-gap),
+        0 0 0 calc(2px + var(--bs-focus-ring-width)) var(--bs-focus-ring-color);
+}
+
+// Bootstrap's focus is a box-shadow behind `outline: 0`, and forced colours drop every box-shadow: there the ring
+// is an outline in the system's text colour.
+@media (forced-colors: active) {
+    .btn:focus-visible,
+    .btn-close:focus-visible {
+        outline: 2px solid CanvasText;
+        outline-offset: 2px;
+    }
 }
 
 // --- Buttons -----------------------------------------------------------------
@@ -561,7 +602,7 @@ input[type="radio"] {
     // against what surrounds it (Dmitry, 2026-10-06, (a)); the box keeps its own edge.
     &:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
+        box-shadow: 0 0 0 2px var(--cms-focus-gap), 0 0 0 4px var(--cms-focus-ring);
         border-color: var(--cms-accent);
     }
 
@@ -635,11 +676,15 @@ input[type="radio"] {
         background-color: var(--cms-accent);
         border-color: var(--cms-accent);
     }
+}
 
-    &:focus {
-        border-color: var(--cms-accent);
-        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
-    }
+// Its focus, lifted (`html`, and the validated variants as lines of their own) above Bootstrap's
+// `.form-check-input.is-invalid:focus` and its kin, whose translucent halos would otherwise win.
+html .form-check-input:focus,
+html .form-check-input:is(.is-valid, .is-invalid):focus,
+html .was-validated .form-check-input:is(:valid, :invalid):focus {
+    border-color: var(--cms-accent);
+    box-shadow: 0 0 0 2px var(--cms-focus-gap), 0 0 0 4px var(--cms-focus-ring);
 }
 
 // -- Toggle / switch -------------------------------------------------------
@@ -704,7 +749,7 @@ input[type="radio"] {
     }
 
     input:focus-visible + &__slider {
-        box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-focus-ring);
+        box-shadow: 0 0 0 2px var(--cms-focus-gap), 0 0 0 4px var(--cms-focus-ring);
     }
 
     input:disabled + &__slider {
@@ -800,6 +845,25 @@ input[type="radio"] {
     margin-top: 4px;
 }
 
+// --- Field focus -------------------------------------------------------------
+//
+// One focus for every field (Dmitry, 2026-10-06): its edge turns --cms-focus-ring and a 1px ring of the same colour
+// sits outside it. The kit's fields and Bootstrap's take it by their own classes; any other field by `cms-field`,
+// and a box holding a borderless input or an editor by `cms-field-box` (on :focus-within). No component draws a
+// focus of its own for a field. `html` lifts it above a component's own edge rule (a class and its scoping
+// attribute) and the validated lines above Bootstrap's `.form-control.is-invalid:focus` and its kin, whose
+// translucent halos would otherwise win. The `.form-group` line stays below `.form-group ... .invalid`, so an
+// invalid field keeps its danger edge when focused, with the ring outside it.
+html :is(.cms-input, .cms-select, .cms-select-native, .form-control, .form-select, .cms-field):focus,
+html :is(.form-control, .form-select):is(.is-valid, .is-invalid):focus,
+html .was-validated :is(.form-control, .form-select):is(:valid, :invalid):focus,
+html .cms-field-box:focus-within,
+.form-group :is(input[type="text"], input[type="number"], select, textarea):focus {
+    outline: none;
+    border-color: var(--cms-focus-ring);
+    box-shadow: 0 0 0 1px var(--cms-focus-ring);
+}
+
 .cms-input {
     border: 1px solid var(--cms-border-control);
     border-radius: var(--cms-radius);
@@ -811,12 +875,6 @@ input[type="radio"] {
     width: 100%;
 
     &::placeholder { color: var(--cms-text-muted); }
-
-    &:focus {
-        outline: none;
-        border-color: var(--cms-focus-ring);
-        box-shadow: 0 0 0 1px var(--cms-focus-ring);
-    }
 }
 
 .cms-select {
@@ -829,12 +887,6 @@ input[type="radio"] {
     transition: border-color .1s, box-shadow .1s;
     width: 100%;
     cursor: pointer;
-
-    &:focus {
-        outline: none;
-        border-color: var(--cms-focus-ring);
-        box-shadow: 0 0 0 1px var(--cms-focus-ring);
-    }
 }
 
 // --- Compact size modifier for the form controls -----------------------------
@@ -865,12 +917,6 @@ input[type="radio"] {
     line-height: 1.5;
 
     &::placeholder { color: var(--cms-text-muted); }
-
-    &:focus {
-        outline: none;
-        border-color: var(--cms-focus-ring);
-        box-shadow: 0 0 0 1px var(--cms-focus-ring);
-    }
 }
 
 // Keep the small variant proportionally tighter
@@ -1055,12 +1101,6 @@ cdk-dialog-container {
         box-sizing: border-box;
         transition: border-color .15s;
 
-        &:focus {
-            outline: none;
-            border-color: var(--cms-focus-ring);
-            box-shadow: 0 0 0 1px var(--cms-focus-ring);
-        }
-
         &.invalid { border-color: var(--cms-danger); }
     }
 
@@ -1169,12 +1209,6 @@ body.cms-resizing {
     width: 100%;
     line-height: 1.5;
     transition: border-color .1s;
-
-    &:focus {
-        outline: none;
-        border-color: var(--cms-focus-ring);
-        box-shadow: 0 0 0 1px var(--cms-focus-ring);
-    }
 }
 
 .cms-select-arrow {
