@@ -19,9 +19,15 @@
 //     --cms-focus-gap (or --cms-surface) band; forced colours may use the system's;
 //     a border colour of another token is the control's own edge only when the same
 //     rule draws the ring beside it.
+//   * a REMOVED ring: a component's focus rule (anywhere but styles.scss) that only
+//     takes the outline or shadow away. A component rule outranks the global field
+//     rule, so `.x:focus { outline: none }` on a field leaves it with no indicator.
+//     Allowed when the rule says where the ring is drawn instead, in a comment in
+//     the rule: `/* ring: <where> */` (an input inside a `cms-field-box`).
 // And in styles.scss: Bootstrap's focus variables not bound to the ring
 // (--bs-focus-ring-color on :root, --bs-btn-focus-box-shadow on .btn,
-// --bs-btn-close-focus-shadow on .btn-close).
+// --bs-btn-close-focus-shadow on .btn-close), and the field rule (the one naming
+// `.cms-field`) not drawing the ring as an outline.
 //
 // WHAT IT CANNOT SEE: a rule Bootstrap or a package stylesheet ships. The rendered
 // half is src/app/shell/focus-ring.spec.ts, which focuses Bootstrap's controls in a
@@ -89,11 +95,14 @@ export function focusRules(text, file) {
         while (/\{[^{}]*\}/.test(own)) own = own.replace(/\{[^{}]*\}/g, '');
         const draws = [];
         for (const d of own.matchAll(DRAWS)) draws.push({ prop: d[1], value: d[2].trim() });
+        // Comments were blanked in `src`; the same span of the original says where a removed ring is drawn.
+        const rawBody = text.slice(m.index + m[0].length, k - 1);
         rules.push({
             file,
             line: src.slice(0, m.index + m[0].length).split('\n').length,
             selector: m[1].trim().replace(/\s+/g, ' '),
             draws,
+            ringElsewhere: /\/\*\s*ring:[^*]+\*\//.test(rawBody),
         });
     }
     return rules;
@@ -102,6 +111,13 @@ export function focusRules(text, file) {
 /** FOUND rows for one rule. */
 export function judge(rule) {
     const found = [];
+    const component = !/(^|\/)styles\.scss$/.test(rule.file);
+    const removesOnly = rule.draws.length > 0 && rule.draws.every((d) => REMOVES.test(d.value))
+        && rule.draws.some((d) => d.prop.startsWith('outline') || d.prop === 'box-shadow');
+    if (component && removesOnly && !rule.ringElsewhere) {
+        const d = rule.draws.find((x) => x.prop.startsWith('outline') || x.prop === 'box-shadow');
+        found.push({ kind: 'REMOVED', ...d, detail: 'takes the ring away and names no ring drawn instead' });
+    }
     const ringDrawn = rule.draws.some((d) => !d.prop.startsWith('border') && RING.test(d.value));
     for (const d of rule.draws) {
         if (REMOVES.test(d.value)) continue;
@@ -148,6 +164,9 @@ export function bindingsMissing(styles) {
     if (!btn || !ringShadow.test(btn[1])) missing.push('.btn: --bs-btn-focus-box-shadow is not the ring');
     const close = block('\\.btn-close').match(/--bs-btn-close-focus-shadow\s*:\s*([^;]+)/);
     if (!close || !ringShadow.test(close[1])) missing.push('.btn-close: --bs-btn-close-focus-shadow is not the ring');
+    const field = [...src.matchAll(/([^{}]*\.cms-field\b[^{}]*:focus[^{}]*)\{([^{}]*)\}/g)];
+    const fieldDraws = field.some((f) => /outline\s*:\s*2px\s+solid\s+var\(--cms-focus-ring\)/.test(f[2]));
+    if (!fieldDraws) missing.push('the field rule (.cms-field:focus) does not draw `outline: 2px solid var(--cms-focus-ring)`');
     return missing;
 }
 

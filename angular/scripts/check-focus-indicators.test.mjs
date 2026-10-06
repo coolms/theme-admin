@@ -20,6 +20,10 @@ const BOUND = `
 }
 .btn-close {
     --bs-btn-close-focus-shadow: 0 0 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color);
+}
+html :is(.cms-input, .cms-field):focus {
+    outline: 2px solid var(--cms-focus-ring);
+    outline-offset: -1px;
 }`;
 
 test('the old translucent halo is found, at its line', () => {
@@ -57,8 +61,15 @@ test('an edge in another colour passes beside the ring, and is found without it'
     assert.deepEqual(found('.s:focus { outline: none; border-color: var(--bs-primary, #0d6efd); }'), ['OFF-TOKEN 1']);
 });
 
+test('a component rule that only takes the ring away is found, unless it names where the ring is', () => {
+    assert.deepEqual(found('.page-editor__title-input:focus { outline: none; }'), ['REMOVED 1']);
+    assert.deepEqual(found('.msg__search-input:focus { outline: none; /* ring: its .cms-field-box */ }'), []);
+    const inStyles = focusRules('.i:focus { outline: none; box-shadow: none; }', 'styles.scss').flatMap(judge);
+    assert.deepEqual(inStyles, [], 'the global stylesheet removes Bootstrap\'s own and draws the ring in the same rule set');
+});
+
 test('removing an indicator is not drawing one; comments are not rules', () => {
-    assert.deepEqual(found('.i:focus { outline: none; box-shadow: none; }'), []);
+    assert.deepEqual(found('.i:focus { outline: none; box-shadow: none; /* ring: elsewhere */ }'), []);
     assert.deepEqual(found('/* .x:focus { box-shadow: 0 0 0 2px rgba(0,0,0,.2); } */\n// .y:focus { outline: 1px solid red; }'),
         []);
 });
@@ -79,7 +90,10 @@ test('Bootstrap\'s focus variables: bound to the ring is clear, each one unbound
         ':root: --bs-focus-ring-opacity is not 1',
         '.btn: --bs-btn-focus-box-shadow is not the ring',
         '.btn-close: --bs-btn-close-focus-shadow is not the ring',
+        'the field rule (.cms-field:focus) does not draw `outline: 2px solid var(--cms-focus-ring)`',
     ]);
+    assert.deepEqual(bindingsMissing(BOUND.replace('outline: 2px solid var(--cms-focus-ring);\n    outline-offset', 'outline: none;\n    outline-offset')),
+        ['the field rule (.cms-field:focus) does not draw `outline: 2px solid var(--cms-focus-ring)`']);
 });
 
 test('the admin\'s own sources: rules read, none found, the bindings present', () => {
