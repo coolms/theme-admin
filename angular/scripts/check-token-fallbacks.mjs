@@ -108,8 +108,8 @@ function codeLines(path) {
         .filter((l) => !COMMENT.test(l.text));
 }
 
-// -- the oracle: the light block of the token file the generator writes (tokens.generated.scss,
-//    from tokens/coolms.tokens.json) and of styles.scss, which keeps what is not a token. Dark
+// -- the oracle: the light block of the token file (tokens.generated.scss, a copy from
+//    coolms/design-tokens) and of styles.scss, which keeps what is not a token. Dark
 //    re-declares the same names.
 const GENERATED = join(SRC, 'tokens.generated.scss');
 function lightOf(text) {
@@ -247,7 +247,7 @@ if (findings.length > 0) {
     console.error(`✗ ${findings.length} var() fallback(s) disagree with the theme's tokens (${sites} checked in ${files.length} files):`);
     for (const f of findings) console.error(`  ${f}`);
     console.error('  A fallback paints wherever the theme is absent. Make it the token\'s own value,');
-    console.error('  or define the token in tokens/coolms.tokens.json if it is new.');
+    console.error('  or define the token in coolms/design-tokens if it is new.');
     process.exit(1);
 }
 

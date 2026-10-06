@@ -7,6 +7,10 @@ Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
 ## Unreleased
 
+### Changed
+
+- The design tokens come from their own package, `coolms/design-tokens`, at v0.1.0. `angular/src/tokens.generated.scss` is a copy of its `dist/coolms-tokens.scss`, pinned by `design-tokens.lock.json`; the CI checks the copy against the lock, and the lock against the package. The token source, its generator and the app's module move out of this repository. Every value is unchanged: the copy differs from the file generated before only in its header line.
+
 ### Security
 
 - A call's relay credentials are asked for that call: the media plane reads

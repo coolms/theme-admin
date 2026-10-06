@@ -196,7 +196,7 @@ let total = 0;
 
 for (const file of walk(SRC)) {
     const raw = readFileSync(file, 'utf8');
-    // tokens.generated.scss is nothing but token-definition blocks (written from tokens/coolms.tokens.json).
+    // tokens.generated.scss is nothing but token-definition blocks (a copy from coolms/design-tokens).
     const defining = file.endsWith('styles.scss') || file.endsWith('tokens.generated.scss');
     const text = defining ? maskTokenBlocks(raw) : raw;
 

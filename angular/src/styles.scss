@@ -2,8 +2,9 @@
 
 // --- CoolMS Brand tokens -----------------------------------------------------
 :root {
-    // The token VALUES are in tokens/coolms.tokens.json, generated into tokens.generated.scss
-    // (imported at the top of this file); the notes below explain them and stay with this block.
+    // The token VALUES come from coolms/design-tokens, copied into tokens.generated.scss (imported at
+    // the top of this file) and pinned by design-tokens.lock.json; the notes below explain them and
+    // stay with this block.
     // Brand accent
     // Foreground (near-black) for text/icons on a SOLID --cms-accent fill
     // (primary buttons, checked checkbox). Distinct from --cms-accent-text,
@@ -275,7 +276,7 @@
 // names. Setting `data-theme` is left to whatever chooses the theme; this block
 // only says what dark MEANS.
 :root[data-theme='dark'] {
-    // The dark VALUES are in tokens/coolms.tokens.json too (see the note in the :root block).
+    // The dark VALUES come from coolms/design-tokens too (see the note in the :root block).
     // See the note on the light value: this is what makes scrollbars, native
     // select popups and unstyled controls follow the theme too.
     color-scheme: dark;

@@ -40,8 +40,8 @@ const SRC = join(ROOT, 'src');
 //                  read as a definition (only setProperty). Not a defect.
 const WITH_FALLBACK_BASELINE = 1;
 
-// The tokens are defined in tokens.generated.scss (written from tokens/coolms.tokens.json by
-// tools/design-tokens.mjs) and in styles.scss, which keeps what is not a token.
+// The tokens are defined in tokens.generated.scss (a copy from coolms/design-tokens, pinned by
+// design-tokens.lock.json) and in styles.scss, which keeps what is not a token.
 const DEFINING = ['styles.scss', 'tokens.generated.scss'];
 const defined = new Set();
 for (const file of DEFINING) {
