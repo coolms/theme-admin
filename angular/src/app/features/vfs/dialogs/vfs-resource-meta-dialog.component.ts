@@ -61,7 +61,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
                 <!-- Not disabled on the write flag (the client keeps no decider): a flag
                      that says no makes Save ask for elevation, not go dead. -->
                 <button type="button" class="cms-btn cms-btn-primary" (click)="save()" [disabled]="saving()"
-                        [title]="node.permissions.write ? '' : 'Read-only for you: Save asks for the admin password first'">
+                        [title]="node.permissions.write ? '' : 'Read-only for you: Save asks for your password first'">
                     @if (saving()) {
                         <cms-loader [inline]="true" />
                     }

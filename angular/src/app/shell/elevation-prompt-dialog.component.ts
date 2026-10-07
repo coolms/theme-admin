@@ -49,13 +49,13 @@ import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
             }
 
             @if (blocker(); as blocker) {
-                <!-- The installation cannot elevate yet: no admin password, or
-                     MFA on with no confirmed factor. The message names the
-                     server command; there is nothing to type here. -->
+                <!-- This account cannot elevate yet: it has no password of its
+                     own, or MFA is on and it has no confirmed factor. The
+                     message says which; there is nothing to type here. -->
                 <div class="cms-alert cms-alert--warning">{{ blocker }}</div>
             } @else {
                 <form autocomplete="off">
-                    <label class="ep-label" for="ep-password">Admin password</label>
+                    <label class="ep-label" for="ep-password">Your password</label>
                     <input #passwordEl
                            id="ep-password"
                            type="password"
@@ -68,7 +68,7 @@ import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
                            (keydown.enter)="onEnter($event)" />
 
                     @if (codeStage()) {
-                        <label class="ep-label" for="ep-code">Code from the admin authenticator</label>
+                        <label class="ep-label" for="ep-code">Code from your authenticator</label>
                         <input #codeEl
                                id="ep-code"
                                type="text"
@@ -160,7 +160,7 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
      */
     readonly endedLine = computed(() => endedSentence(this.data.state, iso => this.dtf.time(iso)));
 
-    /** A warning that means the installation cannot elevate yet, or null. */
+    /** A warning that means this account cannot elevate yet, or null. */
     readonly blocker = computed<string | null>(() =>
         this.data.state.warnings.find(w =>
             w.code === ELEVATION_WARNING_PASSWORD_NOT_SET || w.code === ELEVATION_WARNING_FACTOR_MISSING,
@@ -219,9 +219,9 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
             case 403: return this.codeStage()
                 ? 'Wrong password, or a wrong or already used code.'
                 : 'Wrong password.';
-            case 428: return 'The password is right. Enter the code from the admin authenticator as well.';
+            case 428: return 'The password is right. Enter the code from your authenticator as well.';
             case 429: return 'Too many attempts. Wait a few minutes and try again.';
-            case 409: return this.errors.humanize(err);  // names the server command
+            case 409: return this.errors.humanize(err);  // says why this account cannot elevate
             default:  return this.errors.humanize(err);
         }
     }
@@ -236,7 +236,7 @@ export function endedSentence(state: ElevationState, clock: (iso: string) => str
     // " at " with nothing after it is worse than no clause at all.
     const shown = state.ended.at !== null && state.ended.at !== '' ? clock(state.ended.at) : '';
     const at = shown !== '' ? ` at ${shown}` : '';
-    const again = 'Enter the admin password to elevate again.';
+    const again = 'Enter your password to elevate again.';
 
     switch (state.ended.reason) {
         case 'closed':
@@ -249,7 +249,7 @@ export function endedSentence(state: ElevationState, clock: (iso: string) => str
             return `Your elevated session was ended${at} because the sign-in continued from another address or browser. ${again}`;
         case 'never':
         default:
-            return 'This action needs an elevated session. Enter the admin password to elevate.';
+            return 'This action needs an elevated session. Enter your password to elevate.';
     }
 }
 
