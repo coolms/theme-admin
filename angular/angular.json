@@ -60,10 +60,16 @@
                 "glob": "**/*",
                 "input": "node_modules/ngx-extended-pdf-viewer/assets/",
                 "output": "/assets/",
+                //
+                // The scripting SANDBOX is not shipped at all (2026-10-07), nor its interpreter: scripting
+                // is pinned off in the viewer (@coolms/pdf-angular), and pdf.sandbox-*.mjs with
+                // wasm/quickjs-eval.* is what evaluates a document's JavaScript.
+                // scripts/check-bundled-pdfjs-eval.mjs reads this list.
                 "ignore": [
                   "**/viewer-*[0-9].mjs",
                   "**/pdf.worker-*[0-9].mjs",
-                  "**/pdf.sandbox-*[0-9].mjs"
+                  "**/pdf.sandbox-*",
+                  "**/quickjs-eval.*"
                 ]
               }
             ],

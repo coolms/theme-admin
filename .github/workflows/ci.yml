@@ -20,6 +20,16 @@ jobs:
     with:
       working-directory: angular
 
+  # The pdf.js that ngx-extended-pdf-viewer BUNDLES in its assets, which npm audit cannot see: its version read
+  # from the package as locked and asked of the advisory database (angular/scripts/bundled-pdfjs-audit.mjs), held
+  # to .github/bundled-advisories.txt by the same rules.
+  bundled-pdfjs:
+    uses: coolms/.github/.github/workflows/npm-advisories.yml@develop
+    with:
+      working-directory: angular
+      list: .github/bundled-advisories.txt
+      audit-command: node scripts/bundled-pdfjs-audit.mjs
+
   install:
     name: PHP ${{ matrix.php }} ${{ matrix.deps }}
     runs-on: ubuntu-latest
@@ -211,6 +221,17 @@ jobs:
         run: |
           node --test scripts/check-redraw.test.mjs
           npm run lint:redraw
+
+      # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an
+      # eval or Function( call outside the sites read and pinned by text and count fails. The tests' two cases that
+      # ask the advisory database run here (the version read, and a throwaway copy claiming 4.1.392).
+      - name: The bundled pdf.js evaluates no strings beyond those read
+        working-directory: sources/theme-admin/angular
+        env:
+          BUNDLED_PDFJS_NETWORK: '1'
+        run: |
+          node --test scripts/bundled-pdfjs.test.mjs
+          npm run lint:bundled-pdfjs
 
       - name: Admin suite
         working-directory: sources/theme-admin/angular

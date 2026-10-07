@@ -19,7 +19,8 @@
     "lint:styles": "node scripts/check-inline-styles.mjs",
     "lint:specs": "node scripts/check-package-specs.mjs",
     "lint:redraw": "node scripts/check-redraw.mjs",
-    "lint:focus": "node scripts/check-focus-indicators.mjs"
+    "lint:focus": "node scripts/check-focus-indicators.mjs",
+    "lint:bundled-pdfjs": "node scripts/check-bundled-pdfjs-eval.mjs"
   },
   "dependencies": {
     "@angular/animations": "^22.1.3",
