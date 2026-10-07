@@ -8,13 +8,17 @@
 //   - a new eval or Function( call is FOUND, with its file and offset;
 //   - a second copy of an allowed text is FOUND ("occurs 2 times, more than the 1 read");
 //   - a changed text leaves its call uncovered: FOUND;
-//   - another bundled version gets no allowance: FOUND, until a person reads its sites and pins them.
+//   - another bundled version gets no allowance: FOUND, until a person reads its sites and pins them;
+//   - the allowed files are pinned by sha256 as well: any change to their BYTES, a rebuild of the same version
+//     included, is FOUND, until a person re-quotes both sites for review and moves the pin (review of 2026-10-07:
+//     both sites PASS, these hashes kept in the record).
 // The scripting sandbox (pdf.sandbox-*.mjs) and its interpreter (wasm/quickjs-eval.*) are not shipped: scripting is
 // pinned off in the viewer (@coolms/pdf-angular), and they are what evaluates a document's JavaScript.
 //
 // Exit: 0 CLEAR, 1 FOUND, 2 UNEVALUABLE (the asset entry or the files cannot be read).
 //
 // Run: npm run lint:bundled-pdfjs
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,9 +33,15 @@ const GLOBAL_FALLBACK = 'check("object"==typeof globalThis&&globalThis)||check("
     + '||function(){return this}()||Function("return this")()';
 const REQUIRE_FALLBACK = 'try{return Function(\'return require("\'+e+\'")\')()}catch(e){}';
 
-/** Read by a person on 2026-10-07 in ngx-extended-pdf-viewer 29.0.1's assets. */
+/** Read by a person on 2026-10-07 in ngx-extended-pdf-viewer 29.0.1's assets, and reviewed: PASS. */
 export const ALLOWED_EVAL_SITES = {
     version: '6.1.1164',
+    // The bytes that were read and reviewed. A bump of ngx-extended-pdf-viewer re-quotes both sites for review,
+    // whether or not their text changed: the pin moves only with that review.
+    sha256: {
+        'viewer-6.1.1164.min.mjs': '1f38921087d51a806b9b51c2407988b08a64dfd7ad86403629ef8e5a864126e5',
+        'pdf.worker-6.1.1164.min.mjs': 'd4101bffdb4746bb5b994ecb8379a891809fc4a02375ee23f4886705b44c4d10',
+    },
     sites: {
         'viewer-6.1.1164.min.mjs': [{ text: REQUIRE_FALLBACK, count: 1 }, { text: GLOBAL_FALLBACK, count: 1 }],
         'pdf.worker-6.1.1164.min.mjs': [{ text: REQUIRE_FALLBACK, count: 1 }, { text: GLOBAL_FALLBACK, count: 1 }],
@@ -97,6 +107,27 @@ export function findings(files, allowed) {
     return out;
 }
 
+/**
+ * Every allowed file whose BYTES are not the bytes that were read: FOUND, whatever its text, until a person
+ * re-quotes both sites for review and moves the pin. `files` maps a shipped name to its bytes (a Buffer, as read
+ * from disk -- no text round trip in between) or a string.
+ */
+export function hashFindings(files, allowed) {
+    const out = [];
+    for (const name of Object.keys(allowed.sites)) {
+        if (files[name] === undefined) continue; // not shipped: the version check speaks for it
+        const want = allowed.sha256?.[name];
+        const got = createHash('sha256').update(files[name]).digest('hex');
+        if (!want) {
+            out.push(`${name}: no sha256 pinned for the bytes that were read`);
+        } else if (got !== want) {
+            out.push(`${name}: its bytes changed (sha256 ${got.slice(0, 16)}, read as ${want.slice(0, 16)}) -- `
+                + 'a person re-quotes both string-to-code sites for review before the pin moves');
+        }
+    }
+    return out;
+}
+
 function main() {
     let entry, dir, names;
     try {
@@ -112,13 +143,15 @@ function main() {
     const files = Object.fromEntries(names.map((n) => [n, readFileSync(join(dir, n), 'utf8')]));
     const calls = Object.values(files).reduce((sum, t) => sum + [...t.matchAll(CALLS)].length, 0);
     console.log(`bundled-pdfjs-eval: ${names.length} shipped script(s) (${names.join(', ')}), ${calls} eval/Function call(s)`);
-    const found = findings(files, ALLOWED_EVAL_SITES);
+    const bytes = Object.fromEntries(names.map((n) => [n, readFileSync(join(dir, n))]));
+    const found = [...findings(files, ALLOWED_EVAL_SITES), ...hashFindings(bytes, ALLOWED_EVAL_SITES)];
     for (const f of found) console.log(`  ${f}`);
     if (found.length) {
         console.log(`bundled-pdfjs-eval: FOUND -- ${found.length} finding(s)`);
         process.exit(1);
     }
-    console.log(`bundled-pdfjs-eval: CLEAR -- every call is a site read and pinned for ${ALLOWED_EVAL_SITES.version}`);
+    console.log(`bundled-pdfjs-eval: CLEAR -- every call is a site read and pinned for ${ALLOWED_EVAL_SITES.version}, `
+        + 'and the files are the bytes that were reviewed');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
