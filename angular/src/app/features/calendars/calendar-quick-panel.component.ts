@@ -25,6 +25,7 @@ import {
     CalendarEventEditorResult,
 } from './calendar-event-editor.component';
 import { calendarDaysBetween, localDateOf, localDayKey, monthDayName, shiftDayKey, weekdayName } from './day-key.util';
+import { itemDayKey } from './item-range.util';
 import { MiniCalendarComponent } from './mini-calendar.component';
 
 interface DayBucket {
@@ -298,7 +299,9 @@ export class CalendarQuickPanelComponent implements OnInit {
         // in the past relative to the person's current focus).
         const map = new Map<string, CalendarItemDto[]>();
         for (const item of all) {
-            const key = this.dtf.dayKey(item.start);
+            // An all-day item is listed under its own date: through dayKey a bare date is an
+            // instant, and west of UTC that instant is the evening before.
+            const key = itemDayKey(item, iso => this.dtf.dayKey(iso));
             if (key < startKey || key >= horizonKey) continue;
             if (!map.has(key)) map.set(key, []);
             map.get(key)!.push(item);
