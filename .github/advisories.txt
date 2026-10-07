@@ -1,63 +1,65 @@
 # Advisories known in this repository's committed lockfile (angular/) and not yet cleared.
-# The advisories job (coolms/.github, npm-advisories.yml) fails on an advisory that is not here, and on a line here
-# whose advisory is no longer reported, so this list only shrinks: take a line off when an update clears it.
+# The advisories job (coolms/.github, npm-advisories.yml) fails on an advisory that is not here, on a line here whose
+# advisory is no longer reported (so the list only shrinks), and on a line past its review date.
 #
-#   <package> <advisory id> <severity> <why it stays>
+#   <package> <advisory id> <severity> <review by> <why it stays>
 #
-# Started 2026-10-07 with what `npm audit` reported then: 54 advisory(ies) over 53 package(s). Each stays until an
-# update clears it; an update is a change of its own, made and reviewed as one.
+# Every line is reviewed again by its date: at most 30 days out for critical and high, 90 for the rest. A review writes
+# a new date and the reason as it stands then; an update that clears the advisory takes the line off instead. The
+# reasons below were measured on 2026-10-07 from this lockfile: which direct dependencies bring the package in, whether
+# it ships, and what npm offers to clear it.
 
-@angular/router            GHSA-ff3f-86qr-9cv3  high      present when the list was started; awaiting an update
-@modelcontextprotocol/sdk  GHSA-6qxp-vccf-f47h  high      present when the list was started; awaiting an update
-@tiptap/core               GHSA-cp6q-959q-f8rh  moderate  present when the list was started; awaiting an update
-@tiptap/core               GHSA-j95f-988m-3j2f  high      present when the list was started; awaiting an update
-basic-ftp                  GHSA-c475-qrg2-pj4r  high      present when the list was started; awaiting an update
-brace-expansion            GHSA-3jxr-9vmj-r5cp  high      present when the list was started; awaiting an update
-brace-expansion            GHSA-6j4f-fj2g-mc7p  high      present when the list was started; awaiting an update
-brace-expansion            GHSA-mh99-v99m-4gvg  high      present when the list was started; awaiting an update
-brace-expansion            GHSA-q2hr-2g5m-vwhr  moderate  present when the list was started; awaiting an update
-brace-expansion            GHSA-qhr7-859c-m2p7  high      present when the list was started; awaiting an update
-brace-expansion            GHSA-rgw5-rvv9-x895  high      present when the list was started; awaiting an update
-braces                     GHSA-vfj7-8cjw-p6xm  high      present when the list was started; awaiting an update
-compression                GHSA-vc2v-76pw-4v95  high      present when the list was started; awaiting an update
-engine.io                  GHSA-2gc4-cqfq-p2gv  high      present when the list was started; awaiting an update
-extract-zip                GHSA-7pqw-9j4j-h8q3  high      present when the list was started; awaiting an update
-extract-zip                GHSA-jmr9-qjv8-65gv  high      present when the list was started; awaiting an update
-fabric                     GHSA-w22m-hvvm-xmwx  moderate  present when the list was started; awaiting an update
-fast-uri                   GHSA-4c8g-83qw-93j6  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-7p8r-x3mc-p8w7  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-f65p-4m7j-42xc  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-hrr3-gc8f-f4qj  moderate  present when the list was started; awaiting an update
-fast-uri                   GHSA-jqff-g426-hqxp  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-q3j6-qgpj-74h6  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-qw65-cvwx-89v3  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-v2hh-gcrm-f6hx  high      present when the list was started; awaiting an update
-fast-uri                   GHSA-v39h-62p7-jpjc  high      present when the list was started; awaiting an update
-follow-redirects           GHSA-r4q5-vmmm-2653  moderate  present when the list was started; awaiting an update
-hono                       GHSA-crvj-82cr-hjcx  moderate  present when the list was started; awaiting an update
-hono                       GHSA-g6gw-c38x-mqfc  moderate  present when the list was started; awaiting an update
-hono                       GHSA-gqvv-2mrq-wpjv  moderate  present when the list was started; awaiting an update
-hono                       GHSA-hxh3-vqpv-xpqv  moderate  present when the list was started; awaiting an update
-ip-address                 GHSA-2vr4-cq9g-pvrc  moderate  present when the list was started; awaiting an update
-ip-address                 GHSA-h3mg-xc3c-68pw  moderate  present when the list was started; awaiting an update
-ip-address                 GHSA-j6r3-76f7-8jcv  moderate  present when the list was started; awaiting an update
-ip-address                 GHSA-rpw4-54j3-4h4q  moderate  present when the list was started; awaiting an update
-js-yaml                    GHSA-2883-xcg3-v3hh  high      present when the list was started; awaiting an update
-js-yaml                    GHSA-52cp-r559-cp3m  high      present when the list was started; awaiting an update
-js-yaml                    GHSA-5p4m-2wfm-xmqj  high      present when the list was started; awaiting an update
-js-yaml                    GHSA-h67p-54hq-rp68  moderate  present when the list was started; awaiting an update
-katex                      GHSA-238p-pmpm-9mq7  low       present when the list was started; awaiting an update
-pdfjs-dist                 GHSA-hq66-cqwq-w95j  high      present when the list was started; awaiting an update
-piscina                    GHSA-67c8-pqhq-4rmx  critical  present when the list was started; awaiting an update
-postcss-selector-parser    GHSA-rj75-hqrm-r3gf  moderate  present when the list was started; awaiting an update
-prosemirror-view           GHSA-c8x8-7fp4-3x9w  high      present when the list was started; awaiting an update
-protobufjs                 GHSA-f38q-mgvj-vph7  moderate  present when the list was started; awaiting an update
-protobufjs                 GHSA-j3f2-48v5-ccww  moderate  present when the list was started; awaiting an update
-protobufjs                 GHSA-wcpc-wj8m-hjx6  high      present when the list was started; awaiting an update
-proxy-addr                 GHSA-jqcg-44mw-7w3h  critical  present when the list was started; awaiting an update
-qs                         GHSA-4mjr-xmp4-gh2g  moderate  present when the list was started; awaiting an update
-qs                         GHSA-x5fp-wj9c-mxmx  moderate  present when the list was started; awaiting an update
-shell-quote                GHSA-pqg4-j6r4-53mv  critical  present when the list was started; awaiting an update
-source-map-js              GHSA-68fv-2mgg-jv7q  high      present when the list was started; awaiting an update
-uuid                       GHSA-w5hq-g745-h8pq  moderate  present when the list was started; awaiting an update
-webpack-dev-middleware     GHSA-g84c-rxfj-3j2c  high      present when the list was started; awaiting an update
+@angular/router            GHSA-ff3f-86qr-9cv3  high      2026-11-06  In the built app (a direct dependency); a lockfile update within the declared ranges clears it.
+@modelcontextprotocol/sdk  GHSA-6qxp-vccf-f47h  high      2026-11-06  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+@tiptap/core               GHSA-cp6q-959q-f8rh  moderate  2027-01-05  In the built app (a direct dependency, and through @tiptap/extension-blockquote, @tiptap/extension-bold, @tiptap/extension-bullet-list and 21 more); a lockfile update within the declared ranges clears it.
+@tiptap/core               GHSA-j95f-988m-3j2f  high      2026-11-06  In the built app (a direct dependency, and through @tiptap/extension-blockquote, @tiptap/extension-bold, @tiptap/extension-bullet-list and 21 more); a lockfile update within the declared ranges clears it.
+basic-ftp                  GHSA-c475-qrg2-pj4r  high      2026-11-06  Build and test tooling only, not in the built app (through puppeteer); cleared by puppeteer 25.12.0, a major upgrade.
+brace-expansion            GHSA-3jxr-9vmj-r5cp  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+brace-expansion            GHSA-6j4f-fj2g-mc7p  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+brace-expansion            GHSA-mh99-v99m-4gvg  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+brace-expansion            GHSA-q2hr-2g5m-vwhr  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+brace-expansion            GHSA-qhr7-859c-m2p7  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+brace-expansion            GHSA-rgw5-rvv9-x895  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
+braces                     GHSA-vfj7-8cjw-p6xm  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, @angular/cli and 6 more); cleared by karma 4.0.0, a major upgrade.
+compression                GHSA-vc2v-76pw-4v95  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
+engine.io                  GHSA-2gc4-cqfq-p2gv  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, karma and 2 more); a lockfile update within the declared ranges clears it.
+extract-zip                GHSA-7pqw-9j4j-h8q3  high      2026-11-06  Build and test tooling only, not in the built app (through puppeteer); cleared by puppeteer 25.12.0, a major upgrade.
+extract-zip                GHSA-jmr9-qjv8-65gv  high      2026-11-06  Build and test tooling only, not in the built app (through puppeteer); cleared by puppeteer 25.12.0, a major upgrade.
+fabric                     GHSA-w22m-hvvm-xmwx  moderate  2027-01-05  In the built app (a direct dependency); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-4c8g-83qw-93j6  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-7p8r-x3mc-p8w7  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-f65p-4m7j-42xc  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-hrr3-gc8f-f4qj  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-jqff-g426-hqxp  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-q3j6-qgpj-74h6  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-qw65-cvwx-89v3  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-v2hh-gcrm-f6hx  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+fast-uri                   GHSA-v39h-62p7-jpjc  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 7 more); a lockfile update within the declared ranges clears it.
+follow-redirects           GHSA-r4q5-vmmm-2653  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, karma and 2 more); a lockfile update within the declared ranges clears it.
+hono                       GHSA-crvj-82cr-hjcx  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+hono                       GHSA-g6gw-c38x-mqfc  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+hono                       GHSA-gqvv-2mrq-wpjv  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+hono                       GHSA-hxh3-vqpv-xpqv  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+ip-address                 GHSA-2vr4-cq9g-pvrc  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint, puppeteer); a lockfile update within the declared ranges clears it.
+ip-address                 GHSA-h3mg-xc3c-68pw  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint, puppeteer); a lockfile update within the declared ranges clears it.
+ip-address                 GHSA-j6r3-76f7-8jcv  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint, puppeteer); a lockfile update within the declared ranges clears it.
+ip-address                 GHSA-rpw4-54j3-4h4q  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint, puppeteer); a lockfile update within the declared ranges clears it.
+js-yaml                    GHSA-2883-xcg3-v3hh  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 5 more); a lockfile update within the declared ranges clears it.
+js-yaml                    GHSA-52cp-r559-cp3m  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 5 more); a lockfile update within the declared ranges clears it.
+js-yaml                    GHSA-5p4m-2wfm-xmqj  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 5 more); a lockfile update within the declared ranges clears it.
+js-yaml                    GHSA-h67p-54hq-rp68  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 5 more); a lockfile update within the declared ranges clears it.
+katex                      GHSA-238p-pmpm-9mq7  low       2027-01-05  In the built app (a direct dependency); cleared by katex 0.19.0, a major upgrade.
+pdfjs-dist                 GHSA-hq66-cqwq-w95j  high      2026-11-06  In the built app (a direct dependency); cleared by pdfjs-dist 6.4.299, a major upgrade.
+piscina                    GHSA-67c8-pqhq-4rmx  critical  2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, ng-packagr); a lockfile update within the declared ranges clears it.
+postcss-selector-parser    GHSA-rj75-hqrm-r3gf  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
+prosemirror-view           GHSA-c8x8-7fp4-3x9w  high      2026-11-06  In the built app (through @tiptap/core, @tiptap/extension-blockquote, @tiptap/extension-bold and 23 more); a lockfile update within the declared ranges clears it.
+protobufjs                 GHSA-f38q-mgvj-vph7  moderate  2027-01-05  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
+protobufjs                 GHSA-j3f2-48v5-ccww  moderate  2027-01-05  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
+protobufjs                 GHSA-wcpc-wj8m-hjx6  high      2026-11-06  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
+proxy-addr                 GHSA-jqcg-44mw-7w3h  critical  2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
+qs                         GHSA-4mjr-xmp4-gh2g  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, @angular/cli and 4 more); a lockfile update within the declared ranges clears it.
+qs                         GHSA-x5fp-wj9c-mxmx  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, @angular/cli and 4 more); a lockfile update within the declared ranges clears it.
+shell-quote                GHSA-pqg4-j6r4-53mv  critical  2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
+source-map-js              GHSA-68fv-2mgg-jv7q  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, ng-packagr); a lockfile update within the declared ranges clears it.
+uuid                       GHSA-w5hq-g745-h8pq  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
+webpack-dev-middleware     GHSA-g84c-rxfj-3j2c  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
