@@ -299,8 +299,8 @@ export class CalendarQuickPanelComponent implements OnInit {
         // in the past relative to the person's current focus).
         const map = new Map<string, CalendarItemDto[]>();
         for (const item of all) {
-            // An all-day item is listed under its own date: through dayKey a bare date is an
-            // instant, and west of UTC that instant is the evening before.
+            // A start that is exactly a date (an all-day item) is listed under that date: through
+            // dayKey a bare date is an instant, and west of UTC that instant is the evening before.
             const key = itemDayKey(item, iso => this.dtf.dayKey(iso));
             if (key < startKey || key >= horizonKey) continue;
             if (!map.has(key)) map.set(key, []);

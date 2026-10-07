@@ -58,7 +58,19 @@ describe('item ranges', () => {
             .withContext('vacuous unless the formatter moves the bare date')
             .toBe('2030-03-11');
 
-        expect(itemDayKey({ start: '2030-03-12', allDay: true }, westOfUtc)).toBe('2030-03-12');
-        expect(itemDayKey({ start: '2030-03-12T15:00:00.000Z', allDay: false }, westOfUtc)).toBe('2030-03-12');
+        expect(itemDayKey({ start: '2030-03-12' }, westOfUtc)).toBe('2030-03-12');
+        expect(itemDayKey({ start: '2030-03-12T15:00:00.000Z' }, westOfUtc)).toBe('2030-03-12');
+    });
+
+    it('lists an all-day item the server still sends as an instant by the person\'s day, as before', () => {
+        // Moscow's 6th as today's server writes an all-day start: midnight in the calendar's zone, as UTC.
+        const moscowMidnightOf6th = '2026-10-05T21:00:00+00:00';
+        const inMoscow = (iso: string): string =>
+            new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow' }).format(new Date(iso));
+        expect(moscowMidnightOf6th.slice(0, 10))
+            .withContext('vacuous unless the first ten characters name another day')
+            .toBe('2026-10-05');
+
+        expect(itemDayKey({ start: moscowMidnightOf6th }, inMoscow)).toBe('2026-10-06');
     });
 });

@@ -48,10 +48,15 @@ export function nextDayRange(range: ItemRange, allDay: boolean): ItemRange {
     return { start: start.toISOString(), end: end?.toISOString() ?? null };
 }
 
+/** Exactly a date, `YYYY-MM-DD`, nothing after it. */
+const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
- * The day an item is listed under: an all-day item's own date, a timed item's day in the person's zone (`dayKey`
- * of the formatter, passed in).
+ * The day an item is listed under: a start that is exactly a date is that date; any other start is an instant, and
+ * its day is the person's (`dayKey` of the formatter, passed in), as before. Decided by the VALUE, not by `allDay`:
+ * until the server sends all-day items as dates, it sends them as the instant of midnight in the calendar's zone,
+ * whose first ten characters east of UTC name the day before ("2026-10-05T21:00:00+00:00" is Moscow's 6th).
  */
-export function itemDayKey(item: { readonly start: string; readonly allDay: boolean }, dayKey: (iso: string) => string): string {
-    return item.allDay ? item.start.slice(0, 10) : dayKey(item.start);
+export function itemDayKey(item: { readonly start: string }, dayKey: (iso: string) => string): string {
+    return BARE_DATE.test(item.start) ? item.start : dayKey(item.start);
 }
