@@ -9,10 +9,7 @@
 # reasons below were measured on 2026-10-07 from this lockfile: which direct dependencies bring the package in, whether
 # it ships, and what npm offers to clear it.
 
-@angular/router            GHSA-ff3f-86qr-9cv3  high      2026-11-06  In the built app (a direct dependency); a lockfile update within the declared ranges clears it.
 @modelcontextprotocol/sdk  GHSA-6qxp-vccf-f47h  high      2026-11-06  Build and test tooling only, not in the built app (through @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
-@tiptap/core               GHSA-cp6q-959q-f8rh  moderate  2027-01-05  In the built app (a direct dependency, and through @tiptap/extension-blockquote, @tiptap/extension-bold, @tiptap/extension-bullet-list and 21 more); a lockfile update within the declared ranges clears it.
-@tiptap/core               GHSA-j95f-988m-3j2f  high      2026-11-06  In the built app (a direct dependency, and through @tiptap/extension-blockquote, @tiptap/extension-bold, @tiptap/extension-bullet-list and 21 more); a lockfile update within the declared ranges clears it.
 basic-ftp                  GHSA-c475-qrg2-pj4r  high      2026-11-06  Build and test tooling only, not in the built app (through puppeteer); cleared by puppeteer 25.12.0, a major upgrade.
 brace-expansion            GHSA-3jxr-9vmj-r5cp  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
 brace-expansion            GHSA-6j4f-fj2g-mc7p  high      2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular-eslint/eslint-plugin, @angular-eslint/eslint-plugin-template and 9 more); a lockfile update within the declared ranges clears it.
@@ -52,10 +49,6 @@ katex                      GHSA-238p-pmpm-9mq7  low       2027-01-05  In the bui
 pdfjs-dist                 GHSA-hq66-cqwq-w95j  high      2026-11-06  In the built app (a direct dependency); cleared by pdfjs-dist 6.4.299, a major upgrade.
 piscina                    GHSA-67c8-pqhq-4rmx  critical  2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, ng-packagr); a lockfile update within the declared ranges clears it.
 postcss-selector-parser    GHSA-rj75-hqrm-r3gf  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular); a lockfile update within the declared ranges clears it.
-prosemirror-view           GHSA-c8x8-7fp4-3x9w  high      2026-11-06  In the built app (through @tiptap/core, @tiptap/extension-blockquote, @tiptap/extension-bold and 23 more); a lockfile update within the declared ranges clears it.
-protobufjs                 GHSA-f38q-mgvj-vph7  moderate  2027-01-05  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
-protobufjs                 GHSA-j3f2-48v5-ccww  moderate  2027-01-05  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
-protobufjs                 GHSA-wcpc-wj8m-hjx6  high      2026-11-06  In the built app (through centrifuge); a lockfile update within the declared ranges clears it.
 proxy-addr                 GHSA-jqcg-44mw-7w3h  critical  2026-11-06  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/cli, angular-eslint); a lockfile update within the declared ranges clears it.
 qs                         GHSA-4mjr-xmp4-gh2g  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, @angular/cli and 4 more); a lockfile update within the declared ranges clears it.
 qs                         GHSA-x5fp-wj9c-mxmx  moderate  2027-01-05  Build and test tooling only, not in the built app (through @angular-devkit/build-angular, @angular/build, @angular/cli and 4 more); a lockfile update within the declared ranges clears it.
