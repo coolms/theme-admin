@@ -9,7 +9,8 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { auditReport, bundledVersion } from './bundled-pdfjs-audit.mjs';
-import { ALLOWED_EVAL_SITES, assetEntry, findings, shippedScripts } from './check-bundled-pdfjs-eval.mjs';
+import { ALLOWED_EVAL_SITES, assetEntry, findings, hashFindings, shippedScripts } from './check-bundled-pdfjs-eval.mjs';
+import { createHash } from 'node:crypto';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const NETWORK = process.env.BUNDLED_PDFJS_NETWORK === '1';
@@ -117,4 +118,34 @@ test('the build ships no scripting sandbox nor its interpreter, and without the 
     assert.ok(!shippedScripts(dir, entry.ignore).some((n) => n.startsWith('pdf.sandbox-')));
     const without = entry.ignore.filter((p) => p !== '**/pdf.sandbox-*');
     assert.ok(shippedScripts(dir, without).some((n) => n.startsWith('pdf.sandbox-')));
+});
+
+// The hash pin, on its own allowance: the synthetic files above carry only the allowed texts, never the real bytes.
+const pinned = (files) => ({
+    ...ALLOWED_EVAL_SITES,
+    sha256: Object.fromEntries(Object.entries(files).map(([n, t]) => [n, createHash('sha256').update(t).digest('hex')])),
+});
+
+test('the files are the bytes that were reviewed: CLEAR', () => {
+    const files = real(v);
+    assert.deepEqual(hashFindings(files, pinned(files)), []);
+});
+
+test('one changed byte, both sites\' text untouched, is FOUND until the sites are re-quoted', () => {
+    const files = real(v);
+    const allowed = pinned(files);
+    const changed = { ...files, [`viewer-${v}.min.mjs`]: files[`viewer-${v}.min.mjs`] + ' ' };
+    assert.deepEqual(findings(changed, ALLOWED_EVAL_SITES), [], 'the text check alone would let it through');
+    assert.ok(hashFindings(changed, allowed).some((f) => /viewer-6\.1\.1164\.min\.mjs: its bytes changed .* re-quotes/.test(f)));
+});
+
+test('an allowed file with no pin is FOUND, never trusted', () => {
+    const files = real(v);
+    const allowed = pinned(files);
+    delete allowed.sha256[`pdf.worker-${v}.min.mjs`];
+    assert.ok(hashFindings(files, allowed).some((f) => /pdf\.worker-6\.1\.1164\.min\.mjs: no sha256 pinned/.test(f)));
+});
+
+test('the pin holds the two files that were reviewed', () => {
+    assert.deepEqual(Object.keys(ALLOWED_EVAL_SITES.sha256).sort(), Object.keys(ALLOWED_EVAL_SITES.sites).sort());
 });
