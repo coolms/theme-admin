@@ -32,11 +32,6 @@
                 "output": "/"
               },
               {
-                "glob": "pdf.worker.min.mjs",
-                "input": "node_modules/pdfjs-dist/build",
-                "output": "/assets/pdfjs/"
-              },
-              {
                 // ⚠️ BROWSER-SUPPORT DECISION, 2026-09-04. Do not widen this
                 // back to the whole directory without re-reading it.
                 //

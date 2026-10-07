@@ -82,7 +82,6 @@
     "livekit-client": "^2.20.1",
     "lowlight": "^3.3.0",
     "ngx-extended-pdf-viewer": "^29.0.1",
-    "pdfjs-dist": "^5.7.284",
     "rxjs": "^7.8.0",
     "sip.js": "^0.21.2",
     "zone.js": "^0.15.0"
