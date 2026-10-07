@@ -1,7 +1,7 @@
 // The bundled pdf.js checks on small fixtures: the version read, the advisory answer, the eval tripwire.
 // Run: npm run test:scripts (the two cases that ask the registry run when BUNDLED_PDFJS_NETWORK=1, as CI sets).
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -94,9 +94,25 @@ test('tripwire: another bundled version gets no allowance', () => {
     assert.ok(findings(real('6.2.200'), ALLOWED_EVAL_SITES).some((f) => /6\.2\.200 has no allowance/.test(f)));
 });
 
-test('the build ships no scripting sandbox: angular.json ignores it, and without that line it would ship', () => {
+test('a planted eval( in a script below the top level is found too', () => {
+    const dir = assets(real(v));
+    mkdirSync(join(dir, 'wasm'));
+    writeFileSync(join(dir, 'wasm', 'planted_fallback.js'), 'eval("1+1")');
+    const names = shippedScripts(dir, []);
+    assert.ok(names.includes('wasm/planted_fallback.js'), names.join(', '));
+    const files = Object.fromEntries(names.map((n) => [n, readFileSync(join(dir, n), 'utf8')]));
+    assert.ok(findings(files, ALLOWED_EVAL_SITES).some((f) => /wasm\/planted_fallback\.js:\d+ eval\(/.test(f)));
+});
+
+test('the build ships no scripting sandbox nor its interpreter, and without the ignore lines both would ship', () => {
     const entry = assetEntry(readFileSync(join(ROOT, 'angular.json'), 'utf8'));
     assert.ok(entry.ignore.includes('**/pdf.sandbox-*'), entry.ignore.join(', '));
+    assert.ok(entry.ignore.includes('**/quickjs-eval.*'), entry.ignore.join(', '));
+    const nested = assets(real(v));
+    mkdirSync(join(nested, 'wasm'));
+    writeFileSync(join(nested, 'wasm', 'quickjs-eval.js'), '');
+    assert.ok(!shippedScripts(nested, entry.ignore).includes('wasm/quickjs-eval.js'));
+    assert.ok(shippedScripts(nested, []).includes('wasm/quickjs-eval.js'));
     const dir = assets({ ...real(v), [`pdf.sandbox-${v}.min.mjs`]: 'globalThis.eval(t)' });
     assert.ok(!shippedScripts(dir, entry.ignore).some((n) => n.startsWith('pdf.sandbox-')));
     const without = entry.ignore.filter((p) => p !== '**/pdf.sandbox-*');

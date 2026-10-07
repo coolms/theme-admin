@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 // The bundled pdf.js evaluates no strings beyond what a person has read (2026-10-07).
 //
-// The same tripwire as the mobile app's vendored pdf.js: every file of ngx-extended-pdf-viewer's assets that
-// the admin's build SHIPS (angular.json's asset entry: its glob minus its ignore list) is searched for
+// The same tripwire as the mobile app's vendored pdf.js: every script of ngx-extended-pdf-viewer's assets that
+// the admin's build SHIPS (angular.json's asset entry: its glob, at every depth, minus its ignore list) is searched for
 // /\beval\s*\(/ and /\bFunction\s*\(/. Each match must lie inside a site in ALLOWED_EVAL_SITES -- pinned to
 // one bundled version, by the exact text around the call and by how many times that text occurs. So:
 //   - a new eval or Function( call is FOUND, with its file and offset;
 //   - a second copy of an allowed text is FOUND ("occurs 2 times, more than the 1 read");
 //   - a changed text leaves its call uncovered: FOUND;
 //   - another bundled version gets no allowance: FOUND, until a person reads its sites and pins them.
-// The scripting sandbox (pdf.sandbox-*.mjs) is not shipped: scripting is pinned off in the viewer
-// (@coolms/pdf-angular), and the sandbox is the file that evaluates a document's JavaScript.
+// The scripting sandbox (pdf.sandbox-*.mjs) and its interpreter (wasm/quickjs-eval.*) are not shipped: scripting is
+// pinned off in the viewer (@coolms/pdf-angular), and they are what evaluates a document's JavaScript.
 //
 // Exit: 0 CLEAR, 1 FOUND, 2 UNEVALUABLE (the asset entry or the files cannot be read).
 //
 // Run: npm run lint:bundled-pdfjs
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,7 +24,9 @@ const CALLS = /\b(eval|Function)\s*\(/g;
 
 // Both are core-js, compiled into the viewer and the worker alike: its global-object fallback, and its
 // Node-only `require` fallback (reached only when a Node `process` exists, never in a browser).
-const GLOBAL_FALLBACK = 'check("object"==typeof this&&this)||function(){return this}()||Function("return this")()';
+const GLOBAL_FALLBACK = 'check("object"==typeof globalThis&&globalThis)||check("object"==typeof window&&window)'
+    + '||check("object"==typeof self&&self)||check("object"==typeof global&&global)||check("object"==typeof this&&this)'
+    + '||function(){return this}()||Function("return this")()';
 const REQUIRE_FALLBACK = 'try{return Function(\'return require("\'+e+\'")\')()}catch(e){}';
 
 /** Read by a person on 2026-10-07 in ngx-extended-pdf-viewer 29.0.1's assets. */
@@ -45,8 +47,9 @@ export function assetEntry(angularJsonText) {
     return { input: entry.input, ignore: entry.ignore ?? [] };
 }
 
-// The ignore list's patterns ("**" + "/" + a file-name glob) as a test on a file name.
+// The ignore list's patterns ("**" + "/" + a file-name glob, any depth) as a test on a file's name.
 function ignored(name, patterns) {
+    name = basename(name);
     return patterns.some((p) => {
         const glob = p.replace(/^\*\*\//, '');
         const re = new RegExp('^' + glob.replace(/[.+^${}()|\\]/g, '\\$&').replace(/\*/g, '[^/]*') + '$');
@@ -54,15 +57,21 @@ function ignored(name, patterns) {
     });
 }
 
-/** The script files of `dir` the build ships: top level only (*.mjs, *.js), minus the ignore list. */
-export function shippedScripts(dir, ignore) {
-    return readdirSync(dir).filter((n) => /\.(m?js)$/.test(n) && !ignored(n, ignore)).sort();
+/** The script files (*.mjs, *.js) the build ships from `dir`, at every depth, as paths below it, minus the ignore list. */
+export function shippedScripts(dir, ignore, below = '') {
+    const out = [];
+    for (const name of readdirSync(join(dir, below))) {
+        const rel = below ? `${below}/${name}` : name;
+        if (statSync(join(dir, rel)).isDirectory()) out.push(...shippedScripts(dir, ignore, rel));
+        else if (/\.(m?js)$/.test(name) && !ignored(rel, ignore)) out.push(rel);
+    }
+    return out.sort();
 }
 
 /** Every uncovered call and every over-counted allowed text in `files` ({name: text}). */
 export function findings(files, allowed) {
     const out = [];
-    const versions = new Set(Object.keys(files).map((n) => /-(\d+\.\d+\.\d+)[.-]/.exec(n)?.[1]).filter(Boolean));
+    const versions = new Set(Object.keys(files).map((n) => /-(\d+\.\d+\.\d+)[.-]/.exec(basename(n))?.[1]).filter(Boolean));
     for (const v of versions) {
         if (v !== allowed.version) out.push(`bundled pdf.js ${v} has no allowance (pinned to ${allowed.version}): a person reads its sites first`);
     }
