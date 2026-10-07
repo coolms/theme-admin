@@ -35,6 +35,7 @@ import {
     type ScopePromptResult,
 } from './recurrence-form/scope-prompt-dialog.component';
 import { CalendarLiveEventsService } from './calendar-live-events.service';
+import { capturedRange, nextDayRange } from './item-range.util';
 
 import {
     Calendar,
@@ -919,6 +920,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         const seriesId          = (event.extendedProps['seriesId']       as string | null | undefined) ?? null;
         const recurrence        = (event.extendedProps['recurrence']     as string | null | undefined) ?? null;
         const occurrenceInstant = seriesId ? (event.start?.toISOString() ?? null) : null;
+        const captured          = capturedRange(event);
         this.cmenu.set({
             x: e.clientX,
             y: e.clientY,
@@ -934,8 +936,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // before firing.
             status:      (event.extendedProps['status']      as CalendarItemStatusCode | undefined) ?? 'confirmed',
             type:        (event.extendedProps['type']        as CalendarItemTypeCode   | undefined) ?? 'event',
-            startIso:    event.start?.toISOString() ?? new Date().toISOString(),
-            endIso:      event.end?.toISOString() ?? null,
+            // An all-day event by its DATES: FC holds it at local midnight, which east of
+            // UTC is the day before once it is an ISO instant.
+            startIso:    captured.start,
+            endIso:      captured.end,
             allDay:      event.allDay,
             description: (event.extendedProps['description'] as string | null | undefined) ?? null,
             location:    (event.extendedProps['location']    as string | null | undefined) ?? null,
@@ -1003,19 +1007,16 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             return;
         }
 
-        const start = new Date(menu.startIso);
-        start.setDate(start.getDate() + 1);
-        const end = menu.endIso ? new Date(menu.endIso) : null;
-        if (end) {
-            end.setDate(end.getDate() + 1);
-        }
+        // The next day: an all-day item by DATE ("2030-03-12" -> "2030-03-13"), a timed one
+        // one local day later, as before.
+        const next = nextDayRange({ start: menu.startIso, end: menu.endIso }, menu.allDay);
 
         const payload: CreateCalendarItemDto = {
             calendarId,
             type:        menu.type,
             title:       menu.title,
-            start:       start.toISOString(),
-            end:         end?.toISOString() ?? null,
+            start:       next.start,
+            end:         next.end,
             allDay:      menu.allDay,
             description: menu.description,
             location:    menu.location,
