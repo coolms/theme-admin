@@ -41,6 +41,7 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.40.0",
+    "@coolms/ddoc": "0.1.0-alpha.1",
     "@fullcalendar/angular": "^7.0.2",
     "@ngxs/store": "^22.0.0",
     "@tiptap/core": "^3.20.4",
