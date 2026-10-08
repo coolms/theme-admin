@@ -9,7 +9,10 @@ import {
     ViewChild,
 } from '@angular/core';
 
-import { ContextMenuService, DropZoneDirective, ExplorerToolbarRowComponent } from '@coolms/ui-angular';
+import {
+    ContextMenuService, DropZoneDirective, ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent,
+    ExplorerToolbarRowComponent,
+} from '@coolms/ui-angular';
 import { CmsLoaderComponent, NaviGraphNode, NaviGraphService } from '@coolms/core-angular';
 import { MediaPageStateService } from './media-page-state.service';
 import { MediaGridComponent } from './media-grid.component';
@@ -26,7 +29,10 @@ import { MediaGridComponent } from './media-grid.component';
     selector: 'app-media-grid-slot',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, MediaGridComponent, DropZoneDirective, ExplorerToolbarRowComponent],
+    imports: [
+        CmsLoaderComponent, MediaGridComponent, DropZoneDirective, ExplorerToolbarRowComponent,
+        ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent,
+    ],
     template: `
         <div class="media-grid-slot"
              appDropZone
@@ -53,6 +59,25 @@ import { MediaGridComponent } from './media-grid.component';
                 (navigate)="state.currentDir.set($event)" />
 
             <div class="media-grid-scroll" #scrollContainer>
+                @if (state.listError(); as failed) {
+                    @switch (failed.kind) {
+                        @case ('elevation') {
+                            <cms-elevation-required data-test="media-elevation-required"
+                                                    (elevated)="state.reloadRequested$.next()" />
+                        }
+                        @case ('denied') {
+                            <app-empty-state icon="shield-x" data-test="media-access-denied"
+                                             title="You don't have access to these files" [hint]="failed.message" />
+                        }
+                        @default {
+                            <app-error-banner data-test="media-list-error" [message]="failed.message"
+                                              [showRetry]="true" (retry)="state.reloadRequested$.next()" />
+                        }
+                    }
+                } @else if (!state.loading() && state.assets().length === 0 && state.viewMode() !== 'details') {
+                    <app-empty-state icon="images" data-test="media-empty"
+                                     title="No files here yet" hint="Upload files, or drop them here." />
+                } @else {
                 <app-media-grid
                     [assets]="state.assets()"
                     [selectedIds]="state.selectedIds()"
@@ -65,6 +90,7 @@ import { MediaGridComponent } from './media-grid.component';
                     (moveClick)="state.moveRequested$.next($event)"
                     (editImageClick)="state.editImageRequested$.next($event)"
                     (propertiesClick)="state.propertiesToggleRequested$.next($event)" />
+                }
 
                 @if (state.loading()) {
                     <div class="text-center py-4">

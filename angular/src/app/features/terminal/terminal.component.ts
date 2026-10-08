@@ -289,11 +289,12 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             error: err => {
                 this.term.writeln(`\x1b[31m✗ ${(err as Error).message ?? 'Command failed'}\x1b[0m`);
-                // A member refused for want of an elevated session: the refusal
-                // came as a status before any output, so the same prompt every
-                // gated action uses hangs off it here, and the line is sent
-                // again once -- on a grant, as the person, never as anyone else.
-                if (err instanceof TerminalRefusedError && err.status === 403 && !afterGrant) {
+                // A member refused for want of an elevated session: the line the
+                // person typed is an explicit action, so the prompt is offered for
+                // it, and the line is sent again once -- on a grant, as the person,
+                // never as anyone else. Only a refusal the server stamped offers it:
+                // a 403 for any other reason is shown and left alone.
+                if (err instanceof TerminalRefusedError && err.elevationRequired && !afterGrant) {
                     this.elevation.offerFor(err.detail).pipe(
                         takeUntilDestroyed(this.destroyRef),
                     ).subscribe(granted => {
