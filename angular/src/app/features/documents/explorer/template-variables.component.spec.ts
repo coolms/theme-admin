@@ -100,5 +100,6 @@ describe('TemplateVariablesComponent', () => {
         expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')?.textContent)
             .toContain('A caller can never fill these variables: customer.name.');
         expect(state.templates()[0]).toBe(template);
+        expect(switchFor('customer.name')?.checked).withContext('the switch shows the stored mark again').toBeFalse();
     });
 });

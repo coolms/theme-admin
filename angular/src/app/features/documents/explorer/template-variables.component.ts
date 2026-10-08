@@ -55,7 +55,7 @@ import { WordTemplateService } from '../word/word-template.service';
                                     [checked]="row.callerFillable"
                                     [disabled]="saving()"
                                     [attr.data-path]="row.path"
-                                    (change)="toggle(row.path, $any($event.target).checked)"
+                                    (change)="toggle(row.path, $any($event.target))"
                                 />
                                 Filled by the caller
                             </label>
@@ -132,10 +132,12 @@ export class TemplateVariablesComponent {
     protected readonly saving = signal(false);
     protected readonly error = signal<string | null>(null);
 
-    protected toggle(path: string, on: boolean): void {
+    protected toggle(path: string, input: HTMLInputElement): void {
+        const on = input.checked;
         const template = this.template();
         const schema = template.contextSchema;
         if (null === schema || this.saving()) {
+            input.checked = !on;
             return;
         }
         this.saving.set(true);
@@ -150,6 +152,9 @@ export class TemplateVariablesComponent {
                 },
                 error: (err: HttpErrorResponse) => {
                     this.saving.set(false);
+                    // The click already flipped the box; the stored mark did not change, and nothing re-renders the
+                    // row, so the box is put back by hand.
+                    input.checked = !on;
                     const detail: unknown = err.error?.detail ?? err.error?.['hydra:description'];
                     this.error.set(typeof detail === 'string' && '' !== detail
                         ? detail
