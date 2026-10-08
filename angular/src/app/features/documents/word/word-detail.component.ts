@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
 
 import { DocumentPageStateService } from '../explorer/document-page-state.service';
+import { TemplateVariablesComponent } from '../explorer/template-variables.component';
 import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/document-explorer.types';
 
 /**
@@ -28,7 +29,7 @@ import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/
     selector: 'cms-word-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule],
+    imports: [CommonModule, TemplateVariablesComponent],
     template: `
         @if (templateValue(); as t) {
             <div class="cms-document-detail">
@@ -72,22 +73,7 @@ import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/
 
                     @if (schema()) {
                         <section class="cms-document-detail__schema">
-                            @if (variables().length > 0) {
-                                <h3>Variables ({{ variables().length }})</h3>
-                                <ul class="cms-document-detail__list">
-                                    @for (v of variables(); track v.path) {
-                                        <li>
-                                            <code>&#123;var:{{ v.path }}&#125;</code>
-                                            @if (v.filters.length > 0) {
-                                                <span class="cms-document-detail__filters">| {{ v.filters.join(' | ') }}</span>
-                                            }
-                                            @if (v.loopAlias) {
-                                                <span class="cms-document-detail__loop">in {{ v.loopAlias }}</span>
-                                            }
-                                        </li>
-                                    }
-                                </ul>
-                            }
+                            <cms-template-variables [template]="t" />
 
                             @if (constants().length > 0) {
                                 <h3>Constants ({{ constants().length }})</h3>
@@ -207,12 +193,6 @@ import { type ContextSchemaConditional, type DocumentTemplate } from '../shared/
             padding: 1px 4px;
             border-radius: var(--cms-radius-sm);
         }
-        .cms-document-detail__filters,
-        .cms-document-detail__loop {
-            margin-left: 6px;
-            color: var(--cms-text-muted);
-            font-size: 0.8rem;
-        }
         .cms-document-detail__no-schema {
             color: var(--cms-text-muted);
             font-style: italic;
@@ -250,7 +230,6 @@ export class WordDetailComponent {
 
     protected readonly templateValue = this.templateSignal.asReadonly();
     protected readonly schema = computed(() => this.templateValue()?.contextSchema ?? null);
-    protected readonly variables = computed(() => this.schema()?.variables ?? []);
     protected readonly constants = computed(() => this.schema()?.constants ?? []);
     protected readonly loops = computed(() => this.schema()?.loops ?? []);
     protected readonly conditionals = computed(() => this.schema()?.conditionals ?? []);
