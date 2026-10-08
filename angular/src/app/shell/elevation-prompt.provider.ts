@@ -36,13 +36,21 @@ class ElevationPromptDialogPort implements ElevationPromptPort {
  * The refused action is not repeated by itself -- after elevating, the person repeats it.
  */
 class ElevationNoticeToast implements ElevationNoticePort {
+    private static readonly TITLE = 'This needs an elevated session';
+
     private readonly toast     = inject(ToastService);
     private readonly elevation = inject(ElevationService);
 
     refused(refusal: string): void {
+        // One notice per sentence while it is on screen: a request that repeats on a debounce (a
+        // preview as the person types) would otherwise stack one toast per refusal.
+        const shown = this.toast.toasts().some(t => t.title === ElevationNoticeToast.TITLE && t.message === refusal);
+        if (shown) {
+            return;
+        }
         this.toast.show({
             type:    'warning',
-            title:   'This needs an elevated session',
+            title:   ElevationNoticeToast.TITLE,
             message: refusal,
             action:  {
                 label: 'Elevate',

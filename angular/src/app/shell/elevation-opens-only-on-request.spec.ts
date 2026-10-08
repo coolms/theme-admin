@@ -1,14 +1,14 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Dialog } from '@angular/cdk/dialog';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
 import { of } from 'rxjs';
 import {
-    ConsoleAccessService, elevationInterceptor, NaviGraphService, RealtimeTokenClient,
+    ComponentRegistry, ConsoleAccessService, elevationInterceptor, NaviGraphService, RealtimeTokenClient,
 } from '@coolms/core-angular';
-import { ContextMenuService, ExplorerLayoutComponent, ToastService } from '@coolms/ui-angular';
+import { ContextMenuService, ExplorerLayoutComponent, PageFooterService, ToastService } from '@coolms/ui-angular';
 import { provideElevationPrompt } from './elevation-prompt.provider';
 import { EmailService } from '../features/email/email.service';
 import { MediaGridSlotComponent } from '../features/media/media-grid-slot.component';
@@ -78,6 +78,27 @@ describe('The elevation prompt opens only on a person\'s request', () => {
         http.verify();
     });
 
+    it('answers a refused write with one notice, and opens the modal only when its Elevate is clicked', () => {
+        const http2 = TestBed.inject(HttpClient);
+        // The same refusal twice, as a debounced request repeats it: one notice.
+        for (let i = 0; i < 2; i++) {
+            http2.put('/api/v1/themes/site', {}).subscribe({ error: () => undefined });
+            refuseForElevation(http.expectOne('/api/v1/themes/site'));
+        }
+
+        const toasts = TestBed.inject(ToastService).toasts();
+        expect(toasts.length).toBe(1);
+        expect(toasts[0].message).toBe('This needs an elevated session.');
+        expect(dialogOpen).not.toHaveBeenCalled();
+        http.expectNone(ELEVATION);
+
+        toasts[0].action!.run();
+        http.expectOne(ELEVATION).flush(unelevated);
+
+        expect(dialogOpen).toHaveBeenCalledTimes(1);
+        http.verify();
+    });
+
     it('shows a section that needs elevation inline, and opens the modal only after Elevate is clicked', () => {
         @Component({
             standalone: true,
@@ -106,7 +127,9 @@ describe('The elevation prompt opens only on a person\'s request', () => {
 });
 
 describe('The Media Library shows what its list holds', () => {
+    let http: HttpTestingController;
     let state: MediaPageStateService;
+    let dialogOpen: jasmine.Spy;
 
     const asset = (i: number): MediaAssetDto => ({
         id: `0199a1b2-0000-7000-8000-${String(i).padStart(12, '0')}`,
@@ -115,6 +138,73 @@ describe('The Media Library shows what its list holds', () => {
         fileSize: 1024 + i,
         thumbnailUrl: null,
     } as unknown as MediaAssetDto);
+
+    /** The layout the Media Library reads: its main area is the MediaGrid slot, where the tiles are. */
+    const MEDIA_LAYOUT = { data: { slots: { 'content.main': { component: 'MediaGrid' } } } };
+
+    @Component({
+        standalone: true,
+        imports: [ExplorerLayoutComponent],
+        template: '<app-explorer-layout layoutId="media:library" />',
+    })
+    class MediaLibraryHost {}
+
+    beforeEach(() => {
+        // The page's own binding: the layout names the slot, the registry turns the name into the component.
+        ComponentRegistry.register('MediaGrid', MediaGridSlotComponent);
+        dialogOpen = jasmine.createSpy('Dialog.open').and.returnValue({ closed: of(false) });
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withInterceptors([elevationInterceptor])),
+                provideHttpClientTesting(),
+                // What the Media Library page provides to its layout and its slots.
+                MediaPageStateService,
+                PageFooterService,
+                { provide: Store, useValue: { selectSnapshot: () => MANIFEST, select: () => of(null), dispatch: () => of(null) } },
+                { provide: Dialog, useValue: { open: dialogOpen } },
+                { provide: NaviGraphService, useValue: { loadTree: () => of([]), loadAdminNav: () => of([]) } },
+                { provide: ContextMenuService, useValue: { open: () => undefined, close: () => undefined } },
+                provideElevationPrompt(),
+            ],
+        });
+        http  = TestBed.inject(HttpTestingController);
+        state = TestBed.inject(MediaPageStateService);
+        // What a media_library member's list returns: 25 files, all loaded.
+        state.assets.set(Array.from({ length: 25 }, (_, i) => asset(i + 1)));
+        state.totalItems.set(25);
+        state.loading.set(false);
+    });
+
+    const open = (answer: (req: TestRequest) => void): HTMLElement => {
+        const fixture = TestBed.createComponent(MediaLibraryHost);
+        fixture.detectChanges();
+        answer(http.expectOne('/api/v1/config/layout/media:library'));
+        fixture.detectChanges();
+        return fixture.nativeElement as HTMLElement;
+    };
+
+    it('shows the 25 items a media_library member\'s list returns once the page\'s layout is read', () => {
+        const el = open(req => req.flush(MEDIA_LAYOUT));
+
+        expect(el.querySelectorAll('.media-tile').length).toBe(25);
+        expect(el.querySelector('.explorer-footer')).not.toBeNull();
+    });
+
+    it('shows that the page needs elevation, not nothing under a file count, when its layout is refused', () => {
+        // The report of 2026-10-08: the layout read was refused, no slot was made, 0 tiles were drawn, and the
+        // footer said "All 25 files loaded".
+        const el = open(refuseForElevation);
+
+        expect(el.querySelector('[data-test="explorer-elevation-required"]'))
+            .withContext('the inline state in place of the grid').not.toBeNull();
+        expect(el.querySelectorAll('.media-tile').length).toBe(0);
+        expect(el.querySelector('.explorer-footer')).withContext('no count over a grid that is not there').toBeNull();
+        expect(dialogOpen).not.toHaveBeenCalled();
+    });
+});
+
+describe('The Media grid\'s own states', () => {
+    let state: MediaPageStateService;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -131,21 +221,11 @@ describe('The Media Library shows what its list holds', () => {
         state = TestBed.inject(MediaPageStateService);
     });
 
-    const render = () => {
+    const render = (): HTMLElement => {
         const fixture = TestBed.createComponent(MediaGridSlotComponent);
         fixture.detectChanges();
         return fixture.nativeElement as HTMLElement;
     };
-
-    it('shows the 25 items a media_library member\'s list returns', () => {
-        state.assets.set(Array.from({ length: 25 }, (_, i) => asset(i + 1)));
-        state.totalItems.set(25);
-        state.loading.set(false);
-
-        const el = render();
-
-        expect(el.querySelectorAll('.media-tile').length).toBe(25);
-    });
 
     it('shows that the list needs elevation, with an Elevate button, instead of nothing', () => {
         state.listError.set({ kind: 'elevation', message: 'This needs an elevated session.' });
@@ -161,16 +241,50 @@ describe('The Media Library shows what its list holds', () => {
         state.totalItems.set(0);
         state.loading.set(false);
 
-        const el = render();
-
-        expect(el.querySelector('[data-test="media-empty"]')?.textContent).toContain('No files here yet');
+        expect(render().querySelector('[data-test="media-empty"]')?.textContent).toContain('No files here yet');
     });
 
     it('shows access denied for a refusal that elevation would not change', () => {
         state.listError.set({ kind: 'denied', message: 'You don\'t have access to this.' });
 
-        const el = render();
+        expect(render().querySelector('[data-test="media-access-denied"]')).not.toBeNull();
+    });
+});
 
-        expect(el.querySelector('[data-test="media-access-denied"]')).not.toBeNull();
+describe('On an installation that cannot elevate', () => {
+    it('says so when Elevate is clicked, instead of doing nothing', () => {
+        const dialogOpen = jasmine.createSpy('Dialog.open').and.returnValue({ closed: of(false) });
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withInterceptors([elevationInterceptor])),
+                provideHttpClientTesting(),
+                // No elevation URL in the manifest: the installation offers no elevation.
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1', configBase: '/api/v1/config' }), select: () => of(null), dispatch: () => of(null) } },
+                { provide: Dialog, useValue: { open: dialogOpen } },
+                provideElevationPrompt(),
+            ],
+        });
+        const http = TestBed.inject(HttpTestingController);
+
+        @Component({
+            standalone: true,
+            imports: [ExplorerLayoutComponent],
+            template: '<app-explorer-layout layoutId="media:library" />',
+        })
+        class HostComponent {}
+
+        const fixture = TestBed.createComponent(HostComponent);
+        fixture.detectChanges();
+        refuseForElevation(http.expectOne('/api/v1/config/layout/media:library'));
+        fixture.detectChanges();
+        const el = fixture.nativeElement as HTMLElement;
+        expect(el.querySelector('[data-test="elevation-unavailable"]')).toBeNull();
+
+        (el.querySelector('[data-test="elevate"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(el.querySelector('[data-test="elevation-unavailable"]')?.textContent).toContain('Ask an administrator');
+        expect(dialogOpen).not.toHaveBeenCalled();
+        http.verify();
     });
 });
