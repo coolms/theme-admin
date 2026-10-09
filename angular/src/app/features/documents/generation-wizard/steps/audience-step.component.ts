@@ -8,6 +8,7 @@ import { ContextInputFormComponent } from '../../explorer/context-input-form.com
 import type { ContextFormValue } from '../../explorer/context-form.helpers';
 import type { WizardMode } from './mode-step.component';
 import { FilterAudienceEntity } from '../filter-audience-entity';
+import { callerFillablePaths } from '../caller-fillable.helpers';
 
 /**
  * X-2.6b step 3 -- per-document audience (entity bindings + plain
@@ -69,7 +70,8 @@ import { FilterAudienceEntity } from '../filter-audience-entity';
 
             @if (entityRefs().length === 0 && plainVariableInputs().length === 0) {
                 <p class="cms-audience-step__empty">
-                    This template declares no entity references or variables.
+                    This template asks the caller for nothing: it has no entity references, and none of its
+                    variables is switched on as "Filled by the caller".
                 </p>
             }
         </div>
@@ -149,15 +151,16 @@ export class CmsWizardAudienceStepComponent {
         return out;
     });
 
-    /** Plain-variable form inputs (subset of `variables`, no `entityType`). */
+    /**
+     * Plain-variable form inputs: the variables the template's author switched on as "Filled by the caller", each
+     * path once. The server refuses a value for any other (400), so the form never asks for one. Entity references
+     * are not here either way: they keep their pickers above, bound through the checked audience.
+     */
     protected readonly plainVariableInputs = computed<readonly FormVariableInput[]>(() => {
         const out: FormVariableInput[] = [];
-        for (const v of this.variables()) {
-            if (v.entityType) {
-                continue;
-            }
+        for (const path of callerFillablePaths(this.variables())) {
             out.push({
-                path: v.path,
+                path,
                 label: null,
                 entityType: null,
                 collection: false,
