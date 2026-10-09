@@ -23,7 +23,9 @@ import {
     type CoolmsImageEditorHostResult,
 } from '@coolms/image-editor-angular';
 import { Store } from '@ngxs/store';
-import { AppConfigState, NaviGraphService, resolvePattern, UserPreferencesService } from '@coolms/core-angular';
+import {
+    AppConfigState, ErrorHandlerService, isElevationRefusal, NaviGraphService, resolvePattern, UserPreferencesService,
+} from '@coolms/core-angular';
 import {
     catchError,
     debounceTime,
@@ -170,6 +172,7 @@ export class MediaLibraryPage implements OnInit {
     private readonly store      = inject(Store);
     private readonly confirmSvc = inject(ConfirmDialogService);
     private readonly toast      = inject(ToastService);
+    private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly http       = inject(HttpClient);
     private readonly liveEvents = inject(VfsLiveEventsService);
@@ -268,19 +271,30 @@ export class MediaLibraryPage implements OnInit {
 
     constructor() {
         // Keep footer status bar in sync with media state
+        // The count says what the grid shows: nothing while the list failed, and "24 of 25" while
+        // a later page has not loaded yet ("All 25 files loaded" over 24 tiles, or over none, is what it
+        // said before 2026-10-08).
         effect(() => {
             const loading  = this.state.loading();
             const total    = this.state.totalItems();
+            const loaded   = this.state.assets().length;
+            const failed   = this.state.listError() !== null;
             const selected = this.state.selectedIds().length;
 
             this.footer.set({
                 loading,
-                count:    !loading && total > 0
-                            ? `All ${total} file${total === 1 ? '' : 's'} loaded`
-                            : undefined,
+                count:    loading || failed || total === 0
+                            ? undefined
+                            : loaded >= total
+                                ? `${total} file${total === 1 ? '' : 's'}`
+                                : `${loaded} of ${total} files loaded`,
                 selected: selected > 0 ? `${selected} selected` : undefined,
             });
         });
+
+        this.state.reloadRequested$.pipe(
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(() => this.resetAndLoad());
 
         // Debounce search input
         this.searchSubject.pipe(
@@ -733,10 +747,17 @@ export class MediaLibraryPage implements OnInit {
                 // pinning totalItems to that length flips `hasMore` off.
                 const isPastEnd = !isReset && r.member.length === 0;
                 this.state.totalItems.set(isPastEnd ? merged.length : r.totalItems);
+                this.state.listError.set(null);
                 this.state.loading.set(false);
             },
-            error: () => {
-                if (myLoadId === this.loadId) this.state.loading.set(false);
+            error: (err: unknown) => {
+                if (myLoadId !== this.loadId) return;
+                this.state.listError.set({
+                    kind:    isElevationRefusal(err) ? 'elevation'
+                           : (err as { status?: number })?.status === 403 ? 'denied' : 'error',
+                    message: this.errors.humanize(err),
+                });
+                this.state.loading.set(false);
             },
         });
     }

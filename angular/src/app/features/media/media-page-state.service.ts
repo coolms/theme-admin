@@ -46,6 +46,14 @@ export class MediaPageStateService {
     readonly assets       = signal<MediaAssetDto[]>([]);
     readonly totalItems   = signal(0);
     readonly loading      = signal(false);
+    /**
+     * Why the list could not be loaded, when it could not: `elevation` is a refusal for want of
+     * elevation, `denied` any other refusal, `error` anything else. The grid shows this in place of
+     * the files, never an empty page.
+     */
+    readonly listError    = signal<{ kind: 'elevation' | 'denied' | 'error'; message: string } | null>(null);
+    /** The list is to be read again from its first page, e.g. after the person elevated. */
+    readonly reloadRequested$ = new Subject<void>();
     readonly collections  = signal<CollectionNode[]>([]);
     readonly toolbarNodes = signal<NaviGraphNode[]>([]);
 

@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
-import { AppConfigState, AuthState, Logout, SetTokens } from '@coolms/core-angular';
+import { AppConfigState, AuthState, ELEVATION_REQUIRED_HEADER, Logout, SetTokens } from '@coolms/core-angular';
 import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalCompletions, TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
@@ -51,7 +51,11 @@ export class TerminalService {
                         // A refusal is decided before the stream opens, and it says
                         // why: the problem detail is the line the terminal prints and
                         // the reason the elevation prompt shows.
-                        subscriber.error(new TerminalRefusedError(res.status, await this.detailOf(res)));
+                        subscriber.error(new TerminalRefusedError(
+                            res.status,
+                            await this.detailOf(res),
+                            res.status === 403 && !!res.headers.get(ELEVATION_REQUIRED_HEADER),
+                        ));
                         return;
                     }
 

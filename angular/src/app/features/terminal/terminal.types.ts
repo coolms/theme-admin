@@ -33,6 +33,8 @@ export class TerminalRefusedError extends Error {
     constructor(
         public readonly status: number,
         public readonly detail: string,
+        /** The server stamped the refusal: it was for want of an elevated session, nothing else. */
+        public readonly elevationRequired = false,
     ) {
         super(detail);
         this.name = 'TerminalRefusedError';
