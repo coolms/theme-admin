@@ -5,6 +5,26 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
+
+## Unreleased
+
+### Added
+
+- **The menu shows sections that need an elevated session, with a lock.** A
+  section the server answers `elevate` for a member of admin is shown with a
+  lock instead of hidden. A click asks for elevation and then opens the section
+  in place, without a reload. The menu is asked again on every change of
+  elevation, so the locks follow a grant, a drop or an expiry.
+- The top-bar tiles follow the same answer: a locked tile shows a lock and asks
+  for elevation before it opens. It starts no polling and no subscription until
+  the grant.
+- The account menu offers **Elevate session** to an account the server says may
+  elevate, while the session is not elevated. While elevated it says
+  **Elevated until HH:MM** with **End elevation**.
+
+These need a server that answers `access` on the navigation and `mayElevate` on
+the elevation state; against one that does not, the admin behaves as before.
+
 ## 2.0.0-alpha6 - 2026-10-07
 
 ### Deprecated
