@@ -4,7 +4,7 @@ import { NgClass, NgComponentOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AppConfigState, ConsoleActivation, ConsolePanelHost, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
+import { AppConfigState, ConsoleActivation, ConsolePanelHost, ElevationService, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
     BottomDrawerService,
     ContextMenuComponent,
@@ -14,6 +14,7 @@ import {
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
+import { navFollowsElevation } from './nav-follows-elevation';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -414,6 +415,7 @@ export class AdminLayoutComponent implements OnInit {
     private readonly theme      = inject(ThemeService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly ctxMenuSvc = inject(ContextMenuService);
+    private readonly elevation  = inject(ElevationService);
 
     /** Which console panels are open, and which of them asked for the whole body. */
     readonly panelOpen      = signal<ReadonlySet<string>>(new Set());
@@ -615,6 +617,12 @@ export class AdminLayoutComponent implements OnInit {
         const url = manifest?.navi?.adminNavGraph;
         if (url) {
             this.naviGraph.loadAdminNav(url).subscribe();
+            // The server answers the menu per elevation state: a section is locked before a grant and open after
+            // it, and locked again when the elevation ends. Every change -- a grant, a drop, an expiry, another
+            // tab's -- re-asks, so the locks follow without a reload (2026-10-12).
+            navFollowsElevation(this.naviGraph, this.elevation, url)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe();
         }
 
         // Resolve activeNav override for the already-active route on fresh load.

@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideStore } from '@ngxs/store';
-import { NaviGraphNode } from '@coolms/core-angular';
+import { of } from 'rxjs';
+import { ElevationService, NaviGraphNode } from '@coolms/core-angular';
 
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 
@@ -74,5 +75,94 @@ describe('SidebarNavItemComponent route resolution', () => {
 
  it('falls back to the node path with the /admin prefix removed', () => {
         expect(linkFor(node({ path: '/admin/example', meta: {} }))).toBe('/example');
+    });
+});
+
+/**
+ * A section the server answered 'elevate' for this member of admin (2026-10-12): shown with a lock, never
+ * hidden -- hiding it left no way in -- and a click asks for elevation, then opens it by the router (no reload).
+ */
+describe('SidebarNavItemComponent, a locked section', () => {
+    let asks: number;
+    let answer: boolean;
+    let elevated: boolean;
+
+    function node(access?: 'allowed' | 'elevate'): NaviGraphNode {
+        return {
+            id: 'b', path: '/backups', title: 'Backups', parentId: null, sortOrder: 0,
+            isActive: true, isVisible: true, meta: { resource: '/api/v1/backup' }, children: [],
+            ...(access === undefined ? {} : { access }),
+        } as NaviGraphNode;
+    }
+
+    function render(n: NaviGraphNode): HTMLElement {
+        const fixture = TestBed.createComponent(SidebarNavItemComponent);
+        fixture.componentRef.setInput('node', n);
+        fixture.detectChanges();
+        return fixture.nativeElement as HTMLElement;
+    }
+
+    beforeEach(() => {
+        asks = 0;
+        answer = true;
+        elevated = false;
+        TestBed.configureTestingModule({
+            imports:   [SidebarNavItemComponent],
+            providers: [
+                provideRouter([]),
+                provideHttpClient(),
+                provideHttpClientTesting(),
+                provideStore([]),
+                {
+                    provide: ElevationService,
+                    useValue: {
+                        offerFor: () => { asks++; if (answer) { elevated = true; } return of(answer); },
+                        elevated: () => elevated,
+                    },
+                },
+            ],
+        });
+    });
+
+    it('shows the section with a lock, and no link that would open it unelevated', () => {
+        const el = render(node('elevate'));
+
+        expect(el.querySelector('.cms-nav-item__lock')).withContext('the lock').not.toBeNull();
+        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        expect(link.classList.contains('cms-nav-item--locked')).toBeTrue();
+        expect(link.getAttribute('href')).toBe('#');
+        expect(link.getAttribute('aria-label')).toBe('Backups, needs an elevated session');
+    });
+
+    it('asks for elevation on a click, and opens the section by the router once it is granted', () => {
+        const navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
+        const el = render(node('elevate'));
+
+        (el.querySelector('a.cms-nav-item') as HTMLAnchorElement).click();
+
+        expect(asks).toBe(1);
+        expect(navigate).toHaveBeenCalledOnceWith('/backups');
+    });
+
+    it('opens nothing when the person declines', () => {
+        answer = false;
+        const navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
+        const el = render(node('elevate'));
+
+        (el.querySelector('a.cms-nav-item') as HTMLAnchorElement).click();
+
+        expect(asks).toBe(1);
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('shows an allowed section, and one from a server that says nothing, as before: no lock, its own link', () => {
+        for (const n of [node('allowed'), node()]) {
+            const el = render(n);
+            expect(el.querySelector('.cms-nav-item__lock')).toBeNull();
+            const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+            expect(link.classList.contains('cms-nav-item--locked')).toBeFalse();
+            expect(link.getAttribute('href')).toBe('/backups');
+        }
+        expect(asks).toBe(0);
     });
 });

@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { catchError, combineLatest, distinctUntilChanged, EMPTY, filter, map, merge, of, switchMap, timer } from 'rxjs';
-import { AuthState, NaviGraphService } from '@coolms/core-angular';
+import { AuthState, ElevationService, NaviGraphService } from '@coolms/core-angular';
 import { DrawerService } from '@coolms/ui-angular';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { MessagesService } from './messages.service';
 import { MessagesLiveEventsService } from './messages-live-events.service';
 import { MessagesQuickPanelComponent } from './messages-quick-panel.component';
-import { navOffers } from '../../shell/nav-offers';
+import { navLocked, navOffers } from '../../shell/nav-offers';
+import { afterElevation } from '../../shell/after-elevation';
 
 /**
  * The Chat quick-access icon for the admin topbar.
@@ -30,16 +31,20 @@ import { navOffers } from '../../shell/nav-offers';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        @if (signedIn() && offered()) {
+        @if (signedIn() && (offered() || locked())) {
             <button type="button"
                     class="btn btn-sm position-relative text-white"
                     style="background: rgba(255,255,255,.08);
                            border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
-                    [title]="unread() > 0 ? unread() + ' unread' : 'Chat'"
-                    aria-label="Chat"
-                    (click)="openPanel()">
+                    [title]="locked() ? 'Chat -- needs an elevated session' : unread() > 0 ? unread() + ' unread' : 'Chat'"
+                    [attr.aria-label]="locked() ? 'Chat, needs an elevated session' : 'Chat'"
+                    (click)="onClick()">
                 <i class="bi bi-chat-dots" style="font-size:.9rem"></i>
+                @if (locked()) {
+                    <i class="bi bi-lock-fill position-absolute" aria-hidden="true"
+                       style="font-size:.55rem; top:-3px; right:-3px"></i>
+                }
                 @if (unread() > 0) {
                     <span class="badge rounded-pill bg-danger position-absolute"
                           style="top:-5px; right:-5px; font-size:.6rem; padding:.2em .4em; line-height:1"
@@ -58,12 +63,18 @@ export class MessagesQuickAccessComponent {
     private readonly live       = inject(MessagesLiveEventsService);
     private readonly presence   = inject(ChatPresenceLiveService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly elevation  = inject(ElevationService);
+    private readonly nav        = inject(NaviGraphService).adminNav;
 
     /**
      * Its module's item in the admin navigation, as the server answered it to this account: outside the module's
-     * group every call this tile makes is refused, so it neither shows nor asks (Dmitry, 2026-10-06).
+     * group every call this tile makes is refused, so it neither shows nor asks (2026-10-06). Allowed only:
+     * the unread count's polling and subscriptions start on this, never on a locked item.
      */
-    readonly offered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/chat/conversations');
+    readonly offered = navOffers(this.nav, '/api/v1/chat/conversations');
+
+    /** The same item answered 'elevate': shown with a lock, and opening it asks for elevation first (2026-10-12). */
+    readonly locked = navLocked(this.nav, '/api/v1/chat/conversations');
 
     readonly signedIn = computed<boolean>(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 
@@ -130,6 +141,14 @@ export class MessagesQuickAccessComponent {
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(count => this.unread.set(count));
+    }
+
+    onClick(): void {
+        if (this.locked()) {
+            afterElevation(this.elevation, () => this.openPanel());
+            return;
+        }
+        this.openPanel();
     }
 
     openPanel(): void {
