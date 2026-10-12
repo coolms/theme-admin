@@ -165,4 +165,61 @@ describe('SidebarNavItemComponent, a locked section', () => {
         }
         expect(asks).toBe(0);
     });
+
+    /**
+     * A special target -- the terminal, a panel -- is opened by the host shell, not the router. Locked, it was
+     * rendered by the special branch first: the lock showed, and a click opened the terminal without asking for
+     * elevation. Locked comes first now, and after the grant the shell opens it as always.
+     */
+    function terminal(access?: 'allowed' | 'elevate'): NaviGraphNode {
+        return {
+            id: 't', path: '/terminal', title: 'Terminal', parentId: null, sortOrder: 0,
+            isActive: true, isVisible: true, meta: { target: 'action.terminal' }, children: [],
+            ...(access === undefined ? {} : { access }),
+        } as NaviGraphNode;
+    }
+
+    function renderTerminal(n: NaviGraphNode): { el: HTMLElement; opened: NaviGraphNode[] } {
+        const fixture = TestBed.createComponent(SidebarNavItemComponent);
+        const opened: NaviGraphNode[] = [];
+        fixture.componentInstance.specialClick.subscribe((x) => opened.push(x));
+        fixture.componentRef.setInput('node', n);
+        fixture.detectChanges();
+        return { el: fixture.nativeElement as HTMLElement, opened };
+    }
+
+    it('shows a locked terminal item locked, and opens it through the shell only once elevated', () => {
+        const navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
+        const { el, opened } = renderTerminal(terminal('elevate'));
+        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        expect(link.classList.contains('cms-nav-item--locked')).withContext('locked, not the special link').toBeTrue();
+        expect(link.getAttribute('aria-label')).toBe('Terminal, needs an elevated session');
+
+        link.click();
+
+        expect(asks).withContext('the click asks for elevation').toBe(1);
+        expect(opened.map((x) => x.id)).withContext('the shell opens it, after the grant').toEqual(['t']);
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('does not open a locked terminal item when the person declines', () => {
+        answer = false;
+        const { el, opened } = renderTerminal(terminal('elevate'));
+
+        (el.querySelector('a.cms-nav-item') as HTMLAnchorElement).click();
+
+        expect(asks).toBe(1);
+        expect(opened).toEqual([]);
+    });
+
+    it('opens an allowed terminal item through the shell at once, as before', () => {
+        const { el, opened } = renderTerminal(terminal('allowed'));
+        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        expect(link.classList.contains('cms-nav-item--locked')).toBeFalse();
+
+        link.click();
+
+        expect(asks).toBe(0);
+        expect(opened.map((x) => x.id)).toEqual(['t']);
+    });
 });

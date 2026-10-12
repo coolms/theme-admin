@@ -50,19 +50,11 @@ import { afterElevation } from './after-elevation';
             (keydown.escape)="closeFlyout()">
 
             <div #rowEl class="cms-nav-tree-item__row">
-                @if (isSpecialTarget()) {
-                    <a href="#"
-                       class="cms-nav-item"
-                       [class.active]="isActive()"
-                       [style.paddingLeft.px]="indentPx()"
-                       [title]="collapsed() ? node().title : null"
-                       (click)="onSpecialClick($event)">
-                        <ng-container [ngTemplateOutlet]="rowInner" />
-                    </a>
-                } @else if (locked()) {
+                @if (locked()) {
                     <!-- LOCKED (the server's 'elevate'): this member of admin is let in once the session is
                          elevated. Shown, never hidden -- hiding it left no way in (2026-10-12) -- and a
-                         click asks for elevation first, then opens the section in place. -->
+                         click asks for elevation first, then opens the section in place. Checked BEFORE the
+                         special targets: a locked Terminal item opened its panel without asking. -->
                     <a href="#"
                        class="cms-nav-item cms-nav-item--locked"
                        [class.active]="isActive()"
@@ -70,6 +62,15 @@ import { afterElevation } from './after-elevation';
                        [title]="node().title + ' -- needs an elevated session'"
                        [attr.aria-label]="node().title + ', needs an elevated session'"
                        (click)="onLockedClick($event)">
+                        <ng-container [ngTemplateOutlet]="rowInner" />
+                    </a>
+                } @else if (isSpecialTarget()) {
+                    <a href="#"
+                       class="cms-nav-item"
+                       [class.active]="isActive()"
+                       [style.paddingLeft.px]="indentPx()"
+                       [title]="collapsed() ? node().title : null"
+                       (click)="onSpecialClick($event)">
                         <ng-container [ngTemplateOutlet]="rowInner" />
                     </a>
                 } @else {
@@ -357,10 +358,17 @@ export class SidebarNavItemComponent {
      * A locked section asks for elevation through the one shared prompt, and opens once the session is elevated --
      * by the router, so the page is not reloaded (a reload ends an elevation by design). Declined: nothing happens.
      * Already elevated meanwhile (another tab granted it, the lock not yet refreshed): it simply opens.
+     * A special target (the terminal, a panel) is opened the way it always is, by the host shell, once elevated.
      */
     onLockedClick(event: MouseEvent): void {
         event.preventDefault();
-        afterElevation(this.elevation, () => void this.router.navigateByUrl(this.routerLinkFor()));
+        afterElevation(this.elevation, () => {
+            if (this.isSpecialTarget()) {
+                this.specialClick.emit(this.node());
+            } else {
+                void this.router.navigateByUrl(this.routerLinkFor());
+            }
+        });
     }
 
     // --- inline expand ---------------------------------------------------
