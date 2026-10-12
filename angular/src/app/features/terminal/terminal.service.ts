@@ -160,10 +160,13 @@ export class TerminalService {
                 const suggestions = r.suggestions ?? [];
 
                 // An older server sends no `total`; then what arrived IS the
-                // total, and nothing claims to be capped.
-                return { suggestions, total: r.total ?? suggestions.length };
+                // total, and nothing claims to be capped. Nor any `sudo`: then
+                // nothing is marked. A mark is only ever on a suggestion.
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- an older server omits it
+                const sudo = (r.sudo ?? []).filter(v => suggestions.includes(v));
+                return { suggestions, total: r.total ?? suggestions.length, sudo };
             }),
-            catchError(() => of({ suggestions: [], total: 0 })),
+            catchError(() => of({ suggestions: [], total: 0, sudo: [] })),
         );
     }
 

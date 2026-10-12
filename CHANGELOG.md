@@ -43,6 +43,9 @@ the elevation state; against one that does not, the admin behaves as before.
 - Any other line refused for want of an elevated session is shown as refused,
   with the way to run it (`use sudo <line>`). The terminal no longer opens the
   elevation dialog by itself.
+- Tab completion marks `[sudo]` on a verb the server says runs only through
+  sudo for this person, as `help` does. A server that says nothing marks
+  nothing.
 
 ### Fixed
 

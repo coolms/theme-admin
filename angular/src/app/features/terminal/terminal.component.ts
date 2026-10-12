@@ -470,7 +470,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.svc.complete(this.currentLine, cursorPos, this.cwd, this.homeDir() || '/').pipe(
             takeUntilDestroyed(this.destroyRef),
-        ).subscribe(({ suggestions, total }) => {
+        ).subscribe(({ suggestions, total, sudo }) => {
             if (suggestions.length === 0) {
                 // Bell
                 this.term.write('\x07');
@@ -485,9 +485,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 // Show the options -- and, when the server capped them, say
                 // how many there were. Printing a hundred of eighteen hundred
                 // without a word would read as the whole set.
+                // A verb that runs only through sudo for this person is marked, as `help` marks it.
                 this.term.writeln('');
                 for (const s of suggestions) {
-                    this.term.write(`  \x1b[36m${s}\x1b[0m  `);
+                    const mark = sudo.includes(s) ? ' \x1b[2m[sudo]\x1b[0m' : '';
+                    this.term.write(`  \x1b[36m${s}\x1b[0m${mark}  `);
                 }
                 this.term.writeln('');
                 if (total > suggestions.length) {

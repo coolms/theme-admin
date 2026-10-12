@@ -19,6 +19,7 @@ describe('TerminalComponent, sudo', () => {
     const REFUSED = new TerminalRefusedError(403, '"sudo" needs an elevated session: elevate, then run it again.', true);
 
     let answers: Array<() => Observable<TerminalExecuteEvent>>;
+    let completion: { suggestions: string[]; total: number; sudo: string[] };
     let executed: string[];
     let written: string[];
     let history: string[];
@@ -46,6 +47,7 @@ describe('TerminalComponent, sudo', () => {
 
     beforeEach(() => {
         answers = [];
+        completion = { suggestions: [], total: 0, sudo: [] };
         executed = [];
         written = [];
         history = [];
@@ -63,7 +65,7 @@ describe('TerminalComponent, sudo', () => {
                             return next ? next() : of({ done: true } as TerminalExecuteEvent);
                         },
                         abort: () => undefined,
-                        complete: () => of({ suggestions: [], total: 0 }),
+                        complete: () => of(completion),
                     },
                 },
                 {
@@ -185,6 +187,18 @@ describe('TerminalComponent, sudo', () => {
         written.length = 0;
         type('pwd');
         expect(screen()).withContext('the shell echoes its own line again').toContain('pwd');
+    });
+
+    it('marks the verbs that run only through sudo when Tab lists them', () => {
+        completion = { suggestions: ['navi:delete', 'navi:seed', 'navi:tree'], total: 3, sudo: ['navi:delete', 'navi:seed'] };
+        type('navi:');
+        key('\t', { key: 'Tab' } as KeyboardEventInit);
+
+        const listed = screen().replace(/\x1b\[[0-9;]*m/g, '');
+        expect(listed).toContain('navi:delete [sudo]');
+        expect(listed).toContain('navi:seed [sudo]');
+        expect(listed).not.toContain('navi:tree [sudo]');
+        expect(listed).toContain('navi:tree');
     });
 
     it('recognises a sudo line by its first word only', () => {
