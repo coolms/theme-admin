@@ -35,10 +35,14 @@ function accessIn(nodes: readonly NaviGraphNode[], resource: string): NaviAccess
     for (const node of nodes) {
         // The item's own declaration (a bare path), or the server's normalised form beside it ('GET <path>').
         const normalised = (node as unknown as Record<string, unknown>)['resource'];
-        if (node.meta['resource'] === resource || normalised === 'GET ' + resource) {
+        // Defensive as it always was: every tile reads this computed, so a node that arrives without meta or
+        // children must not throw in it.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the wire may omit meta
+        if (node.meta?.['resource'] === resource || normalised === 'GET ' + resource) {
             return naviAccessOf(node);
         }
-        const below = accessIn(node.children, resource);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the wire may omit children
+        const below = accessIn(node.children ?? [], resource);
         if (below !== null) {
             return below;
         }

@@ -616,10 +616,9 @@ export class AdminLayoutComponent implements OnInit {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const url = manifest?.navi?.adminNavGraph;
         if (url) {
-            this.naviGraph.loadAdminNav(url).subscribe();
-            // The server answers the menu per elevation state: a section is locked before a grant and open after
-            // it, and locked again when the elevation ends. Every change -- a grant, a drop, an expiry, another
-            // tab's -- re-asks, so the locks follow without a reload (2026-10-12).
+            // The menu, loaded once and re-asked on every change of elevation -- one stream, so an older answer
+            // never lands after a newer one. The server answers it per elevation state: a section is locked before
+            // a grant and open after it, and locked again when the elevation ends (2026-10-12).
             navFollowsElevation(this.naviGraph, this.elevation, url)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe();
