@@ -25,6 +25,12 @@ major number means here.
 These need a server that answers `access` on the navigation and `mayElevate` on
 the elevation state; against one that does not, the admin behaves as before.
 
+### Fixed
+
+- A locked menu item that opens something other than a page, such as the
+  **Terminal**, now asks for elevation like any other locked item. Before, it
+  showed the lock, but a click opened the terminal without asking.
+
 ## 2.0.0-alpha6 - 2026-10-07
 
 ### Deprecated
