@@ -30,6 +30,32 @@ export function navLocked(nav: Signal<readonly NaviGraphNode[]>, resource: strin
     return computed(() => accessIn(nav(), resource) === 'elevate');
 }
 
+/**
+ * A console panel's access, read from the menu item that opens it: the item whose target is `action.panel:<id>`, or
+ * `action.terminal` for the terminal's panel (the graph's own name for it). The panel's top-bar toggle and its
+ * keyboard shortcut follow the navigation rule as every item does (2026-10-13, "the header terminal button follows
+ * the navigation rule"):
+ * - 'allowed': the toggle shows and opens the panel;
+ * - 'elevate': it shows with a lock and asks for elevation first;
+ * - null: no such item for this account. The toggle is hidden and the shortcut does nothing.
+ * Null until the navigation has loaded, as for the tiles.
+ */
+export function panelAccessIn(nodes: readonly NaviGraphNode[], panelId: string): NaviAccess | null {
+    for (const node of nodes) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the wire may omit meta
+        const target = node.meta?.['target'];
+        if (target === 'action.panel:' + panelId || (panelId === 'terminal' && target === 'action.terminal')) {
+            return naviAccessOf(node);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- the wire may omit children
+        const below = panelAccessIn(node.children ?? [], panelId);
+        if (below !== null) {
+            return below;
+        }
+    }
+    return null;
+}
+
 /** The access of the first item that reads `resource`; null when the navigation has none for this account. */
 function accessIn(nodes: readonly NaviGraphNode[], resource: string): NaviAccess | null {
     for (const node of nodes) {

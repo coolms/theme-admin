@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { type NaviGraphNode } from '@coolms/core-angular';
-import { navLocked, navOffers } from './nav-offers';
+import { navLocked, navOffers, panelAccessIn } from './nav-offers';
 
 function node(path: string, resource: string | undefined, children: NaviGraphNode[] = []): NaviGraphNode {
     return {
@@ -63,5 +63,37 @@ describe('navOffers', () => {
 
         nav.set([{ ...node('/call', '/api/v1/call/records'), access: 'allowed' } as NaviGraphNode]);
         expect([offered(), locked()]).toEqual([true, false]);
+    });
+});
+
+/**
+ * A console panel follows the menu item that opens it (2026-10-13, "the header terminal button follows the navigation
+ * rule"): the terminal's is the item whose target is `action.terminal`, any other panel's `action.panel:<id>`.
+ */
+describe('panelAccessIn', () => {
+    function opener(target: string, access?: 'allowed' | 'elevate', children: NaviGraphNode[] = []): NaviGraphNode {
+        return {
+            id: target, path: '/' + target, title: target, parentId: null, sortOrder: 0, isActive: true, isVisible: true,
+            meta: { target }, children, ...(access === undefined ? {} : { access }),
+        } as NaviGraphNode;
+    }
+
+    it('is null where the account has no item that opens the panel: its toggle is hidden', () => {
+        expect(panelAccessIn([], 'terminal')).toBeNull();
+        expect(panelAccessIn([node('/email', '/api/v1/email/mailboxes')], 'terminal')).toBeNull();
+    });
+
+    it('reads the terminal\'s item by its target, allowed or locked', () => {
+        expect(panelAccessIn([opener('action.terminal', 'allowed')], 'terminal')).toBe('allowed');
+        expect(panelAccessIn([opener('action.terminal', 'elevate')], 'terminal')).toBe('elevate');
+        expect(panelAccessIn([opener('action.terminal')], 'terminal')).withContext('a server that says nothing').toBe('allowed');
+    });
+
+    it('reads any other panel by action.panel:<id>, at any depth, and never takes one panel for another', () => {
+        const nav = [node('/system', undefined, [opener('action.panel:events', 'elevate')])];
+
+        expect(panelAccessIn(nav, 'events')).toBe('elevate');
+        expect(panelAccessIn(nav, 'terminal')).toBeNull();
+        expect(panelAccessIn([opener('action.terminal', 'allowed')], 'events')).toBeNull();
     });
 });

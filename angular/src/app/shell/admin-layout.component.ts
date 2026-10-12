@@ -15,6 +15,8 @@ import {
 import { AdminTopbarComponent } from './admin-topbar.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 import { navFollowsElevation } from './nav-follows-elevation';
+import { togglePanelByRule } from './open-panel';
+import { panelAccessIn } from './nav-offers';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -287,7 +289,7 @@ import { navFollowsElevation } from './nav-follows-elevation';
         <div class="coolms-admin-shell">
 
             <header class="coolms-topbar">
-                <app-admin-topbar (panelToggle)="togglePanel($event)" />
+                <app-admin-topbar (panelToggle)="requestPanel($event)" />
             </header>
 
             <!-- Body: sidebar + main — collapses when terminal is maximized -->
@@ -545,11 +547,11 @@ export class AdminLayoutComponent implements OnInit {
     @HostListener('document:keydown', ['$event'])
     onKeydown(event: KeyboardEvent): void {
         if (!(event.ctrlKey || event.metaKey)) return;
-        // A panel's declared key (the terminal's is `), with Ctrl or Cmd.
+        // A panel's declared key (the terminal's is `), with Ctrl or Cmd -- by the same rule as its toggle: nothing
+        // where the menu has no item that opens it for this account, elevation first where that item is locked.
         const panel = this.console.panels().find(p => p.toggle.key === event.key);
-        if (panel) {
+        if (panel && this.requestPanel(panel.id)) {
             event.preventDefault();
-            this.togglePanel(panel.id);
         }
     }
 
@@ -568,6 +570,19 @@ export class AdminLayoutComponent implements OnInit {
         this.bdStartY   = event.clientY;
         this.bdStartH   = this.bottomDrawer.height();
         event.preventDefault();
+    }
+
+    /**
+     * A panel asked for from the top bar or by its keyboard shortcut, by the navigation rule: only where the menu has
+     * the item that opens it, and after elevation where that item is locked (see {@link togglePanelByRule}).
+     */
+    requestPanel(id: string): boolean {
+        return togglePanelByRule(
+            panelAccessIn(this.naviGraph.adminNav(), id),
+            this.panelOpen().has(id),
+            this.elevation,
+            () => this.togglePanel(id),
+        );
     }
 
     togglePanel(id: string): void {
