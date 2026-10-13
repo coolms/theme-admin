@@ -6,8 +6,11 @@ import { HttpClient } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AppConfigState, AuthState, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
+import { AppConfigState, AuthState, ElevationService, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
 import {
+    CAPABILITIES_CONTEXT_KEY,
+    capabilityStateOf,
+    leastCapabilities,
     DeleteNodeDialogComponent,
     DeleteNodeDialogData,
     DeleteNodeDialogResult,
@@ -33,6 +36,35 @@ export class VfsActionsService {
     private readonly dialog         = inject(Dialog);
     private readonly editorRegistry = inject(FileEditorRegistry);
     private readonly clipboard      = inject(VfsClipboardService);
+    private readonly elevation      = inject(ElevationService);
+
+    /**
+     * Run `act` as the server's answer allows, when `node` names a `capability`: the least state of
+     * that action across `subjects` -- the nodes the action would touch.
+     *
+     * - `denied`: not at all. The control is drawn disabled; a shortcut that reaches here does nothing either.
+     * - `elevate`: after the person elevates -- or at once when the session turns out to be elevated
+     *   already (the answer was fetched before another tab elevated). Cancelled, nothing runs.
+     * - `allowed`, or no answer (a node naming no capability, subjects the server sent none for): at once.
+     *
+     * Whatever runs, the server's refusal stays the last word; a grant also re-reads the listing
+     * (VfsPageStateService reloads on every elevation change), so the map the page draws catches up.
+     */
+    whenAllowed(node: NaviGraphNode | undefined, subjects: readonly VfsNodeDto[], act: () => void): void {
+        const state = undefined === node
+            ? undefined
+            : capabilityStateOf(node.meta, { [CAPABILITIES_CONTEXT_KEY]: leastCapabilities(subjects) });
+        if ('denied' === state) {
+            return;
+        }
+        if ('elevate' === state) {
+            this.elevation.offerFor().subscribe(granted => {
+                if (granted || this.elevation.elevated()) act();
+            });
+            return;
+        }
+        act();
+    }
 
     execute(action: NaviGraphNode, target: VfsNodeDto | null): void {
         // Guard destructive operations on system nodes before dispatching.

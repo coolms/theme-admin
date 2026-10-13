@@ -38,7 +38,7 @@ import { VfsUploadService } from './vfs-upload.service';
  *
  * !! The other two are the denominator. A spec that only checks "the row
  * updated" passes when a full reload happens to run; a spec that only
- * checks "no request" passes when the harness never wired the client.
+ * checks "no request" passes when the setup never wired the client.
  * The structural case proves the event pipeline is live and reloads;
  * the unknown-UUID case pins the guard that keeps a node this grid does
  * not show from costing a request it could not use.
@@ -179,5 +179,93 @@ describe('VfsFilesComponent -- a live node event refetches the row by path', () 
 
         expect(state.reload).toHaveBeenCalledTimes(1);
         http.verify();
+    });
+});
+
+/**
+ * The right-click menu on a row carries the server's answer for the node it acts on, and what is chosen
+ * from it goes through VfsActionsService.whenAllowed -- the menu draws `denied` disabled and `elevate` locked from
+ * that answer (ui-angular), and whenAllowed decides whether and when the action runs.
+ */
+describe('VfsFilesComponent -- the right-click menu carries the node\'s capability answer', () => {
+    const chmodNode = { path: '/chmod', meta: { action: 'VfsChmod', capability: 'vfs.node.chmod' } };
+
+    function focusedNode(): VfsNodeDto {
+        return {
+            id: 'f-id', name: 'a.txt', type: 'file', path: '/docs/a.txt', mode: '0644', modeString: '-rw-r--r--',
+            size: 1, humanSize: '1 B', mimeType: 'text/plain', extension: 'txt', uid: 'u1', gid: 'g1',
+            uname: 'admin', gname: 'admin', createdAt: '2026-10-13T09:00:00+00:00', updatedAt: '2026-10-13T09:00:00+00:00',
+            isRendered: false, isMaterialized: true, isSystem: false, isHidden: false, isContainer: false,
+            title: null, description: null, permissions: { read: true, write: true, execute: false },
+            capabilities: { 'vfs.node.chmod': 'elevate', 'vfs.node.delete': 'denied' },
+        };
+    }
+
+    function build(): { component: VfsFilesComponent; openFromNodes: jasmine.Spy; whenAllowed: jasmine.Spy; execute: jasmine.Spy } {
+        const openFromNodes = jasmine.createSpy('openFromNodes');
+        const whenAllowed = jasmine.createSpy('whenAllowed');
+        const execute = jasmine.createSpy('execute');
+        const state = {
+            currentPath:     signal('/docs'),
+            nodes:           signal<VfsNodeDto[]>([]),
+            loading:         signal(false),
+            error:           signal<string | null>(null),
+            viewMode:        signal('grid'),
+            selectedNodes:   signal<VfsNodeDto[]>([]),
+            hasMore:         signal(false),
+            vfsToolbarNodes: signal([chmodNode]),
+        };
+
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+                { provide: VfsPageStateService, useValue: state },
+                { provide: VfsLiveEventsService, useValue: { watch: () => new Subject<VfsNodeChangeEvent>() } },
+                { provide: ContextMenuService,   useValue: { openFromNodes } },
+                { provide: DrawerService,        useValue: {} },
+                { provide: Dialog,               useValue: {} },
+                { provide: FileEditorRegistry,   useValue: { resolve: () => null } },
+                { provide: ToastService,         useValue: {} },
+                { provide: VfsUploadService,     useValue: {} },
+                { provide: VfsClipboardService,  useValue: { hasAny: () => false } },
+                { provide: VfsHomeLabelService,  useValue: {} },
+                { provide: VfsIconService,       useValue: {} },
+                { provide: VfsActionsService,    useValue: { whenAllowed, execute } },
+                { provide: ElevationService,     useValue: {} },
+            ],
+        });
+
+        const component = TestBed.runInInjectionContext(() => new VfsFilesComponent());
+
+        return { component, openFromNodes, whenAllowed, execute };
+    }
+
+    it('puts the focused node\'s answer in the menu\'s record', () => {
+        const { component, openFromNodes } = build();
+
+        component.onContextMenu({ item: focusedNode(), event: new MouseEvent('contextmenu') });
+
+        const record = openFromNodes.calls.mostRecent().args[2] as Record<string, unknown>;
+        expect(record['_capabilities']).toEqual({ 'vfs.node.chmod': 'elevate', 'vfs.node.delete': 'denied' });
+    });
+
+    it('sends what is chosen through whenAllowed, with the focused node as its subject', () => {
+        const { component, openFromNodes, whenAllowed, execute } = build();
+        const focused = focusedNode();
+
+        component.onContextMenu({ item: focused, event: new MouseEvent('contextmenu') });
+        const onAction = openFromNodes.calls.mostRecent().args[3] as (id: string) => void;
+        onAction('VfsChmod');
+
+        expect(whenAllowed).toHaveBeenCalledTimes(1);
+        const [node, subjects, act] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[], () => void];
+        expect(node).toBe(chmodNode);
+        expect(subjects).toEqual([focused]);
+        expect(execute).not.toHaveBeenCalled();
+        act();
+        expect(execute).toHaveBeenCalledWith(chmodNode, focused);
     });
 });
