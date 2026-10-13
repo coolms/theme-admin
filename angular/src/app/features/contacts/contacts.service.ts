@@ -77,38 +77,6 @@ export class ContactsService {
             .pipe(map(res => res.member));
     }
 
-    /**
-     * Server-paginated + RQL-filtered directory page for the admin grid.
-     *
-     * `filters` are the DataGrid's pre-built RQL expressions, sent verbatim as
-     * repeated `?filter=` params -- this endpoint is RQL-native and validates
-     * them against the allowlist derived from the `contact:contacts` YAML.
-     * `?limit=` (not `itemsPerPage`) is what the RQL parser reads. Mirrors
-     * `listCallRecordsPage`.
-     */
-    listPage(opts: {
-        page?:     number;
-        pageSize?: number;
-        sort?:     string | null;
-        filters?:  ReadonlyArray<string>;
-    } = {}): Observable<{ items: ContactDto[]; totalItems: number }> {
-        const pageSize = opts.pageSize ?? 50;
-        const page     = opts.page ?? 1;
-
-        let params = new HttpParams()
-            .set('page', String(page))
-            .set('limit', String(pageSize));
-
-        if (opts.sort) params = params.set('sort', opts.sort);
-        for (const f of opts.filters ?? []) {
-            if (f && f.trim() !== '') params = params.append('filter', f);
-        }
-
-        return this.http
-            .get<HydraCollection<ContactDto>>(`${this.apiBase}/contacts`, { params })
-            .pipe(map(res => ({ items: res.member, totalItems: res.totalItems })));
-    }
-
     /** One contact by id -- the detail (Person-hub) page (`GET /contacts/{id}`; 404 if absent/forbidden). */
     get(id: string): Observable<ContactDto> {
         return this.http.get<ContactDto>(`${this.apiBase}/contacts/${encodeURIComponent(id)}`);

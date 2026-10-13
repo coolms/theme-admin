@@ -10,6 +10,14 @@ major number means here.
 
 ### Added
 
+- **Contacts, Users, Leads and Call history read their rows from where the
+  server says they come from.** Each grid's definition now declares its list
+  action, and the four pages read the rows from that action's operation
+  instead of a route of their own; their two page-only list methods are gone.
+  A list the person may read only once elevated shows the elevation notice; a
+  list they may not read says so, instead of an empty grid. Leads still sends
+  its tab as the operation's `status` scope. Needs `@coolms/ui-angular` with
+  declared rows.
 - **The file manager draws each node action as the server answers it for the
   selection.** Every node the file manager lists carries what chmod, chown,
   delete, rename and hide come to for the signed-in person on it -- `allowed`,
