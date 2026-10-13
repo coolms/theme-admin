@@ -18,9 +18,11 @@ import { VfsActionsService } from './vfs-actions.service';
 import { VfsClipboardService } from './vfs-clipboard.service';
 import { VfsUploadService } from './vfs-upload.service';
 import {
+    CAPABILITIES_CONTEXT_KEY,
     CmsPageHeaderComponent,
     ExplorerLayoutComponent,
     FileEditorRegistry,
+    leastCapabilities,
     PageFooterService,
     PageToolbarComponent,
     ToolbarAction,
@@ -243,12 +245,24 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             // because both actions are single-target.
             hasEditor:  single && !!node && this.editorRegistry.resolve(node) !== null,
             canDrillIn: single && !!node && node.isContainer && node.permissions.execute,
+            // What each declared node action comes to on the selection, the least across it: a node
+            // naming a `capability` is disabled on `denied` and locked on `elevate` by the toolbar.
+            [CAPABILITIES_CONTEXT_KEY]: leastCapabilities(selected),
         };
     });
 
     // -- Action handler --------------------------------------------------------
 
+    /**
+     * A click on the bar. A node naming a `capability` goes through VfsActionsService.whenAllowed first -- a locked one asks
+     * for elevation, a denied one does nothing (it is drawn disabled) -- and every other runs at once.
+     */
     onVfsToolbarAction(action: string): void {
+        const node = this.toolbarNodes().find(n => n.meta['action'] === action);
+        this.vfsActions.whenAllowed(node, this.selectedNodes(), () => this.runToolbarAction(action));
+    }
+
+    private runToolbarAction(action: string): void {
         const selected    = this.selectedNodes();
         const target      = selected[0] ?? null;
         const currentPath = this.state.currentPath();
@@ -315,7 +329,12 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             this.clipboard.clear();
         } else if (event.key === 'Delete' && selected.length > 0 && !selected.some(n => n.isSystem)) {
             event.preventDefault();
-            selected.forEach(n => void this.vfsActions.confirmDelete(n));
+            // The key is the Delete button by another route: the same answer decides it.
+            this.vfsActions.whenAllowed(
+                this.toolbarNodes().find(n => n.meta['action'] === 'VfsDelete'),
+                selected,
+                () => selected.forEach(n => void this.vfsActions.confirmDelete(n)),
+            );
         }
     }
 

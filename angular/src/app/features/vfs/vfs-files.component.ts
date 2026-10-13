@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { CmsDropzoneDirective, CmsItemInteractionsDirective, ContextMenuService, DrawerService, FileEditorRegistry, ToastService, VfsNodeDto, type CmsRangeSelectionRequest, type CmsSelectionChange } from '@coolms/ui-angular';
+import { CAPABILITIES_CONTEXT_KEY, CmsDropzoneDirective, CmsItemInteractionsDirective, ContextMenuService, DrawerService, FileEditorRegistry, leastCapabilities, ToastService, VfsNodeDto, type CmsRangeSelectionRequest, type CmsSelectionChange } from '@coolms/ui-angular';
 import { Dialog } from '@angular/cdk/dialog';
 import {
     CdkDrag,
@@ -728,6 +728,8 @@ export class VfsFilesComponent {
             // so these must arrive as flat boolean fields).
             hasEditor:     this.editorRegistry.resolve(focused) !== null,
             canDrillIn:    focused.isContainer && focused.permissions.execute,
+            // The menu acts on the focused node alone, so its answer is the one that decides.
+            [CAPABILITIES_CONTEXT_KEY]: leastCapabilities([focused]),
         };
         this.contextMenu.openFromNodes(
             payload.event,
@@ -767,7 +769,7 @@ export class VfsFilesComponent {
             (n) => String(n.meta['action']) === actionId,
         );
         if (!node) return;
-        this.vfsActions.execute(node, target);
+        this.vfsActions.whenAllowed(node, target ? [target] : [], () => this.vfsActions.execute(node, target));
     }
 
     open(node: VfsNodeDto): void {

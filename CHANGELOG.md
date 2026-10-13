@@ -10,6 +10,18 @@ major number means here.
 
 ### Added
 
+- **The file manager draws each node action as the server answers it for the
+  selection.** Every node the file manager lists carries what chmod, chown,
+  delete, rename and hide come to for the signed-in person on it -- `allowed`,
+  `elevate` or `denied` -- and the toolbar and both right-click menus draw the
+  least answer across what they act on: `denied` disabled, `elevate` with a
+  lock. Choosing a locked action asks for elevation and runs it on the grant
+  (or at once when the session is elevated already); cancelled, nothing runs.
+  The Delete key follows the Delete button's answer. The server's refusal
+  stays the last word, and the listing is read again on every change of
+  elevation, as before. Needs `@coolms/ui-angular` with capability state on
+  navi nodes.
+
 - **The menu shows sections that need an elevated session, with a lock.** A
   section the server answers `elevate` for a member of admin is shown with a
   lock instead of hidden. A click asks for elevation and then opens the section
