@@ -25,6 +25,28 @@ major number means here.
 These need a server that answers `access` on the navigation and `mayElevate` on
 the elevation state; against one that does not, the admin behaves as before.
 
+- A console panel's top-bar toggle and its keyboard shortcut follow the menu
+  item that opens the panel. Without such an item the toggle is hidden and the
+  shortcut does nothing; where the item is locked, the toggle shows a lock and
+  asks for elevation first. The terminal's `>_` and Ctrl+` follow the
+  Terminal item.
+
+### Changed
+
+- **The terminal asks for elevation only for a line that begins with `sudo`.**
+  A `sudo` line refused for want of an elevated session asks for the password
+  in the terminal itself, `[sudo] password for <account>:`, and asks for the
+  code from the authenticator when one is required. Nothing typed there is
+  shown, not even a mask, and nothing is kept in the history. Three wrong
+  answers end it, and Ctrl+C cancels it. On a grant the line is sent once more.
+  It is the same elevation as the account menu's, with the same lifetime.
+- Any other line refused for want of an elevated session is shown as refused,
+  with the way to run it (`use sudo <line>`). The terminal no longer opens the
+  elevation dialog by itself.
+- Tab completion marks `[sudo]` on a verb the server says runs only through
+  sudo for this person, as `help` does. A server that says nothing marks
+  nothing.
+
 ### Fixed
 
 - A locked menu item that opens something other than a page, such as the
