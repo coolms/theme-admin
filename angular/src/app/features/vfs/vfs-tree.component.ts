@@ -22,7 +22,7 @@ import { VfsClipboardService } from './vfs-clipboard.service';
 import { VfsActionsService } from './vfs-actions.service';
 import { VfsHomeLabelService } from './vfs-home-label.service';
 import { VfsIconService } from './vfs-icon.service';
-import { ContextMenuService, VfsDirectoryPage, VfsNodeDto } from '@coolms/ui-angular';
+import { CAPABILITIES_CONTEXT_KEY, ContextMenuService, leastCapabilities, VfsDirectoryPage, VfsNodeDto } from '@coolms/ui-angular';
 import { VfsTreeLiveSubscriptionsService } from './vfs-tree-live-subscriptions.service';
 import { type VfsNodeChangeEvent } from './vfs-live-events.service';
 
@@ -377,6 +377,7 @@ export class VfsTreeComponent implements OnInit {
             isSystem:      node.isSystem,
             isHidden:      node.isHidden,
             isContainer:   node.isContainer,
+            [CAPABILITIES_CONTEXT_KEY]: leastCapabilities([node]),
         };
         this.contextMenu.openFromNodes(
             event,
@@ -390,7 +391,7 @@ export class VfsTreeComponent implements OnInit {
                 const matched = this.state.vfsToolbarNodes().find(
                     (n) => String(n.meta['action']) === actionId,
                 );
-                if (matched) this.vfsActions.execute(matched, node);
+                if (matched) this.vfsActions.whenAllowed(matched, [node], () => this.vfsActions.execute(matched, node));
             },
         );
     }
