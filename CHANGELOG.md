@@ -10,6 +10,15 @@ major number means here.
 
 ### Added
 
+- **Contacts, Users, Leads and Call history read their rows from where the
+  server says they come from.** Each grid's definition now declares its list
+  action, and the four pages read the rows from that action's operation
+  instead of a route of their own; their two page-only list methods are gone.
+  A list the person may read only once elevated shows the elevation notice; a
+  list they may not read says so, instead of an empty grid. Leads still sends
+  its tab as the operation's `status` scope. Needs `@coolms/ui-angular` with
+  declared rows.
+
 - **The menu shows sections that need an elevated session, with a lock.** A
   section the server answers `elevate` for a member of admin is shown with a
   lock instead of hidden. A click asks for elevation and then opens the section

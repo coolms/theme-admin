@@ -16,12 +16,17 @@
  * disagree. Add a spec to the package, add it here -- or let the check tell
  * you that you did not.
  */
+import '../../../ui-angular/src/context-menu/context-menu.service.spec';
+import '../../../ui-angular/src/datagrid/datagrid-declared-rows.spec';
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
 import '../../../ui-angular/src/datagrid/datagrid-keyboard-overlay.spec';
 import '../../../ui-angular/src/datagrid/datagrid-range-filters.spec';
+import '../../../ui-angular/src/datagrid/declared-rows-notice.component.spec';
+import '../../../ui-angular/src/datagrid/declared-rows.source.spec';
 import '../../../ui-angular/src/dynamic-form/dynamic-form-readonly-fields.spec';
 import '../../../ui-angular/src/dynamic-form/fields/relation-field.component.spec';
 import '../../../ui-angular/src/dynamic-form/fields/select-field.component.spec';
+import '../../../ui-angular/src/ui/capability-state.spec';
 import '../../../ui-angular/src/ui/dialog/input-dialog.component.spec';
 import '../../../ui-angular/src/ui/dialog/native-dialog.service.spec';
 import '../../../ui-angular/src/ui/directory-picker/cms-directory-picker.component.spec';

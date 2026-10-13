@@ -62,41 +62,6 @@ export class LeadsService {
         return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
     }
 
-    /**
-     * One PAGE of a lead bucket -- newest-first, server-filtered and sorted
-     *.
-     *
-     * Replaces the old `list()`, which fetched a whole bucket in one request for
-     * a client-mode grid. The endpoint capped that at 200 rows, so the browser
-     * was filtering a truncated window and calling it the complete queue.
-     *
-     * `status` is the tab SCOPE and `filters` are the grid's column filters:
-     * they compose, narrowing within the selected bucket. Filters go through
-     * VERBATIM -- the endpoint is RQL-native and its allowlist comes from the
-     * same `lead:list` YAML that renders the filter row.
-     */
-    listPage(opts: {
-        status:    LeadStatus;
-        page?:     number;
-        pageSize?: number;
-        sort?:     string | null;
-        filters?:  ReadonlyArray<string>;
-    }): Observable<{ items: LeadDto[]; totalItems: number }> {
-        let params = new HttpParams()
-            .set('status', opts.status)
-            .set('page', String(opts.page ?? 1))
-            .set('limit', String(opts.pageSize ?? 50));
-
-        if (opts.sort) params = params.set('sort', opts.sort);
-        for (const f of opts.filters ?? []) {
-            if (f && f.trim() !== '') params = params.append('filter', f);
-        }
-
-        return this.http
-            .get<HydraCollection<LeadDto>>(`${this.apiBase}/leads`, { params })
-            .pipe(map(res => ({ items: res.member ?? [], totalItems: res.totalItems ?? 0 })));
-    }
-
     /** One lead by id -- the admin detail view (`GET /leads/{id}`; 404 if absent). */
     get(id: string): Observable<LeadDto> {
         return this.http.get<LeadDto>(`${this.apiBase}/leads/${encodeURIComponent(id)}`);
