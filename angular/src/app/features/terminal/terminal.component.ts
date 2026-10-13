@@ -22,6 +22,18 @@ const CWD_PREFS_KEY = 'terminal';
 /** Wrong answers a `sudo` prompt takes before it gives up, as the OS's sudo does. */
 const SUDO_TRIES = 3;
 
+/**
+ * Whether a key types a character, into the shell's line or a `sudo` prompt. Any printable text counts, not only one
+ * UTF-16 unit: a character outside the basic plane (an emoji) or a composed one arrives as two. AltGr counts too:
+ * Windows sends it as Ctrl+Alt together, for `@`, `€` or `{` on many layouts. A control sequence (an arrow, a
+ * Ctrl or Alt chord) types nothing.
+ */
+export function typesCharacter(key: string, event: KeyboardEvent): boolean {
+    const altGr = event.ctrlKey && event.altKey;
+    if ((event.ctrlKey || event.altKey || event.metaKey) && !altGr) return false;
+    return key !== '' && !/[\u0000-\u001f\u007f]/.test(key);
+}
+
 /** A line the person began with `sudo`: the one kind of line that may ask for the password. */
 export function isSudoLine(line: string): boolean {
     return /^sudo(\s|$)/.test(line.trim());
@@ -208,10 +220,27 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         this.writePrompt();
 
         this.term.onKey(({ key, domEvent }) => this.handleKey(key, domEvent));
+        // A paste reaches a `sudo` prompt and nothing else: the shell's line takes keys only, as before.
+        this.termEl.nativeElement.addEventListener('paste', this.onPaste, true);
     }
+
+    /**
+     * A password pasted into an open `sudo` prompt goes to its buffer, as typed keys do: nothing written, nothing
+     * kept. Its first line only; the person still presses Enter. With no prompt open, the paste is left alone.
+     */
+    private readonly onPaste = (event: ClipboardEvent): void => {
+        const sudo = this.sudo;
+        if (!sudo) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (sudo.busy) return;
+        sudo.buffer += (event.clipboardData?.getData('text/plain') ?? '').split(/\r?\n/)[0];
+    };
 
     ngOnDestroy(): void {
         this.clearSudo();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- destroyed before the view was built
+        this.termEl?.nativeElement.removeEventListener('paste', this.onPaste, true);
         this.resizeObs?.disconnect();
         this.svc.abort();
         this.term?.dispose();
@@ -250,7 +279,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
             case 'Backspace':
                 if (this.currentLine.length > 0) {
-                    this.currentLine = this.currentLine.slice(0, -1);
+                    // One character, not one UTF-16 unit, as the line now takes characters of any length.
+                    this.currentLine = Array.from(this.currentLine).slice(0, -1).join('');
                     this.term.write('\b \b');
                 }
                 break;
@@ -291,8 +321,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 break;
 
             default:
-                // Printable characters only
-                if (!event.ctrlKey && !event.altKey && !event.metaKey && key.length === 1) {
+                // Printable characters only, of any length (see typesCharacter)
+                if (typesCharacter(key, event)) {
                     this.currentLine += key;
                     this.term.write(key);
                 }
@@ -385,10 +415,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.submitSudo(sudo);
                 return;
             case 'Backspace':
-                sudo.buffer = sudo.buffer.slice(0, -1);
+                // One character, not one UTF-16 unit: half an emoji would be no character at all.
+                sudo.buffer = Array.from(sudo.buffer).slice(0, -1).join('');
                 return;
             default:
-                if (!event.ctrlKey && !event.altKey && !event.metaKey && key.length === 1) {
+                if (typesCharacter(key, event)) {
                     sudo.buffer += key;
                 }
         }
