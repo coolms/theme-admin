@@ -4,7 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { type Observable, of, throwError } from 'rxjs';
 import { AuthState, ElevationService, ErrorHandlerService, ThemeService, UserPreferencesService } from '@coolms/core-angular';
-import { TerminalComponent, isSudoLine } from './terminal.component';
+import { TerminalComponent, isSudoLine, typesCharacter } from './terminal.component';
 import { TerminalService } from './terminal.service';
 import { TerminalHistoryService } from './terminal-history.service';
 import { TerminalRefusedError, type TerminalExecuteEvent } from './terminal.types';
@@ -199,6 +199,65 @@ describe('TerminalComponent, sudo', () => {
         expect(listed).toContain('navi:seed [sudo]');
         expect(listed).not.toContain('navi:tree [sudo]');
         expect(listed).toContain('navi:tree');
+    });
+
+    it('takes a password with characters of any length, and AltGr', () => {
+        answers.push(() => throwError(() => REFUSED));
+        type('sudo ls');
+        enter();
+        type('pw');
+        key('\u{1F600}');
+        key('@', { ctrlKey: true, altKey: true });
+        enter();
+
+        expect(elevate).toHaveBeenCalledOnceWith('pw\u{1F600}@', undefined);
+    });
+
+    it('erases one character with Backspace, not half of one', () => {
+        answers.push(() => throwError(() => REFUSED));
+        type('sudo ls');
+        enter();
+        type('ab');
+        key('\u{1F600}');
+        key('\x7f');
+        enter();
+
+        expect(elevate).toHaveBeenCalledOnceWith('ab', undefined);
+    });
+
+    it('takes a pasted password into an open prompt, its first line only, and shows none of it', () => {
+        answers.push(() => throwError(() => REFUSED));
+        type('sudo ls');
+        enter();
+        const data = new DataTransfer();
+        data.setData('text/plain', 'Pasted-Secret\nsecond line');
+        const paste = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+        (host.querySelector('textarea') ?? host).dispatchEvent(paste);
+        enter();
+
+        expect(paste.defaultPrevented).toBeTrue();
+        expect(elevate).toHaveBeenCalledOnceWith('Pasted-Secret', undefined);
+        expect(screen()).not.toContain('Pasted-Secret');
+    });
+
+    it('leaves a paste alone when no prompt is open', () => {
+        const data = new DataTransfer();
+        data.setData('text/plain', 'ls');
+        const paste = new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true });
+        (host.querySelector('textarea') ?? host).dispatchEvent(paste);
+
+        expect(elevate).not.toHaveBeenCalled();
+        expect(executed).toEqual([]);
+    });
+
+    it('counts any printable text as a typed character, AltGr included, and no control chord', () => {
+        const ev = (init: KeyboardEventInit): KeyboardEvent => new KeyboardEvent('keydown', init);
+        expect(typesCharacter('a', ev({}))).toBeTrue();
+        expect(typesCharacter('\u{1F600}', ev({}))).withContext('outside the basic plane').toBeTrue();
+        expect(typesCharacter('@', ev({ ctrlKey: true, altKey: true }))).withContext('AltGr').toBeTrue();
+        expect(typesCharacter('c', ev({ ctrlKey: true }))).withContext('Ctrl+C').toBeFalse();
+        expect(typesCharacter('x', ev({ altKey: true }))).withContext('Alt+x').toBeFalse();
+        expect(typesCharacter('\x1b[A', ev({}))).withContext('an arrow').toBeFalse();
     });
 
     it('recognises a sudo line by its first word only', () => {

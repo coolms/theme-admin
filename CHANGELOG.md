@@ -49,6 +49,12 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- The terminal takes every printable character typed into its line or into a
+  `sudo` prompt. Before, it dropped a character outside the basic plane (an
+  emoji), a composed one, and any typed with AltGr (`@`, `€` or `{` on many
+  layouts), so a password holding one could never be entered. Backspace erases
+  one whole character. A password can be pasted into an open `sudo` prompt,
+  unseen like a typed one; the shell's line still takes keys only.
 - A locked menu item that opens something other than a page, such as the
   **Terminal**, now asks for elevation like any other locked item. Before, it
   showed the lock, but a click opened the terminal without asking.
