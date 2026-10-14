@@ -218,6 +218,7 @@ export class VfsPageStateService {
                     this.nodes.update(prev => [...prev, ...sorted]);
                 } else {
                     this.nodes.set(sorted);
+                    this.refreshSelection(sorted);
                 }
 
                 this.hasMore.set(r.hasMore ?? false);
@@ -246,6 +247,23 @@ export class VfsPageStateService {
 
     clearSelection(): void {
         this.selectedNodes.set([]);
+    }
+
+    /**
+     * After the listing is read again, the selection takes the node objects it now holds, by id, and drops the
+     * nodes it no longer lists. The bar and the menus read the selection's own objects -- their `capabilities`
+     * and `permissions` -- so an object from before the read would keep answering for the session as it was:
+     * after an elevation ended, a still-selected node's Delete stayed unlocked until it was clicked again.
+     */
+    private refreshSelection(listed: readonly VfsNodeDto[]): void {
+        const selected = this.selectedNodes();
+        if (0 === selected.length) {
+            return;
+        }
+        const byId = new Map(listed.map(n => [n.id, n] as const));
+        this.selectedNodes.set(
+            selected.map(n => byId.get(n.id)).filter((n): n is VfsNodeDto => undefined !== n),
+        );
     }
 
     // -- View mode -------------------------------------------------------------
