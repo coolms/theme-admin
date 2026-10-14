@@ -13,6 +13,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { concat, forkJoin, of, Observable } from 'rxjs';
 import { concatMap, tap, toArray } from 'rxjs/operators';
 import { Store } from '@ngxs/store';
@@ -1517,12 +1518,27 @@ export class PageEditorComponent implements OnInit {
                             },
                         });
                 },
-                error: () => {
+                error: (err: unknown) => {
                     this.saving.set(false);
-                    this.toast.error('Save failed');
+                    this.saveFailed(err);
                     this.cdr.markForCheck();
                 },
             });
+    }
+
+    /**
+     * A save refused because the page moved on since it was opened says so: nothing was overwritten (412) or made
+     * again (404), and the edits stay in the editor.
+     */
+    private saveFailed(err: unknown): void {
+        const status = err instanceof HttpErrorResponse ? err.status : 0;
+        if (status === 412) {
+            this.toast.error('This page was saved elsewhere since you opened it', 'Nothing was overwritten; your edits are kept here');
+        } else if (status === 404) {
+            this.toast.error('This page was deleted since you opened it', 'Nothing was made again; your edits are kept here');
+        } else {
+            this.toast.error('Save failed');
+        }
     }
 
     // -- Markdown export --------------------------------------------
@@ -1818,9 +1834,9 @@ export class PageEditorComponent implements OnInit {
                     this.toast.success('Saved', label || undefined);
                     this.cdr.markForCheck();
                 },
-                error: () => {
+                error: (err: unknown) => {
                     this.saving.set(false);
-                    this.toast.error('Save failed');
+                    this.saveFailed(err);
                     this.cdr.markForCheck();
                 },
             });

@@ -903,6 +903,10 @@ export class VfsFilesComponent {
             context: 'vfs',
             node: {
                 path:       node.path,
+                id:         node.id,
+                // The version it opens at: Save sends it, so a file saved or deleted meanwhile is never overwritten or
+                // made again (2026-10-14).
+                version:    node.contentHash ?? null,
                 canWrite:   node.permissions.write,
                 requestWrite: () => firstValueFrom(this.elevation.offerFor()),
                 sourceUrl:  this.thumbnailUrl(node),

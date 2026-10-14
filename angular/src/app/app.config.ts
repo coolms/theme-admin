@@ -11,6 +11,7 @@ import {
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
+import { provideVfsNodeWatch } from './features/vfs/vfs-node-watch.provider';
 import { SHEET_DOCUMENT_MIME, SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
 import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
@@ -52,6 +53,8 @@ FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogC
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        // An open editor's file watch: a change made elsewhere is said at once (2026-10-14).
+        provideVfsNodeWatch(),
         // The section interceptor stamps `X-CoolMS-Section` and needs the
         // active slug; Sections owns that state. Binding the two here is
         // what lets `core` stay free of feature imports.

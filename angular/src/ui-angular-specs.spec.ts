@@ -27,6 +27,7 @@ import '../../../ui-angular/src/dynamic-form/dynamic-form-readonly-fields.spec';
 import '../../../ui-angular/src/dynamic-form/fields/relation-field.component.spec';
 import '../../../ui-angular/src/dynamic-form/fields/select-field.component.spec';
 import '../../../ui-angular/src/ui/capability-state.spec';
+import '../../../ui-angular/src/ui/code-editor/code-editor.versioned-save.spec';
 import '../../../ui-angular/src/ui/dialog/destructive-confirm-focus.spec';
 import '../../../ui-angular/src/ui/dialog/input-dialog.component.spec';
 import '../../../ui-angular/src/ui/dialog/native-dialog.service.spec';

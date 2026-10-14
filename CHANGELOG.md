@@ -10,6 +10,23 @@ major number means here.
 
 ### Added
 
+- **A page or file opened for editing is saved only over the version it was
+  opened at.** The page editor's body save and the file editors name the
+  version they read (`If-Match`); a page or file changed or deleted meanwhile is
+  said, and nothing is written over it. `provideVfsNodeWatch()` hands the
+  editors the folder's live events, so a change made elsewhere is said at once;
+  one folder channel serves every watcher of it and is left with the last.
+  Needs `@coolms/ui-angular` with `VFS_NODE_WATCH`.
+- **No shortcut of a view fires while a surface is open over it.** The file
+  manager, the media library, the decision and state-machine designers, the
+  BPMN canvas and the shell take their keys through the keyboard scope: while
+  an editor, a viewer, a dialog or a menu is open over the file manager,
+  Delete, Backspace, F2, Escape and Ctrl+A/C/V/X reach nothing beneath it. The
+  file manager's keys follow keyboard focus, not the pointer, and a press
+  anywhere in it puts the keyboard there. The call screen is a card in a
+  corner and takes no keys from the page. Needs `@coolms/ui-angular`
+  2.0.0-alpha.4 and `@coolms/designer` with the keyboard controller's key
+  source.
 - **Contacts, Users, Leads and Call history read their rows from where the
   server says they come from.** Each grid's definition now declares its list
   action, and the four pages read the rows from that action's operation
