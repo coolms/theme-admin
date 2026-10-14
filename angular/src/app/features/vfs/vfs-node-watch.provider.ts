@@ -1,5 +1,5 @@
 import { inject, type Provider } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { EMPTY, catchError, concatMap, filter, map, of, switchMap, type Observable } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
@@ -34,7 +34,11 @@ export function provideVfsNodeWatch(): Provider {
                         ? of({ kind: 'deleted' })
                         : http.get<{ contentHash?: string | null }>(`${base}/vfs/files`, { params: { path: node.path } }).pipe(
                             map(file => ({ kind: 'changed' as const, version: file.contentHash ?? null })),
-                            catchError(() => of({ kind: 'deleted' as const })),
+                            // Only "not found" means the file went. Any other failure (a 5xx, a dropped connection,
+                            // a 403) says nothing about the file: nothing is reported, and the save's If-Match decides.
+                            catchError((error: unknown) => error instanceof HttpErrorResponse && error.status === 404
+                                ? of({ kind: 'deleted' as const })
+                                : EMPTY),
                         )),
                     catchError(() => EMPTY),
                 );

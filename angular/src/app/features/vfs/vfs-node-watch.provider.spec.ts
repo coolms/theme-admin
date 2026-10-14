@@ -56,4 +56,24 @@ describe('provideVfsNodeWatch -- an open file\'s changes elsewhere', () => {
 
         expect(seen).toEqual([{ kind: 'changed', version: 'h9' }, { kind: 'deleted' }]);
     });
+
+    it('takes only a 404 for the version read as "deleted"; any other failure reports nothing', () => {
+        const seen: VfsNodeChange[] = [];
+        TestBed.inject(VFS_NODE_WATCH)({ id: 'file-1', path: '/docs/a.txt' }).subscribe(c => seen.push(c));
+        http.expectOne(r => r.url === '/api/v1/vfs/files' && r.params.get('path') === '/docs').flush({ id: 'folder-1' });
+        const versionRead = (): ReturnType<HttpTestingController['expectOne']> =>
+            http.expectOne(r => r.url === '/api/v1/vfs/files' && r.params.get('path') === '/docs/a.txt');
+
+        events.next(event('node.content_updated', 'file-1'));
+        versionRead().flush('boom', { status: 500, statusText: 'Server Error' });
+        events.next(event('node.content_updated', 'file-1'));
+        versionRead().flush('no', { status: 403, statusText: 'Forbidden' });
+        events.next(event('node.content_updated', 'file-1'));
+        versionRead().error(new ProgressEvent('error'));
+        expect(seen).withContext('a 500, a 403 and a dropped connection say nothing about the file').toEqual([]);
+
+        events.next(event('node.content_updated', 'file-1'));
+        versionRead().flush('gone', { status: 404, statusText: 'Not Found' });
+        expect(seen).toEqual([{ kind: 'deleted' }]);
+    });
 });
