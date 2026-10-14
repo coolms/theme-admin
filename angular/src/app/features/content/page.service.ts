@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { map, Observable, of, switchMap, throwError } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, resolvePattern } from '@coolms/core-angular';
 import { HydraCollection } from '@coolms/core-angular';
@@ -511,6 +511,12 @@ export class PageService {
 
     // -- internals ----------------------------------------------------------
 
+    /**
+     * The version of each variant body this service read or saved, by path: a save sends it as If-Match, so a body
+     * saved or deleted elsewhere meanwhile answers 412 / 404 and is neither overwritten nor made again (2026-10-14).
+     */
+    private readonly bodyVersions = new Map<string, string>();
+
     private resolveVariantNodeId(pageId: string, locale: string): Observable<string> {
         return this.listVariants(pageId).pipe(
             switchMap(variants => {
@@ -538,7 +544,11 @@ export class PageService {
         // Server returns a JSON-LD `FileContent` envelope; unwrap the `content`
         // field for the editor. The envelope also carries `@id`/`@type`/`@context`
         // which the editor does not need.
-        return this.http.get<{ content?: string }>(url).pipe(
+        return this.http.get<{ content?: string; contentHash?: string | null }>(url).pipe(
+            tap(response => {
+                if (response.contentHash) this.bodyVersions.set(path, response.contentHash);
+                else this.bodyVersions.delete(path);
+            }),
             map(response => ({ content: response.content ?? '' })),
         );
     }
@@ -552,7 +562,13 @@ export class PageService {
         // Backend `FileContentResource` expects a JSON-LD `{ "content": "..." }`
         // body and returns `{ "contentHash": "..." }`. Angular's HttpClient
         // serializes the object body as JSON and sets Content-Type for us.
-        return this.http.put<{ contentHash: string }>(url, { content });
+        const version = this.bodyVersions.get(path);
+        const headers = version ? new HttpHeaders({ 'If-Match': `"${version}"` }) : undefined;
+        return this.http.put<{ contentHash: string }>(url, { content }, { headers }).pipe(
+            tap(response => {
+                if (response?.contentHash) this.bodyVersions.set(path, response.contentHash);
+            }),
+        );
     }
 
     private toPageDto(node: VfsNodeWithExtras, variants: PageVariantSummaryDto[]): PageDto {
