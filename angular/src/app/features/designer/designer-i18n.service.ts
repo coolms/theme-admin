@@ -2,36 +2,40 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { Translator } from '@coolms/designer';
+import { createCatalogTranslator, type Messages, type Translator } from '@coolms/designer';
 
 /**
- * Supplies the designer with its UI strings from the backend.
+ * Supplies the designer with its UI strings.
  *
- * The designer package ships message keys and an English fallback and owns no
- * catalogue, so this is the half that decides where the strings come from. In
- * the admin they come from the platform catalogue: the Workflow module ships
- * `translations/workflow.en.xlf` as the baseline (generated from the package's
- * own fallbacks, so it cannot drift), and operators author other locales
- * through the Translations admin, which writes VFS overrides on top.
+ * The designer's code holds message keys only, and the package bundles its
+ * base catalogue -- every key it uses, in its source language -- as the last
+ * fallback of every lookup. This service puts the platform's catalogues in
+ * front of it, most specific first (2026-10-14):
+ *
+ *  1. the person's locale, as the platform resolved it;
+ *  2. its parent (`uk-UA` -> `uk`);
+ *  3. the platform's default locale, as the server reports it;
+ *  4. the package's base catalogue (`createCatalogTranslator` appends it).
+ *
+ * Each of 1-3 is `GET /api/v1/i18n/catalogues/workflow:<locale>`: the
+ * Workflow module ships the baseline and operators override it from the
+ * Translations admin. Nothing here names a language -- every locale is the
+ * server's answer.
  *
  * Three properties this deliberately has:
  *
- *  - **English costs almost nothing.** The package's fallbacks ARE the
- *    English baseline, so an English session asks which locale it is in and
- *    then stops -- it never fetches a catalogue that could only echo them.
- *  - **Failure is invisible.** A 403 (the catalogue endpoint is admin-gated),
- *    a 404 (locale not supported), or an offline backend all leave the editor
- *    rendering its inline English. A missing translation must never be a
- *    broken screen.
- *  - **One request per session.** The result is cached on the service, which
- *    is root-provided, so opening four editors loads one catalogue.
- *
- * The locale is ASKED FOR, not guessed. `GET /i18n/current-locale` runs the
- * platform's own detector chain -- URL prefix, query, the signed-in user's
- * stored preference, cookie, Accept-Language, default -- and reports what it
- * decided. Reading `navigator.language` here instead would ignore the user's
- * preference and every operator override, and would drift the moment the
- * chain was reordered.
+ *  - **Failure is invisible.** A catalogue that cannot be read -- a server
+ *    error, an unsupported locale, an offline backend -- is skipped, and the
+ *    lookup goes on to the next, ending at the base catalogue. A missing
+ *    translation must never be a broken screen.
+ *  - **One load per session.** The result is kept on the service, which is
+ *    root-provided, so opening four editors loads the catalogues once; editors
+ *    mounting together share one load.
+ *  - **The locale is ASKED FOR, not guessed.** `GET /i18n/current-locale` runs
+ *    the platform's own detector chain -- URL prefix, query, the signed-in
+ *    user's stored preference, cookie, Accept-Language, default -- and reports
+ *    what it decided and the platform default. Reading `navigator.language`
+ *    instead would ignore the user's preference and every operator override.
  */
 @Injectable({ providedIn: 'root' })
 export class DesignerI18nService {
@@ -39,39 +43,31 @@ export class DesignerI18nService {
 
     private static readonly DOMAIN = 'workflow';
 
-    /**
-     * The language the package's inline fallbacks are written in. A catalogue
-     * for this locale could only echo them back, so it is never fetched.
-     */
-    private static readonly PACKAGE_LOCALE = 'en';
+    private static readonly JSON = new HttpHeaders({ Accept: 'application/json' });
 
-    /** Resolved catalogue, or null when English / not yet loaded / failed. */
-    private messages: Readonly<Record<string, string>> | null = null;
+    /** The lookup as loaded; the base catalogue alone until then. */
+    private current: Translator = createCatalogTranslator();
+
+    private loaded = false;
 
     /** De-duplicates concurrent loads when several editors mount at once. */
     private pending: Promise<void> | null = null;
 
     /**
      * Hand this to `createEditor({ t })`. Stable identity, safe to call
-     * before {@link ensureLoaded} -- it simply returns English until the
-     * catalogue arrives.
+     * before {@link ensureLoaded} -- it reads the base catalogue until the
+     * platform's arrive.
      */
-    readonly translate: Translator = (key, fallback, params) => {
-        const message = this.messages?.[key];
-        return interpolate(
-            message === undefined || message === '' ? fallback : message,
-            params,
-        );
-    };
+    readonly translate: Translator = (key, params) => this.current(key, params);
 
     /**
-     * Load the catalogue for the current locale, once. Awaited by the editor
+     * Load the catalogues for the current locale, once. Awaited by the editor
      * pages before they mount, because the toolbar captures its labels at
-     * construction -- a catalogue arriving later would leave the chrome in
-     * English while the property panel spoke the target language.
+     * construction -- catalogues arriving later would leave the chrome in the
+     * base language while the property panel spoke the person's.
      */
     async ensureLoaded(): Promise<void> {
-        if (this.messages !== null) return;
+        if (this.loaded) return;
         if (this.pending !== null) return this.pending;
 
         this.pending = this.load().finally(() => {
@@ -81,20 +77,30 @@ export class DesignerI18nService {
     }
 
     private async load(): Promise<void> {
+        let order: readonly string[] = [];
         try {
-            const locale = await this.resolveLocale();
-            if (locale === DesignerI18nService.PACKAGE_LOCALE) {
-                // Fetching a catalogue that would only echo the fallbacks is
-                // pure latency.
-                this.messages = {};
-                return;
-            }
+            const answer = await firstValueFrom(
+                this.http.get<CurrentLocaleResponse>('/api/v1/i18n/current-locale', {
+                    headers: DesignerI18nService.JSON,
+                }),
+            );
+            order = lookupOrder(answer.locale, answer.defaultLocale);
+        } catch {
+            // Not knowing the locale must not mean guessing one: the base
+            // catalogue alone.
+        }
+        const catalogues = await Promise.all(order.map((locale) => this.catalogue(locale)));
+        this.current = createCatalogTranslator(...catalogues.filter((c): c is Messages => c !== null));
+        this.loaded = true;
+    }
 
-            const id = `${DesignerI18nService.DOMAIN}:${locale}`;
+    /** One locale's catalogue as a flat map, or null when it cannot be read. */
+    private async catalogue(locale: string): Promise<Messages | null> {
+        try {
             const response = await firstValueFrom(
-                this.http.get<CatalogueResponse>(`/api/v1/i18n/catalogues/${id}`, {
+                this.http.get<CatalogueResponse>(`/api/v1/i18n/catalogues/${DesignerI18nService.DOMAIN}:${locale}`, {
                     // Hydra strips map-shaped payloads; ask for plain JSON.
-                    headers: new HttpHeaders({ Accept: 'application/json' }),
+                    headers: DesignerI18nService.JSON,
                 }),
             );
             const map: Record<string, string> = {};
@@ -104,23 +110,27 @@ export class DesignerI18nService {
                     map[entry.key] = text;
                 }
             }
-            this.messages = map;
+            return map;
         } catch {
-            // Deliberately silent: see the class docblock. An empty map means
-            // "loaded, nothing to override", so we do not retry on every mount.
-            this.messages = {};
+            return null;
         }
     }
+}
 
-    /** What the platform's detector chain resolved for this session. */
-    private async resolveLocale(): Promise<string> {
-        const response = await firstValueFrom(
-            this.http.get<CurrentLocaleResponse>('/api/v1/i18n/current-locale', {
-                headers: new HttpHeaders({ Accept: 'application/json' }),
-            }),
-        );
-        return response.locale;
-    }
+/**
+ * The locales to read, most specific first: the person's locale, its parent
+ * (`uk-UA` -> `uk`), the platform default -- each once.
+ */
+export function lookupOrder(locale: string, defaultLocale: string): readonly string[] {
+    const order: string[] = [];
+    const add = (l: string | undefined): void => {
+        if (l !== undefined && l !== '' && !order.includes(l)) order.push(l);
+    };
+    add(locale);
+    const cut = locale.search(/[-_]/);
+    if (cut > 0) add(locale.slice(0, cut));
+    add(defaultLocale);
+    return order;
 }
 
 interface CurrentLocaleResponse {
@@ -137,22 +147,4 @@ interface CatalogueEntry {
 
 interface CatalogueResponse {
     readonly entries?: readonly CatalogueEntry[] | null;
-}
-
-/**
- * `%name%` substitution, matching the package's own resolver.
- *
- * Duplicated rather than imported so this service depends only on the
- * package's TYPE, not its runtime -- the admin can then federate the designer
- * without this service pinning a second copy of it into the host bundle.
- */
-function interpolate(
-    text: string,
-    params?: Readonly<Record<string, string | number>>,
-): string {
-    if (params === undefined) return text;
-    return text.replace(/%([A-Za-z0-9_]+)%/g, (whole, name: string) => {
-        const value = params[name];
-        return value === undefined ? whole : String(value);
-    });
 }
