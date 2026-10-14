@@ -69,6 +69,14 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A right-click inside a multi-selection acts on the whole selection.** It
+  took the clicked file's answer, and Delete, Cut and Copy acted on that file
+  alone. The menu now takes the selection's least answer -- any file denied:
+  greyed out; any needing elevation and none denied: locked -- and runs Delete,
+  Cut and Copy on every selected file, as the toolbar does. A greyed-out action
+  in the bar and the menus says how many of the selection refuse it ("not
+  allowed for 2 of 5 selected items").
+
 - The terminal takes every printable character typed into its line or into a
   `sudo` prompt. Before, it dropped a character outside the basic plane (an
   emoji), a composed one, and any typed with AltGr (`@`, `€` or `{` on many

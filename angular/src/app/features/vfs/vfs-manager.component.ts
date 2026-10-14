@@ -18,11 +18,10 @@ import { VfsActionsService } from './vfs-actions.service';
 import { VfsClipboardService } from './vfs-clipboard.service';
 import { VfsUploadService } from './vfs-upload.service';
 import {
-    CAPABILITIES_CONTEXT_KEY,
+    capabilityContext,
     CmsPageHeaderComponent,
     ExplorerLayoutComponent,
     FileEditorRegistry,
-    leastCapabilities,
     PageFooterService,
     PageToolbarComponent,
     ToolbarAction,
@@ -245,9 +244,10 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             // because both actions are single-target.
             hasEditor:  single && !!node && this.editorRegistry.resolve(node) !== null,
             canDrillIn: single && !!node && node.isContainer && node.permissions.execute,
-            // What each declared node action comes to on the selection, the least across it: a node
-            // naming a `capability` is disabled on `denied` and locked on `elevate` by the toolbar.
-            [CAPABILITIES_CONTEXT_KEY]: leastCapabilities(selected),
+            // What each declared node action comes to on the selection, the least across it, and how many
+            // refuse it: a node naming a `capability` is disabled on `denied` (saying how many refuse) and
+            // locked on `elevate` by the toolbar.
+            ...capabilityContext(selected),
         };
     });
 
