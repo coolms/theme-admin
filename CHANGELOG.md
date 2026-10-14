@@ -53,6 +53,15 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Changed
 
+- **The designers read their text from the platform's catalogues most
+  specific first, ending at the designer's own.** The person's locale as the
+  platform resolved it, its parent (`uk-UA` -> `uk`), then the platform
+  default -- each `GET /api/v1/i18n/catalogues/workflow:<locale>` -- and last
+  the base catalogue `@coolms/designer` bundles. Nothing in the admin names a
+  language any more; the base language's own server catalogue is read too, so
+  an operator's override of it counts. A catalogue that cannot be read is
+  skipped. Needs `@coolms/designer` with keys-only translate calls; the admin's
+  tsconfig resolves JSON modules for its bundled catalogue.
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
   in the terminal itself, `[sudo] password for <account>:`, and asks for the
