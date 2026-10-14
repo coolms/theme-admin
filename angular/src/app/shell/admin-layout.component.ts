@@ -6,6 +6,7 @@ import { filter } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, ConsoleActivation, ConsolePanelHost, ElevationService, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
+    bindKeys,
     BottomDrawerService,
     ContextMenuComponent,
     ContextMenuService,
@@ -407,6 +408,8 @@ import { panelAccessIn } from './nav-offers';
 export class AdminLayoutComponent implements OnInit {
     /** The modules' console contributions, filtered by what the manifest says is installed. */
     protected readonly console = inject(ConsoleActivation);
+    /** The panel keys belong to the page: none toggles a panel beneath an open dialog. In text fields too, as before. */
+    private readonly unbindKeys = bindKeys(event => this.onKeydown(event), { inTextFields: true });
     readonly naviGraph     = inject(NaviGraphService);
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);
@@ -544,15 +547,13 @@ export class AdminLayoutComponent implements OnInit {
         }
     }
 
-    @HostListener('document:keydown', ['$event'])
-    onKeydown(event: KeyboardEvent): void {
-        if (!(event.ctrlKey || event.metaKey)) return;
+    /** Bound through the keyboard scope (a field above); true when it opened or closed a panel. */
+    onKeydown(event: KeyboardEvent): boolean {
+        if (!(event.ctrlKey || event.metaKey)) return false;
         // A panel's declared key (the terminal's is `), with Ctrl or Cmd -- by the same rule as its toggle: nothing
         // where the menu has no item that opens it for this account, elevation first where that item is locked.
         const panel = this.console.panels().find(p => p.toggle.key === event.key);
-        if (panel && this.requestPanel(panel.id)) {
-            event.preventDefault();
-        }
+        return panel !== undefined && this.requestPanel(panel.id);
     }
 
     @HostListener('document:mousemove', ['$event'])

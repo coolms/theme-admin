@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { ElementRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngxs/store';
@@ -25,11 +25,22 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
             permissions: { read: true, write: true, execute: false }, capabilities } as unknown as VfsNodeDto;
     }
 
+    let host: HTMLElement;
+
+    beforeEach(() => {
+        host = document.createElement('div');
+        document.body.appendChild(host);
+    });
+
+    afterEach(() => host.remove());
+
     function build(selected: VfsNodeDto[]): { component: VfsManagerComponent; whenAllowed: jasmine.Spy } {
         const whenAllowed = jasmine.createSpy('whenAllowed');
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
+                // The manager binds its keys to its own element's layer when it is built.
+                { provide: ElementRef, useValue: new ElementRef(host) },
                 { provide: Store, useValue: { selectSnapshot: () => null } },
                 { provide: ActivatedRoute, useValue: {} },
                 { provide: NaviGraphService, useValue: {} },
@@ -89,10 +100,10 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
 
     it('sends the Delete key through whenAllowed with the Delete button\'s node', () => {
         const selected = [file('/docs/a', { 'vfs.node.delete': 'denied' })];
-        const { component, whenAllowed } = build(selected);
-        component.isActive.set(true);
+        const { whenAllowed } = build(selected);
 
-        component.onKeydown(new KeyboardEvent('keydown', { key: 'Delete' }));
+        // From inside the manager, as a key on its focused area arrives.
+        host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true, cancelable: true }));
 
         expect(whenAllowed).toHaveBeenCalledTimes(1);
         const [node, subjects] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[]];
