@@ -6,3 +6,4 @@
  * reporting SUCCESS. `npm run lint:specs` keeps this list honest.
  */
 import '../../../image-editor-angular/src/components/coolms-image-editor.keyboard.spec';
+import '../../../image-editor-angular/src/services/image-editor-http.service.spec';
