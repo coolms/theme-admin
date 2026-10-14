@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { CAPABILITIES_CONTEXT_KEY, CmsDropzoneDirective, CmsItemInteractionsDirective, ContextMenuService, DrawerService, FileEditorRegistry, leastCapabilities, ToastService, VfsNodeDto, type CmsRangeSelectionRequest, type CmsSelectionChange } from '@coolms/ui-angular';
+import { capabilityContext, CmsDropzoneDirective, CmsItemInteractionsDirective, ContextMenuService, DrawerService, FileEditorRegistry, ToastService, VfsNodeDto, type CmsRangeSelectionRequest, type CmsSelectionChange } from '@coolms/ui-angular';
 import { Dialog } from '@angular/cdk/dialog';
 import {
     CdkDrag,
@@ -711,6 +711,9 @@ export class VfsFilesComponent {
         if (nodes.length === 0) return;
         const selected = this.state.selectedNodes();
         const single = selected.length <= 1;
+        // The nodes the chosen action acts on: the whole selection when the right-click is inside it, else
+        // the one node clicked (the directive has then made it the selection).
+        const subjects = selected.some(n => n.path === focused.path) ? selected : [focused];
         const record: Record<string, unknown> = {
             _context:      'node',
             _single:       single,
@@ -728,14 +731,15 @@ export class VfsFilesComponent {
             // so these must arrive as flat boolean fields).
             hasEditor:     this.editorRegistry.resolve(focused) !== null,
             canDrillIn:    focused.isContainer && focused.permissions.execute,
-            // The menu acts on the focused node alone, so its answer is the one that decides.
-            [CAPABILITIES_CONTEXT_KEY]: leastCapabilities([focused]),
+            // What each action comes to on the nodes it acts on: the least answer across them (an action on
+            // several takes the most restrictive), and how many of them refuse it.
+            ...capabilityContext(subjects),
         };
         this.contextMenu.openFromNodes(
             payload.event,
             [...nodes],
             record,
-            (actionId) => this.dispatchAction(actionId, focused),
+            (actionId) => this.dispatchAction(actionId, subjects),
         );
     }
 
@@ -756,11 +760,12 @@ export class VfsFilesComponent {
             event,
             [...nodes],
             record,
-            (actionId) => this.dispatchAction(actionId, null),
+            (actionId) => this.dispatchAction(actionId, []),
         );
     }
 
-    private dispatchAction(actionId: string, target: VfsNodeDto | null): void {
+    /** What is chosen in a menu, on the nodes it acts on -- none for the background menu. */
+    private dispatchAction(actionId: string, targets: readonly VfsNodeDto[]): void {
         if (actionId === 'upload') {
             this.state.uploadRequested$.next();
             return;
@@ -769,7 +774,7 @@ export class VfsFilesComponent {
             (n) => String(n.meta['action']) === actionId,
         );
         if (!node) return;
-        this.vfsActions.whenAllowed(node, target ? [target] : [], () => this.vfsActions.execute(node, target));
+        this.vfsActions.whenAllowed(node, targets, () => this.vfsActions.executeOn(node, targets));
     }
 
     open(node: VfsNodeDto): void {

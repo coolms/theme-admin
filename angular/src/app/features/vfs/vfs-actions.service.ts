@@ -66,6 +66,24 @@ export class VfsActionsService {
         act();
     }
 
+    /**
+     * An action chosen for several nodes at once -- the right-click menu on a multi-selection. Delete, Cut and
+     * Copy act on every one of them, as the toolbar's do (Delete skips system nodes, as the bar's does); every
+     * other action is offered for one node only, so it acts on the first. One node goes to `execute`.
+     */
+    executeOn(action: NaviGraphNode, targets: readonly VfsNodeDto[]): void {
+        if (targets.length <= 1) {
+            this.execute(action, targets[0] ?? null);
+            return;
+        }
+        switch (action.meta['action'] as string) {
+            case 'VfsDelete': targets.filter(n => !n.isSystem).forEach(n => void this.confirmDelete(n)); break;
+            case 'VfsCut':    this.clipboard.cut([...targets]);                                          break;
+            case 'VfsCopy':   this.clipboard.copy([...targets]);                                         break;
+            default:          this.execute(action, targets[0]);                                          break;
+        }
+    }
+
     execute(action: NaviGraphNode, target: VfsNodeDto | null): void {
         // Guard destructive operations on system nodes before dispatching.
         const actionKey      = action.meta['action'] as string;

@@ -104,6 +104,29 @@ describe('VfsActionsService.whenAllowed', () => {
         expect(act).not.toHaveBeenCalled();
     });
 
+    // An action on several items takes the most restrictive answer across them (2026-10-14): any denied --
+    // it never runs; any needing elevation and none denied -- it asks first; all allowed -- it runs. The
+    // deciding item first and last, so an answer read from one item for all of them fails here.
+    const mixes: ReadonlyArray<[string, ReadonlyArray<string | undefined>, 'runs' | 'asks' | 'never']> = [
+        ['all allowed',                      ['allowed', 'allowed', 'allowed'], 'runs'],
+        ['one needs elevation, first',       ['elevate', 'allowed'],            'asks'],
+        ['one needs elevation, last',        ['allowed', 'allowed', 'elevate'], 'asks'],
+        ['one denied, first',                ['denied', 'allowed', 'elevate'],  'never'],
+        ['one denied, last',                 ['allowed', 'elevate', 'denied'],  'never'],
+        ['an item without an answer abstains', [undefined, 'allowed', 'elevate'], 'asks'],
+    ];
+    for (const [name, states, outcome] of mixes) {
+        it(`decides a selection by its least answer: ${name} -> ${outcome}`, () => {
+            const { svc, offerFor } = serviceWith(true, true);
+            const act = jasmine.createSpy('act');
+
+            svc.whenAllowed(chmodNode, states.map(s => subject(s)), act);
+
+            expect(offerFor).toHaveBeenCalledTimes('asks' === outcome ? 1 : 0);
+            expect(act).toHaveBeenCalledTimes('never' === outcome ? 0 : 1);
+        });
+    }
+
     it('runs a locked action at once when the session was elevated already', () => {
         // offerFor answers false without a prompt when the session is elevated (another tab did it, after
         // this listing was fetched): the answer was older than the session, not a refusal.
