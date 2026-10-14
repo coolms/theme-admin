@@ -69,6 +69,13 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A selected file follows the listing when it is read again.** The listing is
+  read again whenever elevation is granted, ended or expires, but the selection
+  kept the file objects from before, and the bar and the menus read those: after
+  an elevation ended, a still-selected file's Delete stayed unlocked until it was
+  clicked again. The selection now takes the fresh objects, by id, and drops a
+  file the listing no longer holds.
+
 - **A right-click inside a multi-selection acts on the whole selection.** It
   took the clicked file's answer, and Delete, Cut and Copy acted on that file
   alone. The menu now takes the selection's least answer -- any file denied:
