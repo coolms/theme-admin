@@ -29,7 +29,14 @@ import {
     type DmnDrdModel,
 } from '@coolms/designer/dmn-drd';
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
+import {
+  bindKeys,
+  CmsPageHeaderComponent,
+  ErrorBannerComponent,
+  LoadingComponent,
+  ToastService,
+  UnsavedChangesService,
+} from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
 import { DesignerService } from './designer.service';
@@ -141,6 +148,14 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
     @ViewChild('host', { static: true })
     private readonly hostRef!: ElementRef<HTMLElement>;
 
+    // Delete/Backspace/Escape belong to the layer the designer lies in (the page, or the dialog it is opened in):
+    // none reaches the canvas while a dialog is open over it. Bound in text fields too; onKeyDown keeps its own
+    // field guard for Delete/Backspace.
+    private readonly unbindKeys = bindKeys(event => {
+        this.onKeyDown(event);
+        return event.defaultPrevented;
+    }, { inControls: true });
+
     private readonly route = inject(ActivatedRoute);
     private readonly designer = inject(DesignerService);
     private readonly i18n = inject(DesignerI18nService);
@@ -237,7 +252,6 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         this.offConnect = this.drdEditor.selection.onChange((target) =>
             this.onSelectionForConnect(target),
         );
-        document.addEventListener('keydown', this.onKeyDown);
 
         await this.loadDraft(key);
     }
@@ -481,7 +495,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        document.removeEventListener('keydown', this.onKeyDown);
+        this.unbindKeys();
         try {
             this.offSelectionAutoToggle?.();
             this.offConnect?.();

@@ -5,7 +5,6 @@ import {
     DestroyRef,
     effect,
     ElementRef,
-    HostListener,
     inject,
     OnInit,
     signal,
@@ -44,6 +43,7 @@ import { MediaPermissionsComponent } from './media-permissions.component';
 import { CollectionPermissionsComponent } from './collection-permissions.component';
 import { MoveToDialogComponent } from './move-to-dialog.component';
 import {
+    bindKeys,
     CmsPageHeaderComponent,
     ConfirmDialogService,
     DeleteNodeDialogComponent,
@@ -270,6 +270,10 @@ export class MediaLibraryPage implements OnInit {
     // -- Constructor ---------------------------------------------------------
 
     constructor() {
+        // The library's shortcuts belong to the page: none fires while the image editor, a viewer or a dialog is
+        // open over it, nor while the person types (2026-10-14).
+        bindKeys(event => this.onKeydown(event));
+
         // Keep footer status bar in sync with media state
         // The count says what the grid shows: nothing while the list failed, and "24 of 25" while
         // a later page has not loaded yet ("All 25 files loaded" over 24 tiles, or over none, is what it
@@ -764,23 +768,23 @@ export class MediaLibraryPage implements OnInit {
 
     // -- Keyboard shortcuts --------------------------------------------------
 
-    @HostListener('document:keydown', ['$event'])
-    onKeydown(event: KeyboardEvent): void {
-        const tag = (event.target as HTMLElement)?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
+    /** Bound through the keyboard scope (the constructor); true when it acted on the key. */
+    onKeydown(event: KeyboardEvent): boolean {
         if (event.key === 'Delete' && this.state.selectedIds().length > 0) {
-            event.preventDefault();
             this.deleteAssets(this.selectedAssets());
+            return true;
         }
         if (event.key === 'Escape') {
+            // Clears the selection and lets the key go on: ESC still closes whatever else it closes.
             this.state.selectedIds.set([]);
             this.state.activeAsset.set(null);
+            return false;
         }
         if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-            event.preventDefault();
             this.state.selectedIds.set(this.state.assets().map(a => a.id));
+            return true;
         }
+        return false;
     }
 
     // -- Input handlers ------------------------------------------------------
