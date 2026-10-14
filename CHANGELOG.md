@@ -10,6 +10,13 @@ major number means here.
 
 ### Added
 
+- **Tests of a right-click on a row, through the rendered file list.** A
+  right-click on a file outside the selection selects that file alone and the
+  chosen action runs on it alone; on a file inside the selection, the selection
+  is kept and the action runs on all of it. The `contextmenu` event is
+  dispatched on the row, so the row's selection and the list's handler are
+  tested together. The spec bridge lists `@coolms/ui-angular`'s new
+  `datagrid-refused-list.spec.ts`.
 - **Contacts, Users, Leads and Call history read their rows from where the
   server says they come from.** Each grid's definition now declares its list
   action, and the four pages read the rows from that action's operation
