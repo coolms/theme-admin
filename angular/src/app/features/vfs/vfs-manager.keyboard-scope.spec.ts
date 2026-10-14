@@ -1,4 +1,4 @@
-import { Component, ElementRef, signal } from '@angular/core';
+import { Component, createEnvironmentInjector, ElementRef, EnvironmentInjector, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Dialog, type DialogConfig } from '@angular/cdk/dialog';
 import { ActivatedRoute } from '@angular/router';
@@ -16,6 +16,10 @@ import { VfsActionsService } from './vfs-actions.service';
 import { VfsClipboardService } from './vfs-clipboard.service';
 import { VfsPageStateService } from './vfs-page-state.service';
 import { VfsUploadService } from './vfs-upload.service';
+import { RtcCallOverlayComponent } from '../rtc/rtc-call-overlay.component';
+import { RtcCallService, type ActiveCall } from '../rtc/rtc-call.service';
+import { RtcMediaController } from '../rtc/rtc-media-controller';
+import { RtcSfuMediaController } from '../rtc/rtc-sfu-media-controller';
 
 /**
  * The topmost overlay owns the keyboard (2026-10-14: Del in the image editor deleted the file under it). For every
@@ -66,6 +70,7 @@ describe('VfsManagerComponent -- no shortcut reaches it while a surface is open 
 
     beforeEach(() => {
         host = document.createElement('div');
+        host.tabIndex = -1; // as the component's host binding does
         document.body.appendChild(host);
         whenAllowed = jasmine.createSpy('whenAllowed');
         clipboard = {
@@ -180,5 +185,40 @@ describe('VfsManagerComponent -- no shortcut reaches it while a surface is open 
         press(host, { key: 'Delete' });
         expect(reached()).withContext('once it has closed').toEqual(['Delete']);
         menuFixture.destroy();
+    });
+
+    it('a press where the press moves no focus (a thumbnail\'s image) puts the keyboard here: Del then reaches it', () => {
+        const image = document.createElement('img');
+        const rename = document.createElement('input');
+        host.append(image, rename);
+        (document.activeElement as HTMLElement | null)?.blur();
+
+        image.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        expect(host.contains(document.activeElement)).withContext('focus is in the file manager').toBeTrue();
+        press(document.activeElement!, { key: 'Delete' });
+        expect(reached()).toEqual(['Delete']);
+
+        rename.focus();
+        image.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+        expect(document.activeElement).withContext('a field of its own keeps its focus').toBe(rename);
+    });
+
+    it('takes every one of its shortcuts during a connected video or group call: the call screen is a card, no layer', () => {
+        const card = document.createElement('div');
+        document.body.appendChild(card);
+        const call = { ui: 'connected', mediaKind: 'video', topology: 'sfu', connectedAtMs: 0 } as unknown as ActiveCall;
+        const callInjector = createEnvironmentInjector([
+            { provide: ElementRef, useValue: new ElementRef(card) },
+            { provide: RtcCallService, useValue: { activeCall: signal(call) } },
+            { provide: RtcMediaController, useValue: { screenSharing: signal(true) } },
+            { provide: RtcSfuMediaController, useValue: {} },
+        ], TestBed.inject(EnvironmentInjector));
+        callInjector.runInContext(() => new RtcCallOverlayComponent());
+        TestBed.tick();
+
+        for (const init of KEYS) press(host, init);
+        expect(reached()).toEqual(['Delete', 'Ctrl+X', 'Ctrl+C', 'Ctrl+V', 'Escape']);
+        callInjector.destroy();
+        card.remove();
     });
 });

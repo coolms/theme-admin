@@ -140,7 +140,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
     private readonly unbindKeys = bindKeys(event => {
         this.onKeyDown(event);
         return event.defaultPrevented;
-    }, { inTextFields: true });
+    }, { inControls: true });
 
     private readonly route = inject(ActivatedRoute);
     private readonly designer = inject(DesignerService);

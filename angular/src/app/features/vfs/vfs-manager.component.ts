@@ -9,6 +9,7 @@ import {
     signal,
     untracked,
     ElementRef,
+    DestroyRef,
 } from '@angular/core';
 import { UserPreferencesService, NaviGraphNode, NaviGraphService, AppConfigState } from '@coolms/core-angular';
 import { NgClass } from '@angular/common';
@@ -34,6 +35,8 @@ import { VfsPageStateService } from './vfs-page-state.service';
     selector: 'app-vfs-manager',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    // Focusable, so the keys can follow focus here (see the constructor).
+    host: { tabindex: '-1' },
     providers: [VfsPageStateService, VfsActionsService, VfsClipboardService, VfsUploadService, PageFooterService],
     imports: [
         NgClass,
@@ -45,7 +48,6 @@ import { VfsPageStateService } from './vfs-page-state.service';
         <app-explorer-layout
             layoutId="vfs:file-manager"
             [context]="pageContext()"
-            tabindex="-1"
             (backgroundClick)="clearSelection()">
 
             <!-- Page header: fixed title + Upload primary action -->
@@ -81,8 +83,6 @@ import { VfsPageStateService } from './vfs-page-state.service';
         </app-explorer-layout>
     `,
     styles: [`
-        /* Focusable so a click on a row (not focusable itself) puts the keyboard here: the shortcuts follow focus. */
-        app-explorer-layout:focus { outline: none; }
         :host {
             display: flex;
             flex-direction: column;
@@ -140,6 +140,13 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         // The file manager's shortcuts belong to the page: while an editor, a viewer or a dialog is open over it,
         // none of them fires (Dmitry, 2026-10-14: Del in the image editor deleted the file underneath).
         bindKeys(event => this.onKeydown(event));
+        // A press anywhere in the manager puts the keyboard here, even where the press itself moves no focus: on a
+        // thumbnail's image the drag cancels the press's default (CDK does, for a natively draggable target).
+        const takeFocus = (): void => {
+            if (!this.hostEl.contains(document.activeElement)) this.hostEl.focus({ preventScroll: true });
+        };
+        this.hostEl.addEventListener('pointerdown', takeFocus, { capture: true });
+        inject(DestroyRef).onDestroy(() => this.hostEl.removeEventListener('pointerdown', takeFocus, { capture: true }));
 
         // Keep the panel content in sync with selection: if the
         // active item is no longer selected (deletion, deselection,

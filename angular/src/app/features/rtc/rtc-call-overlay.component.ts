@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Signal, computed, effect, inject, signal } from '@angular/core';
-import { KeyboardScopeService } from '@coolms/ui-angular';
+import { ChangeDetectionStrategy, Component, DestroyRef, Signal, computed, inject, signal } from '@angular/core';
 
 import { ActiveCall, RtcCallService } from './rtc-call.service';
 import { RtcMediaController } from './rtc-media-controller';
@@ -402,24 +401,9 @@ export class RtcCallOverlayComponent {
 
     private readonly nowMs = signal(Date.now());
 
-    /** The call screen covers the page: a connected group call, or a connected video call or screen share. */
-    readonly coversPage = computed<boolean>(() => {
-        const c = this.call();
-        return c !== null && c.ui === 'connected'
-            && (c.topology === 'sfu' || c.mediaKind === 'video' || this.media.screenSharing());
-    });
-
     constructor() {
         const timer = setInterval(() => this.nowMs.set(Date.now()), 1000);
         inject(DestroyRef).onDestroy(() => clearInterval(timer));
-
-        // While the call screen covers the page it is the topmost surface: no shortcut of the page under it fires
-        // (2026-10-14). The ring card and the calling bar leave the page usable and are no layer.
-        const scope = inject(KeyboardScopeService);
-        const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-        effect(onCleanup => {
-            if (this.coversPage()) onCleanup(scope.pushLayer(host));
-        });
     }
 
     private readonly elapsed = computed<string>(() => {

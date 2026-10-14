@@ -33,7 +33,14 @@ import {
     emptyBpmnLiteModel,
 } from '@coolms/designer/bpmn-lite';
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
+import {
+    CmsPageHeaderComponent,
+    ErrorBannerComponent,
+    KeyboardScopeService,
+    LoadingComponent,
+    ToastService,
+    UnsavedChangesService,
+} from '@coolms/ui-angular';
 import { contributorSourceVersion, isContributorSource409 } from './shared/contributor-source';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
@@ -317,6 +324,8 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     private readonly toast = inject(ToastService);
     private readonly unsaved = inject(UnsavedChangesService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly keyboardScope = inject(KeyboardScopeService);
+    private readonly pageEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
     /**
      * Unsaved-work flag, PUBLIC because `unsavedChangesGuard` reads it off
@@ -650,6 +659,8 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             commands: this.shellEditor.commands,
             viewport: this.shellEditor.viewport,
             readOnly: isViewer,
+            // The page's layer: while a dialog is open over the canvas, Delete there deletes nothing on it.
+            keys: handler => this.keyboardScope.bind(this.pageEl, handler),
         });
 
         // F-8 redesign -- auto-toggle the sidebar based on selection

@@ -409,7 +409,7 @@ export class AdminLayoutComponent implements OnInit {
     /** The modules' console contributions, filtered by what the manifest says is installed. */
     protected readonly console = inject(ConsoleActivation);
     /** The panel keys belong to the page: none toggles a panel beneath an open dialog. In text fields too, as before. */
-    private readonly unbindKeys = bindKeys(event => this.onKeydown(event), { inTextFields: true });
+    private readonly unbindKeys = bindKeys(event => this.onKeydown(event), { inControls: true });
     readonly naviGraph     = inject(NaviGraphService);
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);
