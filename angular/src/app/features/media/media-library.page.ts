@@ -38,7 +38,7 @@ import {
     switchMap,
 } from 'rxjs';
 import { MediaService } from './media.service';
-import { MediaAssetDto, MediaViewMode } from './media.types';
+import { MediaAssetDto, MediaViewMode, mediaAssetSourceUrl } from './media.types';
 import { MediaPermissionsComponent } from './media-permissions.component';
 import { CollectionPermissionsComponent } from './collection-permissions.component';
 import { MoveToDialogComponent } from './move-to-dialog.component';
@@ -569,6 +569,11 @@ export class MediaLibraryPage implements OnInit {
             asset: {
                 uuid:        asset.id,
                 originalUrl: asset.originalUrl ?? '',
+                // Pixels and version from one read: the replace names that version (If-Match).
+                sourceUrl:   mediaAssetSourceUrl(
+                    this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '',
+                    asset.path,
+                ),
                 filename:    asset.originalFilename,
                 mimeType:    asset.mimeType,
                 path:        asset.path ?? null,
