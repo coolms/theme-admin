@@ -87,10 +87,13 @@ describe('PageService -- a body save names the version it read', () => {
         http.expectOne(r => r.method === 'POST' && r.url === '/api/v1/vfs/files')
             .flush({ id: 'v1', path: '/content/default/about/en.dtmpl', name: 'en.dtmpl', contentHash: 'h0' });
 
-        pages.saveContent('p1', 'en', 'first words').subscribe();
+        // A refused save is caught here, so a regression fails this case alone instead of aborting the run.
+        let failed: unknown = null;
+        pages.saveContent('p1', 'en', 'first words').subscribe({ error: e => (failed = e) });
         page();
         const put = http.expectOne(r => r.method === 'PUT' && r.urlWithParams === BODY);
         expect(put.request.headers.get('If-Match')).toBe('"h0"');
         put.flush({ contentHash: 'h1' });
+        expect(failed).toBeNull();
     });
 });
