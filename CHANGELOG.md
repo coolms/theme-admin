@@ -86,6 +86,12 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A media asset edited in the image editor is never replaced over a newer
+  one.** The editor read the asset's pixels from its public URL and replaced
+  it with no version, so an asset replaced meanwhile was overwritten silently.
+  The editor now reads the asset's bytes and their version from one
+  authenticated read and names that version when it replaces; an asset changed
+  or deleted meanwhile is refused and the edits can go to a new image.
 - **A page body that could not be read is never written.** When the page
   editor's read of a body failed, it showed an empty body and treated it as
   read, and the next save of a title or SEO field wrote that empty body over
