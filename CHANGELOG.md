@@ -131,8 +131,9 @@ the elevation state; against one that does not, the admin behaves as before.
   30th" moved into another month. Moving only the time of day is always
   possible. A series with an occurrence edited on its own is not moved yet,
   because that occurrence is kept by the slot it replaced, which the server
-  does not move with the series. To find such an occurrence, the calendar's
-  own rows are read.
+  does not move with the series. The series' own read says how many it
+  holds (`exceptionCount`); a read that does not say is not moved either.
+  Needs the backend that answers `exceptionCount`.
 - **"Read without a version" is said as such.** An event write not sent for
   want of a version now says the event was read without one, instead of
   "changed since you opened it".

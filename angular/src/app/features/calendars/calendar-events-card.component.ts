@@ -1479,7 +1479,6 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             arg.revert();
             return;
         }
-        const slug = this.calendar().slug;
         this.calendarsApi.getCalendarItem(seriesId).pipe(
             switchMap(series => {
                 const zone = series.effectiveTimeZone ?? series.timeZone ?? this.calendar().tz ?? 'UTC';
@@ -1501,15 +1500,22 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 };
                 // An occurrence edited on its own is kept by the slot it replaced, which the server does not move
                 // with the series yet: a series with one is not moved, rather than leaving it at a slot it no
-                // longer has.
-                return this.calendarsApi.listCalendarItems({ calendarSlug: slug }).pipe(
-                    switchMap(rows => rows.some(row => row.parentItemId === series.id)
-                        ? throwError(() => new SeriesNotMovedError(
-                            'Some events of this series were changed one by one, and they cannot be moved with it yet. '
-                            + 'Move events one at a time.',
-                        ))
-                        : this.calendarsApi.updateCalendarItem(series.id, write, series.version)),
-                );
+                // longer has. The series' own read says how many it holds; a read that does not say is not
+                // guessed at.
+                const exceptions = series.exceptionCount;
+                if (exceptions === undefined || exceptions === null) {
+                    return throwError(() => new SeriesNotMovedError(
+                        'The server did not say whether events of this series were changed one by one, so all of them '
+                        + 'are not moved. Move events one at a time.',
+                    ));
+                }
+                if (exceptions > 0) {
+                    return throwError(() => new SeriesNotMovedError(
+                        'Some events of this series were changed one by one, and they cannot be moved with it yet. '
+                        + 'Move events one at a time.',
+                    ));
+                }
+                return this.calendarsApi.updateCalendarItem(series.id, write, series.version);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({

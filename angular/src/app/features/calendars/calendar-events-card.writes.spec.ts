@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { ConfirmDialogService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
 
@@ -72,8 +72,6 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         for (const m of Object.keys(api) as (keyof CalendarsApiService)[]) {
             (api[m] as jasmine.Spy).and.returnValue(of({}));
         }
-        // The calendar's own rows: no occurrence edited on its own, unless a case says so.
-        api.listCalendarItems.and.returnValue(of([]));
         toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'show']);
         scope = 'this';
         TestBed.configureTestingModule({
@@ -173,11 +171,12 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
 
     /**
      * The series as its own read answers it: daily from 16 Oct, 07:00-07:30 UTC, ten times, at version 7 (newer than
-     * the row's 3).
+     * the row's 3), with no occurrence edited on its own.
      */
     const SERIES = {
         id: 'base-1', title: 'Daily', start: '2026-10-16T07:00:00.000Z', end: '2026-10-16T07:30:00.000Z', allDay: false,
         version: 7, seriesVersion: 7, effectiveTimeZone: 'UTC', recurrence: 'RRULE:FREQ=DAILY;COUNT=10',
+        exceptionCount: 0,
     };
     // The 5th occurrence of that daily series, a plain one.
     const FIFTH = {
@@ -190,8 +189,6 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
     it('dragging the 5th occurrence of a daily series by two days, "all events", moves the series -- the 1st included -- by two days', async () => {
         scope = 'all';
         api.getCalendarItem.and.returnValue(of(SERIES) as never);
-        // An occurrence edited on its own in ANOTHER series of the calendar does not hold this one back.
-        api.listCalendarItems.and.returnValue(of([{ id: 'other-exception', parentItemId: 'other-base' }]) as never);
         const moved = { ...FIFTH, start: new Date('2026-10-22T07:00:00.000Z'), end: new Date('2026-10-22T07:30:00.000Z') };
 
         card['onEventDrop']({ event: moved, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
@@ -199,7 +196,8 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         await Promise.resolve();
 
         expect(api.getCalendarItem).toHaveBeenCalledOnceWith('base-1');
-        expect(api.listCalendarItems).toHaveBeenCalledOnceWith({ calendarSlug: 'team' });
+        // The series' own read says it holds no exception: the calendar's rows are never read for it.
+        expect(api.listCalendarItems).not.toHaveBeenCalled();
         expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', {
             start: '2026-10-18T07:00:00.000Z',
             end: '2026-10-18T07:30:00.000Z',
@@ -240,10 +238,9 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('numbered weekday'), 'Nothing was changed');
     });
 
-    it('a series whose rows could not be read is not moved: nothing is written, the drag is reverted', async () => {
+    it('a series read without its count of exceptions is not moved: nothing is guessed, nothing written', async () => {
         scope = 'all';
-        api.getCalendarItem.and.returnValue(of(SERIES) as never);
-        api.listCalendarItems.and.returnValue(throwError(() => new Error('the calendar could not be read')) as never);
+        api.getCalendarItem.and.returnValue(of({ ...SERIES, exceptionCount: undefined }) as never);
         const revert = jasmine.createSpy('revert');
         const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
 
@@ -253,13 +250,12 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
 
         expect(api.updateCalendarItem).not.toHaveBeenCalled();
         expect(revert).toHaveBeenCalledTimes(1);
-        expect(toast.error).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('did not say'), 'Nothing was changed');
     });
 
     it('a series with an occurrence edited on its own is not moved, from that occurrence or any other: nothing is written', async () => {
         scope = 'all';
-        api.getCalendarItem.and.returnValue(of(SERIES) as never);
-        api.listCalendarItems.and.returnValue(of([{ id: 'exception-1', parentItemId: 'base-1' }]) as never);
+        api.getCalendarItem.and.returnValue(of({ ...SERIES, exceptionCount: 1 }) as never);
         const revert = jasmine.createSpy('revert');
         // The edited occurrence sits at 08:30 on the 20th; dragged to 10:00 the same day. Then a plain one, by a day.
         const edited = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
