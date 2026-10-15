@@ -152,6 +152,17 @@ export interface CalendarItemDto {
      */
     readonly parentItemId?:   string | null;
     /**
+     * The version of the row this item was read from: the event itself, or on an occurrence of a series the series'
+     * base (a plain occurrence) or its exception (an edited one). A change to THAT row names it (If-Match); a change
+     * made from an older version is refused (412) and nothing is changed.
+     */
+    readonly version?:        number | null;
+    /**
+     * On any occurrence of a series, the series' version: what an exception, a skip, a split, a delete of this and
+     * the following -- and any change to the series' base -- name. Null on a one-off event.
+     */
+    readonly seriesVersion?:  number | null;
+    /**
      * -- non-working-day policy. Controls what the expander
      * does when a recurring occurrence lands on a holiday or other
      * non-working day of the host calendar:

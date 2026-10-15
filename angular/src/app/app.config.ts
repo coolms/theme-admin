@@ -17,6 +17,7 @@ import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
+import { clientHeaderInterceptor } from './client-header.interceptor';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { CallsEndWithTheSession } from './features/rtc/calls-end-with-the-session.service';
 import { SectionState } from './features/sections/section.state';
@@ -83,7 +84,10 @@ export const appConfig: ApplicationConfig = {
         // , which re-enters auth -- so the retry carries the token that
         // is current THEN, not the one stamped before a prompt the person may
         // have left open across a refresh.
-        provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
+        // The client header innermost: a call the elevation interceptor sends again carries it too.
+        provideHttpClient(withXhr(), withInterceptors([
+            sectionInterceptor, elevationInterceptor, authInterceptor, clientHeaderInterceptor,
+        ])),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
         // A signed-out browser closes its own calls (2026-09-25): the server ends a 1:1
