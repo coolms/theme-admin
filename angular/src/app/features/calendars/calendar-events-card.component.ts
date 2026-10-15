@@ -275,7 +275,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
 
         /* Holiday backgrounds — pin the text down so it's visible. */
         /*  .fc-event-title is a v6 name. .fc-ev-holiday-bg is OURS --
-           passed through eventClassNames() -- so it still applies, and the
+           passed through className (eventClassName()) -- so it still applies, and the
            text styling goes on it directly. */
         :host ::ng-deep .fc-ev-holiday-bg {
             color: var(--cms-warning-text);
@@ -816,7 +816,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             allDay:          true,
             display:         'background',
             color:           color,
-            classNames:      ['fc-ev-holiday-bg', h.isWorking ? 'fc-ev-holiday-working' : 'fc-ev-holiday-off'],
+            className:       'fc-ev-holiday-bg ' + (h.isWorking ? 'fc-ev-holiday-working' : 'fc-ev-holiday-off'),
             // Holidays are read-only; the editor key is the ruleId, not
             // a calendar item.
             editable:        false,
@@ -837,7 +837,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // `color` and emits it as --fc-event-color. Setting the old names
             // is why a chosen colour never reached the chip.
             color:           item.color ?? undefined,
-            classNames:      this.eventClassNames(item),
+            // FullCalendar 7 renamed this too: an event's classes are `className`, ONE string. `classNames`
+            // (v6) is kept as an extended prop and never drawn, so no event carried its type, recurring,
+            // tentative or cancelled class; an array under `className` is refused (a warning, no class).
+            className:       this.eventClassName(item),
             // Recurring items are now drag/resize-enabled.
             // On drop we prompt for scope ("only this" -> POST exception;
             // "all events" -> PATCH the canonical row).
@@ -870,12 +873,13 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         };
     }
 
-    private eventClassNames(item: CalendarItemDto): string[] {
+    /** The card's own classes for an event, as the one string FullCalendar 7 takes. */
+    private eventClassName(item: CalendarItemDto): string {
         const cls = [`fc-ev-type-${item.type}`];
         if (item.status === 'tentative') cls.push('fc-ev-tentative');
         if (item.status === 'cancelled') cls.push('fc-ev-cancelled');
         if (item.recurrence) cls.push('fc-ev-recurring');
-        return cls;
+        return cls.join(' ');
     }
 
     private onDateSelect(arg: DateSelectInfo): void {
