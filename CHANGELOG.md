@@ -86,6 +86,13 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Changed
 
+- **The admin installs `@coolms/editor-client` from npm.** The rich-text
+  editor's framework-free core is published on its own; `@coolms/editor-angular`
+  takes it as a peer dependency, so the admin that compiles the editor
+  provides it. Lockfile: the client and the `@coolms/ddoc` it depends on
+  (0.1.0-alpha.2, nested under it -- the admin keeps its own 0.1.0-alpha.1);
+  no third-party package changes.
+
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
   in the terminal itself, `[sudo] password for <account>:`, and asks for the
