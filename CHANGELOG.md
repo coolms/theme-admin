@@ -102,6 +102,13 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **The calendar's events carry their classes again.** FullCalendar 7 takes an
+  event's classes as `className`, one string; the card still set v6's
+  `classNames`, which 7 keeps as an extended prop and never draws. So no event
+  carried its type, and the card's own styles for them were dead: the repeat
+  mark on a recurring event, the line-through of a cancelled one, the italic of
+  a tentative one, and the holiday backgrounds' text. A spec draws the card's
+  events with the admin's FullCalendar and reads the classes off the page.
 - **A form's radios and checkboxes are drawn as the admin draws them.** Three
   forms styled every `input` as a text field, with a width, padding, a border,
   a radius and a background, and that rule reached their radios and
