@@ -233,7 +233,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
            at the 560px dialog width. */
         .field-row--adjustment > * { flex: 1 1 220px; }
         /* Text fields only: a radio or checkbox keeps the admin's own drawing (styles.scss). */
-        input:not([type="radio"]):not([type="checkbox"]), select {
+        input:where(:not([type="radio"]):not([type="checkbox"])), select {
             width: 100%;
             box-sizing: border-box;
             border: 1px solid var(--cms-border, #e5e7eb);

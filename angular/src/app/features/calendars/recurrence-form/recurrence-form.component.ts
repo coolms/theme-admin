@@ -336,7 +336,7 @@ import {
             margin-right: 12px;
         }
         /* Text fields only: a radio or checkbox keeps the admin's own drawing (styles.scss). */
-        input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+        input:where(:not([type="radio"]):not([type="checkbox"])), select, textarea {
             border: 1px solid var(--cms-border-control, #868c96);
             border-radius: var(--cms-radius, 6px);
             padding: 5px 10px;

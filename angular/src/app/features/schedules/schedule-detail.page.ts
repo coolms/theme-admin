@@ -277,7 +277,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
         .block textarea { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
 
         /* Text fields only: a radio or checkbox keeps the admin's own drawing (styles.scss). */
-        input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+        input:where(:not([type="radio"]):not([type="checkbox"])), select, textarea {
             border: 1px solid var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-sm, 4px);
             padding: 6px 8px;
