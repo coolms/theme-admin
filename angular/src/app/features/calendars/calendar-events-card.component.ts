@@ -22,6 +22,7 @@ import { filter, forkJoin, of } from 'rxjs';
 import { CalendarDto, CalendarHolidayPreviewDto, CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CreateCalendarItemDto, HolidayPreviewItemDto } from './calendars.types';
 import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiService } from './calendars-api.service';
 import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
+import { shiftSeries, stretchSeries } from './series-shift.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -1222,12 +1223,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
                 } else if (scope === 'following') {
                     this.persistSeriesSplit(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
-                } else if (seriesTargetId !== canonicalId) {
-                    this.allEventsNotFromAnEditedOccurrence(arg);
                 } else {
-                    this.persistCanonicalMove(
-                        canonicalId, { start: newStart, end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'rescheduled',
-                    );
+                    this.persistSeriesMove(seriesTargetId, arg, 'move');
                 }
             });
             return;
@@ -1272,10 +1269,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 }
                 if (scope === 'this') {
                     this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
-                } else if (seriesTargetId !== canonicalId) {
-                    this.allEventsNotFromAnEditedOccurrence(arg);
                 } else {
-                    this.persistCanonicalMove(canonicalId, { end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'duration updated');
+                    this.persistSeriesMove(seriesTargetId, arg, 'stretch');
                 }
             });
             return;
@@ -1457,16 +1452,46 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     }
 
     /**
-     * "All events" by dragging or resizing an EDITED occurrence: what was dragged is its exception, and moving it would
-     * move that one occurrence though all were chosen. Not acted on -- the drag is reverted, nothing is sent, and the
-     * way to change all of them is said.
+     * "All events" on a dragged (`move`) or resized (`stretch`) occurrence: the WHOLE series moves by the same
+     * difference, days and time, and nothing earlier is dropped. The series is read, its start (and end) moved on its
+     * own wall clock by what the occurrence was moved ({@link shiftSeries}), and saved naming the version of that read
+     * -- a series changed meanwhile is refused, not written over. From an edited occurrence too: it addresses its
+     * series. Changing all events between all-day and timed is left to the series' editor.
      */
-    private allEventsNotFromAnEditedOccurrence(arg: { revert: () => void }): void {
-        arg.revert();
-        this.toast.error(
-            'This occurrence was edited on its own, so dragging it moves only it. Open the series to change all events.',
-            'Nothing was changed',
-        );
+    private persistSeriesMove(seriesId: string, arg: EventDropInfo | EventResizeDoneInfo, how: 'move' | 'stretch'): void {
+        const allDay = arg.oldEvent.allDay;
+        if (arg.event.allDay !== allDay) {
+            arg.revert();
+            this.toast.error('Change all events between all-day and timed in the series\' editor.', 'Nothing was changed');
+            return;
+        }
+        const at = (e: EventApi): string | null => how === 'move'
+            ? (allDay ? e.startStr : e.start?.toISOString() ?? null)
+            : (allDay ? (e.endStr || null) : e.end?.toISOString() ?? null);
+        const from = at(arg.oldEvent);
+        const to = at(arg.event);
+        if (!from || !to) {
+            arg.revert();
+            return;
+        }
+        this.calendarsApi.getCalendarItem(seriesId).pipe(
+            switchMap(series => {
+                const zone = series.effectiveTimeZone ?? series.timeZone ?? this.calendar().tz ?? 'UTC';
+                const times = how === 'move' ? shiftSeries(series, from, to, zone) : stretchSeries(series, from, to, zone);
+                return this.calendarsApi.updateCalendarItem(series.id, { ...times, allDay: series.allDay }, series.version);
+            }),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+            next: () => {
+                this.toast.success(how === 'move' ? 'All events moved' : 'All events resized');
+                this.fc?.refetchEvents();
+                this.eventsChanged.emit();
+            },
+            error: (err: unknown) => {
+                this.writeFailed(err);
+                arg.revert();
+            },
+        });
     }
 
     /** An occurrence read without its slot in the series is not acted on as part of it: said, Reload offered. */

@@ -65,6 +65,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
             'skipCalendarItemOccurrence',
             'splitCalendarItem',
             'deleteFollowingCalendarItem',
+            'getCalendarItem',
         ]);
         for (const m of Object.keys(api) as (keyof CalendarsApiService)[]) {
             (api[m] as jasmine.Spy).and.returnValue(of({}));
@@ -165,31 +166,64 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         }, 3);
     });
 
-    it('dragging or resizing an edited occurrence with "all events" sends nothing and reverts', async () => {
+    /** The series as its own read answers it: starting 16 Oct, 07:00-07:30 UTC, at version 7 (newer than the row's 3). */
+    const SERIES = {
+        id: 'base-1', title: 'Daily', start: '2026-10-16T07:00:00.000Z', end: '2026-10-16T07:30:00.000Z', allDay: false,
+        version: 7, seriesVersion: 7, effectiveTimeZone: 'UTC',
+    };
+    // The 5th occurrence of that daily series, a plain one.
+    const FIFTH = {
+        ...SHIFTED,
+        start: new Date('2026-10-20T07:00:00.000Z'),
+        end: new Date('2026-10-20T07:30:00.000Z'),
+        extendedProps: { ...SHIFTED.extendedProps, recurrenceInstant: '2026-10-20T07:00:00+00:00' },
+    };
+
+    it('dragging the 5th occurrence of a daily series by two days, "all events", moves the series -- the 1st included -- by two days', async () => {
         scope = 'all';
-        const revert = jasmine.createSpy('revert');
-        const moved = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        const moved = { ...FIFTH, start: new Date('2026-10-22T07:00:00.000Z'), end: new Date('2026-10-22T07:30:00.000Z') };
 
-        card['onEventDrop']({ event: moved, oldEvent: EDITED, revert });
-        await Promise.resolve();
-        await Promise.resolve();
-        card['onEventResize']({ event: moved, oldEvent: EDITED, revert });
+        card['onEventDrop']({ event: moved, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(api.updateCalendarItem).not.toHaveBeenCalled();
-        expect(revert).toHaveBeenCalledTimes(2);
+        expect(api.getCalendarItem).toHaveBeenCalledOnceWith('base-1');
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', {
+            start: '2026-10-18T07:00:00.000Z',
+            end: '2026-10-18T07:30:00.000Z',
+            allDay: false,
+        }, 7);
     });
 
-    it('dragging a plain occurrence with "all events" still changes the series\' base, at its version', async () => {
+    it('dragging an edited occurrence, "all events", moves its series by the drag\'s difference', async () => {
         scope = 'all';
-        const moved = { ...SHIFTED, start: new Date('2026-10-21T08:00:00.000Z'), end: new Date('2026-10-21T08:30:00.000Z') };
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        // The edited occurrence sits at 08:30 on the 20th; dragged to 10:00 the same day: an hour and a half later.
+        const moved = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
 
-        card['onEventDrop']({ event: moved, oldEvent: SHIFTED, revert: jasmine.createSpy('revert') });
+        card['onEventDrop']({ event: moved, oldEvent: EDITED, revert: jasmine.createSpy('revert') });
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', jasmine.any(Object), 3);
+        expect(api.getCalendarItem).toHaveBeenCalledOnceWith('base-1');
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', {
+            start: '2026-10-16T08:30:00.000Z',
+            end: '2026-10-16T09:00:00.000Z',
+            allDay: false,
+        }, 7);
+    });
+
+    it('resizing an occurrence, "all events", makes every occurrence as much longer', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        const longer = { ...FIFTH, end: new Date('2026-10-20T08:00:00.000Z') };
+
+        card['onEventResize']({ event: longer, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', { end: '2026-10-16T08:00:00.000Z', allDay: false }, 7);
     });
 
     describe('an edited occurrence whose slot the server did not answer', () => {
