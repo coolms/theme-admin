@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ConfirmDialogService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
 
@@ -238,6 +238,22 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         expect(api.updateCalendarItem).not.toHaveBeenCalled();
         expect(revert).toHaveBeenCalledTimes(1);
         expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('numbered weekday'), 'Nothing was changed');
+    });
+
+    it('a series whose rows could not be read is not moved: nothing is written, the drag is reverted', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        api.listCalendarItems.and.returnValue(throwError(() => new Error('the calendar could not be read')) as never);
+        const revert = jasmine.createSpy('revert');
+        const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
+
+        card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).not.toHaveBeenCalled();
+        expect(revert).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledTimes(1);
     });
 
     it('a series with an occurrence edited on its own is not moved, from that occurrence or any other: nothing is written', async () => {
