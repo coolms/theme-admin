@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
@@ -6,7 +6,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxWriteRequest } from './email.types';
-import { afterAccess, saveFailed } from './mailbox-section-save';
+import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
  * A mailbox's own name and address, saved on their own at the version they were read, sending only what changed --
@@ -52,6 +52,8 @@ import { afterAccess, saveFailed } from './mailbox-section-save';
 export class MailboxDetailsSectionComponent {
     readonly mailbox = input.required<EmailMailboxDto>();
     readonly access = input<CapabilityState>('denied');
+    /** Changes on every Reload of the page: the fields start over from the read. */
+    readonly reset = input(0);
     readonly saved = output<EmailMailboxDto>();
     readonly reload = output<void>();
 
@@ -80,8 +82,31 @@ export class MailboxDetailsSectionComponent {
     });
     readonly dirty = computed(() => Object.keys(this.patch()).length > 0);
 
+    /** The read the fields were last laid over, and the reload it was taken at. */
+    private read: EmailMailboxDto | null = null;
+    private readAtReset = -1;
+
     constructor() {
-        effect(() => this.discard());
+        // The first read and every Reload start the fields over; any other new read keeps what was typed here and
+        // not saved (rebaseDraft), so another section's save never discards it.
+        effect(() => {
+            const next = this.mailbox();
+            const reset = this.reset();
+            untracked(() => {
+                const fresh = { label: next.label ?? '', address: next.emailAddress ?? '' };
+                const kept = this.read === null || reset !== this.readAtReset
+                    ? fresh
+                    : rebaseDraft(
+                        { label: this.read.label ?? '', address: this.read.emailAddress ?? '' },
+                        { label: this.label(), address: this.address() },
+                        fresh,
+                    );
+                this.label.set(kept.label);
+                this.address.set(kept.address);
+                this.read = next;
+                this.readAtReset = reset;
+            });
+        });
     }
 
     discard(): void {

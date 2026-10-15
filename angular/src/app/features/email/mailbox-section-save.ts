@@ -9,17 +9,34 @@ import { mailboxChangedSinceRead } from './email.service';
  * a section the caller may only read offers no save.
  */
 export function afterAccess(access: CapabilityState, elevation: ElevationService, send: () => void): void {
+    if (access === 'denied') {
+        return;
+    }
     if (access === 'allowed' || elevation.elevated()) {
         send();
         return;
     }
-    if (access === 'elevate') {
-        elevation.offerFor().subscribe(granted => {
-            if (granted || elevation.elevated()) {
-                send();
-            }
-        });
+    elevation.offerFor().subscribe(granted => {
+        if (granted || elevation.elevated()) {
+            send();
+        }
+    });
+}
+
+/**
+ * A section's draft after a new read of the mailbox -- another section's save answers one, and so does this section's
+ * own: a field the person did not touch since the previous read follows the new one, and a field they changed keeps
+ * what they typed. So one section's save never discards what is being typed in another. (A section's own saved
+ * fields equal the new read, so its draft is clean again.) Reload is the one thing that starts every section over.
+ */
+export function rebaseDraft<T extends object>(previous: T, draft: T, next: T): T {
+    const out = { ...next };
+    for (const key of Object.keys(draft) as (keyof T)[]) {
+        if (draft[key] !== previous[key]) {
+            out[key] = draft[key];
+        }
     }
+    return out;
 }
 
 /**
