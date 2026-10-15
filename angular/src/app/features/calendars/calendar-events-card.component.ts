@@ -21,6 +21,7 @@ import { filter, forkJoin, of } from 'rxjs';
 
 import { CalendarDto, CalendarHolidayPreviewDto, CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CreateCalendarItemDto, HolidayPreviewItemDto } from './calendars.types';
 import { calendarItemChangedSinceRead, CalendarsApiService } from './calendars-api.service';
+import { rowVersionOf, seriesVersionOf } from './write-versions.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -412,7 +413,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         description: string | null;
         location: string | null;
         color: string | null;
-        /** The version of the row a write to `canonicalId` changes, as the event was read. */
+        /** The version of the row `canonicalId` names, as the event was read (the exception's, on an edited one). */
         canonicalVersion: number | null;
         /** The series' version, for the actions on the series; null on a one-off event. */
         seriesVersion: number | null;
@@ -951,8 +952,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             description: (event.extendedProps['description'] as string | null | undefined) ?? null,
             location:    (event.extendedProps['location']    as string | null | undefined) ?? null,
             color:       event.color || null,
-            canonicalVersion: CalendarEventsCardComponent.canonicalVersionOf(event.extendedProps),
-            seriesVersion:    CalendarEventsCardComponent.seriesVersionOf(event.extendedProps),
+            canonicalVersion: rowVersionOf(event.extendedProps),
+            seriesVersion:    seriesVersionOf(event.extendedProps),
         });
     }
 
@@ -1171,8 +1172,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         }
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
-        const canonicalVersion = CalendarEventsCardComponent.canonicalVersionOf(arg.event.extendedProps);
-        const seriesVersion = CalendarEventsCardComponent.seriesVersionOf(arg.event.extendedProps);
+        const canonicalVersion = rowVersionOf(arg.event.extendedProps);
+        const seriesVersion = seriesVersionOf(arg.event.extendedProps);
         const newStart = arg.event.start?.toISOString();
         const newEnd   = arg.event.end?.toISOString() ?? null;
         if (!newStart) {
@@ -1228,8 +1229,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         }
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
-        const canonicalVersion = CalendarEventsCardComponent.canonicalVersionOf(arg.event.extendedProps);
-        const seriesVersion = CalendarEventsCardComponent.seriesVersionOf(arg.event.extendedProps);
+        const canonicalVersion = rowVersionOf(arg.event.extendedProps);
+        const seriesVersion = seriesVersionOf(arg.event.extendedProps);
         const newStart = arg.event.start?.toISOString();
         const newEnd   = arg.event.end?.toISOString();
         if (!newEnd) {
@@ -1406,21 +1407,6 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             calendarId:  this.calendar().id ?? '',
             calendarTz:  this.calendar().tz ?? 'UTC',
         });
-    }
-
-    /**
-     * The version of the row a write to an event's canonical id changes: on any occurrence of a series the series'
-     * base (`seriesVersion`), on a one-off event the event itself (`version`).
-     */
-    private static canonicalVersionOf(props: Record<string, unknown>): number | null {
-        const version = props['seriesId'] ? props['seriesVersion'] : props['version'];
-        return typeof version === 'number' ? version : null;
-    }
-
-    /** The series' version an exception, a skip, a split or a delete of this-and-following names. */
-    private static seriesVersionOf(props: Record<string, unknown>): number | null {
-        const version = props['seriesVersion'];
-        return typeof version === 'number' ? version : null;
     }
 
     /**
