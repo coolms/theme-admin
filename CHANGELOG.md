@@ -86,6 +86,22 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Changed
 
+- **A mailbox's settings are a page of sections; the wizard only adds a
+  mailbox.** The rail's Settings opens `/email/mailboxes/:id/settings`:
+  - Mailbox: name and address.
+  - Connection: servers, sign-in, sync.
+  - When mail arrives: the workflow a first-contact email starts.
+  - Access, for a shared mailbox.
+  - Removing the mailbox.
+
+  Each section is saved on its own, naming the version of the settings it
+  was read at (`If-Match`), and sends only what the person changed.
+  Settings changed since are refused and Reload is offered; a read
+  without a version saves nothing. What the caller may change is the
+  server's capability answer: someone who may only read the settings sees
+  them read-only. The wizard's edit mode, and its update that named no
+  version, are removed. Needs the backend that answers a mailbox's
+  `version`.
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
   in the terminal itself, `[sudo] password for <account>:`, and asks for the

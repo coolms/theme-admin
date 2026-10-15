@@ -31,6 +31,20 @@ export interface EmailMailboxDto {
     oauthConnected?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    /** `personal` or `shared`: what happens to the mailbox when its owner's account is deleted. */
+    kind?: string;
+    ownerUserId?: string | null;
+    /** The last fetch's outcome: `ok`, `transient`, `permanent` (stopped until a change or a retry), `pending_recheck`. */
+    connectionKind?: string | null;
+    connectionSince?: string | null;
+    /** Why a stopped mailbox stopped: `auth_refused`, `reauth_required`, `unreachable`, `unknown`. */
+    connectionErrorKind?: string | null;
+    lastSuccessAt?: string | null;
+    /**
+     * The version of the settings this read was made at, when the server answers one. A section saves naming it
+     * (If-Match); a mailbox changed since is refused (412) and nothing is changed. Without it nothing is saved.
+     */
+    version?: string | number | null;
 }
 
 /**

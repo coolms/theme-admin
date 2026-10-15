@@ -1,8 +1,9 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Observable, map } from 'rxjs';
+import { Observable, map, throwError } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
+import { type CapabilityState } from '@coolms/ui-angular';
 import {
     CreateDelegationRequest,
     DefinitionCatalogDto,
@@ -25,6 +26,25 @@ import {
     MailboxWriteRequest,
     OutgoingEmailRequest,
 } from './email.types';
+
+/** The actions on a mailbox's settings the page asks about. */
+export type MailboxAction = 'email.mailbox.update' | 'email.mailbox.authorize';
+
+/** A section save of a mailbox read with no version is not sent: it could only go over what is stored now, unseen. */
+export class MailboxNotReadError extends Error {
+    constructor(readonly mailboxId: string) {
+        super(`The mailbox "${mailboxId}" was read with no version, so its settings are not saved.`);
+        this.name = 'MailboxNotReadError';
+    }
+}
+
+/**
+ * A save refused because the mailbox's settings changed since they were read (412), or because they were read with
+ * no version: nothing was saved. What the person can do is reload; the save is never sent again on its own.
+ */
+export function mailboxChangedSinceRead(err: unknown): boolean {
+    return err instanceof MailboxNotReadError || (err instanceof HttpErrorResponse && err.status === 412);
+}
 
 /**
  * Thin API client for the Email mailbox client, over the backend
@@ -67,16 +87,46 @@ export class EmailService {
     }
 
     /**
-     * PATCH /email/mailboxes/{id} -- update a mailbox. API Platform's Patch
-     * op REQUIRES the `application/merge-patch+json` content type (else 415); only
-     * the fields present in the body are applied.
+     * PATCH /email/mailboxes/{id} for one settings section: only the section's fields, naming the version of the
+     * settings as read (If-Match). API Platform's Patch requires `application/merge-patch+json` (else 415); only the
+     * fields present in the body are applied. A mailbox read with no version is not written -- the save could only go over
+     * whatever is stored now, unseen ({@link MailboxNotReadError}); one changed since is refused by the server (412).
      */
-    updateMailbox(id: string, request: MailboxWriteRequest): Observable<EmailMailboxDto> {
+    saveMailboxSection(
+        id: string,
+        request: MailboxWriteRequest,
+        version: string | number | null | undefined,
+    ): Observable<EmailMailboxDto> {
+        if (version === null || version === undefined || version === '') {
+            return throwError(() => new MailboxNotReadError(id));
+        }
         return this.http.patch<EmailMailboxDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}`,
             request,
-            { headers: new HttpHeaders({ 'Content-Type': 'application/merge-patch+json' }) },
+            { headers: new HttpHeaders({ 'Content-Type': 'application/merge-patch+json', 'If-Match': `"${version}"` }) },
         );
+    }
+
+    /**
+     * What the caller may do to one mailbox's settings, as GET /capabilities answers it -- `allowed`, `elevate` or
+     * `denied` per action. An action the answer leaves out is `denied`.
+     */
+    mailboxCapabilities(id: string): Observable<Record<MailboxAction, CapabilityState>> {
+        const actions: readonly MailboxAction[] = ['email.mailbox.update', 'email.mailbox.authorize'];
+        const params = new HttpParams().set('actions', actions.join(',')).set('subject', id);
+        return this.http
+            .get<{ results?: ReadonlyArray<{ action?: string; state?: string }> }>(`${this.apiBase}/capabilities`, {
+                headers: this.jsonHeaders,
+                params,
+            })
+            .pipe(map(answer => {
+                const states = {} as Record<MailboxAction, CapabilityState>;
+                for (const action of actions) {
+                    const state = (answer.results ?? []).find(r => r.action === action)?.state;
+                    states[action] = state === 'allowed' || state === 'elevate' ? state : 'denied';
+                }
+                return states;
+            }));
     }
 
     /** DELETE /email/mailboxes/{id} -- remove a mailbox connection. */
