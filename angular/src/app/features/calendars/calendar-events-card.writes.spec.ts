@@ -1,7 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ConfirmDialogService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
 
@@ -56,6 +57,8 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
     let api: jasmine.SpyObj<CalendarsApiService>;
     let toast: jasmine.SpyObj<ToastService>;
     let scope: 'this' | 'following' | 'all';
+    /** What the person answers when asked to confirm. */
+    let confirmAnswer: boolean;
     let card: Record<string, (...args: unknown[]) => unknown>;
 
     beforeEach(() => {
@@ -74,12 +77,13 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         }
         toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'show']);
         scope = 'this';
+        confirmAnswer = true;
         TestBed.configureTestingModule({
             imports: [CalendarEventsCardComponent],
             providers: [
                 { provide: CalendarsApiService, useValue: api },
                 { provide: Dialog, useValue: { open: () => ({ closed: of(scope) }) } },
-                { provide: ConfirmDialogService, useValue: { open: () => of(true) } },
+                { provide: ConfirmDialogService, useValue: { open: () => of(confirmAnswer) } },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
                 { provide: ToastService, useValue: toast },
                 { provide: CalendarLiveEventsService, useValue: {} },
@@ -238,39 +242,65 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('numbered weekday'), 'Nothing was changed');
     });
 
-    it('a series read without its count of exceptions is not moved: nothing is guessed, nothing written', async () => {
+    it('a series with occurrences edited one by one is moved, from one of them too: the server moves them with it', async () => {
         scope = 'all';
-        api.getCalendarItem.and.returnValue(of({ ...SERIES, exceptionCount: undefined }) as never);
-        const revert = jasmine.createSpy('revert');
-        const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
+        api.getCalendarItem.and.returnValue(of({ ...SERIES, exceptionCount: 2 }) as never);
+        // The edited occurrence sits at 08:30 on the 20th; dragged to 10:00 the same day.
+        const edited = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
 
-        card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert });
+        card['onEventDrop']({ event: edited, oldEvent: EDITED, revert: jasmine.createSpy('revert') });
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(api.updateCalendarItem).not.toHaveBeenCalled();
-        expect(revert).toHaveBeenCalledTimes(1);
-        expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('did not say'), 'Nothing was changed');
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', jasmine.objectContaining({
+            start: '2026-10-16T08:30:00.000Z',
+        }), 7);
+        expect(api.listCalendarItems).not.toHaveBeenCalled();
     });
 
-    it('a series with an occurrence edited on its own is not moved, from that occurrence or any other: nothing is written', async () => {
-        scope = 'all';
-        api.getCalendarItem.and.returnValue(of({ ...SERIES, exceptionCount: 1 }) as never);
-        const revert = jasmine.createSpy('revert');
-        // The edited occurrence sits at 08:30 on the 20th; dragged to 10:00 the same day. Then a plain one, by a day.
-        const edited = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
-        const plain = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
+    describe('a move the server refuses because it would leave edited occurrences behind (409)', () => {
+        const LEAVES = new HttpErrorResponse({
+            status: 409,
+            error: {
+                type: '/errors/series-change-leaves-occurrences',
+                exceptions: [{ id: 'exception-1', start: '2026-10-20T08:30:00+00:00', title: 'Standup (moved)' }],
+                skipDates: [],
+            },
+        });
+        const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
 
-        for (const [event, oldEvent] of [[edited, EDITED], [plain, FIFTH]] as const) {
-            card['onEventDrop']({ event, oldEvent, revert });
+        it('asks, naming them; confirmed, sends the same change again with discardExceptions, at the same version', async () => {
+            scope = 'all';
+            api.getCalendarItem.and.returnValue(of(SERIES) as never);
+            api.updateCalendarItem.and.returnValues(throwError(() => LEAVES) as never, of(SERIES) as never);
+            const confirm = TestBed.inject(ConfirmDialogService);
+            const asked = spyOn(confirm, 'open').and.callThrough();
+
+            card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
             await Promise.resolve();
             await Promise.resolve();
-        }
 
-        expect(api.getCalendarItem.calls.allArgs()).toEqual([['base-1'], ['base-1']]);
-        expect(api.updateCalendarItem).not.toHaveBeenCalled();
-        expect(revert).toHaveBeenCalledTimes(2);
-        expect(toast.error).toHaveBeenCalledWith(jasmine.stringContaining('changed one by one'), 'Nothing was changed');
+            expect(asked.calls.mostRecent().args[0].message).toContain('"Standup (moved)" on 2026-10-20');
+            const [first, second] = api.updateCalendarItem.calls.allArgs();
+            expect(second).toEqual(['base-1', { ...(first[1] as object), discardExceptions: true }, 7]);
+            expect(toast.success).toHaveBeenCalledOnceWith('All events moved');
+        });
+
+        it('declined: nothing more is sent, the drag is reverted, and it says the series was left as it is', async () => {
+            scope = 'all';
+            confirmAnswer = false;
+            api.getCalendarItem.and.returnValue(of(SERIES) as never);
+            api.updateCalendarItem.and.returnValue(throwError(() => LEAVES) as never);
+            const revert = jasmine.createSpy('revert');
+
+            card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert });
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(api.updateCalendarItem).toHaveBeenCalledTimes(1);
+            expect(revert).toHaveBeenCalledTimes(1);
+            expect(toast.error).toHaveBeenCalledOnceWith('The series was left as it is.', 'Nothing was changed');
+        });
     });
 
     it('resizing an occurrence, "all events", makes every occurrence as much longer', async () => {

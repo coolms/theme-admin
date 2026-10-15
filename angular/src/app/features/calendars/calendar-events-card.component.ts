@@ -24,13 +24,14 @@ import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiSer
 import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
 import { SeriesNotMovedError, seriesMove, shiftSeries, stretchSeries } from './series-shift.util';
 import { shiftRecurrence } from './recurrence-shift.util';
+import { leftBehindMessage, seriesChangeLeaves } from './series-change.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ToastService,
     UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
-import { switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { CalendarEventEditorComponent, CalendarEventEditorData, CalendarEventEditorResult } from './calendar-event-editor.component';
 import {
     ScopePromptDialogComponent,
@@ -1461,7 +1462,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      *
      * A move carries the rule's own dates in the same write ({@link shiftRecurrence}): UNTIL, the skipped and added
      * dates, and the weekdays or days of the month the rule picks. It is refused, with nothing written, when no rule
-     * can give the same events moved, and while the series has an occurrence edited on its own.
+     * can give the same events moved. The server moves the occurrences edited one by one with the series; one the
+     * moved series would have no slot for is named in a 409, and the person chooses to let it go or keep the series.
      */
     private persistSeriesMove(seriesId: string, arg: EventDropInfo | EventResizeDoneInfo, how: 'move' | 'stretch'): void {
         const allDay = arg.oldEvent.allDay;
@@ -1498,24 +1500,27 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     allDay: series.allDay,
                     ...(rule === null ? {} : { recurrence: rule.recurrence }),
                 };
-                // An occurrence edited on its own is kept by the slot it replaced, which the server does not move
-                // with the series yet: a series with one is not moved, rather than leaving it at a slot it no
-                // longer has. The series' own read says how many it holds; a read that does not say is not
-                // guessed at.
-                const exceptions = series.exceptionCount;
-                if (exceptions === undefined || exceptions === null) {
-                    return throwError(() => new SeriesNotMovedError(
-                        'The server did not say whether events of this series were changed one by one, so the series is '
-                        + 'not moved. Move events one at a time.',
-                    ));
-                }
-                if (exceptions > 0) {
-                    return throwError(() => new SeriesNotMovedError(
-                        'Some events of this series were changed one by one, and they cannot be moved with it yet. '
-                        + 'Move events one at a time.',
-                    ));
-                }
-                return this.calendarsApi.updateCalendarItem(series.id, write, series.version);
+                // The server moves the occurrences edited one by one with the series. One the moved series would
+                // have no slot for is not dropped unasked: the change is refused (409) naming them, and the person
+                // decides -- let them go with the move, or leave the series as it is.
+                return this.calendarsApi.updateCalendarItem(series.id, write, series.version).pipe(
+                    catchError((err: unknown) => {
+                        const left = seriesChangeLeaves(err);
+                        if (left === null) {
+                            return throwError(() => err);
+                        }
+                        return this.confirmSvc.open({
+                            title: 'Move all events, and let some go?',
+                            message: leftBehindMessage(left),
+                            confirmLabel: 'Move and remove them',
+                            danger: true,
+                        }).pipe(switchMap(confirmed => confirmed
+                            ? this.calendarsApi.updateCalendarItem(
+                                series.id, { ...write, discardExceptions: true }, series.version,
+                            )
+                            : throwError(() => new SeriesNotMovedError('The series was left as it is.'))));
+                    }),
+                );
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({

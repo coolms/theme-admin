@@ -210,7 +210,13 @@ export interface CreateCalendarItemDto {
     readonly nwdPolicy?:   NonWorkingDayPolicy | null;
 }
 
-export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto>;
+export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto> & {
+    /**
+     * On a change of a series the server refused (409) because it would leave occurrences edited one by one, or
+     * skipped dates, on no slot: the same change sent again with this set makes it and removes those (audited).
+     */
+    readonly discardExceptions?: boolean;
+};
 
 /**
  * Wire shape for `POST /api/v1/calendar/items/{itemId}/exception`.
