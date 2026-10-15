@@ -70,6 +70,12 @@
         "strictTemplates": true
     },
     "exclude": [
-        "src/**/*.spec.ts"
+        "src/**/*.spec.ts",
+ // Test-only too, though not named *.spec.ts: the package specs a bridge
+ // runs under a suffix karma does not discover by itself, and the
+ // per-repository counter the bridges mark their specs with. Only the
+ // spec build (tsconfig.spec.json clears this list) compiles them.
+        "src/**/*.client-spec.ts",
+        "src/spec-origin/**/*.ts"
     ]
 }

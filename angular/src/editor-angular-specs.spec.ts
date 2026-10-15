@@ -7,6 +7,7 @@
  * add a spec to the package and add it here, or let the check tell you that you
  * did not.
  */
+import './spec-origin/editor-angular';
 import '../../../editor-angular/src/lib/document-schema-round-trip.spec';
 import '../../../editor-angular/src/lib/extensions/embed/embed-widget-transform.spec';
 import '../../../editor-angular/src/lib/extensions/footnote/footnote-ids.spec';
@@ -18,3 +19,7 @@ import '../../../editor-angular/src/lib/pagination/document-fonts.spec';
 import '../../../editor-angular/src/lib/pagination/flow-blocks.spec';
 import '../../../editor-angular/src/lib/pagination/pagination-extension.spec';
 import '../../../editor-angular/src/lib/pagination/repeated-headers.spec';
+
+import { endSpecOrigin } from './spec-origin/record';
+
+endSpecOrigin();

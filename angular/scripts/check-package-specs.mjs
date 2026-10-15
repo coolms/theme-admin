@@ -34,15 +34,18 @@ const BRIDGES = [
     { bridge: 'src/dtmpl-angular-specs.spec.ts', pkg: 'dtmpl-angular' },
     { bridge: 'src/sheet-editor-angular-specs.spec.ts', pkg: 'sheet-editor-angular' },
     { bridge: 'src/image-editor-angular-specs.spec.ts', pkg: 'image-editor-angular' },
+    // @coolms/editor-client's own specs, copied into the admin and run against the installed package (its repository
+    // has no browser runner): an in-tree directory and a suffix karma does not discover by itself.
+    { bridge: 'src/editor-client-specs.spec.ts', pkg: 'editor-client', dir: 'src/editor-client', suffix: '.client-spec.ts' },
 ];
 
-function specsOnDisk(dir, base = dir) {
+function specsOnDisk(dir, base = dir, suffix = '.spec.ts') {
     const out = [];
     for (const entry of readdirSync(dir)) {
         const full = join(dir, entry);
         if (statSync(full).isDirectory()) {
-            out.push(...specsOnDisk(full, base));
-        } else if (entry.endsWith('.spec.ts')) {
+            out.push(...specsOnDisk(full, base, suffix));
+        } else if (entry.endsWith(suffix)) {
             out.push(relative(base, full).split('\\').join('/').replace(/\.ts$/u, ''));
         }
     }
@@ -51,11 +54,13 @@ function specsOnDisk(dir, base = dir) {
 
 let failed = false;
 
-for (const { bridge, pkg } of BRIDGES) {
+for (const { bridge, pkg, dir, suffix } of BRIDGES) {
     const bridgePath = join(HERE, '..', bridge);
-    const srcDir = join(PACKAGES, pkg, 'src');
+    const srcDir = dir ? join(HERE, '..', dir) : join(PACKAGES, pkg, 'src');
+    // A package's specs are imported as `../../../<pkg>/src/<spec>`; an in-tree copy as `./<dir under src>/<spec>`.
+    const prefix = dir ? `^\\./${dir.replace(/^src\//u, '')}/` : `/${pkg}/src/`;
 
-    const onDisk = new Set(specsOnDisk(srcDir));
+    const onDisk = new Set(specsOnDisk(srcDir, srcDir, suffix ?? '.spec.ts'));
     const listed = new Set();
     /**
      * Membership is not enough. This check used to compare NAMES only, so a
@@ -67,7 +72,7 @@ for (const { bridge, pkg } of BRIDGES) {
     for (const m of readFileSync(bridgePath, 'utf8')
         .matchAll(/import '([^']+)';/gu)) {
         const spec = m[1];
-        const named = new RegExp(String.raw`/${pkg}/src/(.+)$`, 'u').exec(spec);
+        const named = new RegExp(prefix + '(.+)$', 'u').exec(spec);
         if (named) listed.add(named[1]);
         if (!existsSync(join(HERE, '..', dirname(bridge), `${spec}.ts`))) {
             unresolved.push(spec);
