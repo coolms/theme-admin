@@ -1,8 +1,8 @@
 import { instantOfWall, shiftSeries, stretchSeries, wallMs } from './series-shift.util';
 
 /**
- * "All events" on a dragged occurrence moves the whole series by the same difference, day and time, and drops nothing
- * (Dmitry, 2026-10-15). The difference is read on the series' wall clock, so a daylight-saving change between the
+ * "All events" on a dragged occurrence moves the whole series by the same difference, day and time, and drops nothing.
+ * The difference is read on the series' wall clock, so a daylight-saving change between the
  * series' start and the dragged occurrence does not shift its time of day.
  */
 describe('moving a whole series by one occurrence\'s move', () => {
