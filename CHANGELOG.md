@@ -20,6 +20,11 @@ major number means here.
   is never sent again on its own. Without a version nothing is sent. Needs the
   backend that answers each event's `version` and `seriesVersion`, and
   `@coolms/ui-angular` 2.0.0-alpha.4 or later for the Reload button.
+- **The admin names itself on its API calls.** Every call under `/api/`
+  carries `X-CoolMS-Client: com.coolms.admin/<version>`, the header the apps
+  send, so the backend's per-client daily counts show the admin and its
+  version. The version is read from `theme.yaml` into a generated, untracked
+  file on `prebuild`, `pretest` and `prestart` (`scripts/stamp-client.mjs`).
 
 - **A page or file opened for editing is saved only over the version it was
   opened at.** The page editor's body save and the file editors name the
