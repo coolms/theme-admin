@@ -217,11 +217,6 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             height: 32px;        /* match input/select height */
             font-size: .9rem;
         }
-        .checkbox input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-            padding: 0;
-        }
         /* Flex with wrap and min-width:0 children means the row can
            shrink to the dialog body without spilling out. Each child
            grows equally; the dialog's fixed 560px width is plenty for
@@ -237,7 +232,8 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
            "Working day (compensation)" label doesn't wrap aggressively
            at the 560px dialog width. */
         .field-row--adjustment > * { flex: 1 1 220px; }
-        input, select {
+        /* Text fields only: a radio or checkbox keeps the admin's own drawing (styles.scss). */
+        input:where(:not([type="radio"]):not([type="checkbox"])), select {
             width: 100%;
             box-sizing: border-box;
             border: 1px solid var(--cms-border, #e5e7eb);

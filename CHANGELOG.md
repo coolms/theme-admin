@@ -102,6 +102,16 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A form's radios and checkboxes are drawn as the admin draws them.** Three
+  forms styled every `input` as a text field, with a width, padding, a border,
+  a radius and a background, and that rule reached their radios and
+  checkboxes as well:
+  - The recurrence form's "Ends: Never / On / After" and monthly radios showed
+    as rounded squares, which read as checkboxes.
+  - The holiday rule form's checkbox was 2px wide.
+  - The schedule page's "Enabled" checkbox was padded like a text field.
+
+  Each of those rules now names text fields only.
 - **The actions on a series work from an edited occurrence, and at the right
   slot.** "Only this", "this and following" and "all events" -- from the
   calendar's menu, a drag, a resize or the editor -- on an occurrence that was
