@@ -7,3 +7,5 @@
  */
 import '../../../image-editor-angular/src/components/coolms-image-editor.keyboard.spec';
 import '../../../image-editor-angular/src/services/image-editor-http.service.spec';
+import '../../../image-editor-angular/src/engine/fabric-engine.dimensions.spec';
+import '../../../image-editor-angular/src/host/coolms-image-editor-host.one-read.spec';
