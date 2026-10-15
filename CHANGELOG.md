@@ -10,6 +10,17 @@ major number means here.
 
 ### Added
 
+- **An event is changed only from the version it was read at.** Every write of
+  a calendar event -- a change, a delete, and on a recurring event an
+  exception, a skip, a split or a delete of this and the following -- names
+  (`If-Match`) the version of the row it changes, as the editor or the
+  calendar read it: the event's own, or the series' for the series' base and
+  the actions on the series. An event or series changed since is refused,
+  said, and nothing is changed; Reload reads the calendar again, and the write
+  is never sent again on its own. Without a version nothing is sent. Needs the
+  backend that answers each event's `version` and `seriesVersion`, and
+  `@coolms/ui-angular` 2.0.0-alpha.4 or later for the Reload button.
+
 - **A page or file opened for editing is saved only over the version it was
   opened at.** The page editor's body save and the file editors name the
   version they read (`If-Match`); a page or file changed or deleted meanwhile is
