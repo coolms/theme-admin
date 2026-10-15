@@ -1505,8 +1505,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 const exceptions = series.exceptionCount;
                 if (exceptions === undefined || exceptions === null) {
                     return throwError(() => new SeriesNotMovedError(
-                        'The server did not say whether events of this series were changed one by one, so all of them '
-                        + 'are not moved. Move events one at a time.',
+                        'The server did not say whether events of this series were changed one by one, so the series is '
+                        + 'not moved. Move events one at a time.',
                     ));
                 }
                 if (exceptions > 0) {
