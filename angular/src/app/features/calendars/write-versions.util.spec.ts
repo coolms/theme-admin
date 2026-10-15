@@ -41,4 +41,10 @@ describe('the versions a calendar write names', () => {
             .toBe('2026-10-20T07:00:00+00:00');
         expect(occurrenceSlotOf({}, '2026-10-21T07:00:00.000Z')).toBe('2026-10-21T07:00:00.000Z');
     });
+
+    it("an edited occurrence whose slot was not answered has none: its start is no slot of the series", () => {
+        expect(occurrenceSlotOf({ parentItemId: 'base' }, '2026-10-20T08:30:00.000Z')).toBeNull();
+        expect(occurrenceSlotOf({ parentItemId: 'base', recurrenceInstant: '2026-10-20T07:00:00+00:00' }, null))
+            .toBe('2026-10-20T07:00:00+00:00');
+    });
 });

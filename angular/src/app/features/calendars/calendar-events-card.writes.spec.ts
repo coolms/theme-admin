@@ -164,4 +164,41 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
             newEnd: '2026-10-20T10:30:00.000Z',
         }, 3);
     });
+
+    describe('an edited occurrence whose slot the server did not answer', () => {
+        const UNSLOTTED = { ...EDITED, extendedProps: { ...EDITED.extendedProps, recurrenceInstant: null } };
+
+        it('is not deleted from the menu in any scope, nor as a plain event: nothing is sent', async () => {
+            for (const s of ['this', 'following', 'all'] as const) {
+                scope = s;
+                await fromTheMenu(UNSLOTTED, () => card['onCmenuDelete']());
+            }
+
+            expect(api.skipCalendarItemOccurrence).not.toHaveBeenCalled();
+            expect(api.deleteFollowingCalendarItem).not.toHaveBeenCalled();
+            expect(api.deleteCalendarItem).not.toHaveBeenCalled();
+        });
+
+        it('is not moved as part of its series by a drag: nothing is sent, the drag is reverted', async () => {
+            const revert = jasmine.createSpy('revert');
+            const moved = { ...UNSLOTTED, start: new Date('2026-10-20T10:00:00.000Z') };
+
+            for (const s of ['this', 'following'] as const) {
+                scope = s;
+                card['onEventDrop']({ event: moved, oldEvent: UNSLOTTED, revert });
+                await Promise.resolve();
+                await Promise.resolve();
+            }
+
+            expect(api.createCalendarItemException).not.toHaveBeenCalled();
+            expect(api.splitCalendarItem).not.toHaveBeenCalled();
+            expect(revert).toHaveBeenCalledTimes(2);
+        });
+
+        it('still has its own change from the menu, naming its own version', async () => {
+            await fromTheMenu(UNSLOTTED, () => card['onCmenuSetStatus']('tentative'));
+
+            expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('exception-1', { status: 'tentative' }, 9);
+        });
+    });
 });

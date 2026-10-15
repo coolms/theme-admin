@@ -29,9 +29,15 @@ export function seriesTargetOf(props: Record<string, unknown>, drawnId: string):
 /**
  * The slot of the series an occurrence stands for, which a series action names: the server's `recurrenceInstant` --
  * the rule's slot on a plain occurrence (a non-working-day shift can move the start away from it), the replaced slot
- * on an edited one. A server that answers none: the occurrence's start, as before.
+ * on an edited one. A server that answers none: a plain occurrence's start, as before; an EDITED occurrence's start is
+ * no slot of the series at all, so none -- and nothing is sent (an action at it would make a second exception, skip
+ * nothing, or cut the series at the moved time).
  */
 export function occurrenceSlotOf(props: Record<string, unknown>, start: string | null): string | null {
     const slot = props['recurrenceInstant'];
-    return typeof slot === 'string' && slot !== '' ? slot : start;
+    if (typeof slot === 'string' && slot !== '') {
+        return slot;
+    }
+    const parent = props['parentItemId'];
+    return typeof parent === 'string' && parent !== '' ? null : start;
 }

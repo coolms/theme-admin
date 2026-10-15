@@ -1093,6 +1093,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         if (!menu) return;
         this.cmenu.set(null);
 
+        if (menu.seriesId && !menu.occurrenceInstant) {
+            // An occurrence of a series whose slot was not read: neither a series action (no slot to name) nor the
+            // plain delete (it is part of a series). Nothing is sent.
+            this.slotNotRead();
+            return;
+        }
         if (menu.occurrenceInstant) {
             // Recurring occurrence -- scope prompt.
             this.promptScope({ intent: 'delete', itemTitle: menu.title }).then(scope => {
@@ -1436,6 +1442,22 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             message: unread
                 ? 'Nothing was changed: a change is made only from the version it was read at. Reload reads it again.'
                 : 'Nothing was changed. Reload shows the calendar as it is now.',
+            action: {
+                label: 'Reload',
+                run: () => {
+                    this.fc?.refetchEvents();
+                    this.eventsChanged.emit();
+                },
+            },
+        }, 0);
+    }
+
+    /** An occurrence read without its slot in the series is not acted on as part of it: said, Reload offered. */
+    private slotNotRead(): void {
+        this.toast.show({
+            type: 'error',
+            title: 'This occurrence was read without its place in the series',
+            message: 'Nothing was changed. Reload reads the calendar again.',
             action: {
                 label: 'Reload',
                 run: () => {
