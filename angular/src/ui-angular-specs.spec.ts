@@ -16,6 +16,7 @@
  * disagree. Add a spec to the package, add it here -- or let the check tell
  * you that you did not.
  */
+import './spec-origin/ui-angular';
 import '../../../ui-angular/src/context-menu/context-menu.service.spec';
 import '../../../ui-angular/src/datagrid/datagrid-declared-rows.spec';
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
@@ -50,3 +51,7 @@ import '../../../ui-angular/src/notification/session-ended-on-disconnect.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';
 import '../../../ui-angular/src/util/user-calendar-preferences.service.spec';
 import '../../../ui-angular/src/vfs/vfs-write-access.service.spec';
+
+import { endSpecOrigin } from './spec-origin/record';
+
+endSpecOrigin();

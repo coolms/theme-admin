@@ -12,6 +12,7 @@
  * devDependencies). Until then, this file is what keeps them honest -- if you
  * add a spec to the package, add it here.
  */
+import './spec-origin/core-angular';
 import '../../../core-angular/src/interceptors/section.interceptor.spec';
 import '../../../core-angular/src/auth/auth-refresh.coordinator.spec';
 import '../../../core-angular/src/auth/auth.interceptor.spec';
@@ -25,3 +26,7 @@ import '../../../core-angular/src/auth/auth.guard.spec';
 import '../../../core-angular/src/bootstrap/console-access.service.spec';
 import '../../../core-angular/src/auth/login/login.component.spec';
 import '../../../core-angular/src/api/realtime-token.client.spec';
+
+import { endSpecOrigin } from './spec-origin/record';
+
+endSpecOrigin();

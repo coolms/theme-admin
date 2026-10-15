@@ -5,5 +5,10 @@
  * the run the moment the package moved -- silently, with the suite still
  * reporting SUCCESS. `npm run lint:specs` keeps this list honest.
  */
+import './spec-origin/dtmpl-angular';
 import '../../../dtmpl-angular/src/ddoc-document.service.spec';
 import '../../../dtmpl-angular/src/provide-dtmpl-editors.spec';
+
+import { endSpecOrigin } from './spec-origin/record';
+
+endSpecOrigin();

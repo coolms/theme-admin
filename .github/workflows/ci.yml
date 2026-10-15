@@ -253,3 +253,6 @@ jobs:
           if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed (karma exit $rc)"; exit 1; fi
           if [ "$ran" != "$total" ]; then echo "::error::FOUND: $ran of $total specs executed -- ${skipped:-some} were skipped"; exit 1; fi
           echo "CLEAR: $ran of $total specs executed, none failed"
+          # The same specs by the repository they come from, each held against its floor (spec-floors.json): a
+          # repository whose specs stopped running is a drop the total alone does not show.
+          node scripts/check-spec-floors.mjs "$RUNNER_TEMP/karma.log"

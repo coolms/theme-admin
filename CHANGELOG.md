@@ -92,6 +92,23 @@ the elevation state; against one that does not, the admin behaves as before.
   provides it. Lockfile: the client and the `@coolms/ddoc` it depends on
   (0.1.0-alpha.2, nested under it -- the admin keeps its own 0.1.0-alpha.1);
   no third-party package changes.
+- **The admin installs `@coolms/document-engine` from npm** (0.1.0-alpha.2),
+  the optional peer the client loads its pagination engine from. The client
+  imports the engine itself at run time, from the installed packages: the
+  admin's own mapping of the engine to its sources does not reach into
+  them. Without it the client's pagination could not load. Lockfile: that
+  one entry; no third-party package changes.
+- **The client's browser specs run in the admin's suite, against the
+  installed package.** The 10 spec files (132 specs) that ran here before
+  the client moved out are copied under `src/editor-client/` with their
+  imports pointed at `@coolms/editor-client`. They run through
+  `src/editor-client-specs.spec.ts`, and `npm run lint:specs` keeps that
+  list equal to the copies.
+- **The suite counts its specs by the repository they come from.** Each
+  package bridge marks its specs (`src/spec-origin/`). The run writes
+  `SPECS BY REPOSITORY` and CI holds it against `spec-floors.json`, the
+  fewest specs each repository is known to run. A repository below its
+  floor fails, even when the total still passes.
 
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
