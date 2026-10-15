@@ -37,6 +37,20 @@ const VARIANT_MIME = 'text/x-dtmpl';
 
 interface VfsNodeWithExtras extends NodeDto {
     readonly extras?: Record<string, unknown>;
+    /** The file's version, for a reader who may read it: what a save sends back as If-Match. */
+    readonly contentHash?: string | null;
+}
+
+/**
+ * A variant body this service never read (or whose read failed) is not written: without the version it was read at,
+ * the save could only go over whatever is stored now, unseen -- a failed read once turned into an empty body that a
+ * title save wrote over the real one (2026-10-15).
+ */
+export class PageBodyNotReadError extends Error {
+    constructor(readonly path: string) {
+        super(`The body at "${path}" was not read, so it is not written.`);
+        this.name = 'PageBodyNotReadError';
+    }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -343,6 +357,10 @@ export class PageService {
                     path: variantPath,
                     content: '',
                 }).pipe(
+                    // The empty body this made is a version like any other: the first save names it.
+                    tap(node => {
+                        if (node.contentHash) this.bodyVersions.set(variantPath, node.contentHash);
+                    }),
                     switchMap(node => {
                         const hasMeta = data.title !== undefined
                             || (data.extras !== undefined && Object.keys(data.extras).length > 0);
@@ -563,7 +581,10 @@ export class PageService {
         // body and returns `{ "contentHash": "..." }`. Angular's HttpClient
         // serializes the object body as JSON and sets Content-Type for us.
         const version = this.bodyVersions.get(path);
-        const headers = version ? new HttpHeaders({ 'If-Match': `"${version}"` }) : undefined;
+        if (!version) {
+            return throwError(() => new PageBodyNotReadError(path));
+        }
+        const headers = new HttpHeaders({ 'If-Match': `"${version}"` });
         return this.http.put<{ contentHash: string }>(url, { content }, { headers }).pipe(
             tap(response => {
                 if (response?.contentHash) this.bodyVersions.set(path, response.contentHash);
