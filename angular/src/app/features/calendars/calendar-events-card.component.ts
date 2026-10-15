@@ -24,7 +24,7 @@ import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiSer
 import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
 import { SeriesNotMovedError, seriesMove, shiftSeries, stretchSeries } from './series-shift.util';
 import { shiftRecurrence } from './recurrence-shift.util';
-import { leftBehindMessage, seriesChangeLeaves } from './series-change.util';
+import { dateOnClock, leftBehindMessage, seriesChangeLeaves } from './series-change.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -476,6 +476,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // semantically meaningful for signal tracking.
             void tf; void df; void fd; void tz;
         });
+    }
+
+    /** The zone the calendar is shown in: the person's, else the calendar's, else the browser's ("local"). */
+    private displayZone(): string {
+        return this.userPrefs.tz() || this.calendar().tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
     /**
@@ -1511,7 +1516,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                         }
                         return this.confirmSvc.open({
                             title: 'Move all events, and let some go?',
-                            message: leftBehindMessage(left),
+                            // Each event is named by the date the person sees it on: an all-day series' dates
+                            // are kept in UTC, a timed one's read in the zone the calendar is shown in.
+                            message: leftBehindMessage(left, dateOnClock(
+                                series.allDay ? 'UTC' : this.displayZone(),
+                                this.userPrefs.dateFormat() || 'yyyy-MM-dd',
+                            )),
                             confirmLabel: 'Move and remove them',
                             danger: true,
                         }).pipe(switchMap(confirmed => confirmed

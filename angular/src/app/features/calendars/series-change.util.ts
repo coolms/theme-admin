@@ -1,4 +1,7 @@
+import { formatDate } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+
+import { wallMs } from './series-shift.util';
 
 /** The problem type of a series change the server refused because it would leave occurrences on no slot. */
 export const SERIES_CHANGE_LEAVES_OCCURRENCES = '/errors/series-change-leaves-occurrences';
@@ -38,6 +41,18 @@ export function seriesChangeLeaves(err: unknown): SeriesChangeLeaves | null {
         : [];
     const skipDates = Array.isArray(body.skipDates) ? body.skipDates.map(d => String(d)) : [];
     return { exceptions, skipDates };
+}
+
+/**
+ * The date for {@link leftBehindMessage}: the day an instant falls on in `zone` (the one the calendar is shown in),
+ * written in the person's date format (an Angular date pattern). The 409 writes its instants in UTC, whose date can be
+ * a day off the one the person sees.
+ */
+export function dateOnClock(zone: string, pattern: string): (iso: string) => string {
+    return iso => {
+        const at = new Date(iso);
+        return Number.isNaN(at.getTime()) ? iso.slice(0, 10) : formatDate(wallMs(at, zone), pattern, 'en-US', 'UTC');
+    };
 }
 
 /**

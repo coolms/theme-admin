@@ -133,7 +133,8 @@ the elevation state; against one that does not, the admin behaves as before.
   server moves them. When the moved series would have no slot for some of
   them, or some skipped dates would skip nothing, nothing is changed and
   the person is asked. The question names those occurrences by title and
-  date. "Move and remove them" makes the move and removes them; otherwise
+  by the date the calendar shows them on, in the person's date format.
+  "Move and remove them" makes the move and removes them; otherwise
   the series stays as it is. Needs the backend that moves a series'
   edited occurrences and answers 409
   `/errors/series-change-leaves-occurrences` for the rest.

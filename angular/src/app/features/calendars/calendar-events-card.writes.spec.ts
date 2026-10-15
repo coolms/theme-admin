@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ConfirmDialogService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
@@ -263,7 +263,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
             status: 409,
             error: {
                 type: '/errors/series-change-leaves-occurrences',
-                exceptions: [{ id: 'exception-1', start: '2026-10-20T08:30:00+00:00', title: 'Standup (moved)' }],
+                exceptions: [{ id: 'exception-1', start: '2026-10-20T22:30:00+00:00', title: 'Standup (moved)' }],
                 skipDates: [],
             },
         });
@@ -271,6 +271,12 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
 
         it('asks, naming them; confirmed, sends the same change again with discardExceptions, at the same version', async () => {
             scope = 'all';
+            // Shown in Moscow, dates written day first: the 409's 22:30 UTC on the 20th is the 21st there.
+            const prefs = TestBed.inject(UserCalendarPreferencesService) as unknown as {
+                tz: WritableSignal<string>; dateFormat: WritableSignal<string>;
+            };
+            prefs.tz.set('Europe/Moscow');
+            prefs.dateFormat.set('dd.MM.yyyy');
             api.getCalendarItem.and.returnValue(of(SERIES) as never);
             api.updateCalendarItem.and.returnValues(throwError(() => LEAVES) as never, of(SERIES) as never);
             const confirm = TestBed.inject(ConfirmDialogService);
@@ -280,7 +286,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(asked.calls.mostRecent().args[0].message).toContain('"Standup (moved)" on 2026-10-20');
+            expect(asked.calls.mostRecent().args[0].message).toContain('"Standup (moved)" on 21.10.2026');
             const [first, second] = api.updateCalendarItem.calls.allArgs();
             expect(second).toEqual(['base-1', { ...(first[1] as object), discardExceptions: true }, 7]);
             expect(toast.success).toHaveBeenCalledOnceWith('All events moved');
