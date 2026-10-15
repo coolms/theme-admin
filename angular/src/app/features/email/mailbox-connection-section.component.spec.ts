@@ -136,6 +136,34 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             expect(email.saveMailboxSection).toHaveBeenCalledOnceWith('mb-1', { enabled: false }, 'v7');
         });
 
+        it('another section\'s save keeps what was typed here and not saved, a password too; an untouched field follows', () => {
+            const fixture = render(MAILBOX);
+            const section = fixture.componentInstance;
+            section.set('imapPort', 143);
+            section.password.set('not saved yet');
+
+            // The Mailbox section saved: its answer is the page's new read, with an SMTP host someone else changed.
+            fixture.componentRef.setInput('mailbox', { ...MAILBOX, label: 'Renamed', smtpHost: 'mx.example.test', version: 'v8' });
+            fixture.detectChanges();
+
+            expect(section.draft().imapPort).withContext('typed here, kept').toBe(143);
+            expect(section.password()).withContext('typed here, kept').toBe('not saved yet');
+            expect(section.draft().smtpHost).withContext('untouched here, follows the read').toBe('mx.example.test');
+        });
+
+        it('a Reload starts the section over from the read, dropping what was typed', () => {
+            const fixture = render(MAILBOX);
+            const section = fixture.componentInstance;
+            section.set('imapPort', 143);
+            section.password.set('typed');
+
+            fixture.componentRef.setInput('reset', 1);
+            fixture.detectChanges();
+
+            expect(section.draft().imapPort).toBe(993);
+            expect(section.password()).toBe('');
+        });
+
         it('the sync depth appears only when the read carries it', () => {
             expect((render(MAILBOX).nativeElement as HTMLElement).querySelector('[name=backfillDepthMonths]')).toBeNull();
             expect((render({ ...MAILBOX, backfillDepthMonths: 6 } as EmailMailboxDto).nativeElement as HTMLElement)

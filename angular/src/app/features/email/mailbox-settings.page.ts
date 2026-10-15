@@ -56,18 +56,19 @@ import { afterAccess } from './mailbox-section-save';
 
                 <app-mailbox-details-section
                     [mailbox]="mb" [access]="access()['email.mailbox.update']"
-                    (saved)="mailbox.set($event)" (reload)="load()" />
+                    [reset]="resetToken()" (saved)="mailbox.set($event)" (reload)="load()" />
 
                 <app-mailbox-connection-section
                     [mailbox]="mb"
                     [access]="access()['email.mailbox.update']"
                     [authorizeAccess]="access()['email.mailbox.authorize']"
                     (saved)="mailbox.set($event)"
+                    [reset]="resetToken()"
                     (reload)="load()" />
 
                 <app-mailbox-inbound-section
                     [mailbox]="mb" [access]="access()['email.mailbox.update']"
-                    (saved)="mailbox.set($event)" (reload)="load()" />
+                    [reset]="resetToken()" (saved)="mailbox.set($event)" (reload)="load()" />
 
                 @if (mb.kind === 'shared' && access()['email.mailbox.update'] !== 'denied') {
                     <section class="mbs-page__section" aria-label="Access">
@@ -116,6 +117,8 @@ export class MailboxSettingsPageComponent implements OnInit {
 
     readonly mailbox = signal<EmailMailboxDto | null>(null);
     readonly error = signal<string | null>(null);
+    /** Moves on every read the page makes: each section starts over from it (a section's own save does not). */
+    readonly resetToken = signal(0);
     readonly access = signal<Record<MailboxAction, CapabilityState>>({
         'email.mailbox.update': 'denied',
         'email.mailbox.authorize': 'denied',
@@ -162,6 +165,7 @@ export class MailboxSettingsPageComponent implements OnInit {
             .subscribe({
                 next: ({ mailbox, access }) => {
                     this.access.set(access);
+                    this.resetToken.update(n => n + 1);
                     this.mailbox.set(mailbox);
                 },
                 error: (err: unknown) => this.error.set(this.errors.humanize(err)),

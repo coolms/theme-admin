@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
@@ -6,7 +6,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, InboundWorkflowOption } from './email.types';
-import { afterAccess, saveFailed } from './mailbox-section-save';
+import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
  * What starts when a first-contact email reaches the mailbox: one deployed workflow, or none. Saved on its own at
@@ -53,6 +53,8 @@ import { afterAccess, saveFailed } from './mailbox-section-save';
 export class MailboxInboundSectionComponent implements OnInit {
     readonly mailbox = input.required<EmailMailboxDto>();
     readonly access = input<CapabilityState>('denied');
+    /** Changes on every Reload of the page: the choice starts over from the read. */
+    readonly reset = input(0);
     readonly saved = output<EmailMailboxDto>();
     readonly reload = output<void>();
 
@@ -74,8 +76,25 @@ export class MailboxInboundSectionComponent implements OnInit {
         return version !== null && version !== undefined && version !== '';
     });
 
+    /** The read the choice was last laid over, and the reload it was taken at. */
+    private read: string | null = null;
+    private readAtReset = -1;
+
     constructor() {
-        effect(() => this.key.set(this.stored()));
+        // The first read and every Reload start the choice over; any other new read keeps a choice made here and
+        // not saved (rebaseDraft), so another section's save never discards it.
+        effect(() => {
+            const next = this.stored();
+            const reset = this.reset();
+            untracked(() => {
+                const kept = this.read === null || reset !== this.readAtReset
+                    ? next
+                    : rebaseDraft({ key: this.read }, { key: this.key() }, { key: next }).key;
+                this.key.set(kept);
+                this.read = next;
+                this.readAtReset = reset;
+            });
+        });
     }
 
     ngOnInit(): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
@@ -6,7 +6,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxSecurity, MailboxWriteRequest } from './email.types';
-import { afterAccess, saveFailed } from './mailbox-section-save';
+import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /** The connection fields this section edits, as they are read and as they are saved. */
 interface ConnectionDraft {
@@ -222,6 +222,8 @@ export class MailboxConnectionSectionComponent {
     readonly access = input<CapabilityState>('denied');
     /** The server's answer for `email.mailbox.authorize`. */
     readonly authorizeAccess = input<CapabilityState>('denied');
+    /** Changes on every Reload of the page: the draft starts over from the read. */
+    readonly reset = input(0);
 
     /** The settings as saved: the page takes the answer as its new read (and its new version). */
     readonly saved = output<EmailMailboxDto>();
@@ -248,11 +250,27 @@ export class MailboxConnectionSectionComponent {
     readonly status = computed(() => connectionStatusOf(this.mailbox()));
     readonly dirty = computed(() => Object.keys(connectionPatch(this.mailbox(), this.draft(), this.password())).length > 0);
 
+    /** The read the draft was last laid over, and the reload it was taken at. */
+    private read: EmailMailboxDto | null = null;
+    private readAtReset = -1;
+
     constructor() {
-        // Every new read -- the first, a reload, a save's answer -- starts the draft over from it.
+        // The first read and every Reload start the draft over. Any other new read -- a save's answer, this
+        // section's or another's -- is laid under it: what was typed here and not saved stays (rebaseDraft).
         effect(() => {
-            this.draft.set(connectionDraftOf(this.mailbox()));
-            this.password.set('');
+            const next = this.mailbox();
+            const reset = this.reset();
+            untracked(() => {
+                const fresh = connectionDraftOf(next);
+                if (this.read === null || reset !== this.readAtReset) {
+                    this.draft.set(fresh);
+                    this.password.set('');
+                } else {
+                    this.draft.set(rebaseDraft(connectionDraftOf(this.read), this.draft(), fresh));
+                }
+                this.read = next;
+                this.readAtReset = reset;
+            });
         });
     }
 
@@ -289,6 +307,7 @@ export class MailboxConnectionSectionComponent {
         this.email.saveMailboxSection(mailbox.id, patch, mailbox.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: answer => {
                 this.saving.set(false);
+                this.password.set('');
                 this.toast.success('Connection saved');
                 this.saved.emit(answer);
             },
