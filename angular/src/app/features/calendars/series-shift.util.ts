@@ -45,6 +45,9 @@ function shiftDate(date: string, days: number): string {
     return new Date(Date.parse(date.slice(0, 10) + 'T00:00:00Z') + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+/** A series "All events" does not move, with the reason for the person; nothing was written. */
+export class SeriesNotMovedError extends Error {}
+
 export interface SeriesTimes {
     readonly start: string;
     readonly end: string | null;
@@ -56,13 +59,24 @@ export interface SeriesTimes {
  * dropped (`to`), in `zone`. An all-day series moves by whole days (`from`/`to` read as dates).
  */
 export function shiftSeries(series: SeriesTimes, from: string, to: string, zone: string): { start: string; end: string | null } {
+    const move = seriesMove(series.allDay, from, to, zone);
     if (series.allDay) {
-        const days = Math.round((Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / DAY_MS);
+        const days = move.delta / DAY_MS;
         return { start: shiftDate(series.start, days), end: series.end === null ? null : shiftDate(series.end, days) };
     }
-    const delta = wallMs(new Date(to), zone) - wallMs(new Date(from), zone);
-    const move = (iso: string): string => instantOfWall(wallMs(new Date(iso), zone) + delta, zone).toISOString();
-    return { start: move(series.start), end: series.end === null ? null : move(series.end) };
+    const shift = (iso: string): string => instantOfWall(wallMs(new Date(iso), zone) + move.delta, zone).toISOString();
+    return { start: shift(series.start), end: series.end === null ? null : shift(series.end) };
+}
+
+/**
+ * The difference one occurrence was moved by (`from` to `to`), on the wall clock the series repeats on: `zone` for a
+ * timed series; UTC and whole days for an all-day series (`from`/`to` read as dates).
+ */
+export function seriesMove(allDay: boolean, from: string, to: string, zone: string): { readonly zone: string; readonly delta: number } {
+    if (allDay) {
+        return { zone: 'UTC', delta: Math.round((Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / DAY_MS) * DAY_MS };
+    }
+    return { zone, delta: wallMs(new Date(to), zone) - wallMs(new Date(from), zone) };
 }
 
 /**

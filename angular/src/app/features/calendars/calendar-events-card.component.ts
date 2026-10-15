@@ -17,12 +17,13 @@ import {
 } from '@angular/core';
 import type { EventApi } from 'fullcalendar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, forkJoin, of } from 'rxjs';
+import { filter, forkJoin, of, throwError } from 'rxjs';
 
 import { CalendarDto, CalendarHolidayPreviewDto, CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CreateCalendarItemDto, HolidayPreviewItemDto } from './calendars.types';
 import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiService } from './calendars-api.service';
 import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
-import { shiftSeries, stretchSeries } from './series-shift.util';
+import { SeriesNotMovedError, seriesMove, shiftSeries, stretchSeries } from './series-shift.util';
+import { shiftRecurrence } from './recurrence-shift.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -1457,6 +1458,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      * own wall clock by what the occurrence was moved ({@link shiftSeries}), and saved naming the version of that read
      * -- a series changed meanwhile is refused, not written over. From an edited occurrence too: it addresses its
      * series. Changing all events between all-day and timed is left to the series' editor.
+     *
+     * A move carries the rule's own dates in the same write ({@link shiftRecurrence}): UNTIL, the skipped and added
+     * dates, and the weekdays or days of the month the rule picks. It is refused, with nothing written, when no rule
+     * can give the same events moved, and while the series has an occurrence edited on its own.
      */
     private persistSeriesMove(seriesId: string, arg: EventDropInfo | EventResizeDoneInfo, how: 'move' | 'stretch'): void {
         const allDay = arg.oldEvent.allDay;
@@ -1474,11 +1479,37 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             arg.revert();
             return;
         }
+        const slug = this.calendar().slug;
         this.calendarsApi.getCalendarItem(seriesId).pipe(
             switchMap(series => {
                 const zone = series.effectiveTimeZone ?? series.timeZone ?? this.calendar().tz ?? 'UTC';
-                const times = how === 'move' ? shiftSeries(series, from, to, zone) : stretchSeries(series, from, to, zone);
-                return this.calendarsApi.updateCalendarItem(series.id, { ...times, allDay: series.allDay }, series.version);
+                if (how === 'stretch') {
+                    const times = stretchSeries(series, from, to, zone);
+                    return this.calendarsApi.updateCalendarItem(series.id, { ...times, allDay: series.allDay }, series.version);
+                }
+                // The rule's dates move with the start, in the same write: UNTIL, the skipped and the added dates,
+                // and the days a rule picks. A rule no move by this difference can keep is refused.
+                const move = seriesMove(series.allDay, from, to, zone);
+                const rule = series.recurrence ? shiftRecurrence(series.recurrence, series.start, move.delta, move.zone) : null;
+                if (rule !== null && 'refused' in rule) {
+                    return throwError(() => new SeriesNotMovedError(rule.refused));
+                }
+                const write = {
+                    ...shiftSeries(series, from, to, zone),
+                    allDay: series.allDay,
+                    ...(rule === null ? {} : { recurrence: rule.recurrence }),
+                };
+                // An occurrence edited on its own is kept by the slot it replaced, which the server does not move
+                // with the series yet: a series with one is not moved, rather than leaving it at a slot it no
+                // longer has.
+                return this.calendarsApi.listCalendarItems({ calendarSlug: slug }).pipe(
+                    switchMap(rows => rows.some(row => row.parentItemId === series.id)
+                        ? throwError(() => new SeriesNotMovedError(
+                            'Some events of this series were changed one by one, and they cannot be moved with it yet. '
+                            + 'Move events one at a time.',
+                        ))
+                        : this.calendarsApi.updateCalendarItem(series.id, write, series.version)),
+                );
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -1488,7 +1519,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 this.eventsChanged.emit();
             },
             error: (err: unknown) => {
-                this.writeFailed(err);
+                if (err instanceof SeriesNotMovedError) {
+                    this.toast.error(err.message, 'Nothing was changed');
+                } else {
+                    this.writeFailed(err);
+                }
                 arg.revert();
             },
         });

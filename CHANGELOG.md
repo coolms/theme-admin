@@ -120,8 +120,19 @@ the elevation state; against one that does not, the admin behaves as before.
   and time of day, on the series' own wall clock, so a 09:00 series stays at
   09:00 across a daylight-saving change -- and saved naming the version of
   that read. A resize with "All events" makes every occurrence as much longer
-  or shorter. From an edited occurrence too. Changing all events between
-  all-day and timed is left to the series' editor.
+  or shorter. Changing all events between all-day and timed is left to the
+  series' editor.
+  The rule's own dates move in the same write: UNTIL, the skipped dates
+  (EXDATE) and the added ones (RDATE), so a skipped 09:00 occurrence moved to
+  10:00 stays skipped. So do the days the rule picks: weekly on Monday moved
+  by a day repeats on Tuesday, and a day of the month moves within the month.
+  A move that no rule can give exactly is refused, with the reason, and
+  nothing is changed: for example "the 2nd Monday" moved by a day, or "the
+  30th" moved into another month. Moving only the time of day is always
+  possible. A series with an occurrence edited on its own is not moved yet,
+  because that occurrence is kept by the slot it replaced, which the server
+  does not move with the series. To find such an occurrence, the calendar's
+  own rows are read.
 - **"Read without a version" is said as such.** An event write not sent for
   want of a version now says the event was read without one, instead of
   "changed since you opened it".
