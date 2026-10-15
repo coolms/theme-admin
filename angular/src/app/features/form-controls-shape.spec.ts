@@ -90,17 +90,24 @@ describe('a form\'s radios and checkboxes are drawn as the admin draws them', ()
         return found;
     }
 
-    /** Every radio and checkbox `component` draws, each against one drawn alone; the number of them compared. */
-    function expectDrawnAsAlone(component: Type<unknown>, inputs: Record<string, unknown> = {}): number {
+    /**
+     * Every radio and checkbox `component` draws, each against one drawn alone; and every text field it draws still
+     * takes the form's own rule -- a change that dropped the text fields along with the radios fails here. The number
+     * of each compared.
+     */
+    function expectDrawnAsAlone(
+        component: Type<unknown>,
+        inputs: Record<string, unknown> = {},
+    ): { controls: number; textFields: number } {
         const fixture = TestBed.createComponent(component);
         for (const [name, value] of Object.entries(inputs)) {
             fixture.componentRef.setInput(name, value);
         }
         fixture.detectChanges();
         document.body.appendChild(fixture.nativeElement);
-        const controls = Array.from(
-            (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type=radio], input[type=checkbox]'),
-        );
+        const host = fixture.nativeElement as HTMLElement;
+        const controls = Array.from(host.querySelectorAll<HTMLInputElement>('input[type=radio], input[type=checkbox]'));
+        const textFields = Array.from(host.querySelectorAll<HTMLInputElement>('input:not([type=radio]):not([type=checkbox])'));
         try {
             for (const control of controls) {
                 const type = control.type as 'radio' | 'checkbox';
@@ -108,11 +115,18 @@ describe('a form\'s radios and checkboxes are drawn as the admin draws them', ()
                 expect(shapeOf(control)).withContext(which).toEqual(drawnAlone(type, control.checked));
                 expect(componentRulesReaching(control)).withContext(which).toEqual([]);
             }
+            // The text-field rule is the one that gives a field its radius: a rule of a class that only sizes a field
+            // (`.inline-input`) does not stand in for it.
+            for (const field of textFields) {
+                expect(componentRulesReaching(field).some(rule => rule.includes('border-radius')))
+                    .withContext(`${component.name}: the ${field.type} field takes the form's text-field rule`)
+                    .toBeTrue();
+            }
         } finally {
             fixture.nativeElement.remove();
             fixture.destroy();
         }
-        return controls.length;
+        return { controls: controls.length, textFields: textFields.length };
     }
 
     it('the recurrence form\'s radios -- "Ends: Never / On / After" and the monthly anchor -- are round', () => {
@@ -121,21 +135,26 @@ describe('a form\'s radios and checkboxes are drawn as the admin draws them', ()
             dtstart: '2026-11-15T09:00:00Z',
         });
 
-        // Two anchor radios and three end radios: none left out of the comparison.
-        expect(compared).toBe(5);
+        // Two anchor radios and three end radios: none left out of the comparison. And its text fields.
+        expect(compared.controls).toBe(5);
+        expect(compared.textFields).toBeGreaterThan(0);
     });
 
     it('the holiday rule form\'s checkbox is the admin\'s 18px checkbox', () => {
-        expect(expectDrawnAsAlone(HolidayRuleFormComponent)).toBe(1);
+        const compared = expectDrawnAsAlone(HolidayRuleFormComponent);
+
+        expect(compared.controls).toBe(1);
+        expect(compared.textFields).toBeGreaterThan(0);
     });
 
     it('the schedule page\'s "Enabled" checkbox is the admin\'s 18px checkbox', () => {
-        // The page draws its form once the schedule is read: its form row, as the page writes it.
+        // The page draws its form once the schedule is read: its form rows, as the page writes them.
         TestBed.overrideTemplate(ScheduleDetailPageComponent, `
+            <div class="form-row"><label>Name <input type="text" /></label></div>
             <div class="form-row"><label class="check"><input type="checkbox" checked /> Enabled</label></div>
             <div class="form-row"><label class="check"><input type="checkbox" /> Enabled</label></div>`);
         spyOn(ScheduleDetailPageComponent.prototype, 'ngOnInit');
 
-        expect(expectDrawnAsAlone(ScheduleDetailPageComponent)).toBe(2);
+        expect(expectDrawnAsAlone(ScheduleDetailPageComponent)).toEqual({ controls: 2, textFields: 1 });
     });
 });
