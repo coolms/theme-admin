@@ -128,6 +128,10 @@ export interface CalendarItemDto {
     readonly start:           string;        // ISO 8601 with TZ
     readonly end:             string | null; // ISO 8601 with TZ; null for tasks
     readonly allDay:          boolean;
+    /** The IANA zone the item's wall clock runs on, its own (null: its calendar's). */
+    readonly timeZone?:          string | null;
+    /** The zone the item's wall clock runs on: its own, else its calendar's. */
+    readonly effectiveTimeZone?: string | null;
     readonly recurrence:      string | null; // canonical RFC 5545 spec (multi-line)
     readonly color:           string | null; // hex (#rrggbb) or null = use calendar default
     readonly visibility:      CalendarItemVisibilityCode;
