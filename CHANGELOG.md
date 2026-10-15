@@ -86,6 +86,13 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A page body that could not be read is never written.** When the page
+  editor's read of a body failed, it showed an empty body and treated it as
+  read, and the next save of a title or SEO field wrote that empty body over
+  the stored one; Publish and Submit for review wrote the body even before
+  its read answered. A failed read is now shown as such, with a way to read
+  it again; no press writes a body that was not read; and the page service
+  sends no body it holds no version of.
 - **A selected file follows the listing when it is read again.** The listing is
   read again whenever elevation is granted, ended or expires, but the selection
   kept the file objects from before, and the bar and the menus read those: after
