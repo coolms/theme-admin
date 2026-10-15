@@ -1,4 +1,4 @@
-import { rowVersionOf, seriesVersionOf } from './write-versions.util';
+import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
 
 /**
  * A change or a delete names the version of the row the event's id names; the actions on a series name the series'.
@@ -29,5 +29,22 @@ describe('the versions a calendar write names', () => {
     it('a row read without versions names none', () => {
         expect(rowVersionOf({})).toBeNull();
         expect(seriesVersionOf({ seriesVersion: 'x' })).toBeNull();
+    });
+
+    it("a series action addresses the series' base: an edited occurrence's parent, else the drawn id", () => {
+        expect(seriesTargetOf({ parentItemId: 'base' }, 'exception')).toBe('base');
+        expect(seriesTargetOf({ parentItemId: null }, 'base')).toBe('base');
+    });
+
+    it('names the slot the occurrence stands for, and its start only when the server answers none', () => {
+        expect(occurrenceSlotOf({ recurrenceInstant: '2026-10-20T07:00:00+00:00' }, '2026-10-21T07:00:00.000Z'))
+            .toBe('2026-10-20T07:00:00+00:00');
+        expect(occurrenceSlotOf({}, '2026-10-21T07:00:00.000Z')).toBe('2026-10-21T07:00:00.000Z');
+    });
+
+    it("an edited occurrence whose slot was not answered has none: its start is no slot of the series", () => {
+        expect(occurrenceSlotOf({ parentItemId: 'base' }, '2026-10-20T08:30:00.000Z')).toBeNull();
+        expect(occurrenceSlotOf({ parentItemId: 'base', recurrenceInstant: '2026-10-20T07:00:00+00:00' }, null))
+            .toBe('2026-10-20T07:00:00+00:00');
     });
 });
