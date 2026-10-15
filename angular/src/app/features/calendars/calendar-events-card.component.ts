@@ -1222,6 +1222,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
                 } else if (scope === 'following') {
                     this.persistSeriesSplit(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
+                } else if (seriesTargetId !== canonicalId) {
+                    this.allEventsNotFromAnEditedOccurrence(arg);
                 } else {
                     this.persistCanonicalMove(
                         canonicalId, { start: newStart, end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'rescheduled',
@@ -1270,6 +1272,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 }
                 if (scope === 'this') {
                     this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
+                } else if (seriesTargetId !== canonicalId) {
+                    this.allEventsNotFromAnEditedOccurrence(arg);
                 } else {
                     this.persistCanonicalMove(canonicalId, { end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'duration updated');
                 }
@@ -1450,6 +1454,19 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 },
             },
         }, 0);
+    }
+
+    /**
+     * "All events" by dragging or resizing an EDITED occurrence: what was dragged is its exception, and moving it would
+     * move that one occurrence though all were chosen. Not acted on -- the drag is reverted, nothing is sent, and the
+     * way to change all of them is said.
+     */
+    private allEventsNotFromAnEditedOccurrence(arg: { revert: () => void }): void {
+        arg.revert();
+        this.toast.error(
+            'This occurrence was edited on its own, so dragging it moves only it. Open the series to change all events.',
+            'Nothing was changed',
+        );
     }
 
     /** An occurrence read without its slot in the series is not acted on as part of it: said, Reload offered. */

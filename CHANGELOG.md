@@ -109,7 +109,10 @@ the elevation state; against one that does not, the admin behaves as before.
   address the series it belongs to, at the slot it replaced, naming the
   series' version. A plain occurrence that a non-working-day rule moved is
   acted on at its rule's slot, not at the day it moved to. "All events" from
-  an edited occurrence deletes the series, not only that occurrence. Uses the
+  an edited occurrence deletes the series, not only that occurrence; dragging
+  or resizing an edited occurrence with "all events" is not acted on (it would
+  move only that occurrence) -- it is reverted and the way to change all of
+  them is said. Uses the
   `recurrenceInstant` the backend answers on each occurrence; a backend that
   answers none is sent the occurrence's start, as before.
 - **"Read without a version" is said as such.** An event write not sent for

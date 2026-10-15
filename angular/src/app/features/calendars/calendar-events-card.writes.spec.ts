@@ -165,6 +165,33 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         }, 3);
     });
 
+    it('dragging or resizing an edited occurrence with "all events" sends nothing and reverts', async () => {
+        scope = 'all';
+        const revert = jasmine.createSpy('revert');
+        const moved = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
+
+        card['onEventDrop']({ event: moved, oldEvent: EDITED, revert });
+        await Promise.resolve();
+        await Promise.resolve();
+        card['onEventResize']({ event: moved, oldEvent: EDITED, revert });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).not.toHaveBeenCalled();
+        expect(revert).toHaveBeenCalledTimes(2);
+    });
+
+    it('dragging a plain occurrence with "all events" still changes the series\' base, at its version', async () => {
+        scope = 'all';
+        const moved = { ...SHIFTED, start: new Date('2026-10-21T08:00:00.000Z'), end: new Date('2026-10-21T08:30:00.000Z') };
+
+        card['onEventDrop']({ event: moved, oldEvent: SHIFTED, revert: jasmine.createSpy('revert') });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', jasmine.any(Object), 3);
+    });
+
     describe('an edited occurrence whose slot the server did not answer', () => {
         const UNSLOTTED = { ...EDITED, extendedProps: { ...EDITED.extendedProps, recurrenceInstant: null } };
 
