@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { Observable, switchMap, filter } from 'rxjs';
 
 import { CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CalendarItemVisibilityCode, CreateCalendarItemDto, NonWorkingDayPolicy } from './calendars.types';
-import { calendarItemChangedSinceRead, CalendarsApiService } from './calendars-api.service';
+import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiService } from './calendars-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
@@ -611,14 +611,15 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.calendarsApi.splitCalendarItem(item.id, {
+        const series = this.seriesOf(item);
+        this.calendarsApi.splitCalendarItem(series.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
             title:             this.title_.trim(),
             description:       this.description.trim() || null,
             status:            this.status,
-        }, item.seriesVersion ?? item.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, series.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: res => {
                 this.saving.set(false);
                 this.toast.success('Series split at this occurrence');
@@ -643,14 +644,15 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.calendarsApi.createCalendarItemException(item.id, {
+        const series = this.seriesOf(item);
+        this.calendarsApi.createCalendarItemException(series.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
             title:             this.title_.trim(),
             description:       this.description.trim() || null,
             status:            this.status,
-        }, item.seriesVersion ?? item.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, series.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: res => {
                 this.saving.set(false);
                 this.toast.success('This occurrence updated');
@@ -741,7 +743,8 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.calendarsApi.skipCalendarItemOccurrence(item.id, instant, item.seriesVersion ?? item.version)
+        const series = this.seriesOf(item);
+        this.calendarsApi.skipCalendarItemOccurrence(series.id, instant, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -761,7 +764,8 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.calendarsApi.deleteFollowingCalendarItem(item.id, instant, item.seriesVersion ?? item.version)
+        const series = this.seriesOf(item);
+        this.calendarsApi.deleteFollowingCalendarItem(series.id, instant, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -780,13 +784,15 @@ export class CalendarEventEditorComponent {
     private commitCanonicalDelete(): void {
         const item = this.data.item!;
         this.deleting.set(true);
-        this.calendarsApi.deleteCalendarItem(item.id, item.version)
+        // "All events": the series -- from an edited occurrence too, not only its exception.
+        const series = this.seriesOf(item);
+        this.calendarsApi.deleteCalendarItem(series.id, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
                     this.deleting.set(false);
                     this.toast.success('Event deleted');
-                    this.dialogRef.close({ action: 'deleted', id: item.id });
+                    this.dialogRef.close({ action: 'deleted', id: series.id });
                 },
                 error: (err: unknown) => this.failed(err, this.deleting),
             });
@@ -803,13 +809,27 @@ export class CalendarEventEditorComponent {
             this.error.set(this.errors.humanize(err));
             return;
         }
-        this.error.set('This event was changed since you opened it. Nothing was changed.');
+        const unread = err instanceof CalendarItemNotReadError;
+        const title = unread ? 'This event was read without a version' : 'This event was changed since you opened it';
+        this.error.set(`${title}. Nothing was changed.`);
         this.toast.show({
             type: 'error',
-            title: 'This event was changed since you opened it',
-            message: 'Nothing was changed. Reload shows the calendar as it is now.',
+            title,
+            message: unread
+                ? 'A change is made only from the version it was read at. Reload reads the calendar again.'
+                : 'Nothing was changed. Reload shows the calendar as it is now.',
             action: { label: 'Reload', run: () => this.dialogRef.close({ action: 'reload' }) },
         }, 0);
+    }
+
+    /**
+     * The series a series action addresses, and the version it names: an edited occurrence's exception has its own
+     * id and version, and the series is its parent at the series' version; any other item is the series itself.
+     */
+    private seriesOf(item: CalendarItemDto): { id: string; version: number | null | undefined } {
+        return item.parentItemId
+            ? { id: item.parentItemId, version: item.seriesVersion }
+            : { id: item.id, version: item.seriesVersion ?? item.version };
     }
 }
 

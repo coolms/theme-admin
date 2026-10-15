@@ -163,6 +163,13 @@ export interface CalendarItemDto {
      */
     readonly seriesVersion?:  number | null;
     /**
+     * On an occurrence of a series, the slot of the series it stands for (UTC): on a plain occurrence the rule's slot,
+     * which a non-working-day shift can move `start` away from; on an edited one, the slot it replaced. What an
+     * exception, a skip, a split and a delete of this and the following name. Null on a one-off and on the series'
+     * own row.
+     */
+    readonly recurrenceInstant?: string | null;
+    /**
      * -- non-working-day policy. Controls what the expander
      * does when a recurring occurrence lands on a holiday or other
      * non-working day of the host calendar:

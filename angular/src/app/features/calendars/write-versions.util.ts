@@ -16,3 +16,22 @@ export function seriesVersionOf(props: Record<string, unknown>): number | null {
     const version = props['seriesVersion'];
     return typeof version === 'number' ? version : null;
 }
+
+/**
+ * The row a series action addresses: the series' base. On an edited occurrence the drawn id is its exception's, and
+ * the base is the exception's `parentItemId`; on any other occurrence the drawn id is the base's already.
+ */
+export function seriesTargetOf(props: Record<string, unknown>, drawnId: string): string {
+    const parent = props['parentItemId'];
+    return typeof parent === 'string' && parent !== '' ? parent : drawnId;
+}
+
+/**
+ * The slot of the series an occurrence stands for, which a series action names: the server's `recurrenceInstant` --
+ * the rule's slot on a plain occurrence (a non-working-day shift can move the start away from it), the replaced slot
+ * on an edited one. A server that answers none: the occurrence's start, as before.
+ */
+export function occurrenceSlotOf(props: Record<string, unknown>, start: string | null): string | null {
+    const slot = props['recurrenceInstant'];
+    return typeof slot === 'string' && slot !== '' ? slot : start;
+}

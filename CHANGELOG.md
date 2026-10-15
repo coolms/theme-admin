@@ -102,6 +102,19 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **The actions on a series work from an edited occurrence, and at the right
+  slot.** "Only this", "this and following" and "all events" -- from the
+  calendar's menu, a drag, a resize or the editor -- on an occurrence that was
+  edited before went to its exception, which the server refuses; they now
+  address the series it belongs to, at the slot it replaced, naming the
+  series' version. A plain occurrence that a non-working-day rule moved is
+  acted on at its rule's slot, not at the day it moved to. "All events" from
+  an edited occurrence deletes the series, not only that occurrence. Uses the
+  `recurrenceInstant` the backend answers on each occurrence; a backend that
+  answers none is sent the occurrence's start, as before.
+- **"Read without a version" is said as such.** An event write not sent for
+  want of a version now says the event was read without one, instead of
+  "changed since you opened it".
 - **A page body that could not be read is never written.** When the page
   editor's read of a body failed, it showed an empty body and treated it as
   read, and the next save of a title or SEO field wrote that empty body over
