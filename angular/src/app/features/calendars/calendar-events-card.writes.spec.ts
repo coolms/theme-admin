@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ConfirmDialogService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ErrorHandlerService } from '@coolms/core-angular';
 
@@ -54,6 +54,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
     };
 
     let api: jasmine.SpyObj<CalendarsApiService>;
+    let toast: jasmine.SpyObj<ToastService>;
     let scope: 'this' | 'following' | 'all';
     let card: Record<string, (...args: unknown[]) => unknown>;
 
@@ -65,10 +66,15 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
             'skipCalendarItemOccurrence',
             'splitCalendarItem',
             'deleteFollowingCalendarItem',
+            'getCalendarItem',
+            'listCalendarItems',
         ]);
         for (const m of Object.keys(api) as (keyof CalendarsApiService)[]) {
             (api[m] as jasmine.Spy).and.returnValue(of({}));
         }
+        // The calendar's own rows: no occurrence edited on its own, unless a case says so.
+        api.listCalendarItems.and.returnValue(of([]));
+        toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'show']);
         scope = 'this';
         TestBed.configureTestingModule({
             imports: [CalendarEventsCardComponent],
@@ -77,7 +83,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
                 { provide: Dialog, useValue: { open: () => ({ closed: of(scope) }) } },
                 { provide: ConfirmDialogService, useValue: { open: () => of(true) } },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
-                { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'show']) },
+                { provide: ToastService, useValue: toast },
                 { provide: CalendarLiveEventsService, useValue: {} },
                 {
                     provide: UserCalendarPreferencesService,
@@ -88,7 +94,7 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         // Nothing is drawn: the writes are what is measured, not FullCalendar.
         TestBed.overrideTemplate(CalendarEventsCardComponent, '');
         const fixture = TestBed.createComponent(CalendarEventsCardComponent);
-        fixture.componentRef.setInput('calendar', { id: 'cal-1', tz: 'UTC' });
+        fixture.componentRef.setInput('calendar', { id: 'cal-1', slug: 'team', tz: 'UTC' });
         fixture.componentRef.setInput('canEdit', true);
         card = fixture.componentInstance as unknown as typeof card;
     });
@@ -165,31 +171,122 @@ describe('CalendarEventsCardComponent -- each write names the row and the versio
         }, 3);
     });
 
-    it('dragging or resizing an edited occurrence with "all events" sends nothing and reverts', async () => {
-        scope = 'all';
-        const revert = jasmine.createSpy('revert');
-        const moved = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
+    /**
+     * The series as its own read answers it: daily from 16 Oct, 07:00-07:30 UTC, ten times, at version 7 (newer than
+     * the row's 3).
+     */
+    const SERIES = {
+        id: 'base-1', title: 'Daily', start: '2026-10-16T07:00:00.000Z', end: '2026-10-16T07:30:00.000Z', allDay: false,
+        version: 7, seriesVersion: 7, effectiveTimeZone: 'UTC', recurrence: 'RRULE:FREQ=DAILY;COUNT=10',
+    };
+    // The 5th occurrence of that daily series, a plain one.
+    const FIFTH = {
+        ...SHIFTED,
+        start: new Date('2026-10-20T07:00:00.000Z'),
+        end: new Date('2026-10-20T07:30:00.000Z'),
+        extendedProps: { ...SHIFTED.extendedProps, recurrenceInstant: '2026-10-20T07:00:00+00:00' },
+    };
 
-        card['onEventDrop']({ event: moved, oldEvent: EDITED, revert });
+    it('dragging the 5th occurrence of a daily series by two days, "all events", moves the series -- the 1st included -- by two days', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        // An occurrence edited on its own in ANOTHER series of the calendar does not hold this one back.
+        api.listCalendarItems.and.returnValue(of([{ id: 'other-exception', parentItemId: 'other-base' }]) as never);
+        const moved = { ...FIFTH, start: new Date('2026-10-22T07:00:00.000Z'), end: new Date('2026-10-22T07:30:00.000Z') };
+
+        card['onEventDrop']({ event: moved, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
         await Promise.resolve();
         await Promise.resolve();
-        card['onEventResize']({ event: moved, oldEvent: EDITED, revert });
+
+        expect(api.getCalendarItem).toHaveBeenCalledOnceWith('base-1');
+        expect(api.listCalendarItems).toHaveBeenCalledOnceWith({ calendarSlug: 'team' });
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', {
+            start: '2026-10-18T07:00:00.000Z',
+            end: '2026-10-18T07:30:00.000Z',
+            allDay: false,
+            recurrence: 'RRULE:FREQ=DAILY;COUNT=10',
+        }, 7);
+    });
+
+    it('a skipped date moves with the series in the same write: a skipped 07:00 occurrence moved to 08:00 stays skipped', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of({ ...SERIES, recurrence: 'RRULE:FREQ=DAILY;COUNT=10\r\nEXDATE:20261018T070000Z' }) as never);
+        const later = { ...FIFTH, start: new Date('2026-10-20T08:00:00.000Z'), end: new Date('2026-10-20T08:30:00.000Z') };
+
+        card['onEventDrop']({ event: later, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', {
+            start: '2026-10-16T08:00:00.000Z',
+            end: '2026-10-16T08:30:00.000Z',
+            allDay: false,
+            recurrence: 'RRULE:FREQ=DAILY;COUNT=10\r\nEXDATE:20261018T080000Z',
+        }, 7);
+    });
+
+    it('a series whose rule no move by that difference can keep is not moved: nothing is written, the reason is said', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of({ ...SERIES, recurrence: 'RRULE:FREQ=MONTHLY;BYDAY=3FR' }) as never);
+        const revert = jasmine.createSpy('revert');
+        const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
+
+        card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert });
         await Promise.resolve();
         await Promise.resolve();
 
         expect(api.updateCalendarItem).not.toHaveBeenCalled();
-        expect(revert).toHaveBeenCalledTimes(2);
+        expect(revert).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledOnceWith(jasmine.stringContaining('numbered weekday'), 'Nothing was changed');
     });
 
-    it('dragging a plain occurrence with "all events" still changes the series\' base, at its version', async () => {
+    it('a series whose rows could not be read is not moved: nothing is written, the drag is reverted', async () => {
         scope = 'all';
-        const moved = { ...SHIFTED, start: new Date('2026-10-21T08:00:00.000Z'), end: new Date('2026-10-21T08:30:00.000Z') };
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        api.listCalendarItems.and.returnValue(throwError(() => new Error('the calendar could not be read')) as never);
+        const revert = jasmine.createSpy('revert');
+        const nextDay = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
 
-        card['onEventDrop']({ event: moved, oldEvent: SHIFTED, revert: jasmine.createSpy('revert') });
+        card['onEventDrop']({ event: nextDay, oldEvent: FIFTH, revert });
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', jasmine.any(Object), 3);
+        expect(api.updateCalendarItem).not.toHaveBeenCalled();
+        expect(revert).toHaveBeenCalledTimes(1);
+        expect(toast.error).toHaveBeenCalledTimes(1);
+    });
+
+    it('a series with an occurrence edited on its own is not moved, from that occurrence or any other: nothing is written', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        api.listCalendarItems.and.returnValue(of([{ id: 'exception-1', parentItemId: 'base-1' }]) as never);
+        const revert = jasmine.createSpy('revert');
+        // The edited occurrence sits at 08:30 on the 20th; dragged to 10:00 the same day. Then a plain one, by a day.
+        const edited = { ...EDITED, start: new Date('2026-10-20T10:00:00.000Z'), end: new Date('2026-10-20T10:30:00.000Z') };
+        const plain = { ...FIFTH, start: new Date('2026-10-21T07:00:00.000Z'), end: new Date('2026-10-21T07:30:00.000Z') };
+
+        for (const [event, oldEvent] of [[edited, EDITED], [plain, FIFTH]] as const) {
+            card['onEventDrop']({ event, oldEvent, revert });
+            await Promise.resolve();
+            await Promise.resolve();
+        }
+
+        expect(api.getCalendarItem.calls.allArgs()).toEqual([['base-1'], ['base-1']]);
+        expect(api.updateCalendarItem).not.toHaveBeenCalled();
+        expect(revert).toHaveBeenCalledTimes(2);
+        expect(toast.error).toHaveBeenCalledWith(jasmine.stringContaining('changed one by one'), 'Nothing was changed');
+    });
+
+    it('resizing an occurrence, "all events", makes every occurrence as much longer', async () => {
+        scope = 'all';
+        api.getCalendarItem.and.returnValue(of(SERIES) as never);
+        const longer = { ...FIFTH, end: new Date('2026-10-20T08:00:00.000Z') };
+
+        card['onEventResize']({ event: longer, oldEvent: FIFTH, revert: jasmine.createSpy('revert') });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(api.updateCalendarItem).toHaveBeenCalledOnceWith('base-1', { end: '2026-10-16T08:00:00.000Z', allDay: false }, 7);
     });
 
     describe('an edited occurrence whose slot the server did not answer', () => {
