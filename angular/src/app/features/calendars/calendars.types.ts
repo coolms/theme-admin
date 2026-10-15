@@ -167,6 +167,11 @@ export interface CalendarItemDto {
      */
     readonly seriesVersion?:  number | null;
     /**
+     * On a series' own read (and its change's answer): how many of its occurrences are stored as their own rows,
+     * edited or moved one by one. Absent on any other row.
+     */
+    readonly exceptionCount?: number | null;
+    /**
      * On an occurrence of a series, the slot of the series it stands for (UTC): on a plain occurrence the rule's slot,
      * which a non-working-day shift can move `start` away from; on an edited one, the slot it replaced. What an
      * exception, a skip, a split and a delete of this and the following name. Null on a one-off and on the series'
@@ -205,7 +210,13 @@ export interface CreateCalendarItemDto {
     readonly nwdPolicy?:   NonWorkingDayPolicy | null;
 }
 
-export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto>;
+export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto> & {
+    /**
+     * On a change of a series the server refused (409) because it would leave occurrences edited one by one, or
+     * skipped dates, on no slot: the same change sent again with this set makes it and removes those (audited).
+     */
+    readonly discardExceptions?: boolean;
+};
 
 /**
  * Wire shape for `POST /api/v1/calendar/items/{itemId}/exception`.

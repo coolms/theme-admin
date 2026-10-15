@@ -139,10 +139,15 @@ the elevation state; against one that does not, the admin behaves as before.
   A move that no rule can give exactly is refused, with the reason, and
   nothing is changed: for example "the 2nd Monday" moved by a day, or "the
   30th" moved into another month. Moving only the time of day is always
-  possible. A series with an occurrence edited on its own is not moved yet,
-  because that occurrence is kept by the slot it replaced, which the server
-  does not move with the series. To find such an occurrence, the calendar's
-  own rows are read.
+  possible. Occurrences edited one by one move with the series: the
+  server moves them. When the moved series would have no slot for some of
+  them, or some skipped dates would skip nothing, nothing is changed and
+  the person is asked. The question names those occurrences by title and
+  by the date the calendar shows them on, in the person's date format.
+  "Move and remove them" makes the move and removes them; otherwise
+  the series stays as it is. Needs the backend that moves a series'
+  edited occurrences and answers 409
+  `/errors/series-change-leaves-occurrences` for the rest.
 - **"Read without a version" is said as such.** An event write not sent for
   want of a version now says the event was read without one, instead of
   "changed since you opened it".

@@ -24,13 +24,14 @@ import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiSer
 import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
 import { SeriesNotMovedError, seriesMove, shiftSeries, stretchSeries } from './series-shift.util';
 import { shiftRecurrence } from './recurrence-shift.util';
+import { dateOnClock, leftBehindMessage, seriesChangeLeaves } from './series-change.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ToastService,
     UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
-import { switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { CalendarEventEditorComponent, CalendarEventEditorData, CalendarEventEditorResult } from './calendar-event-editor.component';
 import {
     ScopePromptDialogComponent,
@@ -475,6 +476,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // semantically meaningful for signal tracking.
             void tf; void df; void fd; void tz;
         });
+    }
+
+    /** The zone the calendar is shown in: the person's, else the calendar's, else the browser's ("local"). */
+    private displayZone(): string {
+        return this.userPrefs.tz() || this.calendar().tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
     /**
@@ -1461,7 +1467,8 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
      *
      * A move carries the rule's own dates in the same write ({@link shiftRecurrence}): UNTIL, the skipped and added
      * dates, and the weekdays or days of the month the rule picks. It is refused, with nothing written, when no rule
-     * can give the same events moved, and while the series has an occurrence edited on its own.
+     * can give the same events moved. The server moves the occurrences edited one by one with the series; one the
+     * moved series would have no slot for is named in a 409, and the person chooses to let it go or keep the series.
      */
     private persistSeriesMove(seriesId: string, arg: EventDropInfo | EventResizeDoneInfo, how: 'move' | 'stretch'): void {
         const allDay = arg.oldEvent.allDay;
@@ -1479,7 +1486,6 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             arg.revert();
             return;
         }
-        const slug = this.calendar().slug;
         this.calendarsApi.getCalendarItem(seriesId).pipe(
             switchMap(series => {
                 const zone = series.effectiveTimeZone ?? series.timeZone ?? this.calendar().tz ?? 'UTC';
@@ -1499,16 +1505,31 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     allDay: series.allDay,
                     ...(rule === null ? {} : { recurrence: rule.recurrence }),
                 };
-                // An occurrence edited on its own is kept by the slot it replaced, which the server does not move
-                // with the series yet: a series with one is not moved, rather than leaving it at a slot it no
-                // longer has.
-                return this.calendarsApi.listCalendarItems({ calendarSlug: slug }).pipe(
-                    switchMap(rows => rows.some(row => row.parentItemId === series.id)
-                        ? throwError(() => new SeriesNotMovedError(
-                            'Some events of this series were changed one by one, and they cannot be moved with it yet. '
-                            + 'Move events one at a time.',
-                        ))
-                        : this.calendarsApi.updateCalendarItem(series.id, write, series.version)),
+                // The server moves the occurrences edited one by one with the series. One the moved series would
+                // have no slot for is not dropped unasked: the change is refused (409) naming them, and the person
+                // decides -- let them go with the move, or leave the series as it is.
+                return this.calendarsApi.updateCalendarItem(series.id, write, series.version).pipe(
+                    catchError((err: unknown) => {
+                        const left = seriesChangeLeaves(err);
+                        if (left === null) {
+                            return throwError(() => err);
+                        }
+                        return this.confirmSvc.open({
+                            title: 'Move all events, and let some go?',
+                            // Each event is named by the date the person sees it on: an all-day series' dates
+                            // are kept in UTC, a timed one's read in the zone the calendar is shown in.
+                            message: leftBehindMessage(left, dateOnClock(
+                                series.allDay ? 'UTC' : this.displayZone(),
+                                this.userPrefs.dateFormat() || 'yyyy-MM-dd',
+                            )),
+                            confirmLabel: 'Move and remove them',
+                            danger: true,
+                        }).pipe(switchMap(confirmed => confirmed
+                            ? this.calendarsApi.updateCalendarItem(
+                                series.id, { ...write, discardExceptions: true }, series.version,
+                            )
+                            : throwError(() => new SeriesNotMovedError('The series was left as it is.'))));
+                    }),
                 );
             }),
             takeUntilDestroyed(this.destroyRef),
