@@ -63,10 +63,18 @@ import { ProcessCaptureComponent } from './process-capture.component';
     imports: [FormsModule, OrderedBuilderComponent, ProcessCaptureComponent],
     template: `
         @if (isLanding()) {
-            @if (conflict()) {
+            @if (conflict(); as c) {
                 <div class="blk__conflict" role="alert">
-                    These sections were saved by someone else since you opened them. Your edits are still here, and
-                    nothing of theirs was overwritten; reload the page to see theirs.
+                    @if (c === 'deleted') {
+                        This page was deleted since its sections were opened. Your edits are still here; saving cannot
+                        make it again.
+                    } @else {
+                        These sections were saved by someone else since you opened them. Your edits are still here,
+                        and nothing of theirs was overwritten.
+                    }
+                    <button type="button" class="cms-btn cms-btn-sm blk__reload" (click)="reloadAfterConflict()">
+                        Reload, discarding my edits
+                    </button>
                 </div>
             }
             <app-ordered-builder
@@ -178,6 +186,7 @@ import { ProcessCaptureComponent } from './process-capture.component';
             background: var(--cms-warning-light); color: var(--cms-warning-text); font-size: .8125rem;
         }
         .blk__kept { flex: 1 0 100%; margin: 0; }
+        .blk__reload { margin-left: 8px; }
     `],
 })
 export class BlockEditorComponent {
@@ -227,10 +236,10 @@ export class BlockEditorComponent {
      * The version the sections were read at, named by every save; null when they were not read as stored (an
      * answer without `storedBlocks` is the render view, and is never saved over).
      */
-    private version: string | null = null;
+    private readonly version = signal<string | null>(null);
 
     /** A save was refused: the sections were saved by someone else, or the page went. No save until a reload. */
-    readonly conflict = signal(false);
+    readonly conflict = signal<'changed' | 'deleted' | null>(null);
 
     constructor() {
         // Re-fetch whenever the bound path changes (load is async -- guards on
@@ -278,14 +287,15 @@ export class BlockEditorComponent {
 
     readonly saveBlocks: OrderedSaveFn = (els: OrderedElement[]) => {
         // Only over the sections as stored, at the version they were read at, and never after a refusal.
-        if (this.version === null || this.conflict()) {
+        const version = this.version();
+        if (version === null || this.conflict() !== null) {
             return throwError(() => new Error('The sections cannot be saved over: reload the page.'));
         }
-        return this.svc.save(this.loadedPath, els, this.version).pipe(
-            tap(v => { this.version = v; }),
+        return this.svc.save(this.loadedPath, els, version).pipe(
+            tap(v => this.version.set(v)),
             catchError((err: unknown) => {
                 if (err instanceof HttpErrorResponse && (err.status === 412 || err.status === 404)) {
-                    this.conflict.set(true);
+                    this.conflict.set(err.status === 412 ? 'changed' : 'deleted');
                     this.cdr.markForCheck();
                 }
 
@@ -390,6 +400,11 @@ export class BlockEditorComponent {
         this.builder()?.markDirty();
     }
 
+    /** The conflict notice's Reload: the sections as stored now, and their version, in place of the edits. */
+    reloadAfterConflict(): void {
+        this.load(this.loadedPath);
+    }
+
     // -- Load ----------------------------------------------------------------
 
     private load(path: string): void {
@@ -402,8 +417,8 @@ export class BlockEditorComponent {
                     // The sections as stored, never the render view: what the view hides would be deleted by a save.
                     // Without them (or a version) the sections are shown and never saved over.
                     const stored = Array.isArray(dto.storedBlocks) ? dto.storedBlocks : null;
-                    this.version = stored !== null ? (dto.version ?? null) : null;
-                    this.conflict.set(false);
+                    this.version.set(stored !== null ? (dto.version ?? null) : null);
+                    this.conflict.set(null);
                     // Deep-clone so the working copy is freely mutable.
                     this.blocks.set((stored ?? dto.blocks ?? []).map(b => this.cloneBlock(b)));
                     this.builder()?.markPristine();
@@ -413,7 +428,7 @@ export class BlockEditorComponent {
                 error: () => {
                     this.types.set([]);
                     this.contentType.set(null);
-                    this.version = null;
+                    this.version.set(null);
                     this.blocks.set([]);
                     this.builder()?.markPristine();
                     this.activeChange.emit(false);

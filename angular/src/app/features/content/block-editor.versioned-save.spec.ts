@@ -77,7 +77,7 @@ describe('BlockEditorComponent -- the sections as stored, saved over the version
         f.componentInstance.save$().subscribe({ error: () => undefined });
         http.expectOne(WRITE).flush({ title: 'Precondition Failed' }, { status: 412, statusText: 'Precondition Failed' });
         f.detectChanges();
-        expect(f.componentInstance.conflict()).toBeTrue();
+        expect(f.componentInstance.conflict()).toBe('changed');
         expect((f.nativeElement as HTMLElement).querySelector('.blk__conflict')).not.toBeNull();
 
         f.componentInstance.setField(0, 'title', 'Mine, again');
@@ -86,6 +86,36 @@ describe('BlockEditorComponent -- the sections as stored, saved over the version
         f.componentInstance.save$().subscribe({ error: () => (refused = true) });
         http.expectNone(WRITE);
         expect(refused).withContext('the save is refused, not sent').toBeTrue();
+    });
+
+    it('Reload after a refusal reads the sections and their version again, and the next save names it', () => {
+        const f = opened({ blocks: [], storedBlocks: [{ type: 'hero', title: 'Hi' }], version: 'm1' });
+        f.componentInstance.setField(0, 'title', 'Mine');
+        f.detectChanges();
+        f.componentInstance.save$().subscribe({ error: () => undefined });
+        http.expectOne(WRITE).flush({}, { status: 412, statusText: 'Precondition Failed' });
+        f.detectChanges();
+
+        f.componentInstance.reloadAfterConflict();
+        http.expectOne(READ).flush({ types: TYPES, contentType: 'landing', blocks: [], storedBlocks: [{ type: 'hero', title: 'Theirs' }], version: 'm5' });
+        f.detectChanges();
+        expect(f.componentInstance.conflict()).toBeNull();
+
+        f.componentInstance.setField(0, 'title', 'Mine over theirs');
+        f.detectChanges();
+        f.componentInstance.save$().subscribe({ error: () => undefined });
+        expect(http.expectOne(WRITE).request.headers.get('If-Match')).toBe('"m5"');
+    });
+
+    it('a page deleted since it was opened is said as deleted, not as someone else's save', () => {
+        const f = opened({ blocks: [], storedBlocks: [{ type: 'hero', title: 'Hi' }], version: 'm1' });
+        f.componentInstance.setField(0, 'title', 'Mine');
+        f.detectChanges();
+        f.componentInstance.save$().subscribe({ error: () => undefined });
+        http.expectOne(WRITE).flush({}, { status: 404, statusText: 'Not Found' });
+        f.detectChanges();
+        expect(f.componentInstance.conflict()).toBe('deleted');
+        expect((f.nativeElement as HTMLElement).querySelector('.blk__conflict')?.textContent).toContain('deleted');
     });
 
     it('a read without the stored list is the render view: shown, never saved over', () => {
