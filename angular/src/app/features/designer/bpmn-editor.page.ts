@@ -196,7 +196,7 @@ import { DesignerI18nService } from './designer-i18n.service';
 
             <div
                 class="bpmn-editor-page__chrome"
-                [class.d-none]="contributorBanner() !== null"
+                [class.d-none]="contributorBanner() !== null || draftUnread()"
             >
                 <div #host class="bpmn-editor-page__host"></div>
                 <!--
@@ -404,6 +404,11 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
 
     readonly isLoading = signal<boolean>(true);
     readonly loadError = signal<string | null>(null);
+    /**
+     * The draft could not be read (the read failed, or its body did not parse): the canvas and its footer are not
+     * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
+     */
+    readonly draftUnread = signal<boolean>(false);
     readonly title = signal<string>('Workflow editor');
     readonly lastSavedAt = signal<string | null>(null);
     /** Latest deployed version (in-session); > 0 -> the shared status bar's "Deployed vN" badge. */
@@ -708,6 +713,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
 
         this.isLoading.set(true);
         this.loadError.set(null);
+        this.draftUnread.set(false);
         this.contributorBanner.set(null);
         this.forkedFromModule.set(false);
 
@@ -753,6 +759,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                 // banner is the durable surface AND carries Retry; a
                 // duplicate toast just says the same thing twice.
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+                this.draftUnread.set(true);
             }
         } finally {
             this.isLoading.set(false);
@@ -823,7 +830,9 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                 parseErr instanceof BpmnLiteParseError
                     ? parseErr.message
                     : errorMessage(parseErr);
-            this.toast.error(`Failed to parse body: ${msg}`);
+            // Not an empty diagram: the stored one could not be read, so the blank is not shown and never saved over it.
+            this.loadError.set(`Failed to parse body: ${msg}`);
+            this.draftUnread.set(true);
         }
     }
 
@@ -1146,7 +1155,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
 
     /** Footer Save -> serialize current model + PUT to the draft endpoint. */
     protected async onSave(): Promise<void> {
-        if (!this.bpmnEditor) return;
+        if (!this.bpmnEditor || this.draftUnread()) return;
         const body = bpmnLiteModelToJson(this.bpmnEditor.state);
         try {
             const result = await firstValueFrom(
@@ -1171,7 +1180,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * reads from VFS not request body.
      */
     protected async onDeploy(): Promise<void> {
-        if (!this.bpmnEditor) return;
+        if (!this.bpmnEditor || this.draftUnread()) return;
         try {
             await this.onSave();
         } catch {

@@ -93,7 +93,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 <app-error-banner [message]="loadError()!" [showRetry]="true" (retry)="retryLoad()" />
             }
 
-            <div class="drd-editor-page__chrome">
+            <div class="drd-editor-page__chrome" [class.d-none]="draftUnread()">
                 <div #host class="drd-editor-page__host"></div>
                 <app-designer-action-footer
                     [savedAt]="lastSavedAt()"
@@ -183,6 +183,11 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
 
     readonly isLoading = signal<boolean>(true);
     readonly loadError = signal<string | null>(null);
+    /**
+     * The draft could not be read (the read failed, or its body did not parse): the canvas and its footer are not
+     * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
+     */
+    readonly draftUnread = signal<boolean>(false);
     readonly title = signal<string>('Decision requirements editor');
     readonly lastSavedAt = signal<string | null>(null);
     readonly latestVersion = signal<number>(0);
@@ -262,13 +267,18 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         if (this.drdEditor === undefined) return;
         this.isLoading.set(true);
         this.loadError.set(null);
+        this.draftUnread.set(false);
         try {
             const xml = await firstValueFrom(this.designer.getDraft(key));
             let model: DmnDrdModel;
             try {
                 model = readDrdXml(xml);
             } catch {
+                // Not an empty diagram: the stored decisions could not be read, and a blank saved over them would
+                // replace the file, its tables included.
                 model = emptyDmnDrdModel(key);
+                this.loadError.set('The decision file could not be read as a requirements diagram, so it is not shown and nothing is saved over it.');
+                this.draftUnread.set(true);
             }
             this.drdEditor.load(model);
             queueMicrotask(() => this.fitToContent());
@@ -280,6 +290,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
                 queueMicrotask(() => this.fitToContent());
             } else {
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+                this.draftUnread.set(true);
             }
         } finally {
             this.isLoading.set(false);
@@ -293,7 +304,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
     }
 
     protected async onSave(): Promise<void> {
-        if (this.drdEditor === undefined || this.definitionKey === '') return;
+        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
         const xml = writeDrdXml(this.drdEditor.state);
         try {
             await firstValueFrom(this.designer.saveDraft(this.definitionKey, xml));
@@ -306,7 +317,7 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
     }
 
     protected async onDeploy(): Promise<void> {
-        if (this.drdEditor === undefined || this.definitionKey === '') return;
+        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
         // Save first -- the deployer reads the persisted draft from VFS, not
         // the request body (mirrors the BPMN + state-machine designers).
         const xml = writeDrdXml(this.drdEditor.state);
