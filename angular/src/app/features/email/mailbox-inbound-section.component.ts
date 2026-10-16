@@ -9,8 +9,9 @@ import { EmailMailboxDto, InboundWorkflowOption } from './email.types';
 import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
- * What starts when a first-contact email reaches the mailbox: one deployed workflow, or none. Saved on its own at
- * the version it was read; "None" clears the trigger. Until a mailbox's rules exist this is their one rule.
+ * Rules: what a mailbox does with mail as it arrives. Starting a workflow is a rule's action -- today the one rule, on
+ * a first-contact email: one deployed workflow, or none. Saved on its own at the version it was read; "None" clears
+ * it.
  */
 @Component({
     selector: 'app-mailbox-inbound-section',
@@ -20,12 +21,12 @@ import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
     template: `
         <section class="mbs-section" aria-labelledby="mbs-inbound-title">
             <header class="mbs-section__head">
-                <h2 id="mbs-inbound-title" class="mbs-section__title">When mail arrives</h2>
+                <h2 id="mbs-inbound-title" class="mbs-section__title">Rules</h2>
             </header>
             <fieldset class="mbs-fields" [disabled]="access() === 'denied' || saving()">
                 <div class="mbs-group">
                     <label class="mbs-field mbs-field--wide">
-                        <span>Start a workflow for a first-contact email</span>
+                        <span>When a first-contact email arrives: start workflow</span>
                         <select name="inboundWorkflowKey" [ngModel]="key()" (ngModelChange)="key.set($event)">
                             <option value="">None</option>
                             @for (o of options(); track o.key) { <option [value]="o.key">{{ o.label }}</option> }

@@ -23,6 +23,7 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a page of sec
     let email: jasmine.SpyObj<EmailService>;
     let router: jasmine.SpyObj<Router>;
     let confirmed: boolean;
+    let asked: { title?: string; message?: string } | null;
 
     function render(mailbox: EmailMailboxDto, update: 'allowed' | 'elevate' | 'denied') {
         email.getMailbox.and.returnValue(of(mailbox));
@@ -41,13 +42,14 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a page of sec
         email.listDelegations.and.returnValue(of([]));
         email.deleteMailbox.and.returnValue(of({}));
         confirmed = true;
+        asked = null;
         TestBed.configureTestingModule({
             imports: [MailboxSettingsPageComponent],
             providers: [
                 provideRouter([]),
                 { provide: EmailService, useValue: email },
                 { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: 'mb-1' }) } } },
-                { provide: ConfirmDialogService, useValue: { open: () => of(confirmed) } },
+                { provide: ConfirmDialogService, useValue: { open: (o: { title?: string; message?: string }) => { asked = o; return of(confirmed); } } },
                 { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'show']) },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
                 { provide: ElevationService, useValue: { elevated: () => false, offerFor: () => of(true) } },
@@ -65,14 +67,14 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a page of sec
         expect(email.getMailbox).toHaveBeenCalledOnceWith('mb-1');
         expect(email.mailboxCapabilities).toHaveBeenCalledOnceWith('mb-1');
         expect(Array.from(host.querySelectorAll('h2')).map(h => h.textContent?.trim()))
-            .toEqual(['Mailbox', 'Connection', 'When mail arrives']);
+            .toEqual(['General', 'Connection', 'Rules', 'Delete this mailbox']);
     });
 
     it('settings the caller may only read: said once at the top, no section saves, no removal', () => {
         const host = render(MAILBOX, 'denied').nativeElement as HTMLElement;
 
         expect(host.textContent).toContain('You can read these settings; only the mailbox\'s owners can change them.');
-        expect(host.textContent).not.toContain('Remove this mailbox');
+        expect(host.textContent).not.toContain('Delete this mailbox');
         expect(Array.from(host.querySelectorAll('fieldset')).every(f => (f as HTMLFieldSetElement).disabled)).toBeTrue();
     });
 
@@ -80,6 +82,25 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a page of sec
         expect((render(MAILBOX, 'allowed').nativeElement as HTMLElement).textContent).not.toContain('Access');
         expect((render({ ...MAILBOX, kind: 'shared' }, 'allowed').nativeElement as HTMLElement).textContent).toContain('Access');
         expect((render({ ...MAILBOX, kind: 'shared' }, 'denied').nativeElement as HTMLElement).textContent).not.toContain('Access');
+    });
+
+    it('a delegate reads the settings, told it reads them as a delegate', () => {
+        const host = render({ ...MAILBOX, access: 'read_only' }, 'denied').nativeElement as HTMLElement;
+
+        expect(host.textContent).toContain('You read this mailbox as a delegate (read only)');
+        expect(host.textContent).not.toContain('Delete this mailbox');
+    });
+
+    it('deleting is its own last section, and its question names what goes and what stays', () => {
+        const fixture = render(MAILBOX, 'allowed');
+        const sections = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h2')).map(h => h.textContent?.trim());
+        expect(sections[sections.length - 1]).toBe('Delete this mailbox');
+
+        confirmed = false;
+        fixture.componentInstance.remove(MAILBOX);
+        expect(asked?.title).toBe('Delete "Support"?');
+        expect(asked?.message).toContain("CoolMS's copies of its mail, its rules and its settings are deleted.");
+        expect(asked?.message).toContain('The account at the mail provider is not touched');
     });
 
     it('removing asks first; confirmed, the mailbox is deleted and the page returns to Mail', () => {

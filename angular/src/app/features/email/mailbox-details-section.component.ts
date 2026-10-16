@@ -9,8 +9,8 @@ import { EmailMailboxDto, MailboxWriteRequest } from './email.types';
 import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
- * A mailbox's own name and address, saved on their own at the version they were read, sending only what changed --
- * the section the wizard's first step was for an existing mailbox.
+ * General: a mailbox's own name and address, saved on their own at the version they were read, sending only what
+ * changed -- the section the wizard's first step was for an existing mailbox.
  */
 @Component({
     selector: 'app-mailbox-details-section',
@@ -20,7 +20,7 @@ import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
     template: `
         <section class="mbs-section" aria-labelledby="mbs-details-title">
             <header class="mbs-section__head">
-                <h2 id="mbs-details-title" class="mbs-section__title">Mailbox</h2>
+                <h2 id="mbs-details-title" class="mbs-section__title">General</h2>
             </header>
             <fieldset class="mbs-fields" [disabled]="access() === 'denied' || saving()">
                 <div class="mbs-group">

@@ -45,6 +45,42 @@ export interface EmailMailboxDto {
      * (If-Match); a mailbox changed since is refused (412) and nothing is changed. Without it nothing is saved.
      */
     version?: string | number | null;
+    /**
+     * The caller's access to the mailbox, as the read answers it: `owner` or `manager` may change its settings (a manager
+     * is an administrator), `read_only` and `read_and_send` are a delegate's, who may read them.
+     */
+    access?: MailboxAccess | null;
+    /** How much past mail a sync fetches: -1 all of it, 0 none, 1-600 months, null the installation's default. */
+    backfillDepthMonths?: number | null;
+}
+
+/** Who the caller is to a mailbox: may change its settings (`owner`, `manager`), or may read them (a delegate). */
+export type MailboxAccess = 'owner' | 'manager' | 'read_only' | 'read_and_send';
+
+/** One protocol's answer to a connection test: connected, or why not -- a fixed sentence, never the server's text. */
+export interface MailboxTestOutcome {
+    ok: boolean;
+    errorKind?: 'auth_refused' | 'reauth_required' | 'unreachable' | 'unknown' | null;
+    message?: string | null;
+}
+
+/** A connection test's answer, per protocol. */
+export interface MailboxTestResult {
+    imap?: MailboxTestOutcome;
+    smtp?: MailboxTestOutcome;
+}
+
+/** What a connection test tries in place of what is stored; a field left out comes from the stored mailbox. */
+export interface MailboxTestRequest {
+    imapHost?: string;
+    imapPort?: number;
+    imapSecurity?: string;
+    imapUsername?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecurity?: string;
+    smtpUsername?: string;
+    password?: string;
 }
 
 /**
@@ -71,6 +107,8 @@ export interface MailboxWriteRequest {
     authMethod?: string;
     /** OAuth provider key (e.g. `google`) when creating an `oauth` mailbox. */
     oauthProvider?: string;
+    /** How much past mail a sync fetches (see {@link EmailMailboxDto.backfillDepthMonths}); null: the default. */
+    backfillDepthMonths?: number | null;
 }
 
 /** The allowed transport-security modes (`MailboxSecurity` enum). */

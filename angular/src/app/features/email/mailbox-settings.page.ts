@@ -14,13 +14,14 @@ import { MailboxInboundSectionComponent } from './mailbox-inbound-section.compon
 import { afterAccess } from './mailbox-section-save';
 
 /**
- * One mailbox's settings, as a page of sections -- not the wizard, which stays for adding a mailbox (decided
- * 2026-10-15). Each section is saved on its own, naming the version of the settings it was read at; a save's answer
- * is the page's new read. What the caller may change is the server's capability answer for the mailbox: someone who
- * may only read them sees them read-only.
+ * One mailbox's settings, as a page of sections -- not the wizard, which stays for adding a mailbox. Each section is
+ * saved on its own, naming the version of the settings it was read at; a save's answer is the page's new read. What
+ * the caller may change is the server's capability answer for the mailbox: someone who may only read them -- a
+ * delegate, read only or read and send -- sees them read-only.
  *
- * Sections appear as the server serves what they edit, never as empty placeholders: Connection, and Access for a
- * shared mailbox (its delegations). Sending addresses, folders, rules, auto-reply and trusted senders follow theirs.
+ * The sections, in order: General (the name), Connection, Rules (what arriving mail starts), Access for a shared
+ * mailbox (its delegations), and Delete this mailbox, last. Sections appear as the server serves what they edit, never
+ * as empty placeholders: sending addresses, folders, auto-reply and trusted senders follow theirs.
  */
 @Component({
     selector: 'app-mailbox-settings-page',
@@ -46,7 +47,14 @@ import { afterAccess } from './mailbox-section-save';
                 <p class="mbs-page__error" role="alert">{{ message }}</p>
             } @else if (mailbox(); as mb) {
                 @if (access()['email.mailbox.update'] === 'denied') {
-                    <p class="mbs-page__readonly">You can read these settings; only the mailbox's owners can change them.</p>
+                    <p class="mbs-page__readonly">
+                        @if (mb.access === 'read_only' || mb.access === 'read_and_send') {
+                            You read this mailbox as a delegate ({{ mb.access === 'read_only' ? 'read only' : 'read and send' }}):
+                            its settings are shown, and only its owners can change them.
+                        } @else {
+                            You can read these settings; only the mailbox's owners can change them.
+                        }
+                    </p>
                 } @else if (mb.version === null || mb.version === undefined || mb.version === '') {
                     <p class="mbs-page__readonly">
                         These settings were read without a version, so they cannot be saved here: a save could only go
@@ -78,12 +86,17 @@ import { afterAccess } from './mailbox-section-save';
                 }
 
                 @if (access()['email.mailbox.update'] !== 'denied') {
-                    <footer class="mbs-page__danger">
+                    <section class="mbs-page__section mbs-page__danger" aria-labelledby="mbs-delete-title">
+                        <h2 id="mbs-delete-title" class="mbs-page__section-title">Delete this mailbox</h2>
+                        <p class="mbs-page__note">
+                            CoolMS's copies of its mail, its rules and its settings are deleted. The account at the mail
+                            provider is not touched: its mail stays there.
+                        </p>
                         <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm mbs-page__remove" (click)="remove(mb)">
                             @if (access()['email.mailbox.update'] === 'elevate') { <i class="bi bi-lock"></i> }
-                            <i class="bi bi-trash"></i> Remove this mailbox
+                            <i class="bi bi-trash"></i> Delete this mailbox
                         </button>
-                    </footer>
+                    </section>
                 }
             } @else {
                 <p class="mbs-page__loading">Reading the mailbox...</p>
@@ -101,7 +114,8 @@ import { afterAccess } from './mailbox-section-save';
         .mbs-page__loading { color: var(--cms-text-muted); }
         .mbs-page__section-title { margin: 0 0 8px; font-size: 1rem; font-weight: 600; }
         .mbs-page__readonly { margin: 0; padding: 10px 12px; border-radius: var(--cms-radius-sm, 4px); background: var(--cms-surface-muted); font-size: .8125rem; }
-        .mbs-page__danger { display: flex; justify-content: flex-end; }
+        .mbs-page__danger { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 12px; border-top: 1px solid var(--cms-border); }
+        .mbs-page__note { margin: 0; font-size: .8125rem; color: var(--cms-text-muted); }
         .mbs-page__remove { color: var(--cms-danger); }
     `],
 })
@@ -130,15 +144,16 @@ export class MailboxSettingsPageComponent implements OnInit {
     }
 
     /**
-     * Removes the mailbox after the person confirms it -- its fetched mail goes with it -- and returns to Mail.
-     * Asks for an elevated session first where the server answers "elevate".
+     * Deletes the mailbox after the person confirms it -- CoolMS's copies of its mail, its rules and its settings go
+     * with it; the account at the mail provider is not touched -- and returns to Mail. Asks for an elevated session
+     * first where the server answers "elevate".
      */
     remove(mailbox: EmailMailboxDto): void {
         const name = mailbox.label || mailbox.emailAddress || 'this mailbox';
         this.confirm.open({
-            title: `Remove "${name}"?`,
-            message: 'Its connection, who it is shared with and the mail fetched into CoolMS are removed. The mail on the mail server stays.',
-            confirmLabel: 'Remove',
+            title: `Delete "${name}"?`,
+            message: "CoolMS's copies of its mail, its rules and its settings are deleted. The account at the mail provider is not touched: its mail stays there.",
+            confirmLabel: 'Delete',
             danger: true,
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
             if (!confirmed) {
@@ -147,7 +162,7 @@ export class MailboxSettingsPageComponent implements OnInit {
             afterAccess(this.access()['email.mailbox.update'], this.elevation, () => {
                 this.email.deleteMailbox(mailbox.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: () => {
-                        this.toast.success('Mailbox removed');
+                        this.toast.success('Mailbox deleted');
                         void this.router.navigate(['/email']);
                     },
                     error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
