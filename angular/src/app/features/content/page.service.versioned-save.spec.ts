@@ -81,6 +81,21 @@ describe('PageService -- a body save names the version it read', () => {
         expect(failed instanceof PageBodyNotReadError).toBeTrue();
     });
 
+    it('an answer without its content is not an empty body: the read fails, and no body is written on its version', () => {
+        let readFailed: unknown = null;
+        pages.getContent('p1', 'en').subscribe({ error: e => (readFailed = e) });
+        page();
+        http.expectOne(BODY).flush({ contentHash: 'h1' });
+        expect(readFailed instanceof PageBodyNotReadError).withContext('the read is not taken as an empty body').toBeTrue();
+
+        let failed: unknown = null;
+        pages.saveContent('p1', 'en', '').subscribe({ error: e => (failed = e) });
+        page();
+
+        http.expectNone(r => r.method === 'PUT');
+        expect(failed instanceof PageBodyNotReadError).toBeTrue();
+    });
+
     it('saves a variant it created with the version its creation answered', () => {
         const created: PageDto = { id: 'p1', vfsPath: '/content/default/about' } as PageDto;
         pages.createVariant(created, { locale: 'en' }).subscribe();

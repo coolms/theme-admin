@@ -562,12 +562,17 @@ export class PageService {
         // Server returns a JSON-LD `FileContent` envelope; unwrap the `content`
         // field for the editor. The envelope also carries `@id`/`@type`/`@context`
         // which the editor does not need.
+        // An answer without its `content` is not an empty body: unread, and its version is not kept, so nothing
+        // is saved over the body on the strength of it.
         return this.http.get<{ content?: string; contentHash?: string | null }>(url).pipe(
             tap(response => {
-                if (response.contentHash) this.bodyVersions.set(path, response.contentHash);
+                if (response.contentHash && typeof response.content === 'string') this.bodyVersions.set(path, response.contentHash);
                 else this.bodyVersions.delete(path);
             }),
-            map(response => ({ content: response.content ?? '' })),
+            map(response => {
+                if (typeof response.content !== 'string') throw new PageBodyNotReadError(path);
+                return { content: response.content };
+            }),
         );
     }
 

@@ -129,6 +129,26 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **The page editor never saves over a read that has not ended or ended
+  part-way.** These cases lost stored content:
+  - While a body is being read, no editor is shown, and an edit made to a
+    body not yet read is not taken. Before, the editor mounted empty during
+    the read and took edits. The stored body then arrived without replacing
+    them, and Save wrote them over it with the version just read.
+  - A body answer without its `content` is unread, not empty, and its
+    version is not kept.
+  - An SEO field the person never saw is not written. Before, a title
+    edited before the SEO field list arrived cached an empty SEO map, and
+    Save sent null for every declared field, removing their stored values.
+- **The designer never saves over a draft it could not read.** This covers
+  all four of its pages: workflow, decision table, state machine and
+  decision requirements. A draft whose read failed or whose body did not
+  parse now shows no canvas, and Save and Deploy refuse; the banner's Retry
+  reads again. So does a decision without a table, in the table page. A
+  new decision (no draft yet) still opens blank. Before, a blank, editable
+  canvas was shown with Save on, and Save wrote the blank over the stored
+  draft. In the requirements diagram, which writes the whole decision
+  file, that would have replaced its tables too.
 - **The calendar's events carry their classes again.** FullCalendar 7 takes an
   event's classes as `className`, one string; the card still set v6's
   `classNames`, which 7 keeps as an extended prop and never draws. So no event

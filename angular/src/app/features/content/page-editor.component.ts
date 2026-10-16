@@ -321,6 +321,12 @@ type RailTab = string;
                                     <p>The body of this page could not be read, so it is not shown, and nothing is saved over it.</p>
                                     <button type="button" class="cms-btn cms-btn-sm" (click)="retryBody()">Read it again</button>
                                 </div>
+                            } @else if (activeBodyReading()) {
+                                <!-- A body still being read is not an empty body: an editor shown now would take
+                                     edits the stored body then never replaces, and Save would write them over it. -->
+                                <div class="page-editor__reading" role="status">
+                                    <p>Reading the body of this page…</p>
+                                </div>
                             } @else {
                                 <coolms-editor
                                     profile="admin"
@@ -646,6 +652,8 @@ type RailTab = string;
             display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
         }
         .page-editor__unread p { margin: 0; }
+        .page-editor__reading { margin: 16px; padding: 16px; color: var(--cms-text-muted); }
+        .page-editor__reading p { margin: 0; }
         /* Landing pages: the block builder IS the main canvas (the prose editor is
            dropped), so it fills the body and scrolls. It takes no space otherwise
            (it self-hides for non-landing pages). */
@@ -940,9 +948,16 @@ export class PageEditorComponent implements OnInit {
                         this.seoFields.set(seo?.fields ?? []);
                         // Re-seed the active locale now that descriptors exist (the first
                         // activateTab ran with an empty descriptor list).
+                        // An edit made before they arrived (a title, say) keeps its values; every other declared
+                        // field shows the value stored for it, instead of an empty one.
                         const loc = this.activeTab();
-                        if (loc && !this.metaCache()[loc]) {
-                            this.seoValues.set(this.seedSeoFromVariant(this.variants().find(v => v.locale === loc)));
+                        if (loc) {
+                            const cached = this.metaCache()[loc];
+                            this.seoValues.set({
+                                ...this.seedSeoFromVariant(this.variants().find(v => v.locale === loc)),
+                                ...(cached?.seo ?? {}),
+                            });
+                            if (cached) this.cacheMeta();
                         }
                         this.cdr.markForCheck();
                     },
@@ -1065,6 +1080,9 @@ export class PageEditorComponent implements OnInit {
     /** Locales whose body read failed: shown as unread, never as an empty body, and never written (2026-10-15). */
     readonly unreadableLocales = signal<ReadonlySet<string>>(new Set());
     readonly activeBodyUnreadable = computed(() => this.unreadableLocales().has(this.activeTab()));
+    /** Locales whose body read is in flight: no editor until it lands, so no edit is made to a body not yet shown. */
+    readonly readingLocales = signal<ReadonlySet<string>>(new Set());
+    readonly activeBodyReading = computed(() => this.readingLocales().has(this.activeTab()));
 
     /** Content the bridge mounts with. Decoupled from `contentCache` to
      *  prevent the feedback loop where bridge emit -> cache update ->
@@ -1237,8 +1255,8 @@ export class PageEditorComponent implements OnInit {
         }
         // Set editor content BEFORE flipping activeTab so the bridge sees
         // matching mountKey + content in the same change-detection pass.
-        // Cache hit -- immediate. Cache miss -- empty during async fetch,
-        // then refreshed when fetch resolves (one extra remount; acceptable).
+        // Cache hit -- immediate. Cache miss -- no editor while the body is
+        // read (activeBodyReading); it mounts with the body when the read lands.
         this.editorContent.set(this.contentCache()[locale] ?? '');
         this.activeTab.set(locale);
 
@@ -1261,6 +1279,7 @@ export class PageEditorComponent implements OnInit {
     private loadBody(locale: string): void {
         const p = this.page();
         if (!p) return;
+        this.setReading(locale, true);
         this.pageSvc.getContent(p.id, locale)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -1268,6 +1287,7 @@ export class PageEditorComponent implements OnInit {
                     this.contentCache.update(c => ({ ...c, [locale]: content }));
                     this.loadedLocales.add(locale);
                     this.setUnreadable(locale, false);
+                    this.setReading(locale, false);
                     // Only push to the bridge if this tab is still active
                     // (user may have switched again during the round-trip).
                     if (this.activeTab() === locale) {
@@ -1277,9 +1297,20 @@ export class PageEditorComponent implements OnInit {
                 },
                 error: () => {
                     this.setUnreadable(locale, true);
+                    this.setReading(locale, false);
                     this.cdr.markForCheck();
                 },
             });
+    }
+
+    private setReading(locale: string, reading: boolean): void {
+        this.readingLocales.update(s => {
+            if (s.has(locale) === reading) return s;
+            const next = new Set(s);
+            if (reading) next.add(locale);
+            else next.delete(locale);
+            return next;
+        });
     }
 
     /** The unread notice's "Read it again". */
@@ -1313,6 +1344,8 @@ export class PageEditorComponent implements OnInit {
     onContentChange(stored: string): void {
         const locale = this.activeTab();
         if (!locale) return;
+        // A body not read (still being read, or unread) takes no edit: there is nothing it was made to.
+        if (!this.loadedLocales.has(locale)) return;
         if (this.contentCache()[locale] === stored) return;
         this.contentCache.update(c => ({ ...c, [locale]: stored }));
         this.markDirty();
@@ -1503,6 +1536,8 @@ export class PageEditorComponent implements OnInit {
         const meta = this.metaCache()[locale] ?? this.variantMeta(locale);
         const extras: Record<string, unknown> = {};
         for (const f of this.seoFields()) {
+            // A field this locale's meta never held was never shown: left out, so its stored value stays.
+            if (!(f.name in meta.seo)) continue;
             const v = meta.seo[f.name];
             extras[f.name] = (v === '' || v === undefined) ? null : v;
         }
@@ -1939,6 +1974,7 @@ export class PageEditorComponent implements OnInit {
         if (!p || !locale) return;
 
         this.loadedLocales.delete(locale);
+        this.setReading(locale, true);
         this.pageSvc.getContent(p.id, locale)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -1946,6 +1982,7 @@ export class PageEditorComponent implements OnInit {
                     this.contentCache.update(c => ({ ...c, [locale]: content }));
                     this.loadedLocales.add(locale);
                     this.setUnreadable(locale, false);
+                    this.setReading(locale, false);
                     this.editorContent.set(content);
                     // Force a bridge re-mount: the locale (its mount key) is
                     // unchanged, so a plain content update wouldn't refresh it.
@@ -1960,6 +1997,7 @@ export class PageEditorComponent implements OnInit {
                 error: () => {
                     // The cache now holds the body as it was BEFORE what was reloaded: not loaded, so not written.
                     this.setUnreadable(locale, true);
+                    this.setReading(locale, false);
                     this.cdr.markForCheck();
                 },
             });
