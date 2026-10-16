@@ -253,3 +253,7 @@ jobs:
           if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed (karma exit $rc)"; exit 1; fi
           if [ "$ran" != "$total" ]; then echo "::error::FOUND: $ran of $total specs executed -- ${skipped:-some} were skipped"; exit 1; fi
           echo "CLEAR: $ran of $total specs executed, none failed"
+
+  # README, a LICENSE matching the manifest, and CHANGELOG (coolms/.github's basic-files.yml), pinned to a commit.
+  basic-files:
+    uses: coolms/.github/.github/workflows/basic-files.yml@595d36957a135e7d753abe34ca1ce90a0a6f2215
