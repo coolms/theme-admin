@@ -76,6 +76,16 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailMailboxDto>(raw)));
     }
 
+    /**
+     * GET /email/mailboxes?access=read -- every mailbox the caller may read: their own, the ones they manage, and the
+     * ones delegated to them, each with the caller's `access`.
+     */
+    listReadableMailboxes(): Observable<EmailMailboxDto[]> {
+        return this.http
+            .get<unknown>(`${this.apiBase}/email/mailboxes`, { headers: this.jsonHeaders, params: { access: 'read' } })
+            .pipe(map(raw => this.unwrap<EmailMailboxDto>(raw)));
+    }
+
     /** GET /email/mailboxes/{id} -- one mailbox with its full connection settings. */
     getMailbox(id: string): Observable<EmailMailboxDto> {
         return this.http.get<EmailMailboxDto>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}`, {
