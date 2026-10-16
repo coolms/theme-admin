@@ -23,6 +23,8 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
+import { MailPreferencesService } from './mail-preferences.service';
+import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -1164,6 +1166,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
+    private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
 
     /** Current user UUID (rfc4122) -- the per-user realtime channel `email.user.{id}`. */
@@ -1426,8 +1429,10 @@ export class EmailMailboxPageComponent implements OnInit {
         ).subscribe(list => this.contactOptions.set(this.toRecipientOptions(list)));
 
         this.consumeOAuthReturn();
-        this.email.listMailboxes().subscribe({
-            next: list => {
+        // The mailboxes and the person's mail settings together: the settings name the mailbox to open on. A setting
+        // that cannot be read is its default -- the page never waits on it.
+        forkJoin({ list: this.email.listMailboxes(), prefs: this.mailPrefs.readOrDefaults() }).subscribe({
+            next: ({ list, prefs }) => {
                 this.mailboxes.set(list);
                 this.loadingMailboxes.set(false);
                 this.loadMailboxUnread(list);
@@ -1435,13 +1440,9 @@ export class EmailMailboxPageComponent implements OnInit {
                 const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
                 const prefer = this.pendingSelectId;
                 this.pendingSelectId = null;
-
-                // Precedence: an OAuth-return target, then the persisted last mailbox,
-                // then the first mailbox -- each only if it still exists in the list.
-                // `.at(0)` (not `[0]`) so the empty-list case types as `string | null`.
-                const target = (prefer !== null && list.some(m => m.id === prefer)) ? prefer
-                    : (saved !== null && list.some(m => m.id === saved)) ? saved
-                        : (list.at(0)?.id ?? null);
+                // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
+                // the persisted last mailbox, then the first mailbox -- each only if it still exists in the list.
+                const target = openingMailbox(list, prefer, prefs.defaultMailboxId, saved);
                 if (target !== null) {
                     this.selectMailbox(target);
                 }
@@ -1591,7 +1592,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.thread.set([]);
         this.moveMenu.set(null);
         this.deletePrompt.set(null);
-        this.loadRemoteImages.set(false);
+        // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
+        this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
         this.loadingDetail.set(true);
         this.email.getMessage(id).subscribe({
             next: detail => {
