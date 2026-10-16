@@ -6,4 +6,5 @@
  * reporting SUCCESS. `npm run lint:specs` keeps this list honest.
  */
 import '../../../dtmpl-angular/src/ddoc-document.service.spec';
+import '../../../dtmpl-angular/src/dtmpl-editor-dialog.component.spec';
 import '../../../dtmpl-angular/src/provide-dtmpl-editors.spec';

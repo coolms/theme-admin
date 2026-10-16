@@ -132,7 +132,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                     </a>
                 </div>
             }
-            <div class="dmn-editor-page__chrome">
+            <div class="dmn-editor-page__chrome" [class.d-none]="draftUnread()">
                 <div #host class="dmn-editor-page__host"></div>
                 <app-designer-action-footer
                     [savedAt]="lastSavedAt()"
@@ -192,6 +192,11 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
     readonly isLoading     = signal<boolean>(true);
     readonly loadError     = signal<string | null>(null);
     /**
+     * The draft could not be read (the read failed, or the decision has no table here): its canvas and footer are not
+     * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
+     */
+    readonly draftUnread   = signal<boolean>(false);
+    /**
      * True when the body parsed but carries no decision table -- a DRD
      * document rather than a broken one. Rendered as a purposeful
      * empty state, not an error.
@@ -250,6 +255,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         this.isLoading.set(true);
         this.loadError.set(null);
         this.noDecisionTable.set(false);
+        this.draftUnread.set(false);
         try {
             const xml = await firstValueFrom(this.designer.getDraft(this.decisionKey));
             if (xml.trim() !== '') {
@@ -277,7 +283,10 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                  */
                 this.loadError.set(null);
             } else if (isMissingDecisionTable(err)) {
+                // A decision with no table is the requirements diagram's to edit: a blank table saved here would
+                // replace the definitions it holds.
                 this.noDecisionTable.set(true);
+                this.draftUnread.set(true);
             } else {
                 // Banner ONLY -- no toast. `ErrorBannerComponent` exists
                 // precisely "instead of a blank panel + a transient toast
@@ -285,6 +294,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                 // same sentence twice, once in a place they cannot
                 // dismiss and once in a place that vanishes.
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+                this.draftUnread.set(true);
             }
         } finally {
             this.isLoading.set(false);
@@ -307,7 +317,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
 
     /** Footer Save -> PUT current XML. */
     protected async onSave(): Promise<void> {
-        if (!this.tableEditor) return;
+        if (!this.tableEditor || this.draftUnread()) return;
         const xml = this.tableEditor.toXml();
         try {
             await firstValueFrom(this.designer.saveDraft(this.decisionKey, xml));
@@ -327,7 +337,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
      * backend deployer reads from VFS not request body.
      */
     protected async onDeploy(): Promise<void> {
-        if (!this.tableEditor) return;
+        if (!this.tableEditor || this.draftUnread()) return;
         try {
             await this.onSave();
         } catch {
