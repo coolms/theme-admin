@@ -39,7 +39,9 @@ import {
 } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
-import { DesignerService } from './designer.service';
+import { DesignerService, type DraftVersion } from './designer.service';
+import { DraftConflictBannerComponent } from './shared/draft-conflict-banner.component';
+import { draftConflictOf, type DraftConflict } from './shared/draft-conflict';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
@@ -78,7 +80,8 @@ import { DesignerI18nService } from './designer-i18n.service';
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent
+    ErrorBannerComponent,
+    DraftConflictBannerComponent
 ],
     template: `
         <cms-page-header [title]="title()" />
@@ -91,6 +94,9 @@ import { DesignerI18nService } from './designer-i18n.service';
             }
             @if (loadError()) {
                 <app-error-banner [message]="loadError()!" [showRetry]="true" (retry)="retryLoad()" />
+            }
+            @if (conflict(); as c) {
+                <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
             }
 
             <div class="drd-editor-page__chrome" [class.d-none]="draftUnread()">
@@ -188,6 +194,13 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
      * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
      */
     readonly draftUnread = signal<boolean>(false);
+    /** The version of the draft the canvas was read at, named by every save; null: the read found no draft. */
+    private draftVersion: DraftVersion = null;
+    /**
+     * The draft moved on since it was read -- saved by someone else, or deleted. The banner says so; the edits stay on
+     * the canvas; Save and Deploy refuse until Reload reads it again.
+     */
+    readonly conflict = signal<DraftConflict | null>(null);
     readonly title = signal<string>('Decision requirements editor');
     readonly lastSavedAt = signal<string | null>(null);
     readonly latestVersion = signal<number>(0);
@@ -268,8 +281,12 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         this.isLoading.set(true);
         this.loadError.set(null);
         this.draftUnread.set(false);
+        this.conflict.set(null);
+        this.draftVersion = null;
         try {
-            const xml = await firstValueFrom(this.designer.getDraft(key));
+            const draft = await firstValueFrom(this.designer.getDraft(key));
+            this.draftVersion = draft.version;
+            const xml = draft.xml;
             let model: DmnDrdModel;
             try {
                 model = readDrdXml(xml);
@@ -303,32 +320,53 @@ export class DecisionDrdEditorPage implements AfterViewInit, OnDestroy {
         void this.loadDraft(this.definitionKey);
     }
 
+    /** The conflict banner's Reload: the draft as it is now, and its version, in place of the edits. */
+    protected reloadAfterConflict(): void {
+        this.dirty.set(false);
+        void this.loadDraft(this.definitionKey);
+    }
+
     protected async onSave(): Promise<void> {
-        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
+        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread() || this.conflict() !== null) return;
         const xml = writeDrdXml(this.drdEditor.state);
         try {
-            await firstValueFrom(this.designer.saveDraft(this.definitionKey, xml));
+            this.draftVersion = await firstValueFrom(this.designer.saveDraft(this.definitionKey, xml, this.draftVersion));
             this.lastSavedAt.set(new Date().toISOString());
             this.dirty.set(false);
             this.toast.success('Draft saved.');
         } catch (err) {
+            const conflict = draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+
+                return;
+            }
             this.toast.error(`Save failed: ${errorMessage(err)}`);
         }
     }
 
     protected async onDeploy(): Promise<void> {
-        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
+        if (this.drdEditor === undefined || this.definitionKey === '' || this.draftUnread() || this.conflict() !== null) return;
         // Save first -- the deployer reads the persisted draft from VFS, not
         // the request body (mirrors the BPMN + state-machine designers).
         const xml = writeDrdXml(this.drdEditor.state);
+        let saved = false;
         try {
-            await firstValueFrom(this.designer.saveDraft(this.definitionKey, xml));
+            this.draftVersion = await firstValueFrom(this.designer.saveDraft(this.definitionKey, xml, this.draftVersion));
+            saved = true;
             this.lastSavedAt.set(new Date().toISOString());
             this.dirty.set(false);
             const result = await firstValueFrom(this.designer.deploy(this.definitionKey));
             this.latestVersion.set(result.version);
             this.toast.success(`Deployed "${this.definitionKey}" v${result.version}.`);
         } catch (err) {
+            // Only the save's own refusal is a conflict; a deploy that fails after it is a failed deploy.
+            const conflict = saved ? null : draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+
+                return;
+            }
             // A DRD validation failure surfaces as 422 with the validator's
             // message (dangling/self/cyclic requirement, id mismatch, ...).
             this.toast.error(`Deploy failed: ${errorMessage(err)}`);
