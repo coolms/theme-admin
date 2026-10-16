@@ -23,6 +23,8 @@ import {
     MailboxConnectResultDto,
     MailboxDelegationDto,
     MailboxDraftRequest,
+    MailboxTestRequest,
+    MailboxTestResult,
     MailboxWriteRequest,
     OutgoingEmailRequest,
 } from './email.types';
@@ -105,6 +107,16 @@ export class EmailService {
             request,
             { headers: new HttpHeaders({ 'Content-Type': 'application/merge-patch+json', 'If-Match': `"${version}"` }) },
         );
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/test: signs in to the incoming and the outgoing server with what is given -- a field
+     * left out comes from the stored mailbox, the stored credential when no password is given -- and stores nothing.
+     * Each protocol answers connected, or its error kind in a fixed sentence. Ten tests a person in ten minutes: then
+     * 429, with Retry-After.
+     */
+    testMailbox(id: string, request: MailboxTestRequest): Observable<MailboxTestResult> {
+        return this.http.post<MailboxTestResult>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}/test`, request);
     }
 
     /**

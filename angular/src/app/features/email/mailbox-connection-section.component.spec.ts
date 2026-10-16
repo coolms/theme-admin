@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
@@ -63,7 +63,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         }
 
         beforeEach(() => {
-            email = jasmine.createSpyObj<EmailService>('EmailService', ['saveMailboxSection', 'authorizeMailbox']);
+            email = jasmine.createSpyObj<EmailService>('EmailService', ['saveMailboxSection', 'authorizeMailbox', 'testMailbox']);
             toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'show']);
             TestBed.configureTestingModule({
                 imports: [MailboxConnectionSectionComponent],
@@ -162,6 +162,77 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
 
             expect(section.draft().imapPort).toBe(993);
             expect(section.password()).toBe('');
+        });
+
+        it('the test signs in with what is typed, says each protocol in its fixed sentence, and saves nothing', () => {
+            email.testMailbox.and.returnValue(of({
+                imap: { ok: true },
+                smtp: { ok: false, errorKind: 'unreachable', message: 'The server did not answer: check the host, the port and the security.' },
+            }));
+            const fixture = render({ ...MAILBOX, access: 'manager' });
+            const section = fixture.componentInstance;
+            section.set('imapPort', 143);
+            section.password.set('typed');
+
+            section.test();
+            fixture.detectChanges();
+
+            expect(email.testMailbox).toHaveBeenCalledOnceWith('mb-1', jasmine.objectContaining({
+                imapPort: 143, password: 'typed', imapUsername: 'support@example.test',
+            }));
+            expect(email.saveMailboxSection).not.toHaveBeenCalled();
+            const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+            expect(text).toContain('Incoming (IMAP): connected');
+            expect(text).toContain('Outgoing (SMTP): The server did not answer: check the host, the port and the security.');
+        });
+
+        it('too many tests: says when to try again, from Retry-After', () => {
+            email.testMailbox.and.returnValue(throwError(() => new HttpErrorResponse({
+                status: 429, headers: new HttpHeaders({ 'Retry-After': '90' }),
+            })));
+            const section = render(MAILBOX).componentInstance;
+
+            section.test();
+
+            expect(section.testRefused()).toBe('Too many tests: try again in 90 seconds.');
+        });
+
+        it('an owner who is not an administrator signs in as the address: names shown read-only, never sent by a test', () => {
+            email.testMailbox.and.returnValue(of({ imap: { ok: true }, smtp: { ok: true } }));
+            const fixture = render({ ...MAILBOX, access: 'owner' });
+            const host = fixture.nativeElement as HTMLElement;
+
+            expect((host.querySelector('[name=imapUsername]') as HTMLInputElement).readOnly).toBeTrue();
+            expect((host.querySelector('[name=smtpUsername]') as HTMLInputElement).readOnly).toBeTrue();
+            expect(host.textContent).toContain('Your mailbox signs in as its address.');
+
+            fixture.componentInstance.test();
+            const sent = email.testMailbox.calls.mostRecent().args[1];
+            expect('imapUsername' in sent).toBeFalse();
+            expect('smtpUsername' in sent).toBeFalse();
+        });
+
+        it('past mail is a choice: back to the default sends null, all of it is -1', () => {
+            email.saveMailboxSection.and.returnValue(of(MAILBOX));
+            const mailbox = { ...MAILBOX, backfillDepthMonths: 24 } as EmailMailboxDto;
+            const section = render(mailbox).componentInstance;
+
+            expect(section.backfillChoice()).toBe('months');
+            section.chooseBackfill('default');
+            expect(connectionPatch(mailbox, section.draft(), '')).toEqual({ backfillDepthMonths: null });
+            section.save();
+            expect(email.saveMailboxSection).toHaveBeenCalledOnceWith('mb-1', { backfillDepthMonths: null }, 'v7');
+
+            section.chooseBackfill('all');
+            expect(section.draft().backfillDepthMonths).toBe(-1);
+            section.chooseBackfill('none');
+            expect(section.draft().backfillDepthMonths).toBe(0);
+        });
+
+        it('someone who may only read the settings is offered no test', () => {
+            const host = render(MAILBOX, 'denied').nativeElement as HTMLElement;
+
+            expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent?.includes('Test connection'))).toBeFalse();
         });
 
         it('the sync depth appears only when the read carries it', () => {

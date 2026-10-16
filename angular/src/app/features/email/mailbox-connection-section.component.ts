@@ -5,7 +5,8 @@ import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
-import { EmailMailboxDto, MailboxSecurity, MailboxWriteRequest } from './email.types';
+import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest } from './email.types';
+import { HttpErrorResponse } from '@angular/common/http';
 import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /** The connection fields this section edits, as they are read and as they are saved. */
@@ -44,8 +45,25 @@ export function connectionDraftOf(mailbox: EmailMailboxDto): ConnectionDraft {
         smtpSecurity: security(mailbox.smtpSecurity),
         smtpUsername: mailbox.smtpUsername ?? '',
         enabled: mailbox.enabled ?? true,
-        backfillDepthMonths: (mailbox as { backfillDepthMonths?: number | null }).backfillDepthMonths ?? null,
+        backfillDepthMonths: mailbox.backfillDepthMonths ?? null,
     };
+}
+
+/** How much past mail a sync fetches, as the person chooses it: the stored number read as a choice. */
+export type BackfillChoice = 'default' | 'none' | 'months' | 'all';
+
+export function backfillChoiceOf(months: number | null): BackfillChoice {
+    if (months === null) return 'default';
+    if (months === 0) return 'none';
+    if (months < 0) return 'all';
+    return 'months';
+}
+
+/** A connection test's outcome for one protocol, in words. */
+export function testOutcomeText(outcome: MailboxTestOutcome | undefined): string {
+    if (!outcome) return 'not tested';
+    if (outcome.ok) return 'connected';
+    return outcome.message || 'failed';
 }
 
 /**
@@ -56,7 +74,7 @@ export function connectionPatch(mailbox: EmailMailboxDto, draft: ConnectionDraft
     const read = connectionDraftOf(mailbox);
     const patch: Record<string, unknown> = {};
     for (const key of Object.keys(draft) as (keyof ConnectionDraft)[]) {
-        if (draft[key] !== read[key] && draft[key] !== null) {
+        if (draft[key] !== read[key] && (draft[key] !== null || key === 'backfillDepthMonths')) {
             patch[key] = draft[key];
         }
     }
@@ -127,7 +145,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                     </label>
                     <label class="mbs-field mbs-field--wide">
                         <span>Username</span>
-                        <input type="text" name="imapUsername" autocomplete="off"
+                        <input type="text" name="imapUsername" autocomplete="off" [readonly]="usernameIsAddress()"
                                [ngModel]="draft().imapUsername" (ngModelChange)="set('imapUsername', $event)" />
                     </label>
                 </div>
@@ -152,10 +170,13 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                     </label>
                     <label class="mbs-field mbs-field--wide">
                         <span>Username</span>
-                        <input type="text" name="smtpUsername" autocomplete="off"
+                        <input type="text" name="smtpUsername" autocomplete="off" [readonly]="usernameIsAddress()"
                                [ngModel]="draft().smtpUsername" (ngModelChange)="set('smtpUsername', $event)" />
                     </label>
                 </div>
+                @if (usernameIsAddress() && !readOnly()) {
+                    <p class="mbs-note">Your mailbox signs in as its address. An administrator can set another sign-in name.</p>
+                }
 
                 <div class="mbs-group">
                     <h3 class="mbs-group__title">Sign-in</h3>
@@ -188,13 +209,41 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                     </label>
                     @if (hasBackfillDepth()) {
                         <label class="mbs-field">
-                            <span>Months of past mail</span>
-                            <input type="number" name="backfillDepthMonths" min="0"
-                                   [ngModel]="draft().backfillDepthMonths" (ngModelChange)="set('backfillDepthMonths', $event)" />
+                            <span>Past mail to fetch</span>
+                            <select name="backfillChoice" [ngModel]="backfillChoice()" (ngModelChange)="chooseBackfill($event)">
+                                <option value="default">The installation's default</option>
+                                <option value="none">None</option>
+                                <option value="months">The last months, as set</option>
+                                <option value="all">All of it</option>
+                            </select>
                         </label>
+                        @if (backfillChoice() === 'months') {
+                            <label class="mbs-field">
+                                <span>Months (1-600)</span>
+                                <input type="number" name="backfillDepthMonths" min="1" max="600"
+                                       [ngModel]="draft().backfillDepthMonths" (ngModelChange)="set('backfillDepthMonths', $event)" />
+                            </label>
+                        }
                     }
                 </div>
             </fieldset>
+
+            @if (!readOnly()) {
+                <div class="mbs-test">
+                    <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" [disabled]="testing() || saving()" (click)="test()">
+                        @if (access() === 'elevate') { <i class="bi bi-lock"></i> }
+                        {{ testing() ? 'Testing...' : 'Test connection' }}
+                    </button>
+                    <span class="mbs-note">Signs in with what is typed here; nothing is saved.</span>
+                    @if (testResult(); as r) {
+                        <ul class="mbs-test__results">
+                            <li [class.mbs-test__ok]="r.imap?.ok" [class.mbs-test__fail]="r.imap && !r.imap.ok">Incoming (IMAP): {{ outcomeText(r.imap) }}</li>
+                            <li [class.mbs-test__ok]="r.smtp?.ok" [class.mbs-test__fail]="r.smtp && !r.smtp.ok">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
+                        </ul>
+                    }
+                    @if (testRefused(); as why) { <p class="mbs-note mbs-test__fail" role="alert">{{ why }}</p> }
+                </div>
+            }
 
             <footer class="mbs-section__foot">
                 @if (readOnly()) {
@@ -247,6 +296,18 @@ export class MailboxConnectionSectionComponent {
         return version !== null && version !== undefined && version !== '';
     });
     readonly hasBackfillDepth = computed(() => 'backfillDepthMonths' in this.mailbox());
+    readonly backfillChoice = computed(() => backfillChoiceOf(this.draft().backfillDepthMonths));
+    /**
+     * An owner who is not an administrator signs in as the mailbox's address (the server holds a username they send to
+     * it): the names are shown, not edited, and sent back as read.
+     */
+    readonly usernameIsAddress = computed(() => this.mailbox().access === 'owner');
+
+    readonly testing = signal(false);
+    readonly testResult = signal<MailboxTestResult | null>(null);
+    /** Why the last test was not run (too many tests, a refused field), in words. */
+    readonly testRefused = signal<string | null>(null);
+    readonly outcomeText = testOutcomeText;
     readonly status = computed(() => connectionStatusOf(this.mailbox()));
     readonly dirty = computed(() => Object.keys(connectionPatch(this.mailbox(), this.draft(), this.password())).length > 0);
 
@@ -283,6 +344,18 @@ export class MailboxConnectionSectionComponent {
         this.password.set('');
     }
 
+    /** The choice of past mail, as the stored number: the default (null), none (0), all (-1), or a number of months. */
+    chooseBackfill(choice: BackfillChoice): void {
+        const current = this.draft().backfillDepthMonths;
+        const months = { default: null, none: 0, all: -1, months: current !== null && current > 0 ? current : 12 }[choice];
+        this.set('backfillDepthMonths', months);
+    }
+
+    /** Tests the connection with what is typed here -- nothing saved -- as the server's answer for the section allows. */
+    test(): void {
+        afterAccess(this.access(), this.elevation, () => this.sendTest());
+    }
+
     save(): void {
         afterAccess(this.access(), this.elevation, () => this.send());
     }
@@ -297,6 +370,40 @@ export class MailboxConnectionSectionComponent {
                 },
                 error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
             });
+        });
+    }
+
+    private sendTest(): void {
+        const d = this.draft();
+        const request: MailboxTestRequest = {
+            imapHost: d.imapHost, imapSecurity: d.imapSecurity, smtpHost: d.smtpHost, smtpSecurity: d.smtpSecurity,
+        };
+        if (d.imapPort !== null) request.imapPort = d.imapPort;
+        if (d.smtpPort !== null) request.smtpPort = d.smtpPort;
+        if (!this.usernameIsAddress()) {
+            request.imapUsername = d.imapUsername;
+            request.smtpUsername = d.smtpUsername;
+        }
+        if (this.password().trim() !== '') request.password = this.password();
+        this.testing.set(true);
+        this.testResult.set(null);
+        this.testRefused.set(null);
+        this.email.testMailbox(this.mailbox().id, request).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: result => {
+                this.testing.set(false);
+                this.testResult.set(result);
+            },
+            error: (err: unknown) => {
+                this.testing.set(false);
+                if (err instanceof HttpErrorResponse && err.status === 429) {
+                    const after = Number(err.headers?.get('Retry-After'));
+                    this.testRefused.set(Number.isFinite(after) && after > 0
+                        ? `Too many tests: try again in ${Math.ceil(after)} seconds.`
+                        : 'Too many tests: try again in a few minutes.');
+                    return;
+                }
+                this.testRefused.set(this.errors.humanize(err));
+            },
         });
     }
 
