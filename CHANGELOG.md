@@ -86,6 +86,33 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Changed
 
+- **A mailbox's settings are a page of sections; the wizard only adds a
+  mailbox.** The rail's Settings opens `/email/mailboxes/:id/settings`:
+  - General: name and address.
+  - Connection: servers, sign-in, sync, and a connection test.
+  - Rules: what arriving mail starts -- a first-contact email starts a
+    workflow, as a rule's action.
+  - Access, for a shared mailbox.
+  - Delete this mailbox, last: its question names what goes (CoolMS's
+    copies of the mail, the mailbox's rules, its settings) and says the
+    account at the mail provider is not touched.
+
+  Each section is saved on its own, naming the version of the settings it
+  was read at (`If-Match`), and sends only what the person changed.
+  Settings changed since are refused and Reload is offered; a read
+  without a version saves nothing. What the caller may change is the
+  server's capability answer: someone who may only read the settings --
+  a delegate, read only or read and send -- sees them read-only, and is
+  told so. The wizard's edit mode, and its update that named no version,
+  are removed.
+
+  The connection test signs in with what is typed, saves nothing, and says
+  each protocol's outcome in the server's fixed sentence; too many tests
+  say when to try again. An owner who is not an administrator signs in as
+  the mailbox's address, so the sign-in names are shown, not edited. Past
+  mail to fetch is a choice: the installation's default, none, the last
+  months as set, or all of it. Needs the backend's mailbox contract
+  (version, access, backfill depth, the test).
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
   in the terminal itself, `[sudo] password for <account>:`, and asks for the
