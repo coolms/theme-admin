@@ -107,7 +107,7 @@ describe('BlockEditorComponent -- the sections as stored, saved over the version
         expect(http.expectOne(WRITE).request.headers.get('If-Match')).toBe('"m5"');
     });
 
-    it('a page deleted since it was opened is said as deleted, not as someone else's save', () => {
+    it('a page deleted since it was opened is said as deleted, not as a newer save by someone else', () => {
         const f = opened({ blocks: [], storedBlocks: [{ type: 'hero', title: 'Hi' }], version: 'm1' });
         f.componentInstance.setField(0, 'title', 'Mine');
         f.detectChanges();
