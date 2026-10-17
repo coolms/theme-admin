@@ -2,7 +2,7 @@ import { type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, throwError, type Observable } from 'rxjs';
+import { map, of, throwError, type Observable } from 'rxjs';
 import { KeyboardScopeService, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { bpmnLiteModelToJson, emptyBpmnLiteModel } from '@coolms/designer/bpmn-lite';
 import { emptyStateMachineModel } from '@coolms/designer/state-machine';
@@ -34,8 +34,8 @@ describe('Designer pages -- a draft that could not be read is never saved over',
             deployWorkflow: jasmine.createSpy('deployWorkflow').and.returnValue(of({ version: 2 })),
             listWorkflowHandlers: jasmine.createSpy('listWorkflowHandlers').and.returnValue(of([])),
             listForms: jasmine.createSpy('listForms').and.returnValue(of([])),
-            getDraft: jasmine.createSpy('getDraft').and.returnValue(decision),
-            saveDraft: jasmine.createSpy('saveDraft').and.returnValue(of(undefined)),
+            getDraft: jasmine.createSpy('getDraft').and.returnValue(decision.pipe(map(xml => ({ xml, version: 'd1' })))),
+            saveDraft: jasmine.createSpy('saveDraft').and.returnValue(of('d2')),
             deploy: jasmine.createSpy('deploy').and.returnValue(of({ version: 2 })),
             getStateMachineDraft: jasmine.createSpy('getStateMachineDraft').and.returnValue(machine),
             saveStateMachineDraft: jasmine.createSpy('saveStateMachineDraft').and.returnValue(of({ key: 'order', body: '{}', latestVersion: 1 })),

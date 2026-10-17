@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
 /**
  * Shape of the `POST /decisions/{key}/deploy` response.
@@ -30,6 +30,31 @@ export interface StateMachineDraftPayload {
     readonly key: string;
     readonly body: string;
     readonly latestVersion: number;
+    /** The version the draft is at; null (or absent) when there is no draft yet. */
+    readonly contentHash?: string | null;
+}
+
+/**
+ * The version a draft was read at -- the workflow's and state machine's `contentHash`, the decision's ETag -- named by
+ * every save of it. Null: the read found no draft, and a save then only creates one.
+ */
+export type DraftVersion = string | null;
+
+/** An ETag as a version: its quotes and weak mark off; none, or an empty one, is no version. */
+export function draftVersionOf(etag: string | null): DraftVersion {
+    const v = (etag ?? '').replace(/^W\//, '').replace(/"/g, '').trim();
+    return v === '' ? null : v;
+}
+
+/**
+ * The precondition a save of a draft read at `version` sends: If-Match that version -- a newer draft answers 412, one
+ * deleted 404 -- or, when the read found none, If-None-Match: *, so the save creates the draft and never writes over
+ * one made since (412).
+ */
+function draftPrecondition(version: DraftVersion, headers: Record<string, string> = {}): HttpHeaders {
+    return new HttpHeaders(version === null
+        ? { ...headers, 'If-None-Match': '*' }
+        : { ...headers, 'If-Match': `"${version}"` });
 }
 
 /** -- shape of `POST /api/v1/state-machines/{key}/deploy`. */
@@ -74,19 +99,25 @@ export class DesignerService {
         return manifest?.apiBase ?? '/api/v1';
     }
 
-    /** GET the current draft XML for a decision keyed by `key`. */
-    getDraft(key: string): Observable<string> {
+    /** GET the current draft XML for a decision keyed by `key`, and the version it is at (the answer's ETag). */
+    getDraft(key: string): Observable<{ xml: string; version: DraftVersion }> {
         return this.http.get(this.draftUrl(key), {
             headers: new HttpHeaders({ Accept: 'application/xml' }),
             responseType: 'text',
-        });
+            observe: 'response',
+        }).pipe(map(r => ({ xml: r.body ?? '', version: draftVersionOf(r.headers.get('ETag')) })));
     }
 
-    /** PUT the editor's current XML as the new draft body. */
-    saveDraft(key: string, xml: string): Observable<void> {
-        return this.http.put<void>(this.draftUrl(key), xml, {
-            headers: new HttpHeaders({ 'Content-Type': 'application/xml' }),
-        });
+    /**
+     * PUT the editor's current XML as the new draft body, naming the version it was read at; answers the version it
+     * wrote (the 204's ETag).
+     */
+    saveDraft(key: string, xml: string, version: DraftVersion): Observable<DraftVersion> {
+        return this.http.put(this.draftUrl(key), xml, {
+            headers: draftPrecondition(version, { 'Content-Type': 'application/xml' }),
+            observe: 'response',
+            responseType: 'text',
+        }).pipe(map(r => draftVersionOf(r.headers.get('ETag'))));
     }
 
     /** POST the deploy trigger; backend reads the just-saved draft from VFS. */
@@ -124,10 +155,12 @@ export class DesignerService {
     saveWorkflowDraft(
         key: string,
         body: string,
+        version: DraftVersion,
     ): Observable<WorkflowDraftPayload> {
         return this.http.put<WorkflowDraftPayload>(
             this.workflowDraftUrl(key),
             { body },
+            { headers: draftPrecondition(version) },
         );
     }
 
@@ -183,14 +216,16 @@ export class DesignerService {
         return this.http.get<StateMachineDraftPayload>(this.stateMachineDraftUrl(key));
     }
 
-    /** PUT the editor's current model JSON as the new draft body. */
+    /** PUT the editor's current model JSON as the new draft body, naming the version it was read at. */
     saveStateMachineDraft(
         key: string,
         body: string,
+        version: DraftVersion,
     ): Observable<StateMachineDraftPayload> {
         return this.http.put<StateMachineDraftPayload>(
             this.stateMachineDraftUrl(key),
             { body },
+            { headers: draftPrecondition(version) },
         );
     }
 
@@ -360,6 +395,8 @@ export interface WorkflowDraftPayload {
      * `latestVersionSource === 'contributor'`.
      */
     readonly moduleLock?: boolean | null;
+    /** The version the draft is at, named by every save of it; null (or absent) when there is none. */
+    readonly contentHash?: string | null;
 }
 
 /**

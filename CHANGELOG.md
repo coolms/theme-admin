@@ -129,6 +129,19 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **The designer saves a draft only over the version it was read at.** All
+  four pages send the version their draft was read at with every save
+  (`If-Match`; `If-None-Match: *` when there was no draft yet, so the save
+  only creates one). A draft saved by someone else since (412) or deleted
+  (404) is said above the canvas; the edits stay, and Save and Deploy refuse
+  until Reload. Before, the later of two saves silently replaced the earlier
+  one.
+- **The landing-block editor saves the sections as stored.** It edits
+  `storedBlocks` rather than the render view, so a block of a type it does
+  not know and keys it does not edit go back untouched, and live data is not
+  stored. Every save names the version read; a refused save is said, and
+  none follows until a reload. Before, a save deleted what the render view
+  hid.
 - **The page editor never saves over a read that has not ended or ended
   part-way.** These cases lost stored content:
   - While a body is being read, no editor is shown, and an edit made to a
