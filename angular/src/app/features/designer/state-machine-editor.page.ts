@@ -36,7 +36,9 @@ import {
 } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
-import { DesignerService } from './designer.service';
+import { DesignerService, type DraftVersion } from './designer.service';
+import { DraftConflictBannerComponent } from './shared/draft-conflict-banner.component';
+import { draftConflictOf, type DraftConflict } from './shared/draft-conflict';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
@@ -60,7 +62,8 @@ import { DesignerI18nService } from './designer-i18n.service';
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent
+    ErrorBannerComponent,
+    DraftConflictBannerComponent
 ],
     template: `
         <cms-page-header [title]="title()" />
@@ -77,6 +80,9 @@ import { DesignerI18nService } from './designer-i18n.service';
                     [showRetry]="true"
                     (retry)="retryLoad()"
                 />
+            }
+            @if (conflict(); as c) {
+                <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
             }
 
             <div class="sm-editor-page__chrome" [class.d-none]="draftUnread()">
@@ -179,6 +185,13 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
      * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
      */
     readonly draftUnread = signal<boolean>(false);
+    /** The version of the draft the canvas was read at, named by every save; null: the read found no draft. */
+    private draftVersion: DraftVersion = null;
+    /**
+     * The draft moved on since it was read -- saved by someone else, or deleted. The banner says so; the edits stay on
+     * the canvas; Save and Deploy refuse until Reload reads it again.
+     */
+    readonly conflict = signal<DraftConflict | null>(null);
     readonly title = signal<string>('State machine editor');
     readonly lastSavedAt = signal<string | null>(null);
     readonly latestVersion = signal<number>(0);
@@ -385,11 +398,14 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         this.isLoading.set(true);
         this.loadError.set(null);
         this.draftUnread.set(false);
+        this.conflict.set(null);
+        this.draftVersion = null;
         try {
             const payload = await firstValueFrom(
                 this.designer.getStateMachineDraft(key),
             );
             this.latestVersion.set(payload.latestVersion);
+            this.draftVersion = payload.contentHash ?? null;
 
             let model: StateMachineModel;
             try {
@@ -419,31 +435,47 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         void this.loadDraft(this.definitionKey);
     }
 
+    /** The conflict banner's Reload: the draft as it is now, and its version, in place of the edits. */
+    protected reloadAfterConflict(): void {
+        this.dirty.set(false);
+        void this.loadDraft(this.definitionKey);
+    }
+
     protected async onSave(): Promise<void> {
-        if (this.smEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
+        if (this.smEditor === undefined || this.definitionKey === '' || this.draftUnread() || this.conflict() !== null) return;
         const body = JSON.stringify(this.smEditor.state);
         try {
             const result = await firstValueFrom(
-                this.designer.saveStateMachineDraft(this.definitionKey, body),
+                this.designer.saveStateMachineDraft(this.definitionKey, body, this.draftVersion),
             );
+            this.draftVersion = result.contentHash ?? null;
             this.latestVersion.set(result.latestVersion);
             this.lastSavedAt.set(new Date().toISOString());
             this.dirty.set(false);
             this.toast.success('Draft saved.');
         } catch (err) {
+            const conflict = draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+
+                return;
+            }
             this.toast.error(`Save failed: ${errorMessage(err)}`);
         }
     }
 
     protected async onDeploy(): Promise<void> {
-        if (this.smEditor === undefined || this.definitionKey === '' || this.draftUnread()) return;
+        if (this.smEditor === undefined || this.definitionKey === '' || this.draftUnread() || this.conflict() !== null) return;
         // Save first -- the deployer reads the persisted draft, not the
         // request body (mirrors the BPMN designer's save-then-deploy).
         const body = JSON.stringify(this.smEditor.state);
+        let saved = false;
         try {
-            await firstValueFrom(
-                this.designer.saveStateMachineDraft(this.definitionKey, body),
+            const draft = await firstValueFrom(
+                this.designer.saveStateMachineDraft(this.definitionKey, body, this.draftVersion),
             );
+            this.draftVersion = draft.contentHash ?? null;
+            saved = true;
             const result = await firstValueFrom(
                 this.designer.deployStateMachine(this.definitionKey),
             );
@@ -454,6 +486,13 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
                 `Deployed "${this.definitionKey}" v${result.version}.`,
             );
         } catch (err) {
+            // Only the save's own refusal is a conflict; a deploy that fails after it is a failed deploy.
+            const conflict = saved ? null : draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+
+                return;
+            }
             this.toast.error(`Deploy failed: ${errorMessage(err)}`);
         }
     }

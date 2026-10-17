@@ -44,7 +44,9 @@ import {
 import { contributorSourceVersion, isContributorSource409 } from './shared/contributor-source';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
-import { DesignerService } from './designer.service';
+import { DesignerService, type DraftVersion } from './designer.service';
+import { DraftConflictBannerComponent } from './shared/draft-conflict-banner.component';
+import { draftConflictOf, type DraftConflict } from './shared/draft-conflict';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
@@ -110,7 +112,8 @@ import { DesignerI18nService } from './designer-i18n.service';
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent
+    ErrorBannerComponent,
+    DraftConflictBannerComponent
 ],
     template: `
         @if (!embedded()) {
@@ -132,6 +135,9 @@ import { DesignerI18nService } from './designer-i18n.service';
                     [showRetry]="true"
                     (retry)="retryLoad()"
                 />
+            }
+            @if (conflict(); as c) {
+                <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
             }
 
             <!--
@@ -409,6 +415,13 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
      */
     readonly draftUnread = signal<boolean>(false);
+    /** The version of the draft the canvas was read at, named by every save; null: the read found no draft. */
+    private draftVersion: DraftVersion = null;
+    /**
+     * The draft moved on since it was read -- saved by someone else, or deleted. The banner says so; the edits stay on
+     * the canvas; Save and Deploy refuse until Reload reads it again.
+     */
+    readonly conflict = signal<DraftConflict | null>(null);
     readonly title = signal<string>('Workflow editor');
     readonly lastSavedAt = signal<string | null>(null);
     /** Latest deployed version (in-session); > 0 -> the shared status bar's "Deployed vN" badge. */
@@ -714,6 +727,8 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         this.isLoading.set(true);
         this.loadError.set(null);
         this.draftUnread.set(false);
+        this.conflict.set(null);
+        this.draftVersion = null;
         this.contributorBanner.set(null);
         this.forkedFromModule.set(false);
 
@@ -722,6 +737,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
                 this.designer.getWorkflowDraft(key),
             );
             this.lastSavedAt.set(payload.lastModifiedAt);
+            this.draftVersion = payload.contentHash ?? null;
 
             // The forked-from-module chip is keyed off the
             // latest version row's (source, moduleLock) tuple, both
@@ -1153,14 +1169,21 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
         this.syncToolbarModeButtons();
     }
 
+    /** The conflict banner's Reload: the draft as it is now, and its version, in place of the edits. */
+    protected reloadAfterConflict(): void {
+        this.dirty.set(false);
+        void this.loadDraft(this.definitionKey);
+    }
+
     /** Footer Save -> serialize current model + PUT to the draft endpoint. */
     protected async onSave(): Promise<void> {
-        if (!this.bpmnEditor || this.draftUnread()) return;
+        if (!this.bpmnEditor || this.draftUnread() || this.conflict() !== null) return;
         const body = bpmnLiteModelToJson(this.bpmnEditor.state);
         try {
             const result = await firstValueFrom(
-                this.designer.saveWorkflowDraft(this.definitionKey, body),
+                this.designer.saveWorkflowDraft(this.definitionKey, body, this.draftVersion),
             );
+            this.draftVersion = result.contentHash ?? null;
             this.lastSavedAt.set(result.lastModifiedAt);
             // Saved IS the clean point. The undo history is deliberately
             // left intact -- clearing the stack to reset the flag would
@@ -1168,7 +1191,12 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             this.dirty.set(false);
             this.toast.success(`Saved draft for "${this.definitionKey}".`);
         } catch (err) {
-            this.toast.error(`Save failed: ${errorMessage(err)}`);
+            const conflict = draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+            } else {
+                this.toast.error(`Save failed: ${errorMessage(err)}`);
+            }
             throw err;
         }
     }
@@ -1180,7 +1208,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
      * reads from VFS not request body.
      */
     protected async onDeploy(): Promise<void> {
-        if (!this.bpmnEditor || this.draftUnread()) return;
+        if (!this.bpmnEditor || this.draftUnread() || this.conflict() !== null) return;
         try {
             await this.onSave();
         } catch {
