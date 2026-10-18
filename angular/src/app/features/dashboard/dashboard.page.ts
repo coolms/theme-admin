@@ -117,7 +117,8 @@ const MIN_COLUMNS = 1;
  * somewhere else since -- another tab, another device -- the write is refused
  * (412): the page says so, keeps the arrangement on screen, sends nothing
  * again, and offers Reload. A server that still keeps one layout for everyone
- * sends no `canArrange` and no version, and is saved to as before.
+ * sends no `canArrange`, and is saved to as before: an ETag of its own, if it
+ * sends one, goes back as If-Match, and that server does not check it.
  *
  * ## One request per widget, on purpose
  *

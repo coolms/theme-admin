@@ -24,7 +24,8 @@ interface DashboardView {
  * The catalogue answers the version of all of the person's dashboards (ETag) and whether arranging is possible
  * (`canArrange`). Save and Reset name the version (If-Match). Refused 412, the page says so, keeps the arrangement on
  * screen, sends nothing again, and Reload reads the dashboards again. An installation that keeps no personal layouts
- * offers no Arrange. A server that still keeps one layout for everyone sends neither, and is saved to as before.
+ * offers no Arrange. A server that still keeps one layout for everyone sends no `canArrange`, and is saved to as
+ * before: with no ETag, nothing is named; with the ETag its framework adds, that goes back as If-Match.
  */
 describe('DashboardPageComponent -- each person arranges their own dashboards, saved over the version read', () => {
     const WIDGETS = '/api/v1/dashboard/widgets';
@@ -165,5 +166,23 @@ describe('DashboardPageComponent -- each person arranges their own dashboards, s
         req.flush({ storedAt: 'x' });
         flushMicrotasks();
         answerCatalogue({ widgets: [WIDGET], sections: [] }, null);
+    }));
+
+    it('a server that keeps one layout for everyone, with an ETag of its own: sent back, and saved as before', fakeAsync(() => {
+        // API Platform adds a content ETag to a read by default; such a server does not check If-Match on the write.
+        const f = opened({ widgets: [WIDGET], sections: [] }, 'W/"c0ffee"');
+
+        view(f).onAction('arrange');
+        f.detectChanges();
+        expect((f.nativeElement as HTMLElement).textContent).toContain('This arrangement is shared with everyone.');
+
+        view(f).onAction('save');
+        const req = http.expectOne(LAYOUT);
+        expect(req.request.headers.get('If-Match')).toBe('W/"c0ffee"');
+        req.flush({ storedAt: 'x' });
+        flushMicrotasks();
+        answerCatalogue({ widgets: [WIDGET], sections: [] }, 'W/"c0ffee2"');
+        expect(view(f).editing()).toBeFalse();
+        expect(view(f).changedElsewhere()).toBeFalse();
     }));
 });

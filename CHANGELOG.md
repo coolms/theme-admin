@@ -19,7 +19,8 @@ major number means here.
   arranging is not offered; the page publishes `_canArrange` and
   `_changedElsewhere` to its header actions. The arranging hint says whose
   arrangement it is. A backend that still keeps one layout for everyone sends
-  neither the version nor `canArrange`, and is saved to as before.
+  no `canArrange`, and is saved to as before: the `ETag` its framework adds,
+  if any, goes back as `If-Match`, which that backend does not check.
 - **An event is changed only from the version it was read at.** Every write of
   a calendar event -- a change, a delete, and on a recurring event an
   exception, a skip, a split or a delete of this and the following -- names
