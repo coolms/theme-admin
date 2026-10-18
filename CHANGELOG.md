@@ -10,6 +10,16 @@ major number means here.
 
 ### Added
 
+- **Each person arranges their own dashboards, saved over the version read.**
+  The catalogue's `ETag` is the version of all of the person's dashboards,
+  and Save and Reset name it (`If-Match`). Changed somewhere else since, in
+  another tab or on another device, the write is refused: the page says so,
+  keeps the arrangement on screen, sends nothing again, and offers Reload.
+  Where the installation keeps no personal layouts (`canArrange: false`),
+  arranging is not offered; the page publishes `_canArrange` and
+  `_changedElsewhere` to its header actions. The arranging hint says whose
+  arrangement it is. A backend that still keeps one layout for everyone sends
+  neither the version nor `canArrange`, and is saved to as before.
 - **An event is changed only from the version it was read at.** Every write of
   a calendar event -- a change, a delete, and on a recurring event an
   exception, a skip, a split or a delete of this and the following -- names
