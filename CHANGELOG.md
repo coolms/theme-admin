@@ -10,6 +10,24 @@ major number means here.
 
 ### Added
 
+- **Tests of a right-click on a row, through the rendered file list.** A
+  right-click on a file outside the selection selects that file alone and the
+  chosen action runs on it alone; on a file inside the selection, the selection
+  is kept and the action runs on all of it. The `contextmenu` event is
+  dispatched on the row, so the row's selection and the list's handler are
+  tested together. The spec bridge lists `@coolms/ui-angular`'s new
+  `datagrid-refused-list.spec.ts`.
+- **Each person arranges their own dashboards, saved over the version read.**
+  The catalogue's `ETag` is the version of all of the person's dashboards,
+  and Save and Reset name it (`If-Match`). Changed somewhere else since, in
+  another tab or on another device, the write is refused: the page says so,
+  keeps the arrangement on screen, sends nothing again, and offers Reload.
+  Where the installation keeps no personal layouts (`canArrange: false`),
+  arranging is not offered; the page publishes `_canArrange` and
+  `_changedElsewhere` to its header actions. The arranging hint says whose
+  arrangement it is. A backend that still keeps one layout for everyone sends
+  no `canArrange`, and is saved to as before: the `ETag` its framework adds,
+  if any, goes back as `If-Match`, which that backend does not check.
 - **An event is changed only from the version it was read at.** Every write of
   a calendar event -- a change, a delete, and on a recurring event an
   exception, a skip, a split or a delete of this and the following -- names
@@ -279,6 +297,18 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- In a call where both sides offered at once, the side that kept its own offer
+  no longer replays the ignored offer's ICE candidates once the answer is in.
+  The other side rolls that offer back and answers with ICE credentials of its
+  own (measured in Chrome 150), so those candidates could never be used. Chrome
+  took them in without a word; the WebRTC specification has `addIceCandidate`
+  reject a candidate whose username fragment no applied description carries,
+  which the call would log as a failure. They are dropped, held or not, told by
+  the ICE username fragment they carry.
+  The answer's own candidates are still held when they arrive before it, even
+  while the offer before it is being ignored. A candidate that names no ICE
+  session is dropped if it arrives while a colliding offer is ignored and
+  nothing is applied yet, as perfect negotiation does.
 - A call that rang before the admin's incoming-call subscription was confirmed
   still rings. That channel keeps no history, so a ring published between the
   subscribe and the server's confirmation reached nobody, and the call was
