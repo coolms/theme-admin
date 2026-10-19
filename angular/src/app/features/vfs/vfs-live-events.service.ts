@@ -23,10 +23,14 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
 export class VfsLiveEventsService {
     private readonly client = inject(CentrifugoClientService);
 
+    /** Watchers per channel: the channel is left only when its last watcher goes. */
+    private readonly watchers = new Map<string, number>();
+
     watch(parentNodeId: string): Observable<VfsNodeChangeEvent> {
         const channel = `vfs.parent.${parentNodeId}`;
 
         return new Observable<VfsNodeChangeEvent>(subscriber => {
+            this.watchers.set(channel, (this.watchers.get(channel) ?? 0) + 1);
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
 
@@ -52,12 +56,21 @@ export class VfsLiveEventsService {
 
             return () => {
                 unsubscribed = true;
+                // Another watcher of the same folder -- the listing under an open editor -- keeps the channel.
+                const left = (this.watchers.get(channel) ?? 1) - 1;
+                if (left > 0) {
+                    this.watchers.set(channel, left);
+                } else {
+                    this.watchers.delete(channel);
+                }
                 const sub = this.tryGetSubscription(channel);
                 if (sub !== null) {
                     if (publicationHandler !== null) {
                         sub.off('publication', publicationHandler);
                     }
-                    sub.unsubscribe();
+                    if (left <= 0) {
+                        sub.unsubscribe();
+                    }
                 }
             };
         });

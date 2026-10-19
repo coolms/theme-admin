@@ -17,17 +17,21 @@ import {
 } from '@angular/core';
 import type { EventApi } from 'fullcalendar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, forkJoin, of } from 'rxjs';
+import { filter, forkJoin, of, throwError } from 'rxjs';
 
 import { CalendarDto, CalendarHolidayPreviewDto, CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CreateCalendarItemDto, HolidayPreviewItemDto } from './calendars.types';
-import { CalendarsApiService } from './calendars-api.service';
+import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiService } from './calendars-api.service';
+import { occurrenceSlotOf, rowVersionOf, seriesTargetOf, seriesVersionOf } from './write-versions.util';
+import { SeriesNotMovedError, seriesMove, shiftSeries, stretchSeries } from './series-shift.util';
+import { shiftRecurrence } from './recurrence-shift.util';
+import { dateOnClock, leftBehindMessage, seriesChangeLeaves } from './series-change.util';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ToastService,
     UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
-import { switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 import { CalendarEventEditorComponent, CalendarEventEditorData, CalendarEventEditorResult } from './calendar-event-editor.component';
 import {
     ScopePromptDialogComponent,
@@ -271,7 +275,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
 
         /* Holiday backgrounds — pin the text down so it's visible. */
         /*  .fc-event-title is a v6 name. .fc-ev-holiday-bg is OURS --
-           passed through eventClassNames() -- so it still applies, and the
+           passed through className (eventClassName()) -- so it still applies, and the
            text styling goes on it directly. */
         :host ::ng-deep .fc-ev-holiday-bg {
             color: var(--cms-warning-text);
@@ -412,6 +416,12 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         description: string | null;
         location: string | null;
         color: string | null;
+        /** The version of the row `canonicalId` names, as the event was read (the exception's, on an edited one). */
+        canonicalVersion: number | null;
+        /** The series' version, for the actions on the series; null on a one-off event. */
+        seriesVersion: number | null;
+        /** The series' base the actions on the series address: the exception's parent, on an edited occurrence. */
+        seriesTargetId: string;
     } | null>(null);
 
     readonly loadError = signal<string | null>(null);
@@ -466,6 +476,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // semantically meaningful for signal tracking.
             void tf; void df; void fd; void tz;
         });
+    }
+
+    /** The zone the calendar is shown in: the person's, else the calendar's, else the browser's ("local"). */
+    private displayZone(): string {
+        return this.userPrefs.tz() || this.calendar().tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
     /**
@@ -801,7 +816,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             allDay:          true,
             display:         'background',
             color:           color,
-            classNames:      ['fc-ev-holiday-bg', h.isWorking ? 'fc-ev-holiday-working' : 'fc-ev-holiday-off'],
+            className:       'fc-ev-holiday-bg ' + (h.isWorking ? 'fc-ev-holiday-working' : 'fc-ev-holiday-off'),
             // Holidays are read-only; the editor key is the ruleId, not
             // a calendar item.
             editable:        false,
@@ -822,7 +837,10 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             // `color` and emits it as --fc-event-color. Setting the old names
             // is why a chosen colour never reached the chip.
             color:           item.color ?? undefined,
-            classNames:      this.eventClassNames(item),
+            // FullCalendar 7 renamed this too: an event's classes are `className`, ONE string. `classNames`
+            // (v6) is kept as an extended prop and never drawn, so no event carried its type, recurring,
+            // tentative or cancelled class; an array under `className` is refused (a warning, no class).
+            className:       this.eventClassName(item),
             // Recurring items are now drag/resize-enabled.
             // On drop we prompt for scope ("only this" -> POST exception;
             // "all events" -> PATCH the canonical row).
@@ -846,16 +864,22 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 // overrides share the parent's seriesId).
                 seriesId:       item.seriesId ?? null,
                 parentItemId:   item.parentItemId ?? null,
+                // The versions this row was read at: a write names the one of the row it changes.
+                version:        item.version ?? null,
+                seriesVersion:  item.seriesVersion ?? null,
+                // The slot of the series this occurrence stands for: what a series action names.
+                recurrenceInstant: item.recurrenceInstant ?? null,
             },
         };
     }
 
-    private eventClassNames(item: CalendarItemDto): string[] {
+    /** The card's own classes for an event, as the one string FullCalendar 7 takes. */
+    private eventClassName(item: CalendarItemDto): string {
         const cls = [`fc-ev-type-${item.type}`];
         if (item.status === 'tentative') cls.push('fc-ev-tentative');
         if (item.status === 'cancelled') cls.push('fc-ev-cancelled');
         if (item.recurrence) cls.push('fc-ev-recurring');
-        return cls;
+        return cls.join(' ');
     }
 
     private onDateSelect(arg: DateSelectInfo): void {
@@ -890,7 +914,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // base occurrences and overrides.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         const occurrenceInstant = seriesId
-            ? arg.event.start?.toISOString() ?? undefined
+            ? occurrenceSlotOf(arg.event.extendedProps, arg.event.start?.toISOString() ?? null) ?? undefined
             : undefined;
 
         this.calendarsApi.getCalendarItem(canonicalId).pipe(
@@ -919,7 +943,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         const canonicalId       = (event.extendedProps['originalItemId'] as string | undefined) ?? event.id;
         const seriesId          = (event.extendedProps['seriesId']       as string | null | undefined) ?? null;
         const recurrence        = (event.extendedProps['recurrence']     as string | null | undefined) ?? null;
-        const occurrenceInstant = seriesId ? (event.start?.toISOString() ?? null) : null;
+        const occurrenceInstant = seriesId
+            ? occurrenceSlotOf(event.extendedProps, event.start?.toISOString() ?? null)
+            : null;
         const captured          = capturedRange(event);
         this.cmenu.set({
             x: e.clientX,
@@ -944,6 +970,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             description: (event.extendedProps['description'] as string | null | undefined) ?? null,
             location:    (event.extendedProps['location']    as string | null | undefined) ?? null,
             color:       event.color || null,
+            canonicalVersion: rowVersionOf(event.extendedProps),
+            seriesVersion:    seriesVersionOf(event.extendedProps),
+            seriesTargetId:   seriesTargetOf(event.extendedProps, canonicalId),
         });
     }
 
@@ -1050,7 +1079,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         if (!menu) return;
         this.cmenu.set(null);
 
-        this.calendarsApi.updateCalendarItem(menu.canonicalId, { status: newStatus }).pipe(
+        this.calendarsApi.updateCalendarItem(menu.canonicalId, { status: newStatus }, menu.canonicalVersion).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -1058,7 +1087,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 this.fc?.refetchEvents();
                 this.eventsChanged.emit();
             },
-            error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
+            error: (err: unknown) => this.writeFailed(err),
         });
     }
 
@@ -1076,16 +1105,22 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         if (!menu) return;
         this.cmenu.set(null);
 
+        if (menu.seriesId && !menu.occurrenceInstant) {
+            // An occurrence of a series whose slot was not read: neither a series action (no slot to name) nor the
+            // plain delete (it is part of a series). Nothing is sent.
+            this.slotNotRead();
+            return;
+        }
         if (menu.occurrenceInstant) {
             // Recurring occurrence -- scope prompt.
             this.promptScope({ intent: 'delete', itemTitle: menu.title }).then(scope => {
                 if (scope === undefined) return;
                 if (scope === 'this') {
-                    this.deleteSkipOccurrence(menu.canonicalId, menu.occurrenceInstant!);
+                    this.deleteSkipOccurrence(menu.seriesTargetId, menu.occurrenceInstant!, menu.seriesVersion);
                 } else if (scope === 'following') {
-                    this.deleteFollowing(menu.canonicalId, menu.occurrenceInstant!);
+                    this.deleteFollowing(menu.seriesTargetId, menu.occurrenceInstant!, menu.seriesVersion);
                 } else {
-                    this.deleteCanonical(menu.canonicalId, true);
+                    this.deleteCanonical(menu.seriesTargetId, true, menu.seriesVersion);
                 }
             });
             return;
@@ -1102,33 +1137,33 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.calendarsApi.deleteCalendarItem(menu.canonicalId)),
+            switchMap(() => this.calendarsApi.deleteCalendarItem(menu.canonicalId, menu.canonicalVersion)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => this.onAfterDelete('Event deleted'),
-            error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
+            error: (err: unknown) => this.writeFailed(err),
         });
     }
 
-    private deleteSkipOccurrence(parentId: string, recurrenceInstant: string): void {
-        this.calendarsApi.skipCalendarItemOccurrence(parentId, recurrenceInstant)
+    private deleteSkipOccurrence(parentId: string, recurrenceInstant: string, seriesVersion: number | null): void {
+        this.calendarsApi.skipCalendarItemOccurrence(parentId, recurrenceInstant, seriesVersion)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.onAfterDelete('This occurrence skipped'),
-                error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
+                error: (err: unknown) => this.writeFailed(err),
             });
     }
 
-    private deleteFollowing(parentId: string, recurrenceInstant: string): void {
-        this.calendarsApi.deleteFollowingCalendarItem(parentId, recurrenceInstant)
+    private deleteFollowing(parentId: string, recurrenceInstant: string, seriesVersion: number | null): void {
+        this.calendarsApi.deleteFollowingCalendarItem(parentId, recurrenceInstant, seriesVersion)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => this.onAfterDelete('This and following occurrences removed'),
-                error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
+                error: (err: unknown) => this.writeFailed(err),
             });
     }
 
-    private deleteCanonical(canonicalId: string, isRecurring: boolean): void {
+    private deleteCanonical(canonicalId: string, isRecurring: boolean, version: number | null): void {
         // Recurring "all events" delete still needs an explicit
         // confirm -- bypassing the editor's confirm dialog from a
         // right-click would be too easy a footgun.
@@ -1141,11 +1176,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             danger:       true,
         }).pipe(
             filter(Boolean),
-            switchMap(() => this.calendarsApi.deleteCalendarItem(canonicalId)),
+            switchMap(() => this.calendarsApi.deleteCalendarItem(canonicalId, version)),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => this.onAfterDelete('Event deleted'),
-            error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
+            error: (err: unknown) => this.writeFailed(err),
         });
     }
 
@@ -1162,6 +1197,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         }
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
+        const canonicalVersion = rowVersionOf(arg.event.extendedProps);
+        const seriesVersion = seriesVersionOf(arg.event.extendedProps);
+        const seriesTargetId = seriesTargetOf(arg.event.extendedProps, canonicalId);
         const newStart = arg.event.start?.toISOString();
         const newEnd   = arg.event.end?.toISOString() ?? null;
         if (!newStart) {
@@ -1182,7 +1220,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // `toFcEvent` for why `recurrence` can't be used here.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         if (seriesId) {
-            const instant = arg.oldEvent.start?.toISOString();
+            const instant = occurrenceSlotOf(arg.oldEvent.extendedProps, arg.oldEvent.start?.toISOString() ?? null);
             if (!instant) {
                 arg.revert();
                 return;
@@ -1193,17 +1231,19 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     return;
                 }
                 if (scope === 'this') {
-                    this.persistOccurrenceMove(canonicalId, instant, newStart, newEnd, arg);
+                    this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
                 } else if (scope === 'following') {
-                    this.persistSeriesSplit(canonicalId, instant, newStart, newEnd, arg);
+                    this.persistSeriesSplit(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
                 } else {
-                    this.persistCanonicalMove(canonicalId, { start: newStart, end: newEnd, allDay: newAllDay }, arg, 'rescheduled');
+                    this.persistSeriesMove(seriesTargetId, arg, 'move');
                 }
             });
             return;
         }
 
-        this.persistCanonicalMove(canonicalId, { start: newStart, end: newEnd, allDay: newAllDay }, arg, 'rescheduled');
+        this.persistCanonicalMove(
+                        canonicalId, { start: newStart, end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'rescheduled',
+                    );
     }
 
     private onEventResize(arg: EventResizeDoneInfo): void {
@@ -1213,6 +1253,9 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         }
         const canonicalId = (arg.event.extendedProps['originalItemId'] as string | undefined)
             ?? arg.event.id;
+        const canonicalVersion = rowVersionOf(arg.event.extendedProps);
+        const seriesVersion = seriesVersionOf(arg.event.extendedProps);
+        const seriesTargetId = seriesTargetOf(arg.event.extendedProps, canonicalId);
         const newStart = arg.event.start?.toISOString();
         const newEnd   = arg.event.end?.toISOString();
         if (!newEnd) {
@@ -1225,7 +1268,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         // Recurring items resize prompts for scope too.
         const seriesId = arg.event.extendedProps['seriesId'] as string | null | undefined;
         if (seriesId) {
-            const instant = arg.oldEvent.start?.toISOString();
+            const instant = occurrenceSlotOf(arg.oldEvent.extendedProps, arg.oldEvent.start?.toISOString() ?? null);
             if (!instant || !newStart) {
                 arg.revert();
                 return;
@@ -1236,15 +1279,15 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                     return;
                 }
                 if (scope === 'this') {
-                    this.persistOccurrenceMove(canonicalId, instant, newStart, newEnd, arg);
+                    this.persistOccurrenceMove(seriesTargetId, instant, newStart, newEnd, seriesVersion, arg);
                 } else {
-                    this.persistCanonicalMove(canonicalId, { end: newEnd, allDay: newAllDay }, arg, 'duration updated');
+                    this.persistSeriesMove(seriesTargetId, arg, 'stretch');
                 }
             });
             return;
         }
 
-        this.persistCanonicalMove(canonicalId, { end: newEnd, allDay: newAllDay }, arg, 'duration updated');
+        this.persistCanonicalMove(canonicalId, { end: newEnd, allDay: newAllDay }, canonicalVersion, arg, 'duration updated');
     }
 
     /**
@@ -1264,20 +1307,21 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         recurrenceInstant: string,
         newStart: string,
         newEnd: string | null,
+        seriesVersion: number | null,
         arg: { revert: () => void },
     ): void {
         this.calendarsApi.createCalendarItemException(parentItemId, {
             recurrenceInstant,
             newStart,
             newEnd,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, seriesVersion).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.toast.success('This occurrence updated');
                 this.fc?.refetchEvents();
                 this.eventsChanged.emit();
             },
             error: (err: unknown) => {
-                this.toast.error(this.errors.humanize(err));
+                this.writeFailed(err);
                 arg.revert();
             },
         });
@@ -1298,20 +1342,21 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
         recurrenceInstant: string,
         newStart: string,
         newEnd: string | null,
+        seriesVersion: number | null,
         arg: { revert: () => void },
     ): void {
         this.calendarsApi.splitCalendarItem(parentItemId, {
             recurrenceInstant,
             newStart,
             newEnd,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, seriesVersion).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.toast.success('Series split at this occurrence');
                 this.fc?.refetchEvents();
                 this.eventsChanged.emit();
             },
             error: (err: unknown) => {
-                this.toast.error(this.errors.humanize(err));
+                this.writeFailed(err);
                 arg.revert();
             },
         });
@@ -1329,10 +1374,11 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
     private persistCanonicalMove(
         canonicalId: string,
         patch: { start?: string; end?: string | null; allDay?: boolean },
+        version: number | null,
         arg: { revert: () => void },
         successVerb: 'rescheduled' | 'duration updated',
     ): void {
-        this.calendarsApi.updateCalendarItem(canonicalId, patch).pipe(
+        this.calendarsApi.updateCalendarItem(canonicalId, patch, version).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
@@ -1341,7 +1387,7 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
                 this.eventsChanged.emit();
             },
             error: (err: unknown) => {
-                this.toast.error(this.errors.humanize(err));
+                this.writeFailed(err);
                 arg.revert();
             },
         });
@@ -1386,6 +1432,142 @@ export class CalendarEventsCardComponent implements OnInit, AfterViewInit, OnDes
             calendarId:  this.calendar().id ?? '',
             calendarTz:  this.calendar().tz ?? 'UTC',
         });
+    }
+
+    /**
+     * A write refused because the event or its series changed since the calendar read it says so -- nothing was
+     * changed -- and offers Reload, which reads the calendar's events again. Never sent again on its own.
+     */
+    private writeFailed(err: unknown): void {
+        if (!calendarItemChangedSinceRead(err)) {
+            this.toast.error(this.errors.humanize(err));
+            return;
+        }
+        const unread = err instanceof CalendarItemNotReadError;
+        this.toast.show({
+            type: 'error',
+            title: unread
+                ? 'This event was read without a version'
+                : 'This event was changed since the calendar was shown',
+            message: unread
+                ? 'Nothing was changed: a change is made only from the version it was read at. Reload reads it again.'
+                : 'Nothing was changed. Reload shows the calendar as it is now.',
+            action: {
+                label: 'Reload',
+                run: () => {
+                    this.fc?.refetchEvents();
+                    this.eventsChanged.emit();
+                },
+            },
+        }, 0);
+    }
+
+    /**
+     * "All events" on a dragged (`move`) or resized (`stretch`) occurrence: the WHOLE series moves by the same
+     * difference, days and time, and nothing earlier is dropped. The series is read, its start (and end) moved on its
+     * own wall clock by what the occurrence was moved ({@link shiftSeries}), and saved naming the version of that read
+     * -- a series changed meanwhile is refused, not written over. From an edited occurrence too: it addresses its
+     * series. Changing all events between all-day and timed is left to the series' editor.
+     *
+     * A move carries the rule's own dates in the same write ({@link shiftRecurrence}): UNTIL, the skipped and added
+     * dates, and the weekdays or days of the month the rule picks. It is refused, with nothing written, when no rule
+     * can give the same events moved. The server moves the occurrences edited one by one with the series; one the
+     * moved series would have no slot for is named in a 409, and the person chooses to let it go or keep the series.
+     */
+    private persistSeriesMove(seriesId: string, arg: EventDropInfo | EventResizeDoneInfo, how: 'move' | 'stretch'): void {
+        const allDay = arg.oldEvent.allDay;
+        if (arg.event.allDay !== allDay) {
+            arg.revert();
+            this.toast.error('Change all events between all-day and timed in the series\' editor.', 'Nothing was changed');
+            return;
+        }
+        const at = (e: EventApi): string | null => how === 'move'
+            ? (allDay ? e.startStr : e.start?.toISOString() ?? null)
+            : (allDay ? (e.endStr || null) : e.end?.toISOString() ?? null);
+        const from = at(arg.oldEvent);
+        const to = at(arg.event);
+        if (!from || !to) {
+            arg.revert();
+            return;
+        }
+        this.calendarsApi.getCalendarItem(seriesId).pipe(
+            switchMap(series => {
+                const zone = series.effectiveTimeZone ?? series.timeZone ?? this.calendar().tz ?? 'UTC';
+                if (how === 'stretch') {
+                    const times = stretchSeries(series, from, to, zone);
+                    return this.calendarsApi.updateCalendarItem(series.id, { ...times, allDay: series.allDay }, series.version);
+                }
+                // The rule's dates move with the start, in the same write: UNTIL, the skipped and the added dates,
+                // and the days a rule picks. A rule no move by this difference can keep is refused.
+                const move = seriesMove(series.allDay, from, to, zone);
+                const rule = series.recurrence ? shiftRecurrence(series.recurrence, series.start, move.delta, move.zone) : null;
+                if (rule !== null && 'refused' in rule) {
+                    return throwError(() => new SeriesNotMovedError(rule.refused));
+                }
+                const write = {
+                    ...shiftSeries(series, from, to, zone),
+                    allDay: series.allDay,
+                    ...(rule === null ? {} : { recurrence: rule.recurrence }),
+                };
+                // The server moves the occurrences edited one by one with the series. One the moved series would
+                // have no slot for is not dropped unasked: the change is refused (409) naming them, and the person
+                // decides -- let them go with the move, or leave the series as it is.
+                return this.calendarsApi.updateCalendarItem(series.id, write, series.version).pipe(
+                    catchError((err: unknown) => {
+                        const left = seriesChangeLeaves(err);
+                        if (left === null) {
+                            return throwError(() => err);
+                        }
+                        return this.confirmSvc.open({
+                            title: 'Move all events, and let some go?',
+                            // Each event is named by the date the person sees it on: an all-day series' dates
+                            // are kept in UTC, a timed one's read in the zone the calendar is shown in.
+                            message: leftBehindMessage(left, dateOnClock(
+                                series.allDay ? 'UTC' : this.displayZone(),
+                                this.userPrefs.dateFormat() || 'yyyy-MM-dd',
+                            )),
+                            confirmLabel: 'Move and remove them',
+                            danger: true,
+                        }).pipe(switchMap(confirmed => confirmed
+                            ? this.calendarsApi.updateCalendarItem(
+                                series.id, { ...write, discardExceptions: true }, series.version,
+                            )
+                            : throwError(() => new SeriesNotMovedError('The series was left as it is.'))));
+                    }),
+                );
+            }),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+            next: () => {
+                this.toast.success(how === 'move' ? 'All events moved' : 'All events resized');
+                this.fc?.refetchEvents();
+                this.eventsChanged.emit();
+            },
+            error: (err: unknown) => {
+                if (err instanceof SeriesNotMovedError) {
+                    this.toast.error(err.message, 'Nothing was changed');
+                } else {
+                    this.writeFailed(err);
+                }
+                arg.revert();
+            },
+        });
+    }
+
+    /** An occurrence read without its slot in the series is not acted on as part of it: said, Reload offered. */
+    private slotNotRead(): void {
+        this.toast.show({
+            type: 'error',
+            title: 'This occurrence was read without its place in the series',
+            message: 'Nothing was changed. Reload reads the calendar again.',
+            action: {
+                label: 'Reload',
+                run: () => {
+                    this.fc?.refetchEvents();
+                    this.eventsChanged.emit();
+                },
+            },
+        }, 0);
     }
 
     private openEditor(data: CalendarEventEditorData): void {

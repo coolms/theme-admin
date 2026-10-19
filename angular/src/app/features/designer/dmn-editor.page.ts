@@ -47,7 +47,9 @@ function isNewDecisionBody(err: unknown): boolean {
 import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
-import { DesignerService } from './designer.service';
+import { DesignerService, type DraftVersion } from './designer.service';
+import { DraftConflictBannerComponent } from './shared/draft-conflict-banner.component';
+import { draftConflictOf, type DraftConflict } from './shared/draft-conflict';
 import { DesignerI18nService } from './designer-i18n.service';
 
 /**
@@ -97,6 +99,7 @@ import { DesignerI18nService } from './designer-i18n.service';
     DesignerActionFooterComponent,
     LoadingComponent,
     ErrorBannerComponent,
+    DraftConflictBannerComponent,
     RouterLink
 ],
     template: `
@@ -112,6 +115,9 @@ import { DesignerI18nService } from './designer-i18n.service';
             }
             @if (loadError()) {
                 <app-error-banner [message]="loadError()!" [showRetry]="true" (retry)="retryLoad()" />
+            }
+            @if (conflict(); as c) {
+                <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
             }
             @if (noDecisionTable()) {
                 <!--
@@ -132,7 +138,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                     </a>
                 </div>
             }
-            <div class="dmn-editor-page__chrome">
+            <div class="dmn-editor-page__chrome" [class.d-none]="draftUnread()">
                 <div #host class="dmn-editor-page__host"></div>
                 <app-designer-action-footer
                     [savedAt]="lastSavedAt()"
@@ -192,6 +198,18 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
     readonly isLoading     = signal<boolean>(true);
     readonly loadError     = signal<string | null>(null);
     /**
+     * The draft could not be read (the read failed, or the decision has no table here): its canvas and footer are not
+     * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
+     */
+    readonly draftUnread   = signal<boolean>(false);
+    /** The version of the draft the canvas was read at, named by every save; null: the read found no draft. */
+    private draftVersion: DraftVersion = null;
+    /**
+     * The draft moved on since it was read -- saved by someone else, or deleted. The banner says so; the edits stay on
+     * the canvas; Save and Deploy refuse until Reload reads it again.
+     */
+    readonly conflict = signal<DraftConflict | null>(null);
+    /**
      * True when the body parsed but carries no decision table -- a DRD
      * document rather than a broken one. Rendered as a purposeful
      * empty state, not an error.
@@ -250,8 +268,13 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         this.isLoading.set(true);
         this.loadError.set(null);
         this.noDecisionTable.set(false);
+        this.draftUnread.set(false);
+        this.conflict.set(null);
+        this.draftVersion = null;
         try {
-            const xml = await firstValueFrom(this.designer.getDraft(this.decisionKey));
+            const draft = await firstValueFrom(this.designer.getDraft(this.decisionKey));
+            this.draftVersion = draft.version;
+            const xml = draft.xml;
             if (xml.trim() !== '') {
                 this.tableEditor.fromXml(xml);
             }
@@ -277,7 +300,10 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                  */
                 this.loadError.set(null);
             } else if (isMissingDecisionTable(err)) {
+                // A decision with no table is the requirements diagram's to edit: a blank table saved here would
+                // replace the definitions it holds.
                 this.noDecisionTable.set(true);
+                this.draftUnread.set(true);
             } else {
                 // Banner ONLY -- no toast. `ErrorBannerComponent` exists
                 // precisely "instead of a blank panel + a transient toast
@@ -285,6 +311,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                 // same sentence twice, once in a place they cannot
                 // dismiss and once in a place that vanishes.
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+                this.draftUnread.set(true);
             }
         } finally {
             this.isLoading.set(false);
@@ -305,17 +332,28 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         }
     }
 
+    /** The conflict banner's Reload: the draft as it is now, and its version, in place of the edits. */
+    protected reloadAfterConflict(): void {
+        this.dirty.set(false);
+        void this.loadDraft();
+    }
+
     /** Footer Save -> PUT current XML. */
     protected async onSave(): Promise<void> {
-        if (!this.tableEditor) return;
+        if (!this.tableEditor || this.draftUnread() || this.conflict() !== null) return;
         const xml = this.tableEditor.toXml();
         try {
-            await firstValueFrom(this.designer.saveDraft(this.decisionKey, xml));
+            this.draftVersion = await firstValueFrom(this.designer.saveDraft(this.decisionKey, xml, this.draftVersion));
             this.lastSavedAt.set(new Date().toISOString());
             this.dirty.set(false);
             this.toast.success(`Saved draft for "${this.decisionKey}".`);
         } catch (err) {
-            this.toast.error(`Save failed: ${errorMessage(err)}`);
+            const conflict = draftConflictOf(err);
+            if (conflict !== null) {
+                this.conflict.set(conflict);
+            } else {
+                this.toast.error(`Save failed: ${errorMessage(err)}`);
+            }
             throw err;
         }
     }
@@ -327,7 +365,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
      * backend deployer reads from VFS not request body.
      */
     protected async onDeploy(): Promise<void> {
-        if (!this.tableEditor) return;
+        if (!this.tableEditor || this.draftUnread() || this.conflict() !== null) return;
         try {
             await this.onSave();
         } catch {

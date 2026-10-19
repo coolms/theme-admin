@@ -2,8 +2,8 @@
 // verbatim, so a feature stops depending on the shell for its own module's calls.
 // Keeps HttpClient for now; the framework-free transport comes with extraction.
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Store } from '@ngxs/store';
 import { AppConfigState, ApiManifest, type HydraCollection } from '@coolms/core-angular';
@@ -32,6 +32,25 @@ import {
     type UpdateCalendarShareDto,
     type ListCalendarItemsOptions,
 } from './calendars.types';
+
+/**
+ * A write of an event or a series read with no version is not sent: without the version it was read at, it could
+ * only go over whatever is stored now, unseen.
+ */
+export class CalendarItemNotReadError extends Error {
+    constructor(readonly itemId: string) {
+        super(`The event "${itemId}" was read with no version, so it is not changed.`);
+        this.name = 'CalendarItemNotReadError';
+    }
+}
+
+/**
+ * A write refused because the event or its series changed since it was read (412), or because it was read with no
+ * version: nothing was changed. What the person can do is reload; the write is never sent again on its own.
+ */
+export function calendarItemChangedSinceRead(err: unknown): boolean {
+    return err instanceof CalendarItemNotReadError || (err instanceof HttpErrorResponse && err.status === 412);
+}
 
 @Injectable({ providedIn: 'root' })
 export class CalendarsApiService {
@@ -211,14 +230,21 @@ export class CalendarsApiService {
         return this.http.post<CalendarItemDto>(url, dto);
     }
 
-    updateCalendarItem(id: string, patch: UpdateCalendarItemDto): Observable<CalendarItemDto> {
+    /**
+     * `version`: the version of the row `id` names, as read -- `version` of an event or of an edited occurrence,
+     * `seriesVersion` for the series' base. Sent as If-Match; a row changed since answers 412, nothing changed.
+     */
+    updateCalendarItem(id: string, patch: UpdateCalendarItemDto, version: number | null | undefined): Observable<CalendarItemDto> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(id)}`;
-        return this.http.patch<CalendarItemDto>(url, patch, this.patchHeaders);
+        return this.withVersion(id, version, ifMatch => this.http.patch<CalendarItemDto>(url, patch, {
+            headers: { ...this.patchHeaders.headers, 'If-Match': ifMatch },
+        }));
     }
 
-    deleteCalendarItem(id: string): Observable<void> {
+    /** `version`: as for {@link updateCalendarItem}. */
+    deleteCalendarItem(id: string, version: number | null | undefined): Observable<void> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(id)}`;
-        return this.http.delete<void>(url);
+        return this.withVersion(id, version, ifMatch => this.http.delete<void>(url, { headers: { 'If-Match': ifMatch } }));
     }
 
     // -- Per-occurrence overrides ----------------------------------
@@ -228,21 +254,28 @@ export class CalendarsApiService {
     // endpoints instead of touching the canonical row. Both are idempotent
     // on `(parentItemId, recurrenceInstant)` server-side, so a re-edit on
     // the same instant updates rather than duplicates.
+    //
+    // These four change the SERIES: each names the series' version as read
+    // (`seriesVersion`); a series changed since answers 412, nothing changed.
 
     createCalendarItemException(
         parentItemId: string,
         body: CalendarItemExceptionRequest,
+        seriesVersion: number | null | undefined,
     ): Observable<CalendarItemExceptionResponse> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(parentItemId)}/exception`;
-        return this.http.post<CalendarItemExceptionResponse>(url, body);
+        return this.withVersion(parentItemId, seriesVersion, ifMatch =>
+            this.http.post<CalendarItemExceptionResponse>(url, body, { headers: { 'If-Match': ifMatch } }));
     }
 
     skipCalendarItemOccurrence(
         parentItemId: string,
         recurrenceInstant: string,
+        seriesVersion: number | null | undefined,
     ): Observable<CalendarItemSkipResponse> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(parentItemId)}/skip`;
-        return this.http.post<CalendarItemSkipResponse>(url, { recurrenceInstant });
+        return this.withVersion(parentItemId, seriesVersion, ifMatch =>
+            this.http.post<CalendarItemSkipResponse>(url, { recurrenceInstant }, { headers: { 'If-Match': ifMatch } }));
     }
 
     /**
@@ -254,9 +287,11 @@ export class CalendarsApiService {
     splitCalendarItem(
         parentItemId: string,
         body: CalendarItemSplitRequest,
+        seriesVersion: number | null | undefined,
     ): Observable<CalendarItemSplitResponse> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(parentItemId)}/split`;
-        return this.http.post<CalendarItemSplitResponse>(url, body);
+        return this.withVersion(parentItemId, seriesVersion, ifMatch =>
+            this.http.post<CalendarItemSplitResponse>(url, body, { headers: { 'If-Match': ifMatch } }));
     }
 
     /**
@@ -267,9 +302,25 @@ export class CalendarsApiService {
     deleteFollowingCalendarItem(
         parentItemId: string,
         recurrenceInstant: string,
+        seriesVersion: number | null | undefined,
     ): Observable<CalendarItemDeleteFollowingResponse> {
         const url = `${this.manifest.apiBase}/calendar/items/${encodeURIComponent(parentItemId)}/delete-following`;
-        return this.http.post<CalendarItemDeleteFollowingResponse>(url, { recurrenceInstant });
+        return this.withVersion(parentItemId, seriesVersion, ifMatch =>
+            this.http.post<CalendarItemDeleteFollowingResponse>(url, { recurrenceInstant }, {
+                headers: { 'If-Match': ifMatch },
+            }));
+    }
+
+    /** The write, sent with `version` as a strong If-Match -- or, read without one, not sent at all. */
+    private withVersion<T>(
+        id: string,
+        version: number | null | undefined,
+        send: (ifMatch: string) => Observable<T>,
+    ): Observable<T> {
+        if (version === null || version === undefined) {
+            return throwError(() => new CalendarItemNotReadError(id));
+        }
+        return send(`"${version}"`);
     }
 
     // -- Recurrence preview ( / shared) ----------------------------------
