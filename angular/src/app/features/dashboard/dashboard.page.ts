@@ -148,6 +148,17 @@ const MIN_COLUMNS = 1;
                     <app-tab-strip [tabs]="tabs()" [activeId]="section() ?? ''"
                                    (selected)="switchSection($any($event))" />
                 }
+                <!-- Above the states below, not inside one of them: a save refused or failed is said whatever the
+                     page draws -- also on an empty dashboard, where a person offered no widget arranges too. -->
+                @if (changedElsewhere()) {
+                    <div class="dashboard__conflict" role="alert">
+                        <span>Your dashboards were changed somewhere else since you started arranging. Nothing was saved.</span>
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="reloadAfterConflict()">Reload, discarding my arrangement</button>
+                    </div>
+                }
+                @if (saveError()) {
+                    <div class="alert alert-danger">{{ saveError() }}</div>
+                }
                 @if (loading()) {
                     <div class="dashboard__status">
                         <cms-loader label="Loading dashboard" />
@@ -155,12 +166,12 @@ const MIN_COLUMNS = 1;
                 } @else if (error()) {
                     <div class="alert alert-danger m-3">{{ error() }}</div>
                 } @else if (cards().length === 0) {
-                    <!-- Not an error. A platform whose installed modules offer nothing
-                         has an empty dashboard, and saying so beats an empty grid that
-                         looks broken. -->
+                    <!-- Not an error. A person offered nothing -- no installed module
+                         offers a widget they may read -- has an empty dashboard, and
+                         saying so beats an empty grid that looks broken. -->
                     <div class="dashboard__empty">
                         <i class="bi bi-grid-1x2"></i>
-                        <p>No modules are offering dashboard widgets yet.</p>
+                        <p>No dashboard widgets are offered to you.</p>
                     </div>
                 } @else {
                     @if (editing()) {
@@ -171,15 +182,6 @@ const MIN_COLUMNS = 1;
                             item from the left menu onto the grid to add its widgets.
                             @if (personal()) { Only you see this arrangement. } @else { This arrangement is shared with everyone. }
                         </p>
-                    }
-                    @if (changedElsewhere()) {
-                        <div class="dashboard__conflict" role="alert">
-                            <span>Your dashboards were changed somewhere else since you started arranging. Nothing was saved.</span>
-                            <button type="button" class="cms-btn cms-btn-sm" (click)="reloadAfterConflict()">Reload, discarding my arrangement</button>
-                        </div>
-                    }
-                    @if (saveError()) {
-                        <div class="alert alert-danger">{{ saveError() }}</div>
                     }
                     @if (dropNote()) {
                         <div class="dashboard__note">{{ dropNote() }}</div>
