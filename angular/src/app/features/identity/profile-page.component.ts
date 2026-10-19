@@ -119,13 +119,16 @@ type Tab = 'personal' | string;
             border: 2px solid transparent;
             cursor: pointer;
             padding: 0;
-            outline: none;
             transition: transform .1s, box-shadow .1s;
         }
         .color-dot:hover:not(:disabled) { transform: scale(1.2); }
         .color-dot--active {
             box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-selected);
         }
+        /* The focus ring outside the selected ring (4px), with a 1px gap: at the :where() ring's 2px offset it lay on
+           the selected ring itself, and in the dark scheme the two colours are 1.23:1 -- a focused dot looked
+           unfocused. */
+        .color-dot:focus-visible { outline-offset: 5px; }
 
         .sidebar-name {
             font-size: .875rem;

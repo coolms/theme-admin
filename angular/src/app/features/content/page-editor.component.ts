@@ -13,6 +13,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { concat, forkJoin, of, Observable } from 'rxjs';
 import { concatMap, tap, toArray } from 'rxjs/operators';
 import { Store } from '@ngxs/store';
@@ -246,7 +247,7 @@ type RailTab = string;
                 <!-- -- Title field --------------------------------------- -->
                 <div class="page-editor__title-row">
                     <label class="page-editor__title-label">Title</label>
-                    <input class="page-editor__title-input"
+                    <input class="page-editor__title-input cms-field"
                            type="text"
                            [ngModel]="titleValue()"
                            (ngModelChange)="onTitleChange($event)"
@@ -313,14 +314,29 @@ type RailTab = string;
                              editor below never mounts for a landing page; the block
                              editor's activeChange only corrects unstamped legacy pages. -->
                         @if (!landingMode()) {
-                            <coolms-editor
-                                profile="admin"
-                                class="page-editor__canvas"
-                                [style.max-width]="canvasMaxWidth()"
-                                [content]="editorContent()"
-                                (contentChange)="onContentChange($event)"
-                                [contentAdapter]="dtmplAdapter"
-                                [mountKey]="editorMountKey()" />
+                            @if (activeBodyUnreadable()) {
+                                <!-- A body whose read failed is not an empty body: shown as unread, never
+                                     edited, never written over (2026-10-15). -->
+                                <div class="page-editor__unread" role="alert">
+                                    <p>The body of this page could not be read, so it is not shown, and nothing is saved over it.</p>
+                                    <button type="button" class="cms-btn cms-btn-sm" (click)="retryBody()">Read it again</button>
+                                </div>
+                            } @else if (activeBodyReading()) {
+                                <!-- A body still being read is not an empty body: an editor shown now would take
+                                     edits the stored body then never replaces, and Save would write them over it. -->
+                                <div class="page-editor__reading" role="status">
+                                    <p>Reading the body of this page…</p>
+                                </div>
+                            } @else {
+                                <coolms-editor
+                                    profile="admin"
+                                    class="page-editor__canvas"
+                                    [style.max-width]="canvasMaxWidth()"
+                                    [content]="editorContent()"
+                                    (contentChange)="onContentChange($event)"
+                                    [contentAdapter]="dtmplAdapter"
+                                    [mountKey]="editorMountKey()" />
+                            }
                         }
                         @if (postPath()) {
                             <app-block-editor class="page-editor__post" [path]="postPath()" [embedded]="true"
@@ -596,7 +612,7 @@ type RailTab = string;
         }
         .page-editor__title-label { font-size: .75rem; font-weight: 600; white-space: nowrap; color: var(--cms-text-muted); }
         .page-editor__title-input {
-            flex: 1; border: none; outline: none;
+            flex: 1; border: none;
             font-size: 1.125rem; font-weight: 600;
             background: transparent;
             color: var(--cms-text);
@@ -629,6 +645,15 @@ type RailTab = string;
         .page-editor__main { flex: 1; min-height: 0; display: flex; position: relative; }
         .page-editor__body { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
         .page-editor__body coolms-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .page-editor__unread {
+            margin: 16px; padding: 16px;
+            border: 1px solid var(--cms-border-control); border-radius: var(--cms-radius-sm);
+            color: var(--cms-text); background: var(--cms-surface);
+            display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+        }
+        .page-editor__unread p { margin: 0; }
+        .page-editor__reading { margin: 16px; padding: 16px; color: var(--cms-text-muted); }
+        .page-editor__reading p { margin: 0; }
         /* Landing pages: the block builder IS the main canvas (the prose editor is
            dropped), so it fills the body and scrolls. It takes no space otherwise
            (it self-hides for non-landing pages). */
@@ -636,7 +661,7 @@ type RailTab = string;
         .page-editor--landing .page-editor__post { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         /* Layout panel: a page-size max-width caps + centers the editing canvas. */
         .page-editor__canvas { width: 100%; margin-inline: auto; }
-        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #848b96); margin: .5rem 0 0; }
+        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: .5rem 0 0; }
 
         /* Right side-rail (History / Meta / Schedule / Fields) */
         .page-editor__rail { display: flex; flex-shrink: 0; border-left: 1px solid var(--cms-border); }
@@ -923,9 +948,16 @@ export class PageEditorComponent implements OnInit {
                         this.seoFields.set(seo?.fields ?? []);
                         // Re-seed the active locale now that descriptors exist (the first
                         // activateTab ran with an empty descriptor list).
+                        // An edit made before they arrived (a title, say) keeps its values; every other declared
+                        // field shows the value stored for it, instead of an empty one.
                         const loc = this.activeTab();
-                        if (loc && !this.metaCache()[loc]) {
-                            this.seoValues.set(this.seedSeoFromVariant(this.variants().find(v => v.locale === loc)));
+                        if (loc) {
+                            const cached = this.metaCache()[loc];
+                            this.seoValues.set({
+                                ...this.seedSeoFromVariant(this.variants().find(v => v.locale === loc)),
+                                ...(cached?.seo ?? {}),
+                            });
+                            if (cached) this.cacheMeta();
                         }
                         this.cdr.markForCheck();
                     },
@@ -1042,8 +1074,15 @@ export class PageEditorComponent implements OnInit {
      *  after `activeTab` was already set, leaving the editor empty until
      *  a locale switch happens to flip activeTab onto a hot cache entry. */
     private readonly contentCache = signal<Record<string, string>>({});
-    /** Tracks which locales have been loaded from the API */
+    /** Tracks which locales have been loaded from the API -- only those whose read SUCCEEDED (or that this editor
+     *  created empty): a body is written only after it was read. */
     private readonly loadedLocales = new Set<string>();
+    /** Locales whose body read failed: shown as unread, never as an empty body, and never written (2026-10-15). */
+    readonly unreadableLocales = signal<ReadonlySet<string>>(new Set());
+    readonly activeBodyUnreadable = computed(() => this.unreadableLocales().has(this.activeTab()));
+    /** Locales whose body read is in flight: no editor until it lands, so no edit is made to a body not yet shown. */
+    readonly readingLocales = signal<ReadonlySet<string>>(new Set());
+    readonly activeBodyReading = computed(() => this.readingLocales().has(this.activeTab()));
 
     /** Content the bridge mounts with. Decoupled from `contentCache` to
      *  prevent the feedback loop where bridge emit -> cache update ->
@@ -1216,8 +1255,8 @@ export class PageEditorComponent implements OnInit {
         }
         // Set editor content BEFORE flipping activeTab so the bridge sees
         // matching mountKey + content in the same change-detection pass.
-        // Cache hit -- immediate. Cache miss -- empty during async fetch,
-        // then refreshed when fetch resolves (one extra remount; acceptable).
+        // Cache hit -- immediate. Cache miss -- no editor while the body is
+        // read (activeBodyReading); it mounts with the body when the read lands.
         this.editorContent.set(this.contentCache()[locale] ?? '');
         this.activeTab.set(locale);
 
@@ -1229,14 +1268,26 @@ export class PageEditorComponent implements OnInit {
             return;
         }
 
+        this.loadBody(locale);
+    }
+
+    /**
+     * Reads a locale's body. A failed read (a 5xx, a 403, a dropped connection) is NOT a read of an empty body: the
+     * locale is marked unreadable, never loaded, so no save writes its body -- a title save once wrote '' over the
+     * stored body after exactly this (2026-10-15).
+     */
+    private loadBody(locale: string): void {
         const p = this.page();
         if (!p) return;
+        this.setReading(locale, true);
         this.pageSvc.getContent(p.id, locale)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ content }) => {
                     this.contentCache.update(c => ({ ...c, [locale]: content }));
                     this.loadedLocales.add(locale);
+                    this.setUnreadable(locale, false);
+                    this.setReading(locale, false);
                     // Only push to the bridge if this tab is still active
                     // (user may have switched again during the round-trip).
                     if (this.activeTab() === locale) {
@@ -1245,17 +1296,56 @@ export class PageEditorComponent implements OnInit {
                     this.cdr.markForCheck();
                 },
                 error: () => {
-                    this.contentCache.update(c => ({ ...c, [locale]: '' }));
-                    this.loadedLocales.add(locale);
+                    this.setUnreadable(locale, true);
+                    this.setReading(locale, false);
                     this.cdr.markForCheck();
                 },
             });
+    }
+
+    private setReading(locale: string, reading: boolean): void {
+        this.readingLocales.update(s => {
+            if (s.has(locale) === reading) return s;
+            const next = new Set(s);
+            if (reading) next.add(locale);
+            else next.delete(locale);
+            return next;
+        });
+    }
+
+    /** The unread notice's "Read it again". */
+    retryBody(): void {
+        const locale = this.activeTab();
+        if (!locale) return;
+        this.setUnreadable(locale, false);
+        this.loadBody(locale);
+    }
+
+    private setUnreadable(locale: string, unreadable: boolean): void {
+        this.unreadableLocales.update(s => {
+            if (s.has(locale) === unreadable) return s;
+            const next = new Set(s);
+            if (unreadable) next.add(locale);
+            else next.delete(locale);
+            return next;
+        });
+    }
+
+    /** A press that writes the body, refused while the active body is not read: what it would write is not the page's. */
+    private refusedForAnUnreadBody(locale: string, what: string): boolean {
+        if (this.loadedLocales.has(locale)) return false;
+        this.toast.error(this.unreadableLocales().has(locale)
+            ? `The body of this page could not be read, so it was not ${what}. Read it again first.`
+            : `The body of this page is still loading, so it was not ${what}.`);
+        return true;
     }
 
     /** Bridge emits dtmpl-form content (via DtmplContentAdapter.toStorage). */
     onContentChange(stored: string): void {
         const locale = this.activeTab();
         if (!locale) return;
+        // A body not read (still being read, or unread) takes no edit: there is nothing it was made to.
+        if (!this.loadedLocales.has(locale)) return;
         if (this.contentCache()[locale] === stored) return;
         this.contentCache.update(c => ({ ...c, [locale]: stored }));
         this.markDirty();
@@ -1446,6 +1536,8 @@ export class PageEditorComponent implements OnInit {
         const meta = this.metaCache()[locale] ?? this.variantMeta(locale);
         const extras: Record<string, unknown> = {};
         for (const f of this.seoFields()) {
+            // A field this locale's meta never held was never shown: left out, so its stored value stays.
+            if (!(f.name in meta.seo)) continue;
             const v = meta.seo[f.name];
             extras[f.name] = (v === '' || v === undefined) ? null : v;
         }
@@ -1479,6 +1571,7 @@ export class PageEditorComponent implements OnInit {
         const locale = this.activeTab();
         const p = this.page();
         if (!locale || !p || this.saving()) return;
+        if (this.refusedForAnUnreadBody(locale, 'published')) return;
 
         this.saving.set(true);
         const content = this.contentCache()[locale] ?? '';
@@ -1517,12 +1610,27 @@ export class PageEditorComponent implements OnInit {
                             },
                         });
                 },
-                error: () => {
+                error: (err: unknown) => {
                     this.saving.set(false);
-                    this.toast.error('Save failed');
+                    this.saveFailed(err);
                     this.cdr.markForCheck();
                 },
             });
+    }
+
+    /**
+     * A save refused because the page moved on since it was opened says so: nothing was overwritten (412) or made
+     * again (404), and the edits stay in the editor.
+     */
+    private saveFailed(err: unknown): void {
+        const status = err instanceof HttpErrorResponse ? err.status : 0;
+        if (status === 412) {
+            this.toast.error('This page was saved elsewhere since you opened it', 'Nothing was overwritten; your edits are kept here');
+        } else if (status === 404) {
+            this.toast.error('This page was deleted since you opened it', 'Nothing was made again; your edits are kept here');
+        } else {
+            this.toast.error('Save failed');
+        }
     }
 
     // -- Markdown export --------------------------------------------
@@ -1573,6 +1681,7 @@ export class PageEditorComponent implements OnInit {
         const v = this.activeVariant();
         const p = this.page();
         if (!locale || !v || !p || this.saving()) return;
+        if (this.refusedForAnUnreadBody(locale, 'submitted')) return;
 
         this.saving.set(true);
         const content = this.contentCache()[locale] ?? '';
@@ -1818,9 +1927,9 @@ export class PageEditorComponent implements OnInit {
                     this.toast.success('Saved', label || undefined);
                     this.cdr.markForCheck();
                 },
-                error: () => {
+                error: (err: unknown) => {
                     this.saving.set(false);
-                    this.toast.error('Save failed');
+                    this.saveFailed(err);
                     this.cdr.markForCheck();
                 },
             });
@@ -1865,12 +1974,15 @@ export class PageEditorComponent implements OnInit {
         if (!p || !locale) return;
 
         this.loadedLocales.delete(locale);
+        this.setReading(locale, true);
         this.pageSvc.getContent(p.id, locale)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ content }) => {
                     this.contentCache.update(c => ({ ...c, [locale]: content }));
                     this.loadedLocales.add(locale);
+                    this.setUnreadable(locale, false);
+                    this.setReading(locale, false);
                     this.editorContent.set(content);
                     // Force a bridge re-mount: the locale (its mount key) is
                     // unchanged, so a plain content update wouldn't refresh it.
@@ -1883,7 +1995,9 @@ export class PageEditorComponent implements OnInit {
                     this.cdr.markForCheck();
                 },
                 error: () => {
-                    this.loadedLocales.add(locale);
+                    // The cache now holds the body as it was BEFORE what was reloaded: not loaded, so not written.
+                    this.setUnreadable(locale, true);
+                    this.setReading(locale, false);
                     this.cdr.markForCheck();
                 },
             });

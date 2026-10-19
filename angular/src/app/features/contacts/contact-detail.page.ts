@@ -245,7 +245,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         .card__body { padding: 12px 16px; }
 
         dl { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: .9rem; margin: 0; }
-        dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .line { padding: 1px 0; }
@@ -263,11 +263,11 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         .lead:hover { background: var(--cms-canvas, #f3f4f6); }
         .lead__name { flex: 1 1 auto; font-weight: 500; word-break: break-word; }
         .lead__date { flex: 0 0 auto; font-size: .8rem; }
-        .lead__chevron { color: var(--cms-text-muted, #848b96); font-size: .8rem; }
+        .lead__chevron { color: var(--cms-text-muted, #69707c); font-size: .8rem; }
 
-        .hint { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; }
+        .hint { color: var(--cms-text-muted, #69707c); font-size: .85rem; margin: 0; }
         .mono { font-family: var(--cms-font-mono, monospace); }
-        .muted { color: var(--cms-text-muted, #848b96); }
+        .muted { color: var(--cms-text-muted, #69707c); }
     `],
 })
 export class ContactDetailComponent implements OnInit {

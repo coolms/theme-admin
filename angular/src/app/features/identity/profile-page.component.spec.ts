@@ -4,7 +4,7 @@ import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { paginateFlow } from '@coolms/document-engine';
-import { ComponentRegistry, FormRenderDefinition, ThemeService } from '@coolms/core-angular';
+import { ComponentRegistry, FormRenderDefinition, NaviGraphService, ThemeService } from '@coolms/core-angular';
 import { ProfileSection } from './identity.types';
 import { DynamicFormComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
@@ -312,7 +312,10 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
  // component, exactly as a user returning to the tab would. Fed a
  // keyless bag the tab falls to UTC / yyyy-MM-dd / 24h / monday and the
  // next Save writes THOSE over what the user actually stored.
+        // The default-calendar list is asked only where the account's navigation offers Calendar.
+        TestBed.inject(NaviGraphService).adminNav.set([{ id: 'calendars', path: '/calendars', title: 'Calendars', parentId: null, sortOrder: 0, isActive: true, isVisible: true, meta: { resource: '/api/v1/calendar' }, children: [] }]);
         openTab('calendar');
+        TestBed.flushEffects();
         http.expectOne(CALENDAR_LIST_URL).flush({ member: [] });
  // The tab's timezone picker is a lazy-select over the
  // `calendar.timezones` OptionSource -- rows keyed by `value`, not `id`.

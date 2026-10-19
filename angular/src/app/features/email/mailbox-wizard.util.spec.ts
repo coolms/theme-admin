@@ -32,18 +32,13 @@ describe('mailbox wizard rules', () => {
 
     describe('username fields', () => {
         it('are never shown on an OAuth create -- the address is the login', () => {
-            expect(usernameFieldsEditable('create', 'oauth', true)).toBeFalse();
-            expect(usernameFieldsEditable('create', 'oauth', false)).toBeFalse();
+            expect(usernameFieldsEditable('oauth', true)).toBeFalse();
+            expect(usernameFieldsEditable('oauth', false)).toBeFalse();
         });
 
         it('are shown on a password create only to an administrator', () => {
-            expect(usernameFieldsEditable('create', 'password', true)).toBeTrue();
-            expect(usernameFieldsEditable('create', 'password', false)).toBeFalse();
-        });
-
-        it('stay visible in edit mode, where a stored value is being looked at', () => {
-            expect(usernameFieldsEditable('edit', 'password', false)).toBeTrue();
-            expect(usernameFieldsEditable('edit', 'oauth', false)).toBeTrue();
+            expect(usernameFieldsEditable('password', true)).toBeTrue();
+            expect(usernameFieldsEditable('password', false)).toBeFalse();
         });
     });
 

@@ -48,7 +48,7 @@ import { SiteSectionDto } from '../sections.types';
         .site-selector-select {
             background: transparent;
             color: inherit;
-            border: 1px solid rgba(255, 255, 255, .15);
+            border: 1px solid var(--cms-border-control);
             border-radius: 3px;
             padding: 2px 6px;
             font-size: .78rem;
@@ -58,10 +58,6 @@ import { SiteSectionDto } from '../sections.types';
         .site-selector-select option {
             color: var(--cms-text);
             background: var(--cms-surface);
-        }
-        .site-selector-select:focus {
-            outline: none;
-            border-color: rgba(255, 255, 255, .35);
         }
     `],
     template: `
@@ -78,7 +74,7 @@ import { SiteSectionDto } from '../sections.types';
                      no site chosen while a section was current -- and was
                      stamping X-CoolMS-Section with it. An option binding runs
                      inside the option's own view, after it exists. -->
-                <select class="site-selector-select"
+                <select class="site-selector-select cms-field"
                         (change)="onSelect($event)"
                         aria-label="Active site">
                     <option value="" [selected]="null === currentSlug()">No site chosen</option>

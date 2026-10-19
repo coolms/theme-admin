@@ -73,7 +73,7 @@ export interface MigrateResult {
     `,
     styles: [`
         .fields { display: flex; flex-direction: column; gap: 14px; }
-        .lead { margin: 0; font-size: 0.85rem; color: var(--cms-text-muted, #848b96); }
+        .lead { margin: 0; font-size: 0.85rem; color: var(--cms-text-muted, #69707c); }
         .error { color: var(--cms-danger, #dc2626); margin: 0; font-size: 0.8125rem; }
     `],
 })

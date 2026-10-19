@@ -197,12 +197,12 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        dt { color: var(--cms-text-muted, #848b96); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .message { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: .9rem; }
         .mono { font-family: var(--cms-font-mono, monospace); }
-        .muted { color: var(--cms-text-muted, #848b96); }
+        .muted { color: var(--cms-text-muted, #69707c); }
     `],
 })
 export class LeadDetailComponent implements OnInit {

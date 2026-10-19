@@ -31,7 +31,7 @@ import { FormsModule } from '@angular/forms';
         <div class="alt-editor" (mousedown)="$event.stopPropagation()">
             <label class="alt-editor__label" [for]="inputId">Alt text</label>
             <input #input
-                   class="alt-editor__input"
+                   class="alt-editor__input cms-field"
                    type="text"
                    [id]="inputId"
                    [(ngModel)]="value"
@@ -65,18 +65,13 @@ import { FormsModule } from '@angular/forms';
             margin: 0;
         }
         .alt-editor__input {
-            border: 1px solid var(--cms-btn-border);
+            border: 1px solid var(--cms-border-control);
             border-radius: var(--cms-radius-sm);
             padding: 4px 8px;
             font-size: .8125rem;
             color: var(--cms-text);
             outline: none;
             transition: border-color .1s, box-shadow .1s;
-
-            &:focus {
-                border-color: var(--cms-accent);
-                box-shadow: 0 0 0 3px color-mix(in srgb, var(--cms-accent) 15%, transparent);
-            }
         }
         .alt-editor__hint {
             font-size: .6875rem;

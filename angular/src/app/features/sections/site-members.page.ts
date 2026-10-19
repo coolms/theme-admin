@@ -355,7 +355,7 @@ import {
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             background: var(--cms-surface-muted);
             border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
@@ -385,11 +385,11 @@ import {
             flex-wrap: wrap;
         }
         .name { font-weight: 500; color: var(--cms-text, #111827); }
-        .muted { color: var(--cms-text-muted, #848b96); font-size: .85rem; }
+        .muted { color: var(--cms-text-muted, #69707c); font-size: .85rem; }
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
-        .mono--muted { color: var(--cms-text-muted, #848b96); }
+        .mono--muted { color: var(--cms-text-muted, #69707c); }
 
-        .empty { color: var(--cms-text-muted, #848b96); margin: 0 0 8px 0; }
+        .empty { color: var(--cms-text-muted, #69707c); margin: 0 0 8px 0; }
 
         .add-row {
             display: flex;
@@ -408,7 +408,7 @@ import {
             gap: 6px 16px;
         }
         .kv dt {
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             align-self: center;
         }
@@ -417,7 +417,7 @@ import {
         .hint {
             margin: 8px 0 0;
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .hint code {
             background: var(--cms-surface-muted);
@@ -474,7 +474,7 @@ import {
             margin-bottom: 4px;
             font-size: .8rem;
             font-weight: 500;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
     `],
 })

@@ -258,7 +258,7 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
         .rtc-btn:hover { filter: brightness(1.08); }
         .rtc-btn--accept { background: var(--cms-success); }
         .rtc-btn--end    { background: var(--cms-danger); }
-        .rtc-btn--mute   { background: var(--cms-text-muted, #848b96); }
+        .rtc-btn--mute   { background: var(--cms-text-muted, #69707c); }
         .rtc-btn--mute.rtc-btn--on { background: var(--cms-warning, #d97706); }
 
         /* Video stage (Slice 4d) — a floating 1:1 call window. */

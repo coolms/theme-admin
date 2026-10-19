@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { type DocumentTemplate } from '../shared/document-explorer.types';
+import { type ContextSchema, type DocumentTemplate } from '../shared/document-explorer.types';
 
 interface HydraCollection<T> {
     'hydra:member'?: T[];
@@ -168,6 +168,11 @@ export interface UpdateTemplatePayload {
      * true / false to flip it explicitly.
      */
     publiclyAccessible?: boolean;
+    /**
+     * The whole schema, as the variables panel saves its "Filled by the caller" switches. The server refuses (422) a
+     * schema that switches on a variable no caller may fill.
+     */
+    contextSchema?: ContextSchema;
 }
 
 /**

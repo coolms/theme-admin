@@ -17,7 +17,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { firstValueFrom } from 'rxjs';
 import { MediaService } from './media.service';
-import { MediaAssetDto } from './media.types';
+import { MediaAssetDto, mediaAssetSourceUrl } from './media.types';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 import { LocaleSwitcherComponent, TagInputComponent, ToastService } from '@coolms/ui-angular';
 import { AppConfigState } from '@coolms/core-angular';
@@ -400,6 +400,11 @@ export class MediaDetailComponent {
                 asset: {
                     uuid:        asset.id,
                     originalUrl: asset.originalUrl ?? '',
+                    // Pixels and version from one read: the replace names that version (If-Match).
+                    sourceUrl:   mediaAssetSourceUrl(
+                        this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '',
+                        asset.path,
+                    ),
                     filename:    asset.originalFilename,
                     mimeType:    asset.mimeType,
                     path:        asset.path ?? null,

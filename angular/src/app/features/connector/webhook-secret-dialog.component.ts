@@ -80,7 +80,7 @@ export interface WebhookSecretDialogData {
             color: var(--cms-text, #111827);
         }
         .reveal__code--secret { font-weight: 600; }
-        .reveal__hint { margin: 0; font-size: .75rem; color: var(--cms-text-secondary, #6b7280); }
+        .reveal__hint { margin: 0; font-size: .75rem; color: var(--cms-text-secondary, #525a66); }
         .reveal__hint code { word-break: break-all; }
     `],
 })

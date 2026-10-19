@@ -55,7 +55,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
                             }
                         </p>
                     }
-                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelDeletion(d)">
+                    <button type="button" class="cms-btn cms-btn-sm" (click)="cancelDeletion(d)">
                         <i class="bi bi-arrow-counterclockwise me-1"></i>Cancel the deletion
                     </button>
                 } @else {
@@ -84,7 +84,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
                         }
                     </ul>
                     @if (!hasActiveHold()) {
-                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="placeHold()">
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="placeHold()">
                             <i class="bi bi-shield-lock me-1"></i>Place a hold
                         </button>
                     }
@@ -95,10 +95,10 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
     styles: [`
         :host { display: block; }
         .udp { font-size: 0.9rem; }
-        .udp-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #848b96); margin: 0 0 6px; }
+        .udp-heading { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cms-text-muted, #69707c); margin: 0 0 6px; }
         .udp-holds { list-style: none; padding: 0; margin: 0 0 8px; }
         .udp-holds li { padding: 6px 0; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .udp-hold--released .udp-hold-reason { color: var(--cms-text-muted, #848b96); }
+        .udp-hold--released .udp-hold-reason { color: var(--cms-text-muted, #69707c); }
         .udp-hold-reason { white-space: pre-wrap; }
     `],
 })

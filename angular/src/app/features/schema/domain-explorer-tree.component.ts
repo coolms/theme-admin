@@ -14,7 +14,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
     imports: [CmsLoaderComponent, ],
     template: `
         <!-- Filter bar -->
-        <div class="de-filter-bar">
+        <div class="de-filter-bar cms-field-box">
             <i class="bi bi-search de-filter-bar__icon"></i>
             <input type="text"
                    class="de-filter-bar__input"
@@ -166,6 +166,9 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
             gap: 6px;
             flex-shrink: 0;
         }
+        /* The bar is its host's first child and the host clips (overflow: hidden, no padding): the field ring is
+           pulled wholly inside the bar rather than 1px past it. */
+        .de-filter-bar.cms-field-box:focus-within { outline-offset: -2px; }
         .de-filter-bar__icon { color: var(--cms-text-muted); font-size: .8rem; flex-shrink: 0; }
         .de-filter-bar__input {
             flex: 1;

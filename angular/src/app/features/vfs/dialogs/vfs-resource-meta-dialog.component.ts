@@ -39,7 +39,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
                 <div>
                     <label class="rmd-label" for="rmd-description">Description</label>
                     <textarea id="rmd-description"
-                              class="rmd-textarea"
+                              class="rmd-textarea cms-field"
                               rows="3"
                               placeholder="Brief description of this resource endpoint…"
                               [(ngModel)]="description"></textarea>
@@ -61,7 +61,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
                 <!-- Not disabled on the write flag (the client keeps no decider): a flag
                      that says no makes Save ask for elevation, not go dead. -->
                 <button type="button" class="cms-btn cms-btn-primary" (click)="save()" [disabled]="saving()"
-                        [title]="node.permissions.write ? '' : 'Read-only for you: Save asks for the admin password first'">
+                        [title]="node.permissions.write ? '' : 'Read-only for you: Save asks for your password first'">
                     @if (saving()) {
                         <cms-loader [inline]="true" />
                     }
@@ -75,7 +75,7 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             display: block;
             font-size: .78rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: .04em;
@@ -105,7 +105,6 @@ const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'] as const;
             outline: none;
             box-sizing: border-box;
         }
-        .rmd-textarea:focus { border-color: var(--cms-primary, #2563eb); box-shadow: 0 0 0 2px var(--cms-info-subtle); }
         .rmd-chips {
             display: flex;
             gap: 6px;

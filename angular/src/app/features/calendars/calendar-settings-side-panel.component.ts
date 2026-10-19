@@ -125,7 +125,7 @@ type SettingsTab = 'settings' | 'hours' | 'rules' | 'shares';
             border: 0;
             background: transparent;
             border-radius: var(--cms-radius-sm, 4px);
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             cursor: pointer;
         }
         .close-btn:hover { background: var(--cms-surface-muted); color: var(--cms-text); }

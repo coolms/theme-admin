@@ -5,7 +5,279 @@ All notable changes to `coolms/theme-admin` are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning is described in `CONTRIBUTING.md` -- read it before assuming what a
 major number means here.
+
 ## Unreleased
+
+### Added
+
+- **Each person arranges their own dashboards, saved over the version read.**
+  The catalogue's `ETag` is the version of all of the person's dashboards,
+  and Save and Reset name it (`If-Match`). Changed somewhere else since, in
+  another tab or on another device, the write is refused: the page says so,
+  keeps the arrangement on screen, sends nothing again, and offers Reload.
+  Where the installation keeps no personal layouts (`canArrange: false`),
+  arranging is not offered; the page publishes `_canArrange` and
+  `_changedElsewhere` to its header actions. The arranging hint says whose
+  arrangement it is. A backend that still keeps one layout for everyone sends
+  no `canArrange`, and is saved to as before: the `ETag` its framework adds,
+  if any, goes back as `If-Match`, which that backend does not check.
+- **An event is changed only from the version it was read at.** Every write of
+  a calendar event -- a change, a delete, and on a recurring event an
+  exception, a skip, a split or a delete of this and the following -- names
+  (`If-Match`) the version of the row it changes, as the editor or the
+  calendar read it: the event's own, or the series' for the series' base and
+  the actions on the series. An event or series changed since is refused,
+  said, and nothing is changed; Reload reads the calendar again, and the write
+  is never sent again on its own. Without a version nothing is sent. Needs the
+  backend that answers each event's `version` and `seriesVersion`, and
+  `@coolms/ui-angular` 2.0.0-alpha.4 or later for the Reload button.
+- **The admin names itself on its API calls.** Every call under `/api/`
+  carries `X-CoolMS-Client: com.coolms.admin/<version>`, the header the apps
+  send, so the backend's per-client daily counts show the admin and its
+  version. The version is read from `theme.yaml` into a generated, untracked
+  file on `prebuild`, `pretest` and `prestart` (`scripts/stamp-client.mjs`).
+
+- **A page or file opened for editing is saved only over the version it was
+  opened at.** The page editor's body save and the file editors name the
+  version they read (`If-Match`); a page or file changed or deleted meanwhile is
+  said, and nothing is written over it. `provideVfsNodeWatch()` hands the
+  editors the folder's live events, so a change made elsewhere is said at once;
+  one folder channel serves every watcher of it and is left with the last.
+  Needs `@coolms/ui-angular` with `VFS_NODE_WATCH`.
+- **No shortcut of a view fires while a surface is open over it.** The file
+  manager, the media library, the decision and state-machine designers, the
+  BPMN canvas and the shell take their keys through the keyboard scope: while
+  an editor, a viewer, a dialog or a menu is open over the file manager,
+  Delete, Backspace, F2, Escape and Ctrl+A/C/V/X reach nothing beneath it. The
+  file manager's keys follow keyboard focus, not the pointer, and a press
+  anywhere in it puts the keyboard there. The call screen is a card in a
+  corner and takes no keys from the page. Needs `@coolms/ui-angular`
+  2.0.0-alpha.4 and `@coolms/designer` with the keyboard controller's key
+  source.
+- **Contacts, Users, Leads and Call history read their rows from where the
+  server says they come from.** Each grid's definition now declares its list
+  action, and the four pages read the rows from that action's operation
+  instead of a route of their own; their two page-only list methods are gone.
+  A list the person may read only once elevated shows the elevation notice; a
+  list they may not read says so, instead of an empty grid. Leads still sends
+  its tab as the operation's `status` scope. Needs `@coolms/ui-angular` with
+  declared rows.
+- **The file manager draws each node action as the server answers it for the
+  selection.** Every node the file manager lists carries what chmod, chown,
+  delete, rename and hide come to for the signed-in person on it -- `allowed`,
+  `elevate` or `denied` -- and the toolbar and both right-click menus draw the
+  least answer across what they act on: `denied` disabled, `elevate` with a
+  lock. Choosing a locked action asks for elevation and runs it on the grant
+  (or at once when the session is elevated already); cancelled, nothing runs.
+  The Delete key follows the Delete button's answer. The server's refusal
+  stays the last word, and the listing is read again on every change of
+  elevation, as before. Needs `@coolms/ui-angular` with capability state on
+  navi nodes.
+
+- **The menu shows sections that need an elevated session, with a lock.** A
+  section the server answers `elevate` for a member of admin is shown with a
+  lock instead of hidden. A click asks for elevation and then opens the section
+  in place, without a reload. The menu is asked again on every change of
+  elevation, so the locks follow a grant, a drop or an expiry.
+- The top-bar tiles follow the same answer: a locked tile shows a lock and asks
+  for elevation before it opens. It starts no polling and no subscription until
+  the grant.
+- The account menu offers **Elevate session** to an account the server says may
+  elevate, while the session is not elevated. While elevated it says
+  **Elevated until HH:MM** with **End elevation**.
+
+These need a server that answers `access` on the navigation and `mayElevate` on
+the elevation state; against one that does not, the admin behaves as before.
+
+- A console panel's top-bar toggle and its keyboard shortcut follow the menu
+  item that opens the panel. Without such an item the toggle is hidden and the
+  shortcut does nothing; where the item is locked, the toggle shows a lock and
+  asks for elevation first. The terminal's `>_` and Ctrl+` follow the
+  Terminal item.
+
+### Changed
+
+- **A mailbox's settings are a page of sections; the wizard only adds a
+  mailbox.** The rail's Settings opens `/email/mailboxes/:id/settings`:
+  - General: name and address.
+  - Connection: servers, sign-in, sync, and a connection test.
+  - Rules: what arriving mail starts -- a first-contact email starts a
+    workflow, as a rule's action.
+  - Access, for a shared mailbox.
+  - Delete this mailbox, last: its question names what goes (CoolMS's
+    copies of the mail, the mailbox's rules, its settings) and says the
+    account at the mail provider is not touched.
+
+  Each section is saved on its own, naming the version of the settings it
+  was read at (`If-Match`), and sends only what the person changed.
+  Settings changed since are refused and Reload is offered; a read
+  without a version saves nothing. What the caller may change is the
+  server's capability answer: someone who may only read the settings --
+  a delegate, read only or read and send -- sees them read-only, and is
+  told so. The wizard's edit mode, and its update that named no version,
+  are removed.
+
+  The connection test signs in with what is typed, saves nothing, and says
+  each protocol's outcome in the server's fixed sentence; too many tests
+  say when to try again. An owner who is not an administrator signs in as
+  the mailbox's address, so the sign-in names are shown, not edited. Past
+  mail to fetch is a choice: the installation's default, none, the last
+  months as set, or all of it. Needs the backend's mailbox contract
+  (version, access, backfill depth, the test).
+- **The terminal asks for elevation only for a line that begins with `sudo`.**
+  A `sudo` line refused for want of an elevated session asks for the password
+  in the terminal itself, `[sudo] password for <account>:`, and asks for the
+  code from the authenticator when one is required. Nothing typed there is
+  shown, not even a mask, and nothing is kept in the history. Three wrong
+  answers end it, and Ctrl+C cancels it. On a grant the line is sent once more.
+  It is the same elevation as the account menu's, with the same lifetime.
+- Any other line refused for want of an elevated session is shown as refused,
+  with the way to run it (`use sudo <line>`). The terminal no longer opens the
+  elevation dialog by itself.
+- Tab completion marks `[sudo]` on a verb the server says runs only through
+  sudo for this person, as `help` does. A server that says nothing marks
+  nothing.
+
+### Fixed
+
+- **The designer saves a draft only over the version it was read at.** All
+  four pages send the version their draft was read at with every save
+  (`If-Match`; `If-None-Match: *` when there was no draft yet, so the save
+  only creates one). A draft saved by someone else since (412) or deleted
+  (404) is said above the canvas; the edits stay, and Save and Deploy refuse
+  until Reload. Before, the later of two saves silently replaced the earlier
+  one.
+- **The landing-block editor saves the sections as stored.** It edits
+  `storedBlocks` rather than the render view, so a block of a type it does
+  not know and keys it does not edit go back untouched, and live data is not
+  stored. Every save names the version read; a refused save is said, and
+  none follows until a reload. Before, a save deleted what the render view
+  hid.
+- **The page editor never saves over a read that has not ended or ended
+  part-way.** These cases lost stored content:
+  - While a body is being read, no editor is shown, and an edit made to a
+    body not yet read is not taken. Before, the editor mounted empty during
+    the read and took edits. The stored body then arrived without replacing
+    them, and Save wrote them over it with the version just read.
+  - A body answer without its `content` is unread, not empty, and its
+    version is not kept.
+  - An SEO field the person never saw is not written. Before, a title
+    edited before the SEO field list arrived cached an empty SEO map, and
+    Save sent null for every declared field, removing their stored values.
+- **The designer never saves over a draft it could not read.** This covers
+  all four of its pages: workflow, decision table, state machine and
+  decision requirements. A draft whose read failed or whose body did not
+  parse now shows no canvas, and Save and Deploy refuse; the banner's Retry
+  reads again. So does a decision without a table, in the table page. A
+  new decision (no draft yet) still opens blank. Before, a blank, editable
+  canvas was shown with Save on, and Save wrote the blank over the stored
+  draft. In the requirements diagram, which writes the whole decision
+  file, that would have replaced its tables too.
+- **The calendar's events carry their classes again.** FullCalendar 7 takes an
+  event's classes as `className`, one string; the card still set v6's
+  `classNames`, which 7 keeps as an extended prop and never draws. So no event
+  carried its type, and the card's own styles for them were dead: the repeat
+  mark on a recurring event, the line-through of a cancelled one, the italic of
+  a tentative one, and the holiday backgrounds' text. A spec draws the card's
+  events with the admin's FullCalendar and reads the classes off the page.
+- **A form's radios and checkboxes are drawn as the admin draws them.** Three
+  forms styled every `input` as a text field, with a width, padding, a border,
+  a radius and a background, and that rule reached their radios and
+  checkboxes as well:
+  - The recurrence form's "Ends: Never / On / After" and monthly radios showed
+    as rounded squares, which read as checkboxes.
+  - The holiday rule form's checkbox was 2px wide.
+  - The schedule page's "Enabled" checkbox was padded like a text field.
+
+  Each of those rules now names text fields only.
+- **The actions on a series work from an edited occurrence, and at the right
+  slot.** "Only this", "this and following" and "all events" -- from the
+  calendar's menu, a drag, a resize or the editor -- on an occurrence that was
+  edited before went to its exception, which the server refuses; they now
+  address the series it belongs to, at the slot it replaced, naming the
+  series' version. A plain occurrence that a non-working-day rule moved is
+  acted on at its rule's slot, not at the day it moved to. "All events" from
+  an edited occurrence deletes the series, not only that occurrence. Uses the
+  `recurrenceInstant` the backend answers on each occurrence; a backend that
+  answers none is sent the occurrence's start, as before.
+- **"All events" by a drag moves the whole series, and drops nothing.**
+  Dragging an occurrence with "All events" wrote that occurrence's new times
+  onto the series itself: dragging the 5th occurrence of a daily series by two
+  days made the series start on the 5th day, and the first four occurrences
+  were gone. Now the series is read and moved by the same difference -- days
+  and time of day, on the series' own wall clock, so a 09:00 series stays at
+  09:00 across a daylight-saving change -- and saved naming the version of
+  that read. A resize with "All events" makes every occurrence as much longer
+  or shorter. Changing all events between all-day and timed is left to the
+  series' editor.
+  The rule's own dates move in the same write: UNTIL, the skipped dates
+  (EXDATE) and the added ones (RDATE), so a skipped 09:00 occurrence moved to
+  10:00 stays skipped. So do the days the rule picks: weekly on Monday moved
+  by a day repeats on Tuesday, and a day of the month moves within the month.
+  A move that no rule can give exactly is refused, with the reason, and
+  nothing is changed: for example "the 2nd Monday" moved by a day, or "the
+  30th" moved into another month. Moving only the time of day is always
+  possible. Occurrences edited one by one move with the series: the
+  server moves them. When the moved series would have no slot for some of
+  them, or some skipped dates would skip nothing, nothing is changed and
+  the person is asked. The question names those occurrences by title and
+  by the date the calendar shows them on, in the person's date format.
+  "Move and remove them" makes the move and removes them; otherwise
+  the series stays as it is. Needs the backend that moves a series'
+  edited occurrences and answers 409
+  `/errors/series-change-leaves-occurrences` for the rest.
+- **"Read without a version" is said as such.** An event write not sent for
+  want of a version now says the event was read without one, instead of
+  "changed since you opened it".
+- **A media asset edited in the image editor is never replaced over a newer
+  one.** The editor read the asset's pixels from its public URL and replaced
+  it with no version, so an asset replaced meanwhile was overwritten silently.
+  The editor now reads the asset's bytes and their version from one
+  authenticated read and names that version when it replaces; an asset changed
+  or deleted meanwhile is refused and the edits can go to a new image.
+- **A page body that could not be read is never written.** When the page
+  editor's read of a body failed, it showed an empty body and treated it as
+  read, and the next save of a title or SEO field wrote that empty body over
+  the stored one; Publish and Submit for review wrote the body even before
+  its read answered. A failed read is now shown as such, with a way to read
+  it again; no press writes a body that was not read; and the page service
+  sends no body it holds no version of.
+- **A selected file follows the listing when it is read again.** The listing is
+  read again whenever elevation is granted, ended or expires, but the selection
+  kept the file objects from before, and the bar and the menus read those: after
+  an elevation ended, a still-selected file's Delete stayed unlocked until it was
+  clicked again. The selection now takes the fresh objects, by id, and drops a
+  file the listing no longer holds.
+
+- **A right-click inside a multi-selection acts on the whole selection.** It
+  took the clicked file's answer, and Delete, Cut and Copy acted on that file
+  alone. The menu now takes the selection's least answer -- any file denied:
+  greyed out; any needing elevation and none denied: locked -- and runs Delete,
+  Cut and Copy on every selected file, as the toolbar does. A greyed-out action
+  in the bar and the menus says how many of the selection refuse it ("not
+  allowed for 2 of 5 selected items").
+
+- The terminal takes every printable character typed into its line or into a
+  `sudo` prompt. Before, it dropped a character outside the basic plane (an
+  emoji), a composed one, and any typed with AltGr (`@`, `€` or `{` on many
+  layouts), so a password holding one could never be entered. Backspace erases
+  one whole character. A password can be pasted into an open `sudo` prompt,
+  unseen like a typed one; the shell's line still takes keys only.
+- A locked menu item that opens something other than a page, such as the
+  **Terminal**, now asks for elevation like any other locked item. Before, it
+  showed the lock, but a click opened the terminal without asking.
+
+## 2.0.0-alpha6 - 2026-10-07
+
+### Deprecated
+- `theme.yaml` still declares its host contract under the deprecated name,
+  `contracts: { console: "1.0" }`. coolms/core reads `console` as an alias of
+  `admin` (and `desk` of `workspace`), so the theme matches modules written
+  either way. The declaration moves to `admin` before the aliases are removed.
+
+### Changed
+
+- The design tokens come from their own package, `coolms/design-tokens`, at v0.1.0. `angular/src/tokens.generated.scss` is a copy of its `dist/coolms-tokens.scss`, pinned by `design-tokens.lock.json`; the CI checks the copy against the lock, and the lock against the package. The token source, its generator and the app's module move out of this repository. Every value is unchanged: the copy differs from the file generated before only in its header line.
 
 ### Security
 
@@ -13,7 +285,7 @@ major number means here.
   `GET /rtc/calls/{id}/ice-servers`, which the server answers for the call's
   participants only, instead of the per-account `GET /rtc/ice-servers`, which
   handed a TURN credential to any signed-in account. Needs a server that
-  serves the per-call route (backend, 2026-09-29); if it cannot be read the
+  serves the per-call route (available since 2026-09-29); if it cannot be read the
   call still falls back to public STUN, as before.
 
 ### Fixed
@@ -38,7 +310,7 @@ major number means here.
   and raises a listed call as its ring would have. The version rule applies:
   a call already in view takes the record only if it is not older, and a call
   this admin has seen end is not brought back by a read that returns after it
-  ended. Needs a server that serves `GET /rtc/ringing` (backend, 2026-09-30).
+  ended. Needs a server that serves `GET /rtc/ringing` (available since 2026-09-30).
 - The admin subscribes to its incoming-call channel (`rtc.user.<id>`) when both
   the signed-in user is known and the realtime connection is up, and again
   after every reconnect. It was subscribed on the user alone, in one pipe: a
@@ -51,7 +323,7 @@ major number means here.
 - A caller learns its call connected even when the answer lands while it is still
   subscribing to the call's channel. The channel keeps no history, so a
   `call.state connected` published before the caller's subscription became active
-  never arrived, and the caller never started its media (1 of 60 call-harness
+  never arrived, and the caller never started its media (1 of 60 automated call
   runs, 2026-09-27). The client now reads the call each time its subscription to
   the call becomes active, and every change after that arrives on the channel.
   That read can return after the channel has moved on, so it is ordered by the
@@ -116,7 +388,7 @@ major number means here.
   that tree has a `styles.scss` and the script is missing.
 
 ### Changed
-- The polite peer of a 1:1 call's negotiation is the server's to name (Dmitry,
+- The polite peer of a 1:1 call's negotiation is the server's to name (decided
   2026-09-26). The client reads `politeUserId`, from the call record and from
   every `call.state`, and hands the media plane whether it names this user; it
   no longer derives politeness from being the callee. The server names the
@@ -141,8 +413,7 @@ major number means here.
   (`color-mix` of the mark at 8, 14, 15, 18 and 35 per cent -- five tints of
   one colour). `lint:fallbacks`, which the pre-push hook runs on the pushed
   tree, now also refuses a tint of `--cms-selected` mixed by hand and a
-  selected fill whose text names another family, per rule; the backend's
-  `check-cms-tokens` repeats the rule over the library clones.
+  selected fill whose text names another family, per rule.
 - Drop targets are interaction affordances, not selections, and all of them
   read `--cms-primary` with the `--cms-info-light` wash (the three that read
   the accent -- the documents folder, the replace-template dialog, the media
@@ -214,7 +485,7 @@ major number means here.
   remote description in every call, and every call logged "Failed to set
   remote answer sdp: Called in wrong state" from the echoed answers. Whether
   the call then connected depended on which offer the callee applied last; in
-  the call harness about half did not. A `call.signal` from the signed-in user
+  automated call runs about half did not. A `call.signal` from the signed-in user
   is now dropped before the media plane sees it.
 - A pasted or bookmarked module URL landed on the dashboard on a cold load
   (measured: `/admin/identity/users` requested no chunk of its own, the

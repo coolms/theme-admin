@@ -1,0 +1,12 @@
+# Advisories against the pdf.js that ngx-extended-pdf-viewer BUNDLES in its assets, not yet cleared. npm audit
+# cannot see that copy (it sees ngx-extended-pdf-viewer); angular/scripts/bundled-pdfjs-audit.mjs reads its
+# version and asks the advisory database about pdfjs-dist at that version, and the advisories job holds the
+# answer to this list by the same rules as .github/advisories.txt: a new advisory, a line whose advisory is no
+# longer reported, a higher rating and a line past its review date fail.
+#
+#   <package> <advisory id> <severity> <review by> <why it stays>
+#
+# A review date is at most 30 days out for critical and high, 90 for the rest. Clearing an entry means a release
+# of ngx-extended-pdf-viewer that bundles a newer pdf.js: an install, proposed and decided as one.
+
+pdfjs-dist  GHSA-hq66-cqwq-w95j  high  2026-11-06  Bundled pdf.js 6.1.1164 (in >=5.6.83 <6.2.108). The advisory needs scripting on; the viewer pins enableScripting, enableOpenActionJavaScript and enableCatalogAAJavaScript off and does not ship the scripting sandbox. Cleared by a viewer release bundling pdf.js 6.2.108 or later.

@@ -18,9 +18,11 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     DataGridComponent,
+    DeclaredRowsNoticeComponent,
+    declaredRowsSource,
     PageTitleService,
     ToastService,
-    type DataGridData,
+    type DataGridLoadRequest,
 } from '@coolms/ui-angular';
 import { type ContactDto, ContactsService } from './contacts.service';
 import {
@@ -59,7 +61,7 @@ const PAGE_SIZE = 50;
     selector: 'coolms-admin-contacts-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent],
+    imports: [CmsListPageComponent, DataGridComponent, DeclaredRowsNoticeComponent],
     template: `
         <cms-list-page
             title="Contacts"
@@ -69,10 +71,13 @@ const PAGE_SIZE = 50;
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <cms-declared-rows-notice [source]="rows" />
             <coolms-datagrid
                 gridId="contact:contacts"
+                [hidden]="!rows.showsRows()"
                 [configBaseUrl]="configBaseUrl()"
-                [externalData]="gridData()"
+                [externalData]="rows.data()"
+                (configLoaded)="rows.use($event)"
                 (loadMore)="onLoadMore($event)"
                 (rowSelected)="selectedRow.set($event)"
                 (rowActionTriggered)="onRowAction($event)">
@@ -95,16 +100,18 @@ export class ContactsListComponent implements OnInit {
     private readonly titleSvc   = inject(PageTitleService);
     private readonly destroyRef = inject(DestroyRef);
 
-    readonly contacts    = signal<ContactDto[]>([]);
-    readonly loading     = signal(true);
+    /**
+     * The rows, from where the grid's definition says they come from (`rows.operation`, `contact.contact.list`)
+     * and in its query style -- this page names no list route. Paging, sort, filters, out-of-order answers and the
+     * caller's state (allowed / elevate / denied) are the source's.
+     */
+    readonly rows        = declaredRowsSource({ pageSize: PAGE_SIZE });
+    readonly contacts    = computed(() => this.rows.data().items as unknown as ContactDto[]);
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
-    /** Server's count for the CURRENT filter -- drives the footer and `hasMore`. */
-    readonly totalItems  = signal(0);
-    /** Flips true after the first response (success OR error) so the footer stops hiding. */
-    readonly loaded      = signal(false);
-
-    /** Guards against out-of-order responses; see {@link onLoadMore}. */
-    private loadEpoch = 0;
+    /** Server's count for the CURRENT filter -- drives the footer. */
+    readonly totalItems  = computed(() => this.rows.data().totalItems);
+    /** True after the first response (success OR error) so the footer stops hiding. */
+    readonly loaded      = this.rows.loaded;
 
     /**
      * `_selected` gates Edit / Delete; `_canLink` / `_linked` gate the C.6
@@ -129,23 +136,6 @@ export class ContactsListComponent implements OnInit {
     );
 
     /**
-     * Lazy payload. `hasMore` drives the sentinel fetch loop: true until the
-     * loaded window covers the server's total, and true before the first load
-     * resolves so the grid emits its initial `(loadMore)`.
-     */
-    readonly gridData = computed((): DataGridData => {
-        const rows = this.contacts();
-        return {
-            items:      rows as unknown as Array<Record<string, unknown>>,
-            totalItems: this.totalItems(),
-            page:       1,
-            limit:      PAGE_SIZE,
-            totalPages: Math.max(1, Math.ceil(this.totalItems() / PAGE_SIZE)),
-            hasMore:    this.loading() || rows.length < this.totalItems(),
-        };
-    });
-
-    /**
      * `totalItems` is the SERVER's count for the current filter, so it needs no
      * client-side adjustment -- the endpoint filters and pages now.
      */
@@ -168,51 +158,12 @@ export class ContactsListComponent implements OnInit {
     }
 
     /**
-     * The one place contacts are fetched. Fired on mount, on every filter/sort
-     * change (`reset`, offset 0) and when the lazy sentinel scrolls in.
-     *
-     * `columnFilters` is passed VERBATIM: this endpoint is RQL-native (the ORM-
-     * backed), and its allowlist is derived from the same `contact:contacts`
-     * YAML that renders the filter row.
+     * Fired on mount, on every filter/sort change (`reset`, offset 0) and when the lazy sentinel scrolls in; the
+     * rows source answers it. A reset drops the selection, as the list it pointed into is gone.
      */
-    onLoadMore(event: {
-        offset:        number;
-        sort:          string | null;
-        reset:         boolean;
-        columnFilters: ReadonlyArray<string>;
-    }): void {
-        const page  = Math.floor(event.offset / PAGE_SIZE) + 1;
-        const epoch = ++this.loadEpoch;
-
-        this.api.listPage({
-            page,
-            pageSize: PAGE_SIZE,
-            sort:     event.sort,
-            filters:  event.columnFilters,
-        }).pipe(
-            takeUntilDestroyed(this.destroyRef),
-        ).subscribe({
-            next: result => {
-                // Filter changes fire in quick succession and can land out of
-                // order; a stale response would show rows for a filter the user
-                // has already moved off.
-                if (epoch !== this.loadEpoch) return;
-
-                this.contacts.set(event.reset ? result.items : [...this.contacts(), ...result.items]);
-                this.totalItems.set(result.totalItems);
-                this.loading.set(false);
-                this.loaded.set(true);
-                if (event.reset) this.selectedRow.set(null);
-            },
-            error: () => {
-                if (epoch !== this.loadEpoch) return;
-                // Settle `hasMore` on failure too, or the sentinel retries the
-                // failed page forever.
-                this.loading.set(false);
-                this.loaded.set(true);
-                this.toast.error('Failed to load contacts');
-            },
-        });
+    onLoadMore(event: DataGridLoadRequest): void {
+        if (event.reset) this.selectedRow.set(null);
+        this.rows.load(event);
     }
 
     onToolbarAction(id: string): void {

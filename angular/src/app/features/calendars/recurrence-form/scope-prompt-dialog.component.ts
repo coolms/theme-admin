@@ -120,14 +120,14 @@ export interface ScopePromptDialogData {
         }
         .choice:hover:not(.choice--disabled) {
             background: var(--cms-btn-hover-bg, #f3f4f6);
-            border-color: var(--cms-btn-hover-border, #9ca3af);
+            border-color: var(--cms-btn-hover-border, #6b7280);
         }
         .choice input { margin-top: 2px; }
         .choice span { display: flex; flex-direction: column; gap: 2px; }
         .choice strong { font-size: .8125rem; font-weight: 500; }
         .choice small {
             font-size: .75rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .choice--disabled {
             opacity: .55;

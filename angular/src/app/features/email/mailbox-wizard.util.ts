@@ -35,19 +35,14 @@ export interface MailboxWizardForm {
     oauthProvider: string;
 }
 
-export type MailboxEditorMode = 'create' | 'edit';
-
 /**
- * Whether the wizard shows editable username fields at all.
+ * Whether the wizard -- which only adds a mailbox -- shows editable username fields at all.
  *
  * Never on an OAuth create (the address IS the login); on a password create only
- * for an administrator, who may point the login at an alias; in edit mode as
- * before, where the stored value is being looked at rather than derived.
+ * for an administrator, who may point the login at an alias. An existing mailbox's
+ * usernames are its settings page's.
  */
-export function usernameFieldsEditable(mode: MailboxEditorMode, authMethod: MailboxAuthMethod, callerIsAdmin: boolean): boolean {
-    if (mode === 'edit') {
-        return true;
-    }
+export function usernameFieldsEditable(authMethod: MailboxAuthMethod, callerIsAdmin: boolean): boolean {
     if (authMethod === 'oauth') {
         return false;
     }

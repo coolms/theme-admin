@@ -11,11 +11,13 @@ import {
     provideCoolmsEditorFormField,
 } from '@coolms/editor-angular';
 import { CentrifugoNotificationStreamService, CheckboxFieldWidgetComponent, CodeEditorComponent, DateFieldWidgetComponent, DynamicRecordListComponent, FileEditorRegistry, NOTIFICATION_STREAM, OptionSourceFilterWidgetComponent, provideDataGridFilterWidget, provideFieldWidget, TagFieldWidgetComponent, TaxonomyFieldWidgetComponent, TextareaFieldWidgetComponent, TextFieldWidgetComponent } from '@coolms/ui-angular';
+import { provideVfsNodeWatch } from './features/vfs/vfs-node-watch.provider';
 import { SHEET_DOCUMENT_MIME, SheetEditorDialogComponent } from '@coolms/sheet-editor-angular';
 import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
+import { clientHeaderInterceptor } from './client-header.interceptor';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { CallsEndWithTheSession } from './features/rtc/calls-end-with-the-session.service';
 import { SectionState } from './features/sections/section.state';
@@ -52,6 +54,8 @@ FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogC
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        // An open editor's file watch: a change made elsewhere is said at once (2026-10-14).
+        provideVfsNodeWatch(),
         // The section interceptor stamps `X-CoolMS-Section` and needs the
         // active slug; Sections owns that state. Binding the two here is
         // what lets `core` stay free of feature imports.
@@ -80,7 +84,10 @@ export const appConfig: ApplicationConfig = {
         // , which re-enters auth -- so the retry carries the token that
         // is current THEN, not the one stamped before a prompt the person may
         // have left open across a refresh.
-        provideHttpClient(withXhr(), withInterceptors([sectionInterceptor, elevationInterceptor, authInterceptor])),
+        // The client header innermost: a call the elevation interceptor sends again carries it too.
+        provideHttpClient(withXhr(), withInterceptors([
+            sectionInterceptor, elevationInterceptor, authInterceptor, clientHeaderInterceptor,
+        ])),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
         // A signed-out browser closes its own calls (2026-09-25): the server ends a 1:1

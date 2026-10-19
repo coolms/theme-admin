@@ -49,6 +49,11 @@ export interface ContextSchemaVariable {
      * `null` / absent uses the resolver's default field set.
      */
     readonly fields?: string[] | null;
+    /**
+     * The author's "Filled by the caller" switch: whoever asks for a document may supply this variable's value. Absent
+     * means off, which is the default; the server refuses a caller's value for every variable not switched on.
+     */
+    readonly callerFillable?: boolean;
 }
 
 export interface ContextSchemaConstant {

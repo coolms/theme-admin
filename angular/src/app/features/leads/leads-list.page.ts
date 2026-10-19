@@ -17,10 +17,12 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     DataGridComponent,
+    DeclaredRowsNoticeComponent,
+    declaredRowsSource,
     PageTitleService,
     TabStripComponent,
     ToastService,
-    type DataGridData,
+    type DataGridLoadRequest,
 } from '@coolms/ui-angular';
 import { LeadDto, LeadStatus, LeadsService } from './leads.service';
 
@@ -60,7 +62,7 @@ const PAGE_SIZE = 50;
     selector: 'coolms-admin-leads-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent, TabStripComponent],
+    imports: [CmsListPageComponent, DataGridComponent, DeclaredRowsNoticeComponent, TabStripComponent],
     template: `
         <cms-list-page
             title="Leads"
@@ -75,10 +77,13 @@ const PAGE_SIZE = 50;
                 [activeId]="status()"
                 (selected)="selectTab($any($event))" />
 
+            <cms-declared-rows-notice [source]="rows" />
             <coolms-datagrid
                 gridId="lead:list"
+                [hidden]="!rows.showsRows()"
                 [configBaseUrl]="configBaseUrl()"
-                [externalData]="gridData()"
+                [externalData]="rows.data()"
+                (configLoaded)="rows.use($event)"
                 (loadMore)="onLoadMore($event)"
                 (rowSelected)="selectedRow.set($event)"
                 (rowActionTriggered)="onRowAction($event)">
@@ -107,15 +112,17 @@ export class LeadsListComponent implements OnInit {
     ];
 
     readonly status  = signal<LeadStatus>('new');
-    readonly leads   = signal<LeadDto[]>([]);
-    readonly loading = signal(true);
-    /** Server's count for the CURRENT bucket + filter -- drives the footer and `hasMore`. */
-    readonly totalItems = signal(0);
-    /** Flips true after the first response (success OR error) so the footer stops hiding. */
-    readonly loaded = signal(false);
-
-    /** Guards against out-of-order responses; see {@link onLoadMore}. */
-    private loadEpoch = 0;
+    /**
+     * The rows, from where the grid's definition says they come from (`rows.operation`, `lead.lead.list`) and in
+     * its query style -- this page names no list route. The tab is the operation's SCOPE (`?status=`, applied
+     * before its RQL), sent with every request.
+     */
+    readonly rows    = declaredRowsSource({ pageSize: PAGE_SIZE, extraParams: () => ({ status: this.status() }) });
+    readonly leads   = computed(() => this.rows.data().items as unknown as LeadDto[]);
+    /** Server's count for the CURRENT bucket + filter -- drives the footer. */
+    readonly totalItems = computed(() => this.rows.data().totalItems);
+    /** True after the first response (success OR error) so the footer stops hiding. */
+    readonly loaded = this.rows.loaded;
     /** Ids with an in-flight transition -- blocks double-submit. */
     private readonly busyIds = signal<ReadonlySet<string>>(new Set());
 
@@ -139,23 +146,6 @@ export class LeadsListComponent implements OnInit {
     readonly configBaseUrl = computed(() =>
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
-
-    /**
-     * Lazy payload. `hasMore` drives the sentinel fetch loop: true until the
-     * loaded window covers the server's total, and true before the first load
-     * resolves so the grid emits its initial `(loadMore)`.
-     */
-    readonly gridData = computed((): DataGridData => {
-        const rows = this.leads();
-        return {
-            items:      rows as unknown as Array<Record<string, unknown>>,
-            totalItems: this.totalItems(),
-            page:       1,
-            limit:      PAGE_SIZE,
-            totalPages: Math.max(1, Math.ceil(this.totalItems() / PAGE_SIZE)),
-            hasMore:    this.loading() || rows.length < this.totalItems(),
-        };
-    });
 
     /**
      * Footer row-count strip (bottom-left) -- the count lives here, not the
@@ -182,53 +172,12 @@ export class LeadsListComponent implements OnInit {
     }
 
     /**
-     * The one place leads are fetched. Fired on mount, on every filter/sort
-     * change (`reset`, offset 0), when the lazy sentinel scrolls in, and -- via
-     * `grid.reload()` -- on a tab switch or a manual refresh.
-     *
-     * `columnFilters` is passed VERBATIM: the endpoint is RQL-native and its
-     * allowlist is derived from the same `lead:list` YAML that renders the
-     * filter row.
+     * Fired on mount, on every filter/sort change (`reset`, offset 0), when the lazy sentinel scrolls in, and -- via
+     * `grid.reload()` -- on a tab switch or a manual refresh; the rows source answers. A reset drops the selection.
      */
-    onLoadMore(event: {
-        offset:        number;
-        sort:          string | null;
-        reset:         boolean;
-        columnFilters: ReadonlyArray<string>;
-    }): void {
-        const page  = Math.floor(event.offset / PAGE_SIZE) + 1;
-        const epoch = ++this.loadEpoch;
-
-        this.api.listPage({
-            status:   this.status(),
-            page,
-            pageSize: PAGE_SIZE,
-            sort:     event.sort,
-            filters:  event.columnFilters,
-        }).pipe(
-            takeUntilDestroyed(this.destroyRef),
-        ).subscribe({
-            next: result => {
-                // Filter and tab changes fire in quick succession and can land
-                // out of order; a stale response would show the bucket the user
-                // has already moved off.
-                if (epoch !== this.loadEpoch) return;
-
-                this.leads.set(event.reset ? result.items : [...this.leads(), ...result.items]);
-                this.totalItems.set(result.totalItems);
-                this.loading.set(false);
-                this.loaded.set(true);
-                if (event.reset) this.selectedRow.set(null);
-            },
-            error: () => {
-                if (epoch !== this.loadEpoch) return;
-                // Settle `hasMore` on failure too, or the sentinel retries the
-                // failed page forever.
-                this.loading.set(false);
-                this.loaded.set(true);
-                this.toast.error('Failed to load leads');
-            },
-        });
+    onLoadMore(event: DataGridLoadRequest): void {
+        if (event.reset) this.selectedRow.set(null);
+        this.rows.load(event);
     }
 
     /** Toolbar actions: Refresh + Open + the selection-gated Handle / Spam / Reopen mirrors. */
@@ -256,7 +205,6 @@ export class LeadsListComponent implements OnInit {
      * here instead would quietly drop them -- the page does not own that state.
      */
     private load(): void {
-        this.loading.set(true);
         this.selectedRow.set(null);
         this.grid?.reload();
     }
@@ -300,12 +248,11 @@ export class LeadsListComponent implements OnInit {
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: () => {
-                // The lead left the current bucket -- drop it from this view AND
-                // from the server's count, or the footer would keep claiming a
-                // row the queue no longer holds. Cheaper and less jarring than a
-                // full reload, which would discard the loaded window.
-                this.leads.update(list => list.filter(x => x.id !== l.id));
-                this.totalItems.update(n => Math.max(0, n - 1));
+                // The lead left the current bucket -- drop it from this view; the
+                // rows source lowers the server's count with it, so the footer does
+                // not keep claiming a row the queue no longer holds. Cheaper and less
+                // jarring than a full reload, which would discard the loaded window.
+                this.rows.update(items => items.filter(x => x['id'] !== l.id));
                 this.selectedRow.set(null);
                 this.setBusy(l.id, false);
                 this.toast.success(this.successMessage(kind));

@@ -5,7 +5,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { AuthState } from '@coolms/core-angular';
+import { AuthState, ElevationService } from '@coolms/core-angular';
 import { UserAvatarComponent } from '@coolms/ui-angular';
 import { ElevationDisplay } from './elevation-display.service';
 import { EndElevationAction } from './end-elevation.action';
@@ -40,7 +40,7 @@ interface AccountEntry {
 
             <!-- Avatar trigger -->
             <button class="btn btn-sm d-flex align-items-center gap-2 text-white"
-                    style="background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+                    style="background: rgba(255,255,255,.08); border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px 4px 6px"
                     (click)="toggle()">
                 <app-user-avatar [user]="topbarUser()" size="sm" />
@@ -60,7 +60,7 @@ interface AccountEntry {
                  light ink (--cms-sidebar-text) onto a white panel in the light
                  theme -- the menu was there and could not be read. -->
             @if (isOpen()) {
-                <div class="position-absolute end-0 mt-1 py-1 rounded shadow"
+                <div class="cms-page-surface position-absolute end-0 mt-1 py-1 rounded shadow"
                      style="min-width: 180px; z-index: 1050; top: 100%;
                             background: var(--cms-surface); color: var(--cms-text)">
                     <div class="px-3 py-2 border-bottom">
@@ -80,8 +80,19 @@ interface AccountEntry {
                                 </span>
                                 <button type="button"
                                         class="btn btn-link btn-sm p-0 text-decoration-none small"
-                                        (click)="endElevation()">End</button>
+                                        (click)="endElevation()">End elevation</button>
                             </div>
+                        } @else if (offerElevation()) {
+                            <!-- A member of admin, not elevated: always a way to elevate from here (
+                                 2026-10-12), not only from a refused page. Whether this account may elevate is the
+                                 server's answer (mayElevate), never read from membership here. -->
+                            <button type="button"
+                                    class="btn btn-link btn-sm p-0 mt-2 text-decoration-none small
+                                           d-flex align-items-center gap-1"
+                                    (click)="elevateSession()">
+                                <i class="bi bi-shield-lock" style="font-size:.8rem"></i>
+                                Elevate session
+                            </button>
                         }
                     </div>
                     @for (entry of entries; track entry.id) {
@@ -104,6 +115,7 @@ export class AdminTopbarProfileComponent implements OnInit {
     private readonly display    = inject(ElevationDisplay);
     private readonly end        = inject(EndElevationAction);
     private readonly signOut    = inject(SignOutService);
+    private readonly elevation  = inject(ElevationService);
 
     @ViewChild('container') container?: ElementRef;
 
@@ -127,6 +139,15 @@ export class AdminTopbarProfileComponent implements OnInit {
     endElevation(): void {
         this.isOpen.set(false);
         this.end.run();
+    }
+
+    /** "Elevate session" while not elevated -- for an account the server says may elevate, and no other. */
+    readonly offerElevation = (): boolean => this.elevation.mayElevate() && !this.elevation.elevated();
+
+    /** The one shared prompt; the menu and the navigation refresh from the grant it announces. */
+    elevateSession(): void {
+        this.isOpen.set(false);
+        this.elevation.offerFor().subscribe();
     }
 
     @HostListener('document:click', ['$event.target'])

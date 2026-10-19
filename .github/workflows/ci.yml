@@ -13,6 +13,23 @@ permissions:
   contents: read
 
 jobs:
+  # The committed lockfile's advisories against .github/advisories.txt: a new one fails, a listed one that is gone
+  # fails until its line is taken off (coolms/.github, npm-advisories.yml).
+  advisories:
+    uses: coolms/.github/.github/workflows/npm-advisories.yml@develop
+    with:
+      working-directory: angular
+
+  # The pdf.js that ngx-extended-pdf-viewer BUNDLES in its assets, which npm audit cannot see: its version read
+  # from the package as locked and asked of the advisory database (angular/scripts/bundled-pdfjs-audit.mjs), held
+  # to .github/bundled-advisories.txt by the same rules.
+  bundled-pdfjs:
+    uses: coolms/.github/.github/workflows/npm-advisories.yml@develop
+    with:
+      working-directory: angular
+      list: .github/bundled-advisories.txt
+      audit-command: node scripts/bundled-pdfjs-audit.mjs
+
   install:
     name: PHP ${{ matrix.php }} ${{ matrix.deps }}
     runs-on: ubuntu-latest
@@ -101,8 +118,32 @@ jobs:
           fi
           echo "confirmed: no application namespace in src/"
 
+  design-tokens:
+    # The design tokens come from coolms/design-tokens at a tagged version: angular/src/tokens.generated.scss
+    # is a copy of its dist/coolms-tokens.scss, and design-tokens.lock.json records the tag, its commit
+    # and the copy's sha256. Plain Node, no install, no secret: the package is public.
+    name: Design tokens
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The token copy is what the lock records
+        run: node tools/design-tokens-lock.mjs
+      - name: The lock's tag and commit, and the file at that commit, are what the package holds
+        run: node tools/design-tokens-lock.mjs --network
+      # Every focus indicator draws the ring (2026-10-06, from the review of #69): no
+      # component's halo or off-token ring, and Bootstrap's focus variables bound to the token. The
+      # rendered half -- what Bootstrap draws, and its contrast -- is src/app/shell/focus-ring.spec.ts
+      # in the Admin suite.
+      - name: Every focus indicator draws the ring
+        run: |
+          node --test angular/scripts/check-focus-indicators.test.mjs
+          node angular/scripts/check-focus-indicators.mjs angular/src
+
   admin-suite:
-    # The admin's Angular suite, with the count it ran in the verdict line (Dmitry, 2026-09-27:
+    # The admin's Angular suite, with the count it ran in the verdict line (2026-09-27:
     # "a green that does not say what it covered is not evidence"; the 1381 specs had run only
     # on one machine).
     name: Admin suite
@@ -171,7 +212,7 @@ jobs:
         working-directory: sources/theme-admin/angular
         run: npm run lint:specs
 
-      # A value a view shows is drawn when it changes (Dmitry, 2026-09-28): an OnPush view's
+      # A value a view shows is drawn when it changes (2026-09-28): an OnPush view's
       # plain field written asynchronously, or a computed over a plain field that changes, stays
       # stale until something else touches the page. Read from every package the admin compiles,
       # so it runs here, where they are all checked out.
@@ -180,6 +221,17 @@ jobs:
         run: |
           node --test scripts/check-redraw.test.mjs
           npm run lint:redraw
+
+      # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an
+      # eval or Function( call outside the sites read and pinned by text and count fails. The tests' two cases that
+      # ask the advisory database run here (the version read, and a throwaway copy claiming 4.1.392).
+      - name: The bundled pdf.js evaluates no strings beyond those read
+        working-directory: sources/theme-admin/angular
+        env:
+          BUNDLED_PDFJS_NETWORK: '1'
+        run: |
+          node --test scripts/bundled-pdfjs.test.mjs
+          npm run lint:bundled-pdfjs
 
       - name: Admin suite
         working-directory: sources/theme-admin/angular
@@ -201,3 +253,7 @@ jobs:
           if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed (karma exit $rc)"; exit 1; fi
           if [ "$ran" != "$total" ]; then echo "::error::FOUND: $ran of $total specs executed -- ${skipped:-some} were skipped"; exit 1; fi
           echo "CLEAR: $ran of $total specs executed, none failed"
+
+  # README, a LICENSE matching the manifest, and CHANGELOG (coolms/.github's basic-files.yml), pinned to a commit.
+  basic-files:
+    uses: coolms/.github/.github/workflows/basic-files.yml@595d36957a135e7d753abe34ca1ce90a0a6f2215

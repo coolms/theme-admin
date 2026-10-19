@@ -353,7 +353,7 @@ Status / role chips project into the header-meta
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             background: var(--cms-surface-muted);
             border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
@@ -367,15 +367,15 @@ Status / role chips project into the header-meta
             gap: 6px 16px;
         }
         .kv dt {
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
             font-size: .8rem;
             align-self: center;
         }
         .kv dd { margin: 0; color: var(--cms-text, #111827); word-break: break-word; }
 
         .mono { font-family: var(--cms-font-mono, monospace); }
-        .mono--muted { color: var(--cms-text-muted, #848b96); }
-        .muted { color: var(--cms-text-muted, #848b96); font-size: .8rem; }
+        .mono--muted { color: var(--cms-text-muted, #69707c); }
+        .muted { color: var(--cms-text-muted, #69707c); font-size: .8rem; }
 
         .list { list-style: none; margin: 0; padding: 0; }
         .list__row {
@@ -403,7 +403,7 @@ Status / role chips project into the header-meta
         .badge--owner  { background: var(--cms-warning-subtle); color: var(--cms-warning-text); }
         .badge--editor { background: var(--cms-info-subtle); color: var(--cms-info-text); }
 
-        .empty { color: var(--cms-text-muted, #848b96); margin: 0 0 8px 0; }
+        .empty { color: var(--cms-text-muted, #69707c); margin: 0 0 8px 0; }
         .empty--error { color: var(--cms-danger, #dc2626); }
 
     `],

@@ -59,12 +59,12 @@ import type { CockpitTokenDto } from './cockpit.types';
     styles: [`
         :host { display: block; }
         .diag-host { position: relative; width: 100%; height: 360px; display: flex; min-height: 0; }
-        .diag-empty { color: var(--cms-text-muted, #848b96); font-size: .85rem; margin: 0; padding: 8px 0; }
+        .diag-empty { color: var(--cms-text-muted, #69707c); font-size: .85rem; margin: 0; padding: 8px 0; }
         .d-none { display: none !important; }
 
         .diag-legend {
             display: flex; gap: 16px; flex-wrap: wrap;
-            padding: 8px 2px 0; font-size: .75rem; color: var(--cms-text-muted, #848b96);
+            padding: 8px 2px 0; font-size: .75rem; color: var(--cms-text-muted, #69707c);
         }
         .lg { display: inline-flex; align-items: center; gap: 5px; }
         .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }

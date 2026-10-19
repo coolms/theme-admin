@@ -16,3 +16,7 @@ coverage/
 # modules' entry files (src/app/features/*/entries/console*.ts): the list is
 # discovered, never maintained by hand, so the file is not tracked.
 src/app/console.registry.ts
+
+# Generated on prebuild/pretest/prestart by scripts/stamp-client.mjs from ../theme.yaml: the admin's client identity
+# (`com.coolms.admin/<version>`), kept in one place, so not tracked.
+src/app/client.generated.ts

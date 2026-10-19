@@ -7,13 +7,14 @@ import {
     computed,
     inject,
     signal,
+    type WritableSignal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Observable, switchMap, filter } from 'rxjs';
 
 import { CalendarItemDto, CalendarItemStatusCode, CalendarItemTypeCode, CalendarItemVisibilityCode, CreateCalendarItemDto, NonWorkingDayPolicy } from './calendars.types';
-import { CalendarsApiService } from './calendars-api.service';
+import { calendarItemChangedSinceRead, CalendarItemNotReadError, CalendarsApiService } from './calendars-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import {
@@ -79,6 +80,8 @@ export type CalendarEventEditorResult =
     | { action: 'occurrence-skipped'; parentItemId: string; recurrenceInstant: string }
     /** "Delete this and following events" -> series was truncated. */
     | { action: 'following-deleted'; parentItemId: string; recurrenceInstant: string }
+    /** A write was refused because the event changed since it was opened: the calendar reads its events again. */
+    | { action: 'reload' }
     | { action: 'cancelled' };
 
 const TYPES: ReadonlyArray<{ value: CalendarItemTypeCode; label: string }> = [
@@ -272,7 +275,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             display: flex; align-items: center; gap: 8px;
             margin-top: 4px;
             font-size: .8rem;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .recurrence-summary__text { flex: 1; }
         .recurrence-summary__edit {
@@ -580,7 +583,8 @@ export class CalendarEventEditorComponent {
 
         const obs$: Observable<CalendarItemDto> = this.mode === 'create'
             ? this.calendarsApi.createCalendarItem(payload)
-            : this.calendarsApi.updateCalendarItem(this.data.item!.id, payload);
+            // The version of the event this editor read: a change made since refuses the save (412).
+            : this.calendarsApi.updateCalendarItem(this.data.item!.id, payload, this.data.item!.version);
 
         obs$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: item => {
@@ -592,10 +596,7 @@ export class CalendarEventEditorComponent {
                         : { action: 'updated', item },
                 );
             },
-            error: (err: unknown) => {
-                this.saving.set(false);
-                this.error.set(this.errors.humanize(err));
-            },
+            error: (err: unknown) => this.failed(err, this.saving),
         });
     }
 
@@ -610,14 +611,15 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.calendarsApi.splitCalendarItem(item.id, {
+        const series = this.seriesOf(item);
+        this.calendarsApi.splitCalendarItem(series.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
             title:             this.title_.trim(),
             description:       this.description.trim() || null,
             status:            this.status,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, series.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: res => {
                 this.saving.set(false);
                 this.toast.success('Series split at this occurrence');
@@ -628,10 +630,7 @@ export class CalendarEventEditorComponent {
                     seriesId:     res.seriesId,
                 });
             },
-            error: (err: unknown) => {
-                this.saving.set(false);
-                this.error.set(this.errors.humanize(err));
-            },
+            error: (err: unknown) => this.failed(err, this.saving),
         });
     }
 
@@ -645,14 +644,15 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.saving.set(true);
-        this.calendarsApi.createCalendarItemException(item.id, {
+        const series = this.seriesOf(item);
+        this.calendarsApi.createCalendarItemException(series.id, {
             recurrenceInstant: instant,
             newStart:          range.start,
             newEnd:            range.end,
             title:             this.title_.trim(),
             description:       this.description.trim() || null,
             status:            this.status,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        }, series.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: res => {
                 this.saving.set(false);
                 this.toast.success('This occurrence updated');
@@ -662,10 +662,7 @@ export class CalendarEventEditorComponent {
                     overrideId:   res.overrideId,
                 });
             },
-            error: (err: unknown) => {
-                this.saving.set(false);
-                this.error.set(this.errors.humanize(err));
-            },
+            error: (err: unknown) => this.failed(err, this.saving),
         });
     }
 
@@ -729,7 +726,7 @@ export class CalendarEventEditorComponent {
             filter(Boolean),
             switchMap(() => {
                 this.deleting.set(true);
-                return this.calendarsApi.deleteCalendarItem(item.id);
+                return this.calendarsApi.deleteCalendarItem(item.id, item.version);
             }),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -738,10 +735,7 @@ export class CalendarEventEditorComponent {
                 this.toast.success('Event deleted');
                 this.dialogRef.close({ action: 'deleted', id: item.id });
             },
-            error: (err: unknown) => {
-                this.deleting.set(false);
-                this.error.set(this.errors.humanize(err));
-            },
+            error: (err: unknown) => this.failed(err, this.deleting),
         });
     }
 
@@ -749,7 +743,8 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.calendarsApi.skipCalendarItemOccurrence(item.id, instant)
+        const series = this.seriesOf(item);
+        this.calendarsApi.skipCalendarItemOccurrence(series.id, instant, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -761,10 +756,7 @@ export class CalendarEventEditorComponent {
                         recurrenceInstant: res.recurrenceInstant,
                     });
                 },
-                error: (err: unknown) => {
-                    this.deleting.set(false);
-                    this.error.set(this.errors.humanize(err));
-                },
+                error: (err: unknown) => this.failed(err, this.deleting),
             });
     }
 
@@ -772,7 +764,8 @@ export class CalendarEventEditorComponent {
         const item    = this.data.item!;
         const instant = this.data.occurrenceInstant!;
         this.deleting.set(true);
-        this.calendarsApi.deleteFollowingCalendarItem(item.id, instant)
+        const series = this.seriesOf(item);
+        this.calendarsApi.deleteFollowingCalendarItem(series.id, instant, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: res => {
@@ -784,29 +777,59 @@ export class CalendarEventEditorComponent {
                         recurrenceInstant: res.recurrenceInstant,
                     });
                 },
-                error: (err: unknown) => {
-                    this.deleting.set(false);
-                    this.error.set(this.errors.humanize(err));
-                },
+                error: (err: unknown) => this.failed(err, this.deleting),
             });
     }
 
     private commitCanonicalDelete(): void {
         const item = this.data.item!;
         this.deleting.set(true);
-        this.calendarsApi.deleteCalendarItem(item.id)
+        // "All events": the series -- from an edited occurrence too, not only its exception.
+        const series = this.seriesOf(item);
+        this.calendarsApi.deleteCalendarItem(series.id, series.version)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
                     this.deleting.set(false);
                     this.toast.success('Event deleted');
-                    this.dialogRef.close({ action: 'deleted', id: item.id });
+                    this.dialogRef.close({ action: 'deleted', id: series.id });
                 },
-                error: (err: unknown) => {
-                    this.deleting.set(false);
-                    this.error.set(this.errors.humanize(err));
-                },
+                error: (err: unknown) => this.failed(err, this.deleting),
             });
+    }
+
+    /**
+     * A write refused because the event (or its series) changed since this editor read it says so: nothing was
+     * changed, and Reload closes the editor and reads the calendar's events again. The write is never sent again on
+     * its own.
+     */
+    private failed(err: unknown, busy: WritableSignal<boolean>): void {
+        busy.set(false);
+        if (!calendarItemChangedSinceRead(err)) {
+            this.error.set(this.errors.humanize(err));
+            return;
+        }
+        const unread = err instanceof CalendarItemNotReadError;
+        const title = unread ? 'This event was read without a version' : 'This event was changed since you opened it';
+        this.error.set(`${title}. Nothing was changed.`);
+        this.toast.show({
+            type: 'error',
+            title,
+            message: unread
+                ? 'A change is made only from the version it was read at. Reload reads the calendar again.'
+                : 'Nothing was changed. Reload shows the calendar as it is now.',
+            action: { label: 'Reload', run: () => this.dialogRef.close({ action: 'reload' }) },
+        }, 0);
+    }
+
+    /**
+     * The series a series action addresses, and the version it names: an edited occurrence's exception has its own
+     * id and version, and the series is its parent at the series' version; any other item is the series itself.
+     */
+    private seriesOf(item: CalendarItemDto): { id: string; version: number | null | undefined } {
+        return item.parentItemId
+            ? { id: item.parentItemId, version: item.seriesVersion }
+            : { id: item.id, version: item.seriesVersion ?? item.version };
     }
 }
 

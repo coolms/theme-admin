@@ -217,11 +217,6 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             height: 32px;        /* match input/select height */
             font-size: .9rem;
         }
-        .checkbox input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-            padding: 0;
-        }
         /* Flex with wrap and min-width:0 children means the row can
            shrink to the dialog body without spilling out. Each child
            grows equally; the dialog's fixed 560px width is plenty for
@@ -237,7 +232,8 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
            "Working day (compensation)" label doesn't wrap aggressively
            at the 560px dialog width. */
         .field-row--adjustment > * { flex: 1 1 220px; }
-        input, select {
+        /* Text fields only: a radio or checkbox keeps the admin's own drawing (styles.scss). */
+        input:where(:not([type="radio"]):not([type="checkbox"])), select {
             width: 100%;
             box-sizing: border-box;
             border: 1px solid var(--cms-border, #e5e7eb);
@@ -247,7 +243,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             font-family: inherit;
         }
         .params { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .hint { color: var(--cms-text-muted, #848b96); font-size: .8rem; margin: 4px 0; }
+        .hint { color: var(--cms-text-muted, #69707c); font-size: .8rem; margin: 4px 0; }
         .error { color: var(--cms-danger, #dc2626); font-size: .85rem; }
 
         /* One-off date row — keep the year/month/day inputs reasonably
@@ -265,7 +261,7 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             background: transparent;
             border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #848b96);
+            color: var(--cms-text-muted, #69707c);
         }
         .icon-btn:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
         .icon-btn--danger:hover { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }

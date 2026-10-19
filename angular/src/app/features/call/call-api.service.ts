@@ -11,6 +11,7 @@ import {
     type CallRecordDto,
     type CallOriginateRequest,
     type CallOriginateDto,
+    type SipCallIceServersDto,
     type WebPhoneConfigDto,
 } from './call.types';
 
@@ -106,5 +107,14 @@ export class CallApiService {
     getWebPhoneConfig(): Observable<WebPhoneConfigDto> {
         const url = `${this.manifest.apiBase}/call/webphone/config`;
         return this.http.get<WebPhoneConfigDto>(url);
+    }
+
+    /**
+     * One SIP call's ICE servers, by the id its INVITE carried: 403 to anyone not a party,
+     * 404 for no such call, 409 once it has ended. The web phone's only source of a relay credential.
+     */
+    getSipCallIceServers(callId: string): Observable<SipCallIceServersDto> {
+        const url = `${this.manifest.apiBase}/call/webphone/ice-servers`;
+        return this.http.get<SipCallIceServersDto>(url, { params: new HttpParams().set('callId', callId) });
     }
 }

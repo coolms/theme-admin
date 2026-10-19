@@ -23,7 +23,7 @@ export class EndElevationAction {
     run(): void {
         this.confirm.open({
             title:        'End elevation now?',
-            message:      'Actions the mode bits forbid will ask for the admin password again.',
+            message:      'Actions the mode bits forbid will ask for your password again.',
             confirmLabel: 'End elevation',
             cancelLabel:  'Keep it',
         }).subscribe(yes => {

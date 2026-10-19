@@ -1,25 +1,23 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    DestroyRef,
     OnInit,
     ViewChild,
     computed,
     inject,
     signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { CallRecordDto } from './call.types';
 import { CallApiService } from './call-api.service';
 import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
-    DataGridData,
+    DeclaredRowsNoticeComponent,
+    declaredRowsSource,
     PageTitleService,
-    ToastService,
+    type DataGridLoadRequest,
 } from '@coolms/ui-angular';
 
 /**
@@ -38,7 +36,7 @@ import {
     selector: 'coolms-admin-call-records-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, DeclaredRowsNoticeComponent],
     template: `
         <cms-list-page
             title="Call history"
@@ -47,10 +45,13 @@ import {
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <cms-declared-rows-notice [source]="rows" />
             <coolms-datagrid
                 gridId="call:records"
+                [hidden]="!rows.showsRows()"
                 [configBaseUrl]="configBaseUrl()"
-                [externalData]="gridData()"
+                [externalData]="rows.data()"
+                (configLoaded)="rows.use($event)"
                 (rowActionTriggered)="onRowAction($event)"
                 (rowSelected)="onRowSelected($event)"
                 (loadMore)="onLoadMore($event)">
@@ -64,9 +65,7 @@ export class CallRecordsListComponent implements OnInit {
     private readonly callApi = inject(CallApiService);
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
-    private readonly toast      = inject(ToastService);
     private readonly titleSvc   = inject(PageTitleService);
-    private readonly destroyRef = inject(DestroyRef);
 
     private readonly PAGE_SIZE = 50;
 
@@ -75,17 +74,15 @@ export class CallRecordsListComponent implements OnInit {
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
-    /** Current window of loaded call records. */
-    readonly records    = signal<CallRecordDto[]>([]);
-    /** Total rows matching the current filter set, server-reported. */
-    readonly totalItems = signal(0);
     /**
-     * Flips `true` after the first `loadMore` response (success OR error).
-     * Before that, `hasMore` is forced `true` so the lazy sentinel fires the
-     * initial fetch (empty rows + zero total would otherwise compute
-     * `hasMore = false` and trap the page in "No data found").
+     * The rows, from where the grid's definition says they come from (`rows.operation`, `call.record.list`) and in
+     * its query style -- this page names no list route.
      */
-    private readonly loaded = signal(false);
+    readonly rows       = declaredRowsSource({ pageSize: this.PAGE_SIZE });
+    /** Total rows matching the current filter set, server-reported. */
+    readonly totalItems = computed(() => this.rows.data().totalItems);
+    /** True after the first response (success OR error); the footer stays blank before it. */
+    private readonly loaded = this.rows.loaded;
 
     /** Footer-bar label; blank until the first load resolves. */
     readonly footerLabel = computed(() =>
@@ -100,59 +97,13 @@ export class CallRecordsListComponent implements OnInit {
         _selected: this.selectedRow() !== null,
     }));
 
-    /** Grid payload; `hasMore` drives the sentinel-based lazy fetch loop. */
-    readonly gridData = computed((): DataGridData => {
-        const rows = this.records();
-        return {
-            items:      rows.map(r => ({ ...r })),
-            totalItems: this.totalItems(),
-            page:       1,
-            limit:      this.PAGE_SIZE,
-            totalPages: Math.max(1, Math.ceil(this.totalItems() / this.PAGE_SIZE)),
-            hasMore:    !this.loaded() || rows.length < this.totalItems(),
-        };
-    });
-
     ngOnInit(): void {
         this.titleSvc.set('Call history');
     }
 
-    /**
-     * Single entry point for the grid's lazy-mode fetch loop. Fired on mount
-     * (offset=0, reset=true) and on every sort / filter change. Pages from the
-     * offset; non-reset events append to the current window.
-     */
-    onLoadMore(event: {
-        offset:        number;
-        sort:          string | null;
-        reset:         boolean;
-        columnFilters: ReadonlyArray<string>;
-    }): void {
-        const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
-        const epoch = ++this._loadEpoch;
-
-        this.callApi.listCallRecordsPage({
-            page,
-            pageSize: this.PAGE_SIZE,
-            sort:     event.sort,
-            filters:  event.columnFilters,
-        }).pipe(
-            takeUntilDestroyed(this.destroyRef),
-        ).subscribe({
-            next: result => {
-                if (epoch !== this._loadEpoch) return; // stale
-                const merged = event.reset
-                    ? result.items
-                    : [...this.records(), ...result.items];
-                this.records.set(merged);
-                this.totalItems.set(result.totalItems);
-                this.loaded.set(true);
-            },
-            error: () => {
-                this.loaded.set(true); // flip even on error so the sentinel doesn't retry-loop
-                this.toast.error('Failed to load call history');
-            },
-        });
+    /** Fired on mount and on every sort / filter change and sentinel scroll; the rows source answers. */
+    onLoadMore(event: DataGridLoadRequest): void {
+        this.rows.load(event);
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {
@@ -176,5 +127,4 @@ export class CallRecordsListComponent implements OnInit {
     }
 
     /** Monotonically-increasing load counter; stale paged responses are discarded. */
-    private _loadEpoch = 0;
 }
