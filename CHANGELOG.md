@@ -10,6 +10,13 @@ major number means here.
 
 ### Added
 
+- **Tests of a right-click on a row, through the rendered file list.** A
+  right-click on a file outside the selection selects that file alone and the
+  chosen action runs on it alone; on a file inside the selection, the selection
+  is kept and the action runs on all of it. The `contextmenu` event is
+  dispatched on the row, so the row's selection and the list's handler are
+  tested together. The spec bridge lists `@coolms/ui-angular`'s new
+  `datagrid-refused-list.spec.ts`.
 - **Each person arranges their own dashboards, saved over the version read.**
   The catalogue's `ETag` is the version of all of the person's dashboards,
   and Save and Reset name it (`If-Match`). Changed somewhere else since, in
