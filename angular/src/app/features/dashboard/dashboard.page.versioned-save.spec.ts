@@ -119,6 +119,41 @@ describe('DashboardPageComponent -- each person arranges their own dashboards, s
         expect(view(f).editing()).toBeFalse();
     }));
 
+    it('a person offered no widget: a refused save is said on the empty dashboard, with Reload', fakeAsync(() => {
+        const EMPTY = { widgets: [], sections: [], canArrange: true };
+        const f = opened(EMPTY, '"d1"');
+        const host = f.nativeElement as HTMLElement;
+        expect(host.textContent).toContain('No dashboard widgets are offered to you.');
+
+        view(f).onAction('arrange');
+        view(f).onAction('save');
+        http.expectOne(LAYOUT).flush({ detail: 'stale' }, { status: 412, statusText: 'Precondition Failed' });
+        flushMicrotasks();
+        f.detectChanges();
+
+        expect(host.textContent).toContain('Your dashboards were changed somewhere else');
+        const reload = Array.from(host.querySelectorAll('button'))
+            .find(b => b.textContent?.includes('Reload, discarding my arrangement')) as HTMLButtonElement;
+        expect(reload).withContext('Reload is offered on the empty dashboard').toBeDefined();
+        reload.click();
+        answerCatalogue(EMPTY, '"d2"');
+        f.detectChanges();
+        expect(host.textContent).not.toContain('Your dashboards were changed somewhere else');
+    }));
+
+    it('a person offered no widget: a save that failed is said on the empty dashboard', fakeAsync(() => {
+        const f = opened({ widgets: [], sections: [], canArrange: true }, '"d1"');
+
+        view(f).onAction('arrange');
+        view(f).onAction('save');
+        http.expectOne(LAYOUT).flush({ detail: 'The layout names a widget you are not offered.' }, { status: 422, statusText: 'Unprocessable' });
+        flushMicrotasks();
+        f.detectChanges();
+
+        expect((f.nativeElement as HTMLElement).querySelector('.alert-danger')?.textContent)
+            .toContain('The layout names a widget you are not offered.');
+    }));
+
     it('Reset names the version too, and its 412 is said the same way', fakeAsync(() => {
         const f = opened(PERSONAL, '"d1"');
 
