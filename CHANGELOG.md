@@ -10,6 +10,10 @@ major number means here.
 
 ### Added
 
+- **The image editor remembers its tool rail's mode for each person.** Tools
+  with their names, or as icons: the choice is kept in the person's
+  preferences (the page state `imageEditor`), so it follows them. The admin's
+  spec bridge lists the image editor's new specs.
 - **Tests of a right-click on a row, through the rendered file list.** A
   right-click on a file outside the selection selects that file alone and the
   chosen action runs on it alone; on a file inside the selection, the selection
