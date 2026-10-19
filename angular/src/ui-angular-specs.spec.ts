@@ -45,6 +45,8 @@ import '../../../ui-angular/src/ui/lazy-select/lazy-select.component.spec';
 import '../../../ui-angular/src/ui/page-toolbar.component.spec';
 import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';
 import '../../../ui-angular/src/ui/tab-strip.component.spec';
+import '../../../ui-angular/src/ui/toast-outlet.component.spec';
+import '../../../ui-angular/src/ui/toast.service.spec';
 import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
 import '../../../ui-angular/src/notification/session-ended-on-disconnect.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';
