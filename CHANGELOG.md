@@ -140,6 +140,13 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **A refused or failed dashboard save is said on an empty dashboard too.** The
+  notice that the dashboards changed elsewhere, with Reload, and the save's error
+  sat in the part of the page that draws cards, so a person offered no widget
+  saw neither. They are now drawn whatever the page shows. The empty dashboard
+  says "No dashboard widgets are offered to you.": the catalogue is the
+  person's own.
+
 - **The designer saves a draft only over the version it was read at.** All
   four pages send the version their draft was read at with every save
   (`If-Match`; `If-None-Match: *` when there was no draft yet, so the save
