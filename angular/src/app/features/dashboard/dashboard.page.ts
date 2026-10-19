@@ -7,7 +7,7 @@ import {
     signal,
     viewChild,
 } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, type HttpResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CdkDrag, CdkDropList, moveItemInArray, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import { Dialog } from '@angular/cdk/dialog';
@@ -40,6 +40,17 @@ interface DashboardWidget {
     readonly hidden?: boolean;
     /** What the LAYOUT said about the width -- absent when it said nothing. */
     readonly explicitColumns?: number;
+}
+
+/** `GET /dashboard/widgets`: the widgets offered, the sections claimed, and whether this person may arrange. */
+interface DashboardCatalogue {
+    readonly widgets: DashboardWidget[];
+    readonly sections?: string[];
+    /**
+     * False when the installation keeps no personal layouts, so arranging cannot be saved. ABSENT from a server
+     * that still keeps one layout for everyone -- which is how the page tells the two apart.
+     */
+    readonly canArrange?: boolean;
 }
 
 /** A card, once its endpoint has answered and the layout has placed it. */
@@ -95,8 +106,19 @@ const MIN_COLUMNS = 1;
  * Nothing is saved until Save. Entering the mode snapshots the cards, Cancel
  * restores the snapshot, and Save PUTs the whole arrangement and then RELOADS --
  * because the server decides more than the client sent: widgets nobody
- * mentioned are appended, and a colleague's placements for cards this viewer
- * cannot see are preserved.
+ * mentioned are appended, and placements for cards this viewer cannot see
+ * are preserved.
+ *
+ * ## Whose arrangement, and saved over which version
+ *
+ * Each person arranges their own dashboards; the module's layout is the
+ * default until they do. The catalogue answers the version of all of this
+ * person's dashboards (its ETag), and Save and Reset name it (If-Match). Saved
+ * somewhere else since -- another tab, another device -- the write is refused
+ * (412): the page says so, keeps the arrangement on screen, sends nothing
+ * again, and offers Reload. A server that still keeps one layout for everyone
+ * sends no `canArrange`, and is saved to as before: an ETag of its own, if it
+ * sends one, goes back as If-Match, and that server does not check it.
  *
  * ## One request per widget, on purpose
  *
@@ -146,9 +168,15 @@ const MIN_COLUMNS = 1;
                             <i class="bi bi-info-circle"></i>
                             Drag a card by its handle to reorder, drag its right edge to
                             resize, and use the eye to hide or show it. You can also drag an
-                            item from the left menu onto the grid to add its widgets. This
-                            arrangement is shared with everyone.
+                            item from the left menu onto the grid to add its widgets.
+                            @if (personal()) { Only you see this arrangement. } @else { This arrangement is shared with everyone. }
                         </p>
+                    }
+                    @if (changedElsewhere()) {
+                        <div class="dashboard__conflict" role="alert">
+                            <span>Your dashboards were changed somewhere else since you started arranging. Nothing was saved.</span>
+                            <button type="button" class="cms-btn cms-btn-sm" (click)="reloadAfterConflict()">Reload, discarding my arrangement</button>
+                        </div>
                     }
                     @if (saveError()) {
                         <div class="alert alert-danger">{{ saveError() }}</div>
@@ -268,6 +296,19 @@ The card itself drags: with
                above them. */
             padding: 16px 0;
         }
+
+        .dashboard__conflict {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0 0;
+            padding: 8px 12px;
+            border-radius: var(--cms-radius-sm);
+            background: var(--cms-warning-light);
+            color: var(--cms-warning-text);
+            font-size: .85rem;
+        }
+        .dashboard__conflict > span { flex: 1; }
 
         .dashboard__note {
             margin: 8px 0 0;
@@ -478,6 +519,14 @@ export class DashboardPageComponent {
     protected readonly cards     = signal<Card[]>([]);
     protected readonly editing   = signal(false);
     protected readonly saving    = signal(false);
+    /** The version of this person's dashboards the catalogue was read at (its ETag); null when none was sent. */
+    private readonly version = signal<string | null>(null);
+    /** False when the installation keeps no personal layouts: Arrange is not offered. */
+    protected readonly canArrange = signal(true);
+    /** The server keeps each person's own arrangement (its catalogue says whether arranging is possible). */
+    protected readonly personal = signal(false);
+    /** A save or reset was refused (412): said, and nothing is sent again until a reload. */
+    protected readonly changedElsewhere = signal(false);
     /** True while a menu item is being dragged over the grid. */
     protected readonly dropTarget = signal(false);
     /** Transient feedback for a drop that added nothing, and why. */
@@ -509,6 +558,7 @@ export class DashboardPageComponent {
         // Save would be the worst of the available surprises.
         this.editing.set(false);
         this.saveError.set(null);
+        this.changedElsewhere.set(false);
         this.section.set(next);
         void this.load();
     }
@@ -536,6 +586,8 @@ export class DashboardPageComponent {
     private readonly actionContext = computed((): Record<string, unknown> => ({
         _editing: this.editing(),
         _saving:  this.saving(),
+        _canArrange: this.canArrange(),
+        _changedElsewhere: this.changedElsewhere(),
     }));
 
     constructor() {
@@ -562,6 +614,7 @@ export class DashboardPageComponent {
     // -- arranging ----------------------------------------------------------
 
     private startEditing(): void {
+        if (!this.canArrange()) return;
         this.saveError.set(null);
         this.snapshot = this.cards().map(card => ({ ...card }));
         this.editing.set(true);
@@ -803,6 +856,8 @@ export class DashboardPageComponent {
     // -- persistence --------------------------------------------------------
 
     private async save(): Promise<void> {
+        // Refused once, the arrangement is not sent again until a Reload reads the dashboards again.
+        if (this.changedElsewhere()) return;
         this.saving.set(true);
         this.saveError.set(null);
         try {
@@ -823,6 +878,7 @@ export class DashboardPageComponent {
             // viewer cannot see, so what was sent is not what is now saved.
             await this.load();
         } catch (failure) {
+            if (this.refusedAsStale(failure)) return;
             this.saveError.set(this.explain(failure, 'The arrangement could not be saved.'));
         } finally {
             this.saving.set(false);
@@ -830,6 +886,7 @@ export class DashboardPageComponent {
     }
 
     private async reset(): Promise<void> {
+        if (this.changedElsewhere()) return;
         this.saving.set(true);
         this.saveError.set(null);
         try {
@@ -837,10 +894,29 @@ export class DashboardPageComponent {
             this.editing.set(false);
             await this.load();
         } catch (failure) {
+            if (this.refusedAsStale(failure)) return;
             this.saveError.set(this.explain(failure, 'The arrangement could not be reset.'));
         } finally {
             this.saving.set(false);
         }
+    }
+
+    /**
+     * A 412: this person's dashboards were changed somewhere else since they were read. The arrangement stays on
+     * screen (the mode is not left) and nothing is sent again until Reload.
+     */
+    private refusedAsStale(failure: unknown): boolean {
+        if (!(failure instanceof HttpErrorResponse) || 412 !== failure.status) return false;
+        this.changedElsewhere.set(true);
+        return true;
+    }
+
+    /** Reads the dashboards again, discarding the arrangement the 412 refused. */
+    protected reloadAfterConflict(): void {
+        this.changedElsewhere.set(false);
+        this.editing.set(false);
+        this.saveError.set(null);
+        void this.load();
     }
 
     /** The API answers a refusal with a `detail`; anything else is a generic toast. */
@@ -859,9 +935,13 @@ export class DashboardPageComponent {
     private async load(): Promise<void> {
         this.loading.set(true);
         try {
-            const catalogue = await this.fetch<{ widgets: DashboardWidget[]; sections?: string[] }>(
+            const answer = await this.fetchResponse<DashboardCatalogue>(
                 this.apiBase() + '/dashboard/widgets' + this.sectionQuery(),
             );
+            const catalogue = answer.body;
+            this.version.set(answer.headers.get('ETag'));
+            this.personal.set(null !== catalogue && 'canArrange' in catalogue);
+            this.canArrange.set(catalogue?.canArrange !== false);
             const offered = catalogue?.widgets ?? [];
 
             // Every response carries the full section list, whichever dashboard
@@ -951,6 +1031,14 @@ export class DashboardPageComponent {
         });
     }
 
+    /** As `fetch`, with the headers: the catalogue's ETag is the version a save names. */
+    private fetchResponse<T>(url: string): Promise<HttpResponse<T>> {
+        return new Promise<HttpResponse<T>>((resolve, reject) => {
+            this.http.get<T>(url, { headers: { Accept: 'application/json' }, observe: 'response' })
+                .subscribe({ next: resolve, error: reject });
+        });
+    }
+
     /** `?section=growth`, or nothing at all for the main dashboard. */
     private sectionQuery(): string {
         const section = this.section();
@@ -962,7 +1050,11 @@ export class DashboardPageComponent {
         // The section rides on the write too: without it, arranging a section
         // would silently save over the main dashboard's layout.
         const url = this.apiBase() + '/dashboard/layout' + this.sectionQuery();
-        const options = { headers: { Accept: 'application/json' } };
+        // The version the arrangement started from: over dashboards changed since, the write is refused (412).
+        const version = this.version();
+        const headers: Record<string, string> = { Accept: 'application/json' };
+        if (null !== version) headers['If-Match'] = version;
+        const options = { headers };
 
         return new Promise<unknown>((resolve, reject) => {
             const request$ = 'PUT' === method

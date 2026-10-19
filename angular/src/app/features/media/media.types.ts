@@ -109,3 +109,12 @@ export interface CollectionNode {
     children: CollectionNode[];
 }
 
+
+/**
+ * Where the image editor reads a media asset's own bytes WITH their version (the response's ETag): the
+ * authenticated preview of its file. The replace then names that version -- one read for pixels and version, never
+ * the public URL (which names none). Undefined without a path: the editor then shows the public URL and keeps Save off.
+ */
+export function mediaAssetSourceUrl(apiBase: string, path: string | null | undefined): string | undefined {
+    return path ? `${apiBase}/vfs/files/preview?path=${encodeURIComponent(path)}` : undefined;
+}

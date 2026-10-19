@@ -17,6 +17,50 @@ major number means here.
   dispatched on the row, so the row's selection and the list's handler are
   tested together. The spec bridge lists `@coolms/ui-angular`'s new
   `datagrid-refused-list.spec.ts`.
+- **Each person arranges their own dashboards, saved over the version read.**
+  The catalogue's `ETag` is the version of all of the person's dashboards,
+  and Save and Reset name it (`If-Match`). Changed somewhere else since, in
+  another tab or on another device, the write is refused: the page says so,
+  keeps the arrangement on screen, sends nothing again, and offers Reload.
+  Where the installation keeps no personal layouts (`canArrange: false`),
+  arranging is not offered; the page publishes `_canArrange` and
+  `_changedElsewhere` to its header actions. The arranging hint says whose
+  arrangement it is. A backend that still keeps one layout for everyone sends
+  no `canArrange`, and is saved to as before: the `ETag` its framework adds,
+  if any, goes back as `If-Match`, which that backend does not check.
+- **An event is changed only from the version it was read at.** Every write of
+  a calendar event -- a change, a delete, and on a recurring event an
+  exception, a skip, a split or a delete of this and the following -- names
+  (`If-Match`) the version of the row it changes, as the editor or the
+  calendar read it: the event's own, or the series' for the series' base and
+  the actions on the series. An event or series changed since is refused,
+  said, and nothing is changed; Reload reads the calendar again, and the write
+  is never sent again on its own. Without a version nothing is sent. Needs the
+  backend that answers each event's `version` and `seriesVersion`, and
+  `@coolms/ui-angular` 2.0.0-alpha.4 or later for the Reload button.
+- **The admin names itself on its API calls.** Every call under `/api/`
+  carries `X-CoolMS-Client: com.coolms.admin/<version>`, the header the apps
+  send, so the backend's per-client daily counts show the admin and its
+  version. The version is read from `theme.yaml` into a generated, untracked
+  file on `prebuild`, `pretest` and `prestart` (`scripts/stamp-client.mjs`).
+
+- **A page or file opened for editing is saved only over the version it was
+  opened at.** The page editor's body save and the file editors name the
+  version they read (`If-Match`); a page or file changed or deleted meanwhile is
+  said, and nothing is written over it. `provideVfsNodeWatch()` hands the
+  editors the folder's live events, so a change made elsewhere is said at once;
+  one folder channel serves every watcher of it and is left with the last.
+  Needs `@coolms/ui-angular` with `VFS_NODE_WATCH`.
+- **No shortcut of a view fires while a surface is open over it.** The file
+  manager, the media library, the decision and state-machine designers, the
+  BPMN canvas and the shell take their keys through the keyboard scope: while
+  an editor, a viewer, a dialog or a menu is open over the file manager,
+  Delete, Backspace, F2, Escape and Ctrl+A/C/V/X reach nothing beneath it. The
+  file manager's keys follow keyboard focus, not the pointer, and a press
+  anywhere in it puts the keyboard there. The call screen is a card in a
+  corner and takes no keys from the page. Needs `@coolms/ui-angular`
+  2.0.0-alpha.4 and `@coolms/designer` with the keyboard controller's key
+  source.
 - **Contacts, Users, Leads and Call history read their rows from where the
   server says they come from.** Each grid's definition now declares its list
   action, and the four pages read the rows from that action's operation
@@ -60,6 +104,33 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Changed
 
+- **A mailbox's settings are a page of sections; the wizard only adds a
+  mailbox.** The rail's Settings opens `/email/mailboxes/:id/settings`:
+  - General: name and address.
+  - Connection: servers, sign-in, sync, and a connection test.
+  - Rules: what arriving mail starts -- a first-contact email starts a
+    workflow, as a rule's action.
+  - Access, for a shared mailbox.
+  - Delete this mailbox, last: its question names what goes (CoolMS's
+    copies of the mail, the mailbox's rules, its settings) and says the
+    account at the mail provider is not touched.
+
+  Each section is saved on its own, naming the version of the settings it
+  was read at (`If-Match`), and sends only what the person changed.
+  Settings changed since are refused and Reload is offered; a read
+  without a version saves nothing. What the caller may change is the
+  server's capability answer: someone who may only read the settings --
+  a delegate, read only or read and send -- sees them read-only, and is
+  told so. The wizard's edit mode, and its update that named no version,
+  are removed.
+
+  The connection test signs in with what is typed, saves nothing, and says
+  each protocol's outcome in the server's fixed sentence; too many tests
+  say when to try again. An owner who is not an administrator signs in as
+  the mailbox's address, so the sign-in names are shown, not edited. Past
+  mail to fetch is a choice: the installation's default, none, the last
+  months as set, or all of it. Needs the backend's mailbox contract
+  (version, access, backfill depth, the test).
 - **The terminal asks for elevation only for a line that begins with `sudo`.**
   A `sudo` line refused for want of an elevated session asks for the password
   in the terminal itself, `[sudo] password for <account>:`, and asks for the
@@ -76,6 +147,108 @@ the elevation state; against one that does not, the admin behaves as before.
 
 ### Fixed
 
+- **The designer saves a draft only over the version it was read at.** All
+  four pages send the version their draft was read at with every save
+  (`If-Match`; `If-None-Match: *` when there was no draft yet, so the save
+  only creates one). A draft saved by someone else since (412) or deleted
+  (404) is said above the canvas; the edits stay, and Save and Deploy refuse
+  until Reload. Before, the later of two saves silently replaced the earlier
+  one.
+- **The landing-block editor saves the sections as stored.** It edits
+  `storedBlocks` rather than the render view, so a block of a type it does
+  not know and keys it does not edit go back untouched, and live data is not
+  stored. Every save names the version read; a refused save is said, and
+  none follows until a reload. Before, a save deleted what the render view
+  hid.
+- **The page editor never saves over a read that has not ended or ended
+  part-way.** These cases lost stored content:
+  - While a body is being read, no editor is shown, and an edit made to a
+    body not yet read is not taken. Before, the editor mounted empty during
+    the read and took edits. The stored body then arrived without replacing
+    them, and Save wrote them over it with the version just read.
+  - A body answer without its `content` is unread, not empty, and its
+    version is not kept.
+  - An SEO field the person never saw is not written. Before, a title
+    edited before the SEO field list arrived cached an empty SEO map, and
+    Save sent null for every declared field, removing their stored values.
+- **The designer never saves over a draft it could not read.** This covers
+  all four of its pages: workflow, decision table, state machine and
+  decision requirements. A draft whose read failed or whose body did not
+  parse now shows no canvas, and Save and Deploy refuse; the banner's Retry
+  reads again. So does a decision without a table, in the table page. A
+  new decision (no draft yet) still opens blank. Before, a blank, editable
+  canvas was shown with Save on, and Save wrote the blank over the stored
+  draft. In the requirements diagram, which writes the whole decision
+  file, that would have replaced its tables too.
+- **The calendar's events carry their classes again.** FullCalendar 7 takes an
+  event's classes as `className`, one string; the card still set v6's
+  `classNames`, which 7 keeps as an extended prop and never draws. So no event
+  carried its type, and the card's own styles for them were dead: the repeat
+  mark on a recurring event, the line-through of a cancelled one, the italic of
+  a tentative one, and the holiday backgrounds' text. A spec draws the card's
+  events with the admin's FullCalendar and reads the classes off the page.
+- **A form's radios and checkboxes are drawn as the admin draws them.** Three
+  forms styled every `input` as a text field, with a width, padding, a border,
+  a radius and a background, and that rule reached their radios and
+  checkboxes as well:
+  - The recurrence form's "Ends: Never / On / After" and monthly radios showed
+    as rounded squares, which read as checkboxes.
+  - The holiday rule form's checkbox was 2px wide.
+  - The schedule page's "Enabled" checkbox was padded like a text field.
+
+  Each of those rules now names text fields only.
+- **The actions on a series work from an edited occurrence, and at the right
+  slot.** "Only this", "this and following" and "all events" -- from the
+  calendar's menu, a drag, a resize or the editor -- on an occurrence that was
+  edited before went to its exception, which the server refuses; they now
+  address the series it belongs to, at the slot it replaced, naming the
+  series' version. A plain occurrence that a non-working-day rule moved is
+  acted on at its rule's slot, not at the day it moved to. "All events" from
+  an edited occurrence deletes the series, not only that occurrence. Uses the
+  `recurrenceInstant` the backend answers on each occurrence; a backend that
+  answers none is sent the occurrence's start, as before.
+- **"All events" by a drag moves the whole series, and drops nothing.**
+  Dragging an occurrence with "All events" wrote that occurrence's new times
+  onto the series itself: dragging the 5th occurrence of a daily series by two
+  days made the series start on the 5th day, and the first four occurrences
+  were gone. Now the series is read and moved by the same difference -- days
+  and time of day, on the series' own wall clock, so a 09:00 series stays at
+  09:00 across a daylight-saving change -- and saved naming the version of
+  that read. A resize with "All events" makes every occurrence as much longer
+  or shorter. Changing all events between all-day and timed is left to the
+  series' editor.
+  The rule's own dates move in the same write: UNTIL, the skipped dates
+  (EXDATE) and the added ones (RDATE), so a skipped 09:00 occurrence moved to
+  10:00 stays skipped. So do the days the rule picks: weekly on Monday moved
+  by a day repeats on Tuesday, and a day of the month moves within the month.
+  A move that no rule can give exactly is refused, with the reason, and
+  nothing is changed: for example "the 2nd Monday" moved by a day, or "the
+  30th" moved into another month. Moving only the time of day is always
+  possible. Occurrences edited one by one move with the series: the
+  server moves them. When the moved series would have no slot for some of
+  them, or some skipped dates would skip nothing, nothing is changed and
+  the person is asked. The question names those occurrences by title and
+  by the date the calendar shows them on, in the person's date format.
+  "Move and remove them" makes the move and removes them; otherwise
+  the series stays as it is. Needs the backend that moves a series'
+  edited occurrences and answers 409
+  `/errors/series-change-leaves-occurrences` for the rest.
+- **"Read without a version" is said as such.** An event write not sent for
+  want of a version now says the event was read without one, instead of
+  "changed since you opened it".
+- **A media asset edited in the image editor is never replaced over a newer
+  one.** The editor read the asset's pixels from its public URL and replaced
+  it with no version, so an asset replaced meanwhile was overwritten silently.
+  The editor now reads the asset's bytes and their version from one
+  authenticated read and names that version when it replaces; an asset changed
+  or deleted meanwhile is refused and the edits can go to a new image.
+- **A page body that could not be read is never written.** When the page
+  editor's read of a body failed, it showed an empty body and treated it as
+  read, and the next save of a title or SEO field wrote that empty body over
+  the stored one; Publish and Submit for review wrote the body even before
+  its read answered. A failed read is now shown as such, with a way to read
+  it again; no press writes a body that was not read; and the page service
+  sends no body it holds no version of.
 - **A selected file follows the listing when it is read again.** The listing is
   read again whenever elevation is granted, ended or expires, but the selection
   kept the file objects from before, and the bar and the menus read those: after

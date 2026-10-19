@@ -33,6 +33,7 @@ const BRIDGES = [
     { bridge: 'src/editor-angular-specs.spec.ts', pkg: 'editor-angular' },
     { bridge: 'src/dtmpl-angular-specs.spec.ts', pkg: 'dtmpl-angular' },
     { bridge: 'src/sheet-editor-angular-specs.spec.ts', pkg: 'sheet-editor-angular' },
+    { bridge: 'src/image-editor-angular-specs.spec.ts', pkg: 'image-editor-angular' },
 ];
 
 function specsOnDisk(dir, base = dir) {

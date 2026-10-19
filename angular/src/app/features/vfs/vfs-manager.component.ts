@@ -3,12 +3,13 @@ import {
     Component,
     computed,
     effect,
-    HostListener,
     inject,
     OnDestroy,
     OnInit,
     signal,
     untracked,
+    ElementRef,
+    DestroyRef,
 } from '@angular/core';
 import { UserPreferencesService, NaviGraphNode, NaviGraphService, AppConfigState } from '@coolms/core-angular';
 import { NgClass } from '@angular/common';
@@ -18,6 +19,7 @@ import { VfsActionsService } from './vfs-actions.service';
 import { VfsClipboardService } from './vfs-clipboard.service';
 import { VfsUploadService } from './vfs-upload.service';
 import {
+    bindKeys,
     capabilityContext,
     CmsPageHeaderComponent,
     ExplorerLayoutComponent,
@@ -33,6 +35,8 @@ import { VfsPageStateService } from './vfs-page-state.service';
     selector: 'app-vfs-manager',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    // Focusable, so the keys can follow focus here (see the constructor).
+    host: { tabindex: '-1' },
     providers: [VfsPageStateService, VfsActionsService, VfsClipboardService, VfsUploadService, PageFooterService],
     imports: [
         NgClass,
@@ -44,8 +48,6 @@ import { VfsPageStateService } from './vfs-page-state.service';
         <app-explorer-layout
             layoutId="vfs:file-manager"
             [context]="pageContext()"
-            (mouseenter)="isActive.set(true)"
-            (mouseleave)="isActive.set(false)"
             (backgroundClick)="clearSelection()">
 
             <!-- Page header: fixed title + Upload primary action -->
@@ -121,7 +123,8 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
 
     /** Alias to the shared state signal so the local toolbar computeds stay terse. */
     readonly toolbarNodes = this.state.vfsToolbarNodes;
-    isActive              = signal(false);
+    /** The manager's own element: its shortcuts act only on keys that come from inside it. */
+    private readonly hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
     /**
      * Context passed to ExplorerLayout -- drives right panel
@@ -134,6 +137,17 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
     }));
 
     constructor() {
+        // The file manager's shortcuts belong to the page: while an editor, a viewer or a dialog is open over it,
+        // none of them fires (Dmitry, 2026-10-14: Del in the image editor deleted the file underneath).
+        bindKeys(event => this.onKeydown(event));
+        // A press anywhere in the manager puts the keyboard here, even where the press itself moves no focus: on a
+        // thumbnail's image the drag cancels the press's default (CDK does, for a natively draggable target).
+        const takeFocus = (): void => {
+            if (!this.hostEl.contains(document.activeElement)) this.hostEl.focus({ preventScroll: true });
+        };
+        this.hostEl.addEventListener('pointerdown', takeFocus, { capture: true });
+        inject(DestroyRef).onDestroy(() => this.hostEl.removeEventListener('pointerdown', takeFocus, { capture: true }));
+
         // Keep the panel content in sync with selection: if the
         // active item is no longer selected (deletion, deselection,
         // directory change, multi-select), close the panel.
@@ -309,33 +323,42 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
 
     // -- Keyboard shortcuts ----------------------------------------------------
 
-    @HostListener('document:keydown', ['$event'])
-    onKeydown(event: KeyboardEvent): void {
-        if (!this.isActive()) return;
+    /** Bound through the keyboard scope (the constructor); true when it acted on the key. */
+    onKeydown(event: KeyboardEvent): boolean {
+        // Within the page, the keys follow keyboard focus, not the mouse: a key from another panel (the terminal,
+        // the side navigation) never acts on the file manager's selection.
+        if (!(event.target instanceof Node) || !this.hostEl.contains(event.target)) return false;
 
         const ctrl     = event.ctrlKey || event.metaKey;
         const selected = this.state.selectedNodes();
 
         if (ctrl && event.key === 'x' && selected.length > 0) {
-            event.preventDefault();
             this.clipboard.cut(selected);
-        } else if (ctrl && event.key === 'c' && selected.length > 0) {
-            event.preventDefault();
+            return true;
+        }
+        if (ctrl && event.key === 'c' && selected.length > 0) {
             this.clipboard.copy(selected);
-        } else if (ctrl && event.key === 'v' && this.clipboard.hasAny()) {
-            event.preventDefault();
+            return true;
+        }
+        if (ctrl && event.key === 'v' && this.clipboard.hasAny()) {
             void this.clipboard.paste(this.state.currentPath());
-        } else if (event.key === 'Escape') {
+            return true;
+        }
+        if (event.key === 'Escape') {
+            // Clears the clipboard and lets the key go on: ESC still closes whatever else it closes.
             this.clipboard.clear();
-        } else if (event.key === 'Delete' && selected.length > 0 && !selected.some(n => n.isSystem)) {
-            event.preventDefault();
+            return false;
+        }
+        if (event.key === 'Delete' && selected.length > 0 && !selected.some(n => n.isSystem)) {
             // The key is the Delete button by another route: the same answer decides it.
             this.vfsActions.whenAllowed(
                 this.toolbarNodes().find(n => n.meta['action'] === 'VfsDelete'),
                 selected,
                 () => selected.forEach(n => void this.vfsActions.confirmDelete(n)),
             );
+            return true;
         }
+        return false;
     }
 
     ngOnDestroy(): void {

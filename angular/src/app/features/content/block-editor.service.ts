@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
 /** One field of a {@link BlockTypeSchemaDto} -- kind drives the editor widget. */
@@ -37,8 +37,15 @@ export type BlockModel = Record<string, unknown>;
 export interface LandingBlocksDto {
     /** The block-type catalog (palette). */
     readonly types: readonly BlockTypeSchemaDto[];
-    /** The page's current normalized sections (instance mode). */
+    /**
+     * The page's sections as the public site renders them -- unknown types and undeclared keys dropped, live data
+     * added. A view: never written back.
+     */
     readonly blocks: readonly BlockModel[];
+    /** The page's sections exactly as stored (extras.blocks, in order): what the editor edits and saves. */
+    readonly storedBlocks?: readonly BlockModel[] | null;
+    /** The version the page's details were read at: every save names it (If-Match). */
+    readonly version?: string | null;
     /** The page's content-type discriminator (`'landing'` enables the editor). */
     readonly contentType?: string | null;
     readonly path?: string | null;
@@ -69,10 +76,18 @@ export class BlockEditorService {
         return this.http.get<LandingBlocksDto>(url);
     }
 
-    save(path: string, blocks: readonly BlockModel[]): Observable<unknown> {
+    /**
+     * Merge-patches the page's `extras.blocks`, only over the version the sections were read at (If-Match: a newer
+     * version answers 412); answers the version the save wrote (its ETag).
+     */
+    save(path: string, blocks: readonly BlockModel[], version: string): Observable<string | null> {
         const url = `${this.apiBase}/vfs/files?path=${encodeURIComponent(path)}`;
         return this.http.patch(url, { path, extras: { blocks } }, {
-            headers: { 'Content-Type': 'application/merge-patch+json' },
-        });
+            headers: { 'Content-Type': 'application/merge-patch+json', 'If-Match': `"${version}"` },
+            observe: 'response',
+        }).pipe(map(r => {
+            const v = (r.headers.get('ETag') ?? '').replace(/^W\//, '').replace(/"/g, '').trim();
+            return v === '' ? null : v;
+        }));
     }
 }

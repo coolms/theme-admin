@@ -903,6 +903,7 @@ export class VfsFilesComponent {
             context: 'vfs',
             node: {
                 path:       node.path,
+                id:         node.id,
                 canWrite:   node.permissions.write,
                 requestWrite: () => firstValueFrom(this.elevation.offerFor()),
                 sourceUrl:  this.thumbnailUrl(node),
