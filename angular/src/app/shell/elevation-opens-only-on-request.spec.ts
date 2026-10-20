@@ -16,9 +16,9 @@ import { MediaPageStateService } from '../features/media/media-page-state.servic
 import type { MediaAssetDto } from '../features/media/media.types';
 
 /**
- * The elevation prompt opens only when a person asks for it: on an explicit action that needs
- * elevation, such as clicking Elevate. A request made on page load or in the background that gets a
- * 403 never opens it.
+ * The elevation prompt opens for a person: when a write they made is refused for want of elevation
+ * (decided 2026-10-20 -- above whatever they are in, and the write is sent again on a grant), or when
+ * they click Elevate. A request made on page load or in the background that gets a 403 never opens it.
  *
  * Measured before this change, as an administrator who had not elevated: the prompt opened on 13
  * of 15 console pages by a menu click and on 15 of 15 by a reload, and on a Mail reload EITHER of two
@@ -78,24 +78,27 @@ describe('The elevation prompt opens only on a person\'s request', () => {
         http.verify();
     });
 
-    it('answers a refused write with one notice, and opens the modal only when its Elevate is clicked', () => {
+    it('opens the modal for a refused write and, when it is declined, says "Elevation required" once, naming the action', () => {
         const http2 = TestBed.inject(HttpClient);
-        // The same refusal twice, as a debounced request repeats it: one notice.
+        // The same refusal twice, as a debounced request repeats it: the modal each time (declined here),
+        // and one notice.
         for (let i = 0; i < 2; i++) {
             http2.put('/api/v1/themes/site', {}).subscribe({ error: () => undefined });
             refuseForElevation(http.expectOne('/api/v1/themes/site'));
+            http.expectOne(ELEVATION).flush(unelevated);
         }
 
+        expect(dialogOpen).toHaveBeenCalledTimes(2);
         const toasts = TestBed.inject(ToastService).toasts();
         expect(toasts.length).toBe(1);
-        expect(toasts[0].message).toBe('This needs an elevated session.');
-        expect(dialogOpen).not.toHaveBeenCalled();
-        http.expectNone(ELEVATION);
+        expect(toasts[0].title).toBe('Elevation required');
+        expect(toasts[0].message).toBe('Saving themes site needs an elevated session.');
+        http.expectNone('/api/v1/themes/site');
 
         toasts[0].action!.run();
         http.expectOne(ELEVATION).flush(unelevated);
 
-        expect(dialogOpen).toHaveBeenCalledTimes(1);
+        expect(dialogOpen).toHaveBeenCalledTimes(3);
         http.verify();
     });
 
