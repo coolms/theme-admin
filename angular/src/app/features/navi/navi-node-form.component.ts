@@ -51,7 +51,8 @@ export interface NaviNodeFormData {
                             [control]="templateControl()!"
                             [themeSlug]="themeSlug()" />
                         <div class="form-text text-muted">
-                            Optional template for this node's page (theme &quot;{{ themeSlug() }}&quot;). Leave empty for the default.
+                            A page template of the theme &quot;{{ themeSlug() }}&quot; overrides how this entry's page is
+                            drawn. Keep the default unless the page needs it.
                         </div>
                     </div>
                 }
@@ -125,6 +126,24 @@ export class NaviNodeFormComponent implements AfterViewInit {
         setTimeout(() => this.bindTemplateControl(attempt + 1), 100);
     }
 
+    /**
+     * A refused save: each violation goes to its own control (a 422 on `template` shows under the select -- the
+     * picker reads the control's `server` error), and the message still heads the form, because the template field
+     * sits outside the dynamic form's layout and a field error alone could go unseen.
+     */
+    private showSaveError(err: unknown): void {
+        const violations = (err as { error?: { violations?: Array<{ propertyPath: string; message: string }> } })
+            ?.error?.violations ?? [];
+        for (const v of violations) {
+            const ctrl = this.dynamicForm.getControl(v.propertyPath);
+            if (ctrl) {
+                ctrl.markAsTouched();
+                ctrl.setErrors({ server: v.message });
+            }
+        }
+        this.dynamicForm.setServerError(this.errors.humanize(err));
+    }
+
     onSubmit(value: Record<string, unknown>): void {
         if (this.isEdit) {
             const action = new UpdateNaviNode(this.data.node!.id, {
@@ -138,7 +157,7 @@ export class NaviNodeFormComponent implements AfterViewInit {
                     this.store.dispatch(new LoadNaviNodes(this.data.treeSlug));
                     this.dialogRef.close(true);
                 },
-                error: err => this.dynamicForm.setServerError(this.errors.humanize(err)),
+                error: err => this.showSaveError(err),
             });
         } else {
             const action = new CreateNaviNode({
@@ -155,7 +174,7 @@ export class NaviNodeFormComponent implements AfterViewInit {
                     this.store.dispatch(new LoadNaviNodes(this.data.treeSlug));
                     this.dialogRef.close(true);
                 },
-                error: err => this.dynamicForm.setServerError(this.errors.humanize(err)),
+                error: err => this.showSaveError(err),
             });
         }
     }
