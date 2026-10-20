@@ -21,6 +21,13 @@ major number means here.
 
 ### Added
 
+- **A menu entry's template is chosen from a list.** Edit Node's template field
+  is a select of the section theme's page templates, with "Default (directory
+  index)" first, in place of free text with suggestions. A template saved
+  earlier that the theme no longer has stays visible, marked, instead of being
+  replaced. When the server refuses a template (422 on `template`), the message
+  shows under the select, and every violation of a refused save goes to its own
+  field.
 - **The image editor remembers its tool rail's mode for each person.** Tools
   with their names, or as icons: the choice is kept in the person's
   preferences (the page state `imageEditor`), so it follows them. The admin's
