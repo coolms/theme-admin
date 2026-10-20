@@ -8,6 +8,17 @@ major number means here.
 
 ## Unreleased
 
+### Changed
+
+- **A refused save opens the elevation prompt over the dialog it came from.**
+  With @coolms/core-angular's matching change, a person's write refused for
+  want of elevation opens the prompt above whatever they are in. An edit dialog
+  stays open with its input, and the save goes through once they elevate. If
+  they decline, the toast reads **Elevation required** and names the action
+  ("Saving navi nodes needs an elevated session."), with an Elevate button. The
+  app-level elevation spec follows the new rule; reads and background requests
+  still open nothing.
+
 ### Added
 
 - **A menu entry's template is chosen from a list.** Edit Node's template field
