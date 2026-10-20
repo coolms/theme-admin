@@ -19,6 +19,16 @@ major number means here.
   app-level elevation spec follows the new rule; reads and background requests
   still open nothing.
 
+### Fixed
+
+- **Toasts, the context menu and call overlays show above an open dialog
+  again.** @angular/cdk 22 opens every overlay in the browser's top layer,
+  above anything a z-index can say, so a toast raised while a dialog was open
+  rendered under its backdrop. That included the Elevate button on an elevation
+  refusal, which could be reached only by closing the dialog and losing the
+  edit. Overlays now open in the overlay container again, and the admin's
+  z-index order holds. A dialog opened from another still opens above it.
+
 ### Added
 
 - **A menu entry's template is chosen from a list.** Edit Node's template field
