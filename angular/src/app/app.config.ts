@@ -20,6 +20,7 @@ import { CONSOLE_ENTRIES } from './console.registry';
 import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { clientHeaderInterceptor } from './client-header.interceptor';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
+import { provideOverlayStacking } from './shell/overlay-stacking.provider';
 import { CallsEndWithTheSession } from './features/rtc/calls-end-with-the-session.service';
 import { SectionState } from './features/sections/section.state';
 
@@ -91,6 +92,9 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(withXhr(), withInterceptors([
             sectionInterceptor, elevationInterceptor, authInterceptor, clientHeaderInterceptor,
         ])),
+        // Overlays stack by z-index, not in the browser's top layer: toasts, the context menu and call overlays
+        // must be able to sit above a dialog (see the provider).
+        provideOverlayStacking(),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
         // A signed-out browser closes its own calls (2026-09-25): the server ends a 1:1
