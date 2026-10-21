@@ -55,9 +55,9 @@ describe('ProfileCallTabComponent -- the Calls pane on My Profile', () => {
     ];
 
     const USER = {
-        id: 'u-1', identifier: 'd.popov@example.test', identifierType: 'email', isVerified: true,
-        identifiers: [], avatarUrl: null, avatarColor: null, firstName: 'Dmitry', lastName: 'Popov',
-        fullName: 'Dmitry Popov', roles: ['ROLE_ADMIN'], isActive: true, lastLoginAt: null,
+        id: 'u-1', identifier: 'jane.doe@example.com', identifierType: 'email', isVerified: true,
+        identifiers: [], avatarUrl: null, avatarColor: null, firstName: 'Jane', lastName: 'Doe',
+        fullName: 'Jane Doe', roles: ['ROLE_ADMIN'], isActive: true, lastLoginAt: null,
         createdAt: '2026-01-01T00:00:00+00:00', primaryGroup: null, groups: [], groupsCount: 0, uiPrefs: {},
     };
 
