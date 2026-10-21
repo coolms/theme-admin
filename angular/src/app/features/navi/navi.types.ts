@@ -49,7 +49,6 @@ export interface NaviNodeDto {
     isActive:   boolean;
     parentId?:  string | null;
     treeSlug:   string;
-    template?: string | null;
     /**
      * Tree datagrid Ship B -- true when this node has at least one direct
      * child; drives the datagrid chevron under the `computed` strategy.
@@ -68,14 +67,12 @@ export interface CreateNaviNodeDto {
     title:             string;
     path:              string;   // full path, e.g. "/about" — required by CreateNaviNodeProcessor
     parentId?:         string | null;
-    template?: string | null;
     isVisible?:        boolean;
     sortOrder?:        number;
 }
 
 export interface UpdateNaviNodeDto {
     title?:            string;
-    template?: string | null;
     isVisible?:        boolean;
     sortOrder?:        number;
 }
