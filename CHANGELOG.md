@@ -24,6 +24,15 @@ major number means here.
 
 ### Security
 
+- **vite 8.3.4 through an override.** `@angular/build` 22.2.3, the newest, pins
+  `vite` 8.3.0 exactly, which carries six dev-server advisories. An exact
+  `overrides` entry in `angular/package.json` moves it to 8.3.4, and all six
+  `vite` lines come off `.github/advisories.txt`. In the lockfile, only vite and
+  what it needs moved: its own `rolldown`, `postcss` and `@oxc-project/types`,
+  and `nanoid` 3.3.18 to 3.3.20 for that `postcss`. The production bundle is
+  the same file for file; only the build stamp differs. Remove the override
+  once an `@angular/build` release ships with vite 8.3.4 or later.
+
 - **Dependencies updated to clear published advisories.** Angular moves to
   22.2.3 (framework, CLI and build), and `fabric` to 7.4.0, which clears its
   moderate advisory in the built app. The rest are build and test tooling: the

@@ -113,5 +113,8 @@
     "puppeteer": "^24.43.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.33.1"
+  },
+  "overrides": {
+    "vite": "8.3.4"
   }
 }
