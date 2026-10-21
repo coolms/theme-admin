@@ -16,6 +16,18 @@ major number means here.
   template listing call it used, and the `template` field of the menu-entry
   types are gone. The theme page's own template listing is unchanged.
 
+### Security
+
+- **Dependencies updated to clear published advisories.** Angular moves to
+  22.2.3 (framework, CLI and build), and `fabric` to 7.4.0, which clears its
+  moderate advisory in the built app. The rest are build and test tooling: the
+  CLI no longer brings in `@modelcontextprotocol/sdk` or `hono`, and
+  `launch-editor`, `js-yaml`, `qs`, `fast-uri`, `brace-expansion` and others
+  move to fixed versions. 41 advisories come off `.github/advisories.txt`.
+  Three `vite` advisories stay listed with a review date: `@angular/build`
+  22.2.3 pins vite 8.3.0 exactly, and the fix is in 8.3.3. The dev server is
+  build tooling and never ships.
+
 ### Changed
 
 - **A refused save opens the elevation prompt over the dialog it came from.**
