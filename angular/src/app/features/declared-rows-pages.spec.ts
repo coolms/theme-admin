@@ -69,7 +69,7 @@ describe('Grid pages read the rows their definition declares', () => {
 
         const req = http.expectOne(r => r.url === '/api/v1/moved-contacts');
         expect(req.request.params.getAll('filter')).toEqual(['name cn "a"']);
-        req.flush({ member: [{ id: 'c1', displayName: 'Ada' }], totalItems: 1 });
+        req.flush({ member: [{ id: 'c1', displayName: 'Sam' }], totalItems: 1 });
         expect(page.contacts().map(c => c.id)).toEqual(['c1']);
         expect(page.totalItems()).toBe(1);
     });
@@ -80,10 +80,10 @@ describe('Grid pages read the rows their definition declares', () => {
         page.onLoadMore(FIRST);
 
         http.expectOne(r => r.url === '/api/v1/moved-users').flush({
-            member: [{ id: 'u1', identifier: 'ada@example.test', firstName: 'Ada', lastName: 'Lovelace' }],
+            member: [{ id: 'u1', identifier: 'sam.roe@example.test', firstName: 'Sam', lastName: 'Roe' }],
             totalItems: 1,
         });
-        expect((page.rows.data().items[0] as Record<string, unknown>)['displayName']).toBe('Ada Lovelace');
+        expect((page.rows.data().items[0] as Record<string, unknown>)['displayName']).toBe('Sam Roe');
         expect(page.users().map(u => u.id)).toEqual(['u1']);
     });
 
