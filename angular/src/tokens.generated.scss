@@ -6,6 +6,7 @@
     --cms-accent-text: #7C4D00;
     --cms-focus-ring: var(--cms-accent-text);
     --cms-accent-fg: #1a1a1a;
+    --cms-accent-contrast: var(--cms-accent-fg);
     --cms-selected: var(--cms-accent);
     --cms-selected-light: var(--cms-accent-light);
     --cms-selected-text: var(--cms-accent-text);
@@ -46,6 +47,10 @@
     --cms-on-chrome: #ffffff;
     --cms-chrome-edge: #6b7f96;
     --cms-focus-ring-on-chrome: #f5c173;
+    --cms-chrome-danger: #dc2626;
+    --cms-chrome-danger-fg: #ffffff;
+    --cms-chrome-success: #15803d;
+    --cms-chrome-success-fg: #ffffff;
     --cms-success: #16a34a;
     --cms-success-light: #f0fdf4;
     --cms-success-text: #166534;

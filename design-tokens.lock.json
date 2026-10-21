@@ -1,11 +1,11 @@
 {
   "repository": "coolms/design-tokens",
-  "tag": "v0.1.0",
-  "commit": "911d7a63d0051cfec4b70e14ee6deb81e67b98cc",
+  "tag": "v0.3.0",
+  "commit": "629621299b1e6b0621dc0be00a1743138cc9a86a",
   "files": {
     "dist/coolms-tokens.scss": {
       "to": "angular/src/tokens.generated.scss",
-      "sha256": "0a50bae32604bb12a8d30d29143386e9a09203d0d3bf86f00031054e6c27a90b"
+      "sha256": "d47285d2faea3bb0bd88d8a2c447b4d045535e3f3ba0dcda5d23e7aeb2c47f8b"
     }
   }
 }
