@@ -8,6 +8,12 @@ major number means here.
 
 ## Unreleased
 
+### Fixed
+
+- **The toast's count badge reads.** The design tokens move from 0.1.0 to 0.3.0. 0.3.0 adds `accent-contrast`, the
+  token the badge asks for and nothing defined, so it painted white on the amber at 2.03:1. It is now `accent-fg`,
+  at 8.59:1. 0.2.0's chrome danger and success tokens come with it; nothing existing changed.
+
 ### Removed
 
 - **The menu-entry dialog has no template picker.** A menu entry carries no
