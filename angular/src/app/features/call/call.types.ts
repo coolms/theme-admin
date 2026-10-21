@@ -40,10 +40,28 @@ export interface CallOriginateRequest {
     readonly callerId?: string;
 }
 
-/** Click-to-dial response: the created channel id. */
+/**
+ * Click-to-dial response. Answers at once: the platform keeps placing the call until `windowEndsAt`, and says how it
+ * ended on `calls.{agentUuid}` (`call.ringing` placed it, `call.not_placed` gave up, with a `reason`). A second ask for
+ * the same number while it is placing answers the SAME `callId`.
+ */
 export interface CallOriginateDto {
+    readonly callId?: string;
     readonly channelId?: string | null;
+    /** True only when the call is already up; normally false -- not a failure. */
     readonly originated?: boolean;
+    /** `placing` normally; a joined call's state otherwise; `not_placed` with a `reason`. */
+    readonly state?: string;
+    /** ISO-8601: when the platform stops trying. */
+    readonly windowEndsAt?: string | null;
+    readonly reason?: string | null;
+}
+
+/** `POST /call/{callId}/cancel`: the call stopped (or already stopped). */
+export interface CallCancelDto {
+    readonly callId: string;
+    readonly state: string;
+    readonly reason: string | null;
 }
 
 /** The browser softphone connection descriptor (`GET /call/webphone/config`). */
