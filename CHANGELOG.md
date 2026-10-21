@@ -8,6 +8,14 @@ major number means here.
 
 ## Unreleased
 
+### Removed
+
+- **The menu-entry dialog has no template picker.** A menu entry carries no
+  template any more: where a page lives picks its frame, and what kind of page
+  it is picks how its content is drawn. The picker component, the theme
+  template listing call it used, and the `template` field of the menu-entry
+  types are gone. The theme page's own template listing is unchanged.
+
 ### Security
 
 - **Dependencies updated to clear published advisories.** Angular moves to
