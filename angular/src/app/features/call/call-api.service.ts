@@ -11,6 +11,7 @@ import {
     type CallRecordDto,
     type CallOriginateRequest,
     type CallOriginateDto,
+    type CallCancelDto,
     type SipCallIceServersDto,
     type WebPhoneConfigDto,
 } from './call.types';
@@ -97,6 +98,15 @@ export class CallApiService {
     originateCall(body: CallOriginateRequest): Observable<CallOriginateDto> {
         const url = `${this.manifest.apiBase}/call/originate`;
         return this.http.post<CallOriginateDto>(url, body);
+    }
+
+    /**
+     * Stops placing an outbound call of the caller's own. 200 when stopped or already stopped (idempotent); 404 not
+     * theirs; 409 already placed -- hang it up instead.
+     */
+    cancelCall(callId: string): Observable<CallCancelDto> {
+        const url = `${this.manifest.apiBase}/call/${encodeURIComponent(callId)}/cancel`;
+        return this.http.post<CallCancelDto>(url, null);
     }
 
     /**

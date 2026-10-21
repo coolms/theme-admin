@@ -8,6 +8,14 @@ major number means here.
 
 ## Unreleased
 
+### Added
+
+- **The dial pad shows the call while the platform places it.** Placing the call to a number now shows it with its
+  elapsed time and a Cancel. If the platform gives up, the pad says "Call not placed — retry?" with the reason, and
+  Retry asks again. Retry only ever runs on the person's click. Clicking Call while a call is placing shows that
+  attempt and sends nothing, and closing the pad keeps it, so reopening shows it again. Needs the backend that
+  answers `POST /call/originate` with `placing` and adds `POST /call/{callId}/cancel`.
+
 ### Fixed
 
 - **The toast's count badge reads.** The design tokens move from 0.1.0 to 0.3.0. 0.3.0 adds `accent-contrast`, the
