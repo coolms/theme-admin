@@ -10,6 +10,8 @@ major number means here.
 
 ### Changed
 
+- The admin suite names every failing spec: a `failed-specs` reporter in `karma.conf.js` prints each one by suite
+  and name with its messages, and CI prints them and annotates each; a run without that list is UNEVALUABLE.
 - CI runs on the Node the served admin is built with (24.18.0, `angular/.nvmrc`), not the latest Node 22; the
   admin suite checks its Node against that file before it runs.
 

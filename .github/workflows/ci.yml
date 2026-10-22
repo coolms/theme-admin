@@ -260,8 +260,15 @@ jobs:
           failed="$(grep -oE '\(([0-9]+) FAILED\)' <<< "$line" | grep -oE '[0-9]+' || true)"
           skipped="$(grep -oE 'skipped ([0-9]+)' <<< "$line" | grep -oE '[0-9]+' || true)"
           echo "Admin suite: executed ${ran:-0} of ${total:-0} specs, ${failed:-0} failed, ${skipped:-0} skipped (karma exit $rc)"
+          # The failing specs by name (karma.conf.js's failed-specs reporter), not only the progress line's count.
+          names="$(tr '\r' '\n' < "$RUNNER_TEMP/karma.log" | sed -n '/^FAILED SPECS: [0-9]*$/,$p')"
+          if [ -z "$names" ]; then echo "::error::UNEVALUABLE: the failed-specs reporter printed nothing -- the failing specs cannot be named"; exit 2; fi
+          printf '%s\n' "$names"
+          listed="$(grep -c '^FAILED SPEC: ' <<< "$names" || true)"
+          while IFS= read -r spec; do echo "::error title=Failing spec::${spec#FAILED SPEC: }"; done < <(grep '^FAILED SPEC: ' <<< "$names")
           if [ -z "$ran" ] || [ "$ran" = 0 ]; then echo "::error::UNEVALUABLE: the suite ran no spec"; exit 2; fi
-          if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed (karma exit $rc)"; exit 1; fi
+          if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed, $listed named above (karma exit $rc)"; exit 1; fi
+          if [ "$listed" != 0 ]; then echo "::error::FOUND: the reporter names $listed failing spec(s) the progress line did not count"; exit 1; fi
           if [ "$ran" != "$total" ]; then echo "::error::FOUND: $ran of $total specs executed -- ${skipped:-some} were skipped"; exit 1; fi
           echo "CLEAR: $ran of $total specs executed, none failed"
 
