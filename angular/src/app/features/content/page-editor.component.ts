@@ -39,6 +39,7 @@ import { EditorPanelsService, EditorPanelDto } from './editor-panels.service';
 import { PageSizeService, PageSizeOption } from './page-size.service';
 import { EditorCollabService } from './editor-collab.service';
 import { EditorPresenceBarComponent } from './editor-presence-bar.component';
+import { DrawnByNoticeComponent, type DrawnByDto } from './drawn-by-notice.component';
 import { AppConfigState } from '@coolms/core-angular';
 
 /**
@@ -79,7 +80,7 @@ type RailTab = string;
     // EditorCollabService is per-editor: its ngOnDestroy unsubscribes the
     // doc presence channel when this dialog closes.
     providers: [EditorCollabService],
-    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent],
+    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent, DrawnByNoticeComponent],
     template: `
         <div class="page-editor" [class.page-editor--fullscreen]="fullscreen()" [class.page-editor--landing]="landingMode()">
 
@@ -307,6 +308,9 @@ type RailTab = string;
                 <!-- -- Editor body + right side-rail --------------------- -->
                 <div class="page-editor__main">
                     <div class="page-editor__body">
+                        <!-- Which frame draws this page, and a warning when an edit would not show (decided
+                             2026-10-20). The block editor reads it with the sections, for every page. -->
+                        <app-drawn-by-notice [drawing]="drawnBy()" />
                         <!-- Landing pages render their blocks, not the prose body —
                              so the section builder IS the main canvas (the rich-text
                              editor is dropped). landingMode is seeded from the page's
@@ -340,7 +344,8 @@ type RailTab = string;
                         }
                         @if (postPath()) {
                             <app-block-editor class="page-editor__post" [path]="postPath()" [embedded]="true"
-                                              (activeChange)="landingMode.set($event)" />
+                                              (activeChange)="landingMode.set($event)"
+                                              (drawnByChange)="drawnBy.set($event)" />
                         }
                     </div>
 
@@ -790,6 +795,8 @@ export class PageEditorComponent implements OnInit {
      * page whose `extras.contentType` was never stamped.
      */
     readonly landingMode   = signal(false);
+    /** The page's "drawn by", as the block editor read it with the sections; null until read, or when unknown. */
+    readonly drawnBy       = signal<DrawnByDto | null>(null);
 
     /** Configured page kinds for the Type picker. */
     readonly pageTypes = signal<PageTypeDto[]>([]);
