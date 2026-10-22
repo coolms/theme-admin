@@ -8,6 +8,11 @@ major number means here.
 
 ## Unreleased
 
+### Changed
+
+- CI runs on the Node the served admin is built with (24.18.0, `angular/.nvmrc`), not the latest Node 22; the
+  admin suite checks its Node against that file before it runs.
+
 ### Added
 
 - **The page editor says which frame draws the page.** Above the body, every page shows its frame, where that frame
