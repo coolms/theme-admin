@@ -10,6 +10,12 @@ major number means here.
 
 ### Added
 
+- **The page editor says which frame draws the page.** Above the body, every page shows its frame, where that frame
+  was chosen (set on the page, inherited from a folder, the section's own, or the theme's default), and what renders
+  its content. When an edit would not show, the line becomes a warning: the frame does not draw the page's content,
+  or nothing renders its content type. The warning depends on whether the frame actually draws the content, not
+  just on whether a frame is named.
+
 - **The dial pad shows the call while the platform places it.** Placing the call to a number now shows it with its
   elapsed time and a Cancel. If the platform gives up, the pad says "Call not placed — retry?" with the reason, and
   Retry asks again. Retry only ever runs on the person's click. Clicking Call while a call is placing shows that

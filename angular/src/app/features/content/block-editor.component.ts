@@ -29,6 +29,7 @@ import {
     OrderedSaveFn,
 } from '@coolms/ui-angular';
 import { ProcessCaptureComponent } from './process-capture.component';
+import type { DrawnByDto } from './drawn-by-notice.component';
 
 /**
  * Landing-page section builder -- the admin authoring surface
@@ -211,6 +212,12 @@ export class BlockEditorComponent {
      * body editor and let the block list become the scrollable main area.
      */
     readonly activeChange = output<boolean>();
+    /**
+     * Emitted on load with the page's "drawn by" (which frame draws it, and whether that frame draws its content), or
+     * null when the read failed or nothing that renders answered. The page editor shows it above the body, for every
+     * page, landing or not.
+     */
+    readonly drawnByChange = output<DrawnByDto | null>();
 
     /** The generic ordered-list substrate this component drives. Null until the
      *  page is a landing page (it lives inside the `@if`). */
@@ -423,6 +430,7 @@ export class BlockEditorComponent {
                     this.blocks.set((stored ?? dto.blocks ?? []).map(b => this.cloneBlock(b)));
                     this.builder()?.markPristine();
                     this.activeChange.emit(this.isLanding());
+                    this.drawnByChange.emit(dto.drawnBy ?? null);
                     this.cdr.markForCheck();
                 },
                 error: () => {
@@ -432,6 +440,7 @@ export class BlockEditorComponent {
                     this.blocks.set([]);
                     this.builder()?.markPristine();
                     this.activeChange.emit(false);
+                    this.drawnByChange.emit(null);
                     this.cdr.markForCheck();
                 },
             });

@@ -1,3 +1,4 @@
+import type { DrawnByDto } from './drawn-by-notice.component';
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
@@ -49,6 +50,8 @@ export interface LandingBlocksDto {
     /** The page's content-type discriminator (`'landing'` enables the editor). */
     readonly contentType?: string | null;
     readonly path?: string | null;
+    /** Which pipeline and which frame draw the page, as the module that renders answers it; null when it cannot. */
+    readonly drawnBy?: DrawnByDto | null;
 }
 
 /**
