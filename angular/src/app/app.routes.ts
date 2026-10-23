@@ -2,6 +2,7 @@ import { type Routes } from '@angular/router';
 import { authGuard, consoleChildren, loginPageGuard, LoginComponent } from '@coolms/core-angular';
 import { AdminLayoutComponent } from './shell/admin-layout.component';
 import { CONSOLE_ENTRIES } from './console.registry';
+import { MODULE_SETTINGS_ROUTE } from './features/settings/settings.routes';
 
 export const routes: Routes = [
     // Redirect authenticated callers away from /login so a stale tab
@@ -42,6 +43,9 @@ export const routes: Routes = [
                         .then(m => m.UiKitPageComponent),
                 data: { activeNav: '/ui-kit' },
             },
+            // A module's own settings, `/admin/{module}/settings[/{key}]`, AHEAD of the modules' mounts so no
+            // module's catch-all child can claim `settings`. The route chooses the scope (module), never the setting.
+            MODULE_SETTINGS_ROUTE,
             // The modules' mounts, from their console entries (console@1): one
             // child per mount, lazy, activated by the manifest. Everything
             // above this line is the shell's own or not yet moved.
