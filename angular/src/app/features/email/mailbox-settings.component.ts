@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import {
@@ -21,10 +20,9 @@ import { MailboxConnectionSectionComponent } from './mailbox-connection-section.
 import { MailboxDetailsSectionComponent } from './mailbox-details-section.component';
 import { MailboxInboundSectionComponent } from './mailbox-inbound-section.component';
 import { afterAccess } from './mailbox-section-save';
-import { CrumbNamesService } from '../../shell/crumb-names.service';
 
 /** A pane of a mailbox's settings: its id in the URL, its title and help. */
-interface MailboxPane {
+export interface MailboxPane {
     readonly id: 'general' | 'connection' | 'sync' | 'rules' | 'access' | 'delete';
     readonly title: string;
     readonly help: string;
@@ -49,8 +47,13 @@ interface PaneBody {
 }
 
 /**
- * One mailbox's settings, in the settings shell's object scope (`/email/mailboxes/{id}/settings/{pane}`): the panes
- * on the left, one at a time on the right, each saved on its own. The wizard stays for adding a mailbox.
+ * One mailbox's settings, in the settings shell's object scope: the panes on the left, one at a time on the right,
+ * each saved on its own. The wizard stays for adding a mailbox.
+ *
+ * It does not read the URL: its host does (decided 2026-10-24: an object's settings open in a modal over the
+ * object's own page, `/email;mailbox={id}?settings={pane}`). The host gives the mailbox and the pane, and is told
+ * when another pane is picked (`replace` when an unknown one fell back to the first), and when the mailbox was
+ * deleted.
  *
  * Each pane saves only its own fields, naming the version of the settings it was read at (If-Match); a save's answer
  * is the page's new read, laid under what another pane holds unsaved. What the caller may change is the server's
@@ -58,7 +61,7 @@ interface PaneBody {
  * no Delete. Access is a shared mailbox's; Delete is last, and asks.
  */
 @Component({
-    selector: 'app-mailbox-settings-page',
+    selector: 'app-mailbox-settings',
     standalone: true,
     imports: [
         CmsSettingsShellComponent, CmsSettingsPaneComponent,
@@ -71,7 +74,6 @@ interface PaneBody {
             [title]="title()"
             icon="envelope"
             scopeLine="Mailbox settings"
-            [backLink]="{ label: 'Mail', routerLink: ['/email', { mailbox: id() }] }"
             [sections]="sections()"
             [selectedId]="pane()"
             listLabel="Mailbox settings"
@@ -163,13 +165,10 @@ interface PaneBody {
     `,
     styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
 })
-export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
-    private readonly route = inject(ActivatedRoute);
+export class MailboxSettingsComponent implements HasUnsavedChanges {
     private readonly email = inject(EmailService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
-    private readonly router = inject(Router);
-    private readonly crumbs = inject(CrumbNamesService);
     private readonly confirm = inject(ConfirmDialogService);
     private readonly toast = inject(ToastService);
     private readonly elevation = inject(ElevationService);
@@ -182,9 +181,18 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
         'email.mailbox.update': 'denied',
         'email.mailbox.authorize': 'denied',
     });
-    readonly id = signal('');
-    /** The pane open, from the URL. */
-    readonly pane = signal<MailboxPane['id']>('general');
+    /** The mailbox, as the host's URL names it. */
+    readonly mailboxId = input.required<string>();
+    /** The pane the host's URL names; null or unknown is the first. */
+    readonly paneId = input<string | null>(null);
+    /** Another pane was picked; `replace` when an unknown pane fell back to the first (the URL is corrected, not added to). */
+    readonly paneChange = output<{ readonly pane: MailboxPane['id']; readonly replace: boolean }>();
+    /** The mailbox was deleted: the host closes its settings. */
+    readonly deleted = output<void>();
+
+    readonly id = computed((): string => this.mailboxId());
+    /** The pane open: the host's, when it is one of the panes. */
+    readonly pane = computed((): MailboxPane['id'] => PANES.find(p => p.id === this.paneId())?.id ?? 'general');
 
     /** The open pane's section, whatever kind it is. */
     readonly body = viewChild<PaneBody>('paneBody');
@@ -226,32 +234,31 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
         // Closing the tab or reloading with a dirty pane asks the browser's own question.
         const stop = inject(UnsavedChangesService).watch(this, () => this.dirty());
         inject(DestroyRef).onDestroy(stop);
-    }
-
-    ngOnInit(): void {
-        this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
-            const id = params.get('id') ?? '';
-            const pane = params.get('pane');
-            const known = PANES.find(p => p.id === pane)?.id;
-            this.pane.set(known ?? 'general');
-            if (id !== this.id()) {
-                this.id.set(id);
-                this.load();
-            }
-            if (null !== pane && undefined === known) {
-                void this.router.navigate(['/email/mailboxes', id, 'settings'], { replaceUrl: true });
+        // A new mailbox is read when the host names one; a pane change reads nothing.
+        effect(() => {
+            const id = this.mailboxId();
+            untracked(() => this.load(id));
+        });
+        // A pane the host named that is not one of the panes: the URL is corrected to the first.
+        effect(() => {
+            const asked = this.paneId();
+            if (null !== asked && undefined === PANES.find(p => p.id === asked)) {
+                untracked(() => this.paneChange.emit({ pane: 'general', replace: true }));
             }
         });
     }
 
-    /** The open pane has edits not yet saved (the unsaved-changes guard asks before the route moves). */
+    /** The open pane has edits not yet saved (the host asks before it closes or changes pane). */
     dirty(): boolean {
         return this.body()?.dirty() ?? false;
     }
 
-    /** Pick a pane: only the pane and the URL change. */
+    /** Pick a pane: the host changes the URL, and the pane follows it. */
     open(pane: string): void {
-        void this.router.navigate(['/email/mailboxes', this.id(), 'settings', pane]);
+        const known = PANES.find(p => p.id === pane)?.id;
+        if (undefined !== known) {
+            this.paneChange.emit({ pane: known, replace: false });
+        }
     }
 
     save(): void {
@@ -260,8 +267,8 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
 
     /**
      * Deletes the mailbox after the person confirms it -- CoolMS's copies of its mail, its rules and its settings go
-     * with it; the account at the mail provider is not touched -- and returns to Mail. Asks for an elevated session
-     * first where the server answers "elevate".
+     * with it; the account at the mail provider is not touched -- and tells the host, which closes the settings.
+     * Asks for an elevated session first where the server answers "elevate".
      */
     remove(mailbox: EmailMailboxDto): void {
         const name = mailbox.label || mailbox.emailAddress || 'this mailbox';
@@ -278,7 +285,7 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
                 this.email.deleteMailbox(mailbox.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: () => {
                         this.toast.success('Mailbox deleted');
-                        void this.router.navigate(['/email']);
+                        this.deleted.emit();
                     },
                     error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
                 });
@@ -287,8 +294,7 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
     }
 
     /** The mailbox and what the caller may do to it, read together; a reload starts every pane over. */
-    load(): void {
-        const id = this.id();
+    load(id: string = this.id()): void {
         this.error.set(null);
         forkJoin({ mailbox: this.email.getMailbox(id), access: this.email.mailboxCapabilities(id) })
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -297,9 +303,6 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
                     this.access.set(access);
                     this.resetToken.update(n => n + 1);
                     this.mailbox.set(mailbox);
-                    // The id in this page's path is named by the mailbox, and leads back to it on the Email page.
-                    this.crumbs.name(`/email/mailboxes/${id}`, mailbox.label || mailbox.emailAddress || 'Mailbox',
-                        ['/email', { mailbox: id }]);
                 },
                 error: (err: unknown) => this.error.set(this.errors.humanize(err)),
             });

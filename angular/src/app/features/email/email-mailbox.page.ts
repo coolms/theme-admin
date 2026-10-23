@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, catchError, debounceTime, forkJoin, map, of, switchMap } from 'rxjs';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -36,6 +36,7 @@ import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
+import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import {
     EmailAttachmentDto,
     EmailFolderDto,
@@ -105,6 +106,8 @@ interface ComposeDraft {
     selector: 'app-email-mailbox-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    // A mailbox's settings: a modal over this page, kept in step with its URL.
+    providers: [MailboxSettingsModal],
     imports: [FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe, CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent],
     template: `
         <div class="mbx">
@@ -1030,8 +1033,16 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly naviGraph = inject(NaviGraphService);
     private readonly contextMenu = inject(ContextMenuService);
     private readonly crumbs = inject(CrumbNamesService);
+    private readonly settingsModal = inject(MailboxSettingsModal);
+    /**
+     * Each navigation that ends on this page. The breadcrumb's names are cleared when ANY navigation starts, and this
+     * page navigates within itself (its mailbox settings open, change pane and close by the URL), so its crumb is
+     * named again after each one, not only when the selected mailbox changes.
+     */
+    private readonly navigated = toSignal(this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)));
     /** Home / Email / {mailbox}: the selected mailbox is the crumb after the page's own. */
     private readonly mailboxCrumb = effect(() => {
+        this.navigated();
         const id = this.selectedMailboxId();
         const mb = id === null ? undefined : this.mailboxes().find(m => m.id === id);
         this.crumbs.setTail(mb ? (mb.label || mb.emailAddress || null) : null);
@@ -1405,8 +1416,10 @@ export class EmailMailboxPageComponent implements OnInit {
         ).subscribe(list => this.contactOptions.set(this.toRecipientOptions(list)));
 
         this.consumeOAuthReturn();
-        // Back from a mailbox's settings (`/email;mailbox=<id>`): that mailbox is the one to open.
+        // A mailbox named in the URL (`/email;mailbox=<id>`, and with `?settings=` its settings open over it): that
+        // mailbox is the one to open.
         this.pendingSelectId ??= this.route.snapshot.paramMap.get('mailbox');
+        this.settingsModal.attach();
         const pattern = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.graphBySlug;
         if (pattern) {
             this.naviGraph.loadTree(pattern.replace('{slug}', this.toolbarTree))
@@ -2427,11 +2440,14 @@ export class EmailMailboxPageComponent implements OnInit {
         this.mailboxEditorOpen.set(true);
     }
 
-    /** A mailbox's settings are a page of their own (decided 2026-10-15); this wizard only adds a mailbox. */
+    /**
+     * A mailbox's settings open in a modal over this page (decided 2026-10-24), named in the URL so a link opens
+     * them and Back closes them; the wizard only adds a mailbox.
+     */
     openMailboxSettings(): void {
         const id = this.selectedMailboxId();
         if (id) {
-            void this.router.navigate(['/email/mailboxes', id, 'settings']);
+            this.settingsModal.open(id);
         }
     }
 
