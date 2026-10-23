@@ -6,7 +6,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxWriteRequest } from './email.types';
-import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
+import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
  * General: a mailbox's own name and address, saved on their own at the version they were read, sending only what
@@ -18,39 +18,27 @@ import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
     imports: [FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <section class="mbs-section" aria-labelledby="mbs-details-title">
-            <header class="mbs-section__head">
-                <h2 id="mbs-details-title" class="mbs-section__title">General</h2>
-            </header>
-            <fieldset class="mbs-fields" [disabled]="access() === 'denied' || saving()">
-                <div class="mbs-group">
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Name</span>
-                        <input type="text" name="label" [ngModel]="label()" (ngModelChange)="label.set($event)" />
-                    </label>
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Address</span>
-                        <input type="email" name="emailAddress" [ngModel]="address()" (ngModelChange)="address.set($event)" />
-                    </label>
-                </div>
-            </fieldset>
-            @if (access() !== 'denied' && versioned()) {
-                <footer class="mbs-section__foot">
-                    <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" [disabled]="!dirty() || saving()" (click)="discard()">
-                        Discard
-                    </button>
-                    <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" [disabled]="!dirty() || saving()" (click)="save()">
-                        @if (access() === 'elevate') { <i class="bi bi-lock"></i> }
-                        Save
-                    </button>
-                </footer>
-            }
-        </section>
+        @if (access() === 'denied') {
+            <p class="cms-field-hint mb-3">Only the mailbox's owners can change these settings.</p>
+        } @else if (!versioned()) {
+            <p class="cms-field-hint mb-3">These settings were read without a version, so they cannot be saved here.</p>
+        }
+        <fieldset class="border-0 p-0 m-0" [disabled]="access() === 'denied' || saving()">
+            <div class="row g-3">
+                <label class="col-12 col-md-6">
+                    <span class="cms-label">Name</span>
+                    <input type="text" class="cms-input w-100" name="label" [ngModel]="label()" (ngModelChange)="label.set($event)" />
+                </label>
+                <label class="col-12 col-md-6">
+                    <span class="cms-label">Address</span>
+                    <input type="email" class="cms-input w-100" name="emailAddress" [ngModel]="address()" (ngModelChange)="address.set($event)" />
+                </label>
+            </div>
+        </fieldset>
     `,
-    styleUrl: './mailbox-section.css',
 })
 export class MailboxDetailsSectionComponent {
-    readonly mailbox = input.required<EmailMailboxDto>();
+    readonly mailbox = input<EmailMailboxDto>(NO_MAILBOX);
     readonly access = input<CapabilityState>('denied');
     /** Changes on every Reload of the page: the fields start over from the read. */
     readonly reset = input(0);
@@ -80,6 +68,8 @@ export class MailboxDetailsSectionComponent {
         }
         return patch;
     });
+    /** Whether this pane can be saved at all: the caller may change it, and it was read with a version. */
+    readonly editable = computed(() => this.access() !== 'denied' && this.versioned());
     readonly dirty = computed(() => Object.keys(this.patch()).length > 0);
 
     /** The read the fields were last laid over, and the reload it was taken at. */

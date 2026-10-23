@@ -7,7 +7,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest } from './email.types';
 import { HttpErrorResponse } from '@angular/common/http';
-import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
+import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /** The connection fields this section edits, as they are read and as they are saved. */
 interface ConnectionDraft {
@@ -57,6 +57,23 @@ export function backfillChoiceOf(months: number | null): BackfillChoice {
     if (months === 0) return 'none';
     if (months < 0) return 'all';
     return 'months';
+}
+
+/** The two panes the connection settings are shown in: how it connects, and how it syncs. */
+export type ConnectionPart = 'connection' | 'sync';
+
+/** The fields the Sync pane edits; every other field (and the password) is the Connection pane's. */
+const SYNC_KEYS: ReadonlyArray<string> = ['enabled', 'backfillDepthMonths'];
+
+/** The part of a section patch that a pane saves: its own fields only, so two panes never write each other's. */
+export function partPatch(patch: MailboxWriteRequest, part: ConnectionPart): MailboxWriteRequest {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(patch)) {
+        if (SYNC_KEYS.includes(key) === ('sync' === part)) {
+            out[key] = value;
+        }
+    }
+    return out as MailboxWriteRequest;
 }
 
 /** A connection test's outcome for one protocol, in words. */
@@ -118,99 +135,111 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
     imports: [FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <section class="mbs-section" aria-labelledby="mbs-connection-title">
-            <header class="mbs-section__head">
-                <h2 id="mbs-connection-title" class="mbs-section__title">Connection</h2>
-                <span class="mbs-status" [class]="'mbs-status mbs-status--' + status().tone">{{ status().text }}</span>
-            </header>
+        @if (readOnly()) {
+            <p class="cms-field-hint mb-3">Only the mailbox's owners can change these settings.</p>
+        } @else if (!versioned()) {
+            <p class="cms-field-hint mb-3">These settings were read without a version, so they cannot be saved here.</p>
+        }
 
-            <fieldset class="mbs-fields" [disabled]="readOnly() || saving()">
-                <div class="mbs-group">
-                    <h3 class="mbs-group__title">Incoming (IMAP)</h3>
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Server</span>
-                        <input type="text" name="imapHost" autocomplete="off"
+        @if (part() === 'connection') {
+            <p class="mb-3">
+                <span class="cms-badge"
+                      [class.text-success]="'ok' === status().tone"
+                      [class.text-warning]="'warn' === status().tone"
+                      [class.text-danger]="'stop' === status().tone">{{ status().text }}</span>
+            </p>
+        }
+
+        <fieldset class="border-0 p-0 m-0" [disabled]="readOnly() || saving()">
+            @if (part() === 'connection') {
+                <h3 class="cms-section-title px-0">Incoming (IMAP)</h3>
+                <div class="row g-3 mb-4">
+                    <label class="col-12 col-md-6">
+                        <span class="cms-label">Server</span>
+                        <input type="text" class="cms-input w-100" name="imapHost" autocomplete="off"
                                [ngModel]="draft().imapHost" (ngModelChange)="set('imapHost', $event)" />
                     </label>
-                    <label class="mbs-field">
-                        <span>Port</span>
-                        <input type="number" name="imapPort" min="1" max="65535"
+                    <label class="col-6 col-md-2">
+                        <span class="cms-label">Port</span>
+                        <input type="number" class="cms-input w-100" name="imapPort" min="1" max="65535"
                                [ngModel]="draft().imapPort" (ngModelChange)="set('imapPort', $event)" />
                     </label>
-                    <label class="mbs-field">
-                        <span>Security</span>
-                        <select name="imapSecurity" [ngModel]="draft().imapSecurity" (ngModelChange)="set('imapSecurity', $event)">
+                    <label class="col-6 col-md-4">
+                        <span class="cms-label">Security</span>
+                        <select class="cms-select w-100" name="imapSecurity" [ngModel]="draft().imapSecurity" (ngModelChange)="set('imapSecurity', $event)">
                             @for (s of securities; track s.value) { <option [value]="s.value">{{ s.label }}</option> }
                         </select>
                     </label>
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Username</span>
-                        <input type="text" name="imapUsername" autocomplete="off" [readonly]="usernameIsAddress()"
+                    <label class="col-12 col-md-6">
+                        <span class="cms-label">Username</span>
+                        <input type="text" class="cms-input w-100" name="imapUsername" autocomplete="off" [readonly]="usernameIsAddress()"
                                [ngModel]="draft().imapUsername" (ngModelChange)="set('imapUsername', $event)" />
                     </label>
                 </div>
 
-                <div class="mbs-group">
-                    <h3 class="mbs-group__title">Outgoing (SMTP)</h3>
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Server</span>
-                        <input type="text" name="smtpHost" autocomplete="off"
+                <h3 class="cms-section-title px-0">Outgoing (SMTP)</h3>
+                <div class="row g-3 mb-4">
+                    <label class="col-12 col-md-6">
+                        <span class="cms-label">Server</span>
+                        <input type="text" class="cms-input w-100" name="smtpHost" autocomplete="off"
                                [ngModel]="draft().smtpHost" (ngModelChange)="set('smtpHost', $event)" />
                     </label>
-                    <label class="mbs-field">
-                        <span>Port</span>
-                        <input type="number" name="smtpPort" min="1" max="65535"
+                    <label class="col-6 col-md-2">
+                        <span class="cms-label">Port</span>
+                        <input type="number" class="cms-input w-100" name="smtpPort" min="1" max="65535"
                                [ngModel]="draft().smtpPort" (ngModelChange)="set('smtpPort', $event)" />
                     </label>
-                    <label class="mbs-field">
-                        <span>Security</span>
-                        <select name="smtpSecurity" [ngModel]="draft().smtpSecurity" (ngModelChange)="set('smtpSecurity', $event)">
+                    <label class="col-6 col-md-4">
+                        <span class="cms-label">Security</span>
+                        <select class="cms-select w-100" name="smtpSecurity" [ngModel]="draft().smtpSecurity" (ngModelChange)="set('smtpSecurity', $event)">
                             @for (s of securities; track s.value) { <option [value]="s.value">{{ s.label }}</option> }
                         </select>
                     </label>
-                    <label class="mbs-field mbs-field--wide">
-                        <span>Username</span>
-                        <input type="text" name="smtpUsername" autocomplete="off" [readonly]="usernameIsAddress()"
+                    <label class="col-12 col-md-6">
+                        <span class="cms-label">Username</span>
+                        <input type="text" class="cms-input w-100" name="smtpUsername" autocomplete="off" [readonly]="usernameIsAddress()"
                                [ngModel]="draft().smtpUsername" (ngModelChange)="set('smtpUsername', $event)" />
                     </label>
                 </div>
                 @if (usernameIsAddress() && !readOnly()) {
-                    <p class="mbs-note">Your mailbox signs in as its address. An administrator can set another sign-in name.</p>
+                    <p class="cms-field-hint mb-3">Your mailbox signs in as its address. An administrator can set another sign-in name.</p>
                 }
 
-                <div class="mbs-group">
-                    <h3 class="mbs-group__title">Sign-in</h3>
-                    @if (mailbox().authMethod === 'oauth') {
-                        <p class="mbs-note">
+                <h3 class="cms-section-title px-0">Sign-in</h3>
+                @if (mailbox().authMethod === 'oauth') {
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span>
                             Signs in through {{ mailbox().oauthProvider || 'its provider' }}:
                             {{ mailbox().oauthConnected ? 'connected' : 'not connected' }}.
-                        </p>
+                        </span>
                         @if (authorizeAccess() !== 'denied') {
-                            <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" (click)="reconnect()">
+                            <button type="button" class="cms-btn cms-btn-sm" (click)="reconnect()">
                                 @if (authorizeAccess() === 'elevate') { <i class="bi bi-lock"></i> }
                                 {{ mailbox().oauthConnected ? 'Reconnect' : 'Connect' }}
                             </button>
                         }
-                    } @else {
-                        <label class="mbs-field mbs-field--wide">
-                            <span>Password</span>
-                            <input type="password" name="password" autocomplete="new-password"
+                    </div>
+                } @else {
+                    <div class="row g-3 mb-3">
+                        <label class="col-12 col-md-6">
+                            <span class="cms-label">Password</span>
+                            <input type="password" class="cms-input w-100" name="password" autocomplete="new-password"
                                    [placeholder]="mailbox().hasCredential ? 'Stored -- leave empty to keep it' : 'None stored'"
                                    [ngModel]="password()" (ngModelChange)="password.set($event)" />
                         </label>
-                    }
+                    </div>
+                }
+            } @else {
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="mbs-enabled" name="enabled"
+                           [ngModel]="draft().enabled" (ngModelChange)="set('enabled', $event)" />
+                    <label class="form-check-label" for="mbs-enabled">Fetch new mail</label>
                 </div>
-
-                <div class="mbs-group">
-                    <h3 class="mbs-group__title">Sync</h3>
-                    <label class="mbs-check">
-                        <input type="checkbox" name="enabled" [ngModel]="draft().enabled" (ngModelChange)="set('enabled', $event)" />
-                        Fetch new mail
-                    </label>
-                    @if (hasBackfillDepth()) {
-                        <label class="mbs-field">
-                            <span>Past mail to fetch</span>
-                            <select name="backfillChoice" [ngModel]="backfillChoice()" (ngModelChange)="chooseBackfill($event)">
+                @if (hasBackfillDepth()) {
+                    <div class="row g-3">
+                        <label class="col-12 col-md-6">
+                            <span class="cms-label">Past mail to fetch</span>
+                            <select class="cms-select w-100" name="backfillChoice" [ngModel]="backfillChoice()" (ngModelChange)="chooseBackfill($event)">
                                 <option value="default">The installation's default</option>
                                 <option value="none">None</option>
                                 <option value="months">The last months, as set</option>
@@ -218,61 +247,41 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                             </select>
                         </label>
                         @if (backfillChoice() === 'months') {
-                            <label class="mbs-field">
-                                <span>Months (1-600)</span>
-                                <input type="number" name="backfillDepthMonths" min="1" max="600"
+                            <label class="col-6 col-md-3">
+                                <span class="cms-label">Months (1-600)</span>
+                                <input type="number" class="cms-input w-100" name="backfillDepthMonths" min="1" max="600"
                                        [ngModel]="draft().backfillDepthMonths" (ngModelChange)="set('backfillDepthMonths', $event)" />
                             </label>
                         }
-                    }
-                </div>
-            </fieldset>
-
-            @if (!readOnly()) {
-                <div class="mbs-test">
-                    <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" [disabled]="testing() || saving()" (click)="test()">
-                        @if (access() === 'elevate') { <i class="bi bi-lock"></i> }
-                        {{ testing() ? 'Testing...' : 'Test connection' }}
-                    </button>
-                    <span class="mbs-note">Signs in with what is typed here; nothing is saved.</span>
-                    @if (testResult(); as r) {
-                        <ul class="mbs-test__results">
-                            <li [class.mbs-test__ok]="r.imap?.ok" [class.mbs-test__fail]="r.imap && !r.imap.ok">Incoming (IMAP): {{ outcomeText(r.imap) }}</li>
-                            <li [class.mbs-test__ok]="r.smtp?.ok" [class.mbs-test__fail]="r.smtp && !r.smtp.ok">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
-                        </ul>
-                    }
-                    @if (testRefused(); as why) { <p class="mbs-note mbs-test__fail" role="alert">{{ why }}</p> }
-                </div>
-            }
-
-            <footer class="mbs-section__foot">
-                @if (readOnly()) {
-                    <p class="mbs-note">Only the mailbox's owners can change these settings.</p>
-                } @else if (!versioned()) {
-                    <p class="mbs-note">These settings were read without a version, so they cannot be saved here.</p>
-                } @else {
-                    <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" [disabled]="!dirty() || saving()" (click)="discard()">
-                        Discard
-                    </button>
-                    <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" [disabled]="!dirty() || saving()" (click)="save()">
-                        @if (access() === 'elevate') { <i class="bi bi-lock"></i> }
-                        Save connection
-                    </button>
+                    </div>
                 }
-            </footer>
-        </section>
+            }
+        </fieldset>
+
+        @if (part() === 'connection' && !readOnly()) {
+            <!-- The test's button is the pane's (its footer); what it found is said here. -->
+            <p class="cms-field-hint mt-3">Test connection signs in with what is typed here; nothing is saved.</p>
+            @if (testResult(); as r) {
+                <ul class="list-unstyled mb-0">
+                    <li [class.text-success]="r.imap?.ok" [class.text-danger]="r.imap && !r.imap.ok">Incoming (IMAP): {{ outcomeText(r.imap) }}</li>
+                    <li [class.text-success]="r.smtp?.ok" [class.text-danger]="r.smtp && !r.smtp.ok">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
+                </ul>
+            }
+            @if (testRefused(); as why) { <p class="text-danger mb-0" role="alert">{{ why }}</p> }
+        }
     `,
-    styleUrl: './mailbox-section.css',
 })
 export class MailboxConnectionSectionComponent {
     /** The mailbox as read, with the version this section saves against. */
-    readonly mailbox = input.required<EmailMailboxDto>();
+    readonly mailbox = input<EmailMailboxDto>(NO_MAILBOX);
     /** The server's answer for `email.mailbox.update`. */
     readonly access = input<CapabilityState>('denied');
     /** The server's answer for `email.mailbox.authorize`. */
     readonly authorizeAccess = input<CapabilityState>('denied');
     /** Changes on every Reload of the page: the draft starts over from the read. */
     readonly reset = input(0);
+    /** Which pane this instance is: the servers and the sign-in, or the sync. Each saves only its own fields. */
+    readonly part = input<ConnectionPart>('connection');
 
     /** The settings as saved: the page takes the answer as its new read (and its new version). */
     readonly saved = output<EmailMailboxDto>();
@@ -309,7 +318,11 @@ export class MailboxConnectionSectionComponent {
     readonly testRefused = signal<string | null>(null);
     readonly outcomeText = testOutcomeText;
     readonly status = computed(() => connectionStatusOf(this.mailbox()));
-    readonly dirty = computed(() => Object.keys(connectionPatch(this.mailbox(), this.draft(), this.password())).length > 0);
+    /** What a save of this pane would send: its own changed fields. */
+    readonly patch = computed(() => partPatch(connectionPatch(this.mailbox(), this.draft(), this.password()), this.part()));
+    readonly dirty = computed(() => Object.keys(this.patch()).length > 0);
+    /** Whether this pane can be saved at all: the caller may change it, and it was read with a version. */
+    readonly editable = computed(() => !this.readOnly() && this.versioned());
 
     /** The read the draft was last laid over, and the reload it was taken at. */
     private read: EmailMailboxDto | null = null;
@@ -339,9 +352,19 @@ export class MailboxConnectionSectionComponent {
         this.draft.update(d => ({ ...d, [key]: value }));
     }
 
+    /** Throws away this pane's own edits; the other pane's stay. */
     discard(): void {
-        this.draft.set(connectionDraftOf(this.mailbox()));
-        this.password.set('');
+        const read = connectionDraftOf(this.mailbox()) as unknown as Record<string, unknown>;
+        const draft = { ...this.draft() } as unknown as Record<string, unknown>;
+        for (const key of Object.keys(read)) {
+            if (SYNC_KEYS.includes(key) === ('sync' === this.part())) {
+                draft[key] = read[key];
+            }
+        }
+        this.draft.set(draft as unknown as ConnectionDraft);
+        if ('connection' === this.part()) {
+            this.password.set('');
+        }
     }
 
     /** The choice of past mail, as the stored number: the default (null), none (0), all (-1), or a number of months. */
@@ -409,13 +432,15 @@ export class MailboxConnectionSectionComponent {
 
     private send(): void {
         const mailbox = this.mailbox();
-        const patch = connectionPatch(mailbox, this.draft(), this.password());
+        const patch = this.patch();
         this.saving.set(true);
         this.email.saveMailboxSection(mailbox.id, patch, mailbox.version).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: answer => {
                 this.saving.set(false);
-                this.password.set('');
-                this.toast.success('Connection saved');
+                if ('connection' === this.part()) {
+                    this.password.set('');
+                }
+                this.toast.success('connection' === this.part() ? 'Connection saved' : 'Sync saved');
                 this.saved.emit(answer);
             },
             error: (err: unknown) => {

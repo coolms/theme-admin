@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, catchError, debounceTime, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AuthState } from '@coolms/core-angular';
+import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
@@ -12,6 +12,7 @@ import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
+    ContextMenuService,
     DateTimeFormatService,
     DateTimePipe,
     DraftStoreService,
@@ -25,6 +26,7 @@ import {
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
+import { mailboxMenuNodes } from './mailbox-menu';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -137,7 +139,8 @@ interface ComposeDraft {
                                         [class.mbx__account--active]="mb.id === selectedMailboxId()"
                                         [attr.aria-selected]="mb.id === selectedMailboxId()"
                                         [title]="mb.label || mb.emailAddress || mb.id"
-                                        (click)="pickMailbox(mb.id)">
+                                        (click)="pickMailbox(mb.id)"
+                                        (contextmenu)="onMailboxContextMenu($event, mb.id)">
                                     <span class="mbx__account-avatar"
                                           [style.background]="avatarColor(mb.id)">
                                         {{ mailboxInitial(mb) }}
@@ -152,14 +155,6 @@ interface ComposeDraft {
                                 </button>
                             }
                         </div>
-                        @if (selectedMailboxId()) {
-                            <div class="mbx__rail-actions">
-                                <button type="button" class="mbx__rail-action" (click)="openMailboxSettings()">
-                                    <i class="bi bi-gear"></i> Settings
-                                </button>
-                            </div>
-                        }
-
                         <nav class="mbx__folders">
                             @for (f of folders(); track f.folder) {
                                 <button type="button" class="mbx__folder"
@@ -1110,15 +1105,6 @@ interface ComposeDraft {
 
         .mbx__top-actions { display: flex; align-items: center; gap: 8px; }
         .mbx__empty-wrap--col { flex-direction: column; gap: 16px; }
-        .mbx__rail-actions { display: flex; gap: 6px; }
-        .mbx__rail-action {
-            display: inline-flex; align-items: center; gap: 5px; flex: 1; justify-content: center;
-            padding: 5px 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
-            background: var(--cms-surface); color: var(--cms-text); cursor: pointer; font-size: .75rem;
-        }
-        .mbx__rail-action:hover { background: var(--cms-surface-hover); }
-        .mbx__rail-action--danger { color: var(--cms-danger, #dc2626); }
-        .mbx__rail-action:disabled { opacity: .6; cursor: default; }
 
         .mbx__compose--wide { width: 640px; }
         .mbx__fieldset { border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); padding: 12px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -1168,6 +1154,11 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly emailLive = inject(EmailLiveEventsService);
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
+    private readonly route = inject(ActivatedRoute);
+    private readonly naviGraph = inject(NaviGraphService);
+    private readonly contextMenu = inject(ContextMenuService);
+    /** The toolbar tree's nodes: the context menu is built from the same declaration as the action bar. */
+    readonly toolbarNodes = signal<NaviGraphNode[]>([]);
 
     /** Current user UUID (rfc4122) -- the per-user realtime channel `email.user.{id}`. */
     readonly currentUserId = computed<string | null>(() => {
@@ -1345,7 +1336,32 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'compose':
                 this.openCompose();
                 break;
+            case 'mailbox-settings':
+                this.openMailboxSettings();
+                break;
+            case 'module-settings':
+                // Email's own settings, in the settings shell's module scope.
+                void this.router.navigate(['/email', 'settings']);
+                break;
         }
+    }
+
+    /**
+     * A right-click on a mailbox: it is selected, and the menu holds exactly the action bar's actions for it -- the
+     * tree's nodes outside the header, filtered by the same conditions -- never one that exists only here. Only on the
+     * mailboxes: on text, links and inputs the browser's own menu stays.
+     */
+    onMailboxContextMenu(event: MouseEvent, id: string): void {
+        if (id !== this.selectedMailboxId()) {
+            this.pickMailbox(id);
+        }
+        const bar = mailboxMenuNodes(this.toolbarNodes());
+        this.contextMenu.openFromNodes(
+            event,
+            bar,
+            { ...this.toolbarContext(), _hasMailbox: true },
+            action => this.onHeaderAction(action),
+        );
     }
 
     /** C.4.b: recipient chips (were comma-strings pre-C.4.b). Each is an `app-tag-input` `string[]` model. */
@@ -1429,6 +1445,14 @@ export class EmailMailboxPageComponent implements OnInit {
         ).subscribe(list => this.contactOptions.set(this.toRecipientOptions(list)));
 
         this.consumeOAuthReturn();
+        // Back from a mailbox's settings (`/email;mailbox=<id>`): that mailbox is the one to open.
+        this.pendingSelectId ??= this.route.snapshot.paramMap.get('mailbox');
+        const pattern = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.graphBySlug;
+        if (pattern) {
+            this.naviGraph.loadTree(pattern.replace('{slug}', this.toolbarTree))
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.toolbarNodes.set(nodes));
+        }
         // The mailboxes and the person's mail settings together: the settings name the mailbox to open on. A setting
         // that cannot be read is its default -- the page never waits on it.
         forkJoin({ list: this.email.listMailboxes(), prefs: this.mailPrefs.readOrDefaults() }).subscribe({
