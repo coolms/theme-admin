@@ -152,7 +152,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
 
         <fieldset class="border-0 p-0 m-0" [disabled]="readOnly() || saving()">
             @if (part() === 'connection') {
-                <h3 class="cms-section-title">Incoming (IMAP)</h3>
+                <h3 class="cms-section-title px-0">Incoming (IMAP)</h3>
                 <div class="row g-3 mb-4">
                     <label class="col-12 col-md-6">
                         <span class="cms-label">Server</span>
@@ -177,7 +177,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                     </label>
                 </div>
 
-                <h3 class="cms-section-title">Outgoing (SMTP)</h3>
+                <h3 class="cms-section-title px-0">Outgoing (SMTP)</h3>
                 <div class="row g-3 mb-4">
                     <label class="col-12 col-md-6">
                         <span class="cms-label">Server</span>
@@ -205,7 +205,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                     <p class="cms-field-hint mb-3">Your mailbox signs in as its address. An administrator can set another sign-in name.</p>
                 }
 
-                <h3 class="cms-section-title">Sign-in</h3>
+                <h3 class="cms-section-title px-0">Sign-in</h3>
                 @if (mailbox().authMethod === 'oauth') {
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <span>
