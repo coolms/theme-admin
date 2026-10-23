@@ -3,18 +3,16 @@ import {
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
-import { ConsoleActivation, type NaviAccess, NaviGraphService } from '@coolms/core-angular';
+import { ConsoleActivation, type NaviAccess, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { panelAccessIn } from './nav-offers';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
+import { type Crumb, type CrumbLevel, resolveCrumbs } from './breadcrumbs';
+import { CrumbNamesService } from './crumb-names.service';
 
-interface Breadcrumb {
-    path: string;
-    label: string;
-}
 
 /**
  * Full topbar: brand logo left, route breadcrumbs center, drawer toggle + profile right.
@@ -54,7 +52,7 @@ interface Breadcrumb {
                             [style.flex-shrink]="last ? '1' : '0'"
                             [style.min-width]="last ? '0' : null">
                             @if (!last) {
-                                <a [routerLink]="crumb.path"
+                                <a [routerLink]="crumb.link ?? crumb.path"
                                    class="text-white-50 text-decoration-none">
                                     {{ crumb.label }}
                                 </a>
@@ -135,8 +133,14 @@ export class AdminTopbarComponent implements OnInit {
     private readonly route            = inject(ActivatedRoute);
     private readonly pageTitleSvc     = inject(PageTitleService);
 
-    /** Raw URL-segment crumbs; rebuilt on every NavigationEnd. */
-    private readonly rawCrumbs = signal<Breadcrumb[]>([]);
+    private readonly crumbNames       = inject(CrumbNamesService);
+
+    /** The matched route chain, read on every NavigationEnd: what the breadcrumb is built from (never the URL text). */
+    private readonly matched = signal<{
+        segments: string[];
+        levels: CrumbLevel[];
+        intermediate?: { label: string; routerLink: string };
+    }>({ segments: [], levels: [] });
     private readonly nav              = inject(NaviGraphService).adminNav;
     /**
      * A dock panel's toggle was pressed: the panel id, for the layout that owns the dock. The layout applies the
@@ -150,20 +154,30 @@ export class AdminTopbarComponent implements OnInit {
     }
 
     /**
-     * Final breadcrumb list. When PageTitleService carries a resolved label
-     * (set by content components after async data loads), the last crumb's
-     * display text is replaced with that label so it shows e.g. "Product Test"
-     * instead of the raw slug "product_test".
+     * The breadcrumb: names only -- a page's resolved name for a path, the route's
+     * `data.crumb`, the admin menu's title for that path -- and a crumb nothing names is left out (breadcrumbs.ts).
+     * A route that declares an intermediate crumb (`data.breadcrumb`) shows Home, that crumb, and the page's resolved
+     * title once it has one.
      */
-    readonly breadcrumbs = computed(() => {
-        const crumbs = this.rawCrumbs();
-        const title  = this.pageTitleSvc.current();
-        if (!title || crumbs.length === 0) return crumbs;
-        // Replace only the label of the last crumb -- path stays the same.
-        return [
-            ...crumbs.slice(0, -1),
-            { ...crumbs[crumbs.length - 1], label: title },
-        ];
+    readonly breadcrumbs = computed((): Crumb[] => {
+        const m = this.matched();
+        const title = this.pageTitleSvc.current();
+        if (m.intermediate) {
+            const full = '/' + m.segments.join('/');
+            return [
+                { path: '/', label: 'Home' },
+                { path: m.intermediate.routerLink, label: m.intermediate.label },
+                ...(title ? [{ path: full, label: title }] : []),
+            ];
+        }
+        const titles = navTitles(this.nav());
+        const names = this.crumbNames.names();
+        return resolveCrumbs(m.segments, m.levels, {
+            navTitle: p => titles.get(p),
+            named: p => names.get(p),
+            pageTitle: title,
+            tail: this.crumbNames.tail(),
+        });
     });
 
     ngOnInit(): void {
@@ -171,49 +185,47 @@ export class AdminTopbarComponent implements OnInit {
             filter(e => e instanceof NavigationEnd),
             startWith(null),
         ).subscribe(() => {
-            // Clear stale title from the previous route before rebuilding crumbs,
-            // so the raw slug shows during any async load on the new page.
+            // Clear the previous route's title before reading the new chain: until the page names itself, its crumb
+            // is left out rather than shown as a path word.
             this.pageTitleSvc.clear();
-            this.rawCrumbs.set(this.buildBreadcrumbs());
+            this.matched.set(matchedChain(this.router.routerState.snapshot.root));
         });
     }
+}
 
-    private buildBreadcrumbs(): Breadcrumb[] {
-        // Walk to the deepest activated route child to read its data.
-        let r: ActivatedRoute = this.route;
-        while (r.firstChild) r = r.firstChild;
-        const routeBreadcrumb = r.snapshot.data['breadcrumb'] as
-            { label: string; routerLink: string } | undefined;
-
-        const currentPath = this.router.url.split('?')[0];
-
-        if (routeBreadcrumb) {
-            // Variant B: the active route declares an explicit intermediate crumb.
-            // Build: Home -> [breadcrumb.label] -> [current page title]
-            // The last crumb label is replaced by PageTitleService once async
-            // data (schema.label etc.) has loaded.
-            const lastSeg = currentPath.split('/').filter(Boolean).at(-1) ?? '';
-            return [
-                { path: '/', label: 'Home' },
-                { path: routeBreadcrumb.routerLink, label: routeBreadcrumb.label },
-                {
-                    path: currentPath,
-                    label: lastSeg.charAt(0).toUpperCase() + lastSeg.slice(1).replace(/-/g, ' '),
-                },
-            ];
+/** The admin menu's title for each path it links to (separators and headings carry no path of their own). */
+function navTitles(nodes: readonly NaviGraphNode[]): Map<string, string> {
+    const out = new Map<string, string>();
+    const walk = (list: readonly NaviGraphNode[]): void => {
+        for (const n of list) {
+            if (n.path && n.title && !out.has(n.path)) {
+                out.set(n.path, n.title);
+            }
+            walk(n.children ?? []);
         }
+    };
+    walk(nodes);
+    return out;
+}
 
-        // Default: derive crumbs from URL path segments.
-        const segments = currentPath.split('/').filter(Boolean);
-        const crumbs: Breadcrumb[] = [{ path: '/', label: 'Home' }];
-        let path = '';
-        for (const seg of segments) {
-            path += '/' + seg;
-            crumbs.push({
-                path,
-                label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
-            });
+/** The URL segments the matched routes consumed, and where each route's share ends with its declared crumb. */
+function matchedChain(root: ActivatedRouteSnapshot): {
+    segments: string[];
+    levels: CrumbLevel[];
+    intermediate?: { label: string; routerLink: string };
+} {
+    const segments: string[] = [];
+    const levels: CrumbLevel[] = [];
+    let intermediate: { label: string; routerLink: string } | undefined;
+    for (let r: ActivatedRouteSnapshot | null = root; r; r = r.firstChild) {
+        if (r.url.length > 0) {
+            segments.push(...r.url.map(s => s.path));
+            const crumb = r.routeConfig?.data?.['crumb'];
+            levels.push({ end: segments.length, ...(typeof crumb === 'string' ? { label: crumb } : {}) });
         }
-        return crumbs;
+        if (!r.firstChild) {
+            intermediate = r.data['breadcrumb'] as { label: string; routerLink: string } | undefined;
+        }
     }
+    return { segments, levels, ...(intermediate ? { intermediate } : {}) };
 }

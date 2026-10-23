@@ -38,6 +38,8 @@ export const EMAIL_ROUTES: Routes = [
         // unsaved changes -- for another pane, or away -- asks first.
         matcher: mailboxSettingsUrlMatcher,
         canDeactivate: [unsavedChangesGuard],
+        // The crumb after the mailbox's own (named by the page): Home / Email / {mailbox} / Settings.
+        data: { crumb: 'Settings' },
         loadComponent: () =>
             import('./mailbox-settings.page').then(m => m.MailboxSettingsPageComponent),
     },

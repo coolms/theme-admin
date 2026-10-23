@@ -21,6 +21,7 @@ import { MailboxConnectionSectionComponent } from './mailbox-connection-section.
 import { MailboxDetailsSectionComponent } from './mailbox-details-section.component';
 import { MailboxInboundSectionComponent } from './mailbox-inbound-section.component';
 import { afterAccess } from './mailbox-section-save';
+import { CrumbNamesService } from '../../shell/crumb-names.service';
 
 /** A pane of a mailbox's settings: its id in the URL, its title and help. */
 interface MailboxPane {
@@ -168,6 +169,7 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly router = inject(Router);
+    private readonly crumbs = inject(CrumbNamesService);
     private readonly confirm = inject(ConfirmDialogService);
     private readonly toast = inject(ToastService);
     private readonly elevation = inject(ElevationService);
@@ -295,6 +297,9 @@ export class MailboxSettingsPageComponent implements OnInit, HasUnsavedChanges {
                     this.access.set(access);
                     this.resetToken.update(n => n + 1);
                     this.mailbox.set(mailbox);
+                    // The id in this page's path is named by the mailbox, and leads back to it on the Email page.
+                    this.crumbs.name(`/email/mailboxes/${id}`, mailbox.label || mailbox.emailAddress || 'Mailbox',
+                        ['/email', { mailbox: id }]);
                 },
                 error: (err: unknown) => this.error.set(this.errors.humanize(err)),
             });

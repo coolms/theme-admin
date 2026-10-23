@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,6 +12,7 @@ import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
+    ContextMenuItem,
     ContextMenuService,
     DateTimeFormatService,
     DateTimePipe,
@@ -27,6 +28,10 @@ import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.serv
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
+import { messageFrameDoc } from './message-frame-doc';
+import { CrumbNamesService } from '../../shell/crumb-names.service';
+import { buildForward } from './forward.util';
+import { MESSAGE_TOOLBAR_TREE, deleteMenuItems, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -112,6 +117,7 @@ interface ComposeDraft {
             <app-page-toolbar
                 [treeSlug]="toolbarTree"
                 [context]="toolbarContext()"
+                [iconsOnly]="true"
                 (headerActionsChanged)="headerActions.set($event)"
                 (actionClick)="onHeaderAction($event)" />
             <!-- Always-present hidden file input for the "Import" header action. -->
@@ -203,60 +209,9 @@ interface ComposeDraft {
                         @if (!searchActive() && selectedCount() > 0) {
                             <div class="mbx__bulkbar">
                                 <span class="mbx__bulkbar-count">{{ selectedCount() }} selected</span>
-                                <div class="mbx__bulkbar-actions">
-                                    <button type="button" class="mbx__btn mbx__btn--sm" [disabled]="bulkBusy()"
-                                            (click)="bulkMarkSeen(true)" title="Mark selected as read">
-                                        <i class="bi bi-envelope-open"></i> Read
-                                    </button>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" [disabled]="bulkBusy()"
-                                            (click)="bulkMarkSeen(false)" title="Mark selected as unread">
-                                        <i class="bi bi-envelope"></i> Unread
-                                    </button>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" [disabled]="bulkBusy()"
-                                            (click)="bulkFlag(true)" title="Flag selected">
-                                        <i class="bi bi-star-fill"></i> Flag
-                                    </button>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" [disabled]="bulkBusy()"
-                                            (click)="bulkFlag(false)" title="Unflag selected">
-                                        <i class="bi bi-star"></i> Unflag
-                                    </button>
-                                    <div class="mbx__move">
-                                        <button type="button" class="mbx__btn mbx__btn--sm" [disabled]="bulkBusy()"
-                                                (click)="toggleMoveMenu('bulk')" title="Move selected to a folder">
-                                            <i class="bi bi-folder-symlink"></i> Move
-                                        </button>
-                                        @if (moveMenu() === 'bulk') {
-                                            <div class="mbx__move-menu">
-                                                @for (f of moveTargets(selectedFolder()); track f) {
-                                                    <button type="button" class="mbx__move-opt" (click)="bulkMoveTo(f)">{{ f }}</button>
-                                                } @empty {
-                                                    <span class="mbx__move-empty">No other folders</span>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                    <div class="mbx__del">
-                                        <button type="button" class="mbx__btn mbx__btn--sm mbx__btn--danger" [disabled]="bulkBusy()"
-                                                (click)="toggleDeletePrompt('bulk')" title="Delete selected">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
-                                        @if (deletePrompt() === 'bulk') {
-                                            <div class="mbx__confirm">
-                                                <div class="mbx__confirm-head">Delete {{ selectedIds().size }} message(s)?</div>
-                                                @if (selectedFolder() !== 'Trash') {
-                                                    <button type="button" class="mbx__confirm-opt" (click)="confirmDelete(false)">
-                                                        <i class="bi bi-trash"></i>
-                                                        <span>Move to Trash<small>Recoverable</small></span>
-                                                    </button>
-                                                }
-                                                <button type="button" class="mbx__confirm-opt mbx__confirm-opt--danger" (click)="confirmDelete(true)">
-                                                    <i class="bi bi-trash3"></i>
-                                                    <span>Delete permanently<small>Can't be undone</small></span>
-                                                </button>
-                                                <button type="button" class="mbx__confirm-cancel" (click)="deletePrompt.set(null)">Cancel</button>
-                                            </div>
-                                        }
-                                    </div>
+                                <div class="mbx__bulkbar-actions" (pointerdown)="noteActionPoint($event)">
+                                    <app-page-toolbar [treeSlug]="messageTree" [context]="bulkFacts()" [iconsOnly]="true"
+                                                      (actionClick)="onBulkAction($event)" />
                                     <button type="button" class="mbx__btn mbx__btn--sm" (click)="selectAllLoaded()"
                                             title="Select all loaded messages">All</button>
                                     <button type="button" class="mbx__btn mbx__btn--sm" (click)="clearSelection()"
@@ -304,7 +259,7 @@ interface ComposeDraft {
                                              hint="This folder is empty." />
                         } @else {
                             @for (m of messages(); track m.id) {
-                                <div class="mbx__row"
+                                <div class="mbx__row" (contextmenu)="onMessageRowContextMenu($event, m)"
                                      [class.mbx__row--active]="m.id === selectedMessage()?.id"
                                      [class.mbx__row--unread]="!m.seen"
                                      [class.mbx__row--checked]="isSelected(m.id)">
@@ -353,55 +308,11 @@ interface ComposeDraft {
                                     <div><strong>To:</strong> {{ (msg.toAddresses || []).join(', ') }}</div>
                                     <div><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
                                 </div>
-                                <div class="mbx__detail-actions">
-                                    <button type="button" class="mbx__btn mbx__btn--primary" (click)="openReply()">
-                                        <i class="bi bi-reply"></i> Reply
-                                    </button>
-                                    <button type="button" class="mbx__btn" (click)="toggleSeen()">
-                                        <i class="bi" [class.bi-envelope]="msg.seen" [class.bi-envelope-open]="!msg.seen"></i>
-                                        {{ msg.seen ? 'Mark unread' : 'Mark read' }}
-                                    </button>
-                                    <button type="button" class="mbx__btn" (click)="toggleFlagDetail()">
-                                        <i class="bi" [class.bi-star-fill]="msg.flagged" [class.bi-star]="!msg.flagged"></i>
-                                        {{ msg.flagged ? 'Unstar' : 'Star' }}
-                                    </button>
-                                    <div class="mbx__move">
-                                        <button type="button" class="mbx__btn" [disabled]="movingId() === msg.id"
-                                                (click)="toggleMoveMenu('detail')" title="Move to a folder">
-                                            <i class="bi bi-folder-symlink"></i> Move
-                                        </button>
-                                        @if (moveMenu() === 'detail') {
-                                            <div class="mbx__move-menu">
-                                                @for (f of moveTargets(msg.folder || selectedFolder()); track f) {
-                                                    <button type="button" class="mbx__move-opt" (click)="moveDetailTo(f)">{{ f }}</button>
-                                                } @empty {
-                                                    <span class="mbx__move-empty">No other folders</span>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                    <div class="mbx__del">
-                                        <button type="button" class="mbx__btn mbx__btn--danger" [disabled]="deletingId() === msg.id"
-                                                (click)="toggleDeletePrompt('detail')" title="Delete">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
-                                        @if (deletePrompt() === 'detail') {
-                                            <div class="mbx__confirm">
-                                                <div class="mbx__confirm-head">Delete this message?</div>
-                                                @if ((msg.folder || selectedFolder()) !== 'Trash') {
-                                                    <button type="button" class="mbx__confirm-opt" (click)="confirmDelete(false)">
-                                                        <i class="bi bi-trash"></i>
-                                                        <span>Move to Trash<small>Recoverable</small></span>
-                                                    </button>
-                                                }
-                                                <button type="button" class="mbx__confirm-opt mbx__confirm-opt--danger" (click)="confirmDelete(true)">
-                                                    <i class="bi bi-trash3"></i>
-                                                    <span>Delete permanently<small>Can't be undone</small></span>
-                                                </button>
-                                                <button type="button" class="mbx__confirm-cancel" (click)="deletePrompt.set(null)">Cancel</button>
-                                            </div>
-                                        }
-                                    </div>
+                                <!-- The actions on the open message: the explorers' bar, icons only, from the server's tree
+                                     (navi.toolbar.email.message), the same nodes as a message row's menu. -->
+                                <div class="mbx__detail-actions" (pointerdown)="noteActionPoint($event)">
+                                    <app-page-toolbar [treeSlug]="messageTree" [context]="detailFacts()" [iconsOnly]="true"
+                                                      (actionClick)="onDetailAction($event)" />
                                 </div>
                             </div>
                             @if (thread().length > 1) {
@@ -933,45 +844,8 @@ interface ComposeDraft {
         .mbx__detail-head { border-bottom: 1px solid var(--cms-border); padding-bottom: 12px; margin-bottom: 12px; }
         .mbx__detail-subject { margin: 0 0 8px; font-size: 1.125rem; }
         .mbx__detail-meta { display: flex; flex-direction: column; gap: 2px; font-size: .8125rem; color: var(--cms-text-secondary); }
-        .mbx__detail-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-        .mbx__move { position: relative; display: inline-flex; }
-        .mbx__move-menu {
-            position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 150px; max-height: 240px;
-            overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding: 4px;
-            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
-            box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
-        }
-        .mbx__move-opt {
-            border: 0; background: transparent; text-align: left; padding: 6px 10px; border-radius: var(--cms-radius-sm, 4px);
-            cursor: pointer; color: var(--cms-text); font: inherit; white-space: nowrap;
-        }
-        .mbx__move-opt:hover { background: var(--cms-surface-hover); }
-        .mbx__move-empty { padding: 6px 10px; color: var(--cms-text-muted); font-size: .8125rem; white-space: nowrap; }
-        .mbx__del { position: relative; display: inline-flex; }
-        .mbx__confirm {
-            position: absolute; top: calc(100% + 4px); right: 0; z-index: 40; min-width: 220px;
-            display: flex; flex-direction: column; gap: 2px; padding: 6px;
-            background: var(--cms-surface); border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px);
-            box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
-        }
-        .mbx__confirm-head { padding: 4px 8px 6px; font-size: .8125rem; font-weight: 600; color: var(--cms-text); }
-        .mbx__confirm-opt {
-            display: flex; align-items: center; gap: 10px; border: 0; background: transparent; text-align: left;
-            padding: 8px 10px; border-radius: var(--cms-radius, 6px); cursor: pointer; color: var(--cms-text); font: inherit;
-        }
-        .mbx__confirm-opt:hover { background: var(--cms-surface-hover); }
-        .mbx__confirm-opt i { font-size: 1rem; }
-        .mbx__confirm-opt span { display: flex; flex-direction: column; line-height: 1.25; }
-        .mbx__confirm-opt small { color: var(--cms-text-muted); font-size: .75rem; }
-        .mbx__confirm-opt--danger { color: var(--cms-danger, #dc2626); }
-        .mbx__confirm-opt--danger:hover { background: var(--cms-danger-light); }
-        .mbx__confirm-cancel {
-            margin-top: 2px; border: 0; background: transparent; text-align: center; padding: 6px 10px;
-            border-radius: var(--cms-radius, 6px); cursor: pointer; color: var(--cms-text-muted); font: inherit; font-size: .8125rem;
-        }
-        .mbx__confirm-cancel:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
-        .mbx__btn--danger { color: var(--cms-danger); }
-        .mbx__btn--danger:hover:not(:disabled) { border-color: var(--cms-danger); background: var(--cms-danger); color: var(--cms-text-inverse); }
+        /* No box of its own: the explorers' bar inside keeps its spacing. */
+        .mbx__detail-actions { display: contents; }
         .mbx__detail-snippet { white-space: pre-wrap; }
         .mbx__thread {
             margin-top: 14px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); overflow: hidden;
@@ -1124,8 +998,6 @@ interface ComposeDraft {
         .mbx__compose-foot-side { display: flex; align-items: center; gap: 8px; }
         .mbx__draft-badge { display: inline-flex; align-items: center; gap: 4px; font-size: .8125rem; color: var(--cms-text-muted); }
         .mbx__foot-right { display: flex; gap: 8px; }
-        .mbx__btn--danger { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }
-        .mbx__btn--danger:hover { background: var(--cms-danger, #dc2626); color: var(--cms-text-inverse); }
 
         .mbx__oauth { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); }
         .mbx__oauth-label { font-size: .75rem; color: var(--cms-text-muted); text-transform: uppercase; }
@@ -1157,6 +1029,13 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly naviGraph = inject(NaviGraphService);
     private readonly contextMenu = inject(ContextMenuService);
+    private readonly crumbs = inject(CrumbNamesService);
+    /** Home / Email / {mailbox}: the selected mailbox is the crumb after the page's own. */
+    private readonly mailboxCrumb = effect(() => {
+        const id = this.selectedMailboxId();
+        const mb = id === null ? undefined : this.mailboxes().find(m => m.id === id);
+        this.crumbs.setTail(mb ? (mb.label || mb.emailAddress || null) : null);
+    });
     /** The toolbar tree's nodes: the context menu is built from the same declaration as the action bar. */
     readonly toolbarNodes = signal<NaviGraphNode[]>([]);
 
@@ -1194,18 +1073,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (html === null || html === undefined || html === '') {
             return null;
         }
-        // No remote by default: data: images (inlined cid:) and inline styles only.
-        // "Load images" widens img-src to http(s); scripts/objects/frames stay blocked.
-        const imgSrc = this.loadRemoteImages() ? 'data: https: http:' : 'data:';
-        const csp = `default-src 'none'; img-src ${imgSrc}; style-src 'unsafe-inline'; font-src data:`;
-        const doc = '<!doctype html><html><head><meta charset="utf-8">'
-            + `<meta http-equiv="Content-Security-Policy" content="${csp}">`
-            + '<base target="_blank">'
-            + '<style>html,body{margin:0;padding:8px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;'
-            + 'font-size:14px;line-height:1.5;color:#1f2937;word-break:break-word;overflow-wrap:anywhere;}'
-            + 'img{max-width:100%;height:auto;}a{color:#2563eb;}</style>'
-            + `</head><body>${html}</body></html>`;
-        return this.domSanitizer.bypassSecurityTrustHtml(doc);
+        return this.domSanitizer.bypassSecurityTrustHtml(messageFrameDoc(html, this.loadRemoteImages()));
     });
 
     /**
@@ -1238,16 +1106,6 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly bulkBusy = signal<boolean>(false);
     /** Range-select origin for Shift-click (the last individually (de)selected row). */
     private selectAnchorId: string | null = null;
-
-    /** Which "Move to folder" dropdown is open (backlog slice 8), or null when closed. */
-    readonly moveMenu = signal<'detail' | 'bulk' | null>(null);
-    /** The message id whose remote-IMAP move is in flight (disables its detail Move button). */
-    readonly movingId = signal<string | null>(null);
-
-    /** The message id whose remote-IMAP delete is in flight (backlog slice 9). */
-    readonly deletingId = signal<string | null>(null);
-    /** Which delete flow has its "Move to Trash / Delete permanently" prompt open, or null. */
-    readonly deletePrompt = signal<'detail' | 'bulk' | null>(null);
 
     readonly loadingMailboxes = signal<boolean>(true);
     readonly loadingMessages = signal<boolean>(false);
@@ -1325,6 +1183,25 @@ export class EmailMailboxPageComponent implements OnInit {
         _importing:  this.importing(),
     }));
 
+    /**
+     * The actions on messages: one server tree for the icon bar above the open message, the bar above the checked
+     * rows, and a message row's menu. The page says what its target is; the
+     * tree says which actions apply to it.
+     */
+    readonly messageTree = MESSAGE_TOOLBAR_TREE;
+    readonly messageNodes = signal<NaviGraphNode[]>([]);
+    readonly detailFacts = computed(() => {
+        const m = this.selectedMessage();
+        return messageFacts(m ? [m] : []);
+    });
+    readonly bulkFacts = computed(() => {
+        const ids = this.selectedIds();
+        return messageFacts(this.messages().filter(m => ids.has(m.id)));
+    });
+    /** Where the pointer last went down on a message bar, or a row was right-clicked: Move's and Delete's second step
+     *  (the folders; Trash or permanent) opens there. */
+    private actionPoint = { x: 0, y: 0 };
+
     onHeaderAction(id: string): void {
         switch (id) {
             case 'add-mailbox':
@@ -1362,6 +1239,89 @@ export class EmailMailboxPageComponent implements OnInit {
             { ...this.toolbarContext(), _hasMailbox: true },
             action => this.onHeaderAction(action),
         );
+    }
+
+    noteActionPoint(event: PointerEvent): void {
+        this.actionPoint = { x: event.clientX, y: event.clientY };
+    }
+
+    /** The open message's bar. */
+    onDetailAction(action: string): void {
+        const m = this.selectedMessage();
+        if (m) {
+            this.onMessageAction(action, [m.id]);
+        }
+    }
+
+    /** The checked rows' bar. */
+    onBulkAction(action: string): void {
+        this.onMessageAction(action, [...this.selectedIds()]);
+    }
+
+    /** A message row's menu: the same actions as the bars, on the checked rows when this row is one of them. */
+    onMessageRowContextMenu(event: MouseEvent, m: EmailMessageDto): void {
+        const ids = rowTargetIds(this.selectedIds(), m.id);
+        const targets = this.messages().filter(x => ids.includes(x.id));
+        this.actionPoint = { x: event.clientX, y: event.clientY };
+        this.contextMenu.openFromNodes(event, this.messageNodes(), messageFacts(targets),
+            action => this.onMessageAction(action, ids));
+    }
+
+    /** One place for every action on messages, from either bar or a row's menu. */
+    onMessageAction(action: string, ids: string[]): void {
+        if (ids.length === 0) {
+            return;
+        }
+        switch (action) {
+            case 'reply':
+            case 'forward':
+                this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
+                break;
+            case 'mark-read':
+            case 'mark-unread':
+                this.bulkMarkSeen(action === 'mark-read', new Set(ids));
+                break;
+            case 'star':
+            case 'unstar':
+                this.bulkFlag(action === 'star', new Set(ids));
+                break;
+            case 'move':
+                this.openFollowUp(moveMenuItems(this.folders().map(f => f.folder), this.folderOf(ids[0])), id => {
+                    if (id.startsWith('move:')) {
+                        this.bulkMoveTo(id.slice('move:'.length), new Set(ids));
+                    }
+                });
+                break;
+            case 'delete':
+                this.openFollowUp(deleteMenuItems(ids.length, this.folderOf(ids[0]) === 'Trash'), id => {
+                    if (id === 'delete:trash' || id === 'delete:permanent') {
+                        this.bulkDelete(id === 'delete:permanent', new Set(ids));
+                    }
+                });
+                break;
+        }
+    }
+
+    /** Run `then` on this message open in the detail pane, opening it first when another one is. */
+    private withOpen(id: string, then: () => void): void {
+        if (this.selectedMessage()?.id === id) {
+            then();
+            return;
+        }
+        const m = this.messages().find(x => x.id === id);
+        if (m) {
+            this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder(), then);
+        }
+    }
+
+    private folderOf(id: string): string {
+        return this.messages().find(m => m.id === id)?.folder ?? this.selectedFolder();
+    }
+
+    /** Move's and Delete's second step, as a menu where the first was chosen. Opened after the first menu closes. */
+    private openFollowUp(items: ContextMenuItem[], onAction: (id: string) => void): void {
+        const at = new MouseEvent('contextmenu', { clientX: this.actionPoint.x, clientY: this.actionPoint.y });
+        setTimeout(() => this.contextMenu.open(at, items, onAction));
     }
 
     /** C.4.b: recipient chips (were comma-strings pre-C.4.b). Each is an `app-tag-input` `string[]` model. */
@@ -1452,6 +1412,9 @@ export class EmailMailboxPageComponent implements OnInit {
             this.naviGraph.loadTree(pattern.replace('{slug}', this.toolbarTree))
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.toolbarNodes.set(nodes));
+            this.naviGraph.loadTree(pattern.replace('{slug}', this.messageTree))
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.messageNodes.set(nodes));
         }
         // The mailboxes and the person's mail settings together: the settings name the mailbox to open on. A setting
         // that cannot be read is its default -- the page never waits on it.
@@ -1587,8 +1550,6 @@ export class EmailMailboxPageComponent implements OnInit {
     selectFolder(folder: string): void {
         this.selectedFolder.set(folder);
         this.selectedMessage.set(null);
-        this.moveMenu.set(null);
-        this.deletePrompt.set(null);
         this.clearSelection();
         this.clearSearch();
         this.loadMessages(true);
@@ -1609,13 +1570,11 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /** Load a message's detail; mark it read if it was unread. Shared by list + search. */
-    private openById(id: string, seen: boolean, folder: string): void {
+    private openById(id: string, seen: boolean, folder: string, then?: () => void): void {
         const seq = ++this.openSeq;
         this.attachments.set([]);
         this.loadingAttachments.set(false);
         this.thread.set([]);
-        this.moveMenu.set(null);
-        this.deletePrompt.set(null);
         // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
         this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
         this.loadingDetail.set(true);
@@ -1624,6 +1583,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (seq !== this.openSeq) { return; }
                 this.selectedMessage.set(detail);
                 this.loadingDetail.set(false);
+                then?.();
                 this.loadThread(id, seq);
                 if (detail.hasAttachments === true) {
                     this.loadAttachments(id, seq);
@@ -1734,27 +1694,10 @@ export class EmailMailboxPageComponent implements OnInit {
         return hit.sentAt != null ? new Date(hit.sentAt * 1000).toISOString() : null;
     }
 
-    toggleSeen(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.applySeen(msg.id, msg.folder ?? this.selectedFolder(), !msg.seen);
-    }
-
     /** Row star click: toggle this message's flag without opening it (backlog slice 7). */
     toggleFlag(m: EmailMessageDto, ev: MouseEvent): void {
         ev.stopPropagation();
         this.applyFlag(m.id, !(m.flagged ?? false));
-    }
-
-    /** Detail star: toggle the open message's flag. */
-    toggleFlagDetail(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.applyFlag(msg.id, !(msg.flagged ?? false));
     }
 
     /** POST the flag, then reflect it locally (row + open detail). */
@@ -1772,8 +1715,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /** Flag/unflag every selected message in one action (mirrors {@link bulkMarkSeen}). */
-    bulkFlag(flagged: boolean): void {
-        const ids = this.selectedIds();
+    bulkFlag(flagged: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
         const targets = this.messages().filter(m => ids.has(m.id) && (m.flagged ?? false) !== flagged);
         if (targets.length === 0) {
             this.clearSelection();
@@ -1797,11 +1739,6 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.toast.error('Could not update all messages.');
             },
         });
-    }
-
-    /** Toggle the "Move to folder" dropdown (detail or bulk); a second click closes it. */
-    toggleMoveMenu(which: 'detail' | 'bulk'): void {
-        this.moveMenu.set(this.moveMenu() === which ? null : which);
     }
 
     /** The mailbox's folders minus the one the message is already in -- the move targets. */
@@ -1831,33 +1768,8 @@ export class EmailMailboxPageComponent implements OnInit {
         return folderUnread(f);
     }
 
-    /** Move the open message to a folder (remote IMAP); on success it leaves the current list. */
-    moveDetailTo(folder: string): void {
-        this.moveMenu.set(null);
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.movingId.set(msg.id);
-        this.email.moveMessage(msg.id, folder).subscribe({
-            next: () => {
-                this.movingId.set(null);
-                this.messages.set(this.messages().filter(m => m.id !== msg.id));
-                this.selectedMessage.set(null);
-                this.loadFolders();
-                this.toast.success(`Moved to ${folder}.`);
-            },
-            error: () => {
-                this.movingId.set(null);
-                this.toast.error('Could not move the message.');
-            },
-        });
-    }
-
     /** Move every selected message to a folder in one action (mirrors {@link bulkFlag}). */
-    bulkMoveTo(folder: string): void {
-        this.moveMenu.set(null);
-        const ids = this.selectedIds();
+    bulkMoveTo(folder: string, ids: ReadonlySet<string> = this.selectedIds()): void {
         const targets = this.messages().filter(m => ids.has(m.id) && (m.folder ?? this.selectedFolder()) !== folder);
         if (targets.length === 0) {
             this.clearSelection();
@@ -1884,52 +1796,8 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** Open (or toggle-closed) the delete prompt for the detail or bulk flow. */
-    toggleDeletePrompt(which: 'detail' | 'bulk'): void {
-        this.moveMenu.set(null);
-        this.deletePrompt.set(this.deletePrompt() === which ? null : which);
-    }
-
-    /**
-     * Resolve the open delete prompt (backlog slice 9): `permanent=false` moves to
-     * Trash (recoverable), `permanent=true` purges. Dispatches to the detail or bulk
-     * flow depending on which prompt was open.
-     */
-    confirmDelete(permanent: boolean): void {
-        const which = this.deletePrompt();
-        this.deletePrompt.set(null);
-        if (which === 'detail') {
-            this.deleteDetail(permanent);
-        } else if (which === 'bulk') {
-            this.bulkDelete(permanent);
-        }
-    }
-
-    /** Delete the open message: move-to-Trash (recoverable) or PERMANENTLY purge. */
-    deleteDetail(permanent: boolean): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.deletingId.set(msg.id);
-        this.email.deleteMessage(msg.id, permanent).subscribe({
-            next: res => {
-                this.deletingId.set(null);
-                this.messages.set(this.messages().filter(x => x.id !== msg.id));
-                this.selectedMessage.set(null);
-                this.loadFolders();
-                this.toast.success(res.purged === true ? 'Deleted permanently.' : 'Moved to Trash.');
-            },
-            error: () => {
-                this.deletingId.set(null);
-                this.toast.error('Could not delete the message.');
-            },
-        });
-    }
-
     /** Delete every selected message in one action: move-to-Trash or PERMANENTLY purge. */
-    bulkDelete(permanent: boolean): void {
-        const ids = this.selectedIds();
+    bulkDelete(permanent: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
         const targets = this.messages().filter(m => ids.has(m.id));
         if (targets.length === 0) {
             this.clearSelection();
@@ -2123,12 +1991,6 @@ export class EmailMailboxPageComponent implements OnInit {
             this.selectedIds.set(new Set<string>());
         }
         this.selectAnchorId = null;
-        if (this.moveMenu() === 'bulk') {
-            this.moveMenu.set(null);
-        }
-        if (this.deletePrompt() === 'bulk') {
-            this.deletePrompt.set(null);
-        }
     }
 
     /**
@@ -2137,8 +1999,7 @@ export class EmailMailboxPageComponent implements OnInit {
      * the local rows, any open detail, and the folder's unread count are reconciled from
      * the delta. Reuses the existing per-message `/seen` endpoint via forkJoin.
      */
-    bulkMarkSeen(seen: boolean): void {
-        const ids = this.selectedIds();
+    bulkMarkSeen(seen: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
         const targets = this.messages().filter(m => ids.has(m.id) && (m.seen ?? false) !== seen);
         if (targets.length === 0) {
             this.clearSelection();
@@ -2257,6 +2118,29 @@ export class EmailMailboxPageComponent implements OnInit {
         // then restore any saved draft for THIS reply target.
         this.snapshotComposeInitial();
         this.restoreDraftIfAny();
+        this.composeMinimized.set(false);
+        this.composeOpen.set(true);
+    }
+
+    /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */
+    openForward(): void {
+        const msg = this.selectedMessage();
+        if (!msg) {
+            return;
+        }
+        this.composeMode.set('compose');
+        this.replyTargetId.set(null);
+        this.composeTo = [];
+        this.composeCc = [];
+        this.composeBcc = [];
+        this.composeShowCcBcc.set(false);
+        this.contactOptions.set([]);
+        const fwd = buildForward(msg, this.dtf);
+        this.composeSubject = fwd.subject;
+        this.clearComposeBody();
+        this.composeText = fwd.text;
+        this.composeHtml.set(fwd.html);
+        this.snapshotComposeInitial();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
     }
