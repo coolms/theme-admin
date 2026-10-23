@@ -101,10 +101,10 @@ export class HoldsRegisterComponent implements OnInit {
     readonly holdable   = computed(() => this.footprints().filter(f => f.canHold));
     readonly others     = computed(() => this.footprints().filter(f => !f.canHold));
 
-    /** `/settings/{module}/{block}` -- the path IS the tree; the block key comes from the manifest. */
+    /** `/identity/settings/{block}` -- Identity's own settings, in the module scope; the block key comes from the manifest. */
     readonly settingsLink = computed((): string[] | null => {
         const block = this.identityApi.holdsSettingsBlock;
-        return block ? ['/settings', 'identity', block] : null;
+        return block ? ['/identity', 'settings', block] : null;
     });
 
     ngOnInit(): void {

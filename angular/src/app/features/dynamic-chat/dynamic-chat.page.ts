@@ -907,8 +907,8 @@ export class DynamicChatPageComponent implements OnInit {
         if (id === 'refresh') {
             this.queueReload$.next();
         } else if (id === 'settings') {
-            // The module's settings, not one block of them.
-            void this.router.navigate(['/settings', 'dynamic-chat']);
+            // The module's own settings (the module scope), its first open.
+            void this.router.navigate(['/dynamic-chat', 'settings']);
         }
     }
 

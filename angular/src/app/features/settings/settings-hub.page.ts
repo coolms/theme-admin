@@ -13,20 +13,21 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
-    CmsPageHeaderComponent,
-    CmsPaneSplitterComponent,
-    CmsSectionHeaderComponent,
+    CmsSettingsPaneComponent,
+    CmsSettingsShellComponent,
+    type CmsSettingsSection,
     ConfirmDialogService,
     DynamicFormComponent,
     ErrorBannerComponent,
+    type HasUnsavedChanges,
     LoadingComponent,
     PageTitleService,
     PageToolbarComponent,
     ToastService,
     ToolbarAction,
+    UnsavedChangesService,
 } from '@coolms/ui-angular';
-import { ErrorHandlerService, UserPreferencesService } from '@coolms/core-angular';
-
+import { ErrorHandlerService } from '@coolms/core-angular';
 
 import { Store } from '@ngxs/store';
 
@@ -35,71 +36,55 @@ import { SiteSelectorComponent } from '../sections/site-selector/site-selector.c
 import { ModuleSettingsService } from './module-settings.service';
 import { ModuleSettingsBlockDto } from './module-settings.types';
 import { adoptSavedBlock, withoutPinnedKeys } from './settings-payload.util';
-import { deslugify, groupBlocks, isEdited, type ModuleGroup } from './settings-grouping.util';
-
-/** Where the rail's folded branches are remembered, per user. */
-const PREFS_KEY = 'settings';
+import { deslugify, groupBlocks, isEdited } from './settings-grouping.util';
+import { type SettingsScope } from './settings.routes';
 
 /**
- * Settings (`/admin/settings`, ROLE_ADMIN) -- the classic options shape: a tree
- * of every module's blocks on the left, the selected block's form in the main
- * area, its actions along the bottom.
+ * Settings, on the settings shell: the section list on the left, one setting's pane at a time on the right.
  *
- * **Why this and not the two shapes before it.** A grid of panes had nothing to
- * fill a wide screen with and no answer at twenty modules; a modal capped how
- * big a block could grow and made moving between blocks a close-then-open. A
- * rail plus a content pane is what every settings screen converges on because it
- * scales in the one direction settings actually grow -- more of them -- and it
- * lets a block have as much room as it needs.
+ * **The ROUTE chooses the scope, never the setting picked.** `/settings/{module}/{key}` is the global scope -- every
+ * module listed, a filter above them -- and picking any setting there changes only the pane and the URL.
+ * `/{module}/settings/{key}` is that module's scope, with "All settings" back to the global route on the same
+ * setting. The two used to share one URL shape, `/settings/{module}/{key}`, and the page read the scope from the
+ * `{module}` in it, so picking another module's setting turned the global list into that module's.
  *
- * **Reuses the Explorer's resizable rail, not its shell.** `cms-pane-splitter`
- * is the part worth having (a drag handle whose width persists per user);
- * `cms-explorer-layout` is driven by a server-declared `LayoutConfig` of named
- * slot components, which earns its keep where the layout itself is configurable
- * per deployment (VFS, Media, Pages) and would be ceremony here.
- *
- * **Selection lives in the QUERY STRING** -- `?block=` for the selection,
- * `?module=` to root the tree at one module (what a module's own Settings button
- * links to). Both are deep-linkable, and a query-param change does not re-create
- * the component, so moving between blocks costs nothing. The older
- * `/settings/{key}` path still works and is rewritten to `?block=` on arrival.
- *
- * **Generated from the registry, never listed here.** A module that is not
- * installed contributes no block and simply does not appear.
+ * **Generated from the registry, never listed here.** A module that is not installed contributes no setting, and the
+ * list holds only what `GET /module-settings` gives this caller.
  */
 @Component({
     selector: 'coolms-admin-settings-hub',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CmsPageHeaderComponent,
-        CmsPaneSplitterComponent,
+        CmsSettingsShellComponent,
+        CmsSettingsPaneComponent,
         PageToolbarComponent,
-        CmsSectionHeaderComponent,
         DynamicFormComponent,
         LoadingComponent,
         ErrorBannerComponent,
         SiteSelectorComponent,
     ],
     template: `
-        <div class="settings">
-            <cms-page-header
-                [title]="scopeLabel() || 'Settings'"
-                icon="sliders"
-                [subtitle]="subtitle()"
-                [actions]="headerActions()"
-                (actionClick)="onHeaderAction($event)">
-            </cms-page-header>
+        <!-- Declares nothing itself: the server's toolbar tree says which buttons exist (Reload; All settings when
+             its show-when finds the module scope in the context below). -->
+        <app-page-toolbar
+            [treeSlug]="toolbarTree"
+            [context]="toolbarContext()"
+            (headerActionsChanged)="headerActions.set($event)"
+            (actionClick)="onHeaderAction($event)" />
 
-            <!-- Declares nothing itself: the tree says which buttons exist, and
-                 its show-when condition decides whether All settings applies,
-                 from the context below. The bar renders nothing, both nodes
-                 being position header. -->
-            <app-page-toolbar
-                [treeSlug]="toolbarTree"
-                [context]="toolbarContext()"
-                (headerActionsChanged)="headerActions.set($event)"
-                (actionClick)="onHeaderAction($event)" />
+        <cms-settings-shell
+            [title]="title()"
+            [scopeLine]="scopeLine()"
+            [actions]="headerActions()"
+            [sections]="sections()"
+            [selectedId]="selectedKey()"
+            [filterable]="'global' === scope()"
+            [emptyText]="emptyText()"
+            listLabel="Settings"
+            splitterKey="cms.settings.railW"
+            (select)="select($event)"
+            (actionClick)="onHeaderAction($event)">
 
             @if (loading()) {
                 <app-loading label="Loading settings…" />
@@ -108,525 +93,155 @@ const PREFS_KEY = 'settings';
                 <app-error-banner [message]="err" [showRetry]="true" (retry)="load()" />
             }
 
-            @if (ready()) {
-                <div class="settings__body">
-                    <aside class="settings__rail" [class.settings__rail--rooted]="scope() !== null">
-                        @if (visibleGroups().length === 0) {
-                            <p class="settings__rail-empty">
-                                {{ scope() ? scopeLabel() + ' declares no settings.' : 'No installed module declares any settings yet.' }}
+            @if (selected(); as b) {
+                <cms-settings-pane
+                    [title]="b.label"
+                    [icon]="b.moduleIcon ?? 'sliders'"
+                    [owner]="b.moduleLabel ?? deslug(b.module)"
+                    [settingKey]="b.key"
+                    [meta]="b.storedAt ? 'saved to ' + b.storedAt : ''"
+                    [dirty]="dirty()"
+                    [saving]="saving()"
+                    (save)="submit()"
+                    (discard)="discard()">
+
+                    @if (b.siteScopable && multiSite()) {
+                        <!-- Only where the setting declared it. The site picker lives here, the one place the choice
+                             decides something; this picks the LAYER, the picker the site. -->
+                        <div class="mb-3">
+                            <app-site-selector [alwaysShow]="true" />
+                            @if (activeSite(); as site) {
+                                <div class="d-flex align-items-center gap-2 mt-2" role="group" aria-label="Applies to">
+                                    <span class="cms-field-hint">Applies to</span>
+                                    <button type="button" class="cms-btn cms-btn-sm"
+                                            [class.cms-btn-active]="'platform' === scopeMode()"
+                                            [attr.aria-pressed]="'platform' === scopeMode()"
+                                            (click)="chooseScope('platform')">Platform (every site)</button>
+                                    <button type="button" class="cms-btn cms-btn-sm"
+                                            [class.cms-btn-active]="'site' === scopeMode()"
+                                            [attr.aria-pressed]="'site' === scopeMode()"
+                                            (click)="chooseScope('site')">{{ site.label }}</button>
+                                </div>
+                            } @else {
+                                <p class="cms-field-hint">
+                                    Editing the values every site uses. To set them for one site, pick that site above
+                                    first.
+                                </p>
+                            }
+                            @if ('site' === scopeMode() && activeSite()) {
+                                <p class="cms-field-hint">
+                                    Showing this site's settings. Fields it has not overridden are inherited from the
+                                    platform, and Reset drops only this site's overrides &mdash; it does not change the
+                                    platform.
+                                </p>
+                            }
+                        </div>
+                    }
+
+                    @if (b.formId) {
+                        <!-- Rebuilt on formKey() so Reset and Discard re-read the stored values: the form patches its
+                             initial value once, at definition load. -->
+                        @for (k of [formKey()]; track k) {
+                            <app-dynamic-form
+                                [formId]="b.formId"
+                                context="edit"
+                                [initialValue]="b.effective"
+                                [readonlyFields]="lockedAliases(b)"
+                                [showActions]="false"
+                                (formChanged)="dirty.set(true)"
+                                (submitted)="save($event)" />
+                        }
+                        @if (lockedAliases(b).length) {
+                            <!-- Naming the variable is the point: "set by PAGE_CACHE_TTL" says where to change it. -->
+                            <p class="cms-field-hint">
+                                Set by the environment and not editable here:
+                                @for (entry of lockedEntries(b); track entry.alias) {
+                                    <code>{{ entry.alias }}</code> (<code>{{ entry.variable }}</code>){{ $last ? '' : ', ' }}
+                                }
                             </p>
                         }
-                        @for (group of visibleGroups(); track group.module) {
-                            <div class="rail-group">
-                                <!-- Only on the all-modules tree. Rooted at one
-                                     module, the page header already names it and
-                                     a rail heading would say it twice — and there
-                                     is nothing to fold it against.
-                                     Chevron on the RIGHT so the module icon stays
-                                     the left anchor: a disclosure control in
-                                     front would push every label off the line the
-                                     page header and the items share. -->
-                                @if (scope() === null) {
-                                    <button type="button"
-                                            class="rail-group__head"
-                                            [attr.aria-expanded]="isOpen(group.module)"
-                                            (click)="toggleGroup(group.module)">
-                                        <i class="bi" [class]="'bi-' + group.icon"></i>
-                                        <span class="rail-group__label">{{ group.label }}</span>
-                                        @if (group.badge) {
-                                            <span class="rail-group__badge">{{ group.badge }}</span>
-                                        }
-                                        <i class="bi rail-group__chevron"
-                                           [class]="isOpen(group.module) ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
-                                    </button>
-                                }
-                                @if (isOpen(group.module)) {
-                                    @for (block of group.blocks; track block.key) {
-                                        <button type="button"
-                                                class="rail-item"
-                                                [class.rail-item--active]="block.key === selectedKey()"
-                                                (click)="select(block)">
-                                            <span class="rail-item__label">{{ block.label }}</span>
-                                            @if (edited(block)) {
-                                                <span class="rail-item__dot"
-                                                      title="Saved values are overriding the shipped defaults"></span>
-                                            }
-                                        </button>
-                                    }
-                                }
-                            </div>
-                        }
-                    </aside>
+                    } @else {
+                        <p class="cms-field-hint">
+                            This module declared a setting but no form for it, so there is nothing to render here. The
+                            values below are what is stored; they remain editable over the API.
+                        </p>
+                        <pre class="cms-card p-3">{{ prettyData() }}</pre>
+                    }
 
-                    <cms-pane-splitter storageKey="cms.settings.railW" [minWidth]="200" [maxWidth]="440" />
-
-                    <section class="settings__content">
-                        @if (selected(); as b) {
-                            <!-- Header strip, scrolling body, action bar — the
-                                 three parts an options pane has. The strip and
-                                 the bar stay put; only the form moves, so the
-                                 reader never loses which block they are in or
-                                 how to save it. -->
-                            <div class="settings__head">
-                                <cms-section-header
-                                    [icon]="b.moduleIcon ?? 'sliders'"
-                                    [title]="b.label"
-                                    [subtitle]="b.moduleLabel ?? deslug(b.module)"
-                                    [flush]="true" />
-                            </div>
-
-                            <div class="settings__pane">
-                                @if (b.siteScopable && multiSite()) {
-                                    <!-- Only where the block declared it. Offering
-                                         the choice on a platform-wide block would
-                                         invite a save the server refuses.
-
-                                         ⚠️ THE SITE PICKER LIVES HERE NOW. It used to
-                                         sit in the global top bar, on every screen,
-                                         and a sweep of 75 API collections found no
-                                         screen whose contents it changed. This is the
-                                         one place the choice decides something -- these
-                                         settings really are per-site -- so it is shown
-                                         where it acts. Still two controls for two
-                                         questions, not one asked twice: this picks the
-                                         LAYER, that picks the site. -->
-                                    <div class="settings__scope-bar">
-                                        <app-site-selector [alwaysShow]="true" />
-                                    @if (activeSite(); as site) {
-                                        <div class="settings__scope">
-                                            <span id="scope-label">Applies to</span>
-                                            <div class="settings__scope-choice" role="group" aria-labelledby="scope-label">
-                                                <button type="button"
-                                                        [class.is-active]="'platform' === scopeMode()"
-                                                        [attr.aria-pressed]="'platform' === scopeMode()"
-                                                        (click)="chooseScope('platform')">Platform (every site)</button>
-                                                <button type="button"
-                                                        [class.is-active]="'site' === scopeMode()"
-                                                        [attr.aria-pressed]="'site' === scopeMode()"
-                                                        (click)="chooseScope('site')">{{ site.label }}</button>
-                                            </div>
-                                        </div>
-                                    } @else {
-                                        <p class="settings__note">
-                                            Editing the values every site uses. To set them for one site, pick that
-                                            site above first.
-                                        </p>
-                                    }
-                                    @if ('site' === scopeMode() && activeSite()) {
-                                        <!-- The saved values are what THIS SITE
-                                             overrode; the rest is inherited. Without
-                                             saying so, an operator cannot tell a
-                                             value they set here from one coming
-                                             from the platform. -->
-                                        <p class="settings__note">
-                                            Showing this site's settings. Fields it has not overridden are
-                                            inherited from the platform, and Reset drops only this site's
-                                            overrides &mdash; it does not change the platform.
-                                        </p>
-                                    }
-                                    </div>
-                                }
-                                @if (b.formId) {
-                                    <!-- Rebuilt on formKey() so Reset and Discard
-                                         re-read the stored values into the
-                                         controls. The form patches its initial
-                                         value ONCE, at definition load. -->
-                                    @for (k of [formKey()]; track k) {
-                                        <app-dynamic-form
-                                            [formId]="b.formId"
-                                            context="edit"
-                                            [initialValue]="b.effective"
-                                            [readonlyFields]="lockedAliases(b)"
-                                            [showActions]="false"
-                                            (submitted)="save($event)" />
-                                    }
-                                    @if (lockedAliases(b).length) {
-                                        <!-- Naming the variable is the point. A greyed
-                                             control with no explanation reads as a bug;
-                                             "set by PAGE_CACHE_TTL" tells an operator
-                                             exactly where to change it for real. -->
-                                        <p class="settings__note">
-                                            Set by the environment and not editable here:
-                                            @for (entry of lockedEntries(b); track entry.alias) {
-                                                <code>{{ entry.alias }}</code> (<code>{{ entry.variable }}</code>){{ $last ? '' : ', ' }}
-                                            }
-                                        </p>
-                                    }
-                                } @else {
-                                    <p class="settings__note">
-                                        This module declared a settings block but no form for it, so there
-                                        is nothing to render here. The values below are what is stored;
-                                        they remain editable over the API.
-                                    </p>
-                                    <pre class="settings__raw">{{ prettyData() }}</pre>
-                                }
-                            </div>
-
-                            <div class="settings__actions">
-                                <div class="settings__meta">
-                                    <code>{{ b.key }}</code>
-                                    @if (b.storedAt; as where) {
-                                        <span class="settings__stored">saved to {{ where }}</span>
-                                    }
-                                </div>
-
-                                <div class="settings__buttons">
-                                    @if (isEditedBlock()) {
-                                        <button type="button" class="cms-btn cms-btn-sm cms-btn-danger"
-                                                (click)="reset()">
-                                            <i class="bi bi-arrow-counterclockwise"></i>
-                                            <span>Reset to defaults</span>
-                                        </button>
-                                    }
-                                    @if (b.formId) {
-                                        <button type="button" class="cms-btn" (click)="discard()">
-                                            Discard
-                                        </button>
-                                        <!-- Never disabled on invalid: a greyed-out Save with
-                                             no explanation is a dead end, where submitting an
-                                             incomplete form marks its fields and says what is
-                                             missing. -->
-                                        <button type="button" class="cms-btn cms-btn-primary"
-                                                [disabled]="saving()"
-                                                (click)="submit()">
-                                            {{ saving() ? 'Saving…' : 'Save settings' }}
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        } @else {
-                            <div class="settings__placeholder">
-                                <i class="bi bi-sliders"></i>
-                                <p>Select a setting to edit it.</p>
-                            </div>
-                        }
-                    </section>
-                </div>
+                    @if (isEditedBlock()) {
+                        <button paneActions type="button" class="cms-btn cms-btn-sm cms-btn-danger" (click)="reset()">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>Reset to defaults</span>
+                        </button>
+                    }
+                </cms-settings-pane>
             }
-        </div>
+        </cms-settings-shell>
     `,
-    styles: [`
-        :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
-        .settings { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
-        .settings__body { display: flex; flex: 1; min-height: 0; }
-
-        /* Left padding matches cms-page-header's 20px so the rail's labels sit
-           on the same vertical line as the page title above them. The items
-           bleed their hover background back out past it -- see rail-item. */
-        .settings__rail {
-            width: 260px;
-            flex-shrink: 0;
-            overflow-y: auto;
-            padding: 4px 12px 12px 20px;
-        }
-
-        .settings__rail-empty {
-            font-size: .8125rem;
-            color: var(--cms-text-muted);
-            padding: 8px 0;
-            margin: 0;
-        }
-
-        .rail-group + .rail-group { margin-top: 14px; }
-
-        .rail-group__head {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            padding: 4px 0;
-            border: 0;
-            background: transparent;
-            font-size: .75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .03em;
-            color: var(--cms-text-muted);
-            text-align: left;
-            cursor: pointer;
-        }
-        .rail-group__head:hover { color: var(--cms-text); }
-        .rail-group__head:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
-        .rail-group__head .bi { font-size: .8125rem; }
-
-        .rail-group__chevron { margin-left: auto; opacity: .7; }
-
-        .rail-group__badge {
-            font-size: .6875rem;
-            line-height: 1;
-            padding: 2px 6px;
-            border-radius: 999px;
-            background: var(--cms-bg-muted);
-        }
-
-        /* Geometry, so the label lands exactly on the rail's 20px line: pulled
-           10px left, 2px of accent rule, 8px of padding. The background then
-           bleeds past the text on both sides, which is what makes a selected
-           row read as a band rather than a floating pill. */
-        .rail-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            width: calc(100% + 20px);
-            margin: 0 -10px;
-            /* 29px = the 23px the group heading's icon and gap take up, plus the
-               10px pulled back by the margin, minus the 2px accent rule — so a
-               block's label lands exactly under its module's label, the way a
-               tree indents a child rather than starting a new column. */
-            padding: 6px 10px 6px 29px;
-            border: 0;
-            border-left: 2px solid transparent;
-            background: transparent;
-            color: var(--cms-text);
-            font-size: .8125rem;
-            text-align: left;
-            cursor: pointer;
-        }
-
-        /* No module heading to sit under, so no child indent: the blocks are the
-           rail's top level and align with the page header like everything else. */
-        .settings__rail--rooted .rail-item { padding-left: 8px; }
-        .rail-item:hover { background: var(--cms-hover-bg); }
-        .rail-item:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: -2px; }
-        .rail-item--active {
-            background: var(--cms-selected-light);
-            border-left-color: var(--cms-selected);
-            font-weight: 600;
-        }
-
-        .rail-item__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-        .rail-item__dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--cms-accent);
-            flex-shrink: 0;
-        }
-
-        .settings__content {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Header strip: same 20px gutter as the page header above it, and its
-           own full-width rule (the section header runs flush inside it, so the
-           divider is drawn once). */
-        .settings__head {
-            flex-shrink: 0;
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--cms-border);
-        }
-
-        /* 20px inside the splitter, the same gutter the page header keeps from
-           the content edge, so the form's left rule continues the title's. */
-        .settings__pane {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            padding: 4px 20px 16px;
-            max-width: 780px;
-        }
-
-        .settings__note { font-size: .8125rem; color: var(--cms-text-muted); margin: 0 0 8px; }
-
-        /* The scope picker is a control ABOUT the form, not a field in it. The
-           rule and the gap sit under the picker AND its explanation, so the two
-           read as one band that the form starts below — not as a separator
-           driven between a control and the sentence describing it.
-
-           Reported from the screen: without this the select sat hard against the
-           first checkbox and the two looked like one group. */
-        .settings__scope-bar {
-            margin: 0 0 18px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--cms-border);
-        }
-
-        .settings__scope {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin: 0 0 6px;
-            font-size: .8125rem;
-            color: var(--cms-text-muted);
-        }
-
-        .settings__scope-choice { display: inline-flex; }
-
-        .settings__scope-choice button {
-            border: 1px solid var(--cms-border);
-            background: var(--cms-surface);
-            color: var(--cms-text);
-            padding: 4px 12px;
-            font-size: .8125rem;
-            cursor: pointer;
-        }
-
-        .settings__scope-choice button:first-child {
-            border-radius: var(--cms-radius-sm) 0 0 var(--cms-radius-sm);
-        }
-
-        .settings__scope-choice button:last-child {
-            border-radius: 0 var(--cms-radius-sm) var(--cms-radius-sm) 0;
-            border-left: none;
-        }
-
-        /* The selected layer, in the accent the admin uses for a chosen state. */
-        .settings__scope-choice button.is-active {
-            background: var(--cms-selected);
-            border-color: var(--cms-selected);
-            color: var(--cms-selected-fg);
-        }
-
-        /* Already spaced by the bar below it. */
-        .settings__scope-bar .settings__note { margin-bottom: 0; }
-
-        .settings__raw {
-            background: var(--cms-code-bg);
-            color: var(--cms-code-text);
-            border: 1px solid var(--cms-border);
-            border-radius: var(--cms-radius);
-            padding: 12px;
-            font-size: .8125rem;
-            overflow-x: auto;
-        }
-
-        /* Actions along the BOTTOM of the content pane, the way an options
-           dialog puts them: the form scrolls, the actions never leave. */
-        .settings__actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-            padding: 10px 20px;
-            border-top: 1px solid var(--cms-border);
-        }
-
-        .settings__meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-            font-size: .75rem;
-            color: var(--cms-text-muted);
-        }
-        .settings__meta code { word-break: break-all; }
-        .settings__stored { word-break: break-all; }
-
-        .settings__buttons { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-
-        .settings__placeholder {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: var(--cms-text-muted);
-        }
-        .settings__placeholder .bi { font-size: 1.75rem; }
-    `],
+    styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
 })
-export class SettingsHubPageComponent implements OnInit {
+export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
     readonly loading = signal(true);
     readonly loadError = signal<string | null>(null);
     readonly blocks = signal<readonly ModuleSettingsBlockDto[]>([]);
 
-    /** Which block the content pane shows, from `?block=`. */
+    /** The scope, from the ROUTE's data -- never from the setting open. */
+    readonly scope = signal<SettingsScope>('global');
+
+    /** In the module scope, which module; in the global scope, where the open setting lives (not a filter). */
+    readonly module = signal<string | null>(null);
+
+    /** Which setting the pane shows, from the URL. */
     readonly selectedKey = signal<string | null>(null);
 
-    /** Which module roots the tree, from `?module=`; null shows every module. */
-    readonly scope = signal<string | null>(null);
-
-    /** Bumped to force the form to rebuild from the stored values. */
+    /** Bumped to rebuild the form from the stored values. */
     readonly formKey = signal(0);
 
-    //  Declared ABOVE the signals that read it. Field initialisers run in
-    // source order, so a `toSignal(this.store...)` above this line compiles and
-    // then reads undefined at runtime -- TS2729 catches it, which is the only
-    // reason it is not a boot-time mystery.
+    /** The pane has edits not yet saved. */
+    readonly dirty = signal(false);
+
+    //  Declared ABOVE the signals that read it: field initialisers run in source order.
     private readonly store = inject(Store);
 
-    /**
-     * Which LAYER is being edited. The SITE is not chosen here.
-     *
-     *  This screen used to carry its own list of sites, which put a second site
-     * picker on a page that already had one in the global header. Two controls
-     * for one question is the question asked twice, so that list went.
-     *
-     * !! THE HEADER'S PICKER HAS SINCE COME HERE, and this is still not the
-     * second control it looks like. Measured: the picker changed the contents of
-     * ZERO of 75 API collections, and the Pages screen overrides it on create
-     * with its own space -- these settings are the one place the choice decides
-     * anything, so it is rendered here rather than on every screen. It picks the
-     * SITE. This picks the LAYER, which the site picker cannot express: its
-     * empty option means "no site chosen", not "the values every site shares".
-     */
+    /** Which LAYER is being edited (the platform, or the picked site's overrides). The SITE is not chosen here. */
     readonly scopeMode = signal<'platform' | 'site'>('platform');
 
-    /** Every section the operator can see, from the same state the header uses. */
-    private readonly sections = toSignal(this.store.select(SectionState.sections), { initialValue: [] });
+    private readonly siteSections = toSignal(this.store.select(SectionState.sections), { initialValue: [] });
 
-    /** The picked site, or null when none is chosen (the backend resolves from the host). */
+    /** The picked site, or null when none is chosen. */
     readonly activeSite = toSignal(this.store.select(SectionState.currentSection), { initialValue: null });
 
-    /**
-     * Whether a per-site choice means anything here.
-     *
-     * With one section there is nothing to distinguish -- the platform's values
-     * ARE that site's -- and the header's own selector hides itself for exactly
-     * that reason. A layer toggle there would offer a decision with one outcome.
-     */
-    readonly multiSite = computed(() => this.sections().length > 1);
+    /** With one site the platform's values ARE that site's, and a layer toggle would offer a choice of one. */
+    readonly multiSite = computed(() => this.siteSections().length > 1);
 
-    /**
-     * The scope to address the API with: a site id, or null for the platform.
-     *
-     *  A plain signal, SET in {@link chooseScope} -- not a computed over
-     * `scopeMode` and `activeSite`. As a computed it fed `selected()`, which the
-     * template reads, and clicking the site button FROZE the renderer. The exact
-     * cycle was not worth chasing: a settings screen that hangs the admin is not
-     * a trade to make for removing one assignment.
-     */
+    /** The site to address the API with, or null for the platform. SET in chooseScope, not computed: see there. */
     readonly selectedSite = signal<string | null>(null);
 
-    /**
-     * The selected block AS SEEN AT `selectedSite()`.
-     *
-     * Held apart from {@link blocks} rather than written into it: that list is
-     * the platform-wide view the rail renders, and folding a site's values into
-     * it would make the rail describe one site while claiming to describe the
-     * platform.
-     */
+    /** The open setting as seen at `selectedSite()`, held apart from the list, which is the platform-wide view. */
     readonly scopedBlock = signal<ModuleSettingsBlockDto | null>(null);
 
-    /**
-     * Modules whose branch is folded away -- the COLLAPSED set, not the expanded
-     * one, so a newly installed module shows up rather than hiding until someone
-     * finds it.
-     *
-     * Independently collapsible and remembered per user, NOT a strict accordion:
-     * one-at-a-time would close the branch you were comparing against every time
-     * you opened another, and a settings tree earns its keep by being scannable.
-     */
-    readonly collapsed = signal<ReadonlySet<string>>(new Set<string>());
+    /** What the list shows: every module's settings, or the module's in the module scope. */
+    readonly visibleBlocks = computed((): ModuleSettingsBlockDto[] => {
+        const all = groupBlocks(this.blocks()).flatMap(g => g.blocks);
 
-    readonly ready = computed((): boolean => !this.loading() && null === this.loadError());
+        return 'module' === this.scope() ? all.filter(b => b.module === this.module()) : all;
+    });
 
-    readonly groups = computed(() => groupBlocks(this.blocks()));
+    readonly sections = computed((): CmsSettingsSection[] => {
+        const global = 'global' === this.scope();
+        const groups = groupBlocks(this.blocks());
 
-    readonly visibleGroups = computed((): ModuleGroup[] => {
-        const module = this.scope();
+        return this.visibleBlocks().map(b => {
+            const group = groups.find(g => g.module === b.module);
 
-        return null === module ? this.groups() : this.groups().filter(g => g.module === module);
+            return {
+                id: b.key,
+                label: b.label,
+                keywords: b.key,
+                marker: isEdited(b) ? 'Saved values are overriding the shipped defaults' : undefined,
+                group: global && group ? { id: group.module, label: group.label, icon: group.icon } : undefined,
+            };
+        });
     });
 
     readonly selected = computed((): ModuleSettingsBlockDto | null => {
@@ -636,7 +251,7 @@ export class SettingsHubPageComponent implements OnInit {
             return scoped;
         }
 
-        return null === key ? null : this.blocks().find(b => b.key === key) ?? null;
+        return null === key ? null : this.visibleBlocks().find(b => b.key === key) ?? null;
     });
 
     readonly isEditedBlock = computed((): boolean => {
@@ -645,43 +260,37 @@ export class SettingsHubPageComponent implements OnInit {
         return null !== b && isEdited(b);
     });
 
-    /** The raw view shows what is IN FORCE, same as the form above it. */
+    /** The raw view shows what is IN FORCE, same as the form would. */
     readonly prettyData = computed((): string => JSON.stringify(this.selected()?.effective ?? {}, null, 2));
 
-    readonly scopeLabel = computed((): string => {
-        const module = this.scope();
+    readonly moduleLabel = computed((): string => {
+        const module = this.module();
         if (null === module) {
             return '';
         }
 
-        return this.groups().find(g => g.module === module)?.label ?? deslugify(module);
+        return groupBlocks(this.blocks()).find(g => g.module === module)?.label ?? deslugify(module);
     });
 
-    readonly subtitle = computed((): string =>
-        null === this.scope()
-            ? 'Per-module configuration. Changes take effect immediately.'
-            : 'Settings this module owns. Changes take effect immediately.',
-    );
+    readonly title = computed((): string =>
+        'module' === this.scope() ? `${this.moduleLabel()} settings` : 'Settings');
+
+    readonly scopeLine = computed((): string =>
+        'module' === this.scope()
+            ? 'Settings this module owns. Changes take effect immediately.'
+            : 'Every module\'s settings. Changes take effect immediately.');
+
+    readonly emptyText = computed((): string =>
+        'module' === this.scope() ? `${this.moduleLabel()} declares no settings.` : 'No installed module declares any settings yet.');
 
     /** @see SettingsToolbarContributor -- the server owns which buttons exist. */
     readonly toolbarTree = 'navi.toolbar.settings';
 
-    /** Filled from the toolbar tree, not built here. */
     readonly headerActions = signal<ToolbarAction[]>([]);
 
-    /**
-     * What the tree's conditions are evaluated against.
-     *
-     * `_scoped` is the only fact the server needs to decide whether widening the
-     * tree is offered, and publishing it as CONTEXT rather than acting on it
-     * here is the difference between the page describing its state and the page
-     * deciding its chrome.
-     */
-    readonly toolbarContext = computed((): Record<string, unknown> => ({
-        _scoped: null !== this.scope(),
-    }));
+    /** `_scoped` is the one fact the toolbar tree's show-when reads (All settings in the module scope only). */
+    readonly toolbarContext = computed((): Record<string, unknown> => ({ _scoped: 'module' === this.scope() }));
 
-    /** Mid-save, read from the form -- both `saving` and `viewChild` are signals. */
     readonly saving = computed((): boolean => this.form()?.saving() ?? false);
 
     private readonly form = viewChild(DynamicFormComponent);
@@ -693,42 +302,42 @@ export class SettingsHubPageComponent implements OnInit {
     private readonly errors = inject(ErrorHandlerService);
     private readonly toast = inject(ToastService);
     private readonly pageTitle = inject(PageTitleService);
-    private readonly prefs = inject(UserPreferencesService);
     private readonly destroyRef = inject(DestroyRef);
 
-    ngOnInit(): void {
-        // Subscribed, not snapshotted: a param change does not re-create this
-        // component (see settingsUrlMatcher), which is exactly what makes
-        // walking the tree free.
-        const saved = this.prefs.getPageState<{ collapsed?: string[] }>(PREFS_KEY);
-        this.collapsed.set(new Set(saved?.collapsed ?? []));
+    constructor() {
+        // The breadcrumb says where you ARE: the setting open, or the scope.
+        effect(() => this.pageTitle.set(this.selected()?.label ?? this.title()));
 
+        // Closing the tab or reloading with a dirty pane asks the browser's own question.
+        const stop = inject(UnsavedChangesService).watch(this, () => this.dirty());
+        inject(DestroyRef).onDestroy(stop);
+
+        // With nothing selected, open the first setting -- once the list has arrived.
+        effect(() => {
+            if (null === this.selectedKey() && !this.loading()) {
+                const first = this.firstBlock();
+                if (null !== first) {
+                    void this.router.navigate(this.linkTo(first), { replaceUrl: true });
+                }
+            }
+        });
+    }
+
+    ngOnInit(): void {
+        // Subscribed, not snapshotted: a param change does not re-create this component (see settingsUrlMatcher).
+        this.scope.set((this.route.snapshot.data['settingsScope'] as SettingsScope | undefined) ?? 'global');
         this.route.paramMap
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(params => {
-                const module = params.get('module');
-                this.scope.set(module);
-
+                this.module.set(params.get('module'));
                 const key = params.get('block');
                 if (key !== this.selectedKey()) {
                     this.selectedKey.set(key);
-                    this.formKey.update(k => k + 1);
-                }
-
-                if (null !== key) {
-                    this.revealSelected(module);
+                    this.rebuild();
                 }
             });
 
         this.load();
-    }
-
-    constructor() {
-        // The breadcrumb should say where you ARE -- the block, or the module
-        // whose tree is open -- not repeat the section's own name back at you.
-        effect(() => this.pageTitle.set(
-            this.selected()?.label ?? (this.scopeLabel() || 'Settings'),
-        ));
     }
 
     load(): void {
@@ -748,7 +357,9 @@ export class SettingsHubPageComponent implements OnInit {
 
     onHeaderAction(id: string): void {
         if ('all' === id) {
-            void this.router.navigate(['/settings']);
+            // The global route, on the same setting.
+            const b = this.selected();
+            void this.router.navigate(null === b ? ['/settings'] : ['/settings', b.module, b.key]);
 
             return;
         }
@@ -756,50 +367,12 @@ export class SettingsHubPageComponent implements OnInit {
         this.load();
     }
 
-    /** Walk to a block: `/admin/settings/{module}/{block}`. */
-    select(block: ModuleSettingsBlockDto): void {
-        void this.router.navigate(['/settings', block.module, block.key]);
-    }
-
-    /**
-     * Rooted at one module, always open -- its heading is hidden there, so a
-     * branch folded earlier on the all-modules tree would leave the rail empty
-     * with no control anywhere to open it again.
-     */
-    isOpen(module: string): boolean {
-        return null !== this.scope() || !this.collapsed().has(module);
-    }
-
-    toggleGroup(module: string): void {
-        const next = new Set(this.collapsed());
-        if (!next.delete(module)) {
-            next.add(module);
+    /** Pick a setting: only the pane and the URL change, in the scope the route chose. */
+    select(key: string): void {
+        const block = this.visibleBlocks().find(b => b.key === key);
+        if (undefined !== block) {
+            void this.router.navigate(this.linkTo(block));
         }
-
-        this.collapsed.set(next);
-        this.prefs.setPageState(PREFS_KEY, { collapsed: [...next] });
-    }
-
-    /**
-     * Never leave the open block inside a folded branch.
-     *
-     * A deep link, or a Settings button on a module page, can land on a block
-     * whose module the reader collapsed weeks ago -- the form would open with no
-     * highlighted row anywhere in the rail to say where it came from.
-     */
-    private revealSelected(module: string | null): void {
-        if (null === module || !this.collapsed().has(module)) {
-            return;
-        }
-
-        const next = new Set(this.collapsed());
-        next.delete(module);
-        this.collapsed.set(next);
-        this.prefs.setPageState(PREFS_KEY, { collapsed: [...next] });
-    }
-
-    edited(block: ModuleSettingsBlockDto): boolean {
-        return isEdited(block);
     }
 
     deslug(slug: string): string {
@@ -812,15 +385,13 @@ export class SettingsHubPageComponent implements OnInit {
 
     /** Throw away edits by rebuilding the form from what is stored. */
     discard(): void {
-        this.formKey.update(k => k + 1);
+        this.rebuild();
     }
 
-    /** Aliases this deployment pins in its environment. */
     lockedAliases(block: ModuleSettingsBlockDto): string[] {
         return Object.keys(block.locked ?? {});
     }
 
-    /** The same, paired with the variable that owns each, for the note. */
     lockedEntries(block: ModuleSettingsBlockDto): { alias: string; variable: string }[] {
         return Object.entries(block.locked ?? {}).map(([alias, variable]) => ({ alias, variable }));
     }
@@ -831,21 +402,19 @@ export class SettingsHubPageComponent implements OnInit {
             return;
         }
 
-        // Pinned keys must not travel -- see `withoutPinnedKeys` for why a
-        // disabled control still ends up in the payload, and what it costs.
+        // Pinned keys must not travel -- see `withoutPinnedKeys`.
         const payload = withoutPinnedKeys(value, this.selected()?.locked ?? {});
 
         this.settings.save(key, payload, this.selectedSite()).subscribe({
             next: saved => {
-                // Adopt the response: the store normalises and strips its own
-                // bookkeeping, so what came back is what a reload would show --
-                // but into the RIGHT place. See `adoptSavedBlock`.
+                // Adopt the response into the RIGHT place -- see `adoptSavedBlock`.
                 const { blocks, scoped } = adoptSavedBlock(this.blocks(), saved, this.selectedSite());
                 this.blocks.set(blocks);
                 if (null !== scoped) {
                     this.scopedBlock.set(scoped);
                 }
                 this.form()?.resetSaving();
+                this.dirty.set(false);
                 this.toast.success('Settings saved.');
             },
             error: err => this.form()?.setServerError(this.errors.humanize(err)),
@@ -859,52 +428,36 @@ export class SettingsHubPageComponent implements OnInit {
         }
 
         const site = this.selectedSite();
-        //  Different promise per scope. A site sits ON TOP of the platform
-        // row, so dropping its overrides reveals the platform's values, not the
-        // module's shipped ones -- and an operator told "defaults apply again"
-        // would expect the wrong outcome.
+        // A site sits ON TOP of the platform row, so dropping its overrides reveals the platform's values.
         const question = null === site ? 'Reset to defaults?' : "Drop this site's overrides?";
         const detail = null === site
             ? `Drops the saved values for "${b.label}". The module's shipped defaults apply again.`
             : `Drops what this site overrode for "${b.label}". The platform's values apply again.`;
 
-        this.confirm
-            .confirm(question, detail)
-            .subscribe(ok => {
-                if (!ok) {
-                    return;
-                }
+        this.confirm.confirm(question, detail).subscribe(ok => {
+            if (!ok) {
+                return;
+            }
 
-                this.settings.reset(b.key, site).subscribe({
-                    next: () => {
-                        if (null === site) {
-                            const cleared = { ...b, data: {}, storedAt: null };
-                            this.blocks.update(rows => rows.map(r => (r.key === cleared.key ? cleared : r)));
-                        }
-                        // Re-read rather than patch: at a site scope the values
-                        // in force after a reset are the platform's, which this
-                        // client does not hold and must not guess.
-                        this.reloadScoped();
-                        this.formKey.update(k => k + 1);
-                        this.toast.success(null === site ? 'Settings reset to defaults.' : "This site's overrides dropped.");
-                    },
-                    error: err => this.toast.error(this.errors.humanize(err)),
-                });
+            this.settings.reset(b.key, site).subscribe({
+                next: () => {
+                    if (null === site) {
+                        const cleared = { ...b, data: {}, storedAt: null };
+                        this.blocks.update(rows => rows.map(r => (r.key === cleared.key ? cleared : r)));
+                    }
+                    // Re-read: at a site scope the values in force are the platform's, which this client must not guess.
+                    this.reloadScoped();
+                    this.rebuild();
+                    this.toast.success(null === site ? 'Settings reset to defaults.' : "This site's overrides dropped.");
+                },
+                error: err => this.toast.error(this.errors.humanize(err)),
             });
+        });
     }
 
     /**
-     * Switch which LAYER the form is editing. The site comes from the header.
-     *
-     *  **The form is rebuilt when the values ARRIVE, not when the layer is
-     * chosen.** `DynamicFormComponent` patches its initial value once, at
-     * definition load, so a rebuild triggered here -- before the scoped fetch
-     * returns -- patches the PLATFORM's values and then never re-reads. On the
-     * real screen that showed a site with a saved TTL of 60 as 300, with a Reset
-     * button proving a row existed: the screen contradicting itself.
-     *
-     * So only the platform switch bumps synchronously; the site switch leaves it
-     * to {@link reloadScoped}, which knows when there is something to show.
+     * Switch which LAYER the form edits. The form is rebuilt when the values ARRIVE (reloadScoped), not when the
+     * layer is chosen: the form patches its initial value once, so an early rebuild showed the platform's values.
      */
     chooseScope(mode: 'platform' | 'site'): void {
         const site = this.activeSite();
@@ -914,22 +467,31 @@ export class SettingsHubPageComponent implements OnInit {
         this.reloadScoped();
 
         if (null === this.selectedSite()) {
-            this.formKey.update(k => k + 1);
+            this.rebuild();
         }
     }
 
-    //  There is deliberately NO effect watching the header's site here.
-    // The first attempt at one wrote `scopeMode` while also reading it, and the
-    // renderer FROZE -- a settings screen that hangs the admin is a far worse
-    // trade than a stale label. If the header's site changes while this screen is
-    // open, the toggle still names the site it was showing until it is clicked
-    // again; that is visible and recoverable, which a frozen tab is not.
-    /**
-     * Fetch the selected block at the selected scope.
-     *
-     * A no-op at the platform scope: {@link blocks} already holds that view, and
-     * re-fetching it would be a second source for the same row.
-     */
+    /** The URL of a setting in the scope the route chose. */
+    private linkTo(block: ModuleSettingsBlockDto): unknown[] {
+        return 'module' === this.scope()
+            ? ['/', block.module, 'settings', block.key]
+            : ['/settings', block.module, block.key];
+    }
+
+    /** The first setting to open: the global scope's `/settings/{module}` opens that module's first. */
+    private firstBlock(): ModuleSettingsBlockDto | null {
+        const visible = this.visibleBlocks();
+        const module = this.module();
+
+        return (null !== module ? visible.find(b => b.module === module) : undefined) ?? visible[0] ?? null;
+    }
+
+    private rebuild(): void {
+        this.formKey.update(k => k + 1);
+        this.dirty.set(false);
+    }
+
+    /** Fetch the open setting at the selected site; a no-op at the platform layer, which the list already holds. */
     private reloadScoped(): void {
         const key = this.selectedKey();
         const site = this.selectedSite();
@@ -942,19 +504,16 @@ export class SettingsHubPageComponent implements OnInit {
         this.settings.get(key, site).subscribe({
             next: block => {
                 this.scopedBlock.set(block);
-                // NOW the form has something scoped to render -- see chooseSite.
-                this.formKey.update(k => k + 1);
+                this.rebuild();
             },
             error: err => {
-                // Fall back to the platform view rather than showing a block
-                // whose values belong to neither scope.
+                // Back to the platform view rather than a setting whose values belong to neither layer.
                 this.scopeMode.set('platform');
                 this.selectedSite.set(null);
                 this.scopedBlock.set(null);
-                this.formKey.update(k => k + 1);
+                this.rebuild();
                 this.toast.error(this.errors.humanize(err));
             },
         });
     }
-
 }

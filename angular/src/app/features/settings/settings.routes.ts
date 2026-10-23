@@ -1,18 +1,21 @@
-import { type Routes, type UrlMatchResult, type UrlSegment } from '@angular/router';
+import { type Route, type Routes, type UrlMatchResult, type UrlSegment } from '@angular/router';
+import { unsavedChangesGuard } from '@coolms/ui-angular';
+
+/** Which scope a settings route opens: every module's settings, or one module's. The ROUTE says, never the setting. */
+export type SettingsScope = 'global' | 'module';
 
 /**
- * Match all three settings shapes as ONE route:
+ * The global scope, as ONE route:
  *
- *   /admin/settings                        every module
- *   /admin/settings/{module}               that module's tree
- *   /admin/settings/{module}/{block}       ...with a block open
+ *   /admin/settings                        every module, the first setting open
+ *   /admin/settings/{module}               every module, that module's first setting open
+ *   /admin/settings/{module}/{key}         every module, that setting open
  *
- * One config, not three `path` entries, and that is the whole trick: Angular
- * re-creates a routed component whenever the matched route CONFIG changes, so
- * separate entries would tear the page down and rebuild it -- re-fetching the
- * list, losing the rail's scroll -- every time the reader clicked another block.
- * Matched here, walking the tree only changes PARAMS and the page stays put
- * while its content pane swaps.
+ * One config, not three `path` entries: Angular re-creates a routed component whenever the matched route CONFIG
+ * changes, so separate entries would tear the page down -- re-fetching the list, losing its scroll -- on every pick.
+ * Matched here, picking another setting only changes PARAMS and the page stays put while its pane swaps.
+ *
+ * `{module}` here names where the setting lives, not a scope: the list stays every module's, whatever is open.
  */
 export function settingsUrlMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     if (0 === segments.length) {
@@ -31,23 +34,49 @@ export function settingsUrlMatcher(segments: UrlSegment[]): UrlMatchResult | nul
 }
 
 /**
- * Module-settings admin routes (`/admin/settings`).
+ * The module scope, under the module's own path:
  *
- * **The path IS the tree.** Module first, block under it -- so a URL says where
- * you are the way the rail does, and a module's own Settings button links at
- * `/admin/settings/{module}` without naming a block it should not have to know
- * about. Platform-wide settings need no special case: they belong to a module
- * like everything else, so they live at `/admin/settings/core`.
+ *   /admin/{module}/settings               that module's settings, its first open
+ *   /admin/{module}/settings/{key}         ...that setting open
  *
- * ROLE_ADMIN server-side: every operation on /api/v1/module-settings is
- * `is_granted('ROLE_ADMIN')`, and the sidebar node carries the same gate, so a
- * non-admin reaching any of these URLs directly gets an error rather than a
- * screen.
+ * Mounted by the shell AHEAD of every module's own routes (app.routes.ts), so a module's catch-all child can never
+ * claim `settings`. `/admin/settings/settings` is the global route's, not a module called "settings".
+ */
+export function moduleSettingsUrlMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+    if (segments.length < 2 || segments.length > 3 || 'settings' !== segments[1].path || 'settings' === segments[0].path) {
+        return null;
+    }
+
+    const posParams: Record<string, UrlSegment> = { module: segments[0] };
+    if (3 === segments.length) {
+        posParams['block'] = segments[2];
+    }
+
+    return { consumed: segments, posParams };
+}
+
+const loadHub = () => import('./settings-hub.page').then(m => m.SettingsHubPageComponent);
+
+/**
+ * Leaving a dirty pane asks: Discard changes, or Keep editing. The guard runs on a PARAM change too (Angular's default
+ * `runGuardsAndResolvers`), so picking another setting asks as well as leaving the screen does.
+ */
+const guards = { canDeactivate: [unsavedChangesGuard] };
+
+/**
+ * Module-settings admin routes (`/admin/settings`): the global scope.
+ *
+ * ROLE_ADMIN server-side for writes; reads need CONFIGURATION_READ. The list holds only what the caller may read,
+ * because it is the server's answer to `GET /module-settings`.
  */
 export const SETTINGS_ROUTES: Routes = [
-    {
-        matcher: settingsUrlMatcher,
-        loadComponent: () =>
-            import('./settings-hub.page').then(m => m.SettingsHubPageComponent),
-    },
+    { matcher: settingsUrlMatcher, loadComponent: loadHub, ...guards, data: { settingsScope: 'global' satisfies SettingsScope } },
 ];
+
+/** `/admin/{module}/settings[/{key}]`: one module's settings, mounted by the shell (see app.routes.ts). */
+export const MODULE_SETTINGS_ROUTE: Route = {
+    matcher: moduleSettingsUrlMatcher,
+    loadComponent: loadHub,
+    ...guards,
+    data: { settingsScope: 'module' satisfies SettingsScope, activeNav: '/settings' },
+};
