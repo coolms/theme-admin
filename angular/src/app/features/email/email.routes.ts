@@ -1,14 +1,17 @@
-import { type Routes, type UrlMatchResult, type UrlSegment } from '@angular/router';
-import { unsavedChangesGuard } from '@coolms/ui-angular';
+import { inject } from '@angular/core';
+import { Router, type Routes, type UrlMatchResult, type UrlSegment } from '@angular/router';
+
+import { SETTINGS_PARAM } from './mailbox-settings-modal.service';
 
 /**
- * One mailbox's settings, in the settings shell's object scope, as ONE route:
+ * Where one mailbox's settings USED to be a page of their own:
  *
  *   /admin/email/mailboxes/{id}/settings           the first pane
  *   /admin/email/mailboxes/{id}/settings/{pane}    that pane
  *
- * One config, so picking another pane changes only a param and the page stays put (separate entries would re-create
- * it, and re-read the mailbox, on every pick).
+ * They open in a modal over the Email page now (decided 2026-10-24): `/admin/email;mailbox={id}?settings={pane}`.
+ * The old addresses still answer -- a bookmark, a link in a message, the mailbox menu's Settings -- by redirecting
+ * there, with the same pane.
  */
 export function mailboxSettingsUrlMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     if (segments.length < 3 || segments.length > 4 || 'mailboxes' !== segments[0].path || 'settings' !== segments[2].path) {
@@ -34,13 +37,11 @@ export const EMAIL_ROUTES: Routes = [
             import('./email-mailbox.page').then(m => m.EmailMailboxPageComponent),
     },
     {
-        // One mailbox's settings, a pane at a time; the wizard stays for adding a mailbox. Leaving a pane with
-        // unsaved changes -- for another pane, or away -- asks first.
+        // The old settings page's address: the Email page with that mailbox's settings open on the same pane.
         matcher: mailboxSettingsUrlMatcher,
-        canDeactivate: [unsavedChangesGuard],
-        // The crumb after the mailbox's own (named by the page): Home / Email / {mailbox} / Settings.
-        data: { crumb: 'Settings' },
-        loadComponent: () =>
-            import('./mailbox-settings.page').then(m => m.MailboxSettingsPageComponent),
+        redirectTo: ({ params }) => inject(Router).createUrlTree(
+            ['/email', { mailbox: params['id'] }],
+            { queryParams: { [SETTINGS_PARAM]: params['pane'] ?? 'general' } },
+        ),
     },
 ];

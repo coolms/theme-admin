@@ -1,38 +1,36 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap, provideRouter, type ParamMap } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { BehaviorSubject, of } from 'rxjs';
+import { of } from 'rxjs';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto } from './email.types';
-import { MailboxSettingsPageComponent } from './mailbox-settings.page';
+import { MailboxSettingsComponent } from './mailbox-settings.component';
 
 /**
  * A mailbox's settings, in the settings shell's object scope: the mailbox and what the caller may do to it are read
- * together; the URL chooses the pane and each pane saves on its own; someone who may only read the settings sees them
- * so, with no Save and no Delete; Access is a shared mailbox's; Delete is the last pane, asks first and returns to
- * Mail.
+ * together; the host's pane is shown, and a pick is told to the host (which keeps the URL); each pane saves on its
+ * own; someone who may only read the settings sees them so, with no Save and no Delete; Access is a shared mailbox's;
+ * Delete is the last pane, asks first and tells the host. It draws no back link.
  */
-describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a pane at a time', () => {
+describe('MailboxSettingsComponent -- one mailbox\'s settings, a pane at a time', () => {
     const MAILBOX: EmailMailboxDto = {
         id: 'mb-1', label: 'Support', emailAddress: 'support@example.test', kind: 'personal',
         imapHost: 'imap.example.test', imapPort: 993, imapSecurity: 'ssl', smtpHost: 'smtp.example.test',
         smtpPort: 465, smtpSecurity: 'ssl', enabled: true, authMethod: 'password', version: 'v7',
     };
     let email: jasmine.SpyObj<EmailService>;
-    let router: Router;
-    let navigate: jasmine.Spy;
-    let params: BehaviorSubject<ParamMap>;
     let confirmed: boolean;
     let asked: { title?: string; message?: string } | null;
 
     function render(mailbox: EmailMailboxDto, update: 'allowed' | 'elevate' | 'denied', pane: string | null = null) {
         email.getMailbox.and.returnValue(of(mailbox));
         email.mailboxCapabilities.and.returnValue(of({ 'email.mailbox.update': update, 'email.mailbox.authorize': update }));
-        params.next(convertToParamMap(null === pane ? { id: 'mb-1' } : { id: 'mb-1', pane }));
-        const fixture = TestBed.createComponent(MailboxSettingsPageComponent);
+        const fixture = TestBed.createComponent(MailboxSettingsComponent);
+        fixture.componentRef.setInput('mailboxId', 'mb-1');
+        fixture.componentRef.setInput('paneId', pane);
         fixture.detectChanges();
         return fixture;
     }
@@ -51,15 +49,13 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a pane at a t
         email.listDelegations.and.returnValue(of([]));
         email.deleteMailbox.and.returnValue(of({}));
         email.testMailbox.and.returnValue(of({ imap: { ok: true }, smtp: { ok: true } }));
-        params = new BehaviorSubject<ParamMap>(convertToParamMap({ id: 'mb-1' }));
         confirmed = true;
         asked = null;
         TestBed.configureTestingModule({
-            imports: [MailboxSettingsPageComponent],
+            imports: [MailboxSettingsComponent],
             providers: [
                 provideRouter([]),
                 { provide: EmailService, useValue: email },
-                { provide: ActivatedRoute, useValue: { paramMap: params } },
                 { provide: ConfirmDialogService, useValue: { open: (o: { title?: string; message?: string }) => { asked = o; return of(confirmed); } } },
                 { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'show']) },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
@@ -68,8 +64,6 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a pane at a t
                 { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
             ],
         });
-        router = TestBed.inject(Router);
-        navigate = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     });
 
     it('reads the mailbox and the caller\'s answer for it together, and lists its panes, Delete last', () => {
@@ -80,17 +74,40 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a pane at a t
         expect(panes(host)).toEqual(['General', 'Connection', 'Sync', 'Rules', 'Delete this mailbox']);
     });
 
-    it('the URL chooses the pane; picking one changes the URL, and an unknown pane goes to the first', () => {
+    it('the host chooses the pane; a pick is told to the host, and an unknown pane is corrected to the first', () => {
         const fixture = render(MAILBOX, 'allowed', 'sync');
         const host = fixture.nativeElement as HTMLElement;
+        const told: { pane: string; replace: boolean }[] = [];
+        fixture.componentInstance.paneChange.subscribe(change => told.push(change));
         expect(host.querySelector('[name=enabled]')).not.toBeNull();
         expect(host.querySelector('[name=imapHost]')).toBeNull();
 
         fixture.componentInstance.open('rules');
-        expect(navigate).toHaveBeenCalledWith(['/email/mailboxes', 'mb-1', 'settings', 'rules']);
+        expect(told).toEqual([{ pane: 'rules', replace: false }]);
 
-        params.next(convertToParamMap({ id: 'mb-1', pane: 'nonsense' }));
-        expect(navigate).toHaveBeenCalledWith(['/email/mailboxes', 'mb-1', 'settings'], { replaceUrl: true });
+        fixture.componentRef.setInput('paneId', 'nonsense');
+        fixture.detectChanges();
+        expect(told[1]).toEqual({ pane: 'general', replace: true });
+        expect(host.querySelector('[name=imapHost]')).toBeNull();
+        expect(fixture.componentInstance.pane()).toBe('general');
+    });
+
+    it('a new mailbox from the host is read; a pane change reads nothing', () => {
+        const fixture = render(MAILBOX, 'allowed', 'general');
+        fixture.componentRef.setInput('paneId', 'connection');
+        fixture.detectChanges();
+        expect(email.getMailbox).toHaveBeenCalledTimes(1);
+
+        fixture.componentRef.setInput('mailboxId', 'mb-2');
+        fixture.detectChanges();
+        expect(email.getMailbox).toHaveBeenCalledTimes(2);
+        expect(email.getMailbox.calls.mostRecent().args).toEqual(['mb-2']);
+    });
+
+    it('draws no back link: the modal\'s close button is the way back', () => {
+        const host = render(MAILBOX, 'allowed').nativeElement as HTMLElement;
+        expect(host.querySelector('.cms-settings-shell__back')).toBeNull();
+        expect(host.querySelector('.bi-arrow-left')).toBeNull();
     });
 
     it('settings the caller may only read: said at the top, fields disabled, no Save, no Delete', () => {
@@ -161,16 +178,19 @@ describe('MailboxSettingsPageComponent -- one mailbox\'s settings, a pane at a t
         expect(asked?.message).toContain('The account at the mail provider is not touched');
     });
 
-    it('removing asks first; confirmed, the mailbox is deleted and the page returns to Mail', () => {
+    it('removing asks first; confirmed, the mailbox is deleted and the host is told', () => {
         const page = render(MAILBOX, 'allowed').componentInstance;
+        let deleted = 0;
+        page.deleted.subscribe(() => deleted++);
 
         confirmed = false;
         page.remove(MAILBOX);
         expect(email.deleteMailbox).not.toHaveBeenCalled();
+        expect(deleted).toBe(0);
 
         confirmed = true;
         page.remove(MAILBOX);
         expect(email.deleteMailbox).toHaveBeenCalledOnceWith('mb-1');
-        expect(navigate).toHaveBeenCalledWith(['/email']);
+        expect(deleted).toBe(1);
     });
 });

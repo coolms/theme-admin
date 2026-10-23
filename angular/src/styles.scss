@@ -974,6 +974,24 @@ html .form-group :is(input[type="text"], input[type="number"], select, textarea)
     max-width: 540px;
 }
 
+/* An object's settings in a modal over its page (the settings shell: list and panes): most of the window, the
+   shell filling it and scrolling inside. */
+.cdk-overlay-pane.cms-settings-dialog-panel {
+    width: min(1180px, calc(100vw - 48px));
+    height: min(860px, calc(100vh - 48px));
+    background: var(--cms-surface);
+    border-radius: var(--cms-radius-lg);
+    box-shadow: var(--cms-shadow-lg);
+    overflow: hidden;
+    display: flex;
+}
+.cdk-overlay-pane.cms-settings-dialog-panel > .cdk-dialog-container {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
 .cms-dialog-header {
     display: flex;
     align-items: center;
