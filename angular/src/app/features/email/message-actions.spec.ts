@@ -44,6 +44,6 @@ describe('message actions', () => {
     it('offers Trash outside Trash only, and permanent deletion as the danger item', () => {
         expect(deleteMenuItems(1, false).map(i => i.id)).toEqual(['delete:trash', 'delete:permanent']);
         expect(deleteMenuItems(3, true).map(i => i.id)).toEqual(['delete:permanent']);
-        expect(deleteMenuItems(3, false)[1]).toEqual(jasmine.objectContaining({ danger: true, label: 'Delete 3 messages permanently' }));
+        expect(deleteMenuItems(3, false)[1]).toEqual(jasmine.objectContaining({ danger: true, label: "Delete 3 messages permanently -- can't be undone" }));
     });
 });

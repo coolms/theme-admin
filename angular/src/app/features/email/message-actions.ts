@@ -40,6 +40,6 @@ export function deleteMenuItems(count: number, inTrash: boolean): ContextMenuIte
     const what = count === 1 ? 'this message' : `${count} messages`;
     return [
         ...(inTrash ? [] : [{ id: 'delete:trash', label: `Move ${what} to Trash`, icon: 'trash' }]),
-        { id: 'delete:permanent', label: `Delete ${what} permanently`, icon: 'trash3', danger: true },
+        { id: 'delete:permanent', label: `Delete ${what} permanently -- can't be undone`, icon: 'trash3', danger: true },
     ];
 }

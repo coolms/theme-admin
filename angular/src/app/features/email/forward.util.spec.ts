@@ -58,7 +58,24 @@ describe('forward', () => {
         expect(fwd.html).not.toContain('<two>');
     });
 
-    it('falls back to the snippet when there is no plain body', () => {
-        expect(buildForward(msg({ bodyText: null }), dtf).text).toContain('\n\nLine one');
+    it('forwards an HTML-only message whole, as text, not its 200-character snippet', () => {
+        const long = 'The job was not started because recent account payments have failed or your spending limit '
+            + 'needs to be increased. Please go to the billing page to update your payment method and settings. '
+            + 'This sentence keeps the body well past two hundred characters.';
+        const fwd = buildForward(msg({
+            bodyText: null,
+            snippet: long.slice(0, 200),
+            bodyHtml: `<h2>Run failed</h2><p>${long}</p><table><tr><th>Job</th><th>Status</th></tr>`
+                + '<tr><td>lint</td><td>failure</td></tr></table><p>Run <b>&lt;42&gt;</b></p>',
+        }), dtf);
+        expect(fwd.text).toContain('Run failed\n' + long + '\nJob\tStatus');
+        expect(fwd.text).toContain('lint\tfailure');
+        expect(fwd.text).toContain('This sentence keeps the body well past two hundred characters.');
+        expect(fwd.html).toContain('Run &lt;42&gt;');
+        expect(fwd.html).not.toContain('<b>');
+    });
+
+    it('falls back to the snippet only when the message has neither a plain nor an HTML body', () => {
+        expect(buildForward(msg({ bodyText: null, bodyHtml: null }), dtf).text).toContain('\n\nLine one');
     });
 });

@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ActivatedRoute, ActivatedRouteSnapshot, Router, NavigationEnd, NavigationStart } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
 import { ConsoleActivation, type NaviAccess, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { panelAccessIn } from './nav-offers';
@@ -181,8 +181,6 @@ export class AdminTopbarComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        this.router.events.pipe(filter(e => e instanceof NavigationStart))
-            .subscribe(() => this.crumbNames.clear());
         this.router.events.pipe(
             filter(e => e instanceof NavigationEnd),
             startWith(null),
