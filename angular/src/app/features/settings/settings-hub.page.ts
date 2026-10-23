@@ -83,7 +83,7 @@ import { type SettingsScope } from './settings.routes';
             [emptyText]="emptyText()"
             listLabel="Settings"
             splitterKey="cms.settings.railW"
-            (select)="select($event)"
+            (picked)="select($event)"
             (actionClick)="onHeaderAction($event)">
 
             @if (loading()) {
