@@ -1,4 +1,5 @@
 import { type Route, type Routes, type UrlMatchResult, type UrlSegment } from '@angular/router';
+import { consoleModuleInstalled } from '@coolms/core-angular';
 import { unsavedChangesGuard } from '@coolms/ui-angular';
 
 /** Which scope a settings route opens: every module's settings, or one module's. The ROUTE says, never the setting. */
@@ -76,6 +77,8 @@ export const SETTINGS_ROUTES: Routes = [
 /** `/admin/{module}/settings[/{key}]`: one module's settings, mounted by the shell (see app.routes.ts). */
 export const MODULE_SETTINGS_ROUTE: Route = {
     matcher: moduleSettingsUrlMatcher,
+    // The question every module mount gets from consoleChildren: does this installation have Settings at all.
+    canMatch: [consoleModuleInstalled('settings')],
     loadComponent: loadHub,
     ...guards,
     data: { settingsScope: 'module' satisfies SettingsScope, activeNav: '/settings' },

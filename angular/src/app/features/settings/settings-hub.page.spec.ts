@@ -4,7 +4,14 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { Store } from '@ngxs/store';
 import { NEVER, of } from 'rxjs';
 
-import { ErrorHandlerService, NaviGraphService, UserPreferencesService } from '@coolms/core-angular';
+import {
+    AppInitService,
+    ConsoleAccessService,
+    ConsoleActivation,
+    ErrorHandlerService,
+    NaviGraphService,
+    UserPreferencesService,
+} from '@coolms/core-angular';
 import { ConfirmDialogService, FormRenderService, ToastService } from '@coolms/ui-angular';
 
 import { ModuleSettingsService } from './module-settings.service';
@@ -28,10 +35,12 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
 
     const BLOCKS = [block('call', 'call.originate', 'Originate'), block('email', 'email.sync', 'Sync')];
 
+    let installed: Set<string>;
     let routing: RouterTestingHarness;
     let router: Router;
 
     beforeEach(async () => {
+        installed = new Set(['settings']);
         TestBed.configureTestingModule({
             providers: [
                 provideRouter([
@@ -47,6 +56,10 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
                 { provide: ConfirmDialogService, useValue: { confirmDiscard: () => of(true), confirm: () => of(true) } },
                 { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error']) },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
+                // What a module mount's canMatch asks: is Settings installed here.
+                { provide: AppInitService, useValue: { ready$: of(true) } },
+                { provide: ConsoleAccessService, useValue: { ensure: () => Promise.resolve() } },
+                { provide: ConsoleActivation, useValue: { isInstalled: (m: string) => installed.has(m) } },
             ],
         });
         routing = await RouterTestingHarness.create();
@@ -88,6 +101,12 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
         expect(listed()).toEqual(['Sync']);
         expect(routing.routeNativeElement?.textContent).toContain('EMAIL settings');
         expect(router.url).toBe('/email/settings/email.sync');
+    });
+
+    it('a module\'s own settings route exists only where Settings is installed, like every module mount', async () => {
+        installed = new Set();
+
+        await expectAsync(routing.navigateByUrl('/email/settings/email.sync')).toBeRejected();
     });
 
     it('the global route with nothing selected opens the first setting', async () => {
