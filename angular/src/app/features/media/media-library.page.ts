@@ -5,7 +5,6 @@ import {
     DestroyRef,
     effect,
     ElementRef,
-    HostListener,
     inject,
     OnInit,
     signal,
@@ -23,7 +22,9 @@ import {
     type CoolmsImageEditorHostResult,
 } from '@coolms/image-editor-angular';
 import { Store } from '@ngxs/store';
-import { AppConfigState, NaviGraphService, resolvePattern, UserPreferencesService } from '@coolms/core-angular';
+import {
+    AppConfigState, ErrorHandlerService, isElevationRefusal, NaviGraphService, resolvePattern, UserPreferencesService,
+} from '@coolms/core-angular';
 import {
     catchError,
     debounceTime,
@@ -37,11 +38,12 @@ import {
     switchMap,
 } from 'rxjs';
 import { MediaService } from './media.service';
-import { MediaAssetDto, MediaViewMode } from './media.types';
+import { MediaAssetDto, MediaViewMode, mediaAssetSourceUrl } from './media.types';
 import { MediaPermissionsComponent } from './media-permissions.component';
 import { CollectionPermissionsComponent } from './collection-permissions.component';
 import { MoveToDialogComponent } from './move-to-dialog.component';
 import {
+    bindKeys,
     CmsPageHeaderComponent,
     ConfirmDialogService,
     DeleteNodeDialogComponent,
@@ -170,6 +172,7 @@ export class MediaLibraryPage implements OnInit {
     private readonly store      = inject(Store);
     private readonly confirmSvc = inject(ConfirmDialogService);
     private readonly toast      = inject(ToastService);
+    private readonly errors     = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly http       = inject(HttpClient);
     private readonly liveEvents = inject(VfsLiveEventsService);
@@ -267,20 +270,35 @@ export class MediaLibraryPage implements OnInit {
     // -- Constructor ---------------------------------------------------------
 
     constructor() {
+        // The library's shortcuts belong to the page: none fires while the image editor, a viewer or a dialog is
+        // open over it, nor while the person types (2026-10-14).
+        bindKeys(event => this.onKeydown(event));
+
         // Keep footer status bar in sync with media state
+        // The count says what the grid shows: nothing while the list failed, and "24 of 25" while
+        // a later page has not loaded yet ("All 25 files loaded" over 24 tiles, or over none, is what it
+        // said before 2026-10-08).
         effect(() => {
             const loading  = this.state.loading();
             const total    = this.state.totalItems();
+            const loaded   = this.state.assets().length;
+            const failed   = this.state.listError() !== null;
             const selected = this.state.selectedIds().length;
 
             this.footer.set({
                 loading,
-                count:    !loading && total > 0
-                            ? `All ${total} file${total === 1 ? '' : 's'} loaded`
-                            : undefined,
+                count:    loading || failed || total === 0
+                            ? undefined
+                            : loaded >= total
+                                ? `${total} file${total === 1 ? '' : 's'}`
+                                : `${loaded} of ${total} files loaded`,
                 selected: selected > 0 ? `${selected} selected` : undefined,
             });
         });
+
+        this.state.reloadRequested$.pipe(
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(() => this.resetAndLoad());
 
         // Debounce search input
         this.searchSubject.pipe(
@@ -551,6 +569,11 @@ export class MediaLibraryPage implements OnInit {
             asset: {
                 uuid:        asset.id,
                 originalUrl: asset.originalUrl ?? '',
+                // Pixels and version from one read: the replace names that version (If-Match).
+                sourceUrl:   mediaAssetSourceUrl(
+                    this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '',
+                    asset.path,
+                ),
                 filename:    asset.originalFilename,
                 mimeType:    asset.mimeType,
                 path:        asset.path ?? null,
@@ -733,33 +756,40 @@ export class MediaLibraryPage implements OnInit {
                 // pinning totalItems to that length flips `hasMore` off.
                 const isPastEnd = !isReset && r.member.length === 0;
                 this.state.totalItems.set(isPastEnd ? merged.length : r.totalItems);
+                this.state.listError.set(null);
                 this.state.loading.set(false);
             },
-            error: () => {
-                if (myLoadId === this.loadId) this.state.loading.set(false);
+            error: (err: unknown) => {
+                if (myLoadId !== this.loadId) return;
+                this.state.listError.set({
+                    kind:    isElevationRefusal(err) ? 'elevation'
+                           : (err as { status?: number })?.status === 403 ? 'denied' : 'error',
+                    message: this.errors.humanize(err),
+                });
+                this.state.loading.set(false);
             },
         });
     }
 
     // -- Keyboard shortcuts --------------------------------------------------
 
-    @HostListener('document:keydown', ['$event'])
-    onKeydown(event: KeyboardEvent): void {
-        const tag = (event.target as HTMLElement)?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
+    /** Bound through the keyboard scope (the constructor); true when it acted on the key. */
+    onKeydown(event: KeyboardEvent): boolean {
         if (event.key === 'Delete' && this.state.selectedIds().length > 0) {
-            event.preventDefault();
             this.deleteAssets(this.selectedAssets());
+            return true;
         }
         if (event.key === 'Escape') {
+            // Clears the selection and lets the key go on: ESC still closes whatever else it closes.
             this.state.selectedIds.set([]);
             this.state.activeAsset.set(null);
+            return false;
         }
         if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
-            event.preventDefault();
             this.state.selectedIds.set(this.state.assets().map(a => a.id));
+            return true;
         }
+        return false;
     }
 
     // -- Input handlers ------------------------------------------------------

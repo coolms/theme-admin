@@ -126,9 +126,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The Node the served admin is built with (angular/.nvmrc), as in the admin suite below.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: angular/.nvmrc
       - name: The token copy is what the lock records
         run: node tools/design-tokens-lock.mjs
       - name: The lock's tag and commit, and the file at that commit, are what the package holds
@@ -187,11 +188,21 @@ jobs:
           rm -f "$key"
           echo "document-angular $(git -C sources/document-angular rev-parse --short HEAD)"
 
+      # The Node the served admin is BUILT with (angular/.nvmrc, measured 2026-10-22: 24.18.0), so the suite runs on
+      # the same Node as the build that is served. A change of the served build's Node changes this file.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: sources/theme-admin/angular/.nvmrc
           cache: npm
           cache-dependency-path: sources/theme-admin/angular/package-lock.json
+
+      - name: Node is the served build's
+        working-directory: sources/theme-admin/angular
+        run: |
+          want="v$(tr -d '[:space:]' < .nvmrc)"
+          have="$(node -v)"
+          if [ "$have" != "$want" ]; then echo "::error::FOUND: Node $have, the served build's is $want (.nvmrc)"; exit 1; fi
+          echo "CLEAR: Node $have, the served build's (.nvmrc)"
 
       # The admin installs from its lockfile; document-engine and designer from their own. The
       # Angular siblings resolve their bare imports through the ADMIN's node_modules, as in the
@@ -249,7 +260,18 @@ jobs:
           failed="$(grep -oE '\(([0-9]+) FAILED\)' <<< "$line" | grep -oE '[0-9]+' || true)"
           skipped="$(grep -oE 'skipped ([0-9]+)' <<< "$line" | grep -oE '[0-9]+' || true)"
           echo "Admin suite: executed ${ran:-0} of ${total:-0} specs, ${failed:-0} failed, ${skipped:-0} skipped (karma exit $rc)"
+          # The failing specs by name (karma.conf.js's failed-specs reporter), not only the progress line's count.
+          names="$(tr '\r' '\n' < "$RUNNER_TEMP/karma.log" | sed -n '/^FAILED SPECS: [0-9]*$/,$p')"
+          if [ -z "$names" ]; then echo "::error::UNEVALUABLE: the failed-specs reporter printed nothing -- the failing specs cannot be named"; exit 2; fi
+          printf '%s\n' "$names"
+          listed="$(grep -c '^FAILED SPEC: ' <<< "$names" || true)"
+          while IFS= read -r spec; do echo "::error title=Failing spec::${spec#FAILED SPEC: }"; done < <(grep '^FAILED SPEC: ' <<< "$names")
           if [ -z "$ran" ] || [ "$ran" = 0 ]; then echo "::error::UNEVALUABLE: the suite ran no spec"; exit 2; fi
-          if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed (karma exit $rc)"; exit 1; fi
+          if [ "$rc" != 0 ] || [ "${failed:-0}" != 0 ]; then echo "::error::FOUND: ${failed:-?} of $total specs failed, $listed named above (karma exit $rc)"; exit 1; fi
+          if [ "$listed" != 0 ]; then echo "::error::FOUND: the reporter names $listed failing spec(s) the progress line did not count"; exit 1; fi
           if [ "$ran" != "$total" ]; then echo "::error::FOUND: $ran of $total specs executed -- ${skipped:-some} were skipped"; exit 1; fi
           echo "CLEAR: $ran of $total specs executed, none failed"
+
+  # README, a LICENSE matching the manifest, and CHANGELOG (coolms/.github's basic-files.yml), pinned to a commit.
+  basic-files:
+    uses: coolms/.github/.github/workflows/basic-files.yml@595d36957a135e7d753abe34ca1ce90a0a6f2215

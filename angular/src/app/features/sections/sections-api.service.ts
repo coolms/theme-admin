@@ -71,7 +71,7 @@ export class SectionsApiService {
     // The Web module endpoints live under `/api/v1/web/sites`. There is no
     // dedicated manifest section for them (the URL prefix is stable and
     // the FE consumer surface is small) so we build URLs from `apiBase`,
-    // matching the existing `getThemeTemplates` pattern.
+    // as the other feature services do.
 
     /**
      * GET /api/v1/web/sites -- list of composed Site views (admin-gated).

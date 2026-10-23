@@ -10,4 +10,10 @@ export const EMAIL_ROUTES: Routes = [
         loadComponent: () =>
             import('./email-mailbox.page').then(m => m.EmailMailboxPageComponent),
     },
+    {
+        // One mailbox's settings, a page of sections; the wizard stays for adding a mailbox.
+        path: 'mailboxes/:id/settings',
+        loadComponent: () =>
+            import('./mailbox-settings.page').then(m => m.MailboxSettingsPageComponent),
+    },
 ];

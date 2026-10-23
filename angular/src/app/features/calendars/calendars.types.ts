@@ -128,6 +128,10 @@ export interface CalendarItemDto {
     readonly start:           string;        // ISO 8601 with TZ
     readonly end:             string | null; // ISO 8601 with TZ; null for tasks
     readonly allDay:          boolean;
+    /** The IANA zone the item's wall clock runs on, its own (null: its calendar's). */
+    readonly timeZone?:          string | null;
+    /** The zone the item's wall clock runs on: its own, else its calendar's. */
+    readonly effectiveTimeZone?: string | null;
     readonly recurrence:      string | null; // canonical RFC 5545 spec (multi-line)
     readonly color:           string | null; // hex (#rrggbb) or null = use calendar default
     readonly visibility:      CalendarItemVisibilityCode;
@@ -151,6 +155,29 @@ export interface CalendarItemDto {
      * base occurrence.
      */
     readonly parentItemId?:   string | null;
+    /**
+     * The version of the row this item was read from: the event itself, or on an occurrence of a series the series'
+     * base (a plain occurrence) or its exception (an edited one). A change to THAT row names it (If-Match); a change
+     * made from an older version is refused (412) and nothing is changed.
+     */
+    readonly version?:        number | null;
+    /**
+     * On any occurrence of a series, the series' version: what an exception, a skip, a split, a delete of this and
+     * the following -- and any change to the series' base -- name. Null on a one-off event.
+     */
+    readonly seriesVersion?:  number | null;
+    /**
+     * On a series' own read (and its change's answer): how many of its occurrences are stored as their own rows,
+     * edited or moved one by one. Absent on any other row.
+     */
+    readonly exceptionCount?: number | null;
+    /**
+     * On an occurrence of a series, the slot of the series it stands for (UTC): on a plain occurrence the rule's slot,
+     * which a non-working-day shift can move `start` away from; on an edited one, the slot it replaced. What an
+     * exception, a skip, a split and a delete of this and the following name. Null on a one-off and on the series'
+     * own row.
+     */
+    readonly recurrenceInstant?: string | null;
     /**
      * -- non-working-day policy. Controls what the expander
      * does when a recurring occurrence lands on a holiday or other
@@ -183,7 +210,13 @@ export interface CreateCalendarItemDto {
     readonly nwdPolicy?:   NonWorkingDayPolicy | null;
 }
 
-export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto>;
+export type UpdateCalendarItemDto = Partial<CreateCalendarItemDto> & {
+    /**
+     * On a change of a series the server refused (409) because it would leave occurrences edited one by one, or
+     * skipped dates, on no slot: the same change sent again with this set makes it and removes those (audited).
+     */
+    readonly discardExceptions?: boolean;
+};
 
 /**
  * Wire shape for `POST /api/v1/calendar/items/{itemId}/exception`.

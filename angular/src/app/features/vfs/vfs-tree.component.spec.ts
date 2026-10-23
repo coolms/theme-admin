@@ -153,3 +153,77 @@ describe('VfsTreeComponent -- a live node event refetches the row by path', () =
         http.verify();
     });
 });
+
+/**
+ * The tree's right-click menu, as the grid's: the record carries the node's capability answer, and what
+ * is chosen goes through VfsActionsService.whenAllowed with that node as its subject.
+ */
+describe('VfsTreeComponent -- the right-click menu carries the node\'s capability answer', () => {
+    const chmodNode = { path: '/chmod', meta: { action: 'VfsChmod', capability: 'vfs.node.chmod' } };
+
+    function folder(): VfsNodeDto {
+        return {
+            id: 'd-id', name: 'reports', type: 'directory', path: '/docs/reports', mode: '0755', modeString: 'drwxr-xr-x',
+            size: 0, humanSize: '0 B', mimeType: null, extension: null, uid: 'u1', gid: 'g1',
+            uname: 'admin', gname: 'admin', createdAt: '2026-10-13T09:00:00+00:00', updatedAt: '2026-10-13T09:00:00+00:00',
+            isRendered: false, isMaterialized: true, isSystem: false, isHidden: false, isContainer: true,
+            title: null, description: null, permissions: { read: true, write: true, execute: true },
+            capabilities: { 'vfs.node.chmod': 'denied' },
+        };
+    }
+
+    function build(): { component: VfsTreeComponent; openFromNodes: jasmine.Spy; whenAllowed: jasmine.Spy; execute: jasmine.Spy } {
+        const openFromNodes = jasmine.createSpy('openFromNodes');
+        const whenAllowed = jasmine.createSpy('whenAllowed');
+        const execute = jasmine.createSpy('execute');
+
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+                {
+                    provide: VfsPageStateService,
+                    useValue: { currentPath: signal('/'), reloadTrigger: signal(0), vfsToolbarNodes: signal([chmodNode]) },
+                },
+                { provide: VfsTreeLiveSubscriptionsService, useValue: { reconcile: (): void => {} } },
+                { provide: VfsHomeLabelService, useValue: { register: (): void => {} } },
+                { provide: ContextMenuService,  useValue: { openFromNodes } },
+                { provide: VfsClipboardService, useValue: { hasAny: () => false } },
+                { provide: VfsActionsService,   useValue: { whenAllowed, execute } },
+                { provide: VfsIconService,      useValue: {} },
+            ],
+        });
+
+        const component = TestBed.runInInjectionContext(() => new VfsTreeComponent());
+
+        return { component, openFromNodes, whenAllowed, execute };
+    }
+
+    it('puts the node\'s answer in the menu\'s record', () => {
+        const { component, openFromNodes } = build();
+
+        component.onContextMenu(folder(), new MouseEvent('contextmenu'));
+
+        const record = openFromNodes.calls.mostRecent().args[2] as Record<string, unknown>;
+        expect(record['_capabilities']).toEqual({ 'vfs.node.chmod': 'denied' });
+    });
+
+    it('sends what is chosen through whenAllowed, with that node as its subject', () => {
+        const { component, openFromNodes, whenAllowed, execute } = build();
+        const node = folder();
+
+        component.onContextMenu(node, new MouseEvent('contextmenu'));
+        const onAction = openFromNodes.calls.mostRecent().args[3] as (id: string) => void;
+        onAction('VfsChmod');
+
+        expect(whenAllowed).toHaveBeenCalledTimes(1);
+        const [matched, subjects, act] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[], () => void];
+        expect(matched).toBe(chmodNode);
+        expect(subjects).toEqual([node]);
+        expect(execute).not.toHaveBeenCalled();
+        act();
+        expect(execute).toHaveBeenCalledWith(chmodNode, node);
+    });
+});

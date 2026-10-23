@@ -11,7 +11,7 @@ import { CentrifugoClientService } from '@coolms/ui-angular';
  * event; the rest is the same shape a call card renders from.
  */
 export interface CallLiveEvent {
-    readonly type:            string; // 'call.ringing' | 'call.answered' | 'call.on_hold' | 'call.ended'
+    readonly type:            string; // 'call.placing' | 'call.ringing' | 'call.answered' | 'call.on_hold' | 'call.ended' | 'call.not_placed'
     readonly id:              string;
     readonly callId:          string;
     readonly direction:       string;
@@ -28,6 +28,10 @@ export interface CallLiveEvent {
     readonly answeredAt:      string | null;
     readonly endedAt:         string | null;
     readonly durationSeconds: number | null;
+    /** `call.placing`: when the platform stops trying to place it. Null on every other type. */
+    readonly windowEndsAt:    string | null;
+    /** `call.not_placed`: why. Null on every other type. */
+    readonly reason:          string | null;
 }
 
 /**
@@ -171,6 +175,8 @@ export class CallLiveEventsService {
             answeredAt:      nStr(o['answeredAt']),
             endedAt:         nStr(o['endedAt']),
             durationSeconds: typeof o['durationSeconds'] === 'number' ? o['durationSeconds'] : null,
+            windowEndsAt:    nStr(o['windowEndsAt']),
+            reason:          nStr(o['reason']),
         };
     }
 }

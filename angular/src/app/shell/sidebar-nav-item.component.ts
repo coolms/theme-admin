@@ -10,7 +10,8 @@ import {
   ChangeDetectionStrategy
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/core-angular';
+import { ElevationService, NaviGraphService, NaviGraphNode, SidebarStateService, naviAccessOf } from '@coolms/core-angular';
+import { afterElevation } from './after-elevation';
 /**
  * Recursive admin-sidebar nav item -- renders one NaviGraph node and its
  * descendants, supporting up to three visible levels:
@@ -49,7 +50,21 @@ import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/co
             (keydown.escape)="closeFlyout()">
 
             <div #rowEl class="cms-nav-tree-item__row">
-                @if (isSpecialTarget()) {
+                @if (locked()) {
+                    <!-- LOCKED (the server's 'elevate'): this member of admin is let in once the session is
+                         elevated. Shown, never hidden -- hiding it left no way in (2026-10-12) -- and a
+                         click asks for elevation first, then opens the section in place. Checked BEFORE the
+                         special targets: a locked Terminal item opened its panel without asking. -->
+                    <a href="#"
+                       class="cms-nav-item cms-nav-item--locked"
+                       [class.active]="isActive()"
+                       [style.paddingLeft.px]="indentPx()"
+                       [title]="node().title + ' -- needs an elevated session'"
+                       [attr.aria-label]="node().title + ', needs an elevated session'"
+                       (click)="onLockedClick($event)">
+                        <ng-container [ngTemplateOutlet]="rowInner" />
+                    </a>
+                } @else if (isSpecialTarget()) {
                     <a href="#"
                        class="cms-nav-item"
                        [class.active]="isActive()"
@@ -131,6 +146,9 @@ import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/co
                 <span class="cms-nav-tree-item__icon-spacer"></span>
             }
             <span class="cms-nav-item__label">{{ node().title }}</span>
+            @if (locked()) {
+                <i class="bi bi-lock-fill cms-nav-item__lock" aria-hidden="true"></i>
+            }
         </ng-template>
     `,
     changeDetection: ChangeDetectionStrategy.Eager,
@@ -152,6 +170,14 @@ import { NaviGraphService, NaviGraphNode, SidebarStateService } from '@coolms/co
         .cms-nav-tree-item__icon-spacer {
             width: 16px;
             display: inline-block;
+            flex-shrink: 0;
+        }
+        /* The lock of a section that needs an elevated session: after the label, quieter than it. */
+        .cms-nav-item__lock {
+            margin-left: auto;
+            padding-left: 6px;
+            font-size: .75em;
+            opacity: .7;
             flex-shrink: 0;
         }
         .cms-nav-tree-item__toggle {
@@ -226,6 +252,7 @@ export class SidebarNavItemComponent {
     readonly specialClick = output<NaviGraphNode>();
 
     private readonly router       = inject(Router);
+    private readonly elevation    = inject(ElevationService);
     private readonly naviGraph    = inject(NaviGraphService);
     private readonly sidebarState = inject(SidebarStateService);
 
@@ -320,6 +347,28 @@ export class SidebarNavItemComponent {
     onSpecialClick(event: MouseEvent): void {
         event.preventDefault();
         this.specialClick.emit(this.node());
+    }
+
+    /** The server's 'elevate': this member of admin is let in once the session is elevated. */
+    locked(): boolean {
+        return naviAccessOf(this.node()) === 'elevate';
+    }
+
+    /**
+     * A locked section asks for elevation through the one shared prompt, and opens once the session is elevated --
+     * by the router, so the page is not reloaded (a reload ends an elevation by design). Declined: nothing happens.
+     * Already elevated meanwhile (another tab granted it, the lock not yet refreshed): it simply opens.
+     * A special target (the terminal, a panel) is opened the way it always is, by the host shell, once elevated.
+     */
+    onLockedClick(event: MouseEvent): void {
+        event.preventDefault();
+        afterElevation(this.elevation, () => {
+            if (this.isSpecialTarget()) {
+                this.specialClick.emit(this.node());
+            } else {
+                void this.router.navigateByUrl(this.routerLinkFor());
+            }
+        });
     }
 
     // --- inline expand ---------------------------------------------------

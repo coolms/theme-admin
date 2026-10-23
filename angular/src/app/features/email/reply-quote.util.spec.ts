@@ -19,8 +19,8 @@ describe('reply quote', () => {
 
     const msg = (over: Partial<EmailMessageDetailDto> = {}): EmailMessageDetailDto => ({
         id: 'm1',
-        fromName: 'Ada Lovelace',
-        fromAddress: 'ada@example.test',
+        fromName: 'Sam Roe',
+        fromAddress: 'sam.roe@example.test',
         snippet: 'First line\nSecond line',
         sentAt: '2026-09-15T01:30:00.000Z',
         ...over,
@@ -55,21 +55,21 @@ describe('reply quote', () => {
 
         const quote = buildReplyQuote(msg({ sentAt: iso }), dtf);
 
-        expect(quote.text).toContain('On 2026-09-15 10:30, Ada Lovelace <ada@example.test> wrote:');
+        expect(quote.text).toContain('On 2026-09-15 10:30, Sam Roe <sam.roe@example.test> wrote:');
         expect(quote.text).not.toContain(browserWould);
         expect(quote.text).not.toMatch(/AM|PM/);
-        expect(quote.html).toContain('<p>On 2026-09-15 10:30, Ada Lovelace &lt;ada@example.test&gt; wrote:</p>');
+        expect(quote.html).toContain('<p>On 2026-09-15 10:30, Sam Roe &lt;sam.roe@example.test&gt; wrote:</p>');
     });
 
     it('drops the date clause when there is no instant to name', () => {
-        expect(buildReplyQuote(msg({ sentAt: null }), dtf).text).toContain('\n\nAda Lovelace <ada@example.test> wrote:\n');
+        expect(buildReplyQuote(msg({ sentAt: null }), dtf).text).toContain('\n\nSam Roe <sam.roe@example.test> wrote:\n');
         expect(buildReplyQuote(msg({ sentAt: 'not a date' }), dtf).text).not.toContain('On ');
     });
 
     it('quotes the snippet line by line, escaped for the HTML half', () => {
         const quote = buildReplyQuote(msg({ fromName: null, snippet: 'a < b\n& c' }), dtf);
 
-        expect(quote.text).toContain('ada@example.test wrote:\n> a < b\n> & c');
+        expect(quote.text).toContain('sam.roe@example.test wrote:\n> a < b\n> & c');
         expect(quote.html).toContain('<blockquote>a &lt; b<br>&amp; c</blockquote>');
     });
 });

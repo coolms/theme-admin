@@ -115,15 +115,15 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
     const USER = {
         id:             'u-1',
-        identifier:     'd.popov@example.test',
+        identifier:     'jane.doe@example.com',
         identifierType: 'email',
         isVerified:     true,
         identifiers:    [],
         avatarUrl:      null,
         avatarColor:    null,
-        firstName:      'Dmitry',
-        lastName:       'Popov',
-        fullName:       'Dmitry Popov',
+        firstName:      'Jane',
+        lastName:       'Doe',
+        fullName:       'Jane Doe',
         roles:          ['ROLE_ADMIN'],
         isActive:       true,
         lastLoginAt:    null,
@@ -249,9 +249,9 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
     });
 
  it('renders the page, so every component it imports is reachable from a spec', () => {
-        expect(page.user()?.fullName).toBe('Dmitry Popov');
+        expect(page.user()?.fullName).toBe('Jane Doe');
         expect(page.sections().length).toBe(3);
-        expect(fixture.nativeElement.textContent).toContain('Dmitry Popov');
+        expect(fixture.nativeElement.textContent).toContain('Jane Doe');
     });
 
  // -- ngOnInit seeding -----------------------------------------------------

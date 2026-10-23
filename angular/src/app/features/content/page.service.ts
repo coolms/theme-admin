@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { map, Observable, of, switchMap, throwError } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, resolvePattern } from '@coolms/core-angular';
 import { HydraCollection } from '@coolms/core-angular';
@@ -37,6 +37,20 @@ const VARIANT_MIME = 'text/x-dtmpl';
 
 interface VfsNodeWithExtras extends NodeDto {
     readonly extras?: Record<string, unknown>;
+    /** The file's version, for a reader who may read it: what a save sends back as If-Match. */
+    readonly contentHash?: string | null;
+}
+
+/**
+ * A variant body this service never read (or whose read failed) is not written: without the version it was read at,
+ * the save could only go over whatever is stored now, unseen -- a failed read once turned into an empty body that a
+ * title save wrote over the real one (2026-10-15).
+ */
+export class PageBodyNotReadError extends Error {
+    constructor(readonly path: string) {
+        super(`The body at "${path}" was not read, so it is not written.`);
+        this.name = 'PageBodyNotReadError';
+    }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -343,6 +357,10 @@ export class PageService {
                     path: variantPath,
                     content: '',
                 }).pipe(
+                    // The empty body this made is a version like any other: the first save names it.
+                    tap(node => {
+                        if (node.contentHash) this.bodyVersions.set(variantPath, node.contentHash);
+                    }),
                     switchMap(node => {
                         const hasMeta = data.title !== undefined
                             || (data.extras !== undefined && Object.keys(data.extras).length > 0);
@@ -511,6 +529,12 @@ export class PageService {
 
     // -- internals ----------------------------------------------------------
 
+    /**
+     * The version of each variant body this service read or saved, by path: a save sends it as If-Match, so a body
+     * saved or deleted elsewhere meanwhile answers 412 / 404 and is neither overwritten nor made again (2026-10-14).
+     */
+    private readonly bodyVersions = new Map<string, string>();
+
     private resolveVariantNodeId(pageId: string, locale: string): Observable<string> {
         return this.listVariants(pageId).pipe(
             switchMap(variants => {
@@ -538,8 +562,17 @@ export class PageService {
         // Server returns a JSON-LD `FileContent` envelope; unwrap the `content`
         // field for the editor. The envelope also carries `@id`/`@type`/`@context`
         // which the editor does not need.
-        return this.http.get<{ content?: string }>(url).pipe(
-            map(response => ({ content: response.content ?? '' })),
+        // An answer without its `content` is not an empty body: unread, and its version is not kept, so nothing
+        // is saved over the body on the strength of it.
+        return this.http.get<{ content?: string; contentHash?: string | null }>(url).pipe(
+            tap(response => {
+                if (response.contentHash && typeof response.content === 'string') this.bodyVersions.set(path, response.contentHash);
+                else this.bodyVersions.delete(path);
+            }),
+            map(response => {
+                if (typeof response.content !== 'string') throw new PageBodyNotReadError(path);
+                return { content: response.content };
+            }),
         );
     }
 
@@ -552,7 +585,16 @@ export class PageService {
         // Backend `FileContentResource` expects a JSON-LD `{ "content": "..." }`
         // body and returns `{ "contentHash": "..." }`. Angular's HttpClient
         // serializes the object body as JSON and sets Content-Type for us.
-        return this.http.put<{ contentHash: string }>(url, { content });
+        const version = this.bodyVersions.get(path);
+        if (!version) {
+            return throwError(() => new PageBodyNotReadError(path));
+        }
+        const headers = new HttpHeaders({ 'If-Match': `"${version}"` });
+        return this.http.put<{ contentHash: string }>(url, { content }, { headers }).pipe(
+            tap(response => {
+                if (response?.contentHash) this.bodyVersions.set(path, response.contentHash);
+            }),
+        );
     }
 
     private toPageDto(node: VfsNodeWithExtras, variants: PageVariantSummaryDto[]): PageDto {

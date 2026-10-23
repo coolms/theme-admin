@@ -13,7 +13,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Observable } from 'rxjs';
+import { EMPTY, Observable, catchError, tap, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
     BlockEditorService,
     BlockFieldSchemaDto,
@@ -28,6 +29,7 @@ import {
     OrderedSaveFn,
 } from '@coolms/ui-angular';
 import { ProcessCaptureComponent } from './process-capture.component';
+import type { DrawnByDto } from './drawn-by-notice.component';
 
 /**
  * Landing-page section builder -- the admin authoring surface
@@ -62,6 +64,20 @@ import { ProcessCaptureComponent } from './process-capture.component';
     imports: [FormsModule, OrderedBuilderComponent, ProcessCaptureComponent],
     template: `
         @if (isLanding()) {
+            @if (conflict(); as c) {
+                <div class="blk__conflict" role="alert">
+                    @if (c === 'deleted') {
+                        This page was deleted since its sections were opened. Your edits are still here; saving cannot
+                        make it again.
+                    } @else {
+                        These sections were saved by someone else since you opened them. Your edits are still here,
+                        and nothing of theirs was overwritten.
+                    }
+                    <button type="button" class="cms-btn cms-btn-sm blk__reload" (click)="reloadAfterConflict()">
+                        Reload, discarding my edits
+                    </button>
+                </div>
+            }
             <app-ordered-builder
                 [elements]="blocks()"
                 (elementsChange)="blocks.set($event)"
@@ -76,6 +92,9 @@ import { ProcessCaptureComponent } from './process-capture.component';
                 savedMessage="Sections saved"
                 (saved)="saved.emit()">
                 <ng-template let-block let-i="index">
+                    @if (!typeFor(block)) {
+                        <p class="blk__hint blk__kept">A section of a type this admin does not edit: kept as it is.</p>
+                    }
                     @for (field of fieldsOf(block); track field.name) {
                         @if (field.kind === 'group') {
                             <div class="blk__group">
@@ -163,6 +182,12 @@ import { ProcessCaptureComponent } from './process-capture.component';
             padding: 6px; border-radius: var(--cms-radius-sm, 4px); background: var(--cms-border-light);
         }
         .blk__item-del { margin-left: auto; }
+        .blk__conflict {
+            margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-sm);
+            background: var(--cms-warning-light); color: var(--cms-warning-text); font-size: .8125rem;
+        }
+        .blk__kept { flex: 1 0 100%; margin: 0; }
+        .blk__reload { margin-left: 8px; }
     `],
 })
 export class BlockEditorComponent {
@@ -187,6 +212,12 @@ export class BlockEditorComponent {
      * body editor and let the block list become the scrollable main area.
      */
     readonly activeChange = output<boolean>();
+    /**
+     * Emitted on load with the page's "drawn by" (which frame draws it, and whether that frame draws its content), or
+     * null when the read failed or nothing that renders answered. The page editor shows it above the body, for every
+     * page, landing or not.
+     */
+    readonly drawnByChange = output<DrawnByDto | null>();
 
     /** The generic ordered-list substrate this component drives. Null until the
      *  page is a landing page (it lives inside the `@if`). */
@@ -207,6 +238,15 @@ export class BlockEditorComponent {
     readonly dirty = computed(() => this.builder()?.dirty() ?? false);
 
     private loadedPath = '';
+
+    /**
+     * The version the sections were read at, named by every save; null when they were not read as stored (an
+     * answer without `storedBlocks` is the render view, and is never saved over).
+     */
+    private readonly version = signal<string | null>(null);
+
+    /** A save was refused: the sections were saved by someone else, or the page went. No save until a reload. */
+    readonly conflict = signal<'changed' | 'deleted' | null>(null);
 
     constructor() {
         // Re-fetch whenever the bound path changes (load is async -- guards on
@@ -252,8 +292,24 @@ export class BlockEditorComponent {
 
     readonly labelOfBlock = (el: OrderedElement): string => this.typeLabel(el);
 
-    readonly saveBlocks: OrderedSaveFn = (els: OrderedElement[]) =>
-        this.svc.save(this.loadedPath, els);
+    readonly saveBlocks: OrderedSaveFn = (els: OrderedElement[]) => {
+        // Only over the sections as stored, at the version they were read at, and never after a refusal.
+        const version = this.version();
+        if (version === null || this.conflict() !== null) {
+            return throwError(() => new Error('The sections cannot be saved over: reload the page.'));
+        }
+        return this.svc.save(this.loadedPath, els, version).pipe(
+            tap(v => this.version.set(v)),
+            catchError((err: unknown) => {
+                if (err instanceof HttpErrorResponse && (err.status === 412 || err.status === 404)) {
+                    this.conflict.set(err.status === 412 ? 'changed' : 'deleted');
+                    this.cdr.markForCheck();
+                }
+
+                return throwError(() => err);
+            }),
+        );
+    };
 
     // -- Lookups / formatting ------------------------------------------------
 
@@ -351,6 +407,11 @@ export class BlockEditorComponent {
         this.builder()?.markDirty();
     }
 
+    /** The conflict notice's Reload: the sections as stored now, and their version, in place of the edits. */
+    reloadAfterConflict(): void {
+        this.load(this.loadedPath);
+    }
+
     // -- Load ----------------------------------------------------------------
 
     private load(path: string): void {
@@ -360,18 +421,26 @@ export class BlockEditorComponent {
                 next: dto => {
                     this.types.set(dto.types ?? []);
                     this.contentType.set(dto.contentType ?? null);
+                    // The sections as stored, never the render view: what the view hides would be deleted by a save.
+                    // Without them (or a version) the sections are shown and never saved over.
+                    const stored = Array.isArray(dto.storedBlocks) ? dto.storedBlocks : null;
+                    this.version.set(stored !== null ? (dto.version ?? null) : null);
+                    this.conflict.set(null);
                     // Deep-clone so the working copy is freely mutable.
-                    this.blocks.set((dto.blocks ?? []).map(b => this.cloneBlock(b)));
+                    this.blocks.set((stored ?? dto.blocks ?? []).map(b => this.cloneBlock(b)));
                     this.builder()?.markPristine();
                     this.activeChange.emit(this.isLanding());
+                    this.drawnByChange.emit(dto.drawnBy ?? null);
                     this.cdr.markForCheck();
                 },
                 error: () => {
                     this.types.set([]);
                     this.contentType.set(null);
+                    this.version.set(null);
                     this.blocks.set([]);
                     this.builder()?.markPristine();
                     this.activeChange.emit(false);
+                    this.drawnByChange.emit(null);
                     this.cdr.markForCheck();
                 },
             });

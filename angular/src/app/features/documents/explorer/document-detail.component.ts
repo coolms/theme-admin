@@ -4,6 +4,7 @@ import { ComponentRegistry } from '@coolms/core-angular';
 import { CmsRightPanelComponent } from '@coolms/ui-angular';
 import { DocumentPageStateService } from './document-page-state.service';
 import { InstanceDetailComponent } from './instance-detail.component';
+import { TemplateVariablesComponent } from './template-variables.component';
 
 /**
  * Right-panel detail dispatcher.
@@ -27,7 +28,13 @@ import { InstanceDetailComponent } from './instance-detail.component';
     selector: 'cms-document-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, NgComponentOutlet, InstanceDetailComponent, CmsRightPanelComponent],
+    imports: [
+        CommonModule,
+        NgComponentOutlet,
+        InstanceDetailComponent,
+        CmsRightPanelComponent,
+        TemplateVariablesComponent,
+    ],
     template: `
         <cms-right-panel [node]="panelNode()" (closed)="onClose()">
             @if (mode() === 'instances') {
@@ -52,6 +59,10 @@ import { InstanceDetailComponent } from './instance-detail.component';
                                 Register a format module in <code>app.config.ts</code> via
                                 <code>ComponentRegistry.register('document-detail-{{ t.format }}', …)</code>.
                             </p>
+                        </div>
+                        <!-- Every format's author can switch variables on, with or without a panel of its own. -->
+                        <div class="cms-document-detail__variables">
+                            <cms-template-variables [template]="t" />
                         </div>
                     }
                 } @else {
@@ -80,6 +91,10 @@ import { InstanceDetailComponent } from './instance-detail.component';
             background: var(--cms-border-light);
             padding: 1px 4px;
             border-radius: var(--cms-radius-sm);
+        }
+        .cms-document-detail__variables {
+            padding: 0 var(--cms-panel-padding) var(--cms-panel-padding);
+            overflow: auto;
         }
         .cms-document-detail__no-handler-hint {
             font-size: 0.85rem;

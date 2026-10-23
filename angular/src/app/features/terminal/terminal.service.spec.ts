@@ -81,7 +81,7 @@ describe('TerminalService -- a refusal keeps its reason', () => {
 describe('TerminalService -- completion carries the shell location', () => {
     let service: TerminalService;
     let posted: { url: string; body: unknown } | null;
-    let response: { suggestions: string[]; total?: number };
+    let response: { suggestions: string[]; total?: number; sudo?: string[] };
 
     beforeEach(() => {
         posted = null;
@@ -135,6 +135,23 @@ describe('TerminalService -- completion carries the shell location', () => {
         const answer = await firstValueFrom(service.complete('ls /content/', 12));
 
         expect(answer.total).toBe(2);
+    });
+
+    /** The verbs that run only through sudo for this person (2026-10-13): marked as `help` marks them. */
+    it('carries the sudo marks, and only for verbs it suggests', async () => {
+        response = { suggestions: ['navi:delete', 'navi:seed', 'navi:tree'], sudo: ['navi:delete', 'navi:seed', 'rm'] };
+
+        const answer = await firstValueFrom(service.complete('navi:', 5));
+
+        expect(answer.sudo).toEqual(['navi:delete', 'navi:seed']);
+    });
+
+    it('marks nothing for a server that says nothing about sudo', async () => {
+        response = { suggestions: ['navi:delete'] };
+
+        const answer = await firstValueFrom(service.complete('navi:', 5));
+
+        expect(answer.sudo).toEqual([]);
     });
 
     it('falls back to the root when the caller names no place', async () => {

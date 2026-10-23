@@ -25,6 +25,7 @@ import { CmsWizardAudienceStepComponent } from './steps/audience-step.component'
 import { CmsWizardOutputStepComponent } from './steps/output-step.component';
 import { CmsWizardReviewStepComponent } from './steps/review-step.component';
 import { FilterAudienceEntity } from './filter-audience-entity';
+import { callerFillablePaths, onlyCallerFillable } from './caller-fillable.helpers';
 
 /** Data the CDK dialog opener passes through `DIALOG_DATA`. */
 export interface CmsDocumentGenerationWizardData {
@@ -112,7 +113,7 @@ export interface CmsDocumentGenerationWizardResult {
                         [recipientsRql]="recipientsRql()"
                         [recipientsCount]="recipientsCount()"
                         [audience]="audience()"
-                        [plainVariables]="plainVariables()"
+                        [plainVariables]="submittedPlainVariables()"
                         [outputBasePath]="outputBasePath()"
                         [filenamePattern]="filenamePattern()" />
                     @if (submitError()) {
@@ -178,6 +179,9 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
         this.template.contextSchema?.variables ?? [],
     );
 
+    /** The variables the template's author switched on as "Filled by the caller": the only ones the wizard asks for. */
+    protected readonly fillablePaths = computed(() => callerFillablePaths(this.schemaVariables()));
+
     // --- Wizard state --------------------------------------------------
     protected readonly currentStepId = signal<string>('mode');
     protected readonly mode = signal<WizardMode>('single');
@@ -188,6 +192,13 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
 
     protected readonly audience = signal<Record<string, string>>({});
     protected readonly plainVariables = signal<Record<string, unknown>>({});
+    /**
+     * What is reviewed and sent: only the values at a fillable path. A draft from before the author switched a
+     * variable off may hold others, and the server would refuse the whole request for them (400).
+     */
+    protected readonly submittedPlainVariables = computed(() =>
+        onlyCallerFillable(this.plainVariables(), this.fillablePaths()),
+    );
     protected readonly outputBasePath = signal<string>('');
     protected readonly filenamePattern = signal<string>('');
 
@@ -361,7 +372,7 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
             outputFormat:     this.outputFormat(),
             mode,
             audienceCriteria,
-            plainVariables:   this.plainVariables(),
+            plainVariables:   this.submittedPlainVariables(),
             outputBasePath:   this.outputBasePath(),
             filenamePattern:  this.filenamePattern(),
         };

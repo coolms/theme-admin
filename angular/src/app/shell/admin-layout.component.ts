@@ -4,8 +4,9 @@ import { NgClass, NgComponentOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { Store } from '@ngxs/store';
-import { AppConfigState, ConsoleActivation, ConsolePanelHost, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
+import { AppConfigState, ConsoleActivation, ConsolePanelHost, ElevationService, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
+    bindKeys,
     BottomDrawerService,
     ContextMenuComponent,
     ContextMenuService,
@@ -14,6 +15,9 @@ import {
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
+import { navFollowsElevation } from './nav-follows-elevation';
+import { togglePanelByRule } from './open-panel';
+import { panelAccessIn } from './nav-offers';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -286,7 +290,7 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
         <div class="coolms-admin-shell">
 
             <header class="coolms-topbar">
-                <app-admin-topbar (panelToggle)="togglePanel($event)" />
+                <app-admin-topbar (panelToggle)="requestPanel($event)" />
             </header>
 
             <!-- Body: sidebar + main — collapses when terminal is maximized -->
@@ -404,6 +408,8 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 export class AdminLayoutComponent implements OnInit {
     /** The modules' console contributions, filtered by what the manifest says is installed. */
     protected readonly console = inject(ConsoleActivation);
+    /** The panel keys belong to the page: none toggles a panel beneath an open dialog. In text fields too, as before. */
+    private readonly unbindKeys = bindKeys(event => this.onKeydown(event), { inControls: true });
     readonly naviGraph     = inject(NaviGraphService);
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);
@@ -414,6 +420,7 @@ export class AdminLayoutComponent implements OnInit {
     private readonly theme      = inject(ThemeService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly ctxMenuSvc = inject(ContextMenuService);
+    private readonly elevation  = inject(ElevationService);
 
     /** Which console panels are open, and which of them asked for the whole body. */
     readonly panelOpen      = signal<ReadonlySet<string>>(new Set());
@@ -540,15 +547,13 @@ export class AdminLayoutComponent implements OnInit {
         }
     }
 
-    @HostListener('document:keydown', ['$event'])
-    onKeydown(event: KeyboardEvent): void {
-        if (!(event.ctrlKey || event.metaKey)) return;
-        // A panel's declared key (the terminal's is `), with Ctrl or Cmd.
+    /** Bound through the keyboard scope (a field above); true when it opened or closed a panel. */
+    onKeydown(event: KeyboardEvent): boolean {
+        if (!(event.ctrlKey || event.metaKey)) return false;
+        // A panel's declared key (the terminal's is `), with Ctrl or Cmd -- by the same rule as its toggle: nothing
+        // where the menu has no item that opens it for this account, elevation first where that item is locked.
         const panel = this.console.panels().find(p => p.toggle.key === event.key);
-        if (panel) {
-            event.preventDefault();
-            this.togglePanel(panel.id);
-        }
+        return panel !== undefined && this.requestPanel(panel.id);
     }
 
     @HostListener('document:mousemove', ['$event'])
@@ -566,6 +571,19 @@ export class AdminLayoutComponent implements OnInit {
         this.bdStartY   = event.clientY;
         this.bdStartH   = this.bottomDrawer.height();
         event.preventDefault();
+    }
+
+    /**
+     * A panel asked for from the top bar or by its keyboard shortcut, by the navigation rule: only where the menu has
+     * the item that opens it, and after elevation where that item is locked (see {@link togglePanelByRule}).
+     */
+    requestPanel(id: string): boolean {
+        return togglePanelByRule(
+            panelAccessIn(this.naviGraph.adminNav(), id),
+            this.panelOpen().has(id),
+            this.elevation,
+            () => this.togglePanel(id),
+        );
     }
 
     togglePanel(id: string): void {
@@ -614,7 +632,12 @@ export class AdminLayoutComponent implements OnInit {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const url = manifest?.navi?.adminNavGraph;
         if (url) {
-            this.naviGraph.loadAdminNav(url).subscribe();
+            // The menu, loaded once and re-asked on every change of elevation -- one stream, so an older answer
+            // never lands after a newer one. The server answers it per elevation state: a section is locked before
+            // a grant and open after it, and locked again when the elevation ends (2026-10-12).
+            navFollowsElevation(this.naviGraph, this.elevation, url)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe();
         }
 
         // Resolve activeNav override for the already-active route on fresh load.

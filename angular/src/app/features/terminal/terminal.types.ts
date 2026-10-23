@@ -16,12 +16,16 @@ export interface TerminalCompleteResponse {
     suggestions: string[];
     /** How many matched in all. More than `suggestions.length` means capped. */
     total?: number;
+    /** The suggested verbs that run only through `sudo` for this person (a subset of `suggestions`). */
+    sudo?: string[];
 }
 
 /** A completion answer: what to show, and what it is a part of. */
 export interface TerminalCompletions {
     suggestions: string[];
     total: number;
+    /** The suggested verbs that run only through `sudo` for this person; empty from a server that says nothing. */
+    sudo: readonly string[];
 }
 
 /**
@@ -33,6 +37,8 @@ export class TerminalRefusedError extends Error {
     constructor(
         public readonly status: number,
         public readonly detail: string,
+        /** The server stamped the refusal: it was for want of an elevated session, nothing else. */
+        public readonly elevationRequired = false,
     ) {
         super(detail);
         this.name = 'TerminalRefusedError';

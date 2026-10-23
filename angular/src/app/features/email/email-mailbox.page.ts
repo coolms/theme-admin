@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, catchError, debounceTime, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AuthState } from '@coolms/core-angular';
@@ -21,8 +22,9 @@ import {
     ToastService,
     ToolbarAction,
 } from '@coolms/ui-angular';
-import { EmailDelegationsCardComponent } from './email-delegations-card.component';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
+import { MailPreferencesService } from './mail-preferences.service';
+import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -96,7 +98,7 @@ interface ComposeDraft {
     selector: 'app-email-mailbox-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe, CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent, EmailDelegationsCardComponent],
+    imports: [FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe, CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent],
     template: `
         <div class="mbx">
             <cms-page-header icon="envelope" [title]="'Email'"
@@ -152,7 +154,7 @@ interface ComposeDraft {
                         </div>
                         @if (selectedMailboxId()) {
                             <div class="mbx__rail-actions">
-                                <button type="button" class="mbx__rail-action" (click)="openEditMailbox()">
+                                <button type="button" class="mbx__rail-action" (click)="openMailboxSettings()">
                                     <i class="bi bi-gear"></i> Settings
                                 </button>
                             </div>
@@ -599,7 +601,7 @@ interface ComposeDraft {
                 <div class="mbx__overlay" (click)="closeMailboxEditor()">
                     <div class="mbx__compose mbx__compose--wide" (click)="$event.stopPropagation()">
                         <div class="mbx__compose-head">
-                            <span>{{ mailboxEditorMode() === 'edit' ? 'Mailbox settings' : 'Add mailbox' }}</span>
+                            <span>Add mailbox</span>
                             <button type="button" class="mbx__compose-close" (click)="closeMailboxEditor()" aria-label="Close">
                                 <i class="bi bi-x-lg"></i>
                             </button>
@@ -626,30 +628,28 @@ interface ComposeDraft {
                                     <input type="email" [(ngModel)]="mbForm.emailAddress" placeholder="support@example.com" />
                                 </label>
 
-                                @if (mailboxEditorMode() === 'create') {
+                                <label class="mbx__field">
+                                    <span>Authentication</span>
+                                    <select [(ngModel)]="mbForm.authMethod" (ngModelChange)="onAuthMethodChange($event)">
+                                        <option value="password">Password</option>
+                                        <option value="oauth">OAuth (connect an account)</option>
+                                    </select>
+                                </label>
+                                @if (mbForm.authMethod === 'oauth') {
                                     <label class="mbx__field">
-                                        <span>Authentication</span>
-                                        <select [(ngModel)]="mbForm.authMethod" (ngModelChange)="onAuthMethodChange($event)">
-                                            <option value="password">Password</option>
-                                            <option value="oauth">OAuth (connect an account)</option>
+                                        <span>Provider</span>
+                                        <select [(ngModel)]="mbForm.oauthProvider" (ngModelChange)="onProviderChange($event)">
+                                            @for (p of oauthProviders(); track p.key) {
+                                                <option [value]="p.key">{{ p.label || p.key }}</option>
+                                            }
                                         </select>
+                                        <small class="mbx__field-hint">
+                                            The IMAP/SMTP servers are pre-filled for {{ providerLabel(mbForm.oauthProvider) }}.
+                                            The last step opens {{ providerLabel(mbForm.oauthProvider) }}'s consent screen;
+                                            the mailbox is created only once the account is authorized. It signs in as its
+                                            address, and no password is stored.
+                                        </small>
                                     </label>
-                                    @if (mbForm.authMethod === 'oauth') {
-                                        <label class="mbx__field">
-                                            <span>Provider</span>
-                                            <select [(ngModel)]="mbForm.oauthProvider" (ngModelChange)="onProviderChange($event)">
-                                                @for (p of oauthProviders(); track p.key) {
-                                                    <option [value]="p.key">{{ p.label || p.key }}</option>
-                                                }
-                                            </select>
-                                            <small class="mbx__field-hint">
-                                                The IMAP/SMTP servers are pre-filled for {{ providerLabel(mbForm.oauthProvider) }}.
-                                                The last step opens {{ providerLabel(mbForm.oauthProvider) }}'s consent screen;
-                                                the mailbox is created only once the account is authorized. It signs in as its
-                                                address, and no password is stored.
-                                            </small>
-                                        </label>
-                                    }
                                 }
                             }
 
@@ -679,11 +679,9 @@ interface ComposeDraft {
                                             <span>Username</span>
                                             <input type="text" [(ngModel)]="mbForm.imapUsername"
                                                    [placeholder]="mbForm.emailAddress.trim() || 'support@example.com'" />
-                                            @if (mailboxEditorMode() === 'create') {
-                                                <small class="mbx__field-hint">
-                                                    Leave blank to sign in as the address. An alias that differs is an administrator's setting.
-                                                </small>
-                                            }
+                                            <small class="mbx__field-hint">
+                                                Leave blank to sign in as the address. An alias that differs is an administrator's setting.
+                                            </small>
                                         </label>
                                     } @else {
                                         <div class="mbx__field">
@@ -721,11 +719,9 @@ interface ComposeDraft {
                                             <span>Username</span>
                                             <input type="text" [(ngModel)]="mbForm.smtpUsername"
                                                    [placeholder]="mbForm.emailAddress.trim() || 'support@example.com'" />
-                                            @if (mailboxEditorMode() === 'create') {
-                                                <small class="mbx__field-hint">
-                                                    Leave blank to sign in as the address. An alias that differs is an administrator's setting.
-                                                </small>
-                                            }
+                                            <small class="mbx__field-hint">
+                                                Leave blank to sign in as the address. An alias that differs is an administrator's setting.
+                                            </small>
                                         </label>
                                     } @else {
                                         <div class="mbx__field">
@@ -757,31 +753,8 @@ interface ComposeDraft {
                                     <label class="mbx__field">
                                         <span>Password</span>
                                         <input type="password" [(ngModel)]="mbForm.password" autocomplete="new-password"
-                                               [placeholder]="mailboxEditorMode() === 'edit' ? 'Leave blank to keep the stored password' : 'Mailbox password'" />
+                                               placeholder="Mailbox password" />
                                     </label>
-                                } @else if (mailboxEditorMode() === 'edit') {
-                                    <div class="mbx__oauth">
-                                        <span class="mbx__oauth-label">{{ providerLabel(mbForm.oauthProvider) }} connection</span>
-                                        <div class="mbx__oauth-row">
-                                            @if (editingOauthConnected()) {
-                                                <span class="mbx__oauth-badge mbx__oauth-badge--ok">
-                                                    <i class="bi bi-check-circle-fill"></i> Connected
-                                                </span>
-                                            } @else {
-                                                <span class="mbx__oauth-badge">
-                                                    <i class="bi bi-exclamation-circle"></i> Not connected
-                                                </span>
-                                            }
-                                            <button type="button" class="mbx__btn" [disabled]="connecting()"
-                                                    (click)="connectMailbox()">
-                                                <i class="bi bi-box-arrow-up-right"></i>
-                                                {{ connecting() ? 'Redirecting…' : (editingOauthConnected() ? 'Reconnect' : 'Connect') }} with {{ providerLabel(mbForm.oauthProvider) }}
-                                            </button>
-                                        </div>
-                                        <small class="mbx__field-hint">
-                                            Connecting opens {{ providerLabel(mbForm.oauthProvider) }}'s consent screen, then returns here. No password is stored.
-                                        </small>
-                                    </div>
                                 }
 
                                 <label class="mbx__field">
@@ -803,21 +776,10 @@ interface ComposeDraft {
                                     <span>Enabled (included in fetch/send)</span>
                                 </label>
 
-                                @if (mailboxEditorMode() === 'edit' && editingMailboxId()) {
-                                    <div style="margin-top: 14px;">
-                                        <app-email-delegations-card [mailboxId]="editingMailboxId()!" />
-                                    </div>
-                                }
                             }
                         </div>
                         <div class="mbx__compose-foot mbx__compose-foot--split">
                             <div class="mbx__foot-left">
-                                @if (mailboxEditorMode() === 'edit') {
-                                    <button type="button" class="mbx__btn mbx__btn--danger"
-                                            [disabled]="savingMailbox()" (click)="deleteMailbox()">
-                                        <i class="bi bi-trash"></i> {{ deleteArmed() ? 'Confirm delete' : 'Delete' }}
-                                    </button>
-                                }
                             </div>
                             <div class="mbx__foot-right">
                                 <button type="button" class="mbx__btn" (click)="closeMailboxEditor()">Cancel</button>
@@ -839,7 +801,7 @@ interface ComposeDraft {
                                 } @else {
                                     <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="savingMailbox()"
                                             (click)="saveMailbox()">
-                                        {{ savingMailbox() ? 'Saving…' : (mailboxEditorMode() === 'edit' ? 'Save' : 'Create mailbox') }}
+                                        {{ savingMailbox() ? 'Saving…' : 'Create mailbox' }}
                                     </button>
                                 }
                             </div>
@@ -1197,12 +1159,14 @@ interface ComposeDraft {
 })
 export class EmailMailboxPageComponent implements OnInit {
     private readonly email = inject(EmailService);
+    private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
+    private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
 
     /** Current user UUID (rfc4122) -- the per-user realtime channel `email.user.{id}`. */
@@ -1429,22 +1393,16 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly importing = signal<boolean>(false);
 
     readonly mailboxEditorOpen = signal<boolean>(false);
-    readonly mailboxEditorMode = signal<'create' | 'edit'>('create');
     readonly savingMailbox = signal<boolean>(false);
-    readonly deleteArmed = signal<boolean>(false);
     /** Which of the 4 wizard steps the mailbox editor is showing (1-based). Reset to 1 on open. */
     readonly mbStep = signal(1);
     /** Step numbers for the wizard progress indicator. */
     readonly mbSteps = [1, 2, 3, 4] as const;
-    /** The mailbox currently open in the editor (edit mode) -- drives the delegates card. */
-    readonly editingMailboxId = signal<string | null>(null);
     readonly securityOptions: MailboxSecurity[] = ['none', 'ssl', 'starttls'];
     mbForm: MailboxFormModel = EmailMailboxPageComponent.blankMailboxForm();
 
-    // OAuth connect: the edited mailbox's connection state + an
-    // in-flight "Connect with ..." redirect.
+    // OAuth connect: an in-flight "Connect with ..." redirect of a new mailbox.
     readonly connecting = signal<boolean>(false);
-    readonly editingOauthConnected = signal<boolean>(false);
     /** After returning from the provider's consent, select this mailbox once the list loads. */
     private pendingSelectId: string | null = null;
 
@@ -1471,8 +1429,10 @@ export class EmailMailboxPageComponent implements OnInit {
         ).subscribe(list => this.contactOptions.set(this.toRecipientOptions(list)));
 
         this.consumeOAuthReturn();
-        this.email.listMailboxes().subscribe({
-            next: list => {
+        // The mailboxes and the person's mail settings together: the settings name the mailbox to open on. A setting
+        // that cannot be read is its default -- the page never waits on it.
+        forkJoin({ list: this.email.listMailboxes(), prefs: this.mailPrefs.readOrDefaults() }).subscribe({
+            next: ({ list, prefs }) => {
                 this.mailboxes.set(list);
                 this.loadingMailboxes.set(false);
                 this.loadMailboxUnread(list);
@@ -1480,13 +1440,9 @@ export class EmailMailboxPageComponent implements OnInit {
                 const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
                 const prefer = this.pendingSelectId;
                 this.pendingSelectId = null;
-
-                // Precedence: an OAuth-return target, then the persisted last mailbox,
-                // then the first mailbox -- each only if it still exists in the list.
-                // `.at(0)` (not `[0]`) so the empty-list case types as `string | null`.
-                const target = (prefer !== null && list.some(m => m.id === prefer)) ? prefer
-                    : (saved !== null && list.some(m => m.id === saved)) ? saved
-                        : (list.at(0)?.id ?? null);
+                // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
+                // the persisted last mailbox, then the first mailbox -- each only if it still exists in the list.
+                const target = openingMailbox(list, prefer, prefs.defaultMailboxId, saved);
                 if (target !== null) {
                     this.selectMailbox(target);
                 }
@@ -1636,7 +1592,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.thread.set([]);
         this.moveMenu.set(null);
         this.deletePrompt.set(null);
-        this.loadRemoteImages.set(false);
+        // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
+        this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
         this.loadingDetail.set(true);
         this.email.getMessage(id).subscribe({
             next: detail => {
@@ -2557,51 +2514,21 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openCreateMailbox(): void {
-        this.mailboxEditorMode.set('create');
-        this.editingMailboxId.set(null);
-        this.deleteArmed.set(false);
         this.mbStep.set(1);
         this.mbForm = EmailMailboxPageComponent.blankMailboxForm();
         this.mailboxEditorOpen.set(true);
     }
 
-    openEditMailbox(): void {
-        const mb = this.mailboxes().find(x => x.id === this.selectedMailboxId());
-        if (mb) {
-            this.beginEdit(mb);
+    /** A mailbox's settings are a page of their own (decided 2026-10-15); this wizard only adds a mailbox. */
+    openMailboxSettings(): void {
+        const id = this.selectedMailboxId();
+        if (id) {
+            void this.router.navigate(['/email/mailboxes', id, 'settings']);
         }
-    }
-
-    /** Populate + open the editor in edit mode for a specific mailbox DTO. */
-    private beginEdit(mb: EmailMailboxDto): void {
-        this.mailboxEditorMode.set('edit');
-        this.editingMailboxId.set(mb.id);
-        this.deleteArmed.set(false);
-        this.mbStep.set(1);
-        this.editingOauthConnected.set(mb.oauthConnected === true);
-        this.mbForm = {
-            label: mb.label ?? '',
-            emailAddress: mb.emailAddress ?? '',
-            imapHost: mb.imapHost ?? '',
-            imapPort: mb.imapPort ?? 993,
-            imapSecurity: (mb.imapSecurity as MailboxSecurity | undefined) ?? 'ssl',
-            imapUsername: mb.imapUsername ?? '',
-            smtpHost: mb.smtpHost ?? '',
-            smtpPort: mb.smtpPort ?? 465,
-            smtpSecurity: (mb.smtpSecurity as MailboxSecurity | undefined) ?? 'ssl',
-            smtpUsername: mb.smtpUsername ?? '',
-            password: '',
-            enabled: mb.enabled ?? true,
-            inboundWorkflowKey: mb.inboundWorkflowKey ?? '',
-            authMethod: (mb.authMethod as MailboxAuthMethod | undefined) ?? 'password',
-            oauthProvider: mb.oauthProvider ?? 'google',
-        };
-        this.mailboxEditorOpen.set(true);
     }
 
     closeMailboxEditor(): void {
         this.mailboxEditorOpen.set(false);
-        this.deleteArmed.set(false);
     }
 
     /** Human title for the current wizard step (shown in the step indicator). */
@@ -2617,12 +2544,12 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** A NEW OAuth mailbox: the wizard ends in a connect, not a create. */
     isOauthCreate(): boolean {
-        return this.mailboxEditorMode() === 'create' && this.mbForm.authMethod === 'oauth';
+        return this.mbForm.authMethod === 'oauth';
     }
 
     /** Whether the IMAP/SMTP username fields are shown editable -- see the wizard rules. */
     usernameEditable(): boolean {
-        return usernameFieldsEditable(this.mailboxEditorMode(), this.mbForm.authMethod, this.callerIsAdmin());
+        return usernameFieldsEditable(this.mbForm.authMethod, this.callerIsAdmin());
     }
 
     /** Why the username is shown rather than asked for. */
@@ -2715,34 +2642,6 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Begin the OAuth connect for the edited mailbox (): fetch the consent
-     * URL and hand the browser off to Google. On return, `/email/oauth/callback` bounces
-     * back to `/admin/email?oauth=connected` (handled by {@link consumeOAuthReturn}).
-     */
-    connectMailbox(): void {
-        const id = this.editingMailboxId();
-        if (id === null) {
-            return;
-        }
-        this.connecting.set(true);
-        this.email.authorizeMailbox(id).subscribe({
-            next: res => {
-                const url = res.authorizationUrl;
-                if (url !== undefined && url !== '') {
-                    window.location.href = url; // leave the SPA for Google's consent screen
-                } else {
-                    this.connecting.set(false);
-                    this.toast.error('Could not start the Google connection.');
-                }
-            },
-            error: () => {
-                this.connecting.set(false);
-                this.toast.error('Could not start the Google connection.');
-            },
-        });
-    }
-
-    /**
      * Authorize first: hand the intended NEW OAuth mailbox to the server as a draft and
      * leave for the provider's consent screen. No mailbox exists until the callback has
      * proven the grant; the callback bounces to `?oauth=connected&mailbox=<new id>`
@@ -2819,19 +2718,16 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const f = this.mbForm;
-        const isEdit = this.mailboxEditorMode() === 'edit';
 
         // Required-field checks mirror the backend CreateMailboxProcessor. Usernames are
         // not among them: the server derives both from the address, and only an
         // administrator may send an alias (the wizard rules).
-        if (!isEdit) {
-            if (!this.validateAllSteps()) {
-                return;
-            }
-            if (f.password.trim() === '') {
-                this.toast.error('Password is required.');
-                return;
-            }
+        if (!this.validateAllSteps()) {
+            return;
+        }
+        if (f.password.trim() === '') {
+            this.toast.error('Password is required.');
+            return;
         }
 
         const request: MailboxWriteRequest = {
@@ -2847,62 +2743,20 @@ export class EmailMailboxPageComponent implements OnInit {
             // Present '' clears the trigger; a value sets it (merge-patch convention).
             inboundWorkflowKey: f.inboundWorkflowKey.trim(),
         };
-        if (isEdit) {
-            request.imapUsername = f.imapUsername.trim();
-            request.smtpUsername = f.smtpUsername.trim();
-        } else {
-            Object.assign(request, usernamesForCreate(this.callerIsAdmin(), f.imapUsername, f.smtpUsername));
-        }
-        if (f.password.trim() !== '') {
-            // Send the password ONLY when one was typed -- blank on edit keeps the
-            // stored credential (it's write-only, never read back into the form).
-            request.password = f.password;
-        }
-
-        const editId = this.editingMailboxId();
-        const call = isEdit && editId !== null
-            ? this.email.updateMailbox(editId, request)
-            : this.email.createMailbox(request);
+        Object.assign(request, usernamesForCreate(this.callerIsAdmin(), f.imapUsername, f.smtpUsername));
+        request.password = f.password;
 
         this.savingMailbox.set(true);
-        call.subscribe({
+        this.email.createMailbox(request).subscribe({
             next: saved => {
                 this.savingMailbox.set(false);
                 this.mailboxEditorOpen.set(false);
-                this.toast.success(isEdit ? 'Mailbox saved.' : 'Mailbox created.');
+                this.toast.success('Mailbox created.');
                 this.reloadMailboxes(saved.id);
             },
             error: () => {
                 this.savingMailbox.set(false);
-                this.toast.error(isEdit
-                    ? 'Could not save the mailbox.'
-                    : 'Could not create the mailbox — check the connection settings.');
-            },
-        });
-    }
-
-    /** Two-click guard: the first click arms, the second deletes. */
-    deleteMailbox(): void {
-        if (!this.deleteArmed()) {
-            this.deleteArmed.set(true);
-            return;
-        }
-        const id = this.editingMailboxId();
-        if (id === null) {
-            return;
-        }
-        this.savingMailbox.set(true);
-        this.email.deleteMailbox(id).subscribe({
-            next: () => {
-                this.savingMailbox.set(false);
-                this.mailboxEditorOpen.set(false);
-                this.deleteArmed.set(false);
-                this.toast.success('Mailbox deleted.');
-                this.reloadMailboxes(null);
-            },
-            error: () => {
-                this.savingMailbox.set(false);
-                this.toast.error('Could not delete the mailbox.');
+                this.toast.error('Could not create the mailbox — check the connection settings.');
             },
         });
     }

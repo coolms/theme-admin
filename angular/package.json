@@ -2,12 +2,13 @@
   "name": "coolms-admin-spa",
   "private": true,
   "scripts": {
+    "prestart": "node scripts/assemble-console.mjs && node scripts/stamp-client.mjs",
     "start": "ng serve --port 4200 --proxy-config proxy.conf.json",
-    "prebuild": "node ../../../tools/check-template-backticks.mjs && node scripts/assemble-console.mjs",
+    "prebuild": "node ../../../tools/check-template-backticks.mjs && node scripts/assemble-console.mjs && node scripts/stamp-client.mjs",
     "build": "ng build --output-path=../public --base-href=/admin/",
     "watch": "ng build --watch --output-path=../public --base-href=/admin/",
     "assemble": "node scripts/assemble-console.mjs",
-    "pretest": "node scripts/assemble-console.mjs",
+    "pretest": "node scripts/assemble-console.mjs && node scripts/stamp-client.mjs",
     "test": "ng test --watch=false",
     "test:watch": "ng test",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
@@ -23,14 +24,14 @@
     "lint:bundled-pdfjs": "node scripts/check-bundled-pdfjs-eval.mjs"
   },
   "dependencies": {
-    "@angular/animations": "^22.1.3",
+    "@angular/animations": "^22.2.3",
     "@angular/cdk": "^22.1.3",
-    "@angular/common": "^22.1.3",
-    "@angular/compiler": "^22.1.3",
-    "@angular/core": "^22.1.3",
-    "@angular/forms": "^22.1.3",
-    "@angular/platform-browser": "^22.1.3",
-    "@angular/router": "^22.1.3",
+    "@angular/common": "^22.2.3",
+    "@angular/compiler": "^22.2.3",
+    "@angular/core": "^22.2.3",
+    "@angular/forms": "^22.2.3",
+    "@angular/platform-browser": "^22.2.3",
+    "@angular/router": "^22.2.3",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-html": "^6.4.11",
@@ -89,14 +90,14 @@
     "zone.js": "^0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^22.1.5",
+    "@angular-devkit/build-angular": "^22.2.3",
     "@angular-eslint/eslint-plugin": "^22.1.0",
     "@angular-eslint/eslint-plugin-template": "^22.1.0",
     "@angular-eslint/template-parser": "^22.1.0",
-    "@angular/build": "^22.1.5",
-    "@angular/cli": "^22.1.5",
-    "@angular/compiler-cli": "^22.1.3",
-    "@angular/platform-browser-dynamic": "^22.1.3",
+    "@angular/build": "^22.2.3",
+    "@angular/cli": "^22.2.3",
+    "@angular/compiler-cli": "^22.2.3",
+    "@angular/platform-browser-dynamic": "^22.2.3",
     "@types/jasmine": "~5.1.4",
     "angular-eslint": "^22.1.0",
     "eslint": "^9.28.0",
@@ -112,5 +113,8 @@
     "puppeteer": "^24.43.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.33.1"
+  },
+  "overrides": {
+    "vite": "8.3.4"
   }
 }

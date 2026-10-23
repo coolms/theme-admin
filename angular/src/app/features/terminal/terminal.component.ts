@@ -7,7 +7,8 @@ import { Terminal, type ITheme } from '@xterm/xterm';
 import { FitAddon }      from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Store } from '@ngxs/store';
-import { AuthState, ElevationService, ThemeService, UserPreferencesService, type ResolvedTheme } from '@coolms/core-angular';
+import { HttpErrorResponse } from '@angular/common/http';
+import { AuthState, ElevationService, ErrorHandlerService, ThemeService, UserPreferencesService, type ResolvedTheme } from '@coolms/core-angular';
 import { TerminalService } from './terminal.service';
 import { TerminalRefusedError } from './terminal.types';
 import { TerminalHistoryService } from './terminal-history.service';
@@ -17,6 +18,42 @@ const CWD_ROOT = '/';
 
 /** Prefs slot for the remembered working directory. */
 const CWD_PREFS_KEY = 'terminal';
+
+/** Wrong answers a `sudo` prompt takes before it gives up, as the OS's sudo does. */
+const SUDO_TRIES = 3;
+
+/**
+ * Whether a key types a character, into the shell's line or a `sudo` prompt. Any printable text counts, not only one
+ * UTF-16 unit: a character outside the basic plane (an emoji) or a composed one arrives as two. AltGr counts too:
+ * Windows sends it as Ctrl+Alt together, for `@`, `€` or `{` on many layouts. A control sequence (an arrow, a
+ * Ctrl or Alt chord) types nothing.
+ */
+export function typesCharacter(key: string, event: KeyboardEvent): boolean {
+    const altGr = event.ctrlKey && event.altKey;
+    if ((event.ctrlKey || event.altKey || event.metaKey) && !altGr) return false;
+    return key !== '' && !/[\u0000-\u001f\u007f]/.test(key);
+}
+
+/** A line the person began with `sudo`: the one kind of line that may ask for the password. */
+export function isSudoLine(line: string): boolean {
+    return /^sudo(\s|$)/.test(line.trim());
+}
+
+/**
+ * The password -- and the code, when the server asks for one -- of a `sudo` line, read into its own buffer
+ * (2026-10-13, the sudo model: "the shell UI's password prompt for sudo, masked, never echoed or kept in history").
+ */
+interface SudoPrompt {
+    /** The `sudo` line, sent again once the session is elevated. */
+    readonly line: string;
+    stage: 'password' | 'code';
+    buffer: string;
+    /** Held between the password and the code stage, and no longer. */
+    password: string;
+    tries: number;
+    /** An answer is on its way to the server: keys wait, Ctrl+C still cancels. */
+    busy: boolean;
+}
 
 /**
  * The terminal followed no theme at all -- its palette was sixteen literals,
@@ -120,6 +157,14 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly theme      = inject(ThemeService);
     private readonly elevation  = inject(ElevationService);
+    private readonly errors     = inject(ErrorHandlerService);
+
+    /**
+     * The open `sudo` prompt, or null. While it is open, every key goes to {@link handleSudoKey}. Nothing typed into
+     * it is written to the terminal, not even a mask, and nothing reaches the history. It is emptied the moment it is
+     * sent or abandoned.
+     */
+    private sudo: SudoPrompt | null = null;
 
     constructor() {
         // Re-themes a LIVE terminal: xterm re-renders from options.theme, so
@@ -175,9 +220,27 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         this.writePrompt();
 
         this.term.onKey(({ key, domEvent }) => this.handleKey(key, domEvent));
+        // A paste reaches a `sudo` prompt and nothing else: the shell's line takes keys only, as before.
+        this.termEl.nativeElement.addEventListener('paste', this.onPaste, true);
     }
 
+    /**
+     * A password pasted into an open `sudo` prompt goes to its buffer, as typed keys do: nothing written, nothing
+     * kept. Its first line only; the person still presses Enter. With no prompt open, the paste is left alone.
+     */
+    private readonly onPaste = (event: ClipboardEvent): void => {
+        const sudo = this.sudo;
+        if (!sudo) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (sudo.busy) return;
+        sudo.buffer += (event.clipboardData?.getData('text/plain') ?? '').split(/\r?\n/)[0];
+    };
+
     ngOnDestroy(): void {
+        this.clearSudo();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- destroyed before the view was built
+        this.termEl?.nativeElement.removeEventListener('paste', this.onPaste, true);
         this.resizeObs?.disconnect();
         this.svc.abort();
         this.term?.dispose();
@@ -186,6 +249,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
     // -- Key handling -------------------------------------------------------
 
     private handleKey(key: string, event: KeyboardEvent): void {
+        // A `sudo` prompt takes every key: none of them is the shell's line, its history or its output.
+        if (this.sudo) {
+            this.handleSudoKey(key, event);
+            return;
+        }
         // Allow Ctrl+C during execution
         if (this.executing && !(event.ctrlKey && event.key === 'c')) return;
         if (this.executing && event.ctrlKey && event.key === 'c') {
@@ -211,7 +279,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
             case 'Backspace':
                 if (this.currentLine.length > 0) {
-                    this.currentLine = this.currentLine.slice(0, -1);
+                    // One character, not one UTF-16 unit, as the line now takes characters of any length.
+                    this.currentLine = Array.from(this.currentLine).slice(0, -1).join('');
                     this.term.write('\b \b');
                 }
                 break;
@@ -252,8 +321,8 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 break;
 
             default:
-                // Printable characters only
-                if (!event.ctrlKey && !event.altKey && !event.metaKey && key.length === 1) {
+                // Printable characters only, of any length (see typesCharacter)
+                if (typesCharacter(key, event)) {
                     this.currentLine += key;
                     this.term.write(key);
                 }
@@ -288,23 +357,18 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
             },
             error: err => {
-                this.term.writeln(`\x1b[31m✗ ${(err as Error).message ?? 'Command failed'}\x1b[0m`);
-                // A member refused for want of an elevated session: the refusal
-                // came as a status before any output, so the same prompt every
-                // gated action uses hangs off it here, and the line is sent
-                // again once -- on a grant, as the person, never as anyone else.
-                if (err instanceof TerminalRefusedError && err.status === 403 && !afterGrant) {
-                    this.elevation.offerFor(err.detail).pipe(
-                        takeUntilDestroyed(this.destroyRef),
-                    ).subscribe(granted => {
-                        if (granted) {
-                            this.execute(line, true);
-                        } else {
-                            this.executing = false;
-                            this.writePrompt();
-                        }
-                    });
+                const elevationRequired = err instanceof TerminalRefusedError && err.elevationRequired;
+                // The sudo model (2026-10-13): no implicit elevation in the shell. Only a line the person began
+                // with `sudo`, refused for want of an elevated session, asks -- for the password, in the shell, as
+                // sudo does -- and is sent again once on the grant, as the person. Any other line refused so is
+                // shown, with the way to run it; a refusal for any other reason is shown and left alone.
+                if (elevationRequired && !afterGrant && isSudoLine(line)) {
+                    this.askSudo(line);
                     return;
+                }
+                this.term.writeln(`\x1b[31m✗ ${(err as Error).message ?? 'Command failed'}\x1b[0m`);
+                if (elevationRequired && !isSudoLine(line) && !/\bsudo\b/.test((err as Error).message)) {
+                    this.term.writeln(`\x1b[2muse sudo ${line}\x1b[0m`);
                 }
                 this.executing = false;
                 this.writePrompt();
@@ -318,6 +382,118 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
+    // -- sudo ----------------------------------------------------------------
+
+    /** Opens the password prompt for a `sudo` line the server refused for want of an elevated session. */
+    private askSudo(line: string): void {
+        this.sudo = { line, stage: 'password', buffer: '', password: '', tries: 0, busy: false };
+        this.writeSudoPrompt();
+    }
+
+    private writeSudoPrompt(): void {
+        if (!this.sudo) return;
+        const user = this.store.selectSnapshot(AuthState.currentUser);
+        const account = user?.identifier ?? user?.email ?? 'this account';
+        this.term.write(this.sudo.stage === 'password'
+            ? `[sudo] password for ${account}: `
+            : '[sudo] code from your authenticator: ');
+    }
+
+    /** Every key while the prompt is open: kept in the prompt's buffer, never written, never in the history. */
+    private handleSudoKey(key: string, event: KeyboardEvent): void {
+        const sudo = this.sudo;
+        if (!sudo) return;
+        if (event.ctrlKey && event.key === 'c') {
+            this.term.writeln('^C');
+            this.endSudo();
+            return;
+        }
+        if (sudo.busy) return;
+        switch (event.key) {
+            case 'Enter':
+                this.term.writeln('');
+                this.submitSudo(sudo);
+                return;
+            case 'Backspace':
+                // One character, not one UTF-16 unit: half an emoji would be no character at all.
+                sudo.buffer = Array.from(sudo.buffer).slice(0, -1).join('');
+                return;
+            default:
+                if (typesCharacter(key, event)) {
+                    sudo.buffer += key;
+                }
+        }
+    }
+
+    /**
+     * The answer goes to the same elevation the admin's own prompt grants -- POST /auth/elevation, the same lifetime
+     * -- and the line is sent again once on the grant. 428: the password was right and a code is asked for. 403: a
+     * wrong answer, three of which end it. Anything else is said in the server's words, and ends it.
+     */
+    private submitSudo(sudo: SudoPrompt): void {
+        const answer = sudo.buffer;
+        sudo.buffer = '';
+        if (answer === '') {
+            this.term.writeln(sudo.stage === 'password' ? 'sudo: no password was given' : 'sudo: no code was given');
+            this.endSudo();
+            return;
+        }
+        if (sudo.stage === 'password') sudo.password = answer;
+        sudo.busy = true;
+        this.elevation.elevate(sudo.password, sudo.stage === 'code' ? answer : undefined).pipe(
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+            next: () => {
+                // Cancelled while the answer was on its way: the session is elevated, the line is not run.
+                if (this.sudo !== sudo) return;
+                this.clearSudo();
+                this.execute(sudo.line, true);
+            },
+            error: (err: unknown) => {
+                if (this.sudo !== sudo) return;
+                sudo.busy = false;
+                const status = err instanceof HttpErrorResponse ? err.status : 0;
+                if (status === 428) {
+                    sudo.stage = 'code';
+                    this.writeSudoPrompt();
+                    return;
+                }
+                if (status === 403) {
+                    sudo.tries += 1;
+                    sudo.stage = 'password';
+                    sudo.password = '';
+                    if (sudo.tries >= SUDO_TRIES) {
+                        this.term.writeln(`sudo: ${SUDO_TRIES} incorrect attempts`);
+                        this.endSudo();
+                        return;
+                    }
+                    this.term.writeln('Sorry, try again.');
+                    this.writeSudoPrompt();
+                    return;
+                }
+                this.term.writeln(status === 429
+                    ? 'sudo: too many attempts; wait a few minutes and try again.'
+                    : `sudo: ${this.errors.humanize(err)}`);
+                this.endSudo();
+            },
+        });
+    }
+
+    /** The prompt closes, its buffer and the password emptied; the shell's own prompt comes back. */
+    private endSudo(): void {
+        this.clearSudo();
+        this.executing = false;
+        this.writePrompt();
+    }
+
+    private clearSudo(): void {
+        if (this.sudo) {
+            this.sudo.buffer = '';
+            this.sudo.password = '';
+        }
+        this.sudo = null;
+    }
+
     // -- Tab completion -----------------------------------------------------
 
     private requestCompletion(): void {
@@ -325,7 +501,7 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.svc.complete(this.currentLine, cursorPos, this.cwd, this.homeDir() || '/').pipe(
             takeUntilDestroyed(this.destroyRef),
-        ).subscribe(({ suggestions, total }) => {
+        ).subscribe(({ suggestions, total, sudo }) => {
             if (suggestions.length === 0) {
                 // Bell
                 this.term.write('\x07');
@@ -340,9 +516,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                 // Show the options -- and, when the server capped them, say
                 // how many there were. Printing a hundred of eighteen hundred
                 // without a word would read as the whole set.
+                // A verb that runs only through sudo for this person is marked, as `help` marks it.
                 this.term.writeln('');
                 for (const s of suggestions) {
-                    this.term.write(`  \x1b[36m${s}\x1b[0m  `);
+                    const mark = sudo.includes(s) ? ' \x1b[2m[sudo]\x1b[0m' : '';
+                    this.term.write(`  \x1b[36m${s}\x1b[0m${mark}  `);
                 }
                 this.term.writeln('');
                 if (total > suggestions.length) {

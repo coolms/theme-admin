@@ -58,7 +58,7 @@ describe('AdminTopbarProfileComponent -- the menu in the light theme', () => {
                             identity: { elevationUrl: '/api/v1/auth/elevation' },
                             navi:     { topbarNavGraph: '/api/v1/navi/topbar' },
                         }),
-                        select:   () => of({ identifier: 'd.popov@example.test' }),
+                        select:   () => of({ identifier: 'jane.doe@example.com' }),
                         dispatch: () => of(null),
                     },
                 },

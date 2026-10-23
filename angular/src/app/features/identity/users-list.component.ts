@@ -19,10 +19,12 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     DataGridComponent,
-    DataGridData,
+    DeclaredRowsNoticeComponent,
+    declaredRowsSource,
     PageTitleService,
     ToastService,
     type DataGridChangeEvent,
+    type DataGridLoadRequest,
 } from '@coolms/ui-angular';
 import { UserEditDialogComponent } from './user-edit-dialog.component';
 
@@ -32,7 +34,7 @@ const LIMIT = 50;
     selector: 'app-users-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, DeclaredRowsNoticeComponent],
     template: `
         <cms-list-page
             title="Users"
@@ -45,11 +47,14 @@ const LIMIT = 50;
                  Column definitions, sortable flags, filterOp, and rowActions all come from
                  the backend YAML. Column filter row (text/boolean/date) is rendered by the
                  DataGrid itself and pre-built RQL expressions are included in loadMore events. -->
+            <cms-declared-rows-notice [source]="rows" />
             <coolms-datagrid
                 gridId="identity:users"
                 entityAlias="user"
+                [hidden]="!rows.showsRows()"
                 [configBaseUrl]="configBaseUrl()"
-                [externalData]="gridData()"
+                [externalData]="rows.data()"
+                (configLoaded)="rows.use($event)"
                 (rowActionTriggered)="onRowAction($event)"
                 (rowSelected)="onRowSelected($event)"
                 (loadMore)="onLoadMore($event)"
@@ -74,12 +79,16 @@ export class UsersListComponent implements OnInit {
         this.store.selectSnapshot(AppConfigState.manifest)?.dataGrid?.configBase ?? '',
     );
 
-    readonly users   = signal<IdentityUserDto[]>([]);
-    readonly total   = signal<number | null>(null);
-    readonly hasMore = signal(true);
+    /**
+     * The rows, from where the grid's definition says they come from (`rows.operation`, `identity.user.list`) and
+     * in its query style -- this page names no list route. Each row is shaped as the grid draws it.
+     */
+    readonly rows    = declaredRowsSource({ pageSize: LIMIT, mapRow: row => userRow(row as unknown as IdentityUserDto) });
+    readonly users   = computed(() => this.rows.data().items as unknown as IdentityUserDto[]);
+    readonly total   = computed((): number | null => (this.rows.loaded() ? this.rows.data().totalItems : null));
 
-    /** Flips true after the first load so the footer count stays blank until then. */
-    readonly loaded = signal(false);
+    /** True after the first load so the footer count stays blank until then. */
+    readonly loaded = this.rows.loaded;
     readonly footerLabel = computed(() => {
         if (!this.loaded()) return '';
         const n     = this.users().length;
@@ -97,74 +106,13 @@ export class UsersListComponent implements OnInit {
         _selected: this.selectedRow() !== null,
     }));
 
-    readonly gridData = computed((): DataGridData => ({
-        items: this.users().map(u => ({
-            ...u,
-            // 'identifier' matches the logical YAML column ID.
-            // Already on the spread via ...u, but explicitly set here so the
-            // datagrid's cell lookup (row['identifier']) always finds it.
-            identifier:   u.identifier,
-            displayName:  [u.firstName, u.lastName].filter(Boolean).join(' ') || u.identifier,
-            primaryGroup: (u.primaryGroup?.label || u.primaryGroup?.name) ?? '—',
-        })),
-        totalItems: this.total() ?? this.users().length,
-        page:       1,
-        limit:      LIMIT,
-        totalPages: 1,
-        hasMore:    this.hasMore(),
-    }));
-
     ngOnInit(): void {
         this.titleSvc.set('Users');
     }
 
-    /**
-     * Single entry point for all data loading (initial, scroll, sort, filter, reload).
-     *
-     * `columnFilters` contains pre-built RQL expressions emitted by the DataGrid's
-     * column filter row (e.g. `['identifier cn "john"', 'isActive eq true']`).
-     * These are passed directly to the API as filter params -- no translation needed.
-     */
-    onLoadMore(event: {
-        offset:        number;
-        sort:          string | null;
-        reset:         boolean;
-        columnFilters: ReadonlyArray<string>;
-    }): void {
-        if (event.reset) {
-            this.users.set([]);
-            this.hasMore.set(true);
-        }
-
-        // Epoch guard: increment on reset so stale in-flight responses are discarded.
-        // NOTE: loadEpoch is incremented only on reset so that the sentinel's
-        // append call (reset=false) shares the epoch with the preceding reset call.
-        // stale detection relies on the loadEpoch snapshot captured just below.
-        const epoch = ++this._loadEpoch;
-
-        const page = Math.floor(event.offset / LIMIT) + 1;
-
-        this.identityApi.listUsers({
-            limit:   LIMIT,
-            page,
-            filters: [...event.columnFilters],
-            sort:    event.sort ?? undefined,
-        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: ({ members, total }) => {
-                if (epoch !== this._loadEpoch && event.reset) return; // stale reset
-                this.total.set(total);
-                if (event.reset) {
-                    this.users.set(members);
-                } else {
-                    this.users.update(existing => [...existing, ...members]);
-                }
-                this.hasMore.set(this.users().length < total);
-                this.loaded.set(true);
-            },
-            error: () => {
-                this.toast.error('Failed to load users');
-            },
-        });
+    /** Fired on mount, on every filter/sort change and when the lazy sentinel scrolls in; the rows source answers. */
+    onLoadMore(event: DataGridLoadRequest): void {
+        this.rows.load(event);
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {
@@ -203,18 +151,18 @@ export class UsersListComponent implements OnInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: updated => {
-                        this.users.update(existing => existing.map(u => u.id === event.entityId ? updated : u));
+                        this.rows.update(items => items.map(r => (r['id'] === event.entityId ? userRow(updated) : r)));
                     },
                     error: (e: { status?: number }) => {
                         if (404 === e?.status) {
-                            this.users.update(existing => existing.filter(u => u.id !== event.entityId));
+                            this.rows.update(items => items.filter(r => r['id'] !== event.entityId));
                         }
                     },
                 });
             return;
         }
         if (event.type === 'row.deleted') {
-            this.users.update(existing => existing.filter(u => u.id !== event.entityId));
+            this.rows.update(items => items.filter(r => r['id'] !== event.entityId));
         }
     }
 
@@ -274,5 +222,15 @@ export class UsersListComponent implements OnInit {
     }
 
     /** Monotonically-increasing load counter; stale reset responses are discarded. */
-    private _loadEpoch = 0;
+}
+
+/** A user as the grid draws it: the DTO, its display name joined, its primary group by label. */
+function userRow(u: IdentityUserDto): Record<string, unknown> {
+    return {
+        ...u,
+        // 'identifier' matches the logical YAML column ID.
+        identifier:   u.identifier,
+        displayName:  [u.firstName, u.lastName].filter(Boolean).join(' ') || u.identifier,
+        primaryGroup: (u.primaryGroup?.label || u.primaryGroup?.name) ?? '—',
+    };
 }

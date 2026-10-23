@@ -5,7 +5,7 @@ import { signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { Subject } from 'rxjs';
-import { ContextMenuService, DrawerService, FileEditorRegistry, ToastService, type VfsNodeDto } from '@coolms/ui-angular';
+import { ContextMenuService, DrawerService, FileEditorRegistry, ToastService, type CapabilityState, type VfsNodeDto } from '@coolms/ui-angular';
 import { ElevationService } from '@coolms/core-angular';
 
 import { VfsFilesComponent } from './vfs-files.component';
@@ -38,7 +38,7 @@ import { VfsUploadService } from './vfs-upload.service';
  *
  * !! The other two are the denominator. A spec that only checks "the row
  * updated" passes when a full reload happens to run; a spec that only
- * checks "no request" passes when the harness never wired the client.
+ * checks "no request" passes when the setup never wired the client.
  * The structural case proves the event pipeline is live and reloads;
  * the unknown-UUID case pins the guard that keeps a node this grid does
  * not show from costing a request it could not use.
@@ -179,5 +179,141 @@ describe('VfsFilesComponent -- a live node event refetches the row by path', () 
 
         expect(state.reload).toHaveBeenCalledTimes(1);
         http.verify();
+    });
+});
+
+/**
+ * The right-click menu on a row carries the server's answer for the node it acts on, and what is chosen
+ * from it goes through VfsActionsService.whenAllowed -- the menu draws `denied` disabled and `elevate` locked from
+ * that answer (ui-angular), and whenAllowed decides whether and when the action runs.
+ */
+describe('VfsFilesComponent -- the right-click menu carries the node\'s capability answer', () => {
+    const chmodNode = { path: '/chmod', meta: { action: 'VfsChmod', capability: 'vfs.node.chmod' } };
+
+    function focusedNode(): VfsNodeDto {
+        return {
+            id: 'f-id', name: 'a.txt', type: 'file', path: '/docs/a.txt', mode: '0644', modeString: '-rw-r--r--',
+            size: 1, humanSize: '1 B', mimeType: 'text/plain', extension: 'txt', uid: 'u1', gid: 'g1',
+            uname: 'admin', gname: 'admin', createdAt: '2026-10-13T09:00:00+00:00', updatedAt: '2026-10-13T09:00:00+00:00',
+            isRendered: false, isMaterialized: true, isSystem: false, isHidden: false, isContainer: false,
+            title: null, description: null, permissions: { read: true, write: true, execute: false },
+            capabilities: { 'vfs.node.chmod': 'elevate', 'vfs.node.delete': 'denied' },
+        };
+    }
+
+    const deleteNode = { path: '/delete', meta: { action: 'VfsDelete', capability: 'vfs.node.delete' } };
+
+    function nodeAt(path: string, del: CapabilityState): VfsNodeDto {
+        return { ...focusedNode(), id: path, path, name: path, capabilities: { 'vfs.node.delete': del } };
+    }
+
+    function build(selected: VfsNodeDto[] = []): {
+        component: VfsFilesComponent; openFromNodes: jasmine.Spy; whenAllowed: jasmine.Spy; executeOn: jasmine.Spy;
+    } {
+        const openFromNodes = jasmine.createSpy('openFromNodes');
+        const whenAllowed = jasmine.createSpy('whenAllowed');
+        const executeOn = jasmine.createSpy('executeOn');
+        const state = {
+            currentPath:     signal('/docs'),
+            nodes:           signal<VfsNodeDto[]>([]),
+            loading:         signal(false),
+            error:           signal<string | null>(null),
+            viewMode:        signal('grid'),
+            selectedNodes:   signal<VfsNodeDto[]>(selected),
+            hasMore:         signal(false),
+            vfsToolbarNodes: signal([chmodNode, deleteNode]),
+        };
+
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+                { provide: VfsPageStateService, useValue: state },
+                { provide: VfsLiveEventsService, useValue: { watch: () => new Subject<VfsNodeChangeEvent>() } },
+                { provide: ContextMenuService,   useValue: { openFromNodes } },
+                { provide: DrawerService,        useValue: {} },
+                { provide: Dialog,               useValue: {} },
+                { provide: FileEditorRegistry,   useValue: { resolve: () => null } },
+                { provide: ToastService,         useValue: {} },
+                { provide: VfsUploadService,     useValue: {} },
+                { provide: VfsClipboardService,  useValue: { hasAny: () => false } },
+                { provide: VfsHomeLabelService,  useValue: {} },
+                { provide: VfsIconService,       useValue: {} },
+                { provide: VfsActionsService,    useValue: { whenAllowed, executeOn } },
+                { provide: ElevationService,     useValue: {} },
+            ],
+        });
+
+        const component = TestBed.runInInjectionContext(() => new VfsFilesComponent());
+
+        return { component, openFromNodes, whenAllowed, executeOn };
+    }
+
+    it('puts the focused node\'s answer in the menu\'s record', () => {
+        const { component, openFromNodes } = build();
+
+        component.onContextMenu({ item: focusedNode(), event: new MouseEvent('contextmenu') });
+
+        const record = openFromNodes.calls.mostRecent().args[2] as Record<string, unknown>;
+        expect(record['_capabilities']).toEqual({ 'vfs.node.chmod': 'elevate', 'vfs.node.delete': 'denied' });
+    });
+
+    it('sends what is chosen through whenAllowed, with the focused node as its subject', () => {
+        const { component, openFromNodes, whenAllowed, executeOn } = build();
+        const focused = focusedNode();
+
+        component.onContextMenu({ item: focused, event: new MouseEvent('contextmenu') });
+        const onAction = openFromNodes.calls.mostRecent().args[3] as (id: string) => void;
+        onAction('VfsChmod');
+
+        expect(whenAllowed).toHaveBeenCalledTimes(1);
+        const [node, subjects, act] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[], () => void];
+        expect(node).toBe(chmodNode);
+        expect(subjects).toEqual([focused]);
+        expect(executeOn).not.toHaveBeenCalled();
+        act();
+        expect(executeOn).toHaveBeenCalledWith(chmodNode, [focused]);
+    });
+
+    // A right-click INSIDE a multi-selection acts on the whole selection, so the selection's least answer
+    // decides and the menu says how many refuse (2026-10-14). It used to take the clicked node's answer and
+    // act on that node alone. The clicked node is ALLOWED here, so an answer read from it alone fails.
+    it('takes a multi-selection\'s least answer and its refusals when the right-click is inside it', () => {
+        const [a, b, c] = [nodeAt('/docs/a', 'allowed'), nodeAt('/docs/b', 'denied'), nodeAt('/docs/c', 'elevate')];
+        const { component, openFromNodes } = build([a, b, c]);
+
+        component.onContextMenu({ item: a, event: new MouseEvent('contextmenu') });
+
+        const record = openFromNodes.calls.mostRecent().args[2] as Record<string, unknown>;
+        expect(record['_single']).toBe(false);
+        expect(record['_capabilities']).toEqual({ 'vfs.node.delete': 'denied' });
+        expect(record['_capabilityRefusals']).toEqual({ 'vfs.node.delete': { refused: 1, of: 3 } });
+    });
+
+    it('runs what is chosen inside a multi-selection on every selected node, through whenAllowed', () => {
+        const [a, b] = [nodeAt('/docs/a', 'allowed'), nodeAt('/docs/b', 'elevate')];
+        const { component, openFromNodes, whenAllowed, executeOn } = build([a, b]);
+
+        component.onContextMenu({ item: b, event: new MouseEvent('contextmenu') });
+        (openFromNodes.calls.mostRecent().args[3] as (id: string) => void)('VfsDelete');
+
+        const [node, subjects, act] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[], () => void];
+        expect(node).toBe(deleteNode);
+        expect(subjects).toEqual([a, b]);
+        act();
+        expect(executeOn).toHaveBeenCalledWith(deleteNode, [a, b]);
+    });
+
+    it('takes the clicked node alone when the right-click is outside the selection', () => {
+        const [a, b] = [nodeAt('/docs/a', 'allowed'), nodeAt('/docs/b', 'denied')];
+        const { component, openFromNodes } = build([b]);
+
+        component.onContextMenu({ item: a, event: new MouseEvent('contextmenu') });
+
+        const record = openFromNodes.calls.mostRecent().args[2] as Record<string, unknown>;
+        expect(record['_capabilities']).toEqual({ 'vfs.node.delete': 'allowed' });
+        expect(record['_capabilityRefusals']).toEqual({});
     });
 });

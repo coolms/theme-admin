@@ -5,7 +5,8 @@ import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { filter, startWith } from 'rxjs';
-import { ConsoleActivation } from '@coolms/core-angular';
+import { ConsoleActivation, type NaviAccess, NaviGraphService } from '@coolms/core-angular';
+import { panelAccessIn } from './nav-offers';
 import { AdminTopbarProfileComponent } from './admin-topbar-profile.component';
 import { ElevationBadgeComponent } from './elevation-badge.component';
 import { PageTitleService } from '@coolms/ui-angular';
@@ -84,19 +85,27 @@ interface Breadcrumb {
                      control now lives. -->
 
                 <!-- The modules' dock-panel toggles, from their console entries
-                     (console@1): the terminal's is the one that reads >_. -->
+                     (console@1): the terminal's is the one that reads >_. Each
+                     follows the menu item that opens its panel: hidden where
+                     the account has none, locked where it needs elevation. -->
                 @for (panel of console.panels(); track panel.id) {
-                    <button type="button"
-                            class="cms-btn cms-btn-sm"
-                            style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
-                            [title]="panel.toggle.label"
-                            (click)="panelToggle.emit(panel.id)">
-                        @if (panel.toggle.text) {
-                            {{ panel.toggle.text }}
-                        } @else if (panel.toggle.icon) {
-                            <i class="bi bi-{{ panel.toggle.icon }}" aria-hidden="true"></i>
-                        }
-                    </button>
+                    @if (panelAccess(panel.id); as access) {
+                        <button type="button"
+                                class="cms-btn cms-btn-sm position-relative"
+                                style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
+                                [title]="panel.toggle.label + (access === 'elevate' ? ' -- needs an elevated session' : '')"
+                                [attr.aria-label]="panel.toggle.label + (access === 'elevate' ? ', needs an elevated session' : '')"
+                                (click)="panelToggle.emit(panel.id)">
+                            @if (panel.toggle.text) {
+                                {{ panel.toggle.text }}
+                            } @else if (panel.toggle.icon) {
+                                <i class="bi bi-{{ panel.toggle.icon }}" aria-hidden="true"></i>
+                            }
+                            @if (access === 'elevate') {
+                                <i class="bi bi-lock-fill ms-1" aria-hidden="true" style="font-size: .65rem"></i>
+                            }
+                        </button>
+                    }
                 }
 
                 <!-- The modules' quick-access tiles, from their console entries
@@ -128,8 +137,17 @@ export class AdminTopbarComponent implements OnInit {
 
     /** Raw URL-segment crumbs; rebuilt on every NavigationEnd. */
     private readonly rawCrumbs = signal<Breadcrumb[]>([]);
-    /** A dock panel's toggle was pressed: the panel id, for the layout that owns the dock. */
+    private readonly nav              = inject(NaviGraphService).adminNav;
+    /**
+     * A dock panel's toggle was pressed: the panel id, for the layout that owns the dock. The layout applies the
+     * navigation rule to it, as to the panel's keyboard shortcut (togglePanelByRule).
+     */
     panelToggle = output<string>();
+
+    /** The panel's access as the menu item that opens it says (see {@link panelAccessIn}); null hides its toggle. */
+    panelAccess(panelId: string): NaviAccess | null {
+        return panelAccessIn(this.nav(), panelId);
+    }
 
     /**
      * Final breadcrumb list. When PageTitleService carries a resolved label
