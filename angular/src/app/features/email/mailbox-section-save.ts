@@ -2,6 +2,7 @@ import { type ElevationService, type ErrorHandlerService } from '@coolms/core-an
 import { type CapabilityState, type ToastService } from '@coolms/ui-angular';
 
 import { mailboxChangedSinceRead } from './email.service';
+import type { EmailMailboxDto } from './email.types';
 
 /**
  * Runs `send` as the server's answer for the section's action allows: at once when `allowed`; when `elevate`, after
@@ -61,3 +62,10 @@ export function saveFailed(
         action: { label: 'Reload', run: reload },
     }, 0);
 }
+
+/**
+ * The mailbox a section holds before the page has handed it one: empty, so it reads as nothing changed and not
+ * editable. The pane's footer asks a section for its state through the page's view query, in the same update pass
+ * that first sets the section's inputs -- before them -- and a required input throws there (NG0950).
+ */
+export const NO_MAILBOX = { id: '' } as EmailMailboxDto;

@@ -54,10 +54,11 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         let email: jasmine.SpyObj<EmailService>;
         let toast: jasmine.SpyObj<ToastService>;
 
-        function render(mailbox: EmailMailboxDto, access: 'allowed' | 'elevate' | 'denied' = 'allowed') {
+        function render(mailbox: EmailMailboxDto, access: 'allowed' | 'elevate' | 'denied' = 'allowed', part: 'connection' | 'sync' = 'connection') {
             const fixture = TestBed.createComponent(MailboxConnectionSectionComponent);
             fixture.componentRef.setInput('mailbox', mailbox);
             fixture.componentRef.setInput('access', access);
+            fixture.componentRef.setInput('part', part);
             fixture.detectChanges();
             return fixture;
         }
@@ -113,7 +114,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             const host = fixture.nativeElement as HTMLElement;
 
             expect(host.textContent).toContain('read without a version, so they cannot be saved here');
-            expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent?.includes('Save connection'))).toBeFalse();
+            expect(fixture.componentInstance.editable()).withContext('the pane draws no Save').toBeFalse();
         });
 
         it('settings the caller may only read: every field disabled, no Save, and it says who can change them', () => {
@@ -122,12 +123,12 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
 
             expect((host.querySelector('fieldset') as HTMLFieldSetElement).disabled).toBeTrue();
             expect(host.textContent).toContain('Only the mailbox\'s owners can change these settings.');
-            expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent?.includes('Save connection'))).toBeFalse();
+            expect(fixture.componentInstance.editable()).withContext('the pane draws no Save').toBeFalse();
         });
 
         it('a save the server answers "elevate" for asks for an elevated session first, then saves', () => {
             email.saveMailboxSection.and.returnValue(of(MAILBOX));
-            const fixture = render(MAILBOX, 'elevate');
+            const fixture = render(MAILBOX, 'elevate', 'sync');
             const section = fixture.componentInstance;
 
             section.set('enabled', false);
@@ -215,7 +216,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         it('past mail is a choice: back to the default sends null, all of it is -1', () => {
             email.saveMailboxSection.and.returnValue(of(MAILBOX));
             const mailbox = { ...MAILBOX, backfillDepthMonths: 24 } as EmailMailboxDto;
-            const section = render(mailbox).componentInstance;
+            const section = render(mailbox, 'allowed', 'sync').componentInstance;
 
             expect(section.backfillChoice()).toBe('months');
             section.chooseBackfill('default');
@@ -230,14 +231,34 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         });
 
         it('someone who may only read the settings is offered no test', () => {
+            // The button is the pane's (the page draws it only for someone who may change the settings); the section
+            // says nothing about a test either.
             const host = render(MAILBOX, 'denied').nativeElement as HTMLElement;
 
-            expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent?.includes('Test connection'))).toBeFalse();
+            expect(host.textContent).not.toContain('Test connection signs in');
+        });
+
+        it('each pane saves only its own fields, and Discard keeps the other pane\'s edits', () => {
+            email.saveMailboxSection.and.returnValue(of(MAILBOX));
+            const connection = render(MAILBOX).componentInstance;
+            connection.set('imapPort', 143);
+            connection.set('enabled', false);
+            expect(connection.patch()).toEqual({ imapPort: 143 });
+            connection.save();
+            expect(email.saveMailboxSection).toHaveBeenCalledOnceWith('mb-1', { imapPort: 143 }, 'v7');
+
+            const sync = render(MAILBOX, 'allowed', 'sync').componentInstance;
+            sync.set('imapPort', 143);
+            sync.set('enabled', false);
+            expect(sync.patch()).toEqual({ enabled: false });
+            sync.discard();
+            expect(sync.draft().enabled).withContext('its own field, discarded').toBeTrue();
+            expect(sync.draft().imapPort).withContext('the other pane\'s field, kept').toBe(143);
         });
 
         it('the sync depth appears only when the read carries it', () => {
-            expect((render(MAILBOX).nativeElement as HTMLElement).querySelector('[name=backfillDepthMonths]')).toBeNull();
-            expect((render({ ...MAILBOX, backfillDepthMonths: 6 } as EmailMailboxDto).nativeElement as HTMLElement)
+            expect((render(MAILBOX, 'allowed', 'sync').nativeElement as HTMLElement).querySelector('[name=backfillDepthMonths]')).toBeNull();
+            expect((render({ ...MAILBOX, backfillDepthMonths: 6 } as EmailMailboxDto, 'allowed', 'sync').nativeElement as HTMLElement)
                 .querySelector('[name=backfillDepthMonths]')).not.toBeNull();
         });
     });

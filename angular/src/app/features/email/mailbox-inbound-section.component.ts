@@ -6,7 +6,7 @@ import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, InboundWorkflowOption } from './email.types';
-import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
+import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 
 /**
  * Rules: what a mailbox does with mail as it arrives. Starting a workflow is a rule's action -- today the one rule, on
@@ -19,40 +19,26 @@ import { afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
     imports: [FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <section class="mbs-section" aria-labelledby="mbs-inbound-title">
-            <header class="mbs-section__head">
-                <h2 id="mbs-inbound-title" class="mbs-section__title">Rules</h2>
-            </header>
-            <fieldset class="mbs-fields" [disabled]="access() === 'denied' || saving()">
-                <div class="mbs-group">
-                    <label class="mbs-field mbs-field--wide">
-                        <span>When a first-contact email arrives: start workflow</span>
-                        <select name="inboundWorkflowKey" [ngModel]="key()" (ngModelChange)="key.set($event)">
-                            <option value="">None</option>
-                            @for (o of options(); track o.key) { <option [value]="o.key">{{ o.label }}</option> }
-                            @if (unlisted()) { <option [value]="key()">{{ key() }} (not deployed)</option> }
-                        </select>
-                    </label>
-                    <p class="mbs-note">Replies to a conversation the workflow started feed that conversation.</p>
-                </div>
-            </fieldset>
-            @if (access() !== 'denied' && versioned()) {
-                <footer class="mbs-section__foot">
-                    <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" [disabled]="!dirty() || saving()" (click)="discard()">
-                        Discard
-                    </button>
-                    <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" [disabled]="!dirty() || saving()" (click)="save()">
-                        @if (access() === 'elevate') { <i class="bi bi-lock"></i> }
-                        Save
-                    </button>
-                </footer>
-            }
-        </section>
+        @if (access() === 'denied') {
+            <p class="cms-field-hint mb-3">Only the mailbox's owners can change these settings.</p>
+        } @else if (!versioned()) {
+            <p class="cms-field-hint mb-3">These settings were read without a version, so they cannot be saved here.</p>
+        }
+        <fieldset class="border-0 p-0 m-0" [disabled]="access() === 'denied' || saving()">
+            <label class="d-block">
+                <span class="cms-label">When a first-contact email arrives: start workflow</span>
+                <select class="cms-select w-100" name="inboundWorkflowKey" [ngModel]="key()" (ngModelChange)="key.set($event)">
+                    <option value="">None</option>
+                    @for (o of options(); track o.key) { <option [value]="o.key">{{ o.label }}</option> }
+                    @if (unlisted()) { <option [value]="key()">{{ key() }} (not deployed)</option> }
+                </select>
+            </label>
+            <p class="cms-field-hint">Replies to a conversation the workflow started feed that conversation.</p>
+        </fieldset>
     `,
-    styleUrl: './mailbox-section.css',
 })
 export class MailboxInboundSectionComponent implements OnInit {
-    readonly mailbox = input.required<EmailMailboxDto>();
+    readonly mailbox = input<EmailMailboxDto>(NO_MAILBOX);
     readonly access = input<CapabilityState>('denied');
     /** Changes on every Reload of the page: the choice starts over from the read. */
     readonly reset = input(0);
@@ -69,6 +55,8 @@ export class MailboxInboundSectionComponent implements OnInit {
     readonly key = signal('');
     readonly saving = signal(false);
     readonly stored = computed(() => this.mailbox().inboundWorkflowKey ?? '');
+    /** Whether this pane can be saved at all: the caller may change it, and it was read with a version. */
+    readonly editable = computed(() => this.access() !== 'denied' && this.versioned());
     readonly dirty = computed(() => this.key() !== this.stored());
     /** A stored key no deployed workflow answers to is still shown, so a save never drops it unseen. */
     readonly unlisted = computed(() => this.key() !== '' && !this.options().some(o => o.key === this.key()));
