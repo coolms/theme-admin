@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- A send the provider refused says so in the provider's words: "Microsoft refused the message: <code> — <message>"
+  (Google for the Gmail API), with a plain hint for the codes that need one (an Outlook account not yet verified on
+  the web, an address with no Microsoft mailbox, Gmail's daily limit), and what became of the message.
 - A failed send names the server it failed at, where the server's problem says (the SMTP host, or Gmail API /
   Microsoft Graph). Unreachable says the message was not sent again: since the server reads silence after the
   message as unknown, unreachable means it never went out.
