@@ -353,6 +353,7 @@ export class MailboxFiltersSectionComponent {
         const e = this.editing();
         if (e === null || !this.canManage()) return;
         this.saveTried = true;
+        this.serverProblems = {};
         const problems = validateFilter(e.draft);
         this.problems.set(problems);
         if (Object.keys(problems).length > 0) return;
@@ -373,6 +374,7 @@ export class MailboxFiltersSectionComponent {
                 this.saving_.set(false);
                 const violations = violationsByPath(err);
                 if (Object.keys(violations).length > 0) {
+                    this.serverProblems = violations;
                     this.problems.set(violations);
                 } else {
                     this.toast.error(this.errors.humanize(err));
@@ -476,6 +478,7 @@ export class MailboxFiltersSectionComponent {
     private open(id: string | null, draft: MailboxFilterWrite): void {
         this.editing.set({ id, draft, opened: JSON.stringify(draft) });
         this.saveTried = false;
+        this.serverProblems = {};
         this.problems.set({});
         if (this.folders() === null) this.loadFolders();
     }
@@ -504,7 +507,7 @@ export class MailboxFiltersSectionComponent {
 
     patch(change: Partial<MailboxFilterWrite>): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, ...change } }));
-        this.recheck();
+        this.recheck(Object.keys(change));
     }
 
     /** Whether the open filter moves mail: only then is the folder list's note said. */
@@ -514,16 +517,22 @@ export class MailboxFiltersSectionComponent {
 
     /**
      * Once a save has shown problems, each edit checks the filter again, so a field put right stops being marked at
-     * once instead of at the next Save. A server's violation gives way to the client's check here; the server checks
-     * again on the next save.
+     * once instead of at the next Save. A violation only the server can find (a name another filter has) stays until
+     * the edit touches its path -- the field itself, or its list when a condition or action is added or removed, since
+     * the indexes then shift; the server checks again on the next save.
      */
-    private recheck(): void {
+    private recheck(touched: readonly string[]): void {
         const e = this.editing();
-        if (e !== null && this.saveTried) this.problems.set(validateFilter(e.draft));
+        if (e === null || !this.saveTried) return;
+        const covers = (path: string) => touched.some(t => path === t || path.startsWith(`${t}.`) || path.startsWith(`${t}[`));
+        this.serverProblems = Object.fromEntries(Object.entries(this.serverProblems).filter(([path]) => !covers(path)));
+        this.problems.set({ ...this.serverProblems, ...validateFilter(e.draft) });
     }
 
     /** A Save was pressed on the open filter: from then on it is checked on every edit, until it is closed. */
     private saveTried = false;
+    /** The server's violations from the last refused save, each until an edit touches its path. */
+    private serverProblems: Record<string, string> = {};
 
     operators(field: FilterField): readonly FilterOperator[] {
         return operatorsFor(field);
@@ -534,19 +543,19 @@ export class MailboxFiltersSectionComponent {
     }
 
     setField(i: number, field: FilterField): void {
-        this.updateConditions(list => list.map((c, j) => (j === i ? newCondition(field) : c)));
+        this.updateConditions(list => list.map((c, j) => (j === i ? newCondition(field) : c)), `conditions[${i}]`);
     }
 
     setCondition(i: number, change: Partial<FilterCondition>): void {
-        this.updateConditions(list => list.map((c, j) => (j === i ? { ...c, ...change } : c)));
+        this.updateConditions(list => list.map((c, j) => (j === i ? { ...c, ...change } : c)), `conditions[${i}]`);
     }
 
     addCondition(): void {
-        this.updateConditions(list => [...list, newCondition()]);
+        this.updateConditions(list => [...list, newCondition()], 'conditions');
     }
 
     removeCondition(i: number): void {
-        this.updateConditions(list => list.filter((_, j) => j !== i));
+        this.updateConditions(list => list.filter((_, j) => j !== i), 'conditions');
     }
 
     setAction(i: number, change: Partial<FilterAction>): void {
@@ -554,17 +563,17 @@ export class MailboxFiltersSectionComponent {
             if (j !== i) return a;
             const next = { ...a, ...change };
             return change.type !== undefined && change.type !== 'move' ? { type: change.type as FilterActionType } : next;
-        }));
+        }), `actions[${i}]`);
     }
 
     addAction(): void {
         const used = new Set(this.editing()?.draft.actions.map(a => a.type) ?? []);
         const type = FILTER_ACTIONS.find(t => !used.has(t.type))?.type ?? 'flag';
-        this.updateActions(list => [...list, { type }]);
+        this.updateActions(list => [...list, { type }], 'actions');
     }
 
     removeAction(i: number): void {
-        this.updateActions(list => list.filter((_, j) => j !== i));
+        this.updateActions(list => list.filter((_, j) => j !== i), 'actions');
     }
 
     /** A size in bytes shown in KB; an empty field stays empty. */
@@ -582,13 +591,13 @@ export class MailboxFiltersSectionComponent {
         return this.problems()[path] ?? null;
     }
 
-    private updateConditions(f: (list: FilterCondition[]) => FilterCondition[]): void {
+    private updateConditions(f: (list: FilterCondition[]) => FilterCondition[], touched: string): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, conditions: f(e.draft.conditions) } }));
-        this.recheck();
+        this.recheck([touched]);
     }
 
-    private updateActions(f: (list: FilterAction[]) => FilterAction[]): void {
+    private updateActions(f: (list: FilterAction[]) => FilterAction[], touched: string): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, actions: f(e.draft.actions) } }));
-        this.recheck();
+        this.recheck([touched]);
     }
 }

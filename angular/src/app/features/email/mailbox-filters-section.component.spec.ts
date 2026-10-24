@@ -145,6 +145,25 @@ describe('MailboxFiltersSectionComponent -- a mailbox\'s filters', () => {
         expect(c.err('conditions[0].value')).withContext('emptied again').toBe('Enter what to look for.');
     });
 
+    it('a problem only the server finds stays until its own field is edited, not on an unrelated edit', () => {
+        const { c } = make(true, [filter('a', 0)]);
+        c.edit(c.filters()[0]);
+        c.patch({ name: 'Taken' });
+        email.updateFilter.and.returnValue(throwError(() => ({ status: 422, error: { violations: [
+            { propertyPath: 'name', message: 'Another filter of this mailbox has this name.' },
+        ] } })));
+        c.save();
+        expect(c.err('name')).toBe('Another filter of this mailbox has this name.');
+
+        c.setCondition(0, { value: 'other@' });
+        expect(c.err('name')).withContext('an unrelated edit').toBe('Another filter of this mailbox has this name.');
+        c.addAction();
+        expect(c.err('name')).withContext('a list edit elsewhere').toBe('Another filter of this mailbox has this name.');
+
+        c.patch({ name: 'Free' });
+        expect(c.err('name')).withContext('its own field').toBeNull();
+    });
+
     it('the note on the folder list is said only while an action moves mail', () => {
         email.listFilterFolders.and.returnValue(throwError(() => ({ status: 404 })));
         email.listFolders.and.returnValue(of([{ folder: 'INBOX', total: 1, unseen: 0 }]));
