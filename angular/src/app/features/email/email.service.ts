@@ -28,6 +28,7 @@ import {
     MailboxWriteRequest,
     OutgoingEmailRequest,
 } from './email.types';
+import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
 
 /** The actions on a mailbox's settings the page asks about. */
 export type MailboxAction = 'email.mailbox.update' | 'email.mailbox.authorize';
@@ -390,6 +391,54 @@ export class EmailService {
         return this.http.delete<unknown>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/delegations/${encodeURIComponent(id)}`,
         );
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/rules -- the mailbox's filters, in the order they are checked. */
+    listFilters(mailboxId: string): Observable<MailboxFilter[]> {
+        return this.http
+            .get<unknown>(`${this.rulesBase(mailboxId)}`, { headers: this.jsonHeaders })
+            .pipe(map(raw => this.unwrap<MailboxFilter>(raw)));
+    }
+
+    /** POST /email/mailboxes/{mailboxId}/rules -- a new filter, placed last. */
+    createFilter(mailboxId: string, filter: MailboxFilterWrite): Observable<MailboxFilter> {
+        return this.http.post<MailboxFilter>(this.rulesBase(mailboxId), filter, { headers: this.jsonHeaders });
+    }
+
+    /** PATCH /email/mailboxes/{mailboxId}/rules/{id} -- a merge patch of the filter's writable fields. */
+    updateFilter(mailboxId: string, id: string, patch: Partial<MailboxFilterWrite>): Observable<MailboxFilter> {
+        return this.http.patch<MailboxFilter>(
+            `${this.rulesBase(mailboxId)}/${encodeURIComponent(id)}`,
+            patch,
+            { headers: new HttpHeaders({ Accept: 'application/json', 'Content-Type': 'application/merge-patch+json' }) },
+        );
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/rules/{id} -- the filters after it move up. */
+    deleteFilter(mailboxId: string, id: string): Observable<unknown> {
+        return this.http.delete<unknown>(`${this.rulesBase(mailboxId)}/${encodeURIComponent(id)}`);
+    }
+
+    /** PUT /email/mailboxes/{mailboxId}/rules/order -- every filter once, in the new order; answers them so. */
+    reorderFilters(mailboxId: string, ids: readonly string[]): Observable<MailboxFilter[]> {
+        return this.http
+            .put<{ rules?: MailboxFilter[] }>(`${this.rulesBase(mailboxId)}/order`, { ids }, { headers: this.jsonHeaders })
+            .pipe(map(answer => answer?.rules ?? []));
+    }
+
+    /**
+     * GET /email/mailboxes/{mailboxId}/rules/folders -- every folder on the mail server, asked live, for a filter's
+     * Move. The rail's list ({@link listFolders}) names only folders holding imported mail, so a new folder would be
+     * missing from it.
+     */
+    listFilterFolders(mailboxId: string): Observable<FilterFolder[]> {
+        return this.http
+            .get<unknown>(`${this.rulesBase(mailboxId)}/folders`, { headers: this.jsonHeaders })
+            .pipe(map(raw => this.unwrap<FilterFolder>(raw)));
+    }
+
+    private rulesBase(mailboxId: string): string {
+        return `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/rules`;
     }
 
     /** Tolerate a bare array OR a Hydra collection envelope. */

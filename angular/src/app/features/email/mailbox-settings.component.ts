@@ -18,12 +18,13 @@ import { EmailService, type MailboxAction } from './email.service';
 import { EmailMailboxDto } from './email.types';
 import { MailboxConnectionSectionComponent } from './mailbox-connection-section.component';
 import { MailboxDetailsSectionComponent } from './mailbox-details-section.component';
+import { MailboxFiltersSectionComponent } from './mailbox-filters-section.component';
 import { MailboxInboundSectionComponent } from './mailbox-inbound-section.component';
 import { afterAccess } from './mailbox-section-save';
 
 /** A pane of a mailbox's settings: its id in the URL, its title and help. */
 export interface MailboxPane {
-    readonly id: 'general' | 'connection' | 'sync' | 'rules' | 'access' | 'delete';
+    readonly id: 'general' | 'connection' | 'sync' | 'filters' | 'rules' | 'access' | 'delete';
     readonly title: string;
     readonly help: string;
 }
@@ -32,6 +33,7 @@ const PANES: readonly MailboxPane[] = [
     { id: 'general', title: 'General', help: 'The mailbox\'s name and address.' },
     { id: 'connection', title: 'Connection', help: 'The incoming and outgoing servers, and how the mailbox signs in.' },
     { id: 'sync', title: 'Sync', help: 'Whether new mail is fetched, and how much past mail.' },
+    { id: 'filters', title: 'Filters', help: 'Sort arriving mail: where it goes, and how it is marked.' },
     { id: 'rules', title: 'Rules', help: 'What arriving mail starts.' },
     { id: 'access', title: 'Access', help: 'Who else may read this shared mailbox, and send from it.' },
     { id: 'delete', title: 'Delete this mailbox', help: '' },
@@ -66,7 +68,7 @@ interface PaneBody {
     imports: [
         CmsSettingsShellComponent, CmsSettingsPaneComponent,
         MailboxDetailsSectionComponent, MailboxConnectionSectionComponent, MailboxInboundSectionComponent,
-        EmailDelegationsCardComponent,
+        EmailDelegationsCardComponent, MailboxFiltersSectionComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -124,6 +126,18 @@ interface PaneBody {
                             <app-mailbox-connection-section #paneBody part="sync"
                                 [mailbox]="mb" [access]="access()['email.mailbox.update']"
                                 [reset]="resetToken()" (saved)="mailbox.set($event)" (reload)="load()" />
+                        </cms-settings-pane>
+                    }
+                    @case ('filters') {
+                        <!-- Turning a filter on or off, reordering and deleting are writes of their own; the pane's Save
+                             and Discard are the open filter's, shown only while one is open. -->
+                        <cms-settings-pane [title]="current().title" icon="funnel" owner="Email" [help]="current().help"
+                                           settingKey="email.mailbox.filters" [dirty]="body()?.dirty() ?? false"
+                                           [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
+                                           saveLabel="Save filter" (save)="save()" (discard)="body()?.discard()">
+                            <p class="cms-field-hint mb-3">{{ readOnlyNote() }}</p>
+                            <app-mailbox-filters-section #paneBody [mailboxId]="mb.id"
+                                [canManage]="access()['email.mailbox.update'] !== 'denied'" />
                         </cms-settings-pane>
                     }
                     @case ('rules') {

@@ -25,6 +25,10 @@ major number means here.
 
 ### Added
 
+- **A mailbox's settings have a Filters pane.** Filters sort arriving mail: conditions on the sender, recipients,
+  subject, body, a header, an attachment or the size, then move it, trash it, mark it read or flag it, on the mail
+  server too. The list turns them on and off, reorders and deletes them; one is edited below the list and saved with
+  the pane's Save. Built against `/email/mailboxes/{mailboxId}/rules`.
 - **The page editor says which frame draws the page.** Above the body, every page shows its frame, where that frame
   was chosen (set on the page, inherited from a folder, the section's own, or the theme's default), and what renders
   its content. When an edit would not show, the line becomes a warning: the frame does not draw the page's content,
