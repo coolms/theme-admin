@@ -52,6 +52,10 @@ export interface EmailMailboxDto {
     access?: MailboxAccess | null;
     /** How much past mail a sync fetches: -1 all of it, 0 none, 1-600 months, null the installation's default. */
     backfillDepthMonths?: number | null;
+    /** How the mailbox sends; part of the settings' version. Absent from a server that predates the choice. */
+    sendVia?: SendVia;
+    /** Whether it can send through its provider's API, as last learned (read-only). */
+    sendApi?: SendApi;
 }
 
 /** Who the caller is to a mailbox: may change its settings (`owner`, `manager`), or may read them (a delegate). */
@@ -109,6 +113,22 @@ export interface MailboxWriteRequest {
     oauthProvider?: string;
     /** How much past mail a sync fetches (see {@link EmailMailboxDto.backfillDepthMonths}); null: the default. */
     backfillDepthMonths?: number | null;
+    /** How the mailbox sends (see {@link EmailMailboxDto.sendVia}). */
+    sendVia?: SendVia;
+}
+
+/** How a mailbox sends: `auto` through the provider's API where it can, else SMTP; `api` or `smtp` only that way. */
+export type SendVia = 'auto' | 'api' | 'smtp';
+
+/**
+ * Whether the mailbox can send through its provider's API, as the server last learned it (by sending; a reconnect
+ * clears it): `available` true, false, or null when not learned yet; `name` the API (`Gmail API`, `Microsoft Graph`),
+ * null for a plain IMAP/SMTP server; `reason` why not, when not.
+ */
+export interface SendApi {
+    available: boolean | null;
+    name: string | null;
+    reason: 'not_supported' | 'not_enabled' | 'no_consent' | null;
 }
 
 /** The allowed transport-security modes (`MailboxSecurity` enum). */
