@@ -9,6 +9,7 @@ import {
     DefinitionCatalogDto,
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
+    EmailBulkResultDto,
     EmailDeleteResultDto,
     EmailFolderDto,
     EmailMailboxDto,
@@ -326,17 +327,34 @@ export class EmailService {
     }
 
     /**
-     * POST /email/messages/{id}/delete -- Gmail-style delete: by default a
-     * normal message is moved to Trash (recoverable) and one already in Trash is
-     * purged; `permanent: true` forces a permanent delete from ANY folder (the
-     * "Delete permanently" prompt choice). PROPAGATES to the remote IMAP server;
-     * `purged` reports whether it was permanently removed.
+     * POST /email/messages/{id}/delete -- moves the message to Trash on the remote IMAP server, keeping its id. One
+     * already in Trash is refused (409 `/errors/email/already-in-trash`); `permanent: true` deletes it for good, from
+     * Trash only (409 anywhere else).
      */
     deleteMessage(messageId: string, permanent = false): Observable<EmailDeleteResultDto> {
         return this.http.post<EmailDeleteResultDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/delete`,
-            { permanent },
+            permanent ? { permanent } : {},
         );
+    }
+
+    /**
+     * POST /email/messages/delete -- the bulk form, at most 200 ids of one mailbox: one outcome per id, in order. A
+     * partial failure is the `refused` outcomes; the rest are done.
+     */
+    deleteMessages(ids: readonly string[], permanent = false): Observable<EmailBulkResultDto> {
+        return this.http.post<EmailBulkResultDto>(
+            `${this.apiBase}/email/messages/delete`,
+            permanent ? { ids, permanent } : { ids },
+        );
+    }
+
+    /**
+     * POST /email/messages/restore -- the undo of a delete: back from Trash to the folder each was deleted from. Valid
+     * while the message is still in Trash, with no time limit on the server.
+     */
+    restoreMessages(ids: readonly string[]): Observable<EmailBulkResultDto> {
+        return this.http.post<EmailBulkResultDto>(`${this.apiBase}/email/messages/restore`, { ids });
     }
 
     /** POST /email/mailboxes/{id}/send -- send a new message through the mailbox's SMTP. */

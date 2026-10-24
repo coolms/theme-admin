@@ -34,12 +34,3 @@ export function moveMenuItems(folders: readonly string[], current: string): Cont
         ? targets.map(f => ({ id: `move:${f}`, label: f, icon: 'folder' }))
         : [{ id: 'none', label: 'No other folders', disabled: true }];
 }
-
-/** Delete's second step: to Trash (recoverable; not offered inside Trash) or permanently. */
-export function deleteMenuItems(count: number, inTrash: boolean): ContextMenuItem[] {
-    const what = count === 1 ? 'this message' : `${count} messages`;
-    return [
-        ...(inTrash ? [] : [{ id: 'delete:trash', label: `Move ${what} to Trash`, icon: 'trash' }]),
-        { id: 'delete:permanent', label: `Delete ${what} permanently -- can't be undone`, icon: 'trash3', danger: true },
-    ];
-}
