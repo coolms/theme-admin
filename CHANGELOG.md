@@ -10,6 +10,8 @@ major number means here.
 
 ### Changed
 
+- The shell's routes answer GET and HEAD only; any other method is the router's 405. They named no methods, so a
+  POST to `/admin` answered with the shell too.
 - `npm test` leaves no build output behind. The karma builder writes each run to `angular/dist/test-out/<uuid>` and
   removes it only on a normal exit, so runs stopped otherwise piled up there (39,218 files in one clone).
   `scripts/run-tests.mjs` now runs the suite and cleans `dist/test-out` before the run and after it, however the run

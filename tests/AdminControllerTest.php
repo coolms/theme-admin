@@ -7,7 +7,9 @@ namespace CoolMS\ThemeAdmin\Tests;
 use CoolMS\ThemeAdmin\Controller\AdminController;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * What a /admin/** request receives.
@@ -19,6 +21,21 @@ use Symfony\Component\HttpFoundation\Response;
 final class AdminControllerTest extends TestCase
 {
     private string $dir;
+
+    /**
+     * The shell is static files: it answers GET and HEAD, and any other method is the router's 405. The backend's
+     * public-surface list names `GET /admin` and `GET /admin/{path}`, and that is true only when the routes say so.
+     */
+    #[Test]
+    public function theShellAnswersGetAndHeadOnly(): void
+    {
+        $routes = new ReflectionClass(AdminController::class)->getAttributes(Route::class);
+
+        self::assertCount(2, $routes);
+        foreach ($routes as $route) {
+            self::assertSame(['GET', 'HEAD'], $route->newInstance()->methods, (string) $route->newInstance()->name);
+        }
+    }
 
     #[Test]
     public function aMissingAssetIs404AndNotTheShell(): void
