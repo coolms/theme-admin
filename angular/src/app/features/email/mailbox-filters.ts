@@ -73,6 +73,10 @@ export const MAX_CONDITIONS = 20;
 export const MAX_ACTIONS = 5;
 export const MAX_FILTERS = 100;
 export const MAX_NAME = 120;
+/** The longest text a condition compares with. */
+export const MAX_VALUE = 500;
+/** A header's name: printable ASCII, 1-76 characters, no space and no colon (RFC 5322's field name). */
+const HEADER_NAME = /^[!-9;-~]{1,76}$/;
 
 const TEXT_OPERATORS: readonly FilterOperator[] = ['contains', 'notContains', 'equals', 'startsWith', 'endsWith'];
 
@@ -186,12 +190,21 @@ export function validateFilter(w: MailboxFilterWrite): Record<string, string> {
     w.conditions.forEach((raw, i) => {
         const c = cleanCondition(raw);
         if (!operatorsFor(c.field).includes(c.operator)) errors[`conditions[${i}].operator`] = 'Not an operator for this field.';
-        if (c.field === 'header' && !c.name) errors[`conditions[${i}].name`] = 'Name the header.';
+        if (c.field === 'header') {
+            if (!c.name) errors[`conditions[${i}].name`] = 'Name the header.';
+            else if (!HEADER_NAME.test(c.name)) errors[`conditions[${i}].name`] = 'A header name: letters, digits and dashes, no space or colon.';
+        }
         if (c.operator === 'exists' || c.field === 'hasAttachment') return;
         if (c.field === 'size') {
-            if (!Number.isInteger(c.value) || (c.value as number) < 0) errors[`conditions[${i}].value`] = 'A whole number of bytes.';
+            // The size is read BEFORE cleaning: Number('') is 0, and "larger than 0" matches every message.
+            const typed = typeof raw.value === 'number' ? raw.value : String(raw.value ?? '').trim();
+            if (typed === '' || !Number.isInteger(Number(typed)) || Number(typed) < 0) {
+                errors[`conditions[${i}].value`] = 'A whole number of bytes.';
+            }
         } else if (c.value === '') {
             errors[`conditions[${i}].value`] = 'Enter what to look for.';
+        } else if (String(c.value).length > MAX_VALUE) {
+            errors[`conditions[${i}].value`] = `At most ${MAX_VALUE} characters.`;
         }
     });
 
@@ -202,6 +215,10 @@ export function validateFilter(w: MailboxFilterWrite): Record<string, string> {
     }
     w.actions.forEach((a, i) => {
         if (a.type === 'move' && !(a.folder ?? '').trim()) errors[`actions[${i}].folder`] = 'Choose the folder.';
+        // A move ends the message's actions in the Inbox: whatever came after it would never run.
+        if ((a.type === 'move' || a.type === 'trash') && i < w.actions.length - 1) {
+            errors[`actions[${i}].type`] = 'A move comes last: what follows it would not run.';
+        }
     });
     return errors;
 }

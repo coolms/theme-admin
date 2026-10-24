@@ -20,7 +20,7 @@ describe('mailbox filters -- the contract, kept by the editor', () => {
             { field: 'from', operator: 'contains', value: 'billing@' },
             { field: 'subject', operator: 'contains', value: 'invoice' },
         ],
-        actions: [{ type: 'move', folder: 'INBOX/Accounts' }, { type: 'markRead' }],
+        actions: [{ type: 'markRead' }, { type: 'move', folder: 'INBOX/Accounts' }],
         stopProcessing: true,
     });
 
@@ -46,6 +46,37 @@ describe('mailbox filters -- the contract, kept by the editor', () => {
             'conditions[3].value': 'Enter what to look for.',
             'actions[0].folder': 'Choose the folder.',
         });
+    });
+
+    it('a size field left empty or not a number is refused, never sent as 0 bytes ("larger than 0" matches every message)', () => {
+        for (const typed of ['', '  ', 'abc', '1.5', '-3']) {
+            const f = valid();
+            f.conditions = [{ field: 'size', operator: 'greaterThan', value: typed as unknown as number }];
+            expect(validateFilter(f)['conditions[0].value']).withContext(JSON.stringify(typed)).toBe('A whole number of bytes.');
+        }
+        const ok = valid();
+        ok.conditions = [{ field: 'size', operator: 'greaterThan', value: 0 }];
+        expect(validateFilter(ok)).withContext('0 typed on purpose').toEqual({});
+    });
+
+    it('a move or Move to Trash comes last: what would follow it never runs', () => {
+        const f = valid();
+        f.actions = [{ type: 'move', folder: 'INBOX/A' }, { type: 'markRead' }];
+        expect(validateFilter(f)['actions[0].type']).toContain('comes last');
+        f.actions = [{ type: 'flag' }, { type: 'trash' }];
+        expect(validateFilter(f)).toEqual({});
+    });
+
+    it('a header name is printable ASCII without a space or a colon, 76 at most; a value 500 at most', () => {
+        const f = valid();
+        const header = (name: string) => ({ field: 'header' as const, operator: 'contains' as const, name, value: 'x' });
+        f.conditions = [header('List-Id'), header('X Bad'), header('Subject:'), header('x'.repeat(77)), header('Тема')];
+        const e = validateFilter(f);
+        expect(e['conditions[0].name']).toBeUndefined();
+        expect(Object.keys(e).sort()).toEqual(['conditions[1].name', 'conditions[2].name', 'conditions[3].name', 'conditions[4].name']);
+
+        f.conditions = [{ field: 'subject', operator: 'contains', value: 'x'.repeat(501) }];
+        expect(validateFilter(f)['conditions[0].value']).toBe('At most 500 characters.');
     });
 
     it('one move at most: Move to folder and Move to Trash together are refused', () => {
@@ -104,7 +135,7 @@ describe('mailbox filters -- the contract, kept by the editor', () => {
 
     it('the list\'s one line says what a filter does', () => {
         expect(summarizeFilter(valid()))
-            .toBe('If From contains "billing@" and Subject contains "invoice": move to INBOX/Accounts, mark as read; no later filter.');
+            .toBe('If From contains "billing@" and Subject contains "invoice": mark as read, move to INBOX/Accounts; no later filter.');
         expect(summarizeFilter({
             match: 'any', stopProcessing: false,
             conditions: [{ field: 'size', operator: 'greaterThan', value: 5242880 }, { field: 'hasAttachment', operator: 'is', value: true }],
