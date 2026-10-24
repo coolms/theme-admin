@@ -71,7 +71,7 @@ describe('MailboxSettingsComponent -- one mailbox\'s settings, a pane at a time'
 
         expect(email.getMailbox).toHaveBeenCalledOnceWith('mb-1');
         expect(email.mailboxCapabilities).toHaveBeenCalledOnceWith('mb-1');
-        expect(panes(host)).toEqual(['General', 'Connection', 'Sync', 'Rules', 'Delete this mailbox']);
+        expect(panes(host)).toEqual(['General', 'Connection', 'Sync', 'Filters', 'Rules', 'Delete this mailbox']);
     });
 
     it('the host chooses the pane; a pick is told to the host, and an unknown pane is corrected to the first', () => {
