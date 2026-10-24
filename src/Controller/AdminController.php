@@ -38,8 +38,8 @@ use const DIRECTORY_SEPARATOR;
  *
  * No Twig dependency -- file_get_contents() is used throughout.
  */
-#[Route('/admin', name: 'coolms_admin')]
-#[Route('/admin/{path}', name: 'coolms_admin_spa', requirements: ['path' => '.+'])]
+#[Route('/admin', name: 'coolms_admin', methods: ['GET', 'HEAD'])]
+#[Route('/admin/{path}', name: 'coolms_admin_spa', requirements: ['path' => '.+'], methods: ['GET', 'HEAD'])]
 final class AdminController
 {
     /**
