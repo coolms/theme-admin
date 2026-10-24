@@ -244,6 +244,12 @@ jobs:
           node --test scripts/bundled-pdfjs.test.mjs
           npm run lint:bundled-pdfjs
 
+      # npm test runs the suite through scripts/run-tests.mjs, which removes the karma builder's output however a
+      # run ends (2026-10-24: runs stopped otherwise had left 39,218 files in one clone).
+      - name: A test run leaves no build output behind
+        working-directory: sources/theme-admin/angular
+        run: node --test scripts/run-tests.test.mjs
+
       - name: Admin suite
         working-directory: sources/theme-admin/angular
         env:

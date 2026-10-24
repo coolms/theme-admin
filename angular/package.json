@@ -9,7 +9,7 @@
     "watch": "ng build --watch --output-path=../public --base-href=/admin/",
     "assemble": "node scripts/assemble-console.mjs",
     "pretest": "node scripts/assemble-console.mjs && node scripts/stamp-client.mjs",
-    "test": "ng test --watch=false",
+    "test": "node scripts/run-tests.mjs",
     "test:watch": "ng test",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "lint": "eslint 'src/**/*.{ts,html}'",
