@@ -28,6 +28,7 @@ import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.serv
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
+import { sendFailureText } from './send-via';
 import { messageFrameDoc } from './message-frame-doc';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
@@ -2427,9 +2428,10 @@ export class EmailMailboxPageComponent implements OnInit {
                 // Refresh folders (Sent count) + the current message list.
                 this.loadFolders();
             },
-            error: () => {
+            error: (e: unknown) => {
                 this.sending.set(false);
-                this.toast.error('Send failed — check the mailbox SMTP settings.');
+                // The cause by the problem's type (SMTP or the provider's API), never the server's detail.
+                this.toast.error(sendFailureText(e));
             },
         });
     }

@@ -10,6 +10,12 @@ major number means here.
 
 ### Changed
 
+- A mailbox's Connection pane chooses how it sends: Auto (through the provider's API -- Gmail API, Microsoft
+  Graph -- where it can be used, else SMTP), API only, or SMTP only. The pane says what the choice does for this
+  mailbox, says "not checked yet" where no send has found out whether the API can be used (never taken for yes), and
+  why it cannot be used where it cannot, with what to do: reconnect to grant sending, or the administrator enables it
+  for the installation (outside CoolMS). A failed send now says its cause by the server's problem type (unreachable,
+  sign-in refused, a recipient refused, ...); an unknown cause says whether it went out is not known.
 - The shell's routes answer GET and HEAD only; any other method is the router's 405. They named no methods, so a
   POST to `/admin` answered with the shell too.
 - `npm test` leaves no build output behind. The karma builder writes each run to `angular/dist/test-out/<uuid>` and

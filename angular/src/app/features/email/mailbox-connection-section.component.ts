@@ -5,9 +5,10 @@ import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import { type CapabilityState, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
-import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest } from './email.types';
+import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest, SendVia } from './email.types';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
+import { sendViaChoices, sendViaHint } from './send-via';
 
 /** The connection fields this section edits, as they are read and as they are saved. */
 interface ConnectionDraft {
@@ -19,6 +20,7 @@ interface ConnectionDraft {
     smtpPort: number | null;
     smtpSecurity: MailboxSecurity;
     smtpUsername: string;
+    sendVia: SendVia;
     enabled: boolean;
     backfillDepthMonths: number | null;
 }
@@ -44,6 +46,7 @@ export function connectionDraftOf(mailbox: EmailMailboxDto): ConnectionDraft {
         smtpPort: mailbox.smtpPort ?? null,
         smtpSecurity: security(mailbox.smtpSecurity),
         smtpUsername: mailbox.smtpUsername ?? '',
+        sendVia: mailbox.sendVia ?? 'auto',
         enabled: mailbox.enabled ?? true,
         backfillDepthMonths: mailbox.backfillDepthMonths ?? null,
     };
@@ -201,6 +204,17 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                                [ngModel]="draft().smtpUsername" (ngModelChange)="set('smtpUsername', $event)" />
                     </label>
                 </div>
+                @if (hasSendVia()) {
+                    <div class="row g-3 mb-4">
+                        <label class="col-12 col-md-6">
+                            <span class="cms-label">Send through</span>
+                            <select class="cms-select w-100" name="sendVia" [ngModel]="draft().sendVia" (ngModelChange)="set('sendVia', $event)">
+                                @for (c of sendChoices(); track c.value) { <option [value]="c.value" [disabled]="c.disabled">{{ c.label }}</option> }
+                            </select>
+                        </label>
+                        <p class="cms-field-hint col-12 mb-0">{{ sendHint() }}</p>
+                    </div>
+                }
                 @if (usernameIsAddress() && !readOnly()) {
                     <p class="cms-field-hint mb-3">Your mailbox signs in as its address. An administrator can set another sign-in name.</p>
                 }
@@ -305,6 +319,10 @@ export class MailboxConnectionSectionComponent {
         return version !== null && version !== undefined && version !== '';
     });
     readonly hasBackfillDepth = computed(() => 'backfillDepthMonths' in this.mailbox());
+    /** The sending choice, where the server offers it (a server before it reads no `sendVia`). */
+    readonly hasSendVia = computed(() => 'sendVia' in this.mailbox());
+    readonly sendChoices = computed(() => sendViaChoices(this.mailbox().sendApi, this.mailbox().sendVia ?? 'auto'));
+    readonly sendHint = computed(() => sendViaHint(this.draft().sendVia, this.mailbox().sendApi));
     readonly backfillChoice = computed(() => backfillChoiceOf(this.draft().backfillDepthMonths));
     /**
      * An owner who is not an administrator signs in as the mailbox's address (the server holds a username they send to
