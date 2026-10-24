@@ -75,7 +75,11 @@ export function sendFailureText(error: unknown): string {
     const outcome = cause === 'unknown' || cause === null
         ? 'Whether the message went out is not known. Check the Sent folder before sending again.'
         : 'The message was not sent.';
-    return [sentence(`${who} refused the message: ${said}`), hint, outcome].filter(part => part !== undefined).join(' ');
+    // What the provider did, by the cause: a 401 refused the sign-in, a 5xx could not take it, the rest refused it.
+    const did = cause === 'auth-refused' ? 'refused the sign-in'
+        : cause === 'unknown' || cause === null ? 'could not take the message'
+        : 'refused the message';
+    return [sentence(`${who} ${did}: ${said}`), hint, outcome].filter(part => part !== undefined).join(' ');
 }
 
 /** Who speaks for an API, in a sentence: the company, not the API's name. */

@@ -60,8 +60,15 @@ describe('Sending: Auto, API or SMTP', () => {
             .toBe('Google refused the message: invalidArgument — Invalid To header. The message was not sent.');
         expect(sendFailureText(refused('Microsoft Graph', { code: 'ErrorNonExistentMailbox', message: null })))
             .toContain('has no mailbox at Microsoft');
-        // A refusal whose outcome the server could not tell keeps "not known".
-        expect(sendFailureText(refused('Gmail API', { code: 'backendError', message: 'Backend Error' }, 'unknown'))).toContain('is not known');
+        // A 5xx (unknown) keeps the provider's words and says the outcome is not known; a 401 refused the sign-in.
+        expect(sendFailureText(refused('Gmail API', { code: 'backendError', message: 'Backend Error' }, 'unknown')))
+            .toBe('Google could not take the message: backendError — Backend Error. Whether the message went out is not known. '
+                + 'Check the Sent folder before sending again.');
+        expect(sendFailureText(refused('Microsoft Graph', { code: 'InvalidAuthenticationToken', message: 'Access token has expired.' }, 'auth-refused')))
+            .toBe('Microsoft refused the sign-in: InvalidAuthenticationToken — Access token has expired. The message was not sent.');
+        // A 502 from before the provider member existed carries no key at all: read as no reason.
+        expect(sendFailureText(new HttpErrorResponse({ status: 502, error: { type: '/errors/mailbox-send/rejected', server: 'Gmail API' } })))
+            .toBe('Gmail API refused the message. It was not sent.');
         // No reason from the provider (SMTP, the network): the cause in our words, as before.
         expect(sendFailureText(refused('smtp.example.test', null, 'rejected'))).toBe('smtp.example.test refused the message. It was not sent.');
         expect(sendFailureText(refused('Gmail API', { code: ' ', message: '' }))).toBe('Gmail API refused the message. It was not sent.');
