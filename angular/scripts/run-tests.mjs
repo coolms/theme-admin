@@ -3,16 +3,15 @@
 // @angular/build's karma builder writes each run to dist/test-out/<random uuid> and removes it only on a normal
 // process exit. A run stopped by a signal (Ctrl-C, a timeout, a container stopped mid-run) left its directory, and
 // on 2026-10-24 one clone held 39,218 such files (4.2 GiB) -- under a path every IDE indexing the package reads.
-// So this runs the suite and then removes what appeared in dist/test-out during the run, however the run ended --
-// including when the process that started it dies without passing a signal on (npm does, on SIGTERM). Before it
-// starts, it removes what earlier runs left -- a run killed outright (SIGKILL, a container ending) cannot clean up:
-// everything, when no other run is going on in this tree (dist/.runs holds a marker per running run); else only what
-// no run has touched for an hour, so a run going on at the same time keeps its own directory.
+// So this runs the suite and cleans dist/test-out before the run and after it, however the run ended -- including
+// when the process that started it dies without passing a signal on (npm does, on SIGTERM); before, because a run
+// killed outright (SIGKILL, a container ending) cannot clean up after itself. A run going on at the same time in the
+// same tree (dist/.runs holds a marker per running run) keeps its output: see runTests.
 //
 // Run: npm test [-- <ng test options>]. TEST_COMMAND (a JSON array) replaces `ng test --watch=false`, for the tests.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from 'node:fs';
-import { constants as osConstants } from 'node:os';
+import { hostname, constants as osConstants } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,29 +42,55 @@ function pruneEmpty(out) {
     }
 }
 
-/** Runs `command` in `cwd`, cleaning dist/test-out as described above; resolves to the exit code to use. */
-export function runTests({ cwd, command, now = Date.now(), log = () => undefined }) {
+/** How old an entry is, in ms; null when it is already gone (another run's cleanup took it first). */
+function age(path, now) {
+    try {
+        return now - statSync(path).mtimeMs;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The other runs going on in this tree, by their markers (`<host>-<pid>` in dist/.runs). A pid is checked only on its
+ * own host: a container's pid read on the host names another process or none, so a marker from another host counts
+ * as live until it is an hour old. A marker found dead is removed.
+ */
+function otherRuns(runs, own, now) {
+    return entries(runs).filter((name) => {
+        if (name === own) return false;
+        const cut = name.lastIndexOf('-');
+        const host = name.slice(0, cut);
+        const live = host === hostname() ? alive(Number(name.slice(cut + 1))) : (age(join(runs, name), now) ?? Infinity) < STALE_MS;
+        if (!live) rmSync(join(runs, name), { force: true });
+        return live;
+    });
+}
+
+/**
+ * Runs `command` in `cwd`, cleaning dist/test-out as described above; resolves to the exit code to use.
+ *
+ * Which directory in test-out is whose is not known (the builder names it at random), so the rule is by tree: with
+ * no other run going on, everything there is a leftover -- before this run starts and after it ends; with another run
+ * going on, before the start only what no run has touched for an hour is, and at the end nothing: what this run wrote
+ * is left to whichever run ends last.
+ */
+export function runTests({ cwd, command, now = Date.now, log = () => undefined }) {
     const out = join(cwd, 'dist', 'test-out');
     const runs = join(cwd, 'dist', '.runs');
-    // Each run marks itself with its pid while it runs. With no other run alive, everything in test-out is a leftover
-    // (a run killed outright cannot clean up: SIGKILL, a container ending); with one alive, only what no run has
-    // touched for an hour is, so its own output stays.
-    const others = entries(runs).filter((pid) => {
-        if (alive(Number(pid))) return true;
-        rmSync(join(runs, pid), { force: true });
-        return false;
-    });
-    for (const name of entries(out)) {
-        const path = join(out, name);
-        if (others.length === 0 || now - statSync(path).mtimeMs > STALE_MS) {
-            rmSync(path, { recursive: true, force: true });
-            log(`run-tests: removed a leftover run, dist/test-out/${name}`);
+    const own = `${hostname()}-${process.pid}`;
+    const clean = (keepFresh) => {
+        for (const name of entries(out)) {
+            const old = age(join(out, name), now());
+            if (old === null || (keepFresh && old <= STALE_MS)) continue;
+            rmSync(join(out, name), { recursive: true, force: true });
+            log(`run-tests: removed dist/test-out/${name}`);
         }
-    }
+    };
+    clean(otherRuns(runs, own, now()).length > 0);
     mkdirSync(runs, { recursive: true });
-    const marker = join(runs, String(process.pid));
+    const marker = join(runs, own);
     writeFileSync(marker, '');
-    const before = new Set(entries(out));
     return new Promise((resolve) => {
         const child = spawn(command[0], command.slice(1), { cwd, stdio: 'inherit' });
         const forward = (signal) => child.kill(signal);
@@ -89,10 +114,8 @@ export function runTests({ cwd, command, now = Date.now(), log = () => undefined
             clearInterval(orphaned);
             process.off('SIGINT', forward);
             process.off('SIGTERM', forward);
-            for (const name of entries(out)) {
-                if (!before.has(name)) rmSync(join(out, name), { recursive: true, force: true });
-            }
             rmSync(marker, { force: true });
+            if (otherRuns(runs, own, now()).length === 0) clean(false);
             pruneEmpty(runs);
             pruneEmpty(out);
             resolve(code);

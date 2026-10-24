@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,9 @@ const builder = (name, then) => [process.execPath, '-e', `
     fs.mkdirSync('dist/test-out/${name}', { recursive: true });
     fs.writeFileSync('dist/test-out/${name}/main.js', 'built');
     fs.writeFileSync('built-${name}', String(process.pid));
-    ${then === 'wait' ? 'console.log("built"); setInterval(() => undefined, 1000);' : `process.exit(${then});`}
+    ${then === 'wait' ? 'console.log("built"); setInterval(() => undefined, 1000);'
+        : typeof then === 'object' ? `console.log("built"); setTimeout(() => process.exit(0), ${then.exitAfter});`
+            : `process.exit(${then});`}
 `];
 
 const project = () => mkdtempSync(join(tmpdir(), 'run-tests-'));
@@ -131,11 +133,50 @@ test('another run going on in the tree: its fresh output stays, and only what is
     utimesSync(join(cwd, 'dist', 'test-out', 'old'), hourAgo, hourAgo);
     const other = spawn(process.execPath, ['-e', 'setInterval(() => undefined, 1000)'], { stdio: 'ignore' });
     mkdirSync(join(cwd, 'dist', '.runs'), { recursive: true });
-    writeFileSync(join(cwd, 'dist', '.runs', String(other.pid)), '');
+    writeFileSync(join(cwd, 'dist', '.runs', `${hostname()}-${other.pid}`), '');
     assert.equal(await runTests({ cwd, command: builder('mine', 0) }), 0);
     other.kill('SIGKILL');
-    assert.deepEqual(testOut(cwd), ['live']);
-    assert.deepEqual(readdirSync(join(cwd, 'dist', '.runs')), [String(other.pid)], 'only the other run is marked');
+    assert.deepEqual(testOut(cwd).sort(), ['live', 'mine'], 'the old one went; the live run\'s stayed, and so did this run\'s, left to the run that ends last');
+    assert.deepEqual(readdirSync(join(cwd, 'dist', '.runs')), [`${hostname()}-${other.pid}`], 'only the other run is marked');
+    rmSync(cwd, { recursive: true });
+});
+
+test('a run that starts mid-run keeps its output when the first one ends; the last to end removes both', async () => {
+    const cwd = project();
+    mkdirSync(join(cwd, 'scripts'), { recursive: true });
+    copyFileSync(SCRIPT, join(cwd, 'scripts', 'run-tests.mjs'));
+    const start = (name, ms) => {
+        const run = spawn(process.execPath, ['scripts/run-tests.mjs'], {
+            cwd, env: { ...process.env, TEST_COMMAND: JSON.stringify(builder(name, { exitAfter: ms })) }, stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        const built = new Promise((resolve) => run.stdout.on('data', (chunk) => String(chunk).includes('built') && resolve()));
+        const ended = new Promise((resolve) => run.on('exit', (code) => resolve(code)));
+        return { built, ended };
+    };
+    const a = start('a', 1500);
+    await a.built;
+    const b = start('b', 4000);
+    await b.built;
+    assert.equal(await a.ended, 0);
+    assert.ok((testOut(cwd) ?? []).includes('b'), 'after the first run ended, the second run\'s output is still there');
+    assert.equal(await b.ended, 0);
+    assert.equal(testOut(cwd), null, 'after the last run ended');
+    assert.equal(existsSync(join(cwd, 'dist')), false);
+    rmSync(cwd, { recursive: true });
+});
+
+test('a marker from another host (a container\'s pid, unreadable here) counts as live until it is an hour old', async () => {
+    const cwd = project();
+    mkdirSync(join(cwd, 'dist', 'test-out', 'theirs'), { recursive: true });
+    mkdirSync(join(cwd, 'dist', '.runs'), { recursive: true });
+    const foreign = join(cwd, 'dist', '.runs', 'another-host-4242');
+    writeFileSync(foreign, '');
+    assert.equal(await runTests({ cwd, command: builder('mine', 0) }), 0);
+    assert.deepEqual(testOut(cwd).sort(), ['mine', 'theirs'], 'a fresh foreign marker keeps the fresh output, this run\'s too');
+    const hourAgo = (Date.now() - STALE_MS - 60_000) / 1000;
+    utimesSync(foreign, hourAgo, hourAgo);
+    assert.equal(await runTests({ cwd, command: builder('mine', 0) }), 0);
+    assert.equal(existsSync(join(cwd, 'dist')), false, 'an hour-old foreign marker is gone, and everything with it');
     rmSync(cwd, { recursive: true });
 });
 
@@ -145,7 +186,7 @@ test('a marker whose run is gone counts for nothing: everything left goes, and t
     mkdirSync(join(cwd, 'dist', '.runs'), { recursive: true });
     const gone = spawn(process.execPath, ['-e', '0']);
     await new Promise((resolve) => gone.on('exit', resolve));
-    writeFileSync(join(cwd, 'dist', '.runs', String(gone.pid)), '');
+    writeFileSync(join(cwd, 'dist', '.runs', `${hostname()}-${gone.pid}`), '');
     assert.equal(await runTests({ cwd, command: builder('mine', 0) }), 0);
     assert.equal(existsSync(join(cwd, 'dist')), false);
     rmSync(cwd, { recursive: true });
