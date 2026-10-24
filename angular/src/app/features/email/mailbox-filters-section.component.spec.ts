@@ -130,6 +130,35 @@ describe('MailboxFiltersSectionComponent -- a mailbox\'s filters', () => {
         expect(c.editing()).not.toBeNull();
     });
 
+    it('after a refused Save, a field put right stops being marked on the edit itself, not at the next Save', () => {
+        const { c } = make(true, []);
+        c.add();
+        c.patch({ name: 'Invoices' });
+        c.save();
+        expect(c.err('conditions[0].value')).toBe('Enter what to look for.');
+
+        c.setCondition(0, { value: 'billing@' });
+        expect(c.err('conditions[0].value')).toBeNull();
+        expect(email.createFilter).not.toHaveBeenCalled();
+
+        c.setCondition(0, { value: '' });
+        expect(c.err('conditions[0].value')).withContext('emptied again').toBe('Enter what to look for.');
+    });
+
+    it('the note on the folder list is said only while an action moves mail', () => {
+        email.listFilterFolders.and.returnValue(throwError(() => ({ status: 404 })));
+        email.listFolders.and.returnValue(of([{ folder: 'INBOX', total: 1, unseen: 0 }]));
+        const { fixture, c, el } = make(true, []);
+        c.add();
+        fixture.detectChanges();
+        expect(c.foldersNote()).toContain('Only folders');
+        expect(el.textContent).not.toContain('Only folders');
+
+        c.setAction(0, { type: 'move' });
+        fixture.detectChanges();
+        expect(el.textContent).toContain('Only folders that already hold mail');
+    });
+
     it('Discard closes the open filter, and nothing is sent', () => {
         const { c } = make(true, [filter('a', 0)]);
         c.edit(c.filters()[0]);

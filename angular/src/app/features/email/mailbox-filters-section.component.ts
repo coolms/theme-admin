@@ -230,7 +230,7 @@ interface Editing {
                             }
                         }
                         @if (err('actions'); as m) { <p class="flt__field-error">{{ m }}</p> }
-                        @if (foldersNote()) { <p class="cms-field-hint">{{ foldersNote() }}</p> }
+                        @if (foldersNote() && movesMail()) { <p class="cms-field-hint">{{ foldersNote() }}</p> }
                         <button type="button" class="cms-btn cms-btn-sm" [disabled]="e.draft.actions.length >= maxActions"
                                 (click)="addAction()">
                             <i class="bi bi-plus-lg"></i> Add an action
@@ -352,6 +352,7 @@ export class MailboxFiltersSectionComponent {
     save(): void {
         const e = this.editing();
         if (e === null || !this.canManage()) return;
+        this.saveTried = true;
         const problems = validateFilter(e.draft);
         this.problems.set(problems);
         if (Object.keys(problems).length > 0) return;
@@ -474,6 +475,7 @@ export class MailboxFiltersSectionComponent {
 
     private open(id: string | null, draft: MailboxFilterWrite): void {
         this.editing.set({ id, draft, opened: JSON.stringify(draft) });
+        this.saveTried = false;
         this.problems.set({});
         if (this.folders() === null) this.loadFolders();
     }
@@ -502,7 +504,26 @@ export class MailboxFiltersSectionComponent {
 
     patch(change: Partial<MailboxFilterWrite>): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, ...change } }));
+        this.recheck();
     }
+
+    /** Whether the open filter moves mail: only then is the folder list's note said. */
+    movesMail(): boolean {
+        return this.editing()?.draft.actions.some(a => a.type === 'move') ?? false;
+    }
+
+    /**
+     * Once a save has shown problems, each edit checks the filter again, so a field put right stops being marked at
+     * once instead of at the next Save. A server's violation gives way to the client's check here; the server checks
+     * again on the next save.
+     */
+    private recheck(): void {
+        const e = this.editing();
+        if (e !== null && this.saveTried) this.problems.set(validateFilter(e.draft));
+    }
+
+    /** A Save was pressed on the open filter: from then on it is checked on every edit, until it is closed. */
+    private saveTried = false;
 
     operators(field: FilterField): readonly FilterOperator[] {
         return operatorsFor(field);
@@ -563,9 +584,11 @@ export class MailboxFiltersSectionComponent {
 
     private updateConditions(f: (list: FilterCondition[]) => FilterCondition[]): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, conditions: f(e.draft.conditions) } }));
+        this.recheck();
     }
 
     private updateActions(f: (list: FilterAction[]) => FilterAction[]): void {
         this.editing.update(e => (e === null ? e : { ...e, draft: { ...e.draft, actions: f(e.draft.actions) } }));
+        this.recheck();
     }
 }
