@@ -43,3 +43,7 @@
 # They were tracked here for a while, which meant a PHP consumer
 # downloaded 7.71 MB of fonts that the engine owns.
 angular/public/assets/document-fonts/
+
+# A working tool's own settings (an editor's or an assistant's launch and session files) belong to
+# the machine that runs it, never to the package.
+.claude/
