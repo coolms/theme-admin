@@ -1,13 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type SendApi, type SendVia } from './email.types';
 
-const NO_API: SendApi = { available: false, name: null, reason: 'not_supported' };
+/** A read that carries no sendApi says nothing about it: not known, as `available: null`. */
+const UNKNOWN: SendApi = { available: null, name: null, reason: null };
+const known = (api: SendApi | null | undefined): SendApi => api ?? UNKNOWN;
 
 /** The API's name in a sentence: the server's, or a plain one where it names none. */
 const apiName = (api: SendApi): string => api.name ?? 'the provider\'s API';
 
 /** Why the API cannot be used for this mailbox, in words, with what can be done about it; null when it can. */
-export function sendApiWhyNot(api: SendApi = NO_API): string | null {
+export function sendApiWhyNot(read?: SendApi | null): string | null {
+    const api = known(read);
     if (api.available !== false) return null;
     switch (api.reason) {
         case 'not_enabled':
@@ -21,7 +24,8 @@ export function sendApiWhyNot(api: SendApi = NO_API): string | null {
 }
 
 /** The choices, as the select shows them: API only where it may be chosen (or is already the choice). */
-export function sendViaChoices(api: SendApi = NO_API, current: SendVia): { value: SendVia; label: string; disabled: boolean }[] {
+export function sendViaChoices(read: SendApi | null | undefined, current: SendVia): { value: SendVia; label: string; disabled: boolean }[] {
+    const api = known(read);
     return [
         { value: 'auto', label: 'Auto', disabled: false },
         { value: 'api', label: api.name === null ? 'API' : `API (${api.name})`, disabled: api.available === false && current !== 'api' },
@@ -30,7 +34,8 @@ export function sendViaChoices(api: SendApi = NO_API, current: SendVia): { value
 }
 
 /** What the chosen way does for this mailbox, in a sentence. Not learned yet is said, never taken for yes. */
-export function sendViaHint(via: SendVia, api: SendApi = NO_API): string {
+export function sendViaHint(via: SendVia, read?: SendApi | null): string {
+    const api = known(read);
     const name = apiName(api);
     switch (via) {
         case 'smtp':

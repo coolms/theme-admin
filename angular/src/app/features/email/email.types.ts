@@ -55,7 +55,7 @@ export interface EmailMailboxDto {
     /** How the mailbox sends; part of the settings' version. Absent from a server that predates the choice. */
     sendVia?: SendVia;
     /** Whether it can send through its provider's API, as last learned (read-only). */
-    sendApi?: SendApi;
+    sendApi?: SendApi | null;
 }
 
 /** Who the caller is to a mailbox: may change its settings (`owner`, `manager`), or may read them (a delegate). */

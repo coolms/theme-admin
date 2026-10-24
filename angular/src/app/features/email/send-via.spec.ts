@@ -13,6 +13,14 @@ describe('Sending: Auto, API or SMTP', () => {
         expect(sendApiWhyNot(gmail(null))).toBeNull();
     });
 
+    it('a read with no sendApi at all says nothing about it: not known, never "no API" or "yes"', () => {
+        for (const missing of [null, undefined]) {
+            expect(sendApiWhyNot(missing)).toBeNull();
+            expect(sendViaHint('auto', missing)).toContain('not checked yet');
+            expect(sendViaChoices(missing, 'auto').find(c => c.value === 'api')!.disabled).toBeFalse();
+        }
+    });
+
     it('offers API only where it may be chosen, or where it already is', () => {
         const disabled = (api: ReturnType<typeof gmail>, current: 'auto' | 'api') => sendViaChoices(api, current).find(c => c.value === 'api')!.disabled;
         expect(disabled(gmail(true), 'auto')).toBeFalse();
