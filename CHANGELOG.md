@@ -12,9 +12,12 @@ major number means here.
 
 - `npm test` leaves no build output behind. The karma builder writes each run to `angular/dist/test-out/<uuid>` and
   removes it only on a normal exit, so runs stopped otherwise piled up there (39,218 files in one clone).
-  `scripts/run-tests.mjs` now runs the suite. It removes what its run wrote however the run ended, including when
-  the process that started it dies without passing the signal on, as npm does on SIGTERM. Before starting, it removes
-  what earlier runs left: everything when no other run is going on in the tree, else only what is an hour old.
+  `scripts/run-tests.mjs` now runs the suite and cleans `dist/test-out` before the run and after it, however the run
+  ended, including when the process that started it dies without passing the signal on, as npm does on SIGTERM.
+  With no other run going on in the tree, everything there is a leftover; with one going on, its output is kept.
+- Four pages take the shared page header and draw no back link of their own; the breadcrumbs lead back. The
+  calendar's error state, the CDP subject and the image map's regions lose their back links, and the UI kit's own
+  header becomes `cms-page-header`.
 - The admin suite names every failing spec: a `failed-specs` reporter in `karma.conf.js` prints each one by suite
   and name with its messages, and CI prints them and annotates each; a run without that list is UNEVALUABLE.
 - CI runs on the Node the served admin is built with (24.18.0, `angular/.nvmrc`), not the latest Node 22; the

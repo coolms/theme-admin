@@ -11,7 +11,7 @@ import {
     viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
     FabricEngineAdapter,
@@ -64,7 +64,6 @@ const REGION_STYLE = { fill: 'rgba(37, 99, 235, 0.20)', stroke: '#2563eb', strok
     template: `
         <cms-page-header [title]="headerTitle()">
             <div header-actions class="header-actions">
-                <button type="button" class="cms-btn" (click)="back()">Back to list</button>
                 <button type="button" class="cms-btn cms-btn-primary"
                         [disabled]="saving() || loading()"
                         (click)="save()">
@@ -252,7 +251,6 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
     private readonly api    = inject(ImageMapService);
     private readonly media  = inject(MediaService);
     private readonly route  = inject(ActivatedRoute);
-    private readonly router = inject(Router);
     private readonly toast  = inject(ToastService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly unsaved = inject(UnsavedChangesService);
@@ -380,10 +378,6 @@ export class ImageMapRegionsPageComponent implements AfterViewInit, OnDestroy {
         this.resizeObserver?.disconnect();
         this.engine?.destroy();
         this.engine = null;
-    }
-
-    back(): void {
-        void this.router.navigate(['/image-maps']);
     }
 
     setMode(mode: DrawMode): void {

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
+import { CmsPageHeaderComponent } from '@coolms/ui-angular';
 
 import {
     discoverTokenNames,
@@ -45,15 +46,10 @@ import {
     selector: 'app-ui-kit-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CmsPageHeaderComponent],
     template: `
+        <cms-page-header title="UI kit" icon="palette" [subtitle]="summary()" />
         <div class="ui-kit">
-            <header class="ui-kit__header">
-                <h1 class="cms-page-title">UI kit</h1>
-                <p class="cms-field-hint">
-                    The Angular admin kit, read from the live stylesheet.
-                    {{ tokenCount() }} design tokens in {{ groups().length }} groups.
-                </p>
-            </header>
 
             <section class="ui-kit__section">
                 <h2 class="cms-h2">Design tokens</h2>
@@ -234,7 +230,6 @@ import {
     `,
     styles: [`
         .ui-kit { padding: 16px 24px 48px; max-width: 1100px; }
-        .ui-kit__header { margin-bottom: 24px; }
         .ui-kit__section {
             padding: 20px 0;
             border-top: 1px solid var(--cms-border);
@@ -273,6 +268,9 @@ import {
 export class UiKitPageComponent implements OnInit {
     protected readonly groups = signal<UiKitTokenGroup[]>([]);
     protected readonly tokenCount = signal(0);
+    protected readonly summary = computed(
+        () => `The Angular admin kit, read from the live stylesheet. ${this.tokenCount()} design tokens in ${this.groups().length} groups.`,
+    );
 
     ngOnInit(): void {
         const root = document.documentElement;
