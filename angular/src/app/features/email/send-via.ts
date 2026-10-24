@@ -51,26 +51,33 @@ export function sendViaHint(via: SendVia, read?: SendApi | null): string {
     }
 }
 
-/** Why a send or a reply failed (a 502 whose type names the cause), in the page's words, never the server's detail. */
+/**
+ * Why a send or a reply failed (a 502 whose type names the cause), in the page's words, never the server's detail;
+ * naming the server where the problem does (its `server`: the SMTP host, or the API, e.g. Gmail API).
+ */
 export function sendFailureText(error: unknown): string {
-    const type = error instanceof HttpErrorResponse ? (error.error as { type?: unknown } | null)?.type : null;
+    const problem = error instanceof HttpErrorResponse ? (error.error as { type?: unknown; server?: unknown } | null) : null;
+    const type = problem?.type;
     const cause = typeof type === 'string' && type.includes('/errors/mailbox-send/') ? type.slice(type.lastIndexOf('/') + 1) : null;
+    const named = typeof problem?.server === 'string' && problem.server.trim() !== '' ? problem.server : null;
+    const server = named ?? 'The server';
     switch (cause) {
         case 'unreachable':
-            // A timeout counts as unreachable, and one after the message was handed over may have delivered it.
-            return 'The server could not be reached. The message may not have been sent: check the Sent folder before sending again.';
+            // Never handed over: the server reads silence after the message was handed over as `unknown`.
+            return `${server} could not be reached. The message was not sent.`;
         case 'auth-refused':
-            return 'The server refused the sign-in. The message was not sent.';
+            return `${server} refused the sign-in. The message was not sent.`;
         case 'reauth-required':
             return 'Connect this mailbox again to send. The message was not sent.';
         case 'recipient-rejected':
-            return 'The server refused a recipient. The message was not sent.';
+            return `${server} refused a recipient. The message was not sent.`;
         case 'rejected':
-            return 'The server refused the message. It was not sent.';
+            return `${server} refused the message. It was not sent.`;
         case 'api-unavailable':
-            return 'The sending API cannot be used for this mailbox. The message was not sent.';
+            return `${named ?? 'The sending API'} cannot be used for this mailbox. The message was not sent.`;
         default:
             // Unknown: whether it went out is not known either.
-            return 'The send failed, and whether the message went out is not known. Check the Sent folder before sending again.';
+            return 'The send failed' + (named === null ? '' : ' at ' + named)
+                + ', and whether the message went out is not known. Check the Sent folder before sending again.';
     }
 }

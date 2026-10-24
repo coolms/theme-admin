@@ -44,10 +44,19 @@ describe('Sending: Auto, API or SMTP', () => {
         const texts = causes.map(c => sendFailureText(failed(c)));
         expect(new Set(texts).size).toBe(causes.length);
         texts.forEach(t => expect(t).not.toContain('smtp.example.test'));
-        // Unreachable includes a timeout after the message was handed over: it may have gone out, so never "not sent".
-        expect(sendFailureText(failed('unreachable'))).toContain('may not have been sent');
-        expect(sendFailureText(failed('unreachable'))).not.toContain('was not sent');
+        // The server reads silence after the message was handed over as `unknown`: unreachable never went out.
+        expect(sendFailureText(failed('unreachable'))).toBe('The server could not be reached. The message was not sent.');
         expect(sendFailureText(failed('unknown'))).toContain('not known');
         expect(sendFailureText(new HttpErrorResponse({ status: 500 }))).toContain('not known');
+    });
+
+    it('names the server where the problem does, and says "the server" where it does not', () => {
+        const failed = (cause: string, server: string | null) => new HttpErrorResponse({ status: 502, error: { type: `/errors/mailbox-send/${cause}`, server } });
+        expect(sendFailureText(failed('unreachable', 'smtp.office365.com'))).toBe('smtp.office365.com could not be reached. The message was not sent.');
+        expect(sendFailureText(failed('rejected', 'Gmail API'))).toBe('Gmail API refused the message. It was not sent.');
+        expect(sendFailureText(failed('api-unavailable', 'Microsoft Graph'))).toBe('Microsoft Graph cannot be used for this mailbox. The message was not sent.');
+        expect(sendFailureText(failed('unknown', 'smtp.example.test'))).toContain('The send failed at smtp.example.test, and whether');
+        expect(sendFailureText(failed('auth-refused', null))).toBe('The server refused the sign-in. The message was not sent.');
+        expect(sendFailureText(failed('auth-refused', '  '))).toBe('The server refused the sign-in. The message was not sent.');
     });
 });
