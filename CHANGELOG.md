@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- Four pages take the shared page header and draw no back link of their own; the breadcrumbs lead back. The
+  calendar's error state, the CDP subject and the image map's regions lose their back links, and the UI kit's own
+  header becomes `cms-page-header`.
 - The admin suite names every failing spec: a `failed-specs` reporter in `karma.conf.js` prints each one by suite
   and name with its messages, and CI prints them and annotates each; a run without that list is UNEVALUABLE.
 - CI runs on the Node the served admin is built with (24.18.0, `angular/.nvmrc`), not the latest Node 22; the

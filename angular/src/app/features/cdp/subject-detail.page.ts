@@ -51,8 +51,6 @@ interface EventBreakdownRow {
         </cms-page-header>
 
         <div class="cms-subj">
-            <a class="cms-subj__back" routerLink="/cdp/subjects"><i class="bi bi-arrow-left"></i> Back to subjects</a>
-
             @if (loading()) {
                 <p class="cms-subj__hint">Loading profile…</p>
             } @else if (error()) {
@@ -121,7 +119,6 @@ interface EventBreakdownRow {
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .cms-subj { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; overflow-y: auto; }
-        .cms-subj__back { color: var(--cms-primary, #2563eb); text-decoration: none; font-size: 0.85rem; }
         .cms-subj__hint { color: var(--cms-text-muted, #69707c); }
         .cms-subj__error { color: var(--cms-danger, #dc2626); font-size: 0.88rem; }
         .cms-subj__card {
