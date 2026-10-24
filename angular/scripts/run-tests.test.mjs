@@ -2,12 +2,12 @@
 // Run: npm run test:scripts
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { STALE_MS, runTests } from './run-tests.mjs';
+import { ORPHAN_POLL_MS, STALE_MS, runTests } from './run-tests.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./run-tests.mjs', import.meta.url));
 
@@ -177,6 +177,28 @@ test('a marker from another host (a container\'s pid, unreadable here) counts as
     utimesSync(foreign, hourAgo, hourAgo);
     assert.equal(await runTests({ cwd, command: builder('mine', 0) }), 0);
     assert.equal(existsSync(join(cwd, 'dist')), false, 'an hour-old foreign marker is gone, and everything with it');
+    rmSync(cwd, { recursive: true });
+});
+
+test('a running run keeps its marker fresh, so a run longer than an hour never looks gone from another host', async () => {
+    const cwd = project();
+    mkdirSync(join(cwd, 'scripts'), { recursive: true });
+    copyFileSync(SCRIPT, join(cwd, 'scripts', 'run-tests.mjs'));
+    const run = spawn(process.execPath, ['scripts/run-tests.mjs'], {
+        cwd, env: { ...process.env, TEST_COMMAND: JSON.stringify(builder('long', 'wait')) }, stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    await new Promise((resolve) => run.stdout.on('data', (chunk) => String(chunk).includes('built') && resolve()));
+    const marker = join(cwd, 'dist', '.runs', `${hostname()}-${run.pid}`);
+    const twoHoursAgo = (Date.now() - 2 * STALE_MS) / 1000;
+    utimesSync(marker, twoHoursAgo, twoHoursAgo);
+    await new Promise((r) => setTimeout(r, 3 * ORPHAN_POLL_MS));
+    const age = Date.now() - statSync(marker).mtimeMs;
+    const ended = new Promise((resolve) => run.on('exit', resolve));
+    run.kill('SIGTERM');
+    await ended;
+    run.stdout.destroy();
+    assert.ok(age < 2 * ORPHAN_POLL_MS, `the marker was refreshed (age ${Math.round(age)} ms)`);
+    assert.equal(existsSync(join(cwd, 'dist')), false);
     rmSync(cwd, { recursive: true });
 });
 
