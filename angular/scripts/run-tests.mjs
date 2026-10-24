@@ -10,7 +10,7 @@
 //
 // Run: npm test [-- <ng test options>]. TEST_COMMAND (a JSON array) replaces `ng test --watch=false`, for the tests.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync, rmdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, rmdirSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { hostname, constants as osConstants } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,9 +98,16 @@ export function runTests({ cwd, command, now = Date.now, log = () => undefined }
         process.on('SIGTERM', forward);
         // npm (11) dies of a SIGTERM sent to it alone without passing it on, and so does the shell it runs this in:
         // the run went on, orphaned, until something killed it outright, and its output stayed (measured 2026-10-24).
-        // An orphaned run is a stopped one: its parent changing ends the suite as a SIGTERM would.
+        // An orphaned run is a stopped one: its parent changing ends the suite as a SIGTERM would. The same tick keeps
+        // the run's marker fresh: on another host it is read by age, and a run longer than an hour must not look gone.
         const parent = process.ppid;
         const orphaned = setInterval(() => {
+            try {
+                const at = new Date();
+                utimesSync(marker, at, at);
+            } catch {
+                // the marker is gone: the run is ending
+            }
             if (process.ppid === parent) return;
             clearInterval(orphaned);
             log(`run-tests: the process that ran this (${parent}) is gone; stopping the run`);
