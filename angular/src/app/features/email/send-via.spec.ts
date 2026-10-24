@@ -44,6 +44,9 @@ describe('Sending: Auto, API or SMTP', () => {
         const texts = causes.map(c => sendFailureText(failed(c)));
         expect(new Set(texts).size).toBe(causes.length);
         texts.forEach(t => expect(t).not.toContain('smtp.example.test'));
+        // Unreachable includes a timeout after the message was handed over: it may have gone out, so never "not sent".
+        expect(sendFailureText(failed('unreachable'))).toContain('may not have been sent');
+        expect(sendFailureText(failed('unreachable'))).not.toContain('was not sent');
         expect(sendFailureText(failed('unknown'))).toContain('not known');
         expect(sendFailureText(new HttpErrorResponse({ status: 500 }))).toContain('not known');
     });

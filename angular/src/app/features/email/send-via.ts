@@ -57,15 +57,16 @@ export function sendFailureText(error: unknown): string {
     const cause = typeof type === 'string' && type.includes('/errors/mailbox-send/') ? type.slice(type.lastIndexOf('/') + 1) : null;
     switch (cause) {
         case 'unreachable':
-            return 'The mail server could not be reached. The message was not sent.';
+            // A timeout counts as unreachable, and one after the message was handed over may have delivered it.
+            return 'The server could not be reached. The message may not have been sent: check the Sent folder before sending again.';
         case 'auth-refused':
-            return 'The mail server refused the sign-in. The message was not sent.';
+            return 'The server refused the sign-in. The message was not sent.';
         case 'reauth-required':
             return 'Connect this mailbox again to send. The message was not sent.';
         case 'recipient-rejected':
-            return 'The mail server refused a recipient. The message was not sent.';
+            return 'The server refused a recipient. The message was not sent.';
         case 'rejected':
-            return 'The mail server refused the message. It was not sent.';
+            return 'The server refused the message. It was not sent.';
         case 'api-unavailable':
             return 'The sending API cannot be used for this mailbox. The message was not sent.';
         default:
