@@ -10,6 +10,11 @@ major number means here.
 
 ### Changed
 
+- `npm test` leaves no build output behind. The karma builder writes each run to `angular/dist/test-out/<uuid>` and
+  removes it only on a normal exit, so runs stopped otherwise piled up there (39,218 files in one clone).
+  `scripts/run-tests.mjs` now runs the suite and cleans `dist/test-out` before the run and after it, however the run
+  ended, including when the process that started it dies without passing the signal on, as npm does on SIGTERM.
+  With no other run going on in the tree, everything there is a leftover; with one going on, its output is kept.
 - Four pages take the shared page header and draw no back link of their own; the breadcrumbs lead back. The
   calendar's error state, the CDP subject and the image map's regions lose their back links, and the UI kit's own
   header becomes `cms-page-header`.
