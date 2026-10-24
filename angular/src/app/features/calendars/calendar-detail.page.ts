@@ -10,7 +10,7 @@ import {
     signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { CalendarDto } from './calendars.types';
@@ -61,7 +61,6 @@ import { type FcViewName, viewTitle } from './view-title.util';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        RouterLink,
         CalendarEventsCardComponent,
         CalendarSettingsSidePanelComponent,
         CmsPageHeaderComponent,
@@ -74,9 +73,6 @@ import { type FcViewName, viewTitle } from './view-title.util';
         } @else if (error()) {
             <div class="detail-status detail-status--error">
                 <p>{{ error() }}</p>
-                <a routerLink="/calendars" class="back-link">
-                    <i class="bi bi-arrow-left"></i> Back to Calendars
-                </a>
             </div>
         } @else if (calendar()) {
             @let cal = calendar()!;
@@ -250,18 +246,9 @@ import { type FcViewName, viewTitle } from './view-title.util';
            still need its visual treatment. .sub-head, .sep, and
            .chip--tz were dropped along with the sub-head row:
            back-to-Calendars lives in the topbar breadcrumb, timezone
-           lives in the About-this-calendar sidebar block. .back-link
-           is kept solely for the error-state fallback below the
-           "Loading failed" message. */
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--cms-text-muted, #69707c);
-            text-decoration: none;
-            font-size: .8rem;
-        }
-        .back-link:hover { color: var(--cms-accent, #F5A623); }
+           lives in the About-this-calendar sidebar block. No page-local
+           back link, in the error state either: the breadcrumb leads
+           back (decided 2026-10-24: one shared page header). */
         .chip {
             display: inline-flex;
             align-items: center;
