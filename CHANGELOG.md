@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- A failed send names the server it failed at, where the server's problem says (the SMTP host, or Gmail API /
+  Microsoft Graph). Unreachable says the message was not sent again: since the server reads silence after the
+  message as unknown, unreachable means it never went out.
 - A mailbox's Connection pane chooses how it sends: Auto (through the provider's API -- Gmail API, Microsoft
   Graph -- where it can be used, else SMTP), API only, or SMTP only. The pane says what the choice does for this
   mailbox, says "not checked yet" where no send has found out whether the API can be used (never taken for yes), and
