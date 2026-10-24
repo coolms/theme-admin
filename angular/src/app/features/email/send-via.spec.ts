@@ -50,6 +50,24 @@ describe('Sending: Auto, API or SMTP', () => {
         expect(sendFailureText(new HttpErrorResponse({ status: 500 }))).toContain('not known');
     });
 
+    it("shows the provider's own reason as its words, with a hint for a known code, and what became of the message", () => {
+        const refused = (server: string, provider: unknown, cause = 'rejected') =>
+            new HttpErrorResponse({ status: 502, error: { type: `/errors/mailbox-send/${cause}`, server, provider, detail: 'internal detail' } });
+        expect(sendFailureText(refused('Microsoft Graph', { code: 'ErrorMessageSubmissionBlocked', message: 'Message submission is blocked.' })))
+            .toBe('Microsoft refused the message: ErrorMessageSubmissionBlocked — Message submission is blocked. '
+                + 'The Outlook account must be verified in Outlook on the web before it can send. The message was not sent.');
+        expect(sendFailureText(refused('Gmail API', { code: 'invalidArgument', message: 'Invalid To header' })))
+            .toBe('Google refused the message: invalidArgument — Invalid To header. The message was not sent.');
+        expect(sendFailureText(refused('Microsoft Graph', { code: 'ErrorNonExistentMailbox', message: null })))
+            .toContain('has no mailbox at Microsoft');
+        // A refusal whose outcome the server could not tell keeps "not known".
+        expect(sendFailureText(refused('Gmail API', { code: 'backendError', message: 'Backend Error' }, 'unknown'))).toContain('is not known');
+        // No reason from the provider (SMTP, the network): the cause in our words, as before.
+        expect(sendFailureText(refused('smtp.example.test', null, 'rejected'))).toBe('smtp.example.test refused the message. It was not sent.');
+        expect(sendFailureText(refused('Gmail API', { code: ' ', message: '' }))).toBe('Gmail API refused the message. It was not sent.');
+        expect(sendFailureText(refused('Microsoft Graph', { code: 'X', message: 'Y' }))).not.toContain('internal detail');
+    });
+
     it('names the server where the problem does, and says "the server" where it does not', () => {
         const failed = (cause: string, server: string | null) => new HttpErrorResponse({ status: 502, error: { type: `/errors/mailbox-send/${cause}`, server } });
         expect(sendFailureText(failed('unreachable', 'smtp.office365.com'))).toBe('smtp.office365.com could not be reached. The message was not sent.');

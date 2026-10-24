@@ -52,14 +52,58 @@ export function sendViaHint(via: SendVia, read?: SendApi | null): string {
 }
 
 /**
- * Why a send or a reply failed (a 502 whose type names the cause), in the page's words, never the server's detail;
- * naming the server where the problem does (its `server`: the SMTP host, or the API, e.g. Gmail API).
+ * Why a send or a reply failed (a 502 whose type names the cause), naming the server where the problem does (its
+ * `server`: the SMTP host, or the API, e.g. Gmail API). Where the provider gave its own reason (`provider`: an API's
+ * code and message), that is shown as the provider's words, with a plain hint for the codes that need one (decided
+ * 2026-10-25); otherwise the cause in the page's words. The server's `detail` is never shown.
  */
 export function sendFailureText(error: unknown): string {
-    const problem = error instanceof HttpErrorResponse ? (error.error as { type?: unknown; server?: unknown } | null) : null;
+    const problem = error instanceof HttpErrorResponse
+        ? (error.error as { type?: unknown; server?: unknown; provider?: unknown } | null)
+        : null;
     const type = problem?.type;
     const cause = typeof type === 'string' && type.includes('/errors/mailbox-send/') ? type.slice(type.lastIndexOf('/') + 1) : null;
     const named = typeof problem?.server === 'string' && problem.server.trim() !== '' ? problem.server : null;
+    const reason = providerReason(problem);
+    if (reason === null) {
+        return causeText(cause, named);
+    }
+    // The provider's own reason, as its words: "Microsoft refused the message: <code> -- <message>".
+    const who = (named !== null ? PROVIDER[named] ?? named : null) ?? 'The provider';
+    const said = [reason.code, reason.message].filter((part): part is string => part !== null).join(' — ');
+    const hint = reason.code !== null ? PROVIDER_HINTS[reason.code] : undefined;
+    const outcome = cause === 'unknown' || cause === null
+        ? 'Whether the message went out is not known. Check the Sent folder before sending again.'
+        : 'The message was not sent.';
+    return [sentence(`${who} refused the message: ${said}`), hint, outcome].filter(part => part !== undefined).join(' ');
+}
+
+/** Who speaks for an API, in a sentence: the company, not the API's name. */
+const PROVIDER: Readonly<Record<string, string>> = { 'Microsoft Graph': 'Microsoft', 'Gmail API': 'Google' };
+
+/** A plain hint beside a provider's code that is known to puzzle people; the provider's own words are still shown. */
+const PROVIDER_HINTS: Readonly<Record<string, string>> = {
+    // Decided 2026-10-25: a new Outlook account cannot send through Graph until it is verified on the web.
+    ErrorMessageSubmissionBlocked: 'The Outlook account must be verified in Outlook on the web before it can send.',
+    // Measured on the test mailbox: sending to the account's own Microsoft sign-in name ends here too.
+    ErrorNonExistentMailbox: 'The address has no mailbox at Microsoft; sending to the account\'s own Microsoft sign-in name ends here too.',
+    dailyLimitExceeded: 'This Gmail account has reached its daily sending limit. Try again tomorrow.',
+};
+
+/** Ends a sentence that does not end itself (a provider's message may or may not). */
+const sentence = (text: string): string => (/[.!?]$/.test(text) ? text : `${text}.`);
+
+/** The provider's own reason (an API's code and message), as the problem carries it; null where it gave none. */
+function providerReason(problem: { provider?: unknown } | null): { code: string | null; message: string | null } | null {
+    const p = problem?.provider as { code?: unknown; message?: unknown } | null | undefined;
+    const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
+    const code = text(p?.code);
+    const message = text(p?.message);
+    return code === null && message === null ? null : { code, message };
+}
+
+/** The cause alone, where the provider said nothing of its own (SMTP, the network). */
+function causeText(cause: string | null, named: string | null): string {
     const server = named ?? 'The server';
     switch (cause) {
         case 'unreachable':
