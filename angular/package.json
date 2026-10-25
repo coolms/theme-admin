@@ -8,6 +8,8 @@
     "build": "ng build --output-path=../public --base-href=/admin/",
     "watch": "ng build --watch --output-path=../public --base-href=/admin/",
     "assemble": "node scripts/assemble-console.mjs",
+    "kits:build": "node scripts/kits.mjs build",
+    "kits:watch": "node scripts/kits.mjs watch",
     "pretest": "node scripts/assemble-console.mjs && node scripts/stamp-client.mjs",
     "test": "node scripts/run-tests.mjs",
     "test:watch": "ng test",

@@ -43,6 +43,18 @@ bin/console coolms:theme:activate coolms-admin
 Both live in `coolms/core` as of. Before that they were application
 classes, which is what made a theme unpublishable.
 
+## Building the libraries it compiles
+
+The admin compiles a set of sibling libraries (`core-angular`, `ui-angular`, `editor-angular` and the others, beside
+it as `../../<name>`). Each also builds as a library of its own, against its peers' built `dist/`, so they build in
+dependency order:
+
+- `npm run kits:build` (in `angular/`): every library once, in order; it stops at the first that fails and names it.
+- `npm run kits:watch`: every library in watch mode, each started after the ones it imports, so an edit to a kit
+  rebuilds its `dist/` in a few seconds.
+
+The admin itself still compiles the libraries from source for now. Consuming their built output is the next step.
+
 ## Branches
 
 `develop` is the default and where work lands; `main` carries releases. The
