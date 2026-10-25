@@ -74,6 +74,7 @@ function run(lib, args, onFirst) {
     const read = (chunk) => {
         const text = chunk.toString();
         process.stdout.write(text.split('\n').filter(Boolean).map((l) => `[${lib}] ${l}\n`).join(''));
+        if (told) return; // only the first build is read; a watcher's output is not kept all day
         seen += text;
         // A failure is read first: a failed build may also print words a built one does.
         if (FAILED.test(seen)) tell('failed');
@@ -134,9 +135,13 @@ if (mode === 'build') {
         // A library's dependents start only once its first build is BUILT; a failed or never-finished first build
         // stops every watcher and names the library, as build mode does.
         const { child, outcome, ms } = await new Promise((settle) => {
-            const started = run(lib, args, (result, took) => settle({ child: started.child, outcome: result, ms: took }));
+            let cap;
+            const started = run(lib, args, (result, took) => {
+                clearTimeout(cap);
+                settle({ child: started.child, outcome: result, ms: took });
+            });
             children.push(started.child);
-            setTimeout(() => started.tell('timed out'), FIRST_BUILD_CAP_MS);
+            cap = setTimeout(() => started.tell('timed out'), FIRST_BUILD_CAP_MS);
         });
         if (outcome !== 'built') {
             console.error(`kits: ${outcome === 'failed' ? 'FAILED' : 'TIMED OUT'} at ${lib}'s first build `
