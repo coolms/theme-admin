@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- `npm run kits:build` builds the libraries the admin compiles as libraries of their own, in dependency order (each
+  against its peers' built `dist/`), and stops at the first that fails; `npm run kits:watch` keeps each in watch mode,
+  started after the ones it imports, so an edit to a kit rebuilds its `dist/` in a few seconds.
 - A send the provider refused says so in the provider's words: "Microsoft refused the message: <code> — <message>"
   (Google for the Gmail API), with a plain hint for the codes that need one (an Outlook account not yet verified on
   the web, an address with no Microsoft mailbox, Gmail's daily limit), and what became of the message.
