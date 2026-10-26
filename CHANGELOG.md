@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- A call's remote ICE candidates may arrive as one signal, `{ candidates: [...] }` (a device that gathers several close
+  together sends them so): each is taken in its order, as if it had come alone -- held until the remote description is
+  in, then added. A lone candidate is taken as before.
 - `npm run kits:build` builds the libraries the admin compiles as libraries of their own, in dependency order (each
   against its peers' built `dist/`), and stops at the first that fails; `npm run kits:watch` keeps each in watch mode,
   started after the ones it imports, so an edit to a kit rebuilds its `dist/` in a few seconds.
