@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ConfirmDialogData, type ToastService } from '@coolms/ui-angular';
-import { concat, type Observable } from 'rxjs';
-import { map, toArray } from 'rxjs/operators';
+import { concat, of, type Observable } from 'rxjs';
+import { catchError, map, toArray } from 'rxjs/operators';
 import { type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
 
 /** How long the Undo of a move to Trash stays offered. The server keeps the undo valid while the message is in Trash. */
@@ -27,14 +27,21 @@ export const BULK_MAX = 200;
 
 /**
  * A bulk call over any number of ids: chunks of BULK_MAX, sent one after the other, their results joined in the order
- * given -- so "the ones moved" stays exact across chunks, for the toast and for Undo.
+ * given -- so "the ones moved" stays exact across chunks, for the toast and for Undo. A chunk that fails as a whole (a
+ * 409 or a 5xx) becomes refused outcomes for its own ids, never an error of the whole call: the chunks before it
+ * may already have moved their messages on the server, and those still leave the list and can be undone.
  */
 export function inChunks(ids: readonly string[], call: (chunk: readonly string[]) => Observable<EmailBulkResultDto>): Observable<EmailBulkResultDto> {
     const chunks: (readonly string[])[] = [];
     for (let i = 0; i < ids.length; i += BULK_MAX) {
         chunks.push(ids.slice(i, i + BULK_MAX));
     }
-    return concat(...chunks.map(call)).pipe(
+    const answered = (chunk: readonly string[]) => call(chunk).pipe(
+        catchError((e: unknown) => of<EmailBulkResultDto>({
+            results: chunk.map(id => ({ id, outcome: 'refused' as const, reason: problemOf(e) ?? 'failed' })),
+        })),
+    );
+    return concat(...chunks.map(answered)).pipe(
         toArray(),
         map(answers => ({ results: answers.flatMap(a => a.results) })),
     );

@@ -5,7 +5,7 @@ import { type EmailBulkResultDto } from './email.types';
 import { TrashFlow, UNDO_MS, type TrashPorts } from './trash';
 
 /** The page as the flow sees it, recording what it was asked. */
-function page(answers: { delete?: Observable<EmailBulkResultDto>; permanent?: Observable<EmailBulkResultDto>; restore?: Observable<EmailBulkResultDto>; confirm?: boolean; permanentServed?: boolean } = {}) {
+function page(answers: { delete?: Observable<EmailBulkResultDto>; deleteChunk?: (ids: readonly string[], n: number) => Observable<EmailBulkResultDto>; permanent?: Observable<EmailBulkResultDto>; restore?: Observable<EmailBulkResultDto>; confirm?: boolean; permanentServed?: boolean } = {}) {
     const seen = {
         deletes: [] as { ids: readonly string[]; permanent: boolean }[],
         restores: [] as (readonly string[])[],
@@ -19,6 +19,9 @@ function page(answers: { delete?: Observable<EmailBulkResultDto>; permanent?: Ob
     const ports: TrashPorts = {
         deleteMessages: (ids, permanent = false) => {
             seen.deletes.push({ ids, permanent });
+            if (!permanent && answers.deleteChunk) {
+                return answers.deleteChunk(ids, seen.deletes.length);
+            }
             return (permanent ? answers.permanent : answers.delete) ?? of({ results: ids.map(id => ({ id, outcome: 'moved' as const, folder: 'Trash' })) });
         },
         restoreMessages: ids => {
@@ -69,6 +72,20 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.restores.flat()).toEqual(ids);
     });
 
+    it('a chunk that fails as a whole refuses only its own ids: the chunks before it still leave the list and can be undone', () => {
+        const fails = throwError(() => new HttpErrorResponse({ status: 500, error: 'boom' }));
+        const { flow, seen } = page({ deleteChunk: (ids, n) => n === 2 ? fails : of({ results: ids.map(id => ({ id, outcome: 'moved' as const })) }) });
+        const ids = Array.from({ length: 250 }, (_, i) => `m${i}`);
+        flow.moveToTrash(ids);
+        expect(seen.deletes.map(d => d.ids.length)).toEqual([200, 50]);
+        expect(seen.dropped).toEqual([ids.slice(0, 200)]);
+        expect(seen.shown.length).toBe(1);
+        expect(seen.shown[0].input.message).toBe('Moved 200 messages to Trash.');
+        expect(seen.errors).toEqual(['Could not delete 50 messages.']);
+        seen.shown[0].input.action?.run();
+        expect(seen.restores.flat()).toEqual(ids.slice(0, 200));
+    });
+
     it('Undo brings back exactly the moved ones and has the list read again', () => {
         const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'moved' }, { id: 'b', outcome: 'gone' }] }) });
         flow.moveToTrash(['a', 'b']);
@@ -98,7 +115,7 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         const noTrash = throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash' } }));
         const { flow, seen } = page({ delete: noTrash });
         flow.moveToTrash(['a']);
-        expect(seen.dropped).toEqual([]);
+        expect(seen.dropped.flat()).toEqual([]);
         expect(seen.deletes.filter(d => d.permanent)).toEqual([]);
         expect(seen.errors).toEqual(["This mailbox's server has no Trash folder, so nothing was deleted."]);
     });
