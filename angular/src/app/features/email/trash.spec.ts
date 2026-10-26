@@ -27,6 +27,12 @@ describe('Trash: the move, its undo and the permanent delete', () => {
         expect(trashRefusalText('restore', 'not-in-trash', 2)).toBe('2 messages no longer in Trash, so not restored.');
         expect(trashRefusalText('permanent', 'not-in-trash', 1)).toBe('Only messages in Trash can be deleted permanently.');
         expect(trashRefusalText('restore', 'odd', 1)).toBe('Could not restore 1 message.');
+        // The served kinds, in the words agreed with the server's side.
+        expect(trashRefusalText('permanent', 'permanent-deletion', 1)).toBe('Permanent delete isn\'t available yet.');
+        expect(trashRefusalText('delete', 'retired-copy', 1)).toBe('This copy is out of date. Reload the folder.');
+        expect(trashRefusalText('delete', 'renumbered', 1)).toBe('This folder changed on the server. Try again after it refreshes.');
+        expect(trashRefusalText('restore', 'not-found', 1)).toBe('This message no longer exists.');
+        expect(trashRefusalText('delete', 'not-found', 3)).toBe('3 messages no longer exist.');
     });
 
     it("the Trash view says when the server empties it only where that is known", () => {

@@ -26,11 +26,12 @@ major number means here.
   for the installation (outside CoolMS). A failed send now says its cause by the server's problem type (unreachable,
   sign-in refused, a recipient refused, ...); an unknown cause says whether it went out is not known.
 - Delete in Email moves the messages to Trash at once, without asking, and offers Undo for six seconds; the undo
-  brings back exactly the ones moved. Only a permanent delete asks, and it is offered only in Trash (or for a message
-  the server says is already there). A message the server refuses stays in the list and is said why in the page's
-  words: no Trash folder, no move, the folder it came from gone, no longer in Trash. The Trash view says when the mail
-  server empties it, only where that is known for the mailbox's provider. One request per action
-  (`POST /email/messages/delete` and `/restore`), not one per message.
+  brings back exactly the ones moved. A permanent delete, in Trash, says it isn't available yet and asks nothing, until
+  the server deletes permanently; then it is the one delete that asks. A message the server refuses stays in the list
+  and is said why in the page's words: no Trash folder, no move, the folder it came from gone (move it instead), no
+  longer in Trash, a copy out of date (reload the folder), a folder changed on the server (try again after it
+  refreshes), no longer existing. The Trash view says when the mail server empties it, only where that is known for the
+  mailbox's provider. One request per action (`POST /email/messages/delete` and `/restore`), not one per message.
 - The shell's routes answer GET and HEAD only; any other method never reaches the shell (the router's 405, or an
   application's catch-all route -- in CoolMS, its 404). They named no methods, so a POST to `/admin` answered with
   the shell too.

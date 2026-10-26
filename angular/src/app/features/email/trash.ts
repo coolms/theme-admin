@@ -6,6 +6,13 @@ import { type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.ty
 /** How long the Undo of a move to Trash stays offered. The server keeps the undo valid while the message is in Trash. */
 export const UNDO_MS = 6000;
 
+/**
+ * Whether the server deletes permanently yet. It refuses every permanent delete (409 permanent-deletion) until its
+ * permanent slice ships after a mail-library release; until then the page asks nothing and says it isn't available.
+ * Flip this when that slice is served.
+ */
+export const PERMANENT_DELETE_SERVED = false;
+
 /** The folder the page treats as Trash, as the delete step's menu always has. */
 export function isTrashFolder(folder: string): boolean {
     return folder === 'Trash';
@@ -71,6 +78,15 @@ export function trashRefusalText(step: 'delete' | 'restore' | 'permanent', probl
                 : 'Only messages in Trash can be deleted permanently.';
         case 'origin-gone':
             return `The folder ${n === 1 ? 'it' : 'they'} came from no longer exists: move ${n === 1 ? 'it' : 'them'} out of Trash instead.`;
+        case 'permanent-deletion':
+            // Refused until the server's permanent slice: "not available", never "try again".
+            return 'Permanent delete isn\'t available yet.';
+        case 'retired-copy':
+            return 'This copy is out of date. Reload the folder.';
+        case 'renumbered':
+            return 'This folder changed on the server. Try again after it refreshes.';
+        case 'not-found':
+            return n === 1 ? 'This message no longer exists.' : `${messages(n)} no longer exist.`;
     }
     return step === 'restore'
         ? `Could not restore ${messages(n)}.`
@@ -104,7 +120,8 @@ const firstProblem = (refused: readonly EmailMessageOutcomeDto[]): string | null
  * seconds; only a permanent delete, from Trash, asks. A refused message stays and is said why, in the page's words.
  */
 export class TrashFlow {
-    constructor(private readonly ports: TrashPorts) {}
+    /** `permanentServed`: whether the server deletes permanently yet (the page passes nothing: today's answer). */
+    constructor(private readonly ports: TrashPorts, private readonly permanentServed: boolean = PERMANENT_DELETE_SERVED) {}
 
     /** Moves to Trash and offers Undo. Messages already in Trash (the folder said otherwise) go to the permanent delete. */
     moveToTrash(ids: readonly string[]): void {
@@ -144,6 +161,11 @@ export class TrashFlow {
             return;
         }
         const { toast } = this.ports;
+        if (!this.permanentServed) {
+            // Never a confirmation for something the server refuses every time.
+            toast.error(trashRefusalText('permanent', 'permanent-deletion', ids.length));
+            return;
+        }
         this.ports.confirm({ ...permanentQuestion(ids.length), danger: true }).subscribe(yes => {
             if (!yes) {
                 return;

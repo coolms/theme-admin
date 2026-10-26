@@ -5,7 +5,7 @@ import { type EmailBulkResultDto } from './email.types';
 import { TrashFlow, UNDO_MS, type TrashPorts } from './trash';
 
 /** The page as the flow sees it, recording what it was asked. */
-function page(answers: { delete?: Observable<EmailBulkResultDto>; permanent?: Observable<EmailBulkResultDto>; restore?: Observable<EmailBulkResultDto>; confirm?: boolean } = {}) {
+function page(answers: { delete?: Observable<EmailBulkResultDto>; permanent?: Observable<EmailBulkResultDto>; restore?: Observable<EmailBulkResultDto>; confirm?: boolean; permanentServed?: boolean } = {}) {
     const seen = {
         deletes: [] as { ids: readonly string[]; permanent: boolean }[],
         restores: [] as (readonly string[])[],
@@ -41,7 +41,7 @@ function page(answers: { delete?: Observable<EmailBulkResultDto>; permanent?: Ob
         drop: ids => void seen.dropped.push(ids),
         restored: () => void seen.restored++,
     };
-    return { flow: new TrashFlow(ports), seen };
+    return { flow: new TrashFlow(ports, answers.permanentServed ?? false), seen };
 }
 
 describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash, after asking', () => {
@@ -91,23 +91,38 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.errors).toEqual(["This mailbox's server has no Trash folder, so nothing was deleted."]);
     });
 
-    it('a message already in Trash is offered the permanent delete, which asks', () => {
-        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/already-in-trash' }] }), confirm: false });
+    it('while the server deletes nothing permanently, the permanent delete asks nothing and says it is not available yet', () => {
+        const { flow, seen } = page();
+        flow.deletePermanently(['a']);
+        expect(seen.asked).toBe(0);
+        expect(seen.deletes).toEqual([]);
+        expect(seen.errors).toEqual(['Permanent delete isn\'t available yet.']);
+    });
+
+    it('...and a message already in Trash is told the same, with no question', () => {
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/already-in-trash' }] }) });
+        flow.moveToTrash(['a']);
+        expect(seen.asked).toBe(0);
+        expect(seen.errors).toEqual(['Permanent delete isn\'t available yet.']);
+    });
+
+    it('once the server deletes permanently: a message already in Trash is offered it, which asks', () => {
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/already-in-trash' }] }), confirm: false, permanentServed: true });
         flow.moveToTrash(['a']);
         expect(seen.errors).toEqual([]);
         expect(seen.asked).toBe(1);
         expect(seen.deletes.filter(d => d.permanent)).toEqual([]);
     });
 
-    it('the permanent delete asks first; declined, nothing is sent', () => {
-        const { flow, seen } = page({ confirm: false });
+    it('once the server deletes permanently: it asks first; declined, nothing is sent', () => {
+        const { flow, seen } = page({ confirm: false, permanentServed: true });
         flow.deletePermanently(['a']);
         expect(seen.asked).toBe(1);
         expect(seen.deletes).toEqual([]);
     });
 
-    it('confirmed, it deletes for good, drops the rows, and offers no Undo', () => {
-        const { flow, seen } = page({ permanent: of({ results: [{ id: 'a', outcome: 'gone' }] }) });
+    it('once the server deletes permanently: confirmed, it deletes for good, drops the rows, and offers no Undo', () => {
+        const { flow, seen } = page({ permanent: of({ results: [{ id: 'a', outcome: 'gone' }] }), permanentServed: true });
         flow.deletePermanently(['a']);
         expect(seen.deletes).toEqual([{ ids: ['a'], permanent: true }]);
         expect(seen.dropped).toEqual([['a']]);
