@@ -6,6 +6,15 @@ import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateSection, LoadSections, UpdateSection } from './section.actions';
 import { SiteSectionDto } from './sections.types';
 
+/**
+ * The page-template field as the API reads it: trimmed, and `''` when empty -- which CLEARS the site's template.
+ * `undefined` would leave the old one in place under merge-patch, so an emptied field could never clear it.
+ */
+export function pageTemplateFrom(value: Record<string, unknown>): string {
+    const raw = value['pageTemplate'];
+    return 'string' === typeof raw ? raw.trim() : '';
+}
+
 @Component({
     selector: 'app-section-form',
     standalone: true,
@@ -65,6 +74,7 @@ export class SectionFormComponent {
                 // active theme); leaving it undefined would silently keep the old
                 // value under merge-patch and make "clear" impossible.
                 themeSlug:       this.themeSlugFrom(value),
+                pageTemplate:    pageTemplateFrom(value),
               })
             : new CreateSection({
                 slug:            value['slug'] as string,
@@ -73,6 +83,7 @@ export class SectionFormComponent {
                 matchHost:       value['matchHost'] as string | undefined,
                 matchPathPrefix: value['matchPathPrefix'] as string | undefined,
                 matchPriority:   value['matchPriority'] as number | undefined,
+                pageTemplate:    pageTemplateFrom(value) || undefined,
               });
 
         this.store.dispatch(action).subscribe({
