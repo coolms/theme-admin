@@ -10,6 +10,9 @@ major number means here.
 
 ### Changed
 
+- The section form sends the site's page template (the template every page of the site renders with unless it names
+  its own): a set value on create and edit, and an emptied field as `''`, which clears it -- not as `undefined`, which
+  would keep the old one under merge-patch. Requires a platform whose sections carry `pageTemplate`.
 - `npm run kits:build` builds the libraries the admin compiles as libraries of their own, in dependency order (each
   against its peers' built `dist/`), and stops at the first that fails; `npm run kits:watch` keeps each in watch mode,
   started after the ones it imports, so an edit to a kit rebuilds its `dist/` in a few seconds.
