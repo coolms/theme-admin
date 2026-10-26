@@ -56,6 +56,8 @@ export interface EmailMailboxDto {
     sendVia?: SendVia;
     /** Whether it can send through its provider's API, as last learned (read-only). */
     sendApi?: SendApi | null;
+    /** The days after which the SERVER empties Trash, where CoolMS knows it for the provider (a cited source); else null. */
+    trashRetentionDays?: number | null;
 }
 
 /** Who the caller is to a mailbox: may change its settings (`owner`, `manager`), or may read them (a delegate). */
@@ -261,15 +263,31 @@ export interface EmailAttachmentSaveResultDto {
 }
 
 /**
- * The result echoed by delete (`POST .../messages/{id}/delete`, ). `purged`
- * is true when the message was permanently removed (it was already in Trash),
- * false when it was moved to Trash (recoverable); `folder` is where it now lives
- * (empty when purged).
+ * The result echoed by delete (`POST .../messages/{id}/delete`). `folder` is where the message now lives (Trash);
+ * `purged` is true, with `folder` empty, when it was already gone from the server and only CoolMS's copy was
+ * dropped -- nothing to undo. `undo.from` names the folder it was in, for the toast; the undo needs only the id.
  */
 export interface EmailDeleteResultDto {
     id?: string;
     folder?: string;
     purged?: boolean;
+    undo?: { from?: string } | null;
+}
+
+/**
+ * One message's outcome in a bulk delete or restore (`POST .../messages/delete|restore`), in the order asked:
+ * `moved` (to Trash, or back), `gone` (no longer on the server: its row goes), `refused` (nothing changed;
+ * `reason` is the problem type, e.g. `/errors/email/origin-gone`).
+ */
+export interface EmailMessageOutcomeDto {
+    id: string;
+    outcome: 'moved' | 'gone' | 'refused';
+    folder?: string;
+    reason?: string | null;
+}
+
+export interface EmailBulkResultDto {
+    results: EmailMessageOutcomeDto[];
 }
 
 /**

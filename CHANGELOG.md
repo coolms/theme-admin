@@ -25,8 +25,16 @@ major number means here.
   why it cannot be used where it cannot, with what to do: reconnect to grant sending, or the administrator enables it
   for the installation (outside CoolMS). A failed send now says its cause by the server's problem type (unreachable,
   sign-in refused, a recipient refused, ...); an unknown cause says whether it went out is not known.
-- The shell's routes answer GET and HEAD only; any other method is the router's 405. They named no methods, so a
-  POST to `/admin` answered with the shell too.
+- Delete in Email moves the messages to Trash at once, without asking, and offers Undo for six seconds; the undo
+  brings back exactly the ones moved. A permanent delete, in Trash, says it isn't available yet and asks nothing, until
+  the server deletes permanently; then it is the one delete that asks. A message the server refuses stays in the list
+  and is said why in the page's words: no Trash folder, no move, the folder it came from gone (move it instead), no
+  longer in Trash, a copy out of date (reload the folder), a folder changed on the server (try again after it
+  refreshes), no longer existing. The Trash view says when the mail server empties it, only where that is known for the
+  mailbox's provider. One request per action (`POST /email/messages/delete` and `/restore`), not one per message.
+- The shell's routes answer GET and HEAD only; any other method never reaches the shell (the router's 405, or an
+  application's catch-all route -- in CoolMS, its 404). They named no methods, so a POST to `/admin` answered with
+  the shell too.
 - `npm test` leaves no build output behind. The karma builder writes each run to `angular/dist/test-out/<uuid>` and
   removes it only on a normal exit, so runs stopped otherwise piled up there (39,218 files in one clone).
   `scripts/run-tests.mjs` now runs the suite and cleans `dist/test-out` before the run and after it, however the run

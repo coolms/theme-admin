@@ -1,4 +1,4 @@
-import { deleteMenuItems, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
+import { messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
 
 /**
  * The rules behind the message bars and a message row's menu: which messages an
@@ -39,11 +39,5 @@ describe('message actions', () => {
     it('offers the folders the messages are not in, or says there are none', () => {
         expect(moveMenuItems(['INBOX', 'Archive', 'Trash'], 'INBOX').map(i => i.label)).toEqual(['Archive', 'Trash']);
         expect(moveMenuItems(['INBOX'], 'INBOX')).toEqual([{ id: 'none', label: 'No other folders', disabled: true }]);
-    });
-
-    it('offers Trash outside Trash only, and permanent deletion as the danger item', () => {
-        expect(deleteMenuItems(1, false).map(i => i.id)).toEqual(['delete:trash', 'delete:permanent']);
-        expect(deleteMenuItems(3, true).map(i => i.id)).toEqual(['delete:permanent']);
-        expect(deleteMenuItems(3, false)[1]).toEqual(jasmine.objectContaining({ danger: true, label: "Delete 3 messages permanently -- can't be undone" }));
     });
 });

@@ -13,6 +13,7 @@ import {
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
     ContextMenuItem,
+    ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
     DateTimePipe,
@@ -32,7 +33,8 @@ import { sendFailureText } from './send-via';
 import { messageFrameDoc } from './message-frame-doc';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
-import { MESSAGE_TOOLBAR_TREE, deleteMenuItems, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
+import { MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
+import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -226,6 +228,9 @@ interface ComposeDraft {
                             </div>
                         }
 
+                        @if (!searchActive() && trashRetention(); as line) {
+                            <p class="mbx__note">{{ line }}</p>
+                        }
                         @if (searchActive()) {
                             @if (searching() && searchResults().length === 0) {
                                 <p class="mbx__note">Searching…</p>
@@ -1023,6 +1028,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly email = inject(EmailService);
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
+    private readonly confirmDialog = inject(ConfirmDialogService);
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
     private readonly dtf = inject(DateTimeFormatService);
@@ -1104,6 +1110,10 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly folders = signal<EmailFolderDto[]>([]);
     readonly selectedFolder = signal<string>('INBOX');
     readonly messages = signal<EmailMessageDto[]>([]);
+    /** In Trash, when the mail server empties it -- only where that is known for the mailbox's provider. */
+    readonly trashRetention = computed(() => isTrashFolder(this.selectedFolder())
+        ? trashRetentionText(this.mailboxes().find(m => m.id === this.selectedMailboxId())?.trashRetentionDays)
+        : null);
     readonly selectedMessage = signal<EmailMessageDetailDto | null>(null);
     readonly hasMore = signal<boolean>(false);
 
@@ -1305,11 +1315,12 @@ export class EmailMailboxPageComponent implements OnInit {
                 });
                 break;
             case 'delete':
-                this.openFollowUp(deleteMenuItems(ids.length, this.folderOf(ids[0]) === 'Trash'), id => {
-                    if (id === 'delete:trash' || id === 'delete:permanent') {
-                        this.bulkDelete(id === 'delete:permanent', new Set(ids));
-                    }
-                });
+                // Outside Trash, Delete moves to Trash without asking, with an Undo; in Trash it is for good, and asks.
+                if (isTrashFolder(this.folderOf(ids[0]))) {
+                    this.trash.deletePermanently(this.listed(ids));
+                } else {
+                    this.trash.moveToTrash(this.listed(ids));
+                }
                 break;
         }
     }
@@ -1810,34 +1821,38 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** Delete every selected message in one action: move-to-Trash or PERMANENTLY purge. */
-    bulkDelete(permanent: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
-        const targets = this.messages().filter(m => ids.has(m.id));
-        if (targets.length === 0) {
-            this.clearSelection();
+    /** Delete's flow: to Trash at once with Undo, or -- in Trash -- for good after asking (trash.ts). */
+    private readonly trash = new TrashFlow({
+        deleteMessages:  (ids, permanent) => this.email.deleteMessages(ids, permanent),
+        restoreMessages: ids => this.email.restoreMessages(ids),
+        confirm:         question => this.confirmDialog.open(question),
+        toast:           this.toast,
+        busy:            on => this.bulkBusy.set(on),
+        drop:            ids => this.dropRows(ids),
+        restored:        () => {
+            this.loadMessages(true);
+            this.loadFolders();
+        },
+    });
+
+    /** The listed messages among `ids`: an action names only rows the page shows. */
+    private listed(ids: readonly string[]): string[] {
+        return this.messages().filter(m => ids.includes(m.id)).map(m => m.id);
+    }
+
+    /** The rows a delete took out of this folder leave the list, the open message with them; the counts are read again. */
+    private dropRows(ids: readonly string[]): void {
+        if (ids.length === 0) {
             return;
         }
-        const removed = new Set(targets.map(m => m.id));
-        this.bulkBusy.set(true);
-        forkJoin(targets.map(m => this.email.deleteMessage(m.id, permanent))).subscribe({
-            next: () => {
-                this.messages.set(this.messages().filter(m => !removed.has(m.id)));
-                const sel = this.selectedMessage();
-                if (sel && removed.has(sel.id)) {
-                    this.selectedMessage.set(null);
-                }
-                this.bulkBusy.set(false);
-                this.loadFolders();
-                this.toast.success(permanent
-                    ? `Deleted ${targets.length} message(s) permanently.`
-                    : `Moved ${targets.length} message(s) to Trash.`);
-                this.clearSelection();
-            },
-            error: () => {
-                this.bulkBusy.set(false);
-                this.toast.error('Could not delete all messages.');
-            },
-        });
+        const gone = new Set(ids);
+        this.messages.set(this.messages().filter(m => !gone.has(m.id)));
+        const open = this.selectedMessage();
+        if (open && gone.has(open.id)) {
+            this.selectedMessage.set(null);
+        }
+        this.loadFolders();
+        this.clearSelection();
     }
 
     /** Fetch the open message's attachment metadata; `seq` ties it to the current open. */
