@@ -13,8 +13,6 @@ export interface SiteSectionDto {
     matchPriority?: number | null;
     /** Soft ref to Theme slug -- exposed so the Navi-node picker can scope dtmpl templates. */
     themeSlug?:  string | null;
-    /** The template every page of the site renders with unless it names its own; null keeps the conventions. */
-    pageTemplate?: string | null;
     isActive:    boolean;
 }
 
@@ -32,8 +30,6 @@ export interface CreateSectionDto {
      * `themeSlug` off the resource -- the omission was only on this side.
      */
     themeSlug?:      string | null;
-    /** A path inside the theme's templates, e.g. `pages/landing.html.dtmpl`; absent keeps the conventions. */
-    pageTemplate?:   string;
 }
 
 export interface UpdateSectionDto {
@@ -49,11 +45,6 @@ export interface UpdateSectionDto {
      * whichever theme is active; `undefined` leaves it unchanged (merge-patch).
      */
     themeSlug?:      string | null;
-    /**
-     * The site's page template. `''` CLEARS it (the API's convention for this field: `null` means unchanged
-     * there), so an emptied field reaches the API as `''`, never as `undefined`.
-     */
-    pageTemplate?:   string;
 }
 
 /**

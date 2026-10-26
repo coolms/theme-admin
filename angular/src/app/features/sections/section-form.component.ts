@@ -6,20 +6,6 @@ import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateSection, LoadSections, UpdateSection } from './section.actions';
 import { SiteSectionDto } from './sections.types';
 
-/**
- * The page-template field as the API reads it: trimmed, and `''` when the person emptied it -- which CLEARS the
- * site's template (`undefined` would keep the old one under merge-patch). A form value WITHOUT the field (a form
- * definition that does not show it) answers `undefined`: the template is left as it is, never cleared by a save
- * that did not offer it.
- */
-export function pageTemplateFrom(value: Record<string, unknown>): string | undefined {
-    if (!('pageTemplate' in value)) {
-        return undefined;
-    }
-    const raw = value['pageTemplate'];
-    return 'string' === typeof raw ? raw.trim() : '';
-}
-
 @Component({
     selector: 'app-section-form',
     standalone: true,
@@ -79,7 +65,6 @@ export class SectionFormComponent {
                 // active theme); leaving it undefined would silently keep the old
                 // value under merge-patch and make "clear" impossible.
                 themeSlug:       this.themeSlugFrom(value),
-                pageTemplate:    pageTemplateFrom(value),
               })
             : new CreateSection({
                 slug:            value['slug'] as string,
@@ -88,7 +73,6 @@ export class SectionFormComponent {
                 matchHost:       value['matchHost'] as string | undefined,
                 matchPathPrefix: value['matchPathPrefix'] as string | undefined,
                 matchPriority:   value['matchPriority'] as number | undefined,
-                pageTemplate:    pageTemplateFrom(value) || undefined,
               });
 
         this.store.dispatch(action).subscribe({
