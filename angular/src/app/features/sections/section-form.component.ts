@@ -7,10 +7,15 @@ import { CreateSection, LoadSections, UpdateSection } from './section.actions';
 import { SiteSectionDto } from './sections.types';
 
 /**
- * The page-template field as the API reads it: trimmed, and `''` when empty -- which CLEARS the site's template.
- * `undefined` would leave the old one in place under merge-patch, so an emptied field could never clear it.
+ * The page-template field as the API reads it: trimmed, and `''` when the person emptied it -- which CLEARS the
+ * site's template (`undefined` would keep the old one under merge-patch). A form value WITHOUT the field (a form
+ * definition that does not show it) answers `undefined`: the template is left as it is, never cleared by a save
+ * that did not offer it.
  */
-export function pageTemplateFrom(value: Record<string, unknown>): string {
+export function pageTemplateFrom(value: Record<string, unknown>): string | undefined {
+    if (!('pageTemplate' in value)) {
+        return undefined;
+    }
     const raw = value['pageTemplate'];
     return 'string' === typeof raw ? raw.trim() : '';
 }

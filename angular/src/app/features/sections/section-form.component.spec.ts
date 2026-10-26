@@ -9,6 +9,10 @@ describe('The section form sends the site page template as the API reads it', ()
         expect(pageTemplateFrom({ pageTemplate: '' })).toBe('');
         expect(pageTemplateFrom({ pageTemplate: '   ' })).toBe('');
         expect(pageTemplateFrom({ pageTemplate: null })).toBe('');
-        expect(pageTemplateFrom({})).toBe('');
+    });
+
+    it('sends nothing when the form does not offer the field, so a save never clears a template it did not show', () => {
+        expect(pageTemplateFrom({})).toBeUndefined();
+        expect(pageTemplateFrom({ label: 'x' })).toBeUndefined();
     });
 });
