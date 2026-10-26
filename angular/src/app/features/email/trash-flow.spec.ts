@@ -57,6 +57,18 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.shown[0].duration).toBe(UNDO_MS);
     });
 
+    it('more than 200: sent as chunks of 200, one toast for all moved, and Undo restores exactly those, in chunks too', () => {
+        const { flow, seen } = page();
+        const ids = Array.from({ length: 250 }, (_, i) => `m${i}`);
+        flow.moveToTrash(ids);
+        expect(seen.deletes.map(d => d.ids.length)).toEqual([200, 50]);
+        expect(seen.shown.length).toBe(1);
+        expect(seen.shown[0].input.message).toBe('Moved 250 messages to Trash.');
+        seen.shown[0].input.action?.run();
+        expect(seen.restores.map(r => r.length)).toEqual([200, 50]);
+        expect(seen.restores.flat()).toEqual(ids);
+    });
+
     it('Undo brings back exactly the moved ones and has the list read again', () => {
         const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'moved' }, { id: 'b', outcome: 'gone' }] }) });
         flow.moveToTrash(['a', 'b']);
@@ -67,7 +79,7 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
     });
 
     it('an Undo the server refuses says why, and reads nothing again', () => {
-        const { flow, seen } = page({ restore: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/origin-gone' }] }) });
+        const { flow, seen } = page({ restore: of({ results: [{ id: 'a', outcome: 'refused', reason: 'origin-gone' }] }) });
         flow.moveToTrash(['a']);
         seen.shown[0].input.action?.run();
         expect(seen.restored).toBe(0);
@@ -75,7 +87,7 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
     });
 
     it('a refused message stays and is said why; with nothing moved, no Undo is offered', () => {
-        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/no-move' }] }) });
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: 'no-move' }] }) });
         flow.moveToTrash(['a']);
         expect(seen.dropped).toEqual([[]]);
         expect(seen.shown).toEqual([]);
@@ -100,14 +112,14 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
     });
 
     it('...and a message already in Trash is told the same, with no question', () => {
-        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/already-in-trash' }] }) });
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: 'already-in-trash' }] }) });
         flow.moveToTrash(['a']);
         expect(seen.asked).toBe(0);
         expect(seen.errors).toEqual(['Permanent delete isn\'t available yet.']);
     });
 
     it('once the server deletes permanently: a message already in Trash is offered it, which asks', () => {
-        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: '/errors/email/already-in-trash' }] }), confirm: false, permanentServed: true });
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: 'already-in-trash' }] }), confirm: false, permanentServed: true });
         flow.moveToTrash(['a']);
         expect(seen.errors).toEqual([]);
         expect(seen.asked).toBe(1);

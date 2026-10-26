@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ConfirmDialogData, type ToastService } from '@coolms/ui-angular';
-import { type Observable } from 'rxjs';
+import { concat, type Observable } from 'rxjs';
+import { map, toArray } from 'rxjs/operators';
 import { type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
 
 /** How long the Undo of a move to Trash stays offered. The server keeps the undo valid while the message is in Trash. */
@@ -15,7 +16,28 @@ export const PERMANENT_DELETE_SERVED = false;
 
 /** The folder the page treats as Trash, as the delete step's menu always has. */
 export function isTrashFolder(folder: string): boolean {
-    return folder === 'Trash';
+    // The folder's own name, after the server's hierarchy delimiter: Gmail's is "[Gmail]/Trash", a dotted server's
+    // "INBOX.Trash". (Until the folders read carries each folder's role.)
+    const parts = folder.split(/[/.]/);
+    return parts[parts.length - 1] === 'Trash';
+}
+
+/** The most ids one bulk request takes (the server answers 422 above it). */
+export const BULK_MAX = 200;
+
+/**
+ * A bulk call over any number of ids: chunks of BULK_MAX, sent one after the other, their results joined in the order
+ * given -- so "the ones moved" stays exact across chunks, for the toast and for Undo.
+ */
+export function inChunks(ids: readonly string[], call: (chunk: readonly string[]) => Observable<EmailBulkResultDto>): Observable<EmailBulkResultDto> {
+    const chunks: (readonly string[])[] = [];
+    for (let i = 0; i < ids.length; i += BULK_MAX) {
+        chunks.push(ids.slice(i, i + BULK_MAX));
+    }
+    return concat(...chunks.map(call)).pipe(
+        toArray(),
+        map(answers => ({ results: answers.flatMap(a => a.results) })),
+    );
 }
 
 /** What a bulk delete or restore did: the rows to drop (moved or gone), the ones an undo can bring back, the refused. */
@@ -35,6 +57,11 @@ export function trashOutcome(results: readonly EmailMessageOutcomeDto[]): TrashO
 
 /** The last part of a problem type (`/errors/email/no-trash` -> `no-trash`), from a refused outcome or a 4xx answer. */
 export function problemOf(source: unknown): string | null {
+    // A refused bulk outcome's reason is the BARE kind ("no-move"); a 409's body carries the problem TYPE
+    // ("/errors/email/no-move"). Both name the same kinds.
+    if (typeof source === 'string' && /^[a-z]+(-[a-z]+)*$/.test(source)) {
+        return source;
+    }
     const type = source instanceof HttpErrorResponse
         ? (source.error as { type?: unknown } | null)?.type
         : typeof source === 'string' ? source : null;
@@ -130,7 +157,7 @@ export class TrashFlow {
         }
         const { toast } = this.ports;
         this.ports.busy(true);
-        this.ports.deleteMessages(ids).subscribe({
+        inChunks(ids, chunk => this.ports.deleteMessages(chunk)).subscribe({
             next: ({ results }) => {
                 this.ports.busy(false);
                 const outcome = trashOutcome(results);
@@ -171,7 +198,7 @@ export class TrashFlow {
                 return;
             }
             this.ports.busy(true);
-            this.ports.deleteMessages(ids, true).subscribe({
+            inChunks(ids, chunk => this.ports.deleteMessages(chunk, true)).subscribe({
                 next: ({ results }) => {
                     this.ports.busy(false);
                     const outcome = trashOutcome(results);
@@ -193,7 +220,7 @@ export class TrashFlow {
 
     /** The Undo: back from Trash to the folder each came from. */
     private undo(ids: readonly string[]): void {
-        this.ports.restoreMessages(ids).subscribe({
+        inChunks(ids, chunk => this.ports.restoreMessages(chunk)).subscribe({
             next: ({ results }) => {
                 const outcome = trashOutcome(results);
                 if (outcome.undoable.length > 0) {

@@ -328,8 +328,8 @@ export class EmailService {
 
     /**
      * POST /email/messages/{id}/delete -- moves the message to Trash on the remote IMAP server, keeping its id. One
-     * already in Trash is refused (409 `/errors/email/already-in-trash`); `permanent: true` deletes it for good, from
-     * Trash only (409 anywhere else).
+     * already in Trash is refused (409 `/errors/email/already-in-trash`). `permanent: true` is refused every time
+     * (409 `permanent-deletion`) until the server's permanent slice; then it deletes for good, from Trash only.
      */
     deleteMessage(messageId: string, permanent = false): Observable<EmailDeleteResultDto> {
         return this.http.post<EmailDeleteResultDto>(
