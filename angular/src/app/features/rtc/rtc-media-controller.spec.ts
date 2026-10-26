@@ -66,6 +66,11 @@ class FakePeerConnection {
 
 const offer = (sdp: string): RtcSignal => ({ type: 'offer', payload: { type: 'offer', sdp } });
 const candidate = (n: number): RtcSignal => ({ type: 'candidate', payload: { candidate: 'c' + n, sdpMid: '0', sdpMLineIndex: 0 } });
+/** Several candidates in one signal, as a device that gathers them close together sends them. */
+const batch = (...ns: number[]): RtcSignal => ({
+    type: 'candidate',
+    payload: { candidates: ns.map(n => ({ candidate: 'c' + n, sdpMid: '0', sdpMLineIndex: 0 })) },
+});
 
 /** A few turns of the event loop: time for a signal applied at once to have begun. */
 async function settle(): Promise<void> {
@@ -110,6 +115,33 @@ describe('RtcMediaController -- the signals held until the media is ready', () =
     afterEach(() => {
         controller.stop();
         window.RTCPeerConnection = NativePeerConnection;
+    });
+
+    it('takes a batch of candidates as if each had come alone, in its order, after the description', async () => {
+        controller.handleSignal('call-y', offer('o'));
+        controller.handleSignal('call-y', batch(1, 2, 3));
+        controller.handleSignal('call-y', candidate(4));
+
+        await controller.start('call-y', true, 'audio');
+        await settle();
+
+        expect(FakePeerConnection.created[0].events.filter(e => e.startsWith('candidate')))
+            .withContext('the batch\'s three, in order, then the lone one')
+            .toEqual(['candidate c1', 'candidate c2', 'candidate c3', 'candidate c4']);
+    });
+
+    it('holds a batch that comes before the description, each candidate, and adds them once it is in', async () => {
+        controller.handleSignal('call-y', batch(1, 2));
+        controller.handleSignal('call-y', offer('o'));
+
+        await controller.start('call-y', true, 'audio');
+        await settle();
+
+        const events = FakePeerConnection.created[0].events;
+        expect(events.filter(e => e.startsWith('candidate'))).toEqual(['candidate c1', 'candidate c2']);
+        expect(events.indexOf('remote o set'))
+            .withContext('added only after the remote description was set')
+            .toBeLessThan(events.indexOf('candidate c1'));
     });
 
     it('applies only this call\'s held signals when its media starts: another call\'s are dropped', async () => {

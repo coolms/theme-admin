@@ -27,6 +27,12 @@ function iceUfrags(sdp: string | undefined): string[] {
     return [...(sdp ?? '').matchAll(/^a=ice-ufrag:(\S+)/gm)].map(m => m[1]);
 }
 
+/** The candidates a candidate signal carries: a batch's, in order (`{ candidates: [...] }`), or the one it is. */
+function candidatesOf(payload: unknown): RTCIceCandidateInit[] {
+    const batch = (payload as { candidates?: unknown } | null)?.candidates;
+    return Array.isArray(batch) ? (batch as RTCIceCandidateInit[]) : [payload as RTCIceCandidateInit];
+}
+
 /** The ICE username fragment a remote candidate belongs to: its own field, else the candidate line's `ufrag`. */
 function candidateUfrag(candidate: RTCIceCandidateInit): string | null {
     const own = candidate.usernameFragment ?? '';
@@ -386,47 +392,58 @@ export class RtcMediaController {
     private async applySignal(pc: RTCPeerConnection, signal: RtcSignal): Promise<void> {
         try {
             if (signal.type === 'candidate') {
-                const candidate = signal.payload as RTCIceCandidateInit;
-                // A candidate belongs to the remote description it came with; before that is set
-                // the browser refuses it ("The remote description was null") and it is LOST. With
-                // one network interface -- a container, a phone -- it can be the only path, and the
-                // call never connects. Held, and applied as soon as the description is in -- the
-                // answer's too, which can arrive while the offer before it is still being ignored.
-                if (pc.remoteDescription === null) {
-                    if (this.ignoreOffer && candidateUfrag(candidate) === null) {
-                        return; // names no ICE session: taken for the ignored offer's, as perfect negotiation does
-                    }
-                    this.remoteCandidates.push(candidate);
-                    return;
+                // A device that gathers several candidates close together sends them as one signal,
+                // `{ candidates: [...] }`: each is taken in its order, as if it had come alone.
+                for (const candidate of candidatesOf(signal.payload)) {
+                    await this.applyCandidate(pc, candidate);
                 }
-                await this.addCandidate(pc, candidate);
                 return;
             }
-
-            // offer / answer -- perfect-negotiation collision handling.
-            const description = signal.payload as RTCSessionDescriptionInit;
-            const collision = description.type === 'offer' && (this.makingOffer || pc.signalingState !== 'stable');
-            this.ignoreOffer = !this.polite && collision;
-            if (this.ignoreOffer) {
-                // The impolite peer keeps its own offer. The polite one rolls its offer back and
-                // answers with ICE credentials of its own (Chrome 150, measured), so a candidate of
-                // the ignored offer can never be used: it is dropped, whether held or still to come.
-                iceUfrags(description.sdp).forEach(ufrag => this.ignoredUfrags.add(ufrag));
-                return;
-            }
-
-            await pc.setRemoteDescription(description); // implicit rollback if we had a local offer
-            for (const candidate of this.remoteCandidates.splice(0)) {
-                await this.addCandidate(pc, candidate);
-            }
-            if (description.type === 'offer') {
-                await pc.setLocalDescription();
-                if (pc.localDescription !== null) {
-                    this.send({ type: 'answer', payload: pc.localDescription });
-                }
-            }
+            await this.applyDescription(pc, signal);
         } catch (err) {
             console.error('[rtc] applySignal failed', err);
+        }
+    }
+
+    /** One remote candidate: held until the remote description is in, else added. */
+    private async applyCandidate(pc: RTCPeerConnection, candidate: RTCIceCandidateInit): Promise<void> {
+        // A candidate belongs to the remote description it came with; before that is set
+        // the browser refuses it ("The remote description was null") and it is LOST. With
+        // one network interface -- a container, a phone -- it can be the only path, and the
+        // call never connects. Held, and applied as soon as the description is in -- the
+        // answer's too, which can arrive while the offer before it is still being ignored.
+        if (pc.remoteDescription === null) {
+            if (this.ignoreOffer && candidateUfrag(candidate) === null) {
+                return; // names no ICE session: taken for the ignored offer's, as perfect negotiation does
+            }
+            this.remoteCandidates.push(candidate);
+            return;
+        }
+        await this.addCandidate(pc, candidate);
+    }
+
+    /** An offer or an answer -- perfect-negotiation collision handling. */
+    private async applyDescription(pc: RTCPeerConnection, signal: RtcSignal): Promise<void> {
+        const description = signal.payload as RTCSessionDescriptionInit;
+        const collision = description.type === 'offer' && (this.makingOffer || pc.signalingState !== 'stable');
+        this.ignoreOffer = !this.polite && collision;
+        if (this.ignoreOffer) {
+            // The impolite peer keeps its own offer. The polite one rolls its offer back and
+            // answers with ICE credentials of its own (Chrome 150, measured), so a candidate of
+            // the ignored offer can never be used: it is dropped, whether held or still to come.
+            iceUfrags(description.sdp).forEach(ufrag => this.ignoredUfrags.add(ufrag));
+            return;
+        }
+
+        await pc.setRemoteDescription(description); // implicit rollback if we had a local offer
+        for (const candidate of this.remoteCandidates.splice(0)) {
+            await this.addCandidate(pc, candidate);
+        }
+        if (description.type === 'offer') {
+            await pc.setLocalDescription();
+            if (pc.localDescription !== null) {
+                this.send({ type: 'answer', payload: pc.localDescription });
+            }
         }
     }
 
