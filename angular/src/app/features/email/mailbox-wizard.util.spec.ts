@@ -27,6 +27,7 @@ describe('mailbox wizard rules', () => {
         smtpUsername: '',
         authMethod: 'oauth',
         oauthProvider: 'google',
+        kind: 'personal',
         ...over,
     });
 
@@ -61,6 +62,7 @@ describe('mailbox wizard rules', () => {
                 label: 'Support',
                 emailAddress: 'support@example.com',
                 oauthProvider: 'google',
+                kind: 'personal',
                 imapHost: 'imap.gmail.com',
                 imapPort: 993,
                 imapSecurity: 'ssl',
@@ -72,6 +74,11 @@ describe('mailbox wizard rules', () => {
             expect('imapUsername' in req).toBeFalse();
             expect('smtpUsername' in req).toBeFalse();
             expect('password' in req).toBeFalse();
+        });
+
+        it('says whose the mailbox is: the organisation\'s when chosen, which is the one that may send system mail', () => {
+            expect(draftRequestFromForm(form({ kind: 'shared' })).kind).toBe('shared');
+            expect(draftRequestFromForm(form()).kind).toBe('personal');
         });
 
         it('defaults the provider to google when the form has none', () => {

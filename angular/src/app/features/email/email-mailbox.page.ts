@@ -50,6 +50,7 @@ import {
     EmailSearchHitDto,
     InboundWorkflowOption,
     MailboxAuthMethod,
+    MailboxKind,
     MailboxSecurity,
     MailboxWriteRequest,
     OutgoingEmailRequest,
@@ -74,6 +75,8 @@ interface MailboxFormModel {
     authMethod: MailboxAuthMethod;
     /** OAuth provider key when `authMethod` is `oauth` (only `google` today). */
     oauthProvider: string;
+    /** Whose the new mailbox is: a person's own, or the organisation's. */
+    kind: MailboxKind;
 }
 
 /** A saved compose/reply draft -- the composer's restorable state. */
@@ -541,6 +544,18 @@ interface ComposeDraft {
                                 <label class="mbx__field">
                                     <span>Email address</span>
                                     <input type="email" [(ngModel)]="mbForm.emailAddress" placeholder="support@example.com" />
+                                </label>
+                                <label class="mbx__field">
+                                    <span>Whose mailbox</span>
+                                    <select [(ngModel)]="mbForm.kind" name="kind">
+                                        <option value="personal">Personal (yours)</option>
+                                        <option value="shared">Shared (the organisation's)</option>
+                                    </select>
+                                    <small class="mbx__field-hint">
+                                        When the account that connects it is deleted, a personal mailbox stops with it;
+                                        a shared one is kept, to be connected again. Only a shared mailbox can send the
+                                        system's mail.
+                                    </small>
                                 </label>
 
                                 <label class="mbx__field">
@@ -2683,6 +2698,7 @@ export class EmailMailboxPageComponent implements OnInit {
             enabled: f.enabled,
             // Present '' clears the trigger; a value sets it (merge-patch convention).
             inboundWorkflowKey: f.inboundWorkflowKey.trim(),
+            kind: f.kind,
         };
         Object.assign(request, usernamesForCreate(this.callerIsAdmin(), f.imapUsername, f.smtpUsername));
         request.password = f.password;
@@ -2821,6 +2837,7 @@ export class EmailMailboxPageComponent implements OnInit {
             inboundWorkflowKey: '',
             authMethod: 'password',
             oauthProvider: 'google',
+            kind: 'personal',
         };
     }
 }
