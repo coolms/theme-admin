@@ -32,6 +32,11 @@ export function mailboxSettingsUrlMatcher(segments: UrlSegment[]): UrlMatchResul
  */
 export const EMAIL_ROUTES: Routes = [
     {
+        // The installation's system mail: which mailbox the platform's own mail goes out through.
+        path: 'system-mail',
+        loadComponent: () => import('./system-mail.page').then(m => m.SystemMailPageComponent),
+    },
+    {
         path: '',
         loadComponent: () =>
             import('./email-mailbox.page').then(m => m.EmailMailboxPageComponent),

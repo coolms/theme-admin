@@ -402,3 +402,35 @@ export interface MailboxDelegationDto {
 export interface CreateDelegationRequest {
     delegateUserId: string;
 }
+
+/**
+ * The mailbox the platform's own mail goes out through (`GET /email/system-mail`). Every member is present, nulls
+ * included: with nothing chosen, `mailboxId` is null and the configured transport carries system mail.
+ */
+export interface SystemMailDto {
+    mailboxId: string | null;
+    fromAddress: string | null;
+    /** Null keeps the configured From's name. */
+    fromName: string | null;
+    /** `none` (the configured transport), `sending`, or `stopped`. */
+    state: 'none' | 'sending' | 'stopped';
+    /** With `stopped`: `mailbox-gone`, `mailbox-disabled` or `mailbox-needs-reconnect`. */
+    stopReason: string | null;
+    /** How many messages are held, waiting for the mailbox. */
+    held: number;
+}
+
+/** The choice `PUT /email/system-mail` takes. */
+export interface SystemMailChoice {
+    mailboxId: string;
+    fromAddress: string;
+    fromName: string | null;
+}
+
+/** The Froms a mailbox may send system mail as (`GET /email/system-mail/send-as/{mailboxId}`): its own first. */
+export interface SystemMailSendAsDto {
+    mailboxId: string;
+    addresses: string[];
+    /** Why the provider's list could not be read; only the own address is offered then. */
+    unreadable: string | null;
+}
