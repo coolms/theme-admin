@@ -61,7 +61,6 @@ describe('SectionHostsCardComponent', () => {
     it('saves the whole list: a serving host without a status, a redirecting one with it, an empty row dropped', () => {
         const fixture = create(SECTION);
         const card = fixture.componentInstance;
-        card.add();
         card.rows.update(rows => [...rows.slice(0, 1), { host: ' alt.coolms.com ', mode: 'serve', status: '302' }, { host: '', mode: 'redirect', status: '301' }]);
 
         card.save();
@@ -74,6 +73,35 @@ describe('SectionHostsCardComponent', () => {
         }]);
     });
 
+    it('reads the section again when the page raises its revision', () => {
+        let reads = 0;
+        TestBed.configureTestingModule({
+            imports: [SectionHostsCardComponent],
+            providers: [
+                {
+                    provide: SectionsApiService,
+                    useValue: {
+                        getSection: () => {
+                            reads += 1;
+
+                            return of(reads === 1 ? SECTION : { ...SECTION, redirectTarget: 'https://lemacs.com/' });
+                        },
+                    },
+                },
+                { provide: ErrorHandlerService, useValue: { humanize: () => '' } },
+                { provide: ToastService, useValue: { success: () => undefined } },
+            ],
+        });
+        const fixture = TestBed.createComponent(SectionHostsCardComponent);
+        fixture.componentRef.setInput('sectionId', 's1');
+        fixture.detectChanges();
+        fixture.componentRef.setInput('revision', 1);
+        fixture.detectChanges();
+
+        expect(reads).toBe(2);
+        expect(fixture.componentInstance.redirect()?.target).toBe('https://lemacs.com/');
+    });
+
     it('says when the section is a redirect section', () => {
         const fixture = create({ ...SECTION, redirectTarget: 'https://lemacs.com/', redirectStatus: 302, redirectKeepPath: false });
         const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -84,20 +112,49 @@ describe('SectionHostsCardComponent', () => {
 });
 
 describe('SectionFormComponent redirect fields', () => {
+    let dispatched: unknown[];
+    let shown: string[];
+
     function form(data: SiteSectionDto | null): SectionFormComponent {
+        dispatched = [];
+        shown = [];
         // Two forms in one test, each with its own dialog data: a fresh module for each.
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
-                { provide: Store, useValue: { selectSnapshot: () => null, dispatch: () => of(null) } },
+                {
+                    provide: Store,
+                    useValue: {
+                        selectSnapshot: () => null,
+                        dispatch: (action: unknown) => {
+                            dispatched.push(action);
+
+                            return of(null);
+                        },
+                    },
+                },
                 { provide: ErrorHandlerService, useValue: { humanize: () => '' } },
                 { provide: DialogRef, useValue: { close: () => undefined } },
                 { provide: DIALOG_DATA, useValue: data },
             ],
         });
 
-        return TestBed.runInInjectionContext(() => new SectionFormComponent());
+        const component = TestBed.runInInjectionContext(() => new SectionFormComponent());
+        component.dynamicForm = { setServerError: (message: string) => shown.push(message) } as unknown as SectionFormComponent['dynamicForm'];
+
+        return component;
     }
+
+    it('refuses a redirect without a target, on edit and on create, and sends nothing', () => {
+        // An empty target is how a save makes a redirect section a site again: on the redirect switch it must not.
+        for (const data of [{ ...SECTION, redirectTarget: 'https://lemacs.com/' }, null]) {
+            const component = form(data);
+            component.onSubmit({ kind: 'redirect', redirectTarget: '  ', slug: 'new', label: 'New' });
+
+            expect(dispatched).toEqual([]);
+            expect(shown).toEqual([SectionFormComponent.TARGET_REQUIRED]);
+        }
+    });
 
     it('opens a redirect section on the redirect switch, and a site on the site one', () => {
         expect(form({ ...SECTION, redirectTarget: 'https://lemacs.com/', redirectStatus: 302 }).initialValue)

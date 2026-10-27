@@ -137,7 +137,7 @@ Status / role chips project into the header-meta
 
                     <!-- Other hosts: each serves the site or redirects to its host -->
                     @if (s.sectionId) {
-                        <app-section-hosts-card [sectionId]="s.sectionId" />
+                        <app-section-hosts-card [sectionId]="s.sectionId" [revision]="sectionRevision()" />
                     }
 
                     <!-- NaviTrees -->
@@ -438,6 +438,8 @@ export class SiteDetailPageComponent implements OnInit {
     readonly layout         = signal<LayoutConfig | null>(null);
 
     readonly site           = signal<SiteDto | null>(null);
+    /** Raised after the section's form saved, so the other-hosts card reads the section again. */
+    readonly sectionRevision = signal(0);
     readonly loading        = signal(true);
     readonly error          = signal<string | null>(null);
 
@@ -604,6 +606,7 @@ export class SiteDetailPageComponent implements OnInit {
                 // list so any other open tabs / lists pick the change up.
                 this.store.dispatch(new LoadSections());
                 this.loadSite(s.slug!);
+                this.sectionRevision.update(n => n + 1);
             },
             error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
         });

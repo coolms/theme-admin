@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -96,8 +96,10 @@ interface HostRow {
         .hosts__actions { display: flex; gap: 8px; }
     `],
 })
-export class SectionHostsCardComponent implements OnInit {
+export class SectionHostsCardComponent {
     readonly sectionId = input.required<string>();
+    /** Raised by the page after the section was edited elsewhere (its form): the card reads the section again. */
+    readonly revision  = input(0);
 
     private readonly api        = inject(SectionsApiService);
     private readonly errors     = inject(ErrorHandlerService);
@@ -110,8 +112,15 @@ export class SectionHostsCardComponent implements OnInit {
     readonly error     = signal<string | null>(null);
     readonly saving    = signal(false);
 
-    ngOnInit(): void {
-        this.api.getSection(this.sectionId()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    constructor() {
+        effect(() => {
+            this.revision();
+            this.load(this.sectionId());
+        });
+    }
+
+    private load(sectionId: string): void {
+        this.api.getSection(sectionId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next:  section => this.show(section),
             error: (err: unknown) => this.error.set(this.errors.humanize(err)),
         });

@@ -33,6 +33,8 @@ export class SectionFormComponent {
     readonly dialogRef      = inject(DialogRef);
     readonly data: SiteSectionDto | null = inject(DIALOG_DATA);
 
+    static readonly TARGET_REQUIRED = 'A redirect needs a target.';
+
     readonly isEdit       = this.data !== null;
     /**
      * `kind` is the form's site-or-redirect switch, not a stored field: a section with a target is a redirect section.
@@ -78,6 +80,12 @@ export class SectionFormComponent {
     }
 
     onSubmit(value: Record<string, unknown>): void {
+        // An empty target is how a save says "make it a site again": on the redirect switch it would quietly do that.
+        if ('redirect' === value['kind'] && '' === String(value['redirectTarget'] ?? '').trim()) {
+            this.dynamicForm.setServerError(SectionFormComponent.TARGET_REQUIRED);
+
+            return;
+        }
         const action = this.isEdit
             ? new UpdateSection(this.data!.id ?? '', {
                 label:           value['label'] as string | undefined,
