@@ -46,8 +46,9 @@ export function kindOf(mailbox: EmailMailboxDto): MailboxKind {
                         <option value="shared">Shared (the organisation's)</option>
                     </select>
                     <small class="cms-field-hint">
-                        When the account that connected it is deleted, a personal mailbox stops with it; a shared one
-                        is kept, to be connected again. Only a shared mailbox can send the system's mail.
+                        When the account that connected it is deleted, a personal mailbox stops with it, and is erased,
+                        its mail included, when that person connected it; a shared one is kept, to be connected again.
+                        Only a shared mailbox can send the system's mail.
                     </small>
                 </label>
             </div>

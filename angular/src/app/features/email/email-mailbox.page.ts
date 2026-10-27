@@ -552,9 +552,9 @@ interface ComposeDraft {
                                         <option value="shared">Shared (the organisation's)</option>
                                     </select>
                                     <small class="mbx__field-hint">
-                                        When the account that connects it is deleted, a personal mailbox stops with it;
-                                        a shared one is kept, to be connected again. Only a shared mailbox can send the
-                                        system's mail.
+                                        When the account that connects it is deleted, a personal mailbox is erased with
+                                        it, its mail included; a shared one is kept, to be connected again. Only a shared
+                                        mailbox can send the system's mail.
                                     </small>
                                 </label>
 
