@@ -4,7 +4,7 @@ import { Store } from '@ngxs/store';
 import { ErrorHandlerService, AppConfigState } from '@coolms/core-angular';
 import { DynamicFormComponent, ModalComponent } from '@coolms/ui-angular';
 import { CreateSection, LoadSections, UpdateSection } from './section.actions';
-import { SiteSectionDto } from './sections.types';
+import { SectionRedirectFields, SiteSectionDto } from './sections.types';
 
 @Component({
     selector: 'app-section-form',
@@ -34,7 +34,17 @@ export class SectionFormComponent {
     readonly data: SiteSectionDto | null = inject(DIALOG_DATA);
 
     readonly isEdit       = this.data !== null;
-    readonly initialValue = this.data ? { ...this.data } : {};
+    /**
+     * `kind` is the form's site-or-redirect switch, not a stored field: a section with a target is a redirect section.
+     * The status goes to the select as text, as its options are.
+     */
+    readonly initialValue = this.data
+        ? {
+            ...this.data,
+            kind:           this.data.redirectTarget ? 'redirect' : 'site',
+            redirectStatus: String(this.data.redirectStatus ?? 301),
+        }
+        : { kind: 'site', redirectStatus: '301' };
 
     // formId comes from manifest -- no hardcoding
     readonly formId = this.store.selectSnapshot(AppConfigState.manifest)
@@ -51,6 +61,22 @@ export class SectionFormComponent {
         return 'string' === typeof raw && '' !== raw ? raw : null;
     }
 
+    /**
+     * The redirect fields a save sends. A redirect sends its target, kind and path; a site that was a redirect sends an
+     * empty target, which makes it a site again; a site that never was one sends nothing, leaving them as they are.
+     */
+    redirectFrom(value: Record<string, unknown>): SectionRedirectFields {
+        if ('redirect' === value['kind']) {
+            return {
+                redirectTarget:   String(value['redirectTarget'] ?? '').trim(),
+                redirectStatus:   Number(value['redirectStatus'] ?? 301),
+                redirectKeepPath: true === value['redirectKeepPath'],
+            };
+        }
+
+        return this.data?.redirectTarget ? { redirectTarget: '' } : {};
+    }
+
     onSubmit(value: Record<string, unknown>): void {
         const action = this.isEdit
             ? new UpdateSection(this.data!.id ?? '', {
@@ -65,6 +91,7 @@ export class SectionFormComponent {
                 // active theme); leaving it undefined would silently keep the old
                 // value under merge-patch and make "clear" impossible.
                 themeSlug:       this.themeSlugFrom(value),
+                ...this.redirectFrom(value),
               })
             : new CreateSection({
                 slug:            value['slug'] as string,
@@ -73,6 +100,7 @@ export class SectionFormComponent {
                 matchHost:       value['matchHost'] as string | undefined,
                 matchPathPrefix: value['matchPathPrefix'] as string | undefined,
                 matchPriority:   value['matchPriority'] as number | undefined,
+                ...this.redirectFrom(value),
               });
 
         this.store.dispatch(action).subscribe({

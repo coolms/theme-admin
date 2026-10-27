@@ -14,9 +14,34 @@ export interface SiteSectionDto {
     /** Soft ref to Theme slug -- exposed so the Navi-node picker can scope dtmpl templates. */
     themeSlug?:  string | null;
     isActive:    boolean;
+    /** The section's other hosts: each serves the site as its host does, or redirects to it. */
+    hosts?:      SectionHostDto[];
+    /** Set, the section is a redirect section: every request goes here. */
+    redirectTarget?:   string | null;
+    redirectStatus?:   number | null;
+    redirectKeepPath?: boolean | null;
+    /** The section's hosts this server would answer with 400: its trusted hosts do not name them yet. */
+    untrustedHosts?:   string[];
 }
 
-export interface CreateSectionDto {
+/** One of a section's other hosts. `status` is 301 or 302 for a redirecting one, null for a serving one. */
+export interface SectionHostDto {
+    host:    string;
+    mode:    'serve' | 'redirect';
+    status?: number | null;
+}
+
+/**
+ * The redirect fields a save sends. `redirectTarget: ''` makes a redirect section a site again; leaving them out
+ * leaves the redirect as it is (merge-patch).
+ */
+export interface SectionRedirectFields {
+    redirectTarget?:   string;
+    redirectStatus?:   number;
+    redirectKeepPath?: boolean;
+}
+
+export interface CreateSectionDto extends SectionRedirectFields {
     slug:            string;
     label:           string;
     feStack:         string;
@@ -32,7 +57,7 @@ export interface CreateSectionDto {
     themeSlug?:      string | null;
 }
 
-export interface UpdateSectionDto {
+export interface UpdateSectionDto extends SectionRedirectFields {
     label?:          string;
     matchHost?:      string;
     matchPathPrefix?: string;
@@ -45,6 +70,8 @@ export interface UpdateSectionDto {
      * whichever theme is active; `undefined` leaves it unchanged (merge-patch).
      */
     themeSlug?:      string | null;
+    /** The other hosts, as a whole list: `[]` removes them all; leaving it out leaves them. */
+    hosts?:          SectionHostDto[];
 }
 
 /**

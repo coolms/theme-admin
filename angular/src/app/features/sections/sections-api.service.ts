@@ -41,6 +41,11 @@ export class SectionsApiService {
         return this.http.post<SiteSectionDto>(this.manifest.sections!.create, dto);
     }
 
+    /** One section, whole: its other hosts and its redirect included, which the site record does not carry. */
+    getSection(id: string): Observable<SiteSectionDto> {
+        return this.http.get<SiteSectionDto>(resolvePattern(this.manifest.sections!.update, { id }), this.collectionHeaders);
+    }
+
     updateSection(id: string, dto: UpdateSectionDto): Observable<SiteSectionDto> {
         const url = resolvePattern(this.manifest.sections!.update, { id });
         return this.http.patch<SiteSectionDto>(url, dto, this.patchHeaders);
