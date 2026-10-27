@@ -148,6 +148,21 @@ describe('SystemMailPageComponent -- choosing the mailbox system mail goes out t
         expect(page.refusal()).toBeNull();
     });
 
+    it('a refused send-as read for one mailbox is not shown once another, read fine, is picked', () => {
+        email.listMailboxes.and.returnValue(of([...MAILBOXES, { id: 'mb-two', emailAddress: 'two@example.test', kind: 'shared', enabled: true }]));
+        const page = render().componentInstance;
+        email.getSystemMailSendAs.and.callFake((id: string) => ('mb-shared' === id
+            ? throwError(() => problem(502, 'The provider could not be asked.'))
+            : of({ mailboxId: 'mb-two', addresses: ['two@example.test'], unreadable: null })));
+
+        page.pickMailbox('mb-shared');
+        expect(page.refusal()).withContext('control: the first read is refused').toBe('The provider could not be asked.');
+        page.pickMailbox('mb-two');
+
+        expect(page.refusal()).toBeNull();
+        expect(page.fromAddress()).toBe('two@example.test');
+    });
+
     it('a refused save is shown in the server\'s words, on the page', () => {
         email.chooseSystemMail.and.returnValue(throwError(() => problem(422, 'The mailbox cannot send as other@example.test.')));
         const fixture = render();

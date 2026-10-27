@@ -189,6 +189,8 @@ export class SystemMailPageComponent implements OnInit {
      */
     pickMailbox(id: string, keepFrom: string | null = null): void {
         this.mailboxId.set(id);
+        // A refusal about the mailbox picked before says nothing about this one.
+        this.refusal.set(null);
         this.addresses.set([]);
         this.unreadable.set(null);
         this.notOffered.set(null);
