@@ -7,7 +7,7 @@ import { CmsPageHeaderComponent, ConfirmDialogService, ToastService } from '@coo
 
 import { EmailService } from './email.service';
 import type { EmailMailboxDto, SystemMailDto } from './email.types';
-import { systemMailCandidates, systemMailChoice, systemMailStateText } from './system-mail.util';
+import { systemMailCandidates, systemMailChoice, systemMailFromOptions, systemMailStateText } from './system-mail.util';
 
 /**
  * System mail: the mailbox the platform's own mail (sign-in codes, resets, invitations, notices) goes out through,
@@ -70,11 +70,17 @@ import { systemMailCandidates, systemMailChoice, systemMailStateText } from './s
                             <select class="cms-input w-100" name="fromAddress" [ngModel]="fromAddress()" (ngModelChange)="fromAddress.set($event)"
                                     [disabled]="addresses().length === 0">
                                 @for (a of addresses(); track a) {
-                                    <option [value]="a">{{ a }}</option>
+                                    <option [value]="a">{{ a }}{{ a === notOffered() ? ' (not offered now)' : '' }}</option>
                                 }
                             </select>
                             @if (unreadable(); as why) {
                                 <small class="cms-field-hint">Only the mailbox's own address is offered: {{ why }}</small>
+                            }
+                            @if (notOffered(); as stored) {
+                                <small class="cms-field-hint d-block">
+                                    The stored From, {{ stored }}, is not offered by the mailbox now. Saving keeps it; the
+                                    server refuses it if the mailbox may no longer send as it.
+                                </small>
                             }
                         </label>
                         <label class="col-12 col-md-6">
@@ -119,6 +125,8 @@ export class SystemMailPageComponent implements OnInit {
     readonly mailboxId = signal('');
     readonly addresses = signal<string[]>([]);
     readonly unreadable = signal<string | null>(null);
+    /** The stored From the picked mailbox does not offer now; kept, offered and named, never replaced unasked. */
+    readonly notOffered = signal<string | null>(null);
     readonly fromAddress = signal('');
     readonly fromName = signal('');
 
@@ -174,22 +182,42 @@ export class SystemMailPageComponent implements OnInit {
         return m === undefined ? id : (m.label || m.emailAddress || id);
     }
 
-    /** A mailbox picked: its Froms are read, and the From starts at its own address (the list's first). */
+    /**
+     * A mailbox picked: its Froms are read, and the From starts at the stored one (`keepFrom`) or, with none, at its own
+     * address (the list's first). An answer for a mailbox that is no longer the picked one is dropped: a quick switch
+     * must not fill in the other mailbox's addresses.
+     */
     pickMailbox(id: string, keepFrom: string | null = null): void {
         this.mailboxId.set(id);
         this.addresses.set([]);
         this.unreadable.set(null);
+        this.notOffered.set(null);
         this.fromAddress.set('');
         if ('' === id) {
             return;
         }
         this.email.getSystemMailSendAs(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: sendAs => {
-                this.addresses.set(sendAs.addresses);
+                if (this.mailboxId() !== id) {
+                    return;
+                }
+                const from = systemMailFromOptions(sendAs.addresses, keepFrom);
+                this.addresses.set(from.options);
                 this.unreadable.set(sendAs.unreadable);
-                this.fromAddress.set(sendAs.addresses.find(a => a === keepFrom) ?? sendAs.addresses[0] ?? '');
+                this.notOffered.set(from.notOffered);
+                this.fromAddress.set(from.selected);
             },
-            error: (err: unknown) => this.refusal.set(this.errors.humanize(err)),
+            error: (err: unknown) => {
+                if (this.mailboxId() !== id) {
+                    return;
+                }
+                // The list could not be read: the stored From is still shown, and kept, rather than none at all.
+                const from = systemMailFromOptions([], keepFrom);
+                this.addresses.set(from.options);
+                this.notOffered.set(from.notOffered);
+                this.fromAddress.set(from.selected);
+                this.refusal.set(this.errors.humanize(err));
+            },
         });
     }
 
