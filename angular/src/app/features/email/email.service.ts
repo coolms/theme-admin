@@ -28,6 +28,9 @@ import {
     MailboxTestResult,
     MailboxWriteRequest,
     OutgoingEmailRequest,
+    SystemMailChoice,
+    SystemMailDto,
+    SystemMailSendAsDto,
 } from './email.types';
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
 
@@ -453,6 +456,34 @@ export class EmailService {
         return this.http
             .get<unknown>(`${this.rulesBase(mailboxId)}/folders`, { headers: this.jsonHeaders })
             .pipe(map(raw => this.unwrap<FilterFolder>(raw)));
+    }
+
+    /** GET /email/system-mail -- the system mail choice and its state (an elevated administrator). */
+    getSystemMail(): Observable<SystemMailDto> {
+        return this.http.get<SystemMailDto>(`${this.apiBase}/email/system-mail`, { headers: this.jsonHeaders });
+    }
+
+    /** GET /email/system-mail/send-as/{mailboxId} -- the Froms that mailbox may send system mail as. */
+    getSystemMailSendAs(mailboxId: string): Observable<SystemMailSendAsDto> {
+        return this.http.get<SystemMailSendAsDto>(
+            `${this.apiBase}/email/system-mail/send-as/${encodeURIComponent(mailboxId)}`,
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** PUT /email/system-mail -- choose the mailbox and the From; answers the new state. */
+    chooseSystemMail(choice: SystemMailChoice): Observable<SystemMailDto> {
+        return this.http.put<SystemMailDto>(`${this.apiBase}/email/system-mail`, choice, { headers: this.jsonHeaders });
+    }
+
+    /** DELETE /email/system-mail -- clear the choice: the configured transport carries system mail again. */
+    clearSystemMail(): Observable<unknown> {
+        return this.http.delete<unknown>(`${this.apiBase}/email/system-mail`);
+    }
+
+    /** POST /email/system-mail/test -- a test to the signed-in administrator's own address, sent at once (204). */
+    testSystemMail(): Observable<unknown> {
+        return this.http.post<unknown>(`${this.apiBase}/email/system-mail/test`, {});
     }
 
     private rulesBase(mailboxId: string): string {
