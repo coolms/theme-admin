@@ -117,7 +117,16 @@ export interface MailboxWriteRequest {
     backfillDepthMonths?: number | null;
     /** How the mailbox sends (see {@link EmailMailboxDto.sendVia}). */
     sendVia?: SendVia;
+    /** Whose the mailbox is; on create `personal` when absent, and changeable afterwards. */
+    kind?: MailboxKind;
 }
+
+/**
+ * Whose a mailbox is: `personal`, a person's own, stopped when that person's account is deleted; `shared`, the
+ * organisation's, kept when that account is deleted, without the person's credentials, until it is connected again.
+ * Only a shared mailbox may send the installation's system mail. It decides nothing about who may read or manage it.
+ */
+export type MailboxKind = 'personal' | 'shared';
 
 /** How a mailbox sends: `auto` through the provider's API where it can, else SMTP; `api` or `smtp` only that way. */
 export type SendVia = 'auto' | 'api' | 'smtp';
@@ -163,7 +172,7 @@ export interface MailboxDraftRequest {
     label: string;
     emailAddress: string;
     oauthProvider: string;
-    kind?: 'personal' | 'shared';
+    kind?: MailboxKind;
     imapHost: string;
     imapPort: number;
     imapSecurity: MailboxSecurity;

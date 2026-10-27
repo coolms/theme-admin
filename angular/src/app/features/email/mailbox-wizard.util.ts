@@ -1,4 +1,4 @@
-import { type MailboxAuthMethod, type MailboxDraftRequest, type MailboxSecurity } from './email.types';
+import { type MailboxAuthMethod, type MailboxDraftRequest, type MailboxKind, type MailboxSecurity } from './email.types';
 
 /**
  * The mailbox wizard's two rules, as pure functions, so the component decides
@@ -33,6 +33,7 @@ export interface MailboxWizardForm {
     smtpUsername: string;
     authMethod: MailboxAuthMethod;
     oauthProvider: string;
+    kind: MailboxKind;
 }
 
 /**
@@ -87,6 +88,7 @@ export function draftRequestFromForm(f: MailboxWizardForm): MailboxDraftRequest 
         label: f.label.trim(),
         emailAddress: f.emailAddress.trim(),
         oauthProvider: f.oauthProvider || 'google',
+        kind: f.kind,
         imapHost: f.imapHost.trim(),
         imapPort: f.imapPort,
         imapSecurity: f.imapSecurity,
