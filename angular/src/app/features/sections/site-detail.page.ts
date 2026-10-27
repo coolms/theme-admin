@@ -12,7 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import { SiteDto, SiteMemberDto, SiteSectionDto } from './sections.types';
+import { SiteDto, SiteMemberDto } from './sections.types';
 import { SectionsApiService } from './sections-api.service';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import {
@@ -27,6 +27,7 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
+import { SectionHostsCardComponent } from './section-hosts-card.component';
 import { LoadSections } from './section.actions';
 
 /**
@@ -54,7 +55,7 @@ import { LoadSections } from './section.actions';
     selector: 'app-site-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent],
+    imports: [RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent, SectionHostsCardComponent],
     template: `
         @if (loading()) {
             <app-loading label="Loading site…" />
@@ -133,6 +134,11 @@ Status / role chips project into the header-meta
                             </a>
                         </div>
                     </section>
+
+                    <!-- Other hosts: each serves the site or redirects to its host -->
+                    @if (s.sectionId) {
+                        <app-section-hosts-card [sectionId]="s.sectionId" [revision]="sectionRevision()" />
+                    }
 
                     <!-- NaviTrees -->
                     <section class="card">
@@ -432,6 +438,8 @@ export class SiteDetailPageComponent implements OnInit {
     readonly layout         = signal<LayoutConfig | null>(null);
 
     readonly site           = signal<SiteDto | null>(null);
+    /** Raised after the section's form saved, so the other-hosts card reads the section again. */
+    readonly sectionRevision = signal(0);
     readonly loading        = signal(true);
     readonly error          = signal<string | null>(null);
 
@@ -577,40 +585,30 @@ export class SiteDetailPageComponent implements OnInit {
     }
 
     /**
-     * Opens the existing SectionFormComponent dialog (the same modal
-     * used on the Sections list) so settings editing has exactly one
-     * implementation. The Web Site Detail response carries enough fields
-     * to denormalise into a `SiteSectionDto` for the dialog's
-     * `DIALOG_DATA`.
+     * Opens the existing SectionFormComponent dialog (the same modal used on the Sections list), so settings editing
+     * has one implementation. It opens with the whole section, read for it: the site record carries no redirect and no
+     * other hosts, and a redirect section opened without them would show as a site and be saved as one.
      */
     openEditSettings(): void {
         const s = this.site();
         if (!s || !s.sectionId || !s.slug) return;
 
-        const sectionDto: SiteSectionDto = {
-            '@id':            `/api/v1/sections/${s.sectionId}`,
-            id:               s.sectionId,
-            slug:             s.slug,
-            label:            s.label ?? s.slug,
-            matchHost:        s.host,
-            matchPathPrefix:  s.pathPrefix,
-            feStack:          s.feStack,
-            matchPriority:    s.priority,
-            themeSlug:        s.themeSlug,
-            isActive:         s.isActive ?? true,
-        };
-
-        this.dialog.open(SectionFormComponent, {
-            data: sectionDto,
-            backdropClass: 'cdk-overlay-dark-backdrop',
-        }).closed.pipe(
+        this.sectionsApi.getSection(s.sectionId).pipe(
+            switchMap(sectionDto => this.dialog.open(SectionFormComponent, {
+                data: sectionDto,
+                backdropClass: 'cdk-overlay-dark-backdrop',
+            }).closed),
             filter(Boolean),
             takeUntilDestroyed(this.destroyRef),
-        ).subscribe(() => {
-            // Reload both the site detail and the cached NgXS sections
-            // list so any other open tabs / lists pick the change up.
-            this.store.dispatch(new LoadSections());
-            this.loadSite(s.slug!);
+        ).subscribe({
+            next: () => {
+                // Reload both the site detail and the cached NgXS sections
+                // list so any other open tabs / lists pick the change up.
+                this.store.dispatch(new LoadSections());
+                this.loadSite(s.slug!);
+                this.sectionRevision.update(n => n + 1);
+            },
+            error: (err: unknown) => this.toast.error(this.errors.humanize(err)),
         });
     }
 

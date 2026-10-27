@@ -10,6 +10,11 @@ major number means here.
 
 ### Changed
 
+- A site's page has an "Other hosts" card: each other host either serves the site as its host does, or redirects to
+  it (permanent or temporary), edited as a list and saved whole. It shows what the server refuses in its own words,
+  names the hosts the server does not trust yet, and says whether the section is a redirect. The section form switches
+  a section between a site and a redirect (its target, the kind of redirect, and whether the path is kept), and is
+  opened from the site's page with the whole section, so a redirect section is never shown or saved as a site.
 - A call's remote ICE candidates may arrive as one signal, `{ candidates: [...] }` (a device that gathers several close
   together sends them so): each is taken in its order, as if it had come alone -- held until the remote description is
   in, then added. A lone candidate is taken as before.
