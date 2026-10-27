@@ -1,6 +1,6 @@
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
@@ -86,6 +86,81 @@ describe('SystemMailPageComponent -- choosing the mailbox system mail goes out t
 
         expect(page.mailboxId()).toBe('mb-shared');
         expect(page.fromAddress()).toBe('notifications@example.org');
+    });
+
+    it('a stored From the mailbox no longer offers is shown, named, and saved unchanged', () => {
+        email.getSystemMail.and.returnValue(of({ ...NONE, mailboxId: 'mb-shared', fromAddress: 'old@example.org', state: 'sending' }));
+        email.chooseSystemMail.and.returnValue(of(NONE));
+        const fixture = render();
+        const page = fixture.componentInstance;
+        fixture.detectChanges();
+        const host = fixture.nativeElement as HTMLElement;
+
+        expect(page.fromAddress()).toBe('old@example.org');
+        expect(host.querySelector('select[name="fromAddress"] option')?.textContent?.trim()).toBe('old@example.org (not offered now)');
+        expect(host.textContent).toContain('Saving keeps it');
+
+        page.save();
+        expect(email.chooseSystemMail).toHaveBeenCalledOnceWith({ mailboxId: 'mb-shared', fromAddress: 'old@example.org', fromName: null });
+    });
+
+    it('a quick switch: the first mailbox\'s late answer does not fill in the second one\'s addresses', () => {
+        const first = new Subject<{ mailboxId: string; addresses: string[]; unreadable: string | null }>();
+        const second = new Subject<{ mailboxId: string; addresses: string[]; unreadable: string | null }>();
+        email.listMailboxes.and.returnValue(of([...MAILBOXES, { id: 'mb-two', emailAddress: 'two@example.test', kind: 'shared', enabled: true }]));
+        const page = render().componentInstance;
+        email.getSystemMailSendAs.and.callFake((id: string) => ('mb-shared' === id ? first : second).asObservable());
+
+        page.pickMailbox('mb-shared');
+        page.pickMailbox('mb-two');
+        second.next({ mailboxId: 'mb-two', addresses: ['two@example.test'], unreadable: null });
+        first.next({ mailboxId: 'mb-shared', addresses: ['notifications@example.test'], unreadable: null });
+
+        expect(page.mailboxId()).toBe('mb-two');
+        expect(page.addresses()).toEqual(['two@example.test']);
+        expect(page.fromAddress()).toBe('two@example.test');
+    });
+
+    it('the send-as list cannot be read: the stored From is still shown and kept, and the reason is said', () => {
+        email.getSystemMail.and.returnValue(of({ ...NONE, mailboxId: 'mb-shared', fromAddress: 'notifications@example.org', state: 'sending' }));
+        email.getSystemMailSendAs.and.returnValue(throwError(() => problem(502, 'The provider could not be asked.')));
+        const page = render().componentInstance;
+
+        expect(page.fromAddress()).toBe('notifications@example.org');
+        expect(page.notOffered()).toBe('notifications@example.org');
+        expect(page.refusal()).toBe('The provider could not be asked.');
+    });
+
+    it('a quick switch: the first mailbox\'s late refusal says nothing about the second', () => {
+        const first = new Subject<{ mailboxId: string; addresses: string[]; unreadable: string | null }>();
+        email.listMailboxes.and.returnValue(of([...MAILBOXES, { id: 'mb-two', emailAddress: 'two@example.test', kind: 'shared', enabled: true }]));
+        const page = render().componentInstance;
+        email.getSystemMailSendAs.and.callFake((id: string) => ('mb-shared' === id
+            ? first.asObservable()
+            : of({ mailboxId: 'mb-two', addresses: ['two@example.test'], unreadable: null })));
+
+        page.pickMailbox('mb-shared');
+        page.pickMailbox('mb-two');
+        first.error(problem(502, 'The provider could not be asked.'));
+
+        expect(page.addresses()).toEqual(['two@example.test']);
+        expect(page.fromAddress()).toBe('two@example.test');
+        expect(page.refusal()).toBeNull();
+    });
+
+    it('a refused send-as read for one mailbox is not shown once another, read fine, is picked', () => {
+        email.listMailboxes.and.returnValue(of([...MAILBOXES, { id: 'mb-two', emailAddress: 'two@example.test', kind: 'shared', enabled: true }]));
+        const page = render().componentInstance;
+        email.getSystemMailSendAs.and.callFake((id: string) => ('mb-shared' === id
+            ? throwError(() => problem(502, 'The provider could not be asked.'))
+            : of({ mailboxId: 'mb-two', addresses: ['two@example.test'], unreadable: null })));
+
+        page.pickMailbox('mb-shared');
+        expect(page.refusal()).withContext('control: the first read is refused').toBe('The provider could not be asked.');
+        page.pickMailbox('mb-two');
+
+        expect(page.refusal()).toBeNull();
+        expect(page.fromAddress()).toBe('two@example.test');
     });
 
     it('a refused save is shown in the server\'s words, on the page', () => {

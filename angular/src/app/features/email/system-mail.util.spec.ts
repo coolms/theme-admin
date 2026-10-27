@@ -1,5 +1,5 @@
 import type { EmailMailboxDto, SystemMailDto } from './email.types';
-import { systemMailCandidates, systemMailChoice, systemMailStateText } from './system-mail.util';
+import { systemMailCandidates, systemMailChoice, systemMailFromOptions, systemMailStateText } from './system-mail.util';
 
 /**
  * The System mail page's rules: only a shared, enabled mailbox is offered (the server refuses the rest), a blank
@@ -23,6 +23,17 @@ describe('system mail rules', () => {
             mailboxId: 'mb-1', fromAddress: 'notifications@example.test', fromName: 'Notifications',
         });
         expect(systemMailChoice('mb-1', 'notifications@example.test', '   ').fromName).toBeNull();
+    });
+
+    it('keeps a stored From the mailbox no longer offers: offered first, named, and chosen', () => {
+        const offered = ['notifications@example.test', 'notifications@example.org'];
+
+        expect(systemMailFromOptions(offered, null)).toEqual({ options: offered, selected: 'notifications@example.test', notOffered: null });
+        expect(systemMailFromOptions(offered, 'notifications@example.org').selected).toBe('notifications@example.org');
+        expect(systemMailFromOptions(offered, 'old@example.org')).toEqual({
+            options: ['old@example.org', ...offered], selected: 'old@example.org', notOffered: 'old@example.org',
+        });
+        expect(systemMailFromOptions([], 'old@example.org').selected).withContext('nothing could be read').toBe('old@example.org');
     });
 
     it('says the state in words, a stop with its reason', () => {
