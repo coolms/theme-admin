@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -23,7 +23,9 @@ import { SETTINGS_PANE_SLOT, SettingsHubPageComponent } from './settings-hub.pag
 
 /** Something a module binds under one of its settings. */
 @Component({ selector: 'app-pane-extra-stub', standalone: true, template: 'extra' })
-class PaneExtraStubComponent {}
+class PaneExtraStubComponent {
+    readonly settingKey = input<string>('');
+}
 
 /**
  * The scope of the Settings screen is chosen by the route, never by the setting picked.
@@ -91,10 +93,12 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
     it('a module\'s extra under a setting is what it bound to settings.pane:<key>, for that setting only', async () => {
         await routing.navigateByUrl('/settings/email/email.sync');
         const hub = routing.routeDebugElement?.componentInstance as SettingsHubPageComponent;
-        TestBed.inject(ComponentRegistry).register('settings.pane:email.sync', PaneExtraStubComponent);
+        // The registry is one static map for the whole run, with no removal: a key no other test opens, so this
+        // binding cannot appear under another test's setting.
+        TestBed.inject(ComponentRegistry).register('settings.pane:test.pane-extra', PaneExtraStubComponent);
 
-        expect(hub.paneExtraKey('email.sync')).toBe(`${SETTINGS_PANE_SLOT}:email.sync`);
-        expect(hub.hasPaneExtra('email.sync')).toBeTrue();
+        expect(hub.paneExtraKey('test.pane-extra')).toBe(`${SETTINGS_PANE_SLOT}:test.pane-extra`);
+        expect(hub.hasPaneExtra('test.pane-extra')).toBeTrue();
         expect(hub.hasPaneExtra('call.originate')).withContext('another setting has none').toBeFalse();
     });
 

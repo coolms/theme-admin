@@ -41,6 +41,13 @@ import { deslugify, groupBlocks, isEdited } from './settings-grouping.util';
 import { type SettingsScope } from './settings.routes';
 
 /**
+ * The slot a module fills to add something under one of its settings' forms, bound in its console entry as
+ * `settings.pane:<setting key>` -- an action the form cannot express, such as Email's Send test under System mail.
+ * The form stays the settings tier's; the guest calls its own module's API.
+ */
+export const SETTINGS_PANE_SLOT = 'settings.pane';
+
+/**
  * Settings, on the settings shell: the section list on the left, one setting's pane at a time on the right.
  *
  * **The ROUTE chooses the scope, never the setting picked.** `/settings/{module}/{key}` is the global scope -- every
@@ -52,13 +59,6 @@ import { type SettingsScope } from './settings.routes';
  * **Generated from the registry, never listed here.** A module that is not installed contributes no setting, and the
  * list holds only what `GET /module-settings` gives this caller.
  */
-/**
- * The slot a module fills to add something under one of its settings' forms, bound in its console entry as
- * `settings.pane:<setting key>` -- an action the form cannot express, such as Email's Send test under System mail.
- * The form stays the settings tier's; the guest calls its own module's API.
- */
-export const SETTINGS_PANE_SLOT = 'settings.pane';
-
 @Component({
     selector: 'coolms-admin-settings-hub',
     standalone: true,

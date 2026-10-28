@@ -3,7 +3,12 @@ import { of, throwError } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
 
 import { EmailService } from './email.service';
-import { SystemMailTestPaneComponent } from './system-mail-test-pane.component';
+import { SystemMailDto } from './email.types';
+import { SystemMailTestPaneComponent, systemMailStateText } from './system-mail-test-pane.component';
+
+const SENDING: SystemMailDto = {
+    mailboxId: 'm-1', fromAddress: 'notifications@example.org', fromName: null, state: 'sending', stopReason: null, held: 0,
+};
 
 /**
  * Send test under the System mail setting: to the address given, or to the administrator's own when the field is
@@ -12,6 +17,7 @@ import { SystemMailTestPaneComponent } from './system-mail-test-pane.component';
  */
 describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own', () => {
     let testSystemMail: jasmine.Spy;
+    let getSystemMail: jasmine.Spy;
 
     function render(): ComponentFixture<SystemMailTestPaneComponent> {
         const f = TestBed.createComponent(SystemMailTestPaneComponent);
@@ -26,10 +32,11 @@ describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own
 
     beforeEach(() => {
         testSystemMail = jasmine.createSpy('testSystemMail').and.returnValue(of(null));
+        getSystemMail = jasmine.createSpy('getSystemMail').and.returnValue(of(SENDING));
         TestBed.configureTestingModule({
             imports: [SystemMailTestPaneComponent],
             providers: [
-                { provide: EmailService, useValue: { testSystemMail } },
+                { provide: EmailService, useValue: { testSystemMail, getSystemMail } },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'Too many tests: try again in 41 minutes.' } },
             ],
         });
@@ -67,5 +74,50 @@ describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own
         expect(text(f)).toContain('Too many tests: try again in 41 minutes.');
         expect(text(f)).not.toContain('The test was sent');
         expect(f.componentInstance.busy()).toBeFalse();
+    });
+    it('shows the state on open, and the held count only when something is held', () => {
+        getSystemMail.and.returnValue(of({ ...SENDING, state: 'stopped', stopReason: 'mailbox-needs-reconnect', held: 3 }));
+        const f = render();
+
+        expect(text(f)).toContain('Stopped: the mailbox needs to be connected again.');
+        expect(text(f)).toContain('Held, waiting for the mailbox: 3');
+
+        getSystemMail.and.returnValue(of(SENDING));
+        f.componentInstance.readState();
+        f.detectChanges();
+        expect(text(f)).toContain('Sending through the chosen mailbox.');
+        expect(text(f)).not.toContain('Held, waiting');
+    });
+
+    it('reads the state again after a test, sent or refused', () => {
+        const f = render();
+        expect(getSystemMail).toHaveBeenCalledTimes(1);
+
+        f.componentInstance.send();
+        expect(getSystemMail).toHaveBeenCalledTimes(2);
+
+        testSystemMail.and.returnValue(throwError(() => new Error('422')));
+        f.componentInstance.send();
+        expect(getSystemMail).toHaveBeenCalledTimes(3);
+    });
+
+    it('says when the state could not be read, never a state it did not read', () => {
+        getSystemMail.and.returnValue(throwError(() => new Error('403')));
+        const f = render();
+
+        expect(text(f)).toContain('The state could not be read:');
+        expect(text(f)).not.toContain('Sending');
+        expect(text(f)).not.toContain('Stopped');
+    });
+
+    it('words every state and stop reason', () => {
+        expect(systemMailStateText({ ...SENDING, state: 'none', mailboxId: null }))
+            .toBe('No mailbox chosen: system mail is not going out.');
+        expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: 'mailbox-gone' }))
+            .toBe('Stopped: the mailbox no longer exists.');
+        expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: 'mailbox-disabled' }))
+            .toBe('Stopped: the mailbox is disabled.');
+        expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: null }))
+            .toBe('Stopped: no reason was given.');
     });
 });

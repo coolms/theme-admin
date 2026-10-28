@@ -33,8 +33,7 @@ export function mailboxSettingsUrlMatcher(segments: UrlSegment[]): UrlMatchResul
 export const EMAIL_ROUTES: Routes = [
     {
         // The installation's system mail: which mailbox the platform's own mail goes out through.
-        // System mail is one of Email's settings, in the settings shell (decided 2026-10-28); the old address still
-        // lands there.
+        // System mail is one of Email's settings, in the settings shell; the old address still lands there.
         path: 'system-mail',
         redirectTo: '/email/settings/email.system_mail',
         pathMatch: 'full',
