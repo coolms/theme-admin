@@ -1,3 +1,4 @@
+import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -6,6 +7,7 @@ import { NEVER, of } from 'rxjs';
 
 import {
     AppInitService,
+    ComponentRegistry,
     ConsoleAccessService,
     ConsoleActivation,
     ErrorHandlerService,
@@ -17,6 +19,13 @@ import { ConfirmDialogService, FormRenderService, ToastService } from '@coolms/u
 import { ModuleSettingsService } from './module-settings.service';
 import { ModuleSettingsBlockDto } from './module-settings.types';
 import { MODULE_SETTINGS_ROUTE, SETTINGS_ROUTES } from './settings.routes';
+import { SETTINGS_PANE_SLOT, SettingsHubPageComponent } from './settings-hub.page';
+
+/** Something a module binds under one of its settings. */
+@Component({ selector: 'app-pane-extra-stub', standalone: true, template: 'extra' })
+class PaneExtraStubComponent {
+    readonly settingKey = input<string>('');
+}
 
 /**
  * The scope of the Settings screen is chosen by the route, never by the setting picked.
@@ -48,7 +57,7 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
                     { path: 'settings', children: SETTINGS_ROUTES },
                     { path: 'dashboard', children: [] },
                 ]),
-                { provide: ModuleSettingsService, useValue: { list: () => of(BLOCKS), get: () => NEVER } },
+                { provide: ModuleSettingsService, useValue: { list: () => of(BLOCKS), get: () => NEVER, save: (key: string) => of(BLOCKS.find(b => b.key === key)) } },
                 { provide: FormRenderService, useValue: { fetch: () => NEVER } },
                 { provide: NaviGraphService, useValue: { loadTree: () => NEVER, isVisible: () => true, matchesShowWhen: () => true } },
                 { provide: Store, useValue: { select: () => of([]), selectSnapshot: () => undefined } },
@@ -80,6 +89,28 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
 
         return found as HTMLButtonElement;
     }
+
+    it('a module\'s extra under a setting is what it bound to settings.pane:<key>, for that setting only', async () => {
+        await routing.navigateByUrl('/settings/email/email.sync');
+        const hub = routing.routeDebugElement?.componentInstance as SettingsHubPageComponent;
+        // The registry is one static map for the whole run, with no removal: a key no other test opens, so this
+        // binding cannot appear under another test's setting.
+        TestBed.inject(ComponentRegistry).register('settings.pane:test.pane-extra', PaneExtraStubComponent);
+
+        expect(hub.paneExtraKey('test.pane-extra')).toBe(`${SETTINGS_PANE_SLOT}:test.pane-extra`);
+        expect(hub.hasPaneExtra('test.pane-extra')).toBeTrue();
+        expect(hub.hasPaneExtra('call.originate')).withContext('another setting has none').toBeFalse();
+    });
+
+    it('a save raises the revision a setting\'s guest reads, so it can read its own state again', async () => {
+        await routing.navigateByUrl('/settings/email/email.sync');
+        const hub = routing.routeDebugElement?.componentInstance as SettingsHubPageComponent;
+        const before = hub.storedRevision();
+
+        hub.save({});
+
+        expect(hub.storedRevision()).toBe(before + 1);
+    });
 
     it('from the global route, picking another module\'s setting keeps the global list and the global URL', async () => {
         await routing.navigateByUrl('/settings/call/call.originate');
