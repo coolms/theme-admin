@@ -166,6 +166,9 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
                                     }
                                 </div>
                                 <div class="vfs-grid-name text-truncate small">{{ nodeLabel(node) }}</div>
+                                @if (nodeSecondaryLabel(node); as owner) {
+                                    <div class="vfs-grid-owner text-truncate text-muted" style="font-size:.7rem">{{ owner }}</div>
+                                }
                                 <div class="vfs-grid-meta text-muted" style="font-size:.7rem">
                                     {{ node.type === 'file' ? node.humanSize : '' }}
                                 </div>
@@ -259,6 +262,9 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
                                 <span class="text-truncate" style="max-width: 220px">
                                     {{ nodeLabel(node) }}
                                 </span>
+                                @if (nodeSecondaryLabel(node); as owner) {
+                                    <span class="vfs-list-owner text-truncate text-muted small">{{ owner }}</span>
+                                }
                             </div>
                             <div class="vfs-list-col vfs-list-col--type text-muted small">{{ node.type }}</div>
                             <div class="vfs-list-col vfs-list-col--size text-end text-muted small">
@@ -957,6 +963,37 @@ export class VfsFilesComponent {
 
         return node.title || this.homeLabels.labelFor(node.name)();
     }
+
+    /**
+     * The owner's identifier under a home folder's label, when another home in this listing shows the same label: two
+     * people with one name stay apart (2026-10-28). `uname` is the owner's primary identifier as the server lists it,
+     * and only someone allowed to list /home sees these folders at all. Null for every other node, and for a home
+     * whose label is unique here or already is the identifier.
+     */
+    nodeSecondaryLabel(node: VfsNodeDto): string | null {
+        if (!VfsHomeLabelService.isHomeDir(node) || !node.uname) {
+            return null;
+        }
+        const label = this.nodeLabel(node);
+        if (node.uname === label) {
+            return null;
+        }
+
+        return this.sharedHomeLabels().has(label) ? node.uname : null;
+    }
+
+    /** The home-folder labels shown by more than one home in the current listing. */
+    private readonly sharedHomeLabels = computed(() => {
+        const counts = new Map<string, number>();
+        for (const node of this.nodes()) {
+            if (VfsHomeLabelService.isHomeDir(node)) {
+                const label = this.nodeLabel(node);
+                counts.set(label, (counts.get(label) ?? 0) + 1);
+            }
+        }
+
+        return new Set([...counts].filter(([, count]) => count > 1).map(([label]) => label));
+    });
 
     nodeIcon(node: VfsNodeDto):      string        { return this.icons.nodeIcon(node); }
     nodeIconClass(node: VfsNodeDto): string        { return this.icons.nodeIconClass(node); }
