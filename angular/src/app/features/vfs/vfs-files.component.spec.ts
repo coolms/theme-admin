@@ -317,3 +317,83 @@ describe('VfsFilesComponent -- the right-click menu carries the node\'s capabili
         expect(record['_capabilityRefusals']).toEqual({});
     });
 });
+
+describe('VfsFilesComponent -- two homes with one name show their owners', () => {
+    function home(uuid: string, title: string | null, uname: string): VfsNodeDto {
+        return {
+            id: uuid, name: uuid, type: 'directory', path: `/home/${uuid}`, mode: '0711', modeString: 'drwx--x--x',
+            size: 0, humanSize: '0 B', mimeType: null as unknown as string, extension: '', uid: uuid, gid: 'g1',
+            uname, gname: 'user', createdAt: '2026-10-28T09:00:00+00:00', updatedAt: '2026-10-28T09:00:00+00:00',
+            isRendered: false, isMaterialized: false, isSystem: false, isHidden: false, isContainer: true,
+            title, description: null, permissions: { read: true, write: false, execute: true }, capabilities: {},
+        };
+    }
+
+    const probeA = home('01a0ce7f-3068-7556-a2f2-d0237d777f3c', 'Site Probe', 'probe-a@example.test');
+    const probeB = home('01a0ce9f-a2b4-7896-8378-90083aa95507', 'Site Probe', 'probe-b@example.test');
+    const dzmitry = home('019cbd7f-edf6-7a69-9fa5-6e495122686e', 'Dzmitry Papou', 'd.popov@example.test');
+    const untitled = home('019c7566-20f3-7bc4-906b-2b7cae3d9a27', null, 'admin');
+
+    function build(nodes: VfsNodeDto[]): VfsFilesComponent {
+        const state = {
+            currentPath:     signal('/home'),
+            nodes:           signal<VfsNodeDto[]>(nodes),
+            loading:         signal(false),
+            error:           signal<string | null>(null),
+            viewMode:        signal('list'),
+            selectedNodes:   signal<VfsNodeDto[]>([]),
+            hasMore:         signal(false),
+            vfsToolbarNodes: signal([]),
+        };
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+                { provide: VfsPageStateService, useValue: state },
+                { provide: VfsLiveEventsService, useValue: { watch: () => new Subject<VfsNodeChangeEvent>() } },
+                { provide: ContextMenuService,   useValue: {} },
+                { provide: DrawerService,        useValue: {} },
+                { provide: Dialog,               useValue: {} },
+                { provide: FileEditorRegistry,   useValue: { resolve: () => null } },
+                { provide: ToastService,         useValue: {} },
+                { provide: VfsUploadService,     useValue: {} },
+                { provide: VfsClipboardService,  useValue: { hasAny: () => false } },
+                { provide: VfsHomeLabelService,  useValue: { labelFor: (name: string) => signal(name) } },
+                { provide: VfsIconService,       useValue: {} },
+                { provide: VfsActionsService,    useValue: {} },
+                { provide: ElevationService,     useValue: {} },
+            ],
+        });
+
+        return TestBed.runInInjectionContext(() => new VfsFilesComponent());
+    }
+
+    it('shows the owner under each of two homes that carry the same name', () => {
+        const component = build([probeA, probeB, dzmitry]);
+
+        expect(component.nodeSecondaryLabel(probeA)).toBe('probe-a@example.test');
+        expect(component.nodeSecondaryLabel(probeB)).toBe('probe-b@example.test');
+    });
+
+    it('shows nothing under a name no other home in the listing carries', () => {
+        const component = build([probeA, probeB, dzmitry]);
+
+        expect(component.nodeSecondaryLabel(dzmitry)).toBeNull();
+    });
+
+    it('shows nothing once the listing no longer holds the other home of that name', () => {
+        const component = build([probeA, dzmitry]);
+
+        expect(component.nodeSecondaryLabel(probeA)).toBeNull();
+    });
+
+    it('shows nothing for a node that is not a home, nor for a label that already is the identifier', () => {
+        const file: VfsNodeDto = { ...probeA, id: 'f', name: 'a.txt', path: '/docs/a.txt', type: 'file' };
+        const component = build([probeA, probeB, untitled, file]);
+
+        expect(component.nodeSecondaryLabel(file)).toBeNull();
+        expect(component.nodeSecondaryLabel({ ...untitled, title: 'admin' })).toBeNull();
+    });
+});
