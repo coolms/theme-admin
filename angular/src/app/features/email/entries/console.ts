@@ -1,6 +1,7 @@
 import { consoleEntry } from '@coolms/core-angular';
 import { EmailQuickAccessComponent } from '../email-quick-access.component';
 import { ProfileMailTabComponent } from '../profile-mail-tab.component';
+import { SystemMailTestPaneComponent } from '../system-mail-test-pane.component';
 
 /**
  * Email's console entry: the three-pane mailbox client (mailbox rail /
@@ -20,5 +21,9 @@ export default consoleEntry({
     ],
     topbar: [{ id: 'email.quick-access', order: 20, component: EmailQuickAccessComponent }],
     // Identity's profile.tab slot: the Mail pane for the `mail` settings section.
-    bindings: [{ name: 'profile.tab:mail', component: ProfileMailTabComponent }],
+    bindings: [
+        { name: 'profile.tab:mail', component: ProfileMailTabComponent },
+        // Settings' settings.pane slot: Send test under the System mail setting.
+        { name: 'settings.pane:email.system_mail', component: SystemMailTestPaneComponent },
+    ],
 });

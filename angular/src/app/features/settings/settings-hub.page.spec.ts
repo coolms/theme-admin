@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -6,6 +7,7 @@ import { NEVER, of } from 'rxjs';
 
 import {
     AppInitService,
+    ComponentRegistry,
     ConsoleAccessService,
     ConsoleActivation,
     ErrorHandlerService,
@@ -17,6 +19,11 @@ import { ConfirmDialogService, FormRenderService, ToastService } from '@coolms/u
 import { ModuleSettingsService } from './module-settings.service';
 import { ModuleSettingsBlockDto } from './module-settings.types';
 import { MODULE_SETTINGS_ROUTE, SETTINGS_ROUTES } from './settings.routes';
+import { SETTINGS_PANE_SLOT, SettingsHubPageComponent } from './settings-hub.page';
+
+/** Something a module binds under one of its settings. */
+@Component({ selector: 'app-pane-extra-stub', standalone: true, template: 'extra' })
+class PaneExtraStubComponent {}
 
 /**
  * The scope of the Settings screen is chosen by the route, never by the setting picked.
@@ -80,6 +87,16 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
 
         return found as HTMLButtonElement;
     }
+
+    it('a module\'s extra under a setting is what it bound to settings.pane:<key>, for that setting only', async () => {
+        await routing.navigateByUrl('/settings/email/email.sync');
+        const hub = routing.routeDebugElement?.componentInstance as SettingsHubPageComponent;
+        TestBed.inject(ComponentRegistry).register('settings.pane:email.sync', PaneExtraStubComponent);
+
+        expect(hub.paneExtraKey('email.sync')).toBe(`${SETTINGS_PANE_SLOT}:email.sync`);
+        expect(hub.hasPaneExtra('email.sync')).toBeTrue();
+        expect(hub.hasPaneExtra('call.originate')).withContext('another setting has none').toBeFalse();
+    });
 
     it('from the global route, picking another module\'s setting keeps the global list and the global URL', async () => {
         await routing.navigateByUrl('/settings/call/call.originate');

@@ -23,11 +23,12 @@ import {
     LoadingComponent,
     PageTitleService,
     PageToolbarComponent,
+    SlotComponent,
     ToastService,
     ToolbarAction,
     UnsavedChangesService,
 } from '@coolms/ui-angular';
-import { ErrorHandlerService } from '@coolms/core-angular';
+import { ComponentRegistry, ErrorHandlerService } from '@coolms/core-angular';
 
 import { Store } from '@ngxs/store';
 
@@ -51,6 +52,13 @@ import { type SettingsScope } from './settings.routes';
  * **Generated from the registry, never listed here.** A module that is not installed contributes no setting, and the
  * list holds only what `GET /module-settings` gives this caller.
  */
+/**
+ * The slot a module fills to add something under one of its settings' forms, bound in its console entry as
+ * `settings.pane:<setting key>` -- an action the form cannot express, such as Email's Send test under System mail.
+ * The form stays the settings tier's; the guest calls its own module's API.
+ */
+export const SETTINGS_PANE_SLOT = 'settings.pane';
+
 @Component({
     selector: 'coolms-admin-settings-hub',
     standalone: true,
@@ -63,6 +71,7 @@ import { type SettingsScope } from './settings.routes';
         LoadingComponent,
         ErrorBannerComponent,
         SiteSelectorComponent,
+        SlotComponent,
     ],
     template: `
         <!-- Declares nothing itself: the server's toolbar tree says which buttons exist (Reload; All settings when
@@ -168,6 +177,12 @@ import { type SettingsScope } from './settings.routes';
                         <pre class="cms-card p-3">{{ prettyData() }}</pre>
                     }
 
+                    @if (hasPaneExtra(b.key)) {
+                        <!-- What the setting's own module adds under its form -- Email's Send test under System mail --
+                             through the settings.pane slot (see SETTINGS_PANE_SLOT). The guest acts on its own API. -->
+                        <app-slot [key]="paneExtraKey(b.key)" [inputs]="{ settingKey: b.key }" />
+                    }
+
                     @if (isEditedBlock()) {
                         <button paneActions type="button" class="cms-btn cms-btn-sm cms-btn-danger" (click)="reset()">
                             <i class="bi bi-arrow-counterclockwise"></i>
@@ -181,6 +196,16 @@ import { type SettingsScope } from './settings.routes';
     styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
 })
 export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
+    /** The registry key a module's extra for setting `key` is bound under -- see {@link SETTINGS_PANE_SLOT}. */
+    paneExtraKey(key: string): string {
+        return `${SETTINGS_PANE_SLOT}:${key}`;
+    }
+
+    /** Whether the setting's module bound something to show under its form. */
+    hasPaneExtra(key: string): boolean {
+        return this.registry.has(this.paneExtraKey(key));
+    }
+
     readonly loading = signal(true);
     readonly loadError = signal<string | null>(null);
     readonly blocks = signal<readonly ModuleSettingsBlockDto[]>([]);
@@ -302,6 +327,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
     private readonly errors = inject(ErrorHandlerService);
     private readonly toast = inject(ToastService);
     private readonly pageTitle = inject(PageTitleService);
+    private readonly registry = inject(ComponentRegistry);
     private readonly destroyRef = inject(DestroyRef);
 
     constructor() {

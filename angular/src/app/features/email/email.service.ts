@@ -481,9 +481,14 @@ export class EmailService {
         return this.http.delete<unknown>(`${this.apiBase}/email/system-mail`);
     }
 
-    /** POST /email/system-mail/test -- a test to the signed-in administrator's own address, sent at once (204). */
-    testSystemMail(): Observable<unknown> {
-        return this.http.post<unknown>(`${this.apiBase}/email/system-mail/test`, {});
+    /**
+     * POST /email/system-mail/test -- a test sent at once (204), to `to`, or to the signed-in administrator's own
+     * address when none is given. A few an hour per account: past that, a 429 with Retry-After.
+     */
+    testSystemMail(to?: string): Observable<unknown> {
+        const body = undefined === to || '' === to.trim() ? {} : { to: to.trim() };
+
+        return this.http.post<unknown>(`${this.apiBase}/email/system-mail/test`, body, { headers: this.jsonHeaders });
     }
 
     private rulesBase(mailboxId: string): string {
