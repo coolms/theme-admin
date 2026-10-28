@@ -23,11 +23,12 @@ import {
     LoadingComponent,
     PageTitleService,
     PageToolbarComponent,
+    SlotComponent,
     ToastService,
     ToolbarAction,
     UnsavedChangesService,
 } from '@coolms/ui-angular';
-import { ErrorHandlerService } from '@coolms/core-angular';
+import { ComponentRegistry, ErrorHandlerService } from '@coolms/core-angular';
 
 import { Store } from '@ngxs/store';
 
@@ -38,6 +39,14 @@ import { ModuleSettingsBlockDto } from './module-settings.types';
 import { adoptSavedBlock, withoutPinnedKeys } from './settings-payload.util';
 import { deslugify, groupBlocks, isEdited } from './settings-grouping.util';
 import { type SettingsScope } from './settings.routes';
+
+/**
+ * The slot a module fills to add something under one of its settings' forms, bound in its console entry as
+ * `settings.pane:<setting key>` -- an action the form cannot express, such as Email's Send test under System mail.
+ * The form stays the settings tier's; the guest calls its own module's API. Its inputs: `settingKey`, and
+ * `revision`, which goes up each time the setting's stored values change here, so the guest can read again.
+ */
+export const SETTINGS_PANE_SLOT = 'settings.pane';
 
 /**
  * Settings, on the settings shell: the section list on the left, one setting's pane at a time on the right.
@@ -63,6 +72,7 @@ import { type SettingsScope } from './settings.routes';
         LoadingComponent,
         ErrorBannerComponent,
         SiteSelectorComponent,
+        SlotComponent,
     ],
     template: `
         <!-- Declares nothing itself: the server's toolbar tree says which buttons exist (Reload; All settings when
@@ -168,6 +178,12 @@ import { type SettingsScope } from './settings.routes';
                         <pre class="cms-card p-3">{{ prettyData() }}</pre>
                     }
 
+                    @if (hasPaneExtra(b.key)) {
+                        <!-- What the setting's own module adds under its form -- Email's Send test under System mail --
+                             through the settings.pane slot (see SETTINGS_PANE_SLOT). The guest acts on its own API. -->
+                        <app-slot [key]="paneExtraKey(b.key)" [inputs]="{ settingKey: b.key, revision: storedRevision() }" />
+                    }
+
                     @if (isEditedBlock()) {
                         <button paneActions type="button" class="cms-btn cms-btn-sm cms-btn-danger" (click)="reset()">
                             <i class="bi bi-arrow-counterclockwise"></i>
@@ -181,6 +197,16 @@ import { type SettingsScope } from './settings.routes';
     styles: [`:host { display: flex; flex-direction: column; flex: 1; min-height: 0; }`],
 })
 export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
+    /** The registry key a module's extra for setting `key` is bound under -- see {@link SETTINGS_PANE_SLOT}. */
+    paneExtraKey(key: string): string {
+        return `${SETTINGS_PANE_SLOT}:${key}`;
+    }
+
+    /** Whether the setting's module bound something to show under its form. */
+    hasPaneExtra(key: string): boolean {
+        return this.registry.has(this.paneExtraKey(key));
+    }
+
     readonly loading = signal(true);
     readonly loadError = signal<string | null>(null);
     readonly blocks = signal<readonly ModuleSettingsBlockDto[]>([]);
@@ -196,6 +222,8 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
 
     /** Bumped to rebuild the form from the stored values. */
     readonly formKey = signal(0);
+    /** Goes up each time the open setting's stored values change here (a save, a reset): its guest may re-read. */
+    readonly storedRevision = signal(0);
 
     /** The pane has edits not yet saved. */
     readonly dirty = signal(false);
@@ -302,6 +330,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
     private readonly errors = inject(ErrorHandlerService);
     private readonly toast = inject(ToastService);
     private readonly pageTitle = inject(PageTitleService);
+    private readonly registry = inject(ComponentRegistry);
     private readonly destroyRef = inject(DestroyRef);
 
     constructor() {
@@ -415,6 +444,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
                 }
                 this.form()?.resetSaving();
                 this.dirty.set(false);
+                this.storedRevision.update(r => r + 1);
                 this.toast.success('Settings saved.');
             },
             error: err => this.form()?.setServerError(this.errors.humanize(err)),
@@ -448,6 +478,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
                     // Re-read: at a site scope the values in force are the platform's, which this client must not guess.
                     this.reloadScoped();
                     this.rebuild();
+                    this.storedRevision.update(r => r + 1);
                     this.toast.success(null === site ? 'Settings reset to defaults.' : "This site's overrides dropped.");
                 },
                 error: err => this.toast.error(this.errors.humanize(err)),
