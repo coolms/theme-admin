@@ -112,12 +112,22 @@ describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own
 
     it('words every state and stop reason', () => {
         expect(systemMailStateText({ ...SENDING, state: 'none', mailboxId: null }))
-            .toBe('No mailbox chosen: system mail is not going out.');
+            .toBe('No mailbox chosen: system mail goes out through the server\'s configured mail transport.');
         expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: 'mailbox-gone' }))
             .toBe('Stopped: the mailbox no longer exists.');
         expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: 'mailbox-disabled' }))
             .toBe('Stopped: the mailbox is disabled.');
         expect(systemMailStateText({ ...SENDING, state: 'stopped', stopReason: null }))
             .toBe('Stopped: no reason was given.');
+    });
+
+    it('reads the state again when the setting above is saved or reset (the revision rises)', () => {
+        const f = render();
+        expect(getSystemMail).toHaveBeenCalledTimes(1);
+
+        f.componentRef.setInput('revision', 1);
+        f.detectChanges();
+
+        expect(getSystemMail).toHaveBeenCalledTimes(2);
     });
 });

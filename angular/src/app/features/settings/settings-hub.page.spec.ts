@@ -57,7 +57,7 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
                     { path: 'settings', children: SETTINGS_ROUTES },
                     { path: 'dashboard', children: [] },
                 ]),
-                { provide: ModuleSettingsService, useValue: { list: () => of(BLOCKS), get: () => NEVER } },
+                { provide: ModuleSettingsService, useValue: { list: () => of(BLOCKS), get: () => NEVER, save: (key: string) => of(BLOCKS.find(b => b.key === key)) } },
                 { provide: FormRenderService, useValue: { fetch: () => NEVER } },
                 { provide: NaviGraphService, useValue: { loadTree: () => NEVER, isVisible: () => true, matchesShowWhen: () => true } },
                 { provide: Store, useValue: { select: () => of([]), selectSnapshot: () => undefined } },
@@ -100,6 +100,16 @@ describe('SettingsHubPageComponent -- the route chooses the scope', () => {
         expect(hub.paneExtraKey('test.pane-extra')).toBe(`${SETTINGS_PANE_SLOT}:test.pane-extra`);
         expect(hub.hasPaneExtra('test.pane-extra')).toBeTrue();
         expect(hub.hasPaneExtra('call.originate')).withContext('another setting has none').toBeFalse();
+    });
+
+    it('a save raises the revision a setting\'s guest reads, so it can read its own state again', async () => {
+        await routing.navigateByUrl('/settings/email/email.sync');
+        const hub = routing.routeDebugElement?.componentInstance as SettingsHubPageComponent;
+        const before = hub.storedRevision();
+
+        hub.save({});
+
+        expect(hub.storedRevision()).toBe(before + 1);
     });
 
     it('from the global route, picking another module\'s setting keeps the global list and the global URL', async () => {

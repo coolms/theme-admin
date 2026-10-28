@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -11,7 +11,7 @@ export function systemMailStateText(view: SystemMailDto): string {
     switch (view.state) {
         case 'sending': return 'Sending through the chosen mailbox.';
         case 'stopped': return `Stopped: ${stopReasonText(view.stopReason)}`;
-        default: return 'No mailbox chosen: system mail is not going out.';
+        default: return 'No mailbox chosen: system mail goes out through the server\'s configured mail transport.';
     }
 }
 
@@ -28,7 +28,7 @@ function stopReasonText(reason: string | null): string {
  * System mail's state and Send test, under the System mail setting -- Email's guest in the settings pane
  * (`settings.pane:email.system_mail`). The state is what the form cannot show: whether system mail is going out, why it
  * stopped (the mailbox gone, disabled, or needing to be connected again), and how much is held waiting; it is read when
- * the pane opens and again after a test, from `GET /email/system-mail`.
+ * the pane opens, after the setting above is saved or reset, and after a test, from `GET /email/system-mail`.
  *
  * The setting itself is the common form's; this sends a test through the chosen mailbox, to any address given, or to
  * the signed-in administrator's own when the field is left empty: an address outside the organisation is how the
@@ -73,9 +73,11 @@ function stopReasonText(reason: string | null): string {
         </div>
     `,
 })
-export class SystemMailTestPaneComponent implements OnInit {
+export class SystemMailTestPaneComponent {
     /** The setting this pane sits under, as the settings hub passes it. */
     readonly settingKey = input<string>('');
+    /** Goes up when the setting above is saved or reset (the settings hub): the state is read again then. */
+    readonly revision = input<number>(0);
 
     readonly to = signal('');
     readonly busy = signal(false);
@@ -89,8 +91,12 @@ export class SystemMailTestPaneComponent implements OnInit {
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
 
-    ngOnInit(): void {
-        this.readState();
+    constructor() {
+        // On open, and each time the setting above is saved or reset -- the moment the state changes most.
+        effect(() => {
+            this.revision();
+            untracked(() => this.readState());
+        });
     }
 
     /** What system mail is doing now, from the server: on open, and after a test, which can change it. */

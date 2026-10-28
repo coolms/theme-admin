@@ -43,7 +43,8 @@ import { type SettingsScope } from './settings.routes';
 /**
  * The slot a module fills to add something under one of its settings' forms, bound in its console entry as
  * `settings.pane:<setting key>` -- an action the form cannot express, such as Email's Send test under System mail.
- * The form stays the settings tier's; the guest calls its own module's API.
+ * The form stays the settings tier's; the guest calls its own module's API. Its inputs: `settingKey`, and
+ * `revision`, which goes up each time the setting's stored values change here, so the guest can read again.
  */
 export const SETTINGS_PANE_SLOT = 'settings.pane';
 
@@ -180,7 +181,7 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
                     @if (hasPaneExtra(b.key)) {
                         <!-- What the setting's own module adds under its form -- Email's Send test under System mail --
                              through the settings.pane slot (see SETTINGS_PANE_SLOT). The guest acts on its own API. -->
-                        <app-slot [key]="paneExtraKey(b.key)" [inputs]="{ settingKey: b.key }" />
+                        <app-slot [key]="paneExtraKey(b.key)" [inputs]="{ settingKey: b.key, revision: storedRevision() }" />
                     }
 
                     @if (isEditedBlock()) {
@@ -221,6 +222,8 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
 
     /** Bumped to rebuild the form from the stored values. */
     readonly formKey = signal(0);
+    /** Goes up each time the open setting's stored values change here (a save, a reset): its guest may re-read. */
+    readonly storedRevision = signal(0);
 
     /** The pane has edits not yet saved. */
     readonly dirty = signal(false);
@@ -441,6 +444,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
                 }
                 this.form()?.resetSaving();
                 this.dirty.set(false);
+                this.storedRevision.update(r => r + 1);
                 this.toast.success('Settings saved.');
             },
             error: err => this.form()?.setServerError(this.errors.humanize(err)),
@@ -474,6 +478,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
                     // Re-read: at a site scope the values in force are the platform's, which this client must not guess.
                     this.reloadScoped();
                     this.rebuild();
+                    this.storedRevision.update(r => r + 1);
                     this.toast.success(null === site ? 'Settings reset to defaults.' : "This site's overrides dropped.");
                 },
                 error: err => this.toast.error(this.errors.humanize(err)),
