@@ -1,6 +1,7 @@
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { ErrorHandlerService } from '@coolms/core-angular';
+import { ELEVATION_REQUIRED_HEADER, ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 
 import { EmailService } from './email.service';
 import { SystemMailDto } from './email.types';
@@ -18,6 +19,7 @@ const SENDING: SystemMailDto = {
 describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own', () => {
     let testSystemMail: jasmine.Spy;
     let getSystemMail: jasmine.Spy;
+    let offerFor: jasmine.Spy;
 
     function render(): ComponentFixture<SystemMailTestPaneComponent> {
         const f = TestBed.createComponent(SystemMailTestPaneComponent);
@@ -30,13 +32,20 @@ describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own
         return (f.nativeElement as HTMLElement).textContent ?? '';
     }
 
+    function elevateButton(f: ComponentFixture<SystemMailTestPaneComponent>): HTMLButtonElement | null {
+        return (f.nativeElement as HTMLElement)
+            .querySelector<HTMLButtonElement>('[data-test="system-mail-elevation-required"] [data-test="elevate"]');
+    }
+
     beforeEach(() => {
         testSystemMail = jasmine.createSpy('testSystemMail').and.returnValue(of(null));
         getSystemMail = jasmine.createSpy('getSystemMail').and.returnValue(of(SENDING));
+        offerFor = jasmine.createSpy('offerFor').and.returnValue(of(true));
         TestBed.configureTestingModule({
             imports: [SystemMailTestPaneComponent],
             providers: [
                 { provide: EmailService, useValue: { testSystemMail, getSystemMail } },
+                { provide: ElevationService, useValue: { offerFor, elevated: () => false, available: true } },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'Too many tests: try again in 41 minutes.' } },
             ],
         });
@@ -108,6 +117,43 @@ describe('SystemMailTestPaneComponent -- a test to any address, or to one\'s own
         expect(text(f)).toContain('The state could not be read:');
         expect(text(f)).not.toContain('Sending');
         expect(text(f)).not.toContain('Stopped');
+        expect(elevateButton(f)).toBeNull();
+    });
+
+    it('offers Elevate when the read is refused for want of elevation, and reads the state again once elevated', () => {
+        const stamped = new HttpErrorResponse({
+            status: 403, headers: new HttpHeaders({ [ELEVATION_REQUIRED_HEADER]: '1' }),
+        });
+        getSystemMail.and.returnValue(throwError(() => stamped));
+        const f = render();
+
+        expect(elevateButton(f)).not.toBeNull();
+        expect(text(f)).not.toContain('The state could not be read:');
+        expect(text(f)).not.toContain('Sending');
+
+        getSystemMail.and.returnValue(of(SENDING));
+        elevateButton(f)!.click();
+        f.detectChanges();
+
+        expect(offerFor).toHaveBeenCalledTimes(1);
+        expect(getSystemMail).toHaveBeenCalledTimes(2);
+        expect(text(f)).toContain('Sending through the chosen mailbox.');
+        expect(elevateButton(f)).toBeNull();
+    });
+
+    it('a declined prompt reads nothing again and keeps Elevate on offer', () => {
+        offerFor.and.returnValue(of(false));
+        const stamped = new HttpErrorResponse({
+            status: 403, headers: new HttpHeaders({ [ELEVATION_REQUIRED_HEADER]: '1' }),
+        });
+        getSystemMail.and.returnValue(throwError(() => stamped));
+        const f = render();
+
+        elevateButton(f)!.click();
+        f.detectChanges();
+
+        expect(getSystemMail).toHaveBeenCalledTimes(1);
+        expect(elevateButton(f)).not.toBeNull();
     });
 
     it('words every state and stop reason', () => {

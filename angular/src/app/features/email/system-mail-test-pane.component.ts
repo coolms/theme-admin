@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ErrorHandlerService } from '@coolms/core-angular';
+import { ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
+import { ElevationRequiredComponent } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { SystemMailDto } from './email.types';
@@ -34,11 +35,14 @@ function stopReasonText(reason: string | null): string {
  * the signed-in administrator's own when the field is left empty: an address outside the organisation is how the
  * receiving side's SPF, DKIM and DMARC verdicts are read. The server allows a few an hour; its refusal (a malformed
  * address, or too many with when to try again) is shown in its own words, here, not only in a toast.
+ *
+ * The state is a read the server refuses for want of elevation: then the pane shows the Elevate button
+ * (`cms-elevation-required`) instead of the refusal's words, and reads the state again once the session is elevated.
  */
 @Component({
     selector: 'app-system-mail-test-pane',
     standalone: true,
-    imports: [FormsModule],
+    imports: [FormsModule, ElevationRequiredComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <section class="mb-3" aria-label="Current state">
@@ -47,6 +51,10 @@ function stopReasonText(reason: string | null): string {
                 @if (view.held > 0) {
                     <p class="mb-1">Held, waiting for the mailbox: {{ view.held }}</p>
                 }
+            } @else if (stateNeedsElevation()) {
+                <cms-elevation-required data-test="system-mail-elevation-required"
+                                        title="System mail's state needs an elevated session"
+                                        (elevated)="readState()" />
             } @else if (stateUnread(); as why) {
                 <p class="cms-field-hint mb-1">The state could not be read: {{ why }}</p>
             }
@@ -85,6 +93,8 @@ export class SystemMailTestPaneComponent {
     readonly refusal = signal<string | null>(null);
     readonly state = signal<SystemMailDto | null>(null);
     readonly stateUnread = signal<string | null>(null);
+    /** The last read was refused for want of elevation (a stamped 403), not for any other reason. */
+    readonly stateNeedsElevation = signal(false);
     readonly stateText = systemMailStateText;
 
     private readonly email = inject(EmailService);
@@ -105,9 +115,11 @@ export class SystemMailTestPaneComponent {
             next: view => {
                 this.state.set(view);
                 this.stateUnread.set(null);
+                this.stateNeedsElevation.set(false);
             },
             error: (err: unknown) => {
                 this.state.set(null);
+                this.stateNeedsElevation.set(isElevationRefusal(err));
                 this.stateUnread.set(this.errors.humanize(err));
             },
         });
