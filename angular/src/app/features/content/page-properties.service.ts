@@ -35,6 +35,8 @@ export interface PagePropertiesDto {
     readonly properties: Readonly<Record<string, AppliedPropertyDto>>;
     readonly own: Readonly<Record<string, Readonly<Record<string, OwnPropertyDto>>>>;
     readonly version: string;
+    /** Whether the reader may change these properties; a change is refused (403) when not. */
+    readonly writable: boolean;
 }
 
 /** A change: `op` is append, override, stop or reset (reset removes the node's set; `values` is not read). */
@@ -100,6 +102,8 @@ function normalise(raw: unknown): PagePropertiesDto {
         properties,
         own,
         version: String(r['version'] ?? ''),
+        // An answer without the field (a server before it) is not read-only: its write still answers 403.
+        writable: r['writable'] !== false,
     };
 }
 
