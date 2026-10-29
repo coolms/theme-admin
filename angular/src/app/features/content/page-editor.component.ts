@@ -40,6 +40,7 @@ import { PageSizeService, PageSizeOption } from './page-size.service';
 import { EditorCollabService } from './editor-collab.service';
 import { EditorPresenceBarComponent } from './editor-presence-bar.component';
 import { DrawnByNoticeComponent, type DrawnByDto } from './drawn-by-notice.component';
+import { PagePropertiesPanelComponent } from './page-properties-panel.component';
 import { AppConfigState } from '@coolms/core-angular';
 
 /**
@@ -80,7 +81,7 @@ type RailTab = string;
     // EditorCollabService is per-editor: its ngOnDestroy unsubscribes the
     // doc presence channel when this dialog closes.
     providers: [EditorCollabService],
-    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent, DrawnByNoticeComponent],
+    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent, DrawnByNoticeComponent, PagePropertiesPanelComponent],
     template: `
         <div class="page-editor" [class.page-editor--fullscreen]="fullscreen()" [class.page-editor--landing]="landingMode()">
 
@@ -360,7 +361,7 @@ type RailTab = string;
                                  switch/collapse loses nothing. The Fields panel is
                                  the exception — it owns its own model + dirty — so
                                  it's rendered persistently below instead of here. -->
-                            @if (tab !== 'fields') {
+                            @if (tab !== 'fields' && tab !== 'page-properties') {
                                 <div class="page-editor__rail-panel">
                                     <div class="page-editor__rail-head">
                                         <span class="page-editor__rail-title">{{ railTitle(tab) }}</span>
@@ -464,6 +465,23 @@ type RailTab = string;
                                 </div>
                             </div>
                         }
+                        <!-- Page properties (persistent, as Fields): each card saves itself, so its unsaved rows must
+                             outlive a tab switch for the close guard and the footer to see them. -->
+                        @if (hasPagePropertiesPanel()) {
+                            <div class="page-editor__rail-panel" [hidden]="rail() !== 'page-properties'">
+                                <div class="page-editor__rail-head">
+                                    <span class="page-editor__rail-title">{{ railTitle('page-properties') }}</span>
+                                    <button class="cms-btn cms-btn-sm" title="Collapse panel"
+                                            (click)="rail.set(null)">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </button>
+                                </div>
+                                <div class="page-editor__rail-body">
+                                    <app-page-properties-panel [path]="postPath()"
+                                                               [locale]="activeVariant()?.locale ?? ''" />
+                                </div>
+                            </div>
+                        }
                         <!-- Manifest-driven: each tab is a panel an installed
                              module contributes via GET /editor/panels. Schedule
                              appears only when the Scheduler module is installed;
@@ -495,6 +513,12 @@ type RailTab = string;
                         </span>
                     }
                     <div class="page-editor__footer-actions">
+                        @if (pagePropertiesDirty()) {
+                            <span class="page-editor__footer-status" role="status">
+                                {{ railTitle('page-properties') }} has changes this Save does not save: save them in
+                                its panel.
+                            </span>
+                        }
                         <button class="cms-btn cms-btn-sm" (click)="tryClose()">Close</button>
                         <button class="cms-btn cms-btn-primary cms-btn-sm"
                                 [disabled]="saving() || !anyDirty()"
@@ -861,6 +885,7 @@ export class PageEditorComponent implements OnInit {
      * see the persistent render + {@see hasFieldsPanel} in the template.
      */
     private readonly fieldsPanel = viewChild(ContentFieldPanelsComponent);
+    private readonly pagePropertiesPanel = viewChild(PagePropertiesPanelComponent);
 
     /**
      * The landing-page section builder. Self-contained (own merge-patch on
@@ -884,6 +909,10 @@ export class PageEditorComponent implements OnInit {
      * tab switch); derived from the manifest-driven {@see railPanels}.
      */
     readonly hasFieldsPanel = computed(() => this.railPanels().some(p => p.id === 'fields'));
+
+    /** Whether the page-properties panel holds unsaved rows; its cards save themselves, not the footer. */
+    readonly pagePropertiesDirty = computed(() => this.pagePropertiesPanel()?.dirty() ?? false);
+    readonly hasPagePropertiesPanel = computed(() => this.railPanels().some(p => p.id === 'page-properties'));
 
     /**
      * Whether *anything* in the window has unsaved edits -- body/meta in *any*
@@ -2069,7 +2098,8 @@ export class PageEditorComponent implements OnInit {
         // body/meta edits, the Schedule fields and the (now-persistent) Fields
         // panel can hold unsaved work even when their rail tab is closed -- so
         // closing while only those changed must still warn, not exit silently.
-        const otherDirty = this.scheduleDirty() || (this.fieldsPanel()?.dirty() ?? false);
+        const otherDirty = this.scheduleDirty() || (this.fieldsPanel()?.dirty() ?? false)
+            || this.pagePropertiesDirty();
         if (dirtyLocales.length === 0 && !otherDirty) {
             this.dialogRef.close(true);
             return;
