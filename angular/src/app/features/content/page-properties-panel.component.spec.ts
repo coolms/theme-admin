@@ -42,10 +42,18 @@ describe('Page properties: each card shows where its values come from and saves 
             },
             own,
             version,
+            writable: true,
         };
     }
 
-    function open(first: object = view()): { el: HTMLElement; panel: PagePropertiesPanelComponent; detect: () => void } {
+    type Opened = {
+        el: HTMLElement;
+        panel: PagePropertiesPanelComponent;
+        detect: () => void;
+        locale: (l: string) => void;
+    };
+
+    function open(first: object = view()): Opened {
         TestBed.configureTestingModule({
             imports: [PagePropertiesPanelComponent],
             providers: [
@@ -62,7 +70,15 @@ describe('Page properties: each card shows where its values come from and saves 
         f.detectChanges();
         read().flush(first);
         f.detectChanges();
-        return { el: f.nativeElement as HTMLElement, panel: f.componentInstance, detect: () => f.detectChanges() };
+        return {
+            el: f.nativeElement as HTMLElement,
+            panel: f.componentInstance,
+            detect: () => f.detectChanges(),
+            locale: (l: string) => {
+                f.componentRef.setInput('locale', l);
+                f.detectChanges();
+            },
+        };
     }
 
     function read(): TestRequest {
@@ -221,5 +237,37 @@ describe('Page properties: each card shows where its values come from and saves 
 
         expect(el.querySelector('button[aria-label^="Save"]')).toBeNull();
         expect(el.textContent).toContain('You may read these properties but not change them.');
+        // Rows the editor can no longer see or save are not unsaved changes for the close guard.
+        expect(panel.dirty()).toBeFalse();
+    });
+
+    it('is read-only from the read when it says the reader may not write: nothing to change, nothing unsaved', () => {
+        const { el, panel } = open({ ...view(), writable: false });
+
+        expect(el.querySelector('button[aria-label^="Save"]')).toBeNull();
+        expect(el.querySelector('button[aria-label^="Reset"]')).toBeNull();
+        expect(el.textContent).toContain('You may read these properties but not change them.');
+        expect(el.textContent).toContain('from this page');
+        panel.addRow('meta');
+        panel.setRow('meta', 0, 'key', 'author');
+        expect(panel.dirty()).toBeFalse();
+    });
+
+    it('keeps an unsaved card\'s language as an option after the page\'s language changes', () => {
+        const { el, panel, detect, locale } = open();
+        panel.setScope('meta', 'de');
+        panel.addRow('meta');
+        panel.setRow('meta', 0, 'key', 'author');
+        panel.setRow('meta', 0, 'value', 'Mine');
+
+        locale('fr');
+        http.expectOne(r => r.method === 'GET' && r.params.get('locale') === 'fr').flush(view());
+        detect();
+
+        const select = card(el, 'meta').querySelector('select[aria-label="Languages for meta"]') as HTMLSelectElement;
+        const options = Array.from(select.options).map(o => o.textContent?.trim());
+        expect(options).toEqual(['All languages', 'de only', 'fr only']);
+        panel.save('meta');
+        expect(write().request.body.scope).toBe('de');
     });
 });

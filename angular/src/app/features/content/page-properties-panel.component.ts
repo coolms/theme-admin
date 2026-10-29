@@ -63,6 +63,9 @@ export interface PropertyCard {
         @if (loadError(); as e) {
             <p class="pp__error" role="alert">{{ e }}</p>
         }
+        @if (readOnly()) {
+            <p class="pp-card__hint" role="status">You may read these properties but not change them.</p>
+        }
         @if (view(); as v) {
             @for (c of cards(); track c.name) {
                 <section class="pp-card" [attr.aria-label]="c.name">
@@ -93,6 +96,9 @@ export interface PropertyCard {
                                         [ngModel]="c.scope" [disabled]="isDirty(c) || c.saving"
                                         (ngModelChange)="setScope(c.name, $event)">
                                     <option [value]="all">All languages</option>
+                                    @if (c.scope !== all && c.scope !== localeScope()) {
+                                        <option [value]="c.scope">{{ c.scope }} only</option>
+                                    }
                                     @if (localeScope(); as l) {
                                         <option [value]="l">{{ l }} only</option>
                                     }
@@ -204,8 +210,11 @@ export class PagePropertiesPanelComponent {
         return l && l !== ALL_LANGUAGES ? l : null;
     });
 
-    /** Whether a card holds changes not saved -- the editor's leave guard and footer read it. */
-    readonly dirty = computed(() => this.cards().some(c => this.isDirty(c)));
+    /**
+     * Whether a card holds changes not saved -- the editor's leave guard and footer read it. A read-only panel holds
+     * none: its rows can no longer be seen or saved, so nothing is there to warn about.
+     */
+    readonly dirty = computed(() => !this.readOnly() && this.cards().some(c => this.isDirty(c)));
 
     constructor() {
         effect(() => {
@@ -331,7 +340,6 @@ export class PagePropertiesPanelComponent {
                         this.load(this.path(), this.localeScope() ?? ALL_LANGUAGES, c.name);
                     } else if (status === 403) {
                         this.readOnly.set(true);
-                        this.loadError.set('You may read these properties but not change them.');
                     } else {
                         this.patch(c.name, x => ({ ...x, error: errorMessage(err) }));
                     }
@@ -348,6 +356,7 @@ export class PagePropertiesPanelComponent {
         this.service.read(path, scope).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: v => {
                 this.loadError.set(null);
+                this.readOnly.set(!v.writable);
                 const previous = new Map(this.cards().map(c => [c.name, c]));
                 this.view.set(v);
                 this.cards.set(Object.entries(v.properties).map(([name, p]) => {
