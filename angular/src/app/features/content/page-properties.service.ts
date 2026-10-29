@@ -102,8 +102,8 @@ function normalise(raw: unknown): PagePropertiesDto {
         properties,
         own,
         version: String(r['version'] ?? ''),
-        // An answer without the field (a server before it) is not read-only: its write still answers 403.
-        writable: r['writable'] !== false,
+        // A missing flag never grants a right: an answer without the field is read-only.
+        writable: r['writable'] === true,
     };
 }
 

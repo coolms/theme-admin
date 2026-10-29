@@ -253,6 +253,18 @@ describe('Page properties: each card shows where its values come from and saves 
         expect(panel.dirty()).toBeFalse();
     });
 
+    it('is read-only when the read does not say the reader may write: a missing flag grants nothing', () => {
+        const { writable: _, ...withoutFlag } = view() as Record<string, unknown>;
+        const { el, panel } = open(withoutFlag);
+
+        expect(el.querySelector('button[aria-label^="Save"]')).toBeNull();
+        expect(el.querySelector('button[aria-label^="Reset"]')).toBeNull();
+        expect(el.textContent).toContain('You may read these properties but not change them.');
+        panel.addRow('meta');
+        panel.setRow('meta', 0, 'key', 'author');
+        expect(panel.dirty()).toBeFalse();
+    });
+
     it('keeps an unsaved card\'s language as an option after the page\'s language changes', () => {
         const { el, panel, detect, locale } = open();
         panel.setScope('meta', 'de');
