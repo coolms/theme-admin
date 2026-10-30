@@ -56,7 +56,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         @if (loading()) {
             <app-loading label="Loading lead…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else {
           @if (lead(); as l) {
             <cms-page-header
@@ -219,6 +219,8 @@ export class LeadDetailComponent implements OnInit {
     readonly lead    = signal<LeadDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
     /** Blocks double-submit while a transition is in flight. */
     private readonly busy = signal(false);
 
@@ -267,6 +269,7 @@ export class LeadDetailComponent implements OnInit {
                 this.titleSvc.set('Lead');
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 return this.api.get(id);
             }),
             takeUntilDestroyed(this.destroyRef),
@@ -274,6 +277,7 @@ export class LeadDetailComponent implements OnInit {
             next: l => { this.lead.set(l); this.loading.set(false); },
             error: (err: unknown) => {
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
                 this.loading.set(false);
             },
         });

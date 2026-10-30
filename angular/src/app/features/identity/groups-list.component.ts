@@ -12,7 +12,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Dialog } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import { AppConfigState } from '@coolms/core-angular';
+import { AppConfigState, isElevationRefusal } from '@coolms/core-angular';
 import { IdentityApiService } from './identity-api.service';
 import { IdentityGroupDto } from './identity.types';
 import {
@@ -20,7 +20,9 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
+    ElevationRequiredComponent,
     PageTitleService,
+    RELOAD_PAGE,
     ToastService,
 } from '@coolms/ui-angular';
 import { GroupRoleGrantsDialogComponent } from './group-role-grants-dialog.component';
@@ -30,7 +32,7 @@ import { GroupCreateDialogComponent } from './group-create-dialog.component';
     selector: 'app-groups-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ElevationRequiredComponent],
     template: `
         <cms-list-page
             title="Groups"
@@ -43,7 +45,13 @@ import { GroupCreateDialogComponent } from './group-create-dialog.component';
                  Column definitions, sortable flags, filterOp, and rowActions come from
                  the backend YAML. Data is loaded via (loadMore) — all groups at once
                  (hasMore=false after the first page since the API has no pagination). -->
+            <!-- Groups are people's data, read in an elevated session only: refused for want of elevation, the
+                 Elevate state stands in place of the list, and the page loads again after it. -->
+            @if (elevationRequired()) {
+                <cms-elevation-required data-test="groups-elevation-required" (elevated)="loadAgain()" />
+            }
             <coolms-datagrid
+                [hidden]="elevationRequired()"
                 gridId="identity:groups"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -64,6 +72,8 @@ export class GroupsListComponent implements OnInit {
     private readonly toast      = inject(ToastService);
     private readonly titleSvc   = inject(PageTitleService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly reloadPage = inject(RELOAD_PAGE, { optional: true });
+    private lastLoad: Parameters<GroupsListComponent['onLoadMore']>[0] | null = null;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -75,6 +85,8 @@ export class GroupsListComponent implements OnInit {
 
     /** Flips true after the first load so the footer count stays blank until then. */
     readonly loaded = signal(false);
+    /** The groups were refused for want of elevation: the Elevate state stands in place of the list. */
+    readonly elevationRequired = signal(false);
     readonly footerLabel = computed(() =>
         this.loaded() ? `${this.groups().length} group${this.groups().length === 1 ? '' : 's'}` : '',
     );
@@ -115,6 +127,7 @@ export class GroupsListComponent implements OnInit {
     }): void {
         // All groups are fetched in one request; skip append calls.
         if (!event.reset && event.offset > 0) return;
+        this.lastLoad = event;
 
         const epoch = ++this._loadEpoch;
 
@@ -130,9 +143,26 @@ export class GroupsListComponent implements OnInit {
                 this.groups.set(groups);
                 this.hasMore.set(false); // all loaded at once
                 this.loaded.set(true);
+                this.elevationRequired.set(false);
             },
-            error: () => this.toast.error('Failed to load groups'),
+            error: (err: unknown) => {
+                if (isElevationRefusal(err)) {
+                    this.elevationRequired.set(true);
+                } else {
+                    this.toast.error('Failed to load groups');
+                }
+            },
         });
+    }
+
+    /** After the session was elevated from the Elevate state: the page made anew, or else the list read again. */
+    loadAgain(): void {
+        if (this.reloadPage) {
+            this.reloadPage();
+        } else if (this.lastLoad) {
+            this.elevationRequired.set(false);
+            this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
+        }
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {

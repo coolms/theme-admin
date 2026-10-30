@@ -10,6 +10,7 @@ import {
     BottomDrawerService,
     ContextMenuComponent,
     ContextMenuService,
+    RELOAD_PAGE,
     DrawerService,
     ElevationRequiredComponent,
     ToastOutletComponent,
@@ -21,6 +22,7 @@ import { togglePanelByRule } from './open-panel';
 import { panelAccessIn } from './nav-offers';
 import { afterElevation } from './after-elevation';
 import { PageLock, routeOfNavItem } from './locked-page';
+import { PageReload } from './page-reload';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -37,6 +39,11 @@ import { PageLock, routeOfNavItem } from './locked-page';
 @Component({
     selector: 'coolms-admin-layout',
     standalone: true,
+    // A page that shows a refusal for want of elevation loads again after the grant: made anew, not reloaded.
+    providers: [
+        PageReload,
+        { provide: RELOAD_PAGE, useFactory: () => { const pages = inject(PageReload); return () => pages.reload(); } },
+    ],
     imports: [
         RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, ToastOutletComponent, ContextMenuComponent,
         SidebarNavItemComponent, ElevationRequiredComponent,
@@ -372,7 +379,9 @@ import { PageLock, routeOfNavItem } from './locked-page';
                                         (click)="elevateForPage()">Elevate</button>
                             </div>
                         }
-                        <router-outlet />
+                        @for (generation of [pageReload.generation()]; track generation) {
+                            <router-outlet />
+                        }
                     }
                 </main>
 
@@ -454,6 +463,7 @@ export class AdminLayoutComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly ctxMenuSvc = inject(ContextMenuService);
     private readonly elevation  = inject(ElevationService);
+    protected readonly pageReload = inject(PageReload);
 
     /** Which console panels are open, and which of them asked for the whole body. */
     readonly panelOpen      = signal<ReadonlySet<string>>(new Set());
