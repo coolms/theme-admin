@@ -19,7 +19,10 @@ export function openingMailbox(
     return list.at(0)?.id ?? null;
 }
 
-/** Whether a message's remote images load as it opens: only when the profile says "always loaded". */
+/**
+ * Whether a message's remote images load as it opens: only when the rule the server resolved for this person says
+ * "allow" -- their own choice, or the installation's when they follow it. Anything else stays behind Load images.
+ */
 export function loadsRemoteImagesAtOnce(prefs: MailPreferences): boolean {
-    return prefs.remoteImages === 'allow';
+    return prefs.remoteImagesEffective === 'allow';
 }

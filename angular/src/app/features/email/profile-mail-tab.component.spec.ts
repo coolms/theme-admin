@@ -120,4 +120,29 @@ describe('ProfileMailTabComponent -- the mail settings, saved over the version r
         expect(mailPreferencesPatch(MAIL_PREFERENCE_DEFAULTS, { ...MAIL_PREFERENCE_DEFAULTS, remoteImages: 'allow' }))
             .toEqual({ remoteImages: 'allow' });
     });
+
+    it('the patch never holds the server\'s read-only rules, which make nothing to save', () => {
+        const answered = {
+            ...MAIL_PREFERENCE_DEFAULTS, remoteImagesEffective: 'allow', remoteImagesInstallation: 'allow',
+        } as const;
+
+        expect(mailPreferencesPatch(MAIL_PREFERENCE_DEFAULTS, answered)).toEqual({});
+    });
+
+    it('names the installation\'s rule on the choice that follows it, as the server answered it', () => {
+        const installation = { ...MAIL_PREFERENCE_DEFAULTS, remoteImagesInstallation: 'block' } as const;
+        const f = render(of({ prefs: installation, version: 's1' }));
+        expect(f.componentInstance.imageChoices()[0].label).toBe('As the installation decides (now: blocked)');
+    });
+
+    it('names an installation that loads them, and nothing when the server did not say', () => {
+        const installation = { ...MAIL_PREFERENCE_DEFAULTS, remoteImagesInstallation: 'allow' } as const;
+        const f = render(of({ prefs: installation, version: 's1' }));
+        expect(f.componentInstance.imageChoices()[0].label).toBe('As the installation decides (now: loaded)');
+    });
+
+    it('says only "as the installation decides" when the server did not name the rule', () => {
+        const f = render(of({ prefs: MAIL_PREFERENCE_DEFAULTS, version: 's1' }));
+        expect(f.componentInstance.imageChoices()[0].label).toBe('As the installation decides');
+    });
 });

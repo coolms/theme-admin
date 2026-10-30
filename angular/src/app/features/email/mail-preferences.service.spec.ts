@@ -3,7 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
 
-import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesChangedError, MailPreferencesService } from './mail-preferences.service';
+import {
+    MAIL_PREFERENCE_DEFAULTS, MailPreferencesChangedError, MailPreferencesService, type MailPreferences,
+} from './mail-preferences.service';
 
 /**
  * The profile section `mail`, read with its version and saved naming it: a save sends If-Match with the version read
@@ -33,12 +35,21 @@ describe('MailPreferencesService -- the mail section, read with its version and 
         let read: unknown;
         prefs.read().subscribe(r => (read = r));
         http.expectOne(URL).flush(
-            { defaultMailboxId: 'mb-1', remoteImages: 'allow', notifyNewMail: false },
+            {
+                defaultMailboxId: 'mb-1', remoteImages: 'inherit', notifyNewMail: false,
+                remoteImagesEffective: 'allow', remoteImagesInstallation: 'allow',
+            },
             { headers: { ETag: '"s1"' } },
         );
 
-        expect(read).toEqual({ prefs: { defaultMailboxId: 'mb-1', remoteImages: 'allow', notifyNewMail: false }, version: 's1' });
-        expect(prefs.current().remoteImages).toBe('allow');
+        expect(read).toEqual({
+            prefs: {
+                defaultMailboxId: 'mb-1', remoteImages: 'inherit', notifyNewMail: false,
+                remoteImagesEffective: 'allow', remoteImagesInstallation: 'allow',
+            },
+            version: 's1',
+        });
+        expect(prefs.current().remoteImagesEffective).toBe('allow');
     });
 
     it('a save sends only what is given, merge-patch, naming the version read; the answer is what stood', () => {
@@ -52,6 +63,26 @@ describe('MailPreferencesService -- the mail section, read with its version and 
         req.flush({ defaultMailboxId: null, remoteImages: 'inherit', notifyNewMail: true }, { headers: { ETag: '"s2"' } });
 
         expect(saved).toEqual({ prefs: MAIL_PREFERENCE_DEFAULTS, version: 's2' });
+    });
+
+    it('reads a missing or unknown resolved rule as blocked, and an unknown installation rule as none', () => {
+        let read: { prefs: MailPreferences } | undefined;
+        prefs.read().subscribe(r => (read = r));
+        http.expectOne(URL).flush(
+            { remoteImages: 'inherit', remoteImagesInstallation: 'sometimes' },
+            { headers: { ETag: '"s1"' } },
+        );
+
+        expect(read?.prefs.remoteImagesEffective).toBe('block');
+        expect(read?.prefs.remoteImagesInstallation).toBeNull();
+    });
+
+    it('never sends the server\'s read-only rules on a save', () => {
+        prefs.save({ remoteImages: 'allow', remoteImagesEffective: 'allow', remoteImagesInstallation: 'allow' }, 's1')
+            .subscribe();
+        const req = http.expectOne(URL);
+        expect(req.request.body).toEqual({ remoteImages: 'allow' });
+        req.flush({}, { headers: { ETag: '"s2"' } });
     });
 
     it('a section saved since is refused (412) as changed elsewhere; nothing is sent again', () => {

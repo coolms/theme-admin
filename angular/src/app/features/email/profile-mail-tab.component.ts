@@ -9,6 +9,7 @@ import { EmailService } from './email.service';
 import { EmailMailboxDto } from './email.types';
 import {
     MAIL_PREFERENCE_DEFAULTS,
+    MAIL_PREFERENCES_READ_ONLY,
     MailPreferences,
     MailPreferencesChangedError,
     MailPreferencesService,
@@ -19,7 +20,7 @@ import {
 export function mailPreferencesPatch(read: MailPreferences, draft: MailPreferences): Partial<MailPreferences> {
     const patch: Record<string, unknown> = {};
     for (const key of Object.keys(draft) as (keyof MailPreferences)[]) {
-        if (draft[key] !== read[key]) {
+        if (!MAIL_PREFERENCES_READ_ONLY.includes(key) && draft[key] !== read[key]) {
             patch[key] = draft[key];
         }
     }
@@ -93,7 +94,7 @@ export function mailPreferencesPatch(read: MailPreferences, draft: MailPreferenc
                 </div>
                 <div class="group">
                     <span class="group-label">Remote images in a message</span>
-                    @for (o of imageChoices; track o.value) {
+                    @for (o of imageChoices(); track o.value) {
                         <label class="choice">
                             <input type="radio" name="remoteImages" [value]="o.value"
                                    [ngModel]="draft().remoteImages" (ngModelChange)="set('remoteImages', $event)" />
@@ -125,11 +126,16 @@ export class ProfileMailTabComponent implements OnInit {
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
 
-    readonly imageChoices: ReadonlyArray<{ value: RemoteImages; label: string }> = [
-        { value: 'inherit', label: 'As the installation decides (blocked until an administrator sets a rule)' },
-        { value: 'block', label: 'Always blocked; load them per message' },
-        { value: 'allow', label: 'Always loaded' },
-    ];
+    /** The choices; "as the installation decides" names the installation's rule as the server last answered it. */
+    readonly imageChoices = computed<ReadonlyArray<{ value: RemoteImages; label: string }>>(() => {
+        const rule = this.read().remoteImagesInstallation;
+        const now = rule === 'allow' ? ' (now: loaded)' : rule === 'block' ? ' (now: blocked)' : '';
+        return [
+            { value: 'inherit', label: 'As the installation decides' + now },
+            { value: 'block', label: 'Always blocked; load them per message' },
+            { value: 'allow', label: 'Always loaded' },
+        ];
+    });
 
     readonly loading = signal(true);
     readonly unreadable = signal(false);
