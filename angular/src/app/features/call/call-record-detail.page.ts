@@ -49,7 +49,7 @@ import { formatCallDuration } from './call-format';
         @if (loading()) {
             <app-loading label="Loading call…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else {
           @if (record(); as c) {
             <cms-page-header
@@ -239,6 +239,8 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
     readonly record  = signal<CallRecordDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     readonly audioUrl     = signal<string | null>(null);
     readonly audioLoading = signal(false);
@@ -276,6 +278,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
                 this.titleSvc.set('Call');
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 this.revokeAudio();
                 this.audioUrl.set(null);
                 this.audioError.set(null);
@@ -293,6 +296,7 @@ export class CallRecordDetailComponent implements OnInit, OnDestroy {
             },
             error: (err: unknown) => {
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
                 this.loading.set(false);
             },
         });

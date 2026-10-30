@@ -47,7 +47,7 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
         @if (loading()) {
             <app-loading label="Loading schedule…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else if (schedule()) {
             @let s = schedule()!;
 
@@ -322,6 +322,8 @@ export class ScheduleDetailPageComponent implements OnInit {
     readonly calendars = signal<CalendarDto[]>([]);
     readonly loading   = signal(true);
     readonly error     = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     readonly savingSettings = signal(false);
     readonly savingTrigger  = signal(false);
@@ -415,6 +417,7 @@ export class ScheduleDetailPageComponent implements OnInit {
                 this.titleSvc.set('Schedule: ' + slug);
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 return this.schedulesApi.getSchedule(slug);
             }),
             takeUntilDestroyed(this.destroyRef),
@@ -422,6 +425,7 @@ export class ScheduleDetailPageComponent implements OnInit {
             next: s => { this.populate(s); this.loadCalendars(); this.loading.set(false); },
             error: (err: unknown) => {
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
                 this.loading.set(false);
             },
         });

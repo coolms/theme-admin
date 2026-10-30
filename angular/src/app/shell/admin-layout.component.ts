@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, HostListener, inject, Injector, OnInit
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass, NgComponentOutlet } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, tap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, ConsoleActivation, ConsolePanelHost, ElevationService, NaviGraphService, NaviGraphNode, UserPreferencesService, ThemeService, SidebarStateService } from '@coolms/core-angular';
 import {
@@ -10,7 +10,9 @@ import {
     BottomDrawerService,
     ContextMenuComponent,
     ContextMenuService,
+    RELOAD_PAGE,
     DrawerService,
+    ElevationRequiredComponent,
     ToastOutletComponent,
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
@@ -18,6 +20,9 @@ import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 import { navFollowsElevation } from './nav-follows-elevation';
 import { togglePanelByRule } from './open-panel';
 import { panelAccessIn } from './nav-offers';
+import { afterElevation } from './after-elevation';
+import { PageLock, routeOfNavItem } from './locked-page';
+import { PageReload } from './page-reload';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -34,7 +39,15 @@ import { panelAccessIn } from './nav-offers';
 @Component({
     selector: 'coolms-admin-layout',
     standalone: true,
-    imports: [RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, ToastOutletComponent, ContextMenuComponent, SidebarNavItemComponent],
+    // A page that shows a refusal for want of elevation loads again after the grant: made anew, not reloaded.
+    providers: [
+        PageReload,
+        { provide: RELOAD_PAGE, useFactory: () => { const pages = inject(PageReload); return () => pages.reload(); } },
+    ],
+    imports: [
+        RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, ToastOutletComponent, ContextMenuComponent,
+        SidebarNavItemComponent, ElevationRequiredComponent,
+    ],
     styles: [`
         .coolms-admin-shell {
             display: flex;
@@ -200,6 +213,16 @@ import { panelAccessIn } from './nav-offers';
             padding-left: 0;
             padding-right: 0;
         }
+        .coolms-main__elevation-ended {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--cms-warning-light);
+            color: var(--cms-warning-text);
+            border-bottom: 1px solid var(--cms-warning-subtle-border);
+        }
+        .coolms-main__elevation-ended span { flex: 1; }
         .coolms-main {
             flex: 1;
             min-height: 0;
@@ -340,7 +363,26 @@ import { panelAccessIn } from './nav-offers';
 
                 <!-- Main content -->
                 <main class="coolms-main">
-                    <router-outlet />
+                    <!-- A page whose menu item is locked for this session: the Elevate state in its place when it
+                         was entered locked (a reload ends an elevation, so a reload, a bookmark or the back button
+                         lands here), a notice above it when its elevation ended while it was open. -->
+                    <!-- ONE outlet for the page and the notice: the notice coming or going never remounts the page. -->
+                    @if (pageAccess() === 'gate') {
+                        <cms-elevation-required data-test="page-elevation-required"
+                            [title]="pageLock()!.title + ' needs an elevated session'" />
+                    } @else {
+                        @if (pageAccess() === 'banner') {
+                            <div class="coolms-main__elevation-ended" role="status" data-test="page-elevation-ended">
+                                <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                                <span>The elevated session has ended. {{ pageLock()!.title }} needs it again.</span>
+                                <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" data-test="elevate"
+                                        (click)="elevateForPage()">Elevate</button>
+                            </div>
+                        }
+                        @for (generation of [pageReload.generation()]; track generation) {
+                            <router-outlet />
+                        }
+                    }
                 </main>
 
                 <!-- Right drawer -->
@@ -421,6 +463,7 @@ export class AdminLayoutComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly ctxMenuSvc = inject(ContextMenuService);
     private readonly elevation  = inject(ElevationService);
+    protected readonly pageReload = inject(PageReload);
 
     /** Which console panels are open, and which of them asked for the whole body. */
     readonly panelOpen      = signal<ReadonlySet<string>>(new Set());
@@ -437,6 +480,15 @@ export class AdminLayoutComponent implements OnInit {
      * the current URL doesn't match directly.
      */
     activeNavOverride = signal<string | null>(null);
+
+    /** Whether the page in the main area is locked for this session, and how it is shown if so. */
+    private readonly pageLockState = new PageLock(() => this.naviGraph.adminNav(), () => this.activeNavOverride());
+
+    /** The menu item that locks the page in the main area for this session, or null. */
+    readonly pageLock = this.pageLockState.lock;
+
+    /** What the main area shows: the page, the Elevate state in its place, or the page under an Elevate notice. */
+    readonly pageAccess = this.pageLockState.access;
 
     /**
      * Sidebar nodes grouped by meta.section.
@@ -636,7 +688,10 @@ export class AdminLayoutComponent implements OnInit {
             // never lands after a newer one. The server answers it per elevation state: a section is locked before
             // a grant and open after it, and locked again when the elevation ends (2026-10-12).
             navFollowsElevation(this.naviGraph, this.elevation, url)
-                .pipe(takeUntilDestroyed(this.destroyRef))
+                .pipe(
+                    tap(() => this.pageLockState.menuAnswered()),
+                    takeUntilDestroyed(this.destroyRef),
+                )
                 .subscribe();
         }
 
@@ -686,6 +741,12 @@ export class AdminLayoutComponent implements OnInit {
         let child = this.router.routerState.snapshot.root.firstChild;
         while (child?.firstChild) child = child.firstChild;
         this.activeNavOverride.set((child?.data['activeNav'] as string | null) ?? null);
+        this.pageLockState.pageEntered(this.router.url.split('?')[0].split('#')[0]);
+    }
+
+    /** The notice's Elevate: the menu is asked again on the grant, its lock goes, and so does the notice. */
+    elevateForPage(): void {
+        afterElevation(this.elevation, () => undefined);
     }
 
     /** Classify a nav node for template rendering. */
@@ -700,15 +761,7 @@ export class AdminLayoutComponent implements OnInit {
 
     /** Regular route nav items -- use RouterLink for proper zone/CD integration. */
     routerLinkFor(node: NaviGraphNode): string {
-        // meta.route (PHP/YAML convention) or meta.routerLink (typed field) take priority.
-        const fromMeta = node.meta['route'] ?? node.meta['routerLink'];
-        if (fromMeta) {
-            const s = String(fromMeta);
-            return s.startsWith('/') ? s : '/' + s;
-        }
-        // Fallback to node.path. The app is served under base-href /admin/, but
-        // Angular router paths must NOT include that prefix -- strip it.
-        return node.path.replace(/^\/admin/, '') || '/';
+        return routeOfNavItem(node);
     }
 
     /**

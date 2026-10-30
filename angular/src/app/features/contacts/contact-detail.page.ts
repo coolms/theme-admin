@@ -55,7 +55,7 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
         @if (loading()) {
             <app-loading label="Loading contact…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else {
           @if (contact(); as c) {
             <cms-page-header
@@ -289,6 +289,8 @@ export class ContactDetailComponent implements OnInit {
     readonly leads   = signal<LeadDto[]>([]);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     readonly headerTitle = computed(() => {
         const c = this.contact();
@@ -317,6 +319,7 @@ export class ContactDetailComponent implements OnInit {
                 this.titleSvc.set('Contact');
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 this.leads.set([]);
                 return this.api.get(id);
             }),
@@ -329,6 +332,7 @@ export class ContactDetailComponent implements OnInit {
             },
             error: (err: unknown) => {
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
                 this.loading.set(false);
             },
         });

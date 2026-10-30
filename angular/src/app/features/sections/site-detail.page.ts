@@ -14,11 +14,12 @@ import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
 import { SiteDto, SiteMemberDto } from './sections.types';
 import { SectionsApiService } from './sections-api.service';
-import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
+import { ErrorHandlerService, ConfigService, isElevationRefusal, LayoutConfig } from '@coolms/core-angular';
 import {
     CmsDetailFooterComponent,
     CmsPageHeaderComponent,
     ConfirmDialogService,
+    ElevationRequiredComponent,
     ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
@@ -55,12 +56,15 @@ import { LoadSections } from './section.actions';
     selector: 'app-site-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent, SectionHostsCardComponent],
+    imports: [
+        RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
+        SectionHostsCardComponent, ElevationRequiredComponent,
+    ],
     template: `
         @if (loading()) {
             <app-loading label="Loading site…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else if (site()) {
             @let s = site()!;
 
@@ -232,6 +236,10 @@ Status / role chips project into the header-meta
                         <div class="card__body">
                             @if (membersLoading()) {
                                 <p class="empty">Loading members...</p>
+                            } @else if (membersElevation()) {
+                                <!-- A site's members are people's data, read in an elevated session only. -->
+                                <cms-elevation-required data-test="site-members-elevation-required"
+                                    title="The members need an elevated session" (elevated)="reloadMembers()" />
                             } @else if (membersError()) {
                                 <p class="empty empty--error">
                                     {{ membersError() }}
@@ -442,10 +450,14 @@ export class SiteDetailPageComponent implements OnInit {
     readonly sectionRevision = signal(0);
     readonly loading        = signal(true);
     readonly error          = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     readonly members        = signal<SiteMemberDto[]>([]);
     readonly membersLoading = signal(false);
     readonly membersError   = signal<string | null>(null);
+    /** The members were refused for want of elevation: the card shows the Elevate state. */
+    readonly membersElevation = signal(false);
 
     /** Up to `previewLimit` members shown inline on the Members card. */
     readonly membersPreview = computed(() => this.members().slice(0, this.previewLimit));
@@ -552,6 +564,7 @@ export class SiteDetailPageComponent implements OnInit {
     private loadSite(slug: string): void {
         this.loading.set(true);
         this.error.set(null);
+        this.errorFailure.set(null);
         this.sectionsApi.getSite(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -563,13 +576,23 @@ export class SiteDetailPageComponent implements OnInit {
             error: (err: unknown) => {
                 this.loading.set(false);
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
             },
         });
+    }
+
+    /** The members again, after the session was elevated from their card. */
+    reloadMembers(): void {
+        const slug = this.site()?.slug;
+        if (slug) {
+            this.loadMembers(slug);
+        }
     }
 
     private loadMembers(slug: string): void {
         this.membersLoading.set(true);
         this.membersError.set(null);
+        this.membersElevation.set(false);
         this.sectionsApi.listSiteMembers(slug).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -579,7 +602,11 @@ export class SiteDetailPageComponent implements OnInit {
             },
             error: (err: unknown) => {
                 this.membersLoading.set(false);
-                this.membersError.set(this.errors.humanize(err));
+                if (isElevationRefusal(err)) {
+                    this.membersElevation.set(true);
+                } else {
+                    this.membersError.set(this.errors.humanize(err));
+                }
             },
         });
     }
