@@ -15,6 +15,7 @@
 import '../../../core-angular/src/interceptors/section.interceptor.spec';
 import '../../../core-angular/src/auth/auth-refresh.coordinator.spec';
 import '../../../core-angular/src/auth/auth.interceptor.spec';
+import '../../../core-angular/src/auth/elevation-refusal.spec';
 import '../../../core-angular/src/auth/elevation.interceptor.spec';
 import '../../../core-angular/src/auth/elevation.service.spec';
 import '../../../core-angular/src/errors/error-handler.service.spec';

@@ -17,10 +17,13 @@ import { SiteDto, SiteMemberDto } from './sections.types';
 import { SectionsApiService } from './sections-api.service';
 import { IdentityApiService } from '../identity/identity-api.service';
 import { IdentityUserDto } from '../identity/identity.types';
-import { AuthState, ErrorHandlerService, ConfigService, LayoutConfig, AppConfigState } from '@coolms/core-angular';
+import {
+    AuthState, ErrorHandlerService, ConfigService, LayoutConfig, AppConfigState, ElevationService, isElevationRefusal,
+} from '@coolms/core-angular';
 import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
+    ElevationRequiredComponent,
     ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
@@ -59,10 +62,17 @@ import {
     selector: 'app-site-members-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [UserSearchSelectComponent, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent],
+    imports: [
+        UserSearchSelectComponent, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, ElevationRequiredComponent,
+    ],
     template: `
         @if (loading()) {
             <app-loading label="Loading members…" />
+        } @else if (elevationRequired()) {
+            <!-- A site's members are people's data: read in an elevated session only. Reached by a reload, a link
+                 or the back button, or refused on a refresh after the elevation ended: Elevate, then load again. -->
+            <cms-elevation-required data-test="members-elevation-required"
+                title="A site's members need an elevated session" (elevated)="reloadAll()" />
         } @else if (error()) {
             <app-error-banner [message]="error()!" />
         } @else if (site()) {
@@ -495,6 +505,7 @@ export class SiteMembersPageComponent implements OnInit {
     private readonly titleSvc    = inject(PageTitleService);
     private readonly config      = inject(ConfigService);
     private readonly destroyRef  = inject(DestroyRef);
+    private readonly elevation   = inject(ElevationService);
 
     /** Backend-defined page chrome (`web:section-members` layout config). */
     readonly layout       = signal<LayoutConfig | null>(null);
@@ -504,6 +515,8 @@ export class SiteMembersPageComponent implements OnInit {
     readonly loading      = signal(true);
     readonly error        = signal<string | null>(null);
     readonly membersError = signal<string | null>(null);
+    /** The members were refused for want of elevation: the page shows the Elevate state in their place. */
+    readonly elevationRequired = signal(false);
     /** True while any mutation is in flight. Buttons disable so we don't double-submit. */
     readonly busy         = signal(false);
 
@@ -576,6 +589,15 @@ export class SiteMembersPageComponent implements OnInit {
     });
 
     ngOnInit(): void {
+        // An elevation that ends while the members are shown: they are asked again, and a refusal shows the
+        // Elevate state in their place. A grant elsewhere (another tab) loads a refused page again.
+        this.elevation.changes$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            if (this.elevationRequired() && this.elevation.elevated()) {
+                this.reloadAll();
+            } else if (!this.elevation.elevated() && this.site() !== null) {
+                this.reloadMembers();
+            }
+        });
         // Page chrome (back action) is backend-defined; fetch once (cached).
         this.config.layout('web:section-members').pipe(
             takeUntilDestroyed(this.destroyRef),
@@ -614,6 +636,7 @@ export class SiteMembersPageComponent implements OnInit {
         this.loading.set(true);
         this.error.set(null);
         this.membersError.set(null);
+        this.elevationRequired.set(false);
 
         forkJoin({
             site:    this.sectionsApi.getSite(slug),
@@ -627,9 +650,22 @@ export class SiteMembersPageComponent implements OnInit {
             },
             error: (err: unknown) => {
                 this.loading.set(false);
-                this.error.set(this.errors.humanize(err));
+                if (isElevationRefusal(err)) {
+                    this.elevationRequired.set(true);
+                } else {
+                    this.error.set(this.errors.humanize(err));
+                }
             },
         });
+    }
+
+    /** Load the page again from its URL: after the session was elevated from the Elevate state. */
+    reloadAll(): void {
+        const slug = this.route.snapshot.paramMap.get('slug');
+        // The Elevate button and the grant it announces both ask; one load is enough.
+        if (slug && !this.loading()) {
+            this.loadAll(slug);
+        }
     }
 
     /** Refresh just the members list (after a mutation). */
@@ -647,7 +683,11 @@ export class SiteMembersPageComponent implements OnInit {
                 this.members.set(members);
             },
             error: (err: unknown) => {
-                this.membersError.set(this.errors.humanize(err));
+                if (isElevationRefusal(err)) {
+                    this.elevationRequired.set(true);
+                } else {
+                    this.membersError.set(this.errors.humanize(err));
+                }
             },
         });
     }
