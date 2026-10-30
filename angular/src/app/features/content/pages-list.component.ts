@@ -679,7 +679,7 @@ export class PagesListComponent implements OnInit {
      */
     private openSectionPropertiesDialog(path: string, label: string): void {
         this.dialog.open<boolean | null>(SectionPropertiesDialogComponent, {
-            data: { path, label },
+            data: { path, label, siteSlug: this.spaceState.siteSlug() },
             backdropClass: 'cdk-overlay-dark-backdrop',
         }).closed
             .pipe(filter(Boolean), takeUntilDestroyed(this.destroyRef))

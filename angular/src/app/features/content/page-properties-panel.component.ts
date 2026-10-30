@@ -165,7 +165,7 @@ export interface PropertyCard {
                     }
                 </section>
             } @empty {
-                <p class="pp-card__hint">This page has no properties to set.</p>
+                <p class="pp-card__hint">This {{ subject() }} has no properties to set.</p>
             }
         }
     `,
@@ -193,8 +193,13 @@ export class PagePropertiesPanelComponent {
     private readonly confirm = inject(ConfirmDialogService);
     private readonly destroyRef = inject(DestroyRef);
 
-    /** The page's VFS path. */
+    /** The page's VFS path, or the folder's. */
     readonly path = input<string>('');
+    /**
+     * What the path names: a page, or a folder whose properties the pages below it inherit. Only the words change;
+     * the server answers both the same way.
+     */
+    readonly subject = input<'page' | 'folder'>('page');
     /** The language the page is edited in; empty for none. */
     readonly locale = input<string>('');
 
@@ -235,11 +240,11 @@ export class PagePropertiesPanelComponent {
         return Object.keys(values);
     }
 
-    /** "this page", the node's path, or -- for a node the reader may not open -- its name only. */
+    /** "this page" (or folder), the node's path, or -- for a node the reader may not open -- its name only. */
     sourceText(source: PropertySourceDto, path: string): string {
         const where = source.link === null
             ? `${source.label} (you cannot open it)`
-            : (source.link === path ? 'this page' : source.label);
+            : (source.link === path ? 'this ' + this.subject() : source.label);
         return source.scope === ALL_LANGUAGES ? where : `${where} (${source.scope})`;
     }
 
