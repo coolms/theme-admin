@@ -100,7 +100,7 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
                 <app-loading label="Loading settings…" />
             }
             @if (loadError(); as err) {
-                <app-error-banner [message]="err" [showRetry]="true" (retry)="load()" />
+                <app-error-banner [message]="err" [error]="loadErrorFailure()" [showRetry]="true" (retry)="load()" />
             }
 
             @if (selected(); as b) {
@@ -209,6 +209,8 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
 
     readonly loading = signal(true);
     readonly loadError = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly loadErrorFailure = signal<unknown>(null);
     readonly blocks = signal<readonly ModuleSettingsBlockDto[]>([]);
 
     /** The scope, from the ROUTE's data -- never from the setting open. */
@@ -372,6 +374,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
     load(): void {
         this.loading.set(true);
         this.loadError.set(null);
+        this.loadErrorFailure.set(null);
         this.settings.list().subscribe({
             next: blocks => {
                 this.blocks.set(blocks);
@@ -379,6 +382,7 @@ export class SettingsHubPageComponent implements OnInit, HasUnsavedChanges {
             },
             error: err => {
                 this.loadError.set(this.errors.humanize(err));
+                this.loadErrorFailure.set(err);
                 this.loading.set(false);
             },
         });

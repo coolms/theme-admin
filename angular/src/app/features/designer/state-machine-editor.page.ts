@@ -76,7 +76,7 @@ import { DesignerI18nService } from './designer-i18n.service';
             }
             @if (loadError()) {
                 <app-error-banner
-                    [message]="loadError()!"
+                    [message]="loadError()!" [error]="loadErrorFailure()"
                     [showRetry]="true"
                     (retry)="retryLoad()"
                 />
@@ -180,6 +180,8 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
 
     readonly isLoading = signal<boolean>(true);
     readonly loadError = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly loadErrorFailure = signal<unknown>(null);
     /**
      * The draft could not be read (the read failed, or its body did not parse): the canvas and its footer are not
      * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
@@ -397,6 +399,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
         if (this.smEditor === undefined) return;
         this.isLoading.set(true);
         this.loadError.set(null);
+        this.loadErrorFailure.set(null);
         this.draftUnread.set(false);
         this.conflict.set(null);
         this.draftVersion = null;
@@ -423,6 +426,7 @@ export class StateMachineEditorPage implements AfterViewInit, OnDestroy {
             queueMicrotask(() => this.fitToContent());
         } catch (err) {
             this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+            this.loadErrorFailure.set(err);
             this.draftUnread.set(true);
         } finally {
             this.isLoading.set(false);

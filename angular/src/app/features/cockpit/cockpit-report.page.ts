@@ -59,7 +59,7 @@ interface StateTile {
         @if (loading()) {
             <app-loading label="Loading report…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [showRetry]="true" (retry)="load()" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" [showRetry]="true" (retry)="load()" />
         } @else if (report()) {
             @let r = report()!;
 
@@ -330,6 +330,8 @@ export class CockpitReportPageComponent implements OnInit {
     readonly taskMetrics = signal<CockpitTaskMetricsDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     /**
      * Header actions (back to the cockpit + reload) -- declared in the
@@ -445,6 +447,7 @@ export class CockpitReportPageComponent implements OnInit {
     load(): void {
         this.loading.set(true);
         this.error.set(null);
+        this.errorFailure.set(null);
         this.cockpit
             .getReport()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -455,6 +458,7 @@ export class CockpitReportPageComponent implements OnInit {
                 },
                 error: (e: unknown) => {
                     this.error.set(this.errors.humanize(e));
+                    this.errorFailure.set(e);
                     this.loading.set(false);
                 },
             });

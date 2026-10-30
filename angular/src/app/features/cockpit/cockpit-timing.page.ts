@@ -43,7 +43,7 @@ import type { CockpitElementTimingDto, CockpitTimingReportDto } from './cockpit.
         @if (loading()) {
             <app-loading label="Loading timing report…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else if (report()) {
             @let r = report()!;
 
@@ -198,6 +198,8 @@ export class CockpitTimingPageComponent implements OnInit {
     readonly report  = signal<CockpitTimingReportDto | null>(null);
     readonly loading = signal(true);
     readonly error   = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     /** Slowest avg dwell, for scaling the relative bars. */
     private readonly maxAvg = computed(() => {
@@ -228,6 +230,7 @@ export class CockpitTimingPageComponent implements OnInit {
                 this.titleSvc.set('Timing report');
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 return this.cockpit.getTiming(pm.get('definitionId')!);
             }),
             takeUntilDestroyed(this.destroyRef),
@@ -239,6 +242,7 @@ export class CockpitTimingPageComponent implements OnInit {
             },
             error: (e: unknown) => {
                 this.error.set(this.errors.humanize(e));
+                this.errorFailure.set(e);
                 this.loading.set(false);
             },
         });
@@ -255,7 +259,11 @@ export class CockpitTimingPageComponent implements OnInit {
         this.loading.set(true);
         this.cockpit.getTiming(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: r => { this.report.set(r); this.loading.set(false); },
-            error: (e: unknown) => { this.error.set(this.errors.humanize(e)); this.loading.set(false); },
+            error: (e: unknown) => {
+                this.error.set(this.errors.humanize(e));
+                this.errorFailure.set(e);
+                this.loading.set(false);
+            },
         });
     }
 

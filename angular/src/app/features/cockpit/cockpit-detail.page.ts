@@ -71,7 +71,7 @@ import type {
         @if (loading()) {
             <app-loading label="Loading process instance…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <app-error-banner [message]="error()!" [error]="errorFailure()" />
         } @else if (instance()) {
             @let i = instance()!;
 
@@ -393,6 +393,8 @@ export class CockpitDetailPageComponent implements OnInit {
     readonly instance = signal<CockpitInstanceDetailDto | null>(null);
     readonly loading  = signal(true);
     readonly error    = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly errorFailure = signal<unknown>(null);
 
     /**
      * In-flight guard for steering actions: disables the header buttons
@@ -464,6 +466,7 @@ export class CockpitDetailPageComponent implements OnInit {
                 this.titleSvc.set('Process instance');
                 this.loading.set(true);
                 this.error.set(null);
+                this.errorFailure.set(null);
                 return this.cockpit.getInstance(id);
             }),
             takeUntilDestroyed(this.destroyRef),
@@ -475,6 +478,7 @@ export class CockpitDetailPageComponent implements OnInit {
             },
             error: (err: unknown) => {
                 this.error.set(this.errors.humanize(err));
+                this.errorFailure.set(err);
                 this.loading.set(false);
             },
         });

@@ -114,7 +114,8 @@ import { DesignerI18nService } from './designer-i18n.service';
                 </div>
             }
             @if (loadError()) {
-                <app-error-banner [message]="loadError()!" [showRetry]="true" (retry)="retryLoad()" />
+                <app-error-banner [message]="loadError()!" [error]="loadErrorFailure()" [showRetry]="true"
+                                  (retry)="retryLoad()" />
             }
             @if (conflict(); as c) {
                 <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
@@ -197,6 +198,8 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
 
     readonly isLoading     = signal<boolean>(true);
     readonly loadError     = signal<string | null>(null);
+    /** The failure the message describes; the banner shows a refusal for want of elevation as the Elevate state. */
+    readonly loadErrorFailure = signal<unknown>(null);
     /**
      * The draft could not be read (the read failed, or the decision has no table here): its canvas and footer are not
      * shown, and Save and Deploy refuse -- a blank saved over a draft it never showed would replace it.
@@ -267,6 +270,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
         if (this.tableEditor === undefined) return;
         this.isLoading.set(true);
         this.loadError.set(null);
+        this.loadErrorFailure.set(null);
         this.noDecisionTable.set(false);
         this.draftUnread.set(false);
         this.conflict.set(null);
@@ -299,6 +303,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                  * author fill it in.
                  */
                 this.loadError.set(null);
+                this.loadErrorFailure.set(null);
             } else if (isMissingDecisionTable(err)) {
                 // A decision with no table is the requirements diagram's to edit: a blank table saved here would
                 // replace the definitions it holds.
@@ -311,6 +316,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                 // same sentence twice, once in a place they cannot
                 // dismiss and once in a place that vanishes.
                 this.loadError.set(`Failed to load draft: ${errorMessage(err)}`);
+                this.loadErrorFailure.set(err);
                 this.draftUnread.set(true);
             }
         } finally {
