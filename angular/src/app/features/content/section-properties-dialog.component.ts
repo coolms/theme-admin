@@ -6,18 +6,23 @@ import {
     computed,
     inject,
     signal,
+    viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { forkJoin, of } from 'rxjs';
-import { catchError, concatMap } from 'rxjs/operators';
+import { catchError, concatMap, filter } from 'rxjs/operators';
 
 import { ChannelConfigField, CollectionService, OutboundChannelDto } from './collection.service';
 import { PageService } from './page.service';
 import { PageTypeDto } from './page.types';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
+import {
+    ConfirmDialogService, MultiOptionSelectComponent, TabStripComponent, type TabStripItem, ToastService,
+} from '@coolms/ui-angular';
+import { PagePropertiesPanelComponent } from './page-properties-panel.component';
 
 /** Mirrors `ChannelConfigField::TYPE_SECRET_REF`. */
 const SECRET_REF = 'secretRef';
@@ -27,7 +32,18 @@ export interface SectionPropertiesDialogData {
     readonly path: string;
     /** Display name for the header (falls back to the path). */
     readonly label?: string;
+    /**
+     * The site the folder belongs to, or null in a personal space. A site's folder has page properties its pages
+     * inherit; a personal one has none.
+     */
+    readonly siteSlug?: string | null;
 }
+
+/** The dialog's tabs: the section's own settings, and the page properties the pages below the folder inherit. */
+const TABS: readonly TabStripItem[] = [
+    { id: 'section', label: 'Section' },
+    { id: 'page-properties', label: 'Page properties' },
+];
 
 /**
  * Section properties -- everything a section declares about the posts
@@ -65,7 +81,7 @@ export interface SectionPropertiesDialogData {
     selector: 'app-section-properties-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, MultiOptionSelectComponent],
+    imports: [FormsModule, MultiOptionSelectComponent, TabStripComponent, PagePropertiesPanelComponent],
     template: `
         <div class="cms-dialog spd">
             <div class="cms-dialog-header">
@@ -76,7 +92,33 @@ export interface SectionPropertiesDialogData {
                 </button>
             </div>
 
-            <div class="cms-dialog-body spd__body">
+            @if (hasPageProperties()) {
+                <app-tab-strip [tabs]="tabs" [activeId]="tab()" (selected)="tab.set($any($event))" />
+            }
+
+            <!-- Page properties: the folder's own, which every page below it inherits; each card saves
+                 itself. Kept mounted while the Section tab shows, so a card's unsaved rows are not lost. -->
+            @if (hasPageProperties()) {
+                <div class="cms-dialog-body spd__body" [hidden]="tab() !== 'page-properties'"
+                     data-test="folder-page-properties">
+                    <p class="spd__path">{{ data.path }}</p>
+                    <div class="cms-field-hint">
+                        Set here, a property applies to every page below this folder, unless a page or a folder
+                        nearer to it changes it. Each value shows where it comes from.
+                    </div>
+                    <label class="cms-label" for="spd-locale">Language</label>
+                    <select id="spd-locale" class="cms-select" [ngModel]="locale()" (ngModelChange)="locale.set($event)"
+                            [disabled]="propertiesPanel()?.dirty() ?? false">
+                        <option value="">All languages</option>
+                        @for (l of locales(); track l.code) {
+                            <option [value]="l.code">{{ l.label }}</option>
+                        }
+                    </select>
+                    <app-page-properties-panel [path]="data.path" [locale]="locale()" subject="folder" />
+                </div>
+            }
+
+            <div class="cms-dialog-body spd__body" [hidden]="tab() !== 'section'">
                 @if (loading()) {
                     <div class="cms-field-hint">Loading…</div>
                 } @else {
@@ -106,7 +148,7 @@ export interface SectionPropertiesDialogData {
                             </div>
                             <button type="button"
                                     class="cms-btn cms-btn-sm"
-                                    [disabled]="saving()"
+                                    [disabled]="saving() || propertiesDirty()"
                                     (click)="promote()">
                                 <i class="bi bi-rss"></i>
                                 <span>Make this a content collection</span>
@@ -201,11 +243,16 @@ export interface SectionPropertiesDialogData {
             </div>
 
             <div class="cms-dialog-footer">
+                @if (propertiesDirty()) {
+                    <span class="cms-field-hint spd__unsaved" data-test="page-properties-unsaved">
+                        Save or reset the page properties first.
+                    </span>
+                }
                 <button type="button" class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
-                @if (!loading() && isCollection()) {
+                @if (tab() === 'section' && !loading() && isCollection()) {
                     <button type="button"
                             class="cms-btn cms-btn-primary cms-btn-sm"
-                            [disabled]="saving()"
+                            [disabled]="saving() || propertiesDirty()"
                             (click)="save()">
                         {{ saving() ? 'Saving…' : 'Save' }}
                     </button>
@@ -215,6 +262,7 @@ export interface SectionPropertiesDialogData {
     `,
     styles: [`
         .spd { width: 560px; max-width: 94vw; }
+        .spd__unsaved { margin-right: auto; }
         .spd__body { display: flex; flex-direction: column; gap: 14px; max-height: 72vh; overflow-y: auto; }
 
         .spd__path {
@@ -285,6 +333,37 @@ export class SectionPropertiesDialogComponent implements OnInit {
     private readonly toast = inject(ToastService);
     private readonly errors = inject(ErrorHandlerService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly http = inject(HttpClient);
+    private readonly confirm = inject(ConfirmDialogService);
+
+    protected readonly tabs = TABS;
+    protected readonly tab = signal<'section' | 'page-properties'>('section');
+    /** Only a site's folder has page properties. */
+    protected readonly hasPageProperties = computed(() => !!this.data.siteSlug);
+    /** The language the properties are shown and set in; empty for all languages. */
+    protected readonly locale = signal('');
+    /** The languages the folder's site publishes in; empty until they are read. */
+    protected readonly locales = signal<readonly { code: string; label: string }[]>([]);
+    protected readonly propertiesPanel = viewChild(PagePropertiesPanelComponent);
+    /**
+     * A page-properties card holds changes not saved. Saving the section, or making it a collection, closes the
+     * dialog: both wait until the card is saved or reset, as the language does.
+     */
+    protected readonly propertiesDirty = computed(() => this.propertiesPanel()?.dirty() ?? false);
+
+    constructor() {
+        // Escape and a click on the backdrop come here, not to the dialog's own close, so they ask first too: the
+        // dialog closes itself on both unless told not to, whoever opened it.
+        this.ref.disableClose = true;
+        this.ref.backdropClick.pipe(takeUntilDestroyed()).subscribe(() => this.close());
+        this.ref.keydownEvents.pipe(
+            filter(event => event.key === 'Escape'),
+            takeUntilDestroyed(),
+        ).subscribe(event => {
+            event.preventDefault();
+            this.close();
+        });
+    }
 
     protected readonly channelsApiUrl = '/api/v1/options/core.outbound_channels';
 
@@ -352,6 +431,9 @@ export class SectionPropertiesDialogComponent implements OnInit {
     protected readonly atomUrl = computed(() => `${this.publicPath()}/atom.xml`);
 
     ngOnInit(): void {
+        if (this.data.siteSlug) {
+            this.loadLocales(this.data.siteSlug);
+        }
         // Both reads project out of the same node-meta response and the page
         // types are a small static catalogue; one forkJoin so the dialog paints
         // once rather than in three stages.
@@ -572,7 +654,33 @@ export class SectionPropertiesDialogComponent implements OnInit {
             });
     }
 
+    /** A page-properties card with changes not saved asks first: closing would lose them. */
     protected close(): void {
-        this.ref.close(null);
+        if (!this.propertiesDirty()) {
+            this.ref.close(null);
+            return;
+        }
+        this.confirm.open({
+            title: 'Close',
+            message: 'Changes to the page properties are not saved and will be lost.',
+            confirmLabel: 'Close',
+            danger: true,
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
+            if (confirmed) {
+                this.ref.close(null);
+            }
+        });
+    }
+
+    /** The languages of the folder's site, asked of that site. */
+    private loadLocales(siteSlug: string): void {
+        this.http.get<{ member?: { value: string; label: string }[] }>(
+            '/api/v1/options/i18n.site_enabled_locales',
+            { headers: { 'X-CoolMS-Section': siteSlug } },
+        ).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: res => this.locales.set((res.member ?? []).map(o => ({ code: o.value, label: o.label }))),
+            // Without the list the folder is still edited for all languages.
+            error: () => this.locales.set([]),
+        });
     }
 }
