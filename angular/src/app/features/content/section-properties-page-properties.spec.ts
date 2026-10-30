@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting, type TestRequest } from '@angular/common/http/testing';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 import { CollectionService } from './collection.service';
@@ -23,6 +23,8 @@ describe('Section properties: the folder\'s page properties', () => {
     let fixture: ComponentFixture<SectionPropertiesDialogComponent>;
     let closed: unknown[];
     let confirms: number;
+    let ref: { close: (v: unknown) => void; disableClose: boolean | undefined;
+               backdropClick: Subject<MouseEvent>; keydownEvents: Subject<KeyboardEvent> };
 
     function view(locale: string): object {
         return {
@@ -48,6 +50,10 @@ describe('Section properties: the folder\'s page properties', () => {
     function open(data: SectionPropertiesDialogData): HTMLElement {
         closed = [];
         confirms = 0;
+        ref = {
+            close: (v: unknown) => closed.push(v), disableClose: undefined,
+            backdropClick: new Subject<MouseEvent>(), keydownEvents: new Subject<KeyboardEvent>(),
+        };
         TestBed.configureTestingModule({
             imports: [SectionPropertiesDialogComponent],
             providers: [
@@ -55,7 +61,7 @@ describe('Section properties: the folder\'s page properties', () => {
                 provideHttpClientTesting(),
                 { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
                 { provide: DIALOG_DATA, useValue: data },
-                { provide: DialogRef, useValue: { close: (v: unknown) => closed.push(v) } },
+                { provide: DialogRef, useValue: ref },
                 {
                     provide: CollectionService,
                     useValue: {
@@ -154,5 +160,51 @@ describe('Section properties: the folder\'s page properties', () => {
 
         expect(confirms).toBe(1);
         expect(closed).toEqual([null, null]);
+    });
+
+    /** Opens a site's folder and leaves its meta card with a change not saved. */
+    function openDirty(): HTMLElement {
+        const el = open({ path: FOLDER, siteSlug: 'acme' });
+        languages().flush({ member: [] });
+        read('*').flush(view('*'));
+        fixture.detectChanges();
+        const value = el.querySelector('input[aria-label="meta value 1"]') as HTMLInputElement;
+        value.value = 'Bea';
+        value.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+
+        return el;
+    }
+
+    it('takes Escape and the backdrop away from the dialog\'s own close: both ask over a card not saved', () => {
+        openDirty();
+        expect(ref.disableClose).toBeTrue();
+
+        ref.keydownEvents.next(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(confirms).toBe(1);
+        ref.backdropClick.next(new MouseEvent('click'));
+        expect(confirms).toBe(2);
+        expect(closed).toEqual([null, null]);
+    });
+
+    it('closes at once on Escape when no card holds changes, and ignores other keys', () => {
+        open({ path: FOLDER, siteSlug: 'acme' });
+        languages().flush({ member: [] });
+        read('*').flush(view('*'));
+
+        ref.keydownEvents.next(new KeyboardEvent('keydown', { key: 'Enter' }));
+        expect(closed).toEqual([]);
+        ref.keydownEvents.next(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(confirms).toBe(0);
+        expect(closed).toEqual([null]);
+    });
+
+    it('holds the section\'s own actions that close the dialog while a card is not saved, and says why', () => {
+        const el = openDirty();
+
+        const promote = Array.from(el.querySelectorAll('button'))
+            .find(b => b.textContent?.includes('Make this a content collection')) as HTMLButtonElement;
+        expect(promote.disabled).toBeTrue();
+        expect(el.querySelector('[data-test="page-properties-unsaved"]')).not.toBeNull();
     });
 });

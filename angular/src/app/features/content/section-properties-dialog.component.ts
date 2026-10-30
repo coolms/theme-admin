@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { forkJoin, of } from 'rxjs';
-import { catchError, concatMap } from 'rxjs/operators';
+import { catchError, concatMap, filter } from 'rxjs/operators';
 
 import { ChannelConfigField, CollectionService, OutboundChannelDto } from './collection.service';
 import { PageService } from './page.service';
@@ -148,7 +148,7 @@ const TABS: readonly TabStripItem[] = [
                             </div>
                             <button type="button"
                                     class="cms-btn cms-btn-sm"
-                                    [disabled]="saving()"
+                                    [disabled]="saving() || propertiesDirty()"
                                     (click)="promote()">
                                 <i class="bi bi-rss"></i>
                                 <span>Make this a content collection</span>
@@ -243,11 +243,16 @@ const TABS: readonly TabStripItem[] = [
             </div>
 
             <div class="cms-dialog-footer">
+                @if (propertiesDirty()) {
+                    <span class="cms-field-hint spd__unsaved" data-test="page-properties-unsaved">
+                        Save or reset the page properties first.
+                    </span>
+                }
                 <button type="button" class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
                 @if (tab() === 'section' && !loading() && isCollection()) {
                     <button type="button"
                             class="cms-btn cms-btn-primary cms-btn-sm"
-                            [disabled]="saving()"
+                            [disabled]="saving() || propertiesDirty()"
                             (click)="save()">
                         {{ saving() ? 'Saving…' : 'Save' }}
                     </button>
@@ -257,6 +262,7 @@ const TABS: readonly TabStripItem[] = [
     `,
     styles: [`
         .spd { width: 560px; max-width: 94vw; }
+        .spd__unsaved { margin-right: auto; }
         .spd__body { display: flex; flex-direction: column; gap: 14px; max-height: 72vh; overflow-y: auto; }
 
         .spd__path {
@@ -339,6 +345,25 @@ export class SectionPropertiesDialogComponent implements OnInit {
     /** The languages the folder's site publishes in; empty until they are read. */
     protected readonly locales = signal<readonly { code: string; label: string }[]>([]);
     protected readonly propertiesPanel = viewChild(PagePropertiesPanelComponent);
+    /**
+     * A page-properties card holds changes not saved. Saving the section, or making it a collection, closes the
+     * dialog: both wait until the card is saved or reset, as the language does.
+     */
+    protected readonly propertiesDirty = computed(() => this.propertiesPanel()?.dirty() ?? false);
+
+    constructor() {
+        // Escape and a click on the backdrop come here, not to the dialog's own close, so they ask first too: the
+        // dialog closes itself on both unless told not to, whoever opened it.
+        this.ref.disableClose = true;
+        this.ref.backdropClick.pipe(takeUntilDestroyed()).subscribe(() => this.close());
+        this.ref.keydownEvents.pipe(
+            filter(event => event.key === 'Escape'),
+            takeUntilDestroyed(),
+        ).subscribe(event => {
+            event.preventDefault();
+            this.close();
+        });
+    }
 
     protected readonly channelsApiUrl = '/api/v1/options/core.outbound_channels';
 
@@ -631,7 +656,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
 
     /** A page-properties card with changes not saved asks first: closing would lose them. */
     protected close(): void {
-        if (!(this.propertiesPanel()?.dirty() ?? false)) {
+        if (!this.propertiesDirty()) {
             this.ref.close(null);
             return;
         }
