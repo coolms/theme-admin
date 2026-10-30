@@ -7,6 +7,9 @@ import { AppConfigState } from '@coolms/core-angular';
 /** How remote images in a message are treated: the installation's rule, always blocked, or always loaded. */
 export type RemoteImages = 'inherit' | 'block' | 'allow';
 
+/** A rule as the server resolved it: remote images blocked or loaded. */
+export type RemoteImagesRule = 'block' | 'allow';
+
 /** The person's own mail settings: the profile section `mail`. */
 export interface MailPreferences {
     /** The mailbox the mail page opens on and new mail is sent from; null: none chosen. */
@@ -14,10 +17,26 @@ export interface MailPreferences {
     readonly remoteImages: RemoteImages;
     /** Announce new mail as it arrives. */
     readonly notifyNewMail: boolean;
+    /**
+     * Read-only, the server's: the rule that applies to this person, `remoteImages` resolved against the
+     * installation's. Blocked unless the server says "allow". Never sent on a save.
+     */
+    readonly remoteImagesEffective: RemoteImagesRule;
+    /** Read-only, the server's: the installation's own rule, which `inherit` follows; null when not answered. */
+    readonly remoteImagesInstallation: RemoteImagesRule | null;
 }
 
+/** The fields the server answers and never stores: a save leaves them out. */
+export const MAIL_PREFERENCES_READ_ONLY: ReadonlyArray<keyof MailPreferences> = ['remoteImagesEffective', 'remoteImagesInstallation'];
+
 /** The section as the server answers it for someone who never saved it. */
-export const MAIL_PREFERENCE_DEFAULTS: MailPreferences = { defaultMailboxId: null, remoteImages: 'inherit', notifyNewMail: true };
+export const MAIL_PREFERENCE_DEFAULTS: MailPreferences = {
+    defaultMailboxId: null,
+    remoteImages: 'inherit',
+    notifyNewMail: true,
+    remoteImagesEffective: 'block',
+    remoteImagesInstallation: null,
+};
 
 /** The section as read or saved, and the version it is at (the answer's ETag): what a save names. */
 export interface MailPreferencesRead {
@@ -45,6 +64,11 @@ function prefsOf(body: unknown): MailPreferences {
         defaultMailboxId: typeof b.defaultMailboxId === 'string' && b.defaultMailboxId !== '' ? b.defaultMailboxId : null,
         remoteImages: images === 'block' || images === 'allow' ? images : 'inherit',
         notifyNewMail: typeof b.notifyNewMail === 'boolean' ? b.notifyNewMail : MAIL_PREFERENCE_DEFAULTS.notifyNewMail,
+        // Anything but an explicit "allow" -- a missing value included -- is blocked.
+        remoteImagesEffective: b.remoteImagesEffective === 'allow' ? 'allow' : 'block',
+        remoteImagesInstallation: b.remoteImagesInstallation === 'allow' || b.remoteImagesInstallation === 'block'
+            ? b.remoteImagesInstallation
+            : null,
     };
 }
 
@@ -92,7 +116,11 @@ export class MailPreferencesService {
         if (version === null) {
             return throwError(() => new MailPreferencesChangedError());
         }
-        return this.http.patch<unknown>(this.url, changes, {
+        const body: Record<string, unknown> = { ...changes };
+        for (const key of MAIL_PREFERENCES_READ_ONLY) {
+            delete body[key];
+        }
+        return this.http.patch<unknown>(this.url, body, {
             observe: 'response',
             headers: new HttpHeaders({
                 'Content-Type': 'application/merge-patch+json',

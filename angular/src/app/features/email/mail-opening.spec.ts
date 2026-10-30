@@ -20,9 +20,15 @@ describe('The mail page opening, from the mail settings', () => {
         expect(openingMailbox([], null, 'b', null)).toBeNull();
     });
 
-    it('remote images load at once only when the settings say always loaded', () => {
-        expect(loadsRemoteImagesAtOnce({ ...MAIL_PREFERENCE_DEFAULTS, remoteImages: 'allow' })).toBeTrue();
-        expect(loadsRemoteImagesAtOnce({ ...MAIL_PREFERENCE_DEFAULTS, remoteImages: 'block' })).toBeFalse();
-        expect(loadsRemoteImagesAtOnce({ ...MAIL_PREFERENCE_DEFAULTS, remoteImages: 'inherit' })).withContext('blocked until a rule exists').toBeFalse();
+    it('remote images load at once only when the rule the server resolved says allow', () => {
+        const as = (choice: 'inherit' | 'block' | 'allow', effective: 'block' | 'allow') =>
+            loadsRemoteImagesAtOnce({ ...MAIL_PREFERENCE_DEFAULTS, remoteImages: choice, remoteImagesEffective: effective });
+
+        expect(as('allow', 'allow')).toBeTrue();
+        expect(as('inherit', 'allow')).withContext('following an installation that allows them').toBeTrue();
+        expect(as('inherit', 'block')).withContext('following an installation that blocks them').toBeFalse();
+        expect(as('block', 'block')).toBeFalse();
+        expect(as('allow', 'block')).withContext('the server\'s resolution decides, not the choice').toBeFalse();
+        expect(loadsRemoteImagesAtOnce(MAIL_PREFERENCE_DEFAULTS)).withContext('nothing answered yet: blocked').toBeFalse();
     });
 });
