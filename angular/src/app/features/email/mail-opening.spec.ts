@@ -22,13 +22,16 @@ describe('The mail page opening, from the mail settings', () => {
 
     it('remote images load at once only when the rule the server resolved says allow', () => {
         const as = (choice: 'inherit' | 'block' | 'allow', effective: 'block' | 'allow') =>
-            loadsRemoteImagesAtOnce({ ...MAIL_PREFERENCE_DEFAULTS, remoteImages: choice, remoteImagesEffective: effective });
+            loadsRemoteImagesAtOnce({
+                ...MAIL_PREFERENCE_DEFAULTS, remoteImages: choice, remoteImagesEffective: effective,
+            });
 
         expect(as('allow', 'allow')).toBeTrue();
         expect(as('inherit', 'allow')).withContext('following an installation that allows them').toBeTrue();
         expect(as('inherit', 'block')).withContext('following an installation that blocks them').toBeFalse();
         expect(as('block', 'block')).toBeFalse();
         expect(as('allow', 'block')).withContext('the server\'s resolution decides, not the choice').toBeFalse();
-        expect(loadsRemoteImagesAtOnce(MAIL_PREFERENCE_DEFAULTS)).withContext('nothing answered yet: blocked').toBeFalse();
+        expect(loadsRemoteImagesAtOnce(MAIL_PREFERENCE_DEFAULTS))
+            .withContext('nothing answered yet: blocked').toBeFalse();
     });
 });

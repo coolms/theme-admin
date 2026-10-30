@@ -27,7 +27,10 @@ export interface MailPreferences {
 }
 
 /** The fields the server answers and never stores: a save leaves them out. */
-export const MAIL_PREFERENCES_READ_ONLY: ReadonlyArray<keyof MailPreferences> = ['remoteImagesEffective', 'remoteImagesInstallation'];
+export const MAIL_PREFERENCES_READ_ONLY: ReadonlyArray<keyof MailPreferences> = [
+    'remoteImagesEffective',
+    'remoteImagesInstallation',
+];
 
 /** The section as the server answers it for someone who never saved it. */
 export const MAIL_PREFERENCE_DEFAULTS: MailPreferences = {
