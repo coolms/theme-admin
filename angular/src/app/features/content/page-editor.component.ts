@@ -34,6 +34,7 @@ import { ContentFieldPanelsComponent } from './content-field-panels.component';
 import { ContentFieldDescriptorDto, ContentFieldPanelsService } from './content-field-panels.service';
 import { BlockEditorComponent } from './block-editor.component';
 import { FileHistoryPanelComponent } from './file-history-panel.component';
+import { PageHistoryPanelComponent } from './page-history-panel.component';
 import { FileHistoryService } from './file-history.service';
 import { EditorPanelsService, EditorPanelDto } from './editor-panels.service';
 import { PageSizeService, PageSizeOption } from './page-size.service';
@@ -81,7 +82,7 @@ type RailTab = string;
     // EditorCollabService is per-editor: its ngOnDestroy unsubscribes the
     // doc presence channel when this dialog closes.
     providers: [EditorCollabService],
-    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent, DrawnByNoticeComponent, PagePropertiesPanelComponent],
+    imports: [FormsModule, CoolmsEditorComponent, ContentFieldPanelsComponent, FieldWidgetHostComponent, BlockEditorComponent, FileHistoryPanelComponent, PageHistoryPanelComponent, EditorPresenceBarComponent, DateTimeFieldComponent, DrawnByNoticeComponent, PagePropertiesPanelComponent],
     template: `
         <div class="page-editor" [class.page-editor--fullscreen]="fullscreen()" [class.page-editor--landing]="landingMode()">
 
@@ -373,10 +374,19 @@ type RailTab = string;
                                     <div class="page-editor__rail-body">
                                         @switch (tab) {
                                             @case ('history') {
+                                                <!-- The page's own versions first: what changed, by whom, grouped.
+                                                     The active language's body, line by line, below it until the
+                                                     page diff reaches bodies. -->
+                                                @if (postPath()) {
+                                                    <app-page-history-panel [path]="postPath()" />
+                                                }
                                                 @if (activeVariantPath()) {
-                                                    <app-file-history-panel
-                                                        [path]="activeVariantPath()"
-                                                        (restored)="onRevisionRestored()" />
+                                                    <details class="page-editor__body-history">
+                                                        <summary>Body of this language, line by line</summary>
+                                                        <app-file-history-panel
+                                                            [path]="activeVariantPath()"
+                                                            (restored)="onRevisionRestored()" />
+                                                    </details>
                                                 }
                                             }
                                             @case ('meta') {
@@ -691,6 +701,8 @@ type RailTab = string;
         /* Layout panel: a page-size max-width caps + centers the editing canvas. */
         .page-editor__canvas { width: 100%; margin-inline: auto; }
         .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: .5rem 0 0; }
+        .page-editor__body-history { margin-top: 12px; font-size: .8125rem; }
+        .page-editor__body-history > summary { cursor: pointer; color: var(--cms-text-muted); }
 
         /* Right side-rail (History / Meta / Schedule / Fields) */
         .page-editor__rail { display: flex; flex-shrink: 0; border-left: 1px solid var(--cms-border); }
