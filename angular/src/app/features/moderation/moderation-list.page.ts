@@ -187,7 +187,9 @@ export class ModerationListComponent implements OnInit {
         columnFilters: ReadonlyArray<string>;
     }): void {
         this.lastLoad = event;
-        this.loadFailure.set(null);
+        // Only a request that starts the list owns the banner; a later page that fails keeps the rows shown.
+        const startsList = event.reset || event.offset === 0;
+        if (startsList) this.loadFailure.set(null);
         const page  = Math.floor(event.offset / PAGE_SIZE) + 1;
         const epoch = ++this.loadEpoch;
 
@@ -217,7 +219,8 @@ export class ModerationListComponent implements OnInit {
                 // failed page forever.
                 this.loading.set(false);
                 this.loaded.set(true);
-                this.loadFailure.set(err);
+                if (startsList) this.loadFailure.set(err);
+                else this.toast.error('Failed to load the moderation queue');
             },
         });
     }

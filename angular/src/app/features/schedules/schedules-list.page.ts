@@ -170,7 +170,9 @@ export class SchedulesListComponent implements OnInit {
         columnFilters: ReadonlyArray<string>;
     }): void {
         this.lastLoad = event;
-        this.loadFailure.set(null);
+        // Only a request that starts the list owns the banner; a later page that fails keeps the rows shown.
+        const startsList = event.reset || event.offset === 0;
+        if (startsList) this.loadFailure.set(null);
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
@@ -194,7 +196,8 @@ export class SchedulesListComponent implements OnInit {
             error: (err: unknown) => {
                 this.loaded.set(true); // flip even on error so sentinel doesn't retry-loop
                 if (epoch !== this._loadEpoch) return; // stale
-                this.loadFailure.set(err);
+                if (startsList) this.loadFailure.set(err);
+                else this.toast.error('Failed to load schedules');
             },
         });
     }

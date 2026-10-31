@@ -125,73 +125,109 @@ describe('List pages show a failed load in the error banner', () => {
             p => p.onLoadMore(FIRST), p => p.retryLoad(), { findTreeByCode: () => of(null) }),
     ];
 
+    /**
+     * A fresh module per page: `api` answers `method` from `answers` in turn (the last one repeats), every toast is
+     * recorded in `toasts`, and the rest of what construction reaches for is stubbed.
+     */
+    function configure(
+        api: ProviderToken<unknown>,
+        method: string,
+        answers: Array<() => Observable<unknown>>,
+        toasts: string[],
+        alongside?: Record<string, () => Observable<unknown>>,
+    ): { asked: () => number } {
+        let asked = 0;
+        const recordToast = (m: string): void => { toasts.push(m); };
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                {
+                    provide: api,
+                    useValue: {
+                        ...alongside,
+                        [method]: () => answers[Math.min(asked++, answers.length - 1)](),
+                    },
+                },
+                { provide: Store, useValue: { selectSnapshot: () => null } },
+                {
+                    provide: ToastService,
+                    useValue: { error: recordToast, success: recordToast, info: recordToast },
+                },
+                { provide: PageTitleService, useValue: { set: (): void => {} } },
+                { provide: Dialog, useValue: {} },
+                { provide: ConfirmDialogService, useValue: {} },
+                { provide: ErrorHandlerService, useValue: { humanize: (): string => 'refused' } },
+                { provide: Router, useValue: {} },
+                {
+                    provide: ActivatedRoute,
+                    useValue: {
+                        snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({}) },
+                    },
+                },
+                { provide: DateTimeFormatService, useValue: {} },
+                { provide: InboxLiveEventsService, useValue: { watch: () => NEVER } },
+                { provide: ContextMenuService, useValue: {} },
+                { provide: PageFooterService, useValue: { update: (): void => {} } },
+                {
+                    provide: PageSpaceStateService,
+                    useValue: {
+                        spaceKey:                signal('site'),
+                        spaceRoot:               signal('/site'),
+                        pageTypes:               signal([]),
+                        viewMode:                signal('details'),
+                        folderId:                signal(null),
+                        folderPath:              signal('/site'),
+                        actionRequested$:        NEVER,
+                        sectionActionRequested$: NEVER,
+                        resetFolder:             (): void => {},
+                    },
+                },
+            ],
+        });
+
+        return { asked: () => asked };
+    }
+
     for (const r of ROWS) {
         it(`${r.name}: a failed load is the banner, Retry asks again, a success clears it`, () => {
             const failure = new HttpErrorResponse({ status: 500 });
-            const answers: Array<() => Observable<unknown>> = [() => throwError(() => failure), () => of(r.ok)];
-            let asked = 0;
             const toasts: string[] = [];
-            const recordToast = (m: string): void => { toasts.push(m); };
-
-            TestBed.resetTestingModule();
-            TestBed.configureTestingModule({
-                providers: [
-                    {
-                        provide: r.api,
-                        useValue: {
-                            ...r.alongside,
-                            [r.method]: () => answers[Math.min(asked++, answers.length - 1)](),
-                        },
-                    },
-                    { provide: Store, useValue: { selectSnapshot: () => null } },
-                    {
-                        provide: ToastService,
-                        useValue: { error: recordToast, success: recordToast, info: recordToast },
-                    },
-                    { provide: PageTitleService, useValue: { set: (): void => {} } },
-                    { provide: Dialog, useValue: {} },
-                    { provide: ConfirmDialogService, useValue: {} },
-                    { provide: ErrorHandlerService, useValue: { humanize: (): string => 'refused' } },
-                    { provide: Router, useValue: {} },
-                    {
-                        provide: ActivatedRoute,
-                        useValue: {
-                            snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({}) },
-                        },
-                    },
-                    { provide: DateTimeFormatService, useValue: {} },
-                    { provide: InboxLiveEventsService, useValue: { watch: () => NEVER } },
-                    { provide: ContextMenuService, useValue: {} },
-                    { provide: PageFooterService, useValue: { update: (): void => {} } },
-                    {
-                        provide: PageSpaceStateService,
-                        useValue: {
-                            spaceKey:                signal('site'),
-                            spaceRoot:               signal('/site'),
-                            pageTypes:               signal([]),
-                            viewMode:                signal('details'),
-                            folderId:                signal(null),
-                            folderPath:              signal('/site'),
-                            actionRequested$:        NEVER,
-                            sectionActionRequested$: NEVER,
-                            resetFolder:             (): void => {},
-                        },
-                    },
-                ],
-            });
+            const answers = [() => throwError(() => failure), () => of(r.ok)];
+            const api = configure(r.api, r.method, answers, toasts, r.alongside);
             const page = TestBed.runInInjectionContext(() => r.build());
 
             r.load(page);
 
-            expect(asked).withContext('the load asked the API').toBe(1);
+            expect(api.asked()).withContext('the load asked the API').toBe(1);
             expect(page.loadFailure()).withContext('the failure is held for the banner').toBe(failure);
             expect(toasts).withContext('no toast for a failed load').toEqual([]);
 
             r.retry(page);
 
-            expect(asked).withContext('Retry asked the API again').toBe(2);
+            expect(api.asked()).withContext('Retry asked the API again').toBe(2);
             expect(page.loadFailure()).withContext('a load that succeeds clears the failure').toBeNull();
             expect(toasts).toEqual([]);
         });
     }
+
+    it('calendars: a later page that fails keeps the rows and the grid, and is the toast', () => {
+        const toasts: string[] = [];
+        const first = { items: [{ id: 'c1', label: 'One' }], totalItems: 2 };
+        const api = configure(
+            CalendarsApiService,
+            'listCalendarsPage',
+            [() => of(first), () => throwError(() => new HttpErrorResponse({ status: 500 }))],
+            toasts,
+        );
+        const page = TestBed.runInInjectionContext(() => new CalendarsListComponent());
+        page.onLoadMore(FIRST);
+        expect(page.calendars().map(c => c.id)).withContext('the first page loaded').toEqual(['c1']);
+
+        page.onLoadMore({ ...FIRST, reset: false, offset: 1 });
+
+        expect(api.asked()).withContext('the append asked the API').toBe(2);
+        expect(page.loadFailure()).withContext('no banner for a failed append').toBeNull();
+        expect(page.calendars().map(c => c.id)).withContext('the first page is still shown').toEqual(['c1']);
+        expect(toasts).toEqual(['Failed to load calendars']);
+    });
 });
