@@ -18,6 +18,7 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -52,7 +53,7 @@ const TREE_CODE = 'categories';
     selector: 'coolms-admin-categories-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Categories"
@@ -66,7 +67,18 @@ const TREE_CODE = 'categories';
                  [externalData] from TaxonomyService (the full tree, loaded at once).
                  showActionColumn:false — actions come from the action bar (above) +
                  the right-click context menu (rowActions), not per-row buttons. -->
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load categories"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="taxonomy:categories"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -89,6 +101,7 @@ export class CategoriesPageComponent implements OnInit {
     private readonly toast      = inject(ToastService);
     private readonly titleSvc   = inject(PageTitleService);
     private readonly destroyRef = inject(DestroyRef);
+    private lastLoad: Parameters<CategoriesPageComponent['onLoadMore']>[0] | null = null;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -110,6 +123,8 @@ export class CategoriesPageComponent implements OnInit {
      * reports `hasMore: false` and the sentinel doesn't refetch endlessly.
      */
     private readonly loaded   = signal(false);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
 
     readonly footerLabel = signal<string>('');
 
@@ -150,6 +165,8 @@ export class CategoriesPageComponent implements OnInit {
     /** Single data-load entry point; the grid calls it on init + on reload(). */
     onLoadMore(event: { offset: number; sort: string | null; reset: boolean }): void {
         if (!event.reset && event.offset > 0) return; // whole tree fetched at once
+        this.lastLoad = event;
+        this.loadFailure.set(null);
         forkJoin({
             tree:  this.api.findTreeByCode(TREE_CODE),
             nodes: this.api.listNodes(TREE_CODE),
@@ -162,8 +179,13 @@ export class CategoriesPageComponent implements OnInit {
                     nodes.length === 0 ? '' : `${nodes.length} categor${nodes.length === 1 ? 'y' : 'ies'}`,
                 );
             },
-            error: () => { this.loaded.set(true); this.toast.error('Failed to load categories'); },
+            error: (err: unknown) => { this.loaded.set(true); this.loadFailure.set(err); },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     /** Tree-mode: resolve a parent's direct children from the in-memory list. */

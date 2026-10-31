@@ -13,6 +13,7 @@ import { filter, switchMap } from 'rxjs';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -49,7 +50,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
     selector: 'coolms-admin-experiments',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent],
+    imports: [CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Experiments"
@@ -59,8 +60,17 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             [footerCount]="footerLabel()"
             (actionClick)="onHeaderAction($event)">
             <div class="cms-exp">
+            <!-- A failed load is shown in place of the cards: the failure itself goes to the banner, so a refusal
+                 for want of elevation is the Elevate state and anything else the message with Retry. The cards keep
+                 no view state of their own, so the banner replaces them rather than hiding them. -->
             @if (loading()) {
                 <p class="cms-exp__hint">Loading experiments…</p>
+            } @else if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load experiments"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="load()" />
             } @else if (experiments().length === 0) {
                 <div class="cms-exp__empty">
                     <i class="bi bi-signpost-split"></i>
@@ -327,6 +337,8 @@ export class ExperimentsListComponent implements OnInit {
 
     readonly experiments = signal<ExperimentDto[]>([]);
     readonly loading     = signal(true);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the cards. */
+    readonly loadFailure = signal<unknown>(null);
     /** Keys with an in-flight mutation -- disables that card's controls. */
     private readonly pendingKeys = signal<ReadonlySet<string>>(new Set());
 
@@ -470,13 +482,14 @@ export class ExperimentsListComponent implements OnInit {
         this.pendingKeys.set(next);
     }
 
-    private load(): void {
+    load(): void {
         this.loading.set(true);
+        this.loadFailure.set(null);
         this.api.list().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next:  rows => { this.experiments.set(rows); this.loading.set(false); },
-            error: ()   => { this.loading.set(false); this.toast.error('Failed to load experiments'); },
+            error: (err: unknown) => { this.loading.set(false); this.loadFailure.set(err); },
         });
     }
 }

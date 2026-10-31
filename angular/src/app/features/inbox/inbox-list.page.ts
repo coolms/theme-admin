@@ -19,6 +19,7 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
+    ErrorBannerComponent,
     PageTitleService,
     TabStripComponent,
     ToastService,
@@ -63,7 +64,7 @@ import { InboxTab, InboxTaskDto, TaskState } from './inbox.types';
     selector: 'coolms-admin-inbox-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent, TabStripComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent, TabStripComponent],
     template: `
         <cms-list-page
             title="Inbox"
@@ -79,7 +80,18 @@ import { InboxTab, InboxTaskDto, TaskState } from './inbox.types';
                 [activeId]="tab()"
                 (selected)="switchTab($any($event))" />
 
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load inbox tasks"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="inbox:tasks"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -109,6 +121,7 @@ export class InboxListComponent implements OnInit {
     private readonly destroyRef  = inject(DestroyRef);
 
     private readonly PAGE_SIZE = 50;
+    private lastLoad: Parameters<InboxListComponent['onLoadMore']>[0] | null = null;
 
     readonly TABS: ReadonlyArray<{ id: InboxTab; label: string }> = [
         { id: 'assigned',  label: 'My tasks' },
@@ -131,6 +144,8 @@ export class InboxListComponent implements OnInit {
 
     readonly tasks       = signal<ReadonlyArray<InboxTaskDto>>([]);
     readonly totalItems  = signal(0);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     private readonly loaded = signal(false);
     readonly footerLabel = computed(() =>
         this.loaded() ? `${this.totalItems()} task${this.totalItems() === 1 ? '' : 's'}` : '',
@@ -226,6 +241,10 @@ export class InboxListComponent implements OnInit {
         reset:         boolean;
         columnFilters: ReadonlyArray<string>;
     }): void {
+        this.lastLoad = event;
+        // Only a request that starts the list owns the banner; a later page that fails keeps the rows shown.
+        const startsList = event.reset || event.offset === 0;
+        if (startsList) this.loadFailure.set(null);
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
@@ -247,11 +266,18 @@ export class InboxListComponent implements OnInit {
                 this.totalItems.set(result.totalItems);
                 this.loaded.set(true);
             },
-            error: () => {
+            error: (err: unknown) => {
                 this.loaded.set(true);
-                this.toast.error('Failed to load inbox tasks');
+                if (epoch !== this._loadEpoch) return; // stale
+                if (startsList) this.loadFailure.set(err);
+                else this.toast.error('Failed to load inbox tasks');
             },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {

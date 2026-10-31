@@ -16,6 +16,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
+    ErrorBannerComponent,
     PageTitleService,
     TabStripComponent,
     ToastService,
@@ -70,7 +71,7 @@ interface StatusTab {
     selector: 'coolms-admin-newsletter',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent, TabStripComponent],
+    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent, TabStripComponent],
     template: `
         <cms-list-page
             title="Newsletter"
@@ -86,7 +87,18 @@ interface StatusTab {
                         [activeId]="status()"
                         (selected)="selectTab($any($event))" />
 
+                    <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a
+                         refusal for want of elevation is the Elevate state and anything else the message with Retry.
+                         The grid stays mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+                    @if (loadFailure() !== null) {
+                        <app-error-banner
+                            message="Failed to load subscribers"
+                            [error]="loadFailure()"
+                            [showRetry]="true"
+                            (retry)="retryLoad()" />
+                    }
                     <coolms-datagrid
+                        [hidden]="loadFailure() !== null"
                         gridId="newsletter:list"
                         [configBaseUrl]="configBaseUrl()"
                         [externalData]="gridData()"
@@ -143,9 +155,12 @@ export class NewsletterListComponent implements OnInit {
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded = signal(false);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
 
     /** Guards against out-of-order responses; see {@link onLoadMore}. */
     private loadEpoch = 0;
+    private lastLoad: Parameters<NewsletterListComponent['onLoadMore']>[0] | null = null;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -206,6 +221,10 @@ export class NewsletterListComponent implements OnInit {
         reset:         boolean;
         columnFilters: ReadonlyArray<string>;
     }): void {
+        this.lastLoad = event;
+        // Only a request that starts the list owns the banner; a later page that fails keeps the rows shown.
+        const startsList = event.reset || event.offset === 0;
+        if (startsList) this.loadFailure.set(null);
         const status = this.status();
         const page   = Math.floor(event.offset / PAGE_SIZE) + 1;
         const epoch  = ++this.loadEpoch;
@@ -236,15 +255,21 @@ export class NewsletterListComponent implements OnInit {
                     this.confirmedCount.set(result.totalItems);
                 }
             },
-            error: () => {
+            error: (err: unknown) => {
                 if (epoch !== this.loadEpoch) return;
                 // Settle `hasMore` on failure too, or the sentinel retries the
                 // failed page forever.
                 this.loading.set(false);
                 this.loaded.set(true);
-                this.toast.error('Failed to load subscribers');
+                if (startsList) this.loadFailure.set(err);
+                else this.toast.error('Failed to load subscribers');
             },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     onToolbarAction(id: string): void {

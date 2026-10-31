@@ -16,6 +16,7 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     DataGridComponent,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
     type DataGridData,
@@ -54,7 +55,7 @@ const PAGE_SIZE = 50;
     selector: 'coolms-admin-moderation-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent],
+    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Comment moderation"
@@ -64,7 +65,18 @@ const PAGE_SIZE = 50;
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load the moderation queue"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="comment:moderation"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -92,9 +104,12 @@ export class ModerationListComponent implements OnInit {
     readonly totalItems = signal(0);
     /** Flips true after the first response (success OR error) so the footer stops hiding. */
     readonly loaded = signal(false);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
 
     /** Guards against out-of-order responses; see {@link onLoadMore}. */
     private loadEpoch = 0;
+    private lastLoad: Parameters<ModerationListComponent['onLoadMore']>[0] | null = null;
     /** Ids with an in-flight approve/reject -- blocks double-submit. */
     private readonly busyIds = signal<ReadonlySet<string>>(new Set());
 
@@ -171,6 +186,10 @@ export class ModerationListComponent implements OnInit {
         reset:         boolean;
         columnFilters: ReadonlyArray<string>;
     }): void {
+        this.lastLoad = event;
+        // Only a request that starts the list owns the banner; a later page that fails keeps the rows shown.
+        const startsList = event.reset || event.offset === 0;
+        if (startsList) this.loadFailure.set(null);
         const page  = Math.floor(event.offset / PAGE_SIZE) + 1;
         const epoch = ++this.loadEpoch;
 
@@ -194,15 +213,21 @@ export class ModerationListComponent implements OnInit {
                 this.loaded.set(true);
                 if (event.reset) this.selectedRow.set(null);
             },
-            error: () => {
+            error: (err: unknown) => {
                 if (epoch !== this.loadEpoch) return;
                 // Settle `hasMore` on failure too, or the sentinel retries the
                 // failed page forever.
                 this.loading.set(false);
                 this.loaded.set(true);
-                this.toast.error('Failed to load the moderation queue');
+                if (startsList) this.loadFailure.set(err);
+                else this.toast.error('Failed to load the moderation queue');
             },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     /** Toolbar actions: Refresh + the selection-gated Approve / Reject mirrors. */

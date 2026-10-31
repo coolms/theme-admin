@@ -21,6 +21,7 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -32,7 +33,7 @@ import { ApplyNginxChanges } from './section.actions';
     selector: 'coolms-admin-sections-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Site Sections"
@@ -43,7 +44,18 @@ import { ApplyNginxChanges } from './section.actions';
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config fetched from /api/v1/datagrids/section:sections (no externalConfig).
                  All sections are loaded at once via (loadMore) (no server-side pagination). -->
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load sections"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="section:sections"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -66,6 +78,7 @@ export class SectionsListComponent implements OnInit {
     private readonly errors     = inject(ErrorHandlerService);
     private readonly titleSvc    = inject(PageTitleService);
     private readonly destroyRef  = inject(DestroyRef);
+    private lastLoad: Parameters<SectionsListComponent['onLoadMore']>[0] | null = null;
 
     /**
      * Slug of the catch-all/default SiteSection. Kept in lockstep with
@@ -84,6 +97,8 @@ export class SectionsListComponent implements OnInit {
 
     /** Flips true after the first load so the footer count stays blank until then. */
     readonly loaded = signal(false);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     readonly footerLabel = computed(() =>
         this.loaded() ? `${this.sections().length} section${this.sections().length === 1 ? '' : 's'}` : '',
     );
@@ -138,6 +153,8 @@ export class SectionsListComponent implements OnInit {
     }): void {
         // All sections fetched in one request; skip append calls.
         if (!event.reset && event.offset > 0) return;
+        this.lastLoad = event;
+        this.loadFailure.set(null);
 
         const epoch = ++this._loadEpoch;
 
@@ -150,8 +167,16 @@ export class SectionsListComponent implements OnInit {
                 this.hasMore.set(false); // all loaded at once
                 this.loaded.set(true);
             },
-            error: () => this.toast.error('Failed to load sections'),
+            error: (err: unknown) => {
+                if (epoch !== this._loadEpoch && event.reset) return; // stale reset
+                this.loadFailure.set(err);
+            },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {
