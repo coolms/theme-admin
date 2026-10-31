@@ -1,6 +1,7 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
+import { DateTimeFormatService } from '@coolms/ui-angular';
 import { PageHistoryPanelComponent } from './page-history-panel.component';
 import { PageVersionsService } from './page-versions.service';
 import { type PageVersionDto, type PageVersionsDto } from './page-versions';
@@ -23,6 +24,9 @@ describe('PageHistoryPanelComponent', () => {
         TestBed.configureTestingModule({
             imports: [PageHistoryPanelComponent],
             providers: [{
+                provide: DateTimeFormatService,
+                useValue: { time: (iso: string) => iso.slice(11, 16), dateTime: (iso: string) => iso.slice(0, 16) },
+            }, {
                 provide: PageVersionsService,
                 useValue: {
                     list: (_path: string, before: number | null) => {
@@ -42,7 +46,9 @@ describe('PageHistoryPanelComponent', () => {
     it('lists consecutive saves as one group that opens to its versions', () => {
         answers = [() => of({
             path: '/content/site/about.page', hasMore: false,
-            versions: [version(3, '14:11', ['tags']), version(2, '14:05', ['blocks']), version(1, '14:02', ['created'])],
+            versions: [
+                version(3, '14:11', ['tags']), version(2, '14:05', ['blocks']), version(1, '14:02', ['created']),
+            ],
         })];
         const el = open();
 
@@ -71,6 +77,62 @@ describe('PageHistoryPanelComponent', () => {
         expect(asked).toEqual([null, 9]);
         expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([9, 4]);
         expect(el.querySelector('[data-test="history-more"]')).toBeNull();
+    });
+
+    it('keeps the versions read when an older page fails, and its Retry asks for that same page', () => {
+        answers = [
+            () => of({ path: '/p', hasMore: true, versions: [version(9, '15:00', ['tags'])] }),
+            () => throwError(() => new HttpErrorResponse({ status: 500 })),
+            () => of({ path: '/p', hasMore: false, versions: [version(4, '09:00', ['created'])] }),
+        ];
+        const el = open();
+
+        (el.querySelector('[data-test="history-more"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([9]);
+        expect(el.querySelectorAll('[data-test="history-group"]').length).toBe(1);
+        expect(el.querySelector('app-error-banner')).not.toBeNull();
+
+        fixture.componentInstance.more();
+        fixture.detectChanges();
+
+        expect(asked).toEqual([null, 9, 9]);
+        expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([9, 4]);
+        expect(el.querySelector('app-error-banner')).toBeNull();
+    });
+
+    it('drops a late answer for a path no longer asked about', () => {
+        const old = new Subject<PageVersionsDto>();
+        answers = [() => old, () => of({ path: '/b', hasMore: false, versions: [version(7, '12:00', ['frame'])] })];
+        open();
+
+        fixture.componentRef.setInput('path', '/content/site/other.page');
+        fixture.detectChanges();
+        old.next({ path: '/a', hasMore: false, versions: [version(1, '08:00', ['created'])] });
+        old.complete();
+
+        expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([7]);
+    });
+
+    it('drops an older page still on its way when the list is read again', () => {
+        const late = new Subject<PageVersionsDto>();
+        answers = [
+            () => of({ path: '/p', hasMore: true, versions: [version(9, '15:00', ['tags'])] }),
+            () => late,
+            () => of({
+                path: '/p', hasMore: true,
+                versions: [version(10, '15:30', ['blocks']), version(9, '15:00', ['tags'])],
+            }),
+        ];
+        open();
+        fixture.componentInstance.more();
+
+        fixture.componentInstance.reload();
+        late.next({ path: '/p', hasMore: false, versions: [version(4, '09:00', ['created'])] });
+        late.complete();
+
+        expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([10, 9]);
     });
 
     it('says when there is no version yet', () => {

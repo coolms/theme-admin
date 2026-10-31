@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DatePipe } from '@angular/common';
-import { ErrorBannerComponent } from '@coolms/ui-angular';
+import { DateTimeFormatService, ErrorBannerComponent } from '@coolms/ui-angular';
 import { PageVersionDto, groupVersions } from './page-versions';
 import { PageVersionsService } from './page-versions.service';
 
@@ -16,13 +15,14 @@ import { PageVersionsService } from './page-versions.service';
     selector: 'app-page-history-panel',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DatePipe, ErrorBannerComponent],
+    imports: [ErrorBannerComponent],
     template: `
         <div class="ph">
             <div class="ph__head">
                 <span class="ph__count">
                     @if (versions().length > 0) {
-                        {{ versions().length }}{{ hasMore() ? '+' : '' }} version{{ versions().length === 1 ? '' : 's' }}
+                        {{ versions().length }}{{ hasMore() ? '+' : '' }}
+                        version{{ versions().length === 1 ? '' : 's' }}
                     }
                 </span>
                 <button type="button" class="cms-btn cms-btn-sm" title="Refresh" aria-label="Refresh"
@@ -31,7 +31,8 @@ import { PageVersionsService } from './page-versions.service';
                 </button>
             </div>
 
-            @if (failure() !== null) {
+            @if (failure() !== null && versions().length === 0) {
+                <!-- Nothing read yet: the failure stands in place of the list. -->
                 <app-error-banner message="The history could not be read" [error]="failure()" [showRetry]="true"
                                   (retry)="reload()" />
             } @else if (loading() && versions().length === 0) {
@@ -49,10 +50,10 @@ import { PageVersionsService } from './page-versions.service';
                                 @if (group.versions.length > 1) {
                                     <span class="ph__saves">{{ group.versions.length }} saves</span>
                                     <span class="ph__when">
-                                        {{ group.oldest | date: 'short' }} – {{ group.newest | date: 'shortTime' }}
+                                        {{ format.dateTime(group.oldest) }} – {{ format.time(group.newest) }}
                                     </span>
                                 } @else {
-                                    <span class="ph__when">{{ group.newest | date: 'short' }}</span>
+                                    <span class="ph__when">{{ format.dateTime(group.newest) }}</span>
                                 }
                                 <span class="ph__changes">
                                     @for (label of group.changes; track label) {
@@ -64,7 +65,7 @@ import { PageVersionsService } from './page-versions.service';
                                 <ol class="ph__versions" data-test="history-versions">
                                     @for (version of group.versions; track version.id) {
                                         <li class="ph__version">
-                                            <span class="ph__when">{{ version.recordedAt | date: 'mediumTime' }}</span>
+                                            <span class="ph__when">{{ format.time(version.recordedAt) }}</span>
                                             @if (version.message) {
                                                 <span class="ph__message">{{ version.message }}</span>
                                             }
@@ -80,7 +81,12 @@ import { PageVersionsService } from './page-versions.service';
                         </li>
                     }
                 </ol>
-                @if (hasMore()) {
+                @if (failure() !== null) {
+                    <!-- An older page that failed: the versions read stay, and the failure stands where the button
+                         was, its Retry asking for the same page. -->
+                    <app-error-banner message="Older versions could not be read" [error]="failure()" [showRetry]="true"
+                                      (retry)="more()" />
+                } @else if (hasMore()) {
                     <button type="button" class="cms-btn cms-btn-sm ph__more" data-test="history-more"
                             [disabled]="loading()" (click)="more()">Older versions</button>
                 }
@@ -112,6 +118,10 @@ import { PageVersionsService } from './page-versions.service';
 export class PageHistoryPanelComponent {
     private readonly service = inject(PageVersionsService);
     private readonly destroyRef = inject(DestroyRef);
+    /** The person's own date and time setting, as the rest of the admin writes times. */
+    protected readonly format = inject(DateTimeFormatService);
+    /** The latest request's number: an answer to any earlier one is dropped (a path changed, a refresh came). */
+    private generation = 0;
 
     /** The page, the folder, or a language file of the page. */
     readonly path = input<string>('');
@@ -170,15 +180,30 @@ export class PageHistoryPanelComponent {
     }
 
     private load(path: string, before: number | null): void {
+        const generation = ++this.generation;
         this.loading.set(true);
         this.failure.set(null);
+        if (before === null) {
+            // A first page replaces the list; until it answers, nothing older is offered on top of the old one.
+            this.hasMore.set(false);
+        }
         this.service.list(path, before).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: page => {
+                if (generation !== this.generation) {
+                    return;
+                }
                 this.versions.set(before === null ? page.versions : [...this.versions(), ...page.versions]);
                 this.hasMore.set(page.hasMore);
                 this.loading.set(false);
             },
             error: (err: unknown) => {
+                if (generation !== this.generation) {
+                    return;
+                }
+                if (before === null) {
+                    // The list read was refused: what was shown belongs to another path or an older read.
+                    this.versions.set([]);
+                }
                 this.failure.set(err);
                 this.loading.set(false);
             },
