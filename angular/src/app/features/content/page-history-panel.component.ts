@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
+import {
+    ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DateTimeFormatService, ErrorBannerComponent } from '@coolms/ui-angular';
@@ -252,10 +254,12 @@ export class PageHistoryPanelComponent {
     private blameGeneration = 0;
 
     constructor() {
+        // Only the path is this effect's: what load() reads (the view, the list) is read untracked, or switching
+        // between Versions and By section would read the first page again and drop the older ones paged in.
         effect(() => {
             const path = this.path();
             if (path) {
-                this.load(path, null);
+                untracked(() => this.load(path, null));
             }
         });
     }

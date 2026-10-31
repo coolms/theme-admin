@@ -127,8 +127,8 @@ const TABS: readonly TabStripItem[] = [
                 </div>
             }
 
-            <!-- The folder's history, compact: its latest versions, each opening to what changed. Read when the tab is
-                 first opened, not with the dialog. -->
+            <!-- The folder's history, compact: its latest versions, each opening to what changed. Read each time the tab
+                 is opened (not with the dialog), so it shows what the folder's saves left since. -->
             @if (hasPageProperties() && tab() === 'history') {
                 <div class="cms-dialog-body spd__body" data-test="folder-history">
                     <app-page-history-panel [path]="data.path" [compact]="true" />

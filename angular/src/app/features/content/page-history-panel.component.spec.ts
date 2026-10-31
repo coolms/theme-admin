@@ -250,6 +250,27 @@ describe('PageHistoryPanelComponent', () => {
         expect(el.querySelectorAll('[data-test="history-group"]').length).toBe(7);
     });
 
+    it('keeps the versions paged in when the view goes to By section and back, reading nothing again', () => {
+        answers = [
+            () => of({ path: '/p', hasMore: true, versions: [version(9, '15:00', ['tags'])] }),
+            () => of({ path: '/p', hasMore: false, versions: [version(4, '09:00', ['created'])] }),
+        ];
+        open();
+        fixture.componentInstance.more();
+        fixture.detectChanges();
+
+        fixture.componentInstance.show('blame');
+        fixture.detectChanges();
+        TestBed.tick();
+        fixture.componentInstance.show('versions');
+        fixture.detectChanges();
+        TestBed.tick();
+
+        expect(asked).toEqual([null, 9]);
+        expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([9, 4]);
+        expect(blameAsked.length).toBe(1);
+    });
+
     it('says when there is no version yet', () => {
         answers = [() => of({ path: '/p', hasMore: false, versions: [] })];
 
