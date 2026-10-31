@@ -9,13 +9,18 @@ import {
     ViewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DateTimeFormatService, DynamicFormComponent, ToastService } from '@coolms/ui-angular';
+import {
+    DateTimeFormatService,
+    DynamicFormComponent,
+    ElevationRequiredComponent,
+    ToastService,
+} from '@coolms/ui-angular';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { forkJoin } from 'rxjs';
 import { IdentityApiService } from './identity-api.service';
 import { CreateUserDto, IdentityUserDto } from './identity.types';
-import { AppConfigState, CmsLoaderComponent, ErrorHandlerService } from '@coolms/core-angular';
+import { AppConfigState, CmsLoaderComponent, ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
 import { UserDeletionPanelComponent } from './user-deletion-panel.component';
 
 interface UserEditDialogData {
@@ -28,7 +33,7 @@ interface UserEditDialogData {
     selector: 'app-user-edit-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, DynamicFormComponent, UserDeletionPanelComponent],
+    imports: [CmsLoaderComponent, DynamicFormComponent, ElevationRequiredComponent, UserDeletionPanelComponent],
     template: `
         <div class="cms-dialog ued-dialog">
             <div class="cms-dialog-header">
@@ -47,6 +52,12 @@ interface UserEditDialogData {
             @if (loadingUser()) {
                 <div class="ued-loading-user">
                     <cms-loader [inline]="true" />
+                </div>
+            } @else if (elevationRequired()) {
+                <!-- The account is people's data, read in an elevated session only: refused for want of elevation,
+                     the Elevate state stands in place of the form, and the account is read again after it. -->
+                <div class="cms-dialog-body ued-body">
+                    <cms-elevation-required data-test="user-elevation-required" (elevated)="loadUser()" />
                 </div>
             } @else {
                 <div class="cms-dialog-body ued-body">
@@ -100,6 +111,8 @@ export class UserEditDialogComponent implements OnInit {
 
     readonly user        = signal<IdentityUserDto | null>(null);
     readonly loadingUser = signal(true);
+    /** The account was refused for want of elevation: the Elevate state stands in place of the form. */
+    readonly elevationRequired = signal(false);
     readonly saving      = signal(false);
 
     readonly formId = this.store.selectSnapshot(AppConfigState.manifest)
@@ -140,6 +153,13 @@ export class UserEditDialogComponent implements OnInit {
             return;
         }
 
+        this.loadUser();
+    }
+
+    /** The account read, the first time or again after the session was elevated from the Elevate state. */
+    loadUser(): void {
+        this.loadingUser.set(true);
+        this.elevationRequired.set(false);
         this.identityApi.getUser(this.dialogData.userId!)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -147,9 +167,13 @@ export class UserEditDialogComponent implements OnInit {
                     this.user.set(fullUser);
                     this.loadingUser.set(false);
                 },
-                error: () => {
+                error: (err: unknown) => {
                     this.loadingUser.set(false);
-                    this.toast.error('Failed to load user');
+                    if (isElevationRefusal(err)) {
+                        this.elevationRequired.set(true);
+                    } else {
+                        this.toast.error('Failed to load user');
+                    }
                 },
             });
     }
