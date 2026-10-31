@@ -23,6 +23,7 @@ import {
     ConfirmDialogService, ElevationRequiredComponent, MultiOptionSelectComponent, TabStripComponent,
     type TabStripItem, ToastService,
 } from '@coolms/ui-angular';
+import { PageHistoryPanelComponent } from './page-history-panel.component';
 import { PagePropertiesPanelComponent } from './page-properties-panel.component';
 
 /** Mirrors `ChannelConfigField::TYPE_SECRET_REF`. */
@@ -40,10 +41,14 @@ export interface SectionPropertiesDialogData {
     readonly siteSlug?: string | null;
 }
 
-/** The dialog's tabs: the section's own settings, and the page properties the pages below the folder inherit. */
+/**
+ * The dialog's tabs: the section's own settings, the page properties the pages below the folder inherit, and the
+ * folder's history (its frame and property sets, as each save left them).
+ */
 const TABS: readonly TabStripItem[] = [
     { id: 'section', label: 'Section' },
     { id: 'page-properties', label: 'Page properties' },
+    { id: 'history', label: 'History' },
 ];
 
 /**
@@ -84,7 +89,7 @@ const TABS: readonly TabStripItem[] = [
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         ElevationRequiredComponent, FormsModule, MultiOptionSelectComponent, TabStripComponent,
-        PagePropertiesPanelComponent,
+        PageHistoryPanelComponent, PagePropertiesPanelComponent,
     ],
     template: `
         <div class="cms-dialog spd">
@@ -119,6 +124,14 @@ const TABS: readonly TabStripItem[] = [
                         }
                     </select>
                     <app-page-properties-panel [path]="data.path" [locale]="locale()" subject="folder" />
+                </div>
+            }
+
+            <!-- The folder's history, compact: its latest versions, each opening to what changed. Read each time the tab
+                 is opened (not with the dialog), so it shows what the folder's saves left since. -->
+            @if (hasPageProperties() && tab() === 'history') {
+                <div class="cms-dialog-body spd__body" data-test="folder-history">
+                    <app-page-history-panel [path]="data.path" [compact]="true" />
                 </div>
             }
 
@@ -356,7 +369,7 @@ export class SectionPropertiesDialogComponent implements OnInit {
     private readonly confirm = inject(ConfirmDialogService);
 
     protected readonly tabs = TABS;
-    protected readonly tab = signal<'section' | 'page-properties'>('section');
+    protected readonly tab = signal<'section' | 'page-properties' | 'history'>('section');
     /** Only a site's folder has page properties. */
     protected readonly hasPageProperties = computed(() => !!this.data.siteSlug);
     /** The language the properties are shown and set in; empty for all languages. */

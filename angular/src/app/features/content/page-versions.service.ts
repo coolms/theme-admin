@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
-import { PageVersionsDto } from './page-versions';
+import { PageBlameDto, PageVersionDiffDto, PageVersionsDto } from './page-versions';
 
 /** A page's or a directory's versions, newest first: `GET /web/page-versions`. */
 @Injectable({ providedIn: 'root' })
@@ -17,8 +17,22 @@ export class PageVersionsService {
         if (before !== null) {
             params = params.set('before', String(before));
         }
-        const base = this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
+        return this.http.get<PageVersionsDto>(`${this.base()}/web/page-versions`, { params });
+    }
 
-        return this.http.get<PageVersionsDto>(`${base}/web/page-versions`, { params });
+    /** What changed in the version `seq` since the one before it. */
+    diff(path: string, seq: number): Observable<PageVersionDiffDto> {
+        const params = new HttpParams().set('path', path).set('seq', String(seq));
+
+        return this.http.get<PageVersionDiffDto>(`${this.base()}/web/page-version-diff`, { params });
+    }
+
+    /** Who last changed each of the page's sections, and each of their fields. */
+    blame(path: string): Observable<PageBlameDto> {
+        return this.http.get<PageBlameDto>(`${this.base()}/web/page-blame`, { params: new HttpParams().set('path', path) });
+    }
+
+    private base(): string {
+        return this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
     }
 }
