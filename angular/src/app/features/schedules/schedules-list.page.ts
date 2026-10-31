@@ -23,6 +23,7 @@ import {
     DataGridComponent,
     DataGridData,
     DateTimeFormatService,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -42,7 +43,7 @@ import {
     selector: 'coolms-admin-schedules-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Schedules"
@@ -51,7 +52,18 @@ import {
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load schedules"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="scheduler:schedules"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -77,6 +89,7 @@ export class SchedulesListComponent implements OnInit {
     private readonly dtf         = inject(DateTimeFormatService);
 
     private readonly PAGE_SIZE = 50;
+    private lastLoad: Parameters<SchedulesListComponent['onLoadMore']>[0] | null = null;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -87,6 +100,8 @@ export class SchedulesListComponent implements OnInit {
     readonly schedules   = signal<ScheduleDto[]>([]);
     /** Total rows that match the current filter set, server-reported. */
     readonly totalItems  = signal(0);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     /**
      * Flips `true` after the first `loadMore` response (success OR
      * error). Before that, `hasMore` is forced `true` so the lazy
@@ -154,6 +169,8 @@ export class SchedulesListComponent implements OnInit {
         reset:         boolean;
         columnFilters: ReadonlyArray<string>;
     }): void {
+        this.lastLoad = event;
+        this.loadFailure.set(null);
         const page = Math.floor(event.offset / this.PAGE_SIZE) + 1;
         const epoch = ++this._loadEpoch;
 
@@ -174,11 +191,17 @@ export class SchedulesListComponent implements OnInit {
                 this.totalItems.set(result.totalItems);
                 this.loaded.set(true);
             },
-            error: () => {
+            error: (err: unknown) => {
                 this.loaded.set(true); // flip even on error so sentinel doesn't retry-loop
-                this.toast.error('Failed to load schedules');
+                if (epoch !== this._loadEpoch) return; // stale
+                this.loadFailure.set(err);
             },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {

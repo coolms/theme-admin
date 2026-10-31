@@ -21,6 +21,7 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -30,7 +31,7 @@ import { NaviTreeFormComponent } from './navi-tree-form.component';
     selector: 'coolms-admin-navi-trees-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent],
+    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Navigation Trees"
@@ -41,7 +42,18 @@ import { NaviTreeFormComponent } from './navi-tree-form.component';
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config fetched from /api/v1/datagrids/navi:trees (no externalConfig).
                  All trees are loaded at once via (loadMore) (no server-side pagination). -->
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load trees"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="retryLoad()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="navi:trees"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -63,6 +75,7 @@ export class NaviTreesListComponent implements OnInit {
     private readonly toast      = inject(ToastService);
     private readonly titleSvc    = inject(PageTitleService);
     private readonly destroyRef  = inject(DestroyRef);
+    private lastLoad: Parameters<NaviTreesListComponent['onLoadMore']>[0] | null = null;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -74,6 +87,8 @@ export class NaviTreesListComponent implements OnInit {
 
     /** Flips true after the first load so the footer count stays blank until then. */
     readonly loaded = signal(false);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     readonly footerLabel = computed(() =>
         this.loaded() ? `${this.trees().length} tree${this.trees().length === 1 ? '' : 's'}` : '',
     );
@@ -163,6 +178,8 @@ export class NaviTreesListComponent implements OnInit {
     }): void {
         // All trees fetched in one request; skip append calls.
         if (!event.reset && event.offset > 0) return;
+        this.lastLoad = event;
+        this.loadFailure.set(null);
 
         const epoch = ++this._loadEpoch;
 
@@ -178,8 +195,16 @@ export class NaviTreesListComponent implements OnInit {
                 this.hasMore.set(false); // all loaded at once
                 this.loaded.set(true);
             },
-            error: () => this.toast.error('Failed to load trees'),
+            error: (err: unknown) => {
+                if (epoch !== this._loadEpoch && event.reset) return; // stale reset
+                this.loadFailure.set(err);
+            },
         });
+    }
+
+    /** Reads the list again with the grid's last request, from the top. */
+    retryLoad(): void {
+        if (this.lastLoad) this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
     }
 
     onRowSelected(row: Record<string, unknown> | null): void {
