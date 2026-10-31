@@ -12,8 +12,9 @@ import { type IdentityUserDto } from './identity.types';
 /**
  * An account is people's data, read in an elevated session only. Opened from the users list and refused for want of
  * elevation -- the elevation ended while the list was open -- the dialog shows the Elevate state in place of the form,
- * never the "Failed to load user" toast, and reads the account again after Elevate. Any other failure is the toast, as
- * before. The dialog is built directly, not rendered.
+ * never the "Failed to load user" toast, and reads the account again after Elevate. Any other failure keeps its reason
+ * in the body with Retry, never a toast, and no form is shown over an account never read. The dialog is built
+ * directly, not rendered.
  */
 describe('UserEditDialogComponent -- reading the account', () => {
     const stamped = () => new HttpErrorResponse({ status: 403, error: { type: ELEVATION_REQUIRED_PROBLEM_TYPE } });
@@ -33,7 +34,7 @@ describe('UserEditDialogComponent -- reading the account', () => {
                 { provide: Store, useValue: { selectSnapshot: () => null } },
                 { provide: DateTimeFormatService, useValue: { date: () => '', dateTime: () => '' } },
                 { provide: ToastService, useValue: { error: (m: string) => toasts.push(m) } },
-                { provide: ErrorHandlerService, useValue: { humanize: (): string => '' } },
+                { provide: ErrorHandlerService, useValue: { humanize: (): string => 'refused' } },
                 {
                     provide: IdentityApiService,
                     useValue: { getUser: () => answers[Math.min(asked++, answers.length - 1)]() },
@@ -68,12 +69,29 @@ describe('UserEditDialogComponent -- reading the account', () => {
         expect(dialog.user()?.id).toBe('u1');
     });
 
-    it('keeps the toast for any other failure', () => {
+    it('keeps any other failure in the body, not a toast', () => {
         answers = [() => throwError(() => new HttpErrorResponse({ status: 500 }))];
 
         const dialog = build();
 
         expect(dialog.elevationRequired()).toBeFalse();
-        expect(toasts).toEqual(['Failed to load user']);
+        expect(dialog.loadingUser()).toBeFalse();
+        expect(dialog.loadFailureText()).toBe('refused');
+        expect(dialog.user()).toBeNull();
+        expect(toasts).toEqual([]);
+    });
+
+    it('reads the account again from Retry, and a success clears the failure', () => {
+        answers = [
+            () => throwError(() => new HttpErrorResponse({ status: 500 })),
+            () => of({ id: 'u1', groups: [] } as unknown as IdentityUserDto),
+        ];
+        const dialog = build();
+
+        dialog.loadUser();
+
+        expect(asked).toBe(2);
+        expect(dialog.loadFailure()).toBeNull();
+        expect(dialog.user()?.id).toBe('u1');
     });
 });

@@ -3,6 +3,7 @@ import {
     Component,
     DestroyRef,
     OnInit,
+    computed,
     inject,
     signal,
 } from '@angular/core';
@@ -64,9 +65,15 @@ export interface GroupRoleGrantsDialogData {
                          the Elevate state stands in place of the editor, and the grants are read again after it. -->
                     <cms-elevation-required data-test="role-grants-elevation-required" (elevated)="loadGrants()" />
                 } @else if (!loaded()) {
-                    <!-- Not read: nothing is shown as granted, and nothing can be saved over grants never read. -->
+                    <!-- Not read: the reason stays in the body with Retry, nothing is shown as granted, and nothing
+                         can be saved over grants never read. -->
                     <div class="cms-field-hint" data-test="role-grants-not-read">
-                        The role grants could not be read. Close this and try again.
+                        Failed to load role grants. {{ loadFailureText() }}
+                    </div>
+                    <div>
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="loadGrants()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
                     </div>
                 } @else {
                     <p class="grg__lead">
@@ -147,6 +154,12 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
     protected readonly loaded = signal(false);
     /** The group was refused for want of elevation: the Elevate state stands in place of the editor. */
     protected readonly elevationRequired = signal(false);
+    /** Why the grants could not be read (any refusal but elevation); null once they were. */
+    protected readonly loadFailure = signal<unknown>(null);
+    protected readonly loadFailureText = computed(() => {
+        const failure = this.loadFailure();
+        return failure === null ? '' : this.errors.humanize(failure);
+    });
     protected readonly saving = signal(false);
     protected readonly granted = signal<readonly string[]>([]);
 
@@ -158,10 +171,11 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
         this.loadGrants();
     }
 
-    /** The grants read, the first time or again after the session was elevated from the Elevate state. */
+    /** The grants read, the first time, from Retry, or again after the session was elevated. */
     protected loadGrants(): void {
         this.loading.set(true);
         this.elevationRequired.set(false);
+        this.loadFailure.set(null);
         // The LIST omits `grantsGroupIds`, so the editor re-reads the ITEM
         // rather than trusting the row it was opened from -- `undefined` there
         // means "not loaded", and treating it as "grants nothing" would let a
@@ -178,7 +192,7 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
                 if (isElevationRefusal(err)) {
                     this.elevationRequired.set(true);
                 } else {
-                    this.toast.error('Failed to load role grants');
+                    this.loadFailure.set(err);
                 }
                 this.loading.set(false);
             },
