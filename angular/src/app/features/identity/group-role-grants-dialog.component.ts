@@ -10,8 +10,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
 import { IdentityApiService } from './identity-api.service';
-import { ErrorHandlerService } from '@coolms/core-angular';
-import { MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
+import { ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
+import { ElevationRequiredComponent, MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
 
 export interface GroupRoleGrantsDialogData {
     readonly id: string;
@@ -45,7 +45,7 @@ export interface GroupRoleGrantsDialogData {
     selector: 'app-group-role-grants-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [MultiOptionSelectComponent],
+    imports: [ElevationRequiredComponent, MultiOptionSelectComponent],
     template: `
         <div class="cms-dialog grg">
             <div class="cms-dialog-header">
@@ -59,6 +59,15 @@ export interface GroupRoleGrantsDialogData {
             <div class="cms-dialog-body grg__body">
                 @if (loading()) {
                     <div class="cms-field-hint">Loading…</div>
+                } @else if (elevationRequired()) {
+                    <!-- A group is people's data, read in an elevated session only: refused for want of elevation,
+                         the Elevate state stands in place of the editor, and the grants are read again after it. -->
+                    <cms-elevation-required data-test="role-grants-elevation-required" (elevated)="loadGrants()" />
+                } @else if (!loaded()) {
+                    <!-- Not read: nothing is shown as granted, and nothing can be saved over grants never read. -->
+                    <div class="cms-field-hint" data-test="role-grants-not-read">
+                        The role grants could not be read. Close this and try again.
+                    </div>
                 } @else {
                     <p class="grg__lead">
                         Anyone holding <code>{{ data.role }}</code> also gets the roles of the
@@ -92,7 +101,7 @@ export interface GroupRoleGrantsDialogData {
 
             <div class="cms-dialog-footer">
                 <button type="button" class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
-                @if (!loading()) {
+                @if (loaded()) {
                     <button type="button"
                             class="cms-btn cms-btn-primary cms-btn-sm"
                             [disabled]="saving()"
@@ -134,6 +143,10 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
     protected readonly groupsApiUrl = '/api/v1/options/identity.groups';
 
     protected readonly loading = signal(true);
+    /** The grants were read: only then is the editor shown and a save offered (an unread list is not "none"). */
+    protected readonly loaded = signal(false);
+    /** The group was refused for want of elevation: the Elevate state stands in place of the editor. */
+    protected readonly elevationRequired = signal(false);
     protected readonly saving = signal(false);
     protected readonly granted = signal<readonly string[]>([]);
 
@@ -142,6 +155,13 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.loadGrants();
+    }
+
+    /** The grants read, the first time or again after the session was elevated from the Elevate state. */
+    protected loadGrants(): void {
+        this.loading.set(true);
+        this.elevationRequired.set(false);
         // The LIST omits `grantsGroupIds`, so the editor re-reads the ITEM
         // rather than trusting the row it was opened from -- `undefined` there
         // means "not loaded", and treating it as "grants nothing" would let a
@@ -151,10 +171,15 @@ export class GroupRoleGrantsDialogComponent implements OnInit {
         ).subscribe({
             next: group => {
                 this.granted.set(group.grantsGroupIds ?? []);
+                this.loaded.set(true);
                 this.loading.set(false);
             },
-            error: () => {
-                this.toast.error('Failed to load role grants');
+            error: (err: unknown) => {
+                if (isElevationRefusal(err)) {
+                    this.elevationRequired.set(true);
+                } else {
+                    this.toast.error('Failed to load role grants');
+                }
                 this.loading.set(false);
             },
         });
