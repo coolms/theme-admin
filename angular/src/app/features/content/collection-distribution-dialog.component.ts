@@ -8,8 +8,9 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
+import { ElevationRequiredComponent, MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
 import { CollectionService } from './collection.service';
-import { MultiOptionSelectComponent, ToastService } from '@coolms/ui-angular';
 
 interface DistributionDialogData {
     /** Absolute VFS path of the collection directory. */
@@ -37,7 +38,7 @@ interface DistributionDialogData {
     selector: 'app-collection-distribution-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, MultiOptionSelectComponent],
+    imports: [ElevationRequiredComponent, FormsModule, MultiOptionSelectComponent],
     template: `
         <div class="cms-dialog" style="width: 460px;">
             <div class="cms-dialog-header">
@@ -49,6 +50,21 @@ interface DistributionDialogData {
             <div class="cms-dialog-body" style="display: flex; flex-direction: column; gap: 12px;">
                 @if (loading()) {
                     <div class="text-muted">Loading…</div>
+                } @else if (elevationRequired()) {
+                    <!-- Refused for want of elevation: the Elevate state stands in place of the settings, and they
+                         are read again after it. -->
+                    <cms-elevation-required data-test="distribution-elevation-required" (elevated)="load()" />
+                } @else if (!loaded()) {
+                    <!-- Not read: the reason stays in the body with Retry, nothing is editable, and nothing can be
+                         saved over settings never read. -->
+                    <div class="cms-field-hint" data-test="distribution-not-read">
+                        Failed to load distribution settings. {{ loadFailureText() }}
+                    </div>
+                    <div>
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="load()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
+                    </div>
                 } @else if (!isCollection()) {
                     <div class="cms-field-hint">
                         This directory is not a content collection. Distribution settings
@@ -82,7 +98,7 @@ interface DistributionDialogData {
             </div>
             <div class="cms-dialog-footer">
                 <button class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
-                @if (!loading() && isCollection()) {
+                @if (loaded() && isCollection()) {
                     <button class="cms-btn cms-btn-primary cms-btn-sm"
                             [disabled]="saving()"
                             (click)="save()">
@@ -98,10 +114,21 @@ export class CollectionDistributionDialogComponent implements OnInit {
     private readonly data          = inject<DistributionDialogData>(DIALOG_DATA);
     private readonly collectionSvc = inject(CollectionService);
     private readonly toast         = inject(ToastService);
+    private readonly errors        = inject(ErrorHandlerService);
 
     readonly channelsApiUrl = '/api/v1/options/core.outbound_channels';
 
     readonly loading         = signal(true);
+    /** The settings were read: only then is the editor shown and a save offered. */
+    readonly loaded          = signal(false);
+    /** The settings were refused for want of elevation: the Elevate state stands in place of the editor. */
+    readonly elevationRequired = signal(false);
+    /** Why the settings could not be read (any refusal but elevation); null once they were. */
+    readonly loadFailure     = signal<unknown>(null);
+    readonly loadFailureText = computed(() => {
+        const failure = this.loadFailure();
+        return failure === null ? '' : this.errors.humanize(failure);
+    });
     readonly saving          = signal(false);
     readonly isCollection    = signal(true);
     readonly enabledChannels = signal<readonly string[]>([]);
@@ -113,17 +140,29 @@ export class CollectionDistributionDialogComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.load();
+    }
+
+    /** The settings read, the first time, from Retry, or again after the session was elevated. */
+    load(): void {
+        this.loading.set(true);
+        this.elevationRequired.set(false);
+        this.loadFailure.set(null);
         this.collectionSvc.getDistribution(this.data.path).subscribe({
             next: cfg => {
                 this.isCollection.set(cfg.isCollection);
                 this.enabledChannels.set(cfg.enabledChannels);
                 const webhook = cfg.channelConfig['webhook'];
                 this.webhookUrl = webhook && typeof webhook['url'] === 'string' ? String(webhook['url']) : '';
+                this.loaded.set(true);
                 this.loading.set(false);
             },
-            error: () => {
-                this.toast.error('Failed to load distribution settings');
-                this.isCollection.set(false);
+            error: (err: unknown) => {
+                if (isElevationRefusal(err)) {
+                    this.elevationRequired.set(true);
+                } else {
+                    this.loadFailure.set(err);
+                }
                 this.loading.set(false);
             },
         });

@@ -82,6 +82,24 @@ export class DomainExplorerStateService {
     readonly showEntities      = signal<boolean>(true);
     readonly viewMode          = signal<'structure' | 'records'>('structure');
 
+    // -- Load failures ---------------------------------------------------------
+    // Why each piece could not be read; null once it was. The component that shows the piece shows the failure in
+    // the error banner in place of it, with Retry calling that piece's load.
+    private readonly domainFailureState       = signal<unknown>(null);
+    private readonly recordsFailureState      = signal<unknown>(null);
+    private readonly dynamicTypesFailureState = signal<unknown>(null);
+    /** The domain's modules and entities could not be read. */
+    readonly domainFailure       = this.domainFailureState.asReadonly();
+    /** The active entity's records could not be read. */
+    readonly recordsFailure      = this.recordsFailureState.asReadonly();
+    /** The root level of the dynamic types could not be read. */
+    readonly dynamicTypesFailure = this.dynamicTypesFailureState.asReadonly();
+    /** The sort and filters of the last records read, so Retry asks for the same rows. */
+    private lastRecordsQuery: { sort: string | null; columnFilters: ReadonlyArray<string> } = {
+        sort: null,
+        columnFilters: [],
+    };
+
     // -- NaviGraph-driven toolbar ----------------------------------------------
     /** Flat resolved nodes from navi.toolbar.domain_explorer, loaded once on init. */
     readonly domainToolbarNodes = signal<NaviGraphNode[]>([]);
@@ -468,42 +486,11 @@ export class DomainExplorerStateService {
         const wantTypes    = this.showDynamicTypes();
 
         if (wantEntities && wantTypes) {
-            this.schemaSvc.listDomain()
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: domain => {
-                        this.modules.set(domain);
-                        this.loading.set(false);
-                        if (domain.length > 0 && !this.activeEntity() && !this.activeRuntimeType()) {
-                            this.activeModule.set(domain[0].module);
-                        }
-                    },
-                    error: () => {
-                        this.loading.set(false);
-                        this.toast.error('Failed to load domain data');
-                    },
-                });
+            this.loadDomain();
             this.loadRoot();
 
         } else if (wantEntities) {
-            this.schemaSvc.listDomain()
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                    next: domain => {
-                        this.modules.set(domain);
-                        this.loading.set(false);
-                        if (domain.length > 0 && !this.activeEntity()) {
-                            this.activeModule.set(domain[0].module);
-                        }
-                        if (!this.activeEntity()) {
-                            this.footer?.set({ count: `${this.totalEntityCount()} entities` });
-                        }
-                    },
-                    error: () => {
-                        this.loading.set(false);
-                        this.toast.error('Failed to load domain data');
-                    },
-                });
+            this.loadDomain();
 
         } else if (wantTypes) {
             this.loadRoot();
@@ -513,7 +500,34 @@ export class DomainExplorerStateService {
         }
     }
 
-    /** Loads the root level of the dynamic-type tree (called once on page init). */
+    /**
+     * Reads the domain's modules and entities, on page init or again from the banner's Retry. With the dynamic types
+     * shown too, the first module opens only while no type is active; with entities alone, the footer counts them.
+     */
+    loadDomain(): void {
+        const withTypes = this.showDynamicTypes();
+        this.domainFailureState.set(null);
+        this.schemaSvc.listDomain()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: domain => {
+                    this.modules.set(domain);
+                    this.loading.set(false);
+                    if (domain.length > 0 && !this.activeEntity() && (!withTypes || !this.activeRuntimeType())) {
+                        this.activeModule.set(domain[0].module);
+                    }
+                    if (!withTypes && !this.activeEntity()) {
+                        this.footer?.set({ count: `${this.totalEntityCount()} entities` });
+                    }
+                },
+                error: (err: unknown) => {
+                    this.domainFailureState.set(err);
+                    this.loading.set(false);
+                },
+            });
+    }
+
+    /** Loads the root level of the dynamic-type tree, on page init or again from the banner's Retry. */
     loadRoot(): void {
         this.fetchChildren(this.ROOT_KEY);
     }
@@ -1346,6 +1360,8 @@ export class DomainExplorerStateService {
             httpParams = httpParams.set('sort', sort);
         }
 
+        this.lastRecordsQuery = { sort, columnFilters };
+        this.recordsFailureState.set(null);
         this.entityRecordsLoading.set(true);
         this.http.get<HydraCollection<Record<string, unknown>>>(entity.recordsUrl, {
             params: httpParams,
@@ -1381,13 +1397,21 @@ export class DomainExplorerStateService {
                     }
                     this.entityRecordsLoading.set(false);
                 },
-                error: (err) => {
+                error: (err: unknown) => {
                     console.error('[RECORDS LOAD ERROR]', err);
                     if (reset) this.entityRecordsData.set(null);
+                    this.recordsFailureState.set(err);
                     this.entityRecordsLoading.set(false);
-                    this.toast.error('Failed to load records');
                 },
             });
+    }
+
+    /** The active entity's records read again from the first page, with the last sort and filters (Retry). */
+    retryEntityRecords(): void {
+        const entity = this.activeEntity();
+        if (!entity?.recordsUrl || entity.dynamicOrigin === 'runtime') return;
+        const { sort, columnFilters } = this.lastRecordsQuery;
+        this.loadEntityRecords(entity, 0, true, sort, columnFilters);
     }
 
     /**
@@ -1543,6 +1567,7 @@ export class DomainExplorerStateService {
     private fetchChildren(parentId: string): void {
         if (this.loadedIds.has(parentId)) return;
         this.loadedIds.add(parentId);
+        if (parentId === this.ROOT_KEY) this.dynamicTypesFailureState.set(null);
 
         this.schemaSvc.listRuntimeTypesForParent(parentId)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1562,12 +1587,12 @@ export class DomainExplorerStateService {
                         }
                     }
                 },
-                error: () => {
+                error: (err: unknown) => {
                     // Remove from loadedIds so the caller can retry
                     this.loadedIds.delete(parentId);
                     if (parentId === this.ROOT_KEY) {
+                        this.dynamicTypesFailureState.set(err);
                         this.loading.set(false);
-                        this.toast.error('Failed to load dynamic types');
                     }
                 },
             });

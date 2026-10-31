@@ -9,7 +9,19 @@ import {
     viewChild,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { CalendarPrefs, CmsPageHeaderComponent, DynamicFormComponent, PageTitleService, SlotComponent, TabStripComponent, TabStripItem, ToastService, UserAvatarComponent, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import {
+    CalendarPrefs,
+    CmsPageHeaderComponent,
+    DynamicFormComponent,
+    ErrorBannerComponent,
+    PageTitleService,
+    SlotComponent,
+    TabStripComponent,
+    TabStripItem,
+    ToastService,
+    UserAvatarComponent,
+    UserCalendarPreferencesService,
+} from '@coolms/ui-angular';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
@@ -47,6 +59,7 @@ type Tab = 'personal' | string;
         DatePipe,
         CmsPageHeaderComponent,
         DynamicFormComponent,
+        ErrorBannerComponent,
         UserAvatarComponent,
         ProfileCalendarTabComponent,
         SlotComponent,
@@ -203,7 +216,16 @@ type Tab = 'personal' | string;
         <cms-page-header icon="person-circle" title="My Profile" />
 
         <div class="profile-body">
-            <div class="profile-layout cms-card">
+            <!-- A failed read of the profile is shown in place of the profile form: the failure itself goes to the
+                 banner, with Retry reading it again. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load profile"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="load()" />
+            }
+            <div class="profile-layout cms-card" [hidden]="loadFailure() !== null">
 
                 <!-- Left sidebar -->
                 <aside class="profile-sidebar">
@@ -388,6 +410,8 @@ export class ProfilePageComponent implements OnInit {
         ...this.sections().map(sec => ({ id: sec.section, label: sec.label, icon: sec.icon })),
     ]);
     readonly settings       = signal<Record<string, Record<string, unknown> | undefined>>({});
+    /** Why the profile could not be read; null once it was. The banner shows it in place of the profile form. */
+    readonly loadFailure    = signal<unknown>(null);
     readonly activeTab      = signal<Tab>('personal');
     readonly savingProfile  = signal(false);
     readonly savingCalendar = signal(false);
@@ -414,7 +438,12 @@ export class ProfilePageComponent implements OnInit {
 
     ngOnInit(): void {
         this.titleSvc.set('My Profile');
+        this.load();
+    }
 
+    /** The profile, its sections and its settings read, the first time or again from the banner's Retry. */
+    load(): void {
+        this.loadFailure.set(null);
         forkJoin([
             this.identityApi.getMe(),
             this.identityApi.getSettingsSections(),
@@ -436,7 +465,7 @@ export class ProfilePageComponent implements OnInit {
                 // Sections another module owns a pane for (profile.tab) are
                 // not seeded here: the guest asks the server when it opens.
             },
-            error: () => this.toast.error('Failed to load profile'),
+            error: (err: unknown) => this.loadFailure.set(err),
         });
     }
 

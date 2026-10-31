@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { CmsLoaderComponent } from '@coolms/core-angular';
+import { ErrorBannerComponent } from '@coolms/ui-angular';
 import { DomainExplorerStateService } from './domain-explorer-state.service';
 
 /**
@@ -11,7 +12,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
     selector: 'app-domain-explorer-tree',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, ],
+    imports: [CmsLoaderComponent, ErrorBannerComponent],
     template: `
         <!-- Filter bar -->
         <div class="de-filter-bar cms-field-box">
@@ -36,6 +37,16 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
             <div class="de-module-list">
 
                 @if (showEntities()) {
+
+                <!-- A failed read of the domain stands in place of the module list (which is then empty), with
+                     Retry reading it again. -->
+                @if (st.domainFailure() !== null) {
+                    <app-error-banner
+                        message="Failed to load domain data"
+                        [error]="st.domainFailure()"
+                        [showRetry]="true"
+                        (retry)="st.loadDomain()" />
+                }
 
                 @for (group of st.filteredModules(); track group.module) {
                     <div class="de-module">
@@ -100,7 +111,15 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
                 }
 
                 @if (st.runtimeExpanded()) {
-                    @if (st.flatTypes().length === 0 && !st.filterText()) {
+                    <!-- A failed read of the root types stands in place of the type tree (which is then empty), with
+                         Retry reading it again. -->
+                    @if (st.dynamicTypesFailure() !== null) {
+                        <app-error-banner
+                            message="Failed to load dynamic types"
+                            [error]="st.dynamicTypesFailure()"
+                            [showRetry]="true"
+                            (retry)="st.loadRoot()" />
+                    } @else if (st.flatTypes().length === 0 && !st.filterText()) {
                         <div class="de-empty-section">No runtime types yet.</div>
                     }
 

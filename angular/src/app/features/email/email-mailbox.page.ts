@@ -19,6 +19,7 @@ import {
     DateTimePipe,
     DraftStoreService,
     EmptyStateComponent,
+    ErrorBannerComponent,
     PageToolbarComponent,
     TagInputComponent,
     TagOption,
@@ -114,7 +115,10 @@ interface ComposeDraft {
     changeDetection: ChangeDetectionStrategy.OnPush,
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
-    imports: [FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe, CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent],
+    imports: [
+        FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
+        CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
+    ],
     template: `
         <div class="mbx">
             <cms-page-header icon="envelope" [title]="'Email'"
@@ -133,7 +137,7 @@ interface ComposeDraft {
             <input #importInput type="file" accept=".eml,.mbox,message/rfc822,text/plain" hidden
                    (change)="onImportFileSelected(importInput)" />
 
-            @if (!loadingMailboxes() && mailboxes().length === 0) {
+            @if (!loadingMailboxes() && mailboxesFailure() === null && mailboxes().length === 0) {
                 <div class="mbx__empty-wrap mbx__empty-wrap--col">
                     <app-empty-state icon="envelope"
                                      title="No mailboxes configured"
@@ -147,6 +151,15 @@ interface ComposeDraft {
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
                         <span class="mbx__rail-label">Mailbox</span>
+                        <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
+                             with Retry reading it again. The message pane is not touched. -->
+                        @if (mailboxesFailure() !== null) {
+                            <app-error-banner
+                                message="Could not load mailboxes."
+                                [error]="mailboxesFailure()"
+                                [showRetry]="true"
+                                (retry)="loadMailboxes()" />
+                        }
                         <div class="mbx__accounts" role="tablist" aria-label="Mailboxes">
                             @for (mb of mailboxes(); track mb.id) {
                                 <button type="button" class="mbx__account"
@@ -264,6 +277,14 @@ interface ComposeDraft {
                                     </button>
                                 }
                             }
+                        } @else if (messagesFailure() !== null && !messagesFailedOnAppend()) {
+                            <!-- A failed read of the folder's messages stands in place of the message list, with
+                                 Retry reading it again. The mailbox pane is not touched. -->
+                            <app-error-banner
+                                message="Could not load messages."
+                                [error]="messagesFailure()"
+                                [showRetry]="true"
+                                (retry)="retryMessages()" />
                         } @else if (loadingMessages() && messages().length === 0) {
                             <p class="mbx__note">Loading…</p>
                         } @else if (messages().length === 0) {
@@ -295,7 +316,15 @@ interface ComposeDraft {
                                     </button>
                                 </div>
                             }
-                            @if (hasMore()) {
+                            @if (messagesFailure() !== null) {
+                                <!-- A failed next page: the rows read so far stay, and the failure stands in place
+                                     of Load more, with Retry asking for that page again. -->
+                                <app-error-banner
+                                    message="Could not load messages."
+                                    [error]="messagesFailure()"
+                                    [showRetry]="true"
+                                    (retry)="retryMessages()" />
+                            } @else if (hasMore()) {
                                 <button type="button" class="mbx__more" [disabled]="loadingMessages()"
                                         (click)="loadMore()">
                                     {{ loadingMessages() ? 'Loading…' : 'Load more' }}
@@ -1146,6 +1175,12 @@ export class EmailMailboxPageComponent implements OnInit {
 
     readonly loadingMailboxes = signal<boolean>(true);
     readonly loadingMessages = signal<boolean>(false);
+    /** Why the mailbox list could not be read; null once it was. The banner shows it in the mailbox pane. */
+    readonly mailboxesFailure = signal<unknown>(null);
+    /** Why the messages could not be read; null once they were. The banner shows it in the message pane. */
+    readonly messagesFailure = signal<unknown>(null);
+    /** The failed read was a next page: the rows read so far stay, and the banner stands in place of Load more. */
+    readonly messagesFailedOnAppend = signal<boolean>(false);
     readonly loadingDetail = signal<boolean>(false);
 
     /**
@@ -1456,29 +1491,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.messageNodes.set(nodes));
         }
-        // The mailboxes and the person's mail settings together: the settings name the mailbox to open on. A setting
-        // that cannot be read is its default -- the page never waits on it.
-        forkJoin({ list: this.email.listMailboxes(), prefs: this.mailPrefs.readOrDefaults() }).subscribe({
-            next: ({ list, prefs }) => {
-                this.mailboxes.set(list);
-                this.loadingMailboxes.set(false);
-                this.loadMailboxUnread(list);
-
-                const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
-                const prefer = this.pendingSelectId;
-                this.pendingSelectId = null;
-                // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
-                // the persisted last mailbox, then the first mailbox -- each only if it still exists in the list.
-                const target = openingMailbox(list, prefer, prefs.defaultMailboxId, saved);
-                if (target !== null) {
-                    this.selectMailbox(target);
-                }
-            },
-            error: () => {
-                this.loadingMailboxes.set(false);
-                this.toast.error('Could not load mailboxes.');
-            },
-        });
+        this.loadMailboxes();
 
         // Populate the inbound-workflow picker. Non-blocking + non-fatal: on failure the
         // select still offers "None" plus any value already stored on the edited mailbox.
@@ -1511,6 +1524,37 @@ export class EmailMailboxPageComponent implements OnInit {
                     error: () => { /* swallow -- manual reload still works */ },
                 });
         }
+    }
+
+    /**
+     * The mailboxes and the person's mail settings together, on page init or again from the mailbox pane's Retry:
+     * the settings name the mailbox to open on. A setting that cannot be read is its default -- the page never waits
+     * on it. A failed read of the list is held for the banner in the mailbox pane; the message pane is not touched.
+     */
+    loadMailboxes(): void {
+        this.loadingMailboxes.set(true);
+        this.mailboxesFailure.set(null);
+        forkJoin({ list: this.email.listMailboxes(), prefs: this.mailPrefs.readOrDefaults() }).subscribe({
+            next: ({ list, prefs }) => {
+                this.mailboxes.set(list);
+                this.loadingMailboxes.set(false);
+                this.loadMailboxUnread(list);
+
+                const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
+                const prefer = this.pendingSelectId;
+                this.pendingSelectId = null;
+                // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
+                // the persisted last mailbox, then the first mailbox -- each only if it still exists in the list.
+                const target = openingMailbox(list, prefer, prefs.defaultMailboxId, saved);
+                if (target !== null) {
+                    this.selectMailbox(target);
+                }
+            },
+            error: (err: unknown) => {
+                this.mailboxesFailure.set(err);
+                this.loadingMailboxes.set(false);
+            },
+        });
     }
 
     /**
@@ -2761,7 +2805,18 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
+    /** The message pane's Retry: a failed next page is asked for again, any other failed read reads the folder. */
+    retryMessages(): void {
+        if (this.messagesFailedOnAppend()) {
+            this.loadMore();
+        } else {
+            this.loadMessages(true);
+        }
+    }
+
     private loadMessages(reset: boolean): void {
+        this.messagesFailure.set(null);
+        this.messagesFailedOnAppend.set(false);
         const id = this.selectedMailboxId();
         if (id === null) {
             this.messages.set([]);
@@ -2779,10 +2834,15 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
                 this.loadingMessages.set(false);
             },
-            error: () => {
+            error: (err: unknown) => {
                 if (seq !== this.listSeq) { return; }
+                if (!reset) {
+                    // The page was not read: Retry asks for the same one.
+                    this.page -= 1;
+                }
+                this.messagesFailedOnAppend.set(!reset);
+                this.messagesFailure.set(err);
                 this.loadingMessages.set(false);
-                this.toast.error('Could not load messages.');
             },
         });
     }

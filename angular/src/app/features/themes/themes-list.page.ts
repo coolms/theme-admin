@@ -13,6 +13,7 @@ import { filter, switchMap } from 'rxjs';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
 } from '@coolms/ui-angular';
@@ -61,16 +62,21 @@ interface TemplateGroup {
     selector: 'app-themes-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent],
+    imports: [CmsListPageComponent, ErrorBannerComponent],
     template: `
         <cms-list-page title="Themes" icon="palette"
                        subtitle="Which theme skins each site, and what it overrides">
 
             @if (loading()) {
                 <p class="state">Loading themes…</p>
-            } @else if (error()) {
-                <!-- Banner for a failed LOAD; toasts are for actions (platform rule). -->
-                <div class="cms-banner cms-banner-error">{{ error() }}</div>
+            } @else if (loadFailure() !== null) {
+                <!-- A failed load is shown in place of the list: the failure itself goes to the banner, so a refusal
+                     for want of elevation is the Elevate state and anything else the message with Retry. -->
+                <app-error-banner
+                    message="Could not load themes."
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="load()" />
             } @else if (themes().length === 0) {
                 <p class="state">
                     No themes installed. Themes are installed from the command line:
@@ -316,7 +322,8 @@ export class ThemesListComponent {
     readonly themes  = signal<ThemeDto[]>([]);
     readonly loading = signal(true);
     readonly busy    = signal(false);
-    readonly error   = signal<string | null>(null);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the list. */
+    readonly loadFailure = signal<unknown>(null);
 
     /** Slug of the theme whose templates are open; only one at a time. */
     readonly expanded         = signal<string | null>(null);
@@ -511,17 +518,18 @@ export class ThemesListComponent {
         });
     }
 
-    private load(): void {
+    /** The themes read, the first time, after an action, or again from the banner's Retry. */
+    load(): void {
         this.loading.set(true);
-        this.error.set(null);
+        this.loadFailure.set(null);
         this.api.listThemes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: rows => {
                 this.themes.set(rows);
                 this.loading.set(false);
             },
-            error: () => {
+            error: (err: unknown) => {
+                this.loadFailure.set(err);
                 this.loading.set(false);
-                this.error.set('Could not load themes.');
             },
         });
 
