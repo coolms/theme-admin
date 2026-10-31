@@ -59,6 +59,19 @@ interface UserEditDialogData {
                 <div class="cms-dialog-body ued-body">
                     <cms-elevation-required data-test="user-elevation-required" (elevated)="loadUser()" />
                 </div>
+            } @else if (loadFailure() !== null) {
+                <!-- Not read: the reason stays in the body with Retry, and no form is shown over an account never
+                     read. -->
+                <div class="cms-dialog-body ued-body">
+                    <div class="cms-field-hint" data-test="user-not-read">
+                        Failed to load user. {{ loadFailureText() }}
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="loadUser()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
+                    </div>
+                </div>
             } @else {
                 <div class="cms-dialog-body ued-body">
                     <app-dynamic-form
@@ -113,6 +126,12 @@ export class UserEditDialogComponent implements OnInit {
     readonly loadingUser = signal(true);
     /** The account was refused for want of elevation: the Elevate state stands in place of the form. */
     readonly elevationRequired = signal(false);
+    /** Why the account could not be read (any refusal but elevation); null once it was. */
+    readonly loadFailure = signal<unknown>(null);
+    readonly loadFailureText = computed(() => {
+        const failure = this.loadFailure();
+        return failure === null ? '' : this.errors.humanize(failure);
+    });
     readonly saving      = signal(false);
 
     readonly formId = this.store.selectSnapshot(AppConfigState.manifest)
@@ -156,10 +175,11 @@ export class UserEditDialogComponent implements OnInit {
         this.loadUser();
     }
 
-    /** The account read, the first time or again after the session was elevated from the Elevate state. */
+    /** The account read, the first time, from Retry, or again after the session was elevated. */
     loadUser(): void {
         this.loadingUser.set(true);
         this.elevationRequired.set(false);
+        this.loadFailure.set(null);
         this.identityApi.getUser(this.dialogData.userId!)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
@@ -172,7 +192,7 @@ export class UserEditDialogComponent implements OnInit {
                     if (isElevationRefusal(err)) {
                         this.elevationRequired.set(true);
                     } else {
-                        this.toast.error('Failed to load user');
+                        this.loadFailure.set(err);
                     }
                 },
             });
