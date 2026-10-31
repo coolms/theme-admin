@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { DataGridComponent, DataGridData, DynamicRecordListComponent } from '@coolms/ui-angular';
+import { DataGridComponent, DataGridData, DynamicRecordListComponent, ErrorBannerComponent } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
 import { DomainExplorerStateService } from './domain-explorer-state.service';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
@@ -16,7 +16,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
     selector: 'app-domain-explorer-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, DataGridComponent, DynamicRecordListComponent],
+    imports: [CmsLoaderComponent, DataGridComponent, DynamicRecordListComponent, ErrorBannerComponent],
     template: `
         <!-- -- Sticky breadcrumb band (above all content) ------------------ -->
         @if (st.toolbarBreadcrumb()) {
@@ -151,12 +151,24 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
                         <!-- PHP entity (static or managed-dynamic) with an explicit flat GET
                              collection endpoint. Grid config comes from the server via
                              StaticEntityDataGridConfigProvider for 'entity:{aliasOrClassName}'. -->
+                        <!-- A failed read of the records stands in place of the grid, with Retry reading them
+                             again; a grid already shown stays mounted, hidden, so it keeps its sort and filters. -->
+                        @if (st.recordsFailure() !== null) {
+                            <app-error-banner
+                                message="Failed to load records"
+                                [error]="st.recordsFailure()"
+                                [showRetry]="true"
+                                (retry)="st.retryEntityRecords()" />
+                        }
                         @if (!st.entityRecordsData() || !entityRecordsGridId()) {
-                            <div class="de-spinner-row">
-                                <cms-loader [inline]="true" />
-                            </div>
+                            @if (st.recordsFailure() === null) {
+                                <div class="de-spinner-row">
+                                    <cms-loader [inline]="true" />
+                                </div>
+                            }
                         } @else {
                             <coolms-datagrid
+                                [hidden]="st.recordsFailure() !== null"
                                 [embedded]="true"
                                 [gridId]="entityRecordsGridId()!"
                                 [configBaseUrl]="configBaseUrl()"

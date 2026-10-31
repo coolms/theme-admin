@@ -18,9 +18,10 @@ import { catchError, concatMap, filter } from 'rxjs/operators';
 import { ChannelConfigField, CollectionService, OutboundChannelDto } from './collection.service';
 import { PageService } from './page.service';
 import { PageTypeDto } from './page.types';
-import { ErrorHandlerService } from '@coolms/core-angular';
+import { ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
 import {
-    ConfirmDialogService, MultiOptionSelectComponent, TabStripComponent, type TabStripItem, ToastService,
+    ConfirmDialogService, ElevationRequiredComponent, MultiOptionSelectComponent, TabStripComponent,
+    type TabStripItem, ToastService,
 } from '@coolms/ui-angular';
 import { PagePropertiesPanelComponent } from './page-properties-panel.component';
 
@@ -81,7 +82,10 @@ const TABS: readonly TabStripItem[] = [
     selector: 'app-section-properties-dialog',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, MultiOptionSelectComponent, TabStripComponent, PagePropertiesPanelComponent],
+    imports: [
+        ElevationRequiredComponent, FormsModule, MultiOptionSelectComponent, TabStripComponent,
+        PagePropertiesPanelComponent,
+    ],
     template: `
         <div class="cms-dialog spd">
             <div class="cms-dialog-header">
@@ -121,6 +125,21 @@ const TABS: readonly TabStripItem[] = [
             <div class="cms-dialog-body spd__body" [hidden]="tab() !== 'section'">
                 @if (loading()) {
                     <div class="cms-field-hint">Loading…</div>
+                } @else if (elevationRequired()) {
+                    <!-- Refused for want of elevation: the Elevate state stands in place of the section's settings
+                         only, and they are read again after it. The Page properties tab is not touched. -->
+                    <cms-elevation-required data-test="section-elevation-required" (elevated)="loadSection()" />
+                } @else if (!loaded()) {
+                    <!-- Not read: the reason stays in the body with Retry, nothing is editable, and nothing can be
+                         saved over settings never read. -->
+                    <div class="cms-field-hint" data-test="section-not-read">
+                        Failed to load section properties. {{ loadFailureText() }}
+                    </div>
+                    <div>
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="loadSection()">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
+                    </div>
                 } @else {
                     <p class="spd__path">{{ data.path }}</p>
 
@@ -249,7 +268,7 @@ const TABS: readonly TabStripItem[] = [
                     </span>
                 }
                 <button type="button" class="cms-btn cms-btn-sm" (click)="close()">Cancel</button>
-                @if (tab() === 'section' && !loading() && isCollection()) {
+                @if (tab() === 'section' && loaded() && isCollection()) {
                     <button type="button"
                             class="cms-btn cms-btn-primary cms-btn-sm"
                             [disabled]="saving() || propertiesDirty()"
@@ -368,6 +387,16 @@ export class SectionPropertiesDialogComponent implements OnInit {
     protected readonly channelsApiUrl = '/api/v1/options/core.outbound_channels';
 
     protected readonly loading = signal(true);
+    /** The section's settings were read: only then is the Section tab's editor shown and its save offered. */
+    protected readonly loaded = signal(false);
+    /** The section's settings were refused for want of elevation: the Elevate state stands in the Section tab. */
+    protected readonly elevationRequired = signal(false);
+    /** Why the section's settings could not be read (any refusal but elevation); null once they were. */
+    protected readonly loadFailure = signal<unknown>(null);
+    protected readonly loadFailureText = computed(() => {
+        const failure = this.loadFailure();
+        return failure === null ? '' : this.errors.humanize(failure);
+    });
     protected readonly saving = signal(false);
     protected readonly isCollection = signal(false);
     protected readonly pageTypes = signal<readonly PageTypeDto[]>([]);
@@ -434,6 +463,17 @@ export class SectionPropertiesDialogComponent implements OnInit {
         if (this.data.siteSlug) {
             this.loadLocales(this.data.siteSlug);
         }
+        this.loadSection();
+    }
+
+    /**
+     * The section's own settings read, the first time, from Retry, or again after the session was elevated. A
+     * failure here is the Section tab's only: the Page properties tab reads its own endpoint.
+     */
+    protected loadSection(): void {
+        this.loading.set(true);
+        this.elevationRequired.set(false);
+        this.loadFailure.set(null);
         // Both reads project out of the same node-meta response and the page
         // types are a small static catalogue; one forkJoin so the dialog paints
         // once rather than in three stages.
@@ -455,10 +495,15 @@ export class SectionPropertiesDialogComponent implements OnInit {
                     this.loadedConfig = distribution.channelConfig;
                     this.fieldValues.set(this.flatten(distribution.channelConfig, channels));
                     this.pageTypes.set(types);
+                    this.loaded.set(true);
                     this.loading.set(false);
                 },
-                error: () => {
-                    this.toast.error('Failed to load section properties');
+                error: (err: unknown) => {
+                    if (isElevationRefusal(err)) {
+                        this.elevationRequired.set(true);
+                    } else {
+                        this.loadFailure.set(err);
+                    }
                     this.loading.set(false);
                 },
             });

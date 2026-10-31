@@ -10,9 +10,9 @@ import { CalendarDto } from '../calendars/calendars.types';
 import { CalendarsApiService } from '../calendars/calendars-api.service';
 import {
     CalendarPrefs,
+    ErrorBannerComponent,
     LazySelectComponent,
     LazySelectOption,
-    ToastService,
     UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
 import { NaviGraphService } from '@coolms/core-angular';
@@ -54,7 +54,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
     selector: 'app-profile-calendar-tab',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, DatePipe, LazySelectComponent],
+    imports: [CommonModule, FormsModule, DatePipe, ErrorBannerComponent, LazySelectComponent],
     styles: [`
         :host { display: block; }
         .group { display: flex; flex-direction: column; gap: 4px; }
@@ -186,6 +186,13 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
             <label class="group-label" for="cal-default">Default calendar</label>
             @if (loadingCalendars()) {
                 <p class="group-help">Loading your calendars…</p>
+            } @else if (calendarsFailure() !== null) {
+                <!-- A failed read of the calendar list stands in place of the picker, with Retry. -->
+                <app-error-banner
+                    message="Failed to load calendar list"
+                    [error]="calendarsFailure()"
+                    [showRetry]="true"
+                    (retry)="loadCalendars()" />
             } @else {
                 <app-lazy-select
                         [options]="defaultCalendarOptions()"
@@ -219,7 +226,6 @@ export class ProfileCalendarTabComponent implements OnInit {
     /** Emitted when the user clicks Save changes (parent owns the network call). */
     @Output() saved = new EventEmitter<CalendarPrefs>();
     private readonly calendarsApi = inject(CalendarsApiService);
-    private readonly toast  = inject(ToastService);
     private readonly prefs  = inject(UserCalendarPreferencesService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -250,6 +256,8 @@ export class ProfileCalendarTabComponent implements OnInit {
 
     readonly calendars        = signal<CalendarDto[]>([]);
     readonly loadingCalendars = signal<boolean>(true);
+    /** Why the calendar list could not be read; null once it was. The banner shows it in place of the picker. */
+    readonly calendarsFailure = signal<unknown>(null);
 
     // ngModel-bound fields. ngOnInit seeds them from `initial`.
     tz                  = 'UTC';
@@ -298,7 +306,10 @@ export class ProfileCalendarTabComponent implements OnInit {
         }
     }
 
-    private loadCalendars(): void {
+    /** The calendar list read, the first time or again from the banner's Retry. */
+    loadCalendars(): void {
+        this.loadingCalendars.set(true);
+        this.calendarsFailure.set(null);
         this.calendarsApi.listCalendars().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -306,9 +317,9 @@ export class ProfileCalendarTabComponent implements OnInit {
                 this.calendars.set(rows);
                 this.loadingCalendars.set(false);
             },
-            error: () => {
+            error: (err: unknown) => {
+                this.calendarsFailure.set(err);
                 this.loadingCalendars.set(false);
-                this.toast.error('Failed to load calendar list');
             },
         });
     }
