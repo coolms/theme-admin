@@ -4,7 +4,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { DateTimeFormatService } from '@coolms/ui-angular';
 import { PageHistoryPanelComponent } from './page-history-panel.component';
 import { PageVersionsService } from './page-versions.service';
-import { type PageVersionDto, type PageVersionsDto } from './page-versions';
+import { type PageBlameDto, type PageVersionDiffDto, type PageVersionDto, type PageVersionsDto } from './page-versions';
 
 /**
  * The page's history panel: the versions grouped, a group opening to its versions, older ones asked for by the oldest
@@ -17,10 +17,32 @@ describe('PageHistoryPanelComponent', () => {
 
     let answers: Array<() => Observable<PageVersionsDto>>;
     let asked: Array<number | null>;
+    let diffsAsked: number[];
+    let blameAsked: string[];
+    const diffOf = (seq: number): PageVersionDiffDto => ({
+        path: '/content/site/about.page', version: version(seq, '14:00', ['blocks (1 changed)']), previous: seq - 1,
+        changes: {
+            created: false, fields: [], languages: [], frame: null, properties: [], other: [],
+            records: { blocks: { matchedBy: 'id', counts: { added: 0, removed: 0, moved: 0, changed: 1 }, records: [{
+                status: 'changed', moved: false, id: 'b1', type: 'hero', from: 0, to: 0,
+                fields: [{ name: 'title', kind: 'text', old: 'Book a call', new: 'Book a demo', words: [
+                    { op: 'equal', text: 'Book a ' }, { op: 'delete', text: 'call' }, { op: 'insert', text: 'demo' },
+                ] }],
+            }] } },
+        },
+        bodies: [],
+    });
+    const blame: PageBlameDto = {
+        path: '/content/site/about.page', complete: false,
+        blocks: [{ id: 'b1', type: 'faq_list', index: 0, seq: 3, fields: { title: 3, items: null } }],
+        versions: { '3': { recordedAt: '2026-10-31T14:11:00Z', author: ann } },
+    };
     let fixture: ComponentFixture<PageHistoryPanelComponent>;
 
-    function open(): HTMLElement {
+    function open(compact = false): HTMLElement {
         asked = [];
+        diffsAsked = [];
+        blameAsked = [];
         TestBed.configureTestingModule({
             imports: [PageHistoryPanelComponent],
             providers: [{
@@ -33,11 +55,20 @@ describe('PageHistoryPanelComponent', () => {
                         asked.push(before);
                         return answers[Math.min(asked.length - 1, answers.length - 1)]();
                     },
+                    diff: (_path: string, seq: number) => {
+                        diffsAsked.push(seq);
+                        return of(diffOf(seq));
+                    },
+                    blame: (path: string) => {
+                        blameAsked.push(path);
+                        return of(blame);
+                    },
                 },
             }],
         });
         fixture = TestBed.createComponent(PageHistoryPanelComponent);
         fixture.componentRef.setInput('path', '/content/site/about.page');
+        fixture.componentRef.setInput('compact', compact);
         fixture.detectChanges();
 
         return fixture.nativeElement as HTMLElement;
@@ -133,6 +164,90 @@ describe('PageHistoryPanelComponent', () => {
         late.complete();
 
         expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([10, 9]);
+    });
+
+    it('clears the old page versions at once when it is asked about another one', () => {
+        const pending = new Subject<PageVersionsDto>();
+        answers = [
+            () => of({ path: '/a', hasMore: false, versions: [version(1, '08:00', ['created'])] }),
+            () => pending,
+        ];
+        const el = open();
+        expect(el.querySelectorAll('[data-test="history-group"]').length).toBe(1);
+
+        fixture.componentRef.setInput('path', '/content/site/other.page');
+        fixture.detectChanges();
+
+        expect(fixture.componentInstance.versions()).toEqual([]);
+        expect(el.querySelector('[data-test="history-group"]')).toBeNull();
+    });
+
+    it('opens a single version straight to what changed in it, word by word', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(5, '14:00', ['blocks (1 changed)'])] })];
+        const el = open();
+
+        (el.querySelector('[data-test="history-group"] button') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(diffsAsked).toEqual([5]);
+        const section = el.querySelector('[data-test="diff-section"]') as HTMLElement;
+        expect(section.textContent).toContain('Hero');
+        expect(section.querySelector('.vd__run--delete')?.textContent).toBe('call');
+        expect(section.querySelector('.vd__run--insert')?.textContent).toBe('demo');
+    });
+
+    it('opens one version of a group to its changes, read once however often it is opened', () => {
+        answers = [() => of({
+            path: '/p', hasMore: false,
+            versions: [version(3, '14:11', ['tags']), version(2, '14:05', ['blocks'])],
+        })];
+        const el = open();
+        (el.querySelector('[data-test="history-group"] button') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        const second = el.querySelectorAll('[data-test="history-version"]')[1] as HTMLButtonElement;
+
+        second.click();
+        fixture.detectChanges();
+        second.click();
+        fixture.detectChanges();
+        second.click();
+        fixture.detectChanges();
+
+        expect(diffsAsked).toEqual([2]);
+        expect(el.querySelector('app-page-version-diff')).not.toBeNull();
+    });
+
+    it('says by section who last changed each section and each field, and "earlier" past what was read', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(3, '14:11', ['blocks'])] })];
+        const el = open();
+
+        (el.querySelector('[data-test="history-view-blame"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(blameAsked).toEqual(['/content/site/about.page']);
+        const section = el.querySelector('[data-test="blame-section"]') as HTMLElement;
+        expect(section.textContent).toContain('1. Faq list');
+        expect(section.textContent).toContain('Ann');
+        (section.querySelector('button') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(section.querySelector('[data-test="blame-fields"]')?.textContent).toContain('earlier');
+        expect(el.querySelector('[data-test="blame-incomplete"]')).not.toBeNull();
+    });
+
+    it('shows the latest rows only when compact, with Show all, and no By section', () => {
+        const ids = [1, 2, 3, 4, 5, 6, 7];
+        answers = [() => of({
+            path: '/f', hasMore: false,
+            // An hour apart, newest first: each its own row.
+            versions: ids.map(n => version(10 - n, String(18 - n) + ':00', ['frame'])),
+        })];
+        const el = open(true);
+
+        expect(el.querySelectorAll('[data-test="history-group"]').length).toBe(5);
+        expect(el.querySelector('[data-test="history-view-blame"]')).toBeNull();
+        (el.querySelector('[data-test="history-show-all"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(el.querySelectorAll('[data-test="history-group"]').length).toBe(7);
     });
 
     it('says when there is no version yet', () => {

@@ -69,6 +69,26 @@ describe('BlockEditorComponent -- the sections as stored, saved over the version
         expect(http.expectOne(WRITE).request.headers.get('If-Match')).withContext('the version the save answered').toBe('"m2"');
     });
 
+    it('a new section carries its own id, and a stored one goes back with the id it has', () => {
+        const f = opened({
+            blocks: [{ type: 'hero', title: 'Hi' }],
+            storedBlocks: [{ type: 'hero', title: 'Hi', id: 'stored-1' }],
+            version: 'm1',
+        });
+
+        const fresh = f.componentInstance.makeBlock('hero') as Record<string, unknown>;
+        const other = f.componentInstance.makeBlock('hero') as Record<string, unknown>;
+        expect(fresh['id']).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+        expect(other['id']).not.toBe(fresh['id']);
+
+        f.componentInstance.blocks.set([...f.componentInstance.blocks(), fresh]);
+        f.componentInstance.setField(1, 'title', 'New');
+        f.detectChanges();
+        f.componentInstance.save$().subscribe({ error: () => undefined });
+        const sent = http.expectOne(WRITE).request.body.extras.blocks as Record<string, unknown>[];
+        expect(sent.map(b => b['id'])).toEqual(['stored-1', fresh['id']]);
+    });
+
     it('a save refused 412 is said, and nothing more is sent until a reload', () => {
         const f = opened({ blocks: [], storedBlocks: [{ type: 'hero', title: 'Hi' }], version: 'm1' });
 

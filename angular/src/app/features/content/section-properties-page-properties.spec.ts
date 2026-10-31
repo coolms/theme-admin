@@ -5,7 +5,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Store } from '@ngxs/store';
 import { of, Subject } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
+import { ConfirmDialogService, DateTimeFormatService, ToastService } from '@coolms/ui-angular';
 import { CollectionService } from './collection.service';
 import { PageService } from './page.service';
 import { SectionPropertiesDialogComponent, type SectionPropertiesDialogData } from './section-properties-dialog.component';
@@ -63,6 +63,10 @@ describe('Section properties: the folder\'s page properties', () => {
                 { provide: DIALOG_DATA, useValue: data },
                 { provide: DialogRef, useValue: ref },
                 {
+                    provide: DateTimeFormatService,
+                    useValue: { time: (iso: string) => iso.slice(11, 16), dateTime: (iso: string) => iso.slice(0, 16) },
+                },
+                {
                     provide: CollectionService,
                     useValue: {
                         getSettings: () => of({
@@ -103,13 +107,34 @@ describe('Section properties: the folder\'s page properties', () => {
         fixture.detectChanges();
 
         expect(Array.from(el.querySelectorAll('[role="tab"]')).map(t => t.textContent?.trim()))
-            .toEqual(['Section', 'Page properties']);
+            .toEqual(['Section', 'Page properties', 'History']);
         const tab = el.querySelector('[data-test="folder-page-properties"]') as HTMLElement;
         expect(tab).not.toBeNull();
         expect(tab.textContent).toContain('from this folder');
         expect(tab.textContent).toContain('from /content/site');
         expect(Array.from(tab.querySelectorAll('#spd-locale option')).map(o => o.textContent?.trim()))
             .toEqual(['All languages', 'English', 'Deutsch']);
+    });
+
+    it('shows the folder\'s history, compact, read only when its tab is opened', () => {
+        const el = open({ path: FOLDER, siteSlug: 'acme' });
+        languages().flush({ member: [] });
+        read('*').flush(view('*'));
+        fixture.detectChanges();
+        http.expectNone(r => r.url.endsWith('/web/page-versions'));
+
+        const history = Array.from(el.querySelectorAll('[role="tab"]'))
+            .find(t => t.textContent?.trim() === 'History') as HTMLElement;
+        history.click();
+        fixture.detectChanges();
+
+        const req = http.expectOne(r => r.url.endsWith('/web/page-versions'));
+        expect(req.request.params.get('path')).toBe(FOLDER);
+        req.flush({ path: FOLDER, hasMore: false, versions: [] });
+        fixture.detectChanges();
+        const tab = el.querySelector('[data-test="folder-history"]') as HTMLElement;
+        expect(tab.querySelector('[data-test="history-empty"]')).not.toBeNull();
+        expect(tab.querySelector('[data-test="history-view-blame"]')).toBeNull();
     });
 
     it('asks the site named for its languages', () => {

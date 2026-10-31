@@ -279,11 +279,14 @@ export class BlockEditorComponent {
 
     // -- Substrate config (arrow props so `this` is bound when passed as inputs) --
 
-    /** Build a default block of `id` from its type's field schema, or null. */
+    /**
+     * Build a default block of `id` from its type's field schema, or null. It carries its own id from the start: the
+     * page's history matches a section by it from one version to the next, and the server keeps an id it is sent.
+     */
     readonly makeBlock: OrderedElementFactory = (id: string): OrderedElement | null => {
         const type = this.types().find(t => t.id === id);
         if (!type) return null;
-        const fresh: BlockModel = { type: id };
+        const fresh: BlockModel = { type: id, id: newBlockId() };
         for (const f of type.fields) {
             fresh[f.name] = f.kind === 'group' ? [] : '';
         }
@@ -455,4 +458,14 @@ export class BlockEditorComponent {
         }
         return copy;
     }
+}
+
+/** A new section's id: a UUID where the browser offers one (a secure page), else one made from the time and chance. */
+function newBlockId(): string {
+    try {
+        if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+            return crypto.randomUUID();
+        }
+    } catch { /* fall through */ }
+    return `b-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e12).toString(36)}`;
 }
