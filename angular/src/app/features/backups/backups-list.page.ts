@@ -15,6 +15,7 @@ import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
     type DataGridData,
@@ -51,7 +52,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
     selector: 'coolms-admin-backups',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent],
+    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Backups"
@@ -61,7 +62,18 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load backups"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="load()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="backup:bundles"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -82,6 +94,8 @@ export class BackupsListPageComponent implements OnInit {
 
     readonly bundles = signal<BackupBundleDto[]>([]);
     readonly loading = signal(true);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     readonly configBaseUrl = computed(() =>
@@ -177,14 +191,15 @@ export class BackupsListPageComponent implements OnInit {
         return this.bundles().find(x => x.name === row['id']) ?? null;
     }
 
-    private load(): void {
+    load(): void {
         this.loading.set(true);
+        this.loadFailure.set(null);
         this.selectedRow.set(null);
         this.api.listBundles().pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
             next: rows => { this.bundles.set(rows); this.loading.set(false); },
-            error: () => { this.loading.set(false); this.toast.error('Failed to load backups'); },
+            error: (err: unknown) => { this.loading.set(false); this.loadFailure.set(err); },
         });
     }
 }

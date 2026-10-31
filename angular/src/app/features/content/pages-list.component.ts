@@ -20,6 +20,7 @@ import {
     ContextMenuService,
     DataGridComponent,
     DataGridData,
+    ErrorBannerComponent,
     ExplorerToolbarRowComponent,
     PageFooterService,
     PageTitleService,
@@ -40,7 +41,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
     selector: 'app-pages-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, ExplorerToolbarRowComponent, PageTilesComponent],
+    imports: [DataGridComponent, ErrorBannerComponent, ExplorerToolbarRowComponent, PageTilesComponent],
     // / -- this is now the `content.main` SLOT of the Pages
     // explorer, not a routed page. The shell it used to carry
     // (`<cms-list-page>`: title, toolbar, footer) comes from
@@ -69,10 +70,23 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
             [editable]="false"
             (navigate)="onBreadcrumbNavigate($event)" />
 
+        <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+             want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+             mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+        @if (loadFailure() !== null) {
+            <app-error-banner
+                message="Failed to load pages"
+                [error]="loadFailure()"
+                [showRetry]="true"
+                (retry)="retryLoad()" />
+        }
         @if (viewMode() === 'details') {
             <!-- Grid config from /api/v1/datagrids/content:pages. Rows are the
                  current folder's direct children — the same list the tiles get. -->
-            <div class="pages-grid-scroll" (contextmenu)="onBackgroundContextMenu($event)">
+            <div
+                class="pages-grid-scroll"
+                [hidden]="loadFailure() !== null"
+                (contextmenu)="onBackgroundContextMenu($event)">
                 <coolms-datagrid
                     gridId="content:pages"
                     [configBaseUrl]="configBaseUrl()"
@@ -84,7 +98,10 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
                 </coolms-datagrid>
             </div>
         } @else {
-            <div class="pages-tiles-scroll" (contextmenu)="onBackgroundContextMenu($event)">
+            <div
+                class="pages-tiles-scroll"
+                [hidden]="loadFailure() !== null"
+                (contextmenu)="onBackgroundContextMenu($event)">
                 <!-- One component for the three non-table renderings:
                      they differ in tile SIZE and how much detail each shows,
                      not in what they are, so three components would have been
@@ -136,6 +153,7 @@ export class PagesListComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
     private readonly spaceState = inject(PageSpaceStateService);
     private readonly footer     = inject(PageFooterService);
+    private lastLoad: Parameters<PagesListComponent['onLoadMore']>[0] | null = null;
 
     constructor() {
         // -- reload when the accordion picks a different space. The grid
@@ -265,6 +283,7 @@ export class PagesListComponent implements OnInit {
         if (null === space) {
             return;
         }
+        this.loadFailure.set(null);
         const epoch = ++this._loadEpoch;
         const parentId = this.folderId();
         this.pageSvc.listPages({ parentId, space }).pipe(
@@ -282,7 +301,10 @@ export class PagesListComponent implements OnInit {
                 for (const item of items) this.childIndex.set(item.id, item);
                 this.footerLabel.set(`${items.length} page${items.length === 1 ? '' : 's'}`);
             },
-            error: () => this.toast.error('Failed to load pages'),
+            error: (err: unknown) => {
+                if (epoch !== this._loadEpoch) return;
+                this.loadFailure.set(err);
+            },
         });
     }
 
@@ -316,6 +338,9 @@ export class PagesListComponent implements OnInit {
 
     /** Rows shown by the tile view: the current folder's direct children. */
     protected readonly folderItems = signal<PageDto[]>([]);
+
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
 
     /**
      * Configured page kinds, loaded once for the tile view's labels.
@@ -461,6 +486,7 @@ export class PagesListComponent implements OnInit {
         // one: two requests, and briefly the wrong content on screen. The
         // space effect performs the real first load.
         if (null === this.activeSpace()) return;
+        this.lastLoad = event;
 
         const search = this.searchTermFromFilters(event.columnFilters);
         if ('' === search) {
@@ -473,6 +499,7 @@ export class PagesListComponent implements OnInit {
         // are looking for is usually not in the folder you happen to be in, and
         // a filter that only narrowed the visible dozen rows would be a worse
         // version of reading them.
+        this.loadFailure.set(null);
         const epoch = ++this._loadEpoch;
         this.pageSvc.listPages({ search, space: this.activeSpace() }).pipe(
             takeUntilDestroyed(this.destroyRef),
@@ -482,8 +509,21 @@ export class PagesListComponent implements OnInit {
                 this.folderItems.set(matches);
                 this.footerLabel.set(`${matches.length} match${matches.length === 1 ? '' : 'es'}`);
             },
-            error: () => this.toast.error('Failed to load pages'),
+            error: (err: unknown) => {
+                if (epoch !== this._loadEpoch) return;
+                this.loadFailure.set(err);
+            },
         });
+    }
+
+    /** Reads the list again: the grid's last request in the table view, else the folder on screen. */
+    retryLoad(): void {
+        if ('details' === this.viewMode() && null !== this.lastLoad) {
+            this.onLoadMore({ ...this.lastLoad, reset: true, offset: 0 });
+
+            return;
+        }
+        this.loadFolder();
     }
 
     /**

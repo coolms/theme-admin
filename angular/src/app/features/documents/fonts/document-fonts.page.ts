@@ -16,6 +16,7 @@ import { refreshDocumentFonts } from '@coolms/editor-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
+    ErrorBannerComponent,
     PageTitleService,
     ToastService,
     type DataGridData,
@@ -64,7 +65,7 @@ import {
     selector: 'coolms-admin-document-fonts',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent],
+    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent],
     template: `
         <cms-list-page
             title="Document fonts"
@@ -74,7 +75,18 @@ import {
             [toolbarContext]="toolbarContext()"
             [footerCount]="footerLabel()"
             (actionClick)="onToolbarAction($event)">
+            <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
+                 want of elevation is the Elevate state and anything else the message with Retry. The grid stays
+                 mounted, hidden, so a retry keeps its sort, filters and column widths. -->
+            @if (loadFailure() !== null) {
+                <app-error-banner
+                    message="Failed to load installed fonts"
+                    [error]="loadFailure()"
+                    [showRetry]="true"
+                    (retry)="load()" />
+            }
             <coolms-datagrid
+                [hidden]="loadFailure() !== null"
                 gridId="document:fonts"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
@@ -170,6 +182,8 @@ export class DocumentFontsPageComponent implements OnInit {
 
     readonly families = signal<DocumentFontFamilyDto[]>([]);
     readonly loading = signal(true);
+    /** Why the list could not be read; null once it was. The banner shows it in place of the grid. */
+    readonly loadFailure = signal<unknown>(null);
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
 
     readonly browsing = signal(false);
@@ -335,12 +349,13 @@ export class DocumentFontsPageComponent implements OnInit {
         });
     }
 
-    private load(): void {
+    load(): void {
         this.loading.set(true);
+        this.loadFailure.set(null);
         this.selectedRow.set(null);
         this.api.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: result => { this.families.set(result.families); this.loading.set(false); },
-            error: () => { this.loading.set(false); this.toast.error('Failed to load installed fonts'); },
+            error: (err: unknown) => { this.loading.set(false); this.loadFailure.set(err); },
         });
     }
 }
