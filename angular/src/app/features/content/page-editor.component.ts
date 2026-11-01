@@ -378,7 +378,9 @@ type RailTab = string;
                                                      The active language's body, line by line, below it until the
                                                      page diff reaches bodies. -->
                                                 @if (postPath()) {
-                                                    <app-page-history-panel [path]="postPath()" />
+                                                    <app-page-history-panel [path]="postPath()"
+                                                        (restored)="onPageRestored()"
+                                                        (renameOffered)="onRenameOffered($event)" />
                                                 }
                                                 @if (activeVariantPath()) {
                                                     <details class="page-editor__body-history">
@@ -2094,6 +2096,39 @@ export class PageEditorComponent implements OnInit {
         } else {
             this.collab.stop();
         }
+    }
+
+    /**
+     * The page was restored to one of its versions (the history panel asked first, and said that unsaved edits are
+     * replaced): read the page again -- its title and address, its languages and their bodies, its sections -- so the
+     * editor shows what the restore wrote.
+     */
+    onPageRestored(): void {
+        const vfsPath = this.page()?.vfsPath;
+        if (!vfsPath) return;
+        this.pageSvc.getPageByVfsPath(vfsPath)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: fresh => {
+                    if (!fresh) return;
+                    this.page.set(fresh);
+                    this.slugInput.set(fresh.slug ?? '');
+                    this.loadedLocales.clear();
+                    this.contentCache.set({});
+                    this.dirtyLocales.set(new Set());
+                    this.loadVariants(fresh);
+                    this.blockEditor()?.reloadAfterConflict();
+                    this.pagePropertiesPanel()?.refresh();
+                    this.cdr.markForCheck();
+                },
+                error: () => this.toast.error('The page was restored, but it could not be read again: close and reopen it.'),
+            });
+    }
+
+    /** The restored version had another address: put it in the address field, for the person to rename to it. */
+    onRenameOffered(slug: string): void {
+        this.slugInput.set(slug);
+        this.toast.info('The address field now holds that version\'s address. Rename to use it.');
     }
 
     /** Banner action: discard the local view and reload the peer's saved body. */

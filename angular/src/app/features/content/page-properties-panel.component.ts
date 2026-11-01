@@ -301,6 +301,11 @@ export class PagePropertiesPanelComponent {
         this.send(c, c.op, valuesOf(c.rows), v.version);
     }
 
+    /** Reads the properties again, as they now are: after a restore wrote them, for one. */
+    refresh(): void {
+        this.load(this.path(), this.localeScope() ?? ALL_LANGUAGES);
+    }
+
     /** Drops the editor's rows, after a confirm, for the values as they now are. */
     reloadCard(name: string): void {
         this.confirm.open({

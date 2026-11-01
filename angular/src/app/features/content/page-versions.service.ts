@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState } from '@coolms/core-angular';
-import { PageBlameDto, PageVersionDiffDto, PageVersionsDto } from './page-versions';
+import { PageBlameDto, PageRestoreDto, PageVersionDiffDto, PageVersionsDto } from './page-versions';
 
 /** A page's or a directory's versions, newest first: `GET /web/page-versions`. */
 @Injectable({ providedIn: 'root' })
@@ -30,6 +30,11 @@ export class PageVersionsService {
     /** Who last changed each of the page's sections, and each of their fields. */
     blame(path: string): Observable<PageBlameDto> {
         return this.http.get<PageBlameDto>(`${this.base()}/web/page-blame`, { params: new HttpParams().set('path', path) });
+    }
+
+    /** Restores the page or folder to the version `seq`: one transaction, recorded as a new version. */
+    restore(path: string, seq: number): Observable<PageRestoreDto> {
+        return this.http.post<PageRestoreDto>(`${this.base()}/web/page-restores`, { path, seq });
     }
 
     private base(): string {
