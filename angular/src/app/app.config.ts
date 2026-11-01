@@ -17,7 +17,7 @@ import { SHEET_DOCUMENT_MIME, SheetEditorDialogComponent } from '@coolms/sheet-e
 import { provideDtmplEditors } from '@coolms/dtmpl-angular';
 import { routes } from './app.routes';
 import { CONSOLE_ENTRIES } from './console.registry';
-import { AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
+import { AUTH_AUDIENCE, AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { clientHeaderInterceptor } from './client-header.interceptor';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
 import { provideOverlayStacking } from './shell/overlay-stacking.provider';
@@ -56,6 +56,8 @@ FileEditorRegistry.register(SHEET_DOCUMENT_MIME, { component: SheetEditorDialogC
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        // A sign-in here is for the admin: its tokens say so, and a refresh keeps it.
+        { provide: AUTH_AUDIENCE, useValue: 'admin' },
         // An open editor's file watch: a change made elsewhere is said at once (2026-10-14).
         provideVfsNodeWatch(),
         // The image editor's rail mode, remembered in the person's preferences.
