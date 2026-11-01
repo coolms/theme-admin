@@ -1,10 +1,12 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
-import { DateTimeFormatService } from '@coolms/ui-angular';
+import { ConfirmDialogService, DateTimeFormatService } from '@coolms/ui-angular';
 import { PageHistoryPanelComponent } from './page-history-panel.component';
 import { PageVersionsService } from './page-versions.service';
-import { type PageBlameDto, type PageVersionDiffDto, type PageVersionDto, type PageVersionsDto } from './page-versions';
+import {
+    type PageBlameDto, type PageRestoreDto, type PageVersionDiffDto, type PageVersionDto, type PageVersionsDto,
+} from './page-versions';
 
 /**
  * The page's history panel: the versions grouped, a group opening to its versions, older ones asked for by the oldest
@@ -19,6 +21,9 @@ describe('PageHistoryPanelComponent', () => {
     let asked: Array<number | null>;
     let diffsAsked: number[];
     let blameAsked: string[];
+    let restoresAsked: Array<[string, number]>;
+    let confirmed: boolean;
+    let restoreAnswer: () => Observable<PageRestoreDto>;
     const diffOf = (seq: number): PageVersionDiffDto => ({
         path: '/content/site/about.page', version: version(seq, '14:00', ['blocks (1 changed)']), previous: seq - 1,
         changes: {
@@ -43,6 +48,14 @@ describe('PageHistoryPanelComponent', () => {
         asked = [];
         diffsAsked = [];
         blameAsked = [];
+        restoresAsked = [];
+        confirmed = true;
+        restoreAnswer = () => of({
+            path: '/content/site/about.page', restoredFrom: 2, version: { id: 'v4', seq: 4 },
+            dropped: [{ part: 'content', what: 'Section 2 (retired_widget)', why: 'This kind of section no longer exists.' }],
+            left: [{ part: 'content', what: 'de language', why: 'It was added after this version.' }],
+            offered: { slug: 'about-us' },
+        });
         TestBed.configureTestingModule({
             imports: [PageHistoryPanelComponent],
             providers: [{
@@ -63,7 +76,14 @@ describe('PageHistoryPanelComponent', () => {
                         blameAsked.push(path);
                         return of(blame);
                     },
+                    restore: (path: string, seq: number) => {
+                        restoresAsked.push([path, seq]);
+                        return restoreAnswer();
+                    },
                 },
+            }, {
+                provide: ConfirmDialogService,
+                useValue: { open: () => of(confirmed) },
             }],
         });
         fixture = TestBed.createComponent(PageHistoryPanelComponent);
@@ -269,6 +289,73 @@ describe('PageHistoryPanelComponent', () => {
         expect(asked).toEqual([null, 9]);
         expect(fixture.componentInstance.versions().map(v => v.seq)).toEqual([9, 4]);
         expect(blameAsked.length).toBe(1);
+    });
+
+    it('offers to restore every version but the newest', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(3, '14:11', ['tags']), version(2, '09:00', ['blocks'])] })];
+        const el = open();
+        const rows = el.querySelectorAll('[data-test="history-group"] > button');
+
+        (rows[0] as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(el.querySelector('[data-test="history-restore"]')).toBeNull();
+
+        (rows[0] as HTMLButtonElement).click();
+        (rows[1] as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(el.querySelector('[data-test="history-restore"]')).not.toBeNull();
+    });
+
+    it('restores after the confirm, says what was not written, tells the host, and reads the list again', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(3, '14:11', ['tags']), version(2, '09:00', ['blocks'])] })];
+        const el = open();
+        const told: PageRestoreDto[] = [];
+        fixture.componentInstance.restored.subscribe(r => told.push(r));
+        (el.querySelectorAll('[data-test="history-group"] > button')[1] as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        (el.querySelector('[data-test="history-restore"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(restoresAsked).toEqual([['/content/site/about.page', 2]]);
+        expect(told.length).toBe(1);
+        expect(asked.length).toBe(2);
+        const notice = el.querySelector('[data-test="history-restored"]') as HTMLElement;
+        expect(notice.textContent).toContain('Restored as a new version.');
+        expect(notice.querySelector('[data-test="history-restored-dropped"]')?.textContent).toContain('Section 2 (retired_widget)');
+        expect(notice.querySelector('[data-test="history-restored-left"]')?.textContent).toContain('de language');
+        expect(notice.querySelector('[data-test="history-restored-slug"]')?.textContent).toContain('about-us');
+    });
+
+    it('restores nothing when the confirm is declined', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(3, '14:11', ['tags']), version(2, '09:00', ['blocks'])] })];
+        const el = open();
+        confirmed = false;
+        (el.querySelectorAll('[data-test="history-group"] > button')[1] as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        (el.querySelector('[data-test="history-restore"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(restoresAsked).toEqual([]);
+        expect(el.querySelector('[data-test="history-restored"]')).toBeNull();
+    });
+
+    it('shows a refused restore in the banner, and tells the host nothing', () => {
+        answers = [() => of({ path: '/p', hasMore: false, versions: [version(3, '14:11', ['tags']), version(2, '09:00', ['blocks'])] })];
+        const el = open();
+        restoreAnswer = () => throwError(() => new HttpErrorResponse({ status: 403 }));
+        const told: PageRestoreDto[] = [];
+        fixture.componentInstance.restored.subscribe(r => told.push(r));
+        (el.querySelectorAll('[data-test="history-group"] > button')[1] as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        (el.querySelector('[data-test="history-restore"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+
+        expect(told).toEqual([]);
+        expect(el.querySelector('app-error-banner')).not.toBeNull();
+        expect(el.querySelector('[data-test="history-restore"]')).not.toBeNull();
     });
 
     it('says when there is no version yet', () => {

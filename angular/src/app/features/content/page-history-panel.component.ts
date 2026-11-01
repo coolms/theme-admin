@@ -1,10 +1,10 @@
 import {
-    ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked,
+    ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DateTimeFormatService, ErrorBannerComponent } from '@coolms/ui-angular';
-import { PageBlameDto, PageVersionDiffDto, PageVersionDto, groupVersions } from './page-versions';
+import { ConfirmDialogService, DateTimeFormatService, ErrorBannerComponent } from '@coolms/ui-angular';
+import { PageBlameDto, PageRestoreDto, PageVersionDiffDto, PageVersionDto, groupVersions } from './page-versions';
 import { PageVersionsService } from './page-versions.service';
 import { PageVersionDiffComponent } from './page-version-diff.component';
 
@@ -24,6 +24,10 @@ type DiffState =
  * by one, each language body line by line. Older versions are asked for page by page.
  *
  * "By section" answers, for each section the page has now, who last changed it and each of its fields.
+ *
+ * A version older than the newest can be restored: the page put back as it was then, as a new version, after a
+ * confirmation. The answer is shown in place -- what today's rules no longer allow and so was left out, what was left in
+ * place, and the old address offered as a rename -- and `restored` tells the host to read the page again.
  *
  * `compact` (a folder's dialog) shows the latest rows only, with "Show all", and no "By section": a folder has no
  * sections.
@@ -61,6 +65,41 @@ type DiffState =
                 </button>
             </div>
 
+            @if (restoreFailure() !== null) {
+                <app-error-banner message="The version could not be restored" [error]="restoreFailure()" />
+            }
+            @if (restoreResult(); as r) {
+                <div class="ph__restored" role="status" data-test="history-restored">
+                    <p class="ph__restored-head">
+                        {{ r.version ? 'Restored as a new version.' : 'The page was already as that version left it: nothing changed.' }}
+                    </p>
+                    @if (r.dropped.length > 0) {
+                        <p class="ph__restored-sub">Left out, because today's rules no longer allow it:</p>
+                        <ul class="ph__notes" data-test="history-restored-dropped">
+                            @for (note of r.dropped; track $index) {
+                                <li><strong>{{ note.what }}</strong>: {{ note.why }}</li>
+                            }
+                        </ul>
+                    }
+                    @if (r.left.length > 0) {
+                        <p class="ph__restored-sub">Left in place (delete it from its language tab if it should go):</p>
+                        <ul class="ph__notes" data-test="history-restored-left">
+                            @for (note of r.left; track $index) {
+                                <li><strong>{{ note.what }}</strong>: {{ note.why }}</li>
+                            }
+                        </ul>
+                    }
+                    @if (r.offered.slug; as slug) {
+                        <p class="ph__restored-sub" data-test="history-restored-slug">
+                            Then, its address was <code>{{ slug }}</code>; the restore did not rename it.
+                            <button type="button" class="cms-btn cms-btn-sm" (click)="renameOffered.emit(slug)">
+                                Use that address
+                            </button>
+                        </p>
+                    }
+                    <button type="button" class="cms-btn cms-btn-sm" (click)="restoreResult.set(null)">Dismiss</button>
+                </div>
+            }
             @if (view() === 'blame') {
                 @if (blameFailure() !== null) {
                     <app-error-banner message="Who changed the sections could not be read" [error]="blameFailure()"
@@ -181,6 +220,12 @@ type DiffState =
             @switch (state?.state) {
                 @case ('read') {
                     <app-page-version-diff [diff]="$any(state).diff" />
+                    @if (canRestore(version.seq)) {
+                        <button type="button" class="cms-btn cms-btn-sm ph__restore" data-test="history-restore"
+                                [disabled]="restoring()" (click)="restore(version)">
+                            Restore this version
+                        </button>
+                    }
                 }
                 @case ('failed') {
                     <app-error-banner message="What changed in this version could not be read" [error]="$any(state).error"
@@ -216,11 +261,19 @@ type DiffState =
                        border-bottom: 1px solid var(--cms-border); }
         .ph__version--stack { flex-direction: column; }
         .ph__message { font-style: italic; }
-        .ph__more { align-self: flex-start; }
+        .ph__more, .ph__restore { align-self: flex-start; }
+        .ph__restore { margin-top: 4px; }
+        .ph__restored { display: flex; flex-direction: column; gap: 4px; padding: 8px;
+                        border: 1px solid var(--cms-border); border-radius: var(--cms-radius-sm, 4px);
+                        background: var(--cms-surface-alt); }
+        .ph__restored-head, .ph__restored-sub { margin: 0; }
+        .ph__restored-head { font-weight: 600; }
+        .ph__notes { margin: 0; padding-left: 16px; }
     `],
 })
 export class PageHistoryPanelComponent {
     private readonly service = inject(PageVersionsService);
+    private readonly confirm = inject(ConfirmDialogService);
     private readonly destroyRef = inject(DestroyRef);
     /** The person's own date and time setting, as the rest of the admin writes times. */
     protected readonly format = inject(DateTimeFormatService);
@@ -233,6 +286,11 @@ export class PageHistoryPanelComponent {
     readonly path = input<string>('');
     /** The folder dialog's history: the latest rows, "Show all", and no "By section". */
     readonly compact = input(false);
+
+    /** A version was restored: the host reads the page (or folder) again. */
+    readonly restored = output<PageRestoreDto>();
+    /** The restored version's address was another: the host may offer it as a rename. */
+    readonly renameOffered = output<string>();
 
     readonly view = signal<'versions' | 'blame'>('versions');
     readonly versions = signal<readonly PageVersionDto[]>([]);
@@ -249,6 +307,9 @@ export class PageHistoryPanelComponent {
     readonly openDiff = signal<number | null>(null);
     readonly blame = signal<PageBlameDto | null>(null);
     readonly blameFailure = signal<unknown>(null);
+    readonly restoring = signal(false);
+    readonly restoreResult = signal<PageRestoreDto | null>(null);
+    readonly restoreFailure = signal<unknown>(null);
     private readonly open = signal<ReadonlySet<string>>(new Set());
     private readonly diffs = signal<ReadonlyMap<number, DiffState>>(new Map());
     private blameGeneration = 0;
@@ -368,6 +429,46 @@ export class PageHistoryPanelComponent {
         });
     }
 
+    /** Every version but the newest: restoring the newest would change nothing. */
+    canRestore(seq: number): boolean {
+        const newest = this.versions().at(0);
+        return newest !== undefined && newest.seq !== seq;
+    }
+
+    /** Asks, then restores: the page as `version` left it, recorded as a new version. */
+    restore(version: PageVersionDto): void {
+        const path = this.path();
+        if (!path || this.restoring()) {
+            return;
+        }
+        this.confirm.open({
+            title: 'Restore this version',
+            message: 'The sections, title, languages, frame and page properties are put back as they were in the version '
+                + 'of ' + this.format.dateTime(version.recordedAt) + ', as a new version: nothing in the history is lost. '
+                + 'What today\'s rules no longer allow is left out and listed. Unsaved edits in the editor are replaced.',
+            confirmLabel: 'Restore',
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(confirmed => {
+            if (!confirmed) {
+                return;
+            }
+            this.restoring.set(true);
+            this.restoreFailure.set(null);
+            this.restoreResult.set(null);
+            this.service.restore(path, version.seq).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: result => {
+                    this.restoring.set(false);
+                    this.restoreResult.set(result);
+                    this.reload();
+                    this.restored.emit(result);
+                },
+                error: (error: unknown) => {
+                    this.restoring.set(false);
+                    this.restoreFailure.set(error);
+                },
+            });
+        });
+    }
+
     authorOf(version: PageVersionDto): string {
         return this.nameOf(version.author);
     }
@@ -424,6 +525,8 @@ export class PageHistoryPanelComponent {
             this.blame.set(null);
             this.blameFailure.set(null);
             this.showAll.set(false);
+            this.restoreResult.set(null);
+            this.restoreFailure.set(null);
             ++this.blameGeneration;
             if (this.view() === 'blame') {
                 this.loadBlame();

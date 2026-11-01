@@ -131,7 +131,8 @@ const TABS: readonly TabStripItem[] = [
                  is opened (not with the dialog), so it shows what the folder's saves left since. -->
             @if (hasPageProperties() && tab() === 'history') {
                 <div class="cms-dialog-body spd__body" data-test="folder-history">
-                    <app-page-history-panel [path]="data.path" [compact]="true" />
+                    <app-page-history-panel [path]="data.path" [compact]="true"
+                                            (restored)="propertiesPanel()?.refresh()" />
                 </div>
             }
 

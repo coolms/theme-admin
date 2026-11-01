@@ -83,6 +83,27 @@ export interface PageVersionDiffDto {
     readonly bodies: readonly { readonly locale: string; readonly lines: readonly TextRunDto[] | null }[];
 }
 
+/** One thing a restore did not write: which part, what, and why. */
+export interface RestoreNoteDto {
+    readonly part: string;
+    readonly what: string;
+    readonly why: string;
+}
+
+/** What `POST /web/page-restores` answers: the version recorded, and what was not written. */
+export interface PageRestoreDto {
+    readonly path: string;
+    readonly restoredFrom: number;
+    /** Null when the page was already as that version left it. */
+    readonly version: { readonly id: string; readonly seq: number } | null;
+    /** What today's rules no longer allow, not written. */
+    readonly dropped: readonly RestoreNoteDto[];
+    /** What was left in place because removing it could not be undone (a language added since). */
+    readonly left: readonly RestoreNoteDto[];
+    /** A step offered on its own: `slug`, the recorded name, as a rename. */
+    readonly offered: { readonly slug?: string };
+}
+
 /** Who last changed each section and each of its fields, as `GET /web/page-blame` answers it. */
 export interface PageBlameDto {
     readonly path: string;
