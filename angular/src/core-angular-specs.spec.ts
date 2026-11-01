@@ -27,3 +27,4 @@ import '../../../core-angular/src/bootstrap/console-access.service.spec';
 import '../../../core-angular/src/auth/login/login.component.spec';
 import '../../../core-angular/src/api/realtime-token.client.spec';
 import '../../../core-angular/src/api/identity-api.client.spec';
+import '../../../core-angular/src/auth/audience-refusal.spec';
