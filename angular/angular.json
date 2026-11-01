@@ -103,9 +103,8 @@
               ],
               "outputHashing": "all",
               //
-              // No critical-CSS inlining (2026-11-01): it writes an inline <script> that flips the stylesheet's
-              // media (an onload attribute in older versions), which a CSP without 'unsafe-inline' in script-src
-              // refuses -- the inline reports of the admin's report-only week, lines 65/77/78 of index.html. The
+              // No critical-CSS inlining: it writes an inline <script> that flips the stylesheet's media (an
+              // onload attribute in older versions), which a CSP without 'unsafe-inline' in script-src refuses. The
               // stylesheet is linked as an ordinary one instead. Scripts, styles and fonts stay minified.
               "optimization": {
                 "scripts": true,
