@@ -29,6 +29,7 @@ import {
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
 import { SectionHostsCardComponent } from './section-hosts-card.component';
+import { SiteRobotsCardComponent } from './site-robots-card.component';
 import { LoadSections } from './section.actions';
 
 /**
@@ -58,7 +59,7 @@ import { LoadSections } from './section.actions';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
-        SectionHostsCardComponent, ElevationRequiredComponent,
+        SectionHostsCardComponent, SiteRobotsCardComponent, ElevationRequiredComponent,
     ],
     template: `
         @if (loading()) {
@@ -142,6 +143,9 @@ Status / role chips project into the header-meta
                     <!-- Other hosts: each serves the site or redirects to its host -->
                     @if (s.sectionId) {
                         <app-section-hosts-card [sectionId]="s.sectionId" [revision]="sectionRevision()" />
+                        @if (s.slug) {
+                            <app-site-robots-card [slug]="s.slug" />
+                        }
                     }
 
                     <!-- NaviTrees -->
