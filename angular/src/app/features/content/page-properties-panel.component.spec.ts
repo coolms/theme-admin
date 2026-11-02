@@ -100,6 +100,28 @@ describe('Page properties: each card shows where its values come from and saves 
 
     afterEach(() => http.verify());
 
+    it('marks a value whose template the page leaves out, with why, on its card and its line', () => {
+        const failed = { meta: { author: 'the filter "raw" is not allowed in a page property' } };
+        const { el } = open({ ...view(), failed });
+
+        const meta = card(el, 'meta');
+        expect(meta.querySelector('.pp-card__failed-mark')?.textContent).toContain('a template is left out');
+        const lines = Array.from(meta.querySelectorAll('.pp-card__applied'));
+        const author = lines.find(l => l.textContent?.includes('author')) as HTMLElement;
+        expect(author.classList).toContain('pp-card__applied--failed');
+        expect(author.textContent).toContain('Left out of this page: the filter "raw" is not allowed in a page property.');
+        const keywords = lines.find(l => l.textContent?.includes('keywords')) as HTMLElement;
+        expect(keywords.classList).not.toContain('pp-card__applied--failed');
+        expect(card(el, 'og').querySelector('.pp-card__failed-mark')).toBeNull();
+    });
+
+    it('marks nothing when the server names no failed template, or says nothing of them', () => {
+        const { el } = open();
+
+        expect(el.querySelector('.pp-card__failed-mark')).toBeNull();
+        expect(el.querySelector('.pp-card__failed')).toBeNull();
+    });
+
     it('draws one card per property the server declares, a fifth included, with no client list', () => {
         const { el } = open(view({}, 'v1', { robots: { merge: 'keyed', values: {}, sources: {}, stoppedAt: null } }));
 

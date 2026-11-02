@@ -37,6 +37,11 @@ export interface PagePropertiesDto {
     readonly version: string;
     /** Whether the reader may change these properties; a change is refused (403) when not. */
     readonly writable: boolean;
+    /**
+     * Each value written as a template that this page leaves out, and why: property -> key -> reason. Empty when
+     * every template renders (and from a server that does not say).
+     */
+    readonly failed: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 /** A change: `op` is append, override, stop or reset (reset removes the node's set; `values` is not read). */
@@ -96,6 +101,18 @@ function normalise(raw: unknown): PagePropertiesDto {
             own[scope][name] = { op: String(s['op'] ?? ''), values: record(s['values']) as Record<string, string> };
         }
     }
+    const failed: Record<string, Record<string, string>> = {};
+    for (const [name, keys] of Object.entries(record(r['failed']))) {
+        const why: Record<string, string> = {};
+        for (const [key, reason] of Object.entries(record(keys))) {
+            if (typeof reason === 'string') {
+                why[key] = reason;
+            }
+        }
+        if (Object.keys(why).length > 0) {
+            failed[name] = why;
+        }
+    }
     return {
         path: String(r['path'] ?? ''),
         locale: String(r['locale'] ?? ALL_LANGUAGES),
@@ -104,6 +121,7 @@ function normalise(raw: unknown): PagePropertiesDto {
         version: String(r['version'] ?? ''),
         // A missing flag never grants a right: an answer without the field is read-only.
         writable: r['writable'] === true,
+        failed,
     };
 }
 
