@@ -60,9 +60,13 @@ const PURPOSES: Record<string, string> = {
                     <div class="robots__modes" role="group" aria-label="Edit as">
                         <button type="button" class="cms-btn cms-btn-sm" [class.cms-btn-primary]="mode() === 'form'"
                                 [class.cms-btn-secondary]="mode() !== 'form'" [attr.aria-pressed]="mode() === 'form'"
+                                [disabled]="mode() !== 'form' && changed(robots()!)"
+                                [attr.title]="mode() !== 'form' && changed(robots()!) ? switchHint : null"
                                 (click)="mode.set('form')">Form</button>
                         <button type="button" class="cms-btn cms-btn-sm" [class.cms-btn-primary]="mode() === 'text'"
                                 [class.cms-btn-secondary]="mode() !== 'text'" [attr.aria-pressed]="mode() === 'text'"
+                                [disabled]="mode() !== 'text' && changed(robots()!)"
+                                [attr.title]="mode() !== 'text' && changed(robots()!) ? switchHint : null"
                                 (click)="mode.set('text')">Text</button>
                     </div>
                 }
@@ -153,7 +157,22 @@ const PURPOSES: Record<string, string> = {
                             }
                             <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm"
                                     (click)="added.rules.push({ kind: 'disallow', value: '' })">Add a rule</button>
+                            @if (added.agents.length > 0 && added.rules.length === 0) {
+                                <label class="robots__open">
+                                    <input type="checkbox" [(ngModel)]="openGroup">
+                                    This group has no rules: {{ added.agents.join(', ') }} may read every page. Add it anyway.
+                                </label>
+                            }
                         </fieldset>
+                        @if (blockers(r); as b) {
+                            @if (b.length > 0) {
+                                <ul class="robots__findings">
+                                    @for (why of b; track why) {
+                                        <li class="robots__warning">{{ why }}</li>
+                                    }
+                                </ul>
+                            }
+                        }
                     } @else {
                         <label class="robots__label" for="robots-text">The text, as it is kept</label>
                         <textarea id="robots-text" class="cms-input robots__text" rows="12" spellcheck="false"
@@ -185,7 +204,7 @@ const PURPOSES: Record<string, string> = {
                             </button>
                         }
                         <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" (click)="save()"
-                                [disabled]="saving() || !changed(r)">
+                                [disabled]="saving() || !changed(r) || blockers(r).length > 0">
                             Save robots.txt
                         </button>
                     </div>
@@ -216,6 +235,7 @@ const PURPOSES: Record<string, string> = {
         .robots__warning { color: var(--cms-warning-text); }
         .robots__served pre { white-space: pre-wrap; font-size: .8rem; }
         .robots__actions { display: flex; gap: 8px; }
+        .robots__open { display: flex; gap: 6px; align-items: baseline; font-size: .85rem; margin-top: 8px; }
     `],
 })
 export class SiteRobotsCardComponent {
@@ -238,6 +258,9 @@ export class SiteRobotsCardComponent {
     added: RobotsNewGroup = { agents: [], rules: [] };
     picked = '';
     custom = '';
+    /** The person said a new group without rules -- its crawlers may read every page -- is meant. */
+    openGroup = false;
+    readonly switchHint = 'Save or undo the changes here first: the other view does not carry them.';
 
     constructor() {
         effect(() => this.load(this.slug()));
@@ -245,6 +268,30 @@ export class SiteRobotsCardComponent {
 
     changed(robots: SiteRobotsTxt): boolean {
         return this.mode() === 'text' ? this.draft !== robots.text : formChanged(this.form, this.added);
+    }
+
+    /**
+     * Why the form would save the opposite of what it seems to say, each in a sentence; the save waits until none
+     * is left. A Disallow with no path disallows nothing, so a crawler added to be kept out would be let in.
+     */
+    blockers(robots: SiteRobotsTxt): string[] {
+        if (this.mode() !== 'form') {
+            return [];
+        }
+        const said: string[] = [];
+        if (this.added.rules.some((rule) => rule.value.trim() === '')) {
+            said.push('Each new rule needs a path, such as / for the whole site.');
+        }
+        const emptied = this.form.some((group) => group.rules.some((rule) => !rule.removed && rule.kind === 'disallow'
+            && rule.value.trim() === '' && (rule.readValue !== '' || rule.field !== 'disallow')));
+        if (emptied) {
+            said.push('A Disallow rule with no path disallows nothing: give it a path, or remove the rule.');
+        }
+        if (this.added.agents.length > 0 && this.added.rules.length === 0 && !this.openGroup) {
+            said.push('The new group has no rules, so its crawlers may read every page: add a rule, or say that is meant.');
+        }
+
+        return said;
     }
 
     purposes(robots: SiteRobotsTxt): { purpose: string; label: string; crawlers: RobotsCrawler[] }[] {
@@ -326,6 +373,7 @@ export class SiteRobotsCardComponent {
         this.error.set(null);
         this.form = formOf(robots);
         this.added = { agents: [], rules: [] };
+        this.openGroup = false;
         if (!keepDraft) {
             this.draft = robots.text;
         }

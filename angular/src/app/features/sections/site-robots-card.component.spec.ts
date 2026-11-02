@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ChangeDetectorRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -61,6 +62,12 @@ describe('SiteRobotsCardComponent', () => {
         expect(text()).toContain('serves the default robots.txt');
         expect((root.querySelector('#agent-0') as HTMLInputElement | null)?.value ?? null).toBe('*');
     });
+
+    // OnPush: a click or a keystroke marks the card for checking; a field a spec sets does not, so it marks it.
+    function refresh(fixture: ReturnType<typeof render>['fixture']): void {
+        fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
+        fixture.detectChanges();
+    }
 
     // The text, saved whole.
     function asText(fixture: ReturnType<typeof render>['fixture']): void {
@@ -161,6 +168,65 @@ describe('SiteRobotsCardComponent', () => {
         fixture.componentInstance.save();
 
         expect(http.expectOne(WRITE).request.body.changes).toEqual([{ line: 2, value: null }]);
+    });
+
+    it('will not save a new rule without a path, which would disallow nothing', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const card = fixture.componentInstance;
+        card.addAgent('GPTBot');
+        card.added.rules.push({ kind: 'disallow', value: '  ' });
+
+        expect(card.blockers(card.robots()!)).toEqual(['Each new rule needs a path, such as / for the whole site.']);
+        card.added.rules[0].value = '/';
+        expect(card.blockers(card.robots()!)).toEqual([]);
+    });
+
+    it('will not empty a Disallow rule\'s path, and lets a rule that was read empty stay so', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer({ ...two(), groups: [{
+            agents: ['GPTBot'], rules: [['disallow', '/old'], ['disallow', '']], agentLines: [1], ruleLines: [2, 3],
+        }] }));
+        fixture.detectChanges();
+        const card = fixture.componentInstance;
+
+        expect(card.blockers(card.robots()!)).toEqual([]);
+        card.form[0].rules[0].value = '';
+        expect(card.blockers(card.robots()!).length).toBe(1);
+        card.form[0].rules[0].removed = true;
+        expect(card.blockers(card.robots()!)).toEqual([]);
+    });
+
+    it('adds a group without rules only once the person says its crawlers may read every page', () => {
+        const { fixture, http, text } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const card = fixture.componentInstance;
+        card.addAgent('GPTBot');
+        refresh(fixture);
+        const save = (): HTMLButtonElement => Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+            .find((b) => b.textContent?.includes('Save robots.txt')) as HTMLButtonElement;
+
+        expect(text()).toContain('GPTBot may read every page');
+        expect(save().disabled).toBeTrue();
+        card.openGroup = true;
+        refresh(fixture);
+        expect(save().disabled).toBeFalse();
+    });
+
+    it('will not switch views while the visible one has changes not saved', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const card = fixture.componentInstance;
+        const textButton = (): HTMLButtonElement => Array.from((fixture.nativeElement as HTMLElement)
+            .querySelectorAll('.robots__modes button')).find((b) => b.textContent?.trim() === 'Text') as HTMLButtonElement;
+
+        expect(textButton().disabled).toBeFalse();
+        card.form[0].rules[0].value = '/new';
+        refresh(fixture);
+        expect(textButton().disabled).toBeTrue();
     });
 
     it('adds a group from a listed crawler and a typed one, with its rules', () => {
