@@ -53,6 +53,14 @@ describe('InstallationBannerComponent', () => {
         expect(text()).toBe('');
     });
 
+    it('shows nothing for an answer it cannot read', () => {
+        const { text, http, fixture } = render();
+        http.expectOne(URL).flush({});
+        fixture.detectChanges();
+
+        expect(text()).toBe('');
+    });
+
     it('shows nothing to someone the server refuses', () => {
         const { text, http, fixture } = render();
         http.expectOne(URL).flush({ title: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });

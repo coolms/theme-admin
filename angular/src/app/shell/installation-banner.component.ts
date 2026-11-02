@@ -53,13 +53,18 @@ export class InstallationBannerComponent implements OnInit {
     private readonly http = inject(HttpClient);
     private readonly store = inject(Store);
 
-    /** Null until answered, and for anyone the server does not answer. */
+    /** Null until answered, for anyone the server does not answer, and for an answer it cannot read. */
     protected readonly state = signal<InstallationState | null>(null);
 
     ngOnInit(): void {
         const apiBase = this.store.selectSnapshot(AppConfigState.manifest)?.apiBase ?? '/api/v1';
         this.http.get<InstallationState>(`${apiBase}/application/installation`).subscribe({
-            next: (answer) => this.state.set({ production: answer.production === true, answered: answer.answered === true }),
+            // An answer of another shape is not one: nothing is shown, as for a refusal.
+            next: (answer) => this.state.set(
+                typeof answer?.production === 'boolean'
+                    ? { production: answer.production, answered: answer.answered === true }
+                    : null,
+            ),
             error: () => this.state.set(null),
         });
     }
