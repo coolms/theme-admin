@@ -18,10 +18,15 @@ describe('SiteRobotsCardComponent', () => {
         site: 'docs',
         text: 'User-agent: *\nAllow: /\n',
         version: null,
-        groups: [{ agents: ['*'], rules: [['allow', '/']] }],
+        groups: [{ agents: ['*'], rules: [['allow', '/']], agentLines: [0], ruleLines: [1] }],
         host: 'docs.example.test',
         rendered: 'User-agent: *\nAllow: /\n',
         findings: [],
+        crawlers: [
+            { agent: 'Googlebot', purpose: 'search', operator: 'Google' },
+            { agent: 'GPTBot', purpose: 'ai-training', operator: 'OpenAI' },
+            { agent: 'Claude-User', purpose: 'ai-answers', operator: 'Anthropic' },
+        ],
         ...over,
     });
 
@@ -45,19 +50,28 @@ describe('SiteRobotsCardComponent', () => {
         return { fixture, http, text };
     }
 
-    it('says when the site serves the default, and shows its groups', () => {
+    it('says when the site serves the default, and shows its groups in the form', async () => {
         const { fixture, http, text } = render();
         http.expectOne(READ).flush(answer());
         fixture.detectChanges();
+        // ngModel writes an input's value after the change detection that created it.
+        await fixture.whenStable();
+        const root = fixture.nativeElement as HTMLElement;
 
         expect(text()).toContain('serves the default robots.txt');
-        expect(text()).toContain('*: allow /');
+        expect((root.querySelector('#agent-0') as HTMLInputElement | null)?.value ?? null).toBe('*');
     });
+
+    // The text, saved whole.
+    function asText(fixture: ReturnType<typeof render>['fixture']): void {
+        fixture.componentInstance.mode.set('text');
+        fixture.detectChanges();
+    }
 
     it('saves the whole text with the version it was read at', () => {
         const { fixture, http } = render();
         http.expectOne(READ).flush(answer({ version: 'v1' }));
-        fixture.detectChanges();
+        asText(fixture);
         fixture.componentInstance.draft = 'User-agent: GPTBot\nDisallow: /\n';
 
         fixture.componentInstance.save();
@@ -72,7 +86,7 @@ describe('SiteRobotsCardComponent', () => {
     it('says in words that a save from an older version was refused', () => {
         const { fixture, http, text } = render();
         http.expectOne(READ).flush(answer({ version: 'v1' }));
-        fixture.detectChanges();
+        asText(fixture);
         fixture.componentInstance.draft = 'User-agent: *\nDisallow: /x\n';
 
         fixture.componentInstance.save();
@@ -85,7 +99,7 @@ describe('SiteRobotsCardComponent', () => {
     it('reads the current version again after a refused save, keeping the typed text, and the next save names it', () => {
         const { fixture, http } = render();
         http.expectOne(READ).flush(answer({ version: 'v1' }));
-        fixture.detectChanges();
+        asText(fixture);
         const typed = 'User-agent: *\nDisallow: /mine\n';
         fixture.componentInstance.draft = typed;
         fixture.componentInstance.save();
@@ -114,5 +128,91 @@ describe('SiteRobotsCardComponent', () => {
 
         expect(root.querySelector('.robots__findings .robots__error')?.textContent).toContain('Line 2:');
         expect(root.querySelector('.robots__findings .robots__warning')?.textContent).toContain('Line 3:');
+    });
+
+    // The form, saved line by line.
+    const two = (): Partial<SiteRobotsTxt> => ({
+        version: 'v1',
+        text: '# ours\nUser-agent: GPTBot\nUser-agent: CCBot\nDisallow: /old # was\n',
+        groups: [{ agents: ['GPTBot', 'CCBot'], rules: [['disallow', '/old']], agentLines: [1, 2], ruleLines: [3] }],
+    });
+
+    it('sends only the rule that changed, its value and its field, with the version', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const rule = fixture.componentInstance.form[0].rules[0];
+        rule.value = '/new';
+        rule.kind = 'allow';
+
+        fixture.componentInstance.save();
+
+        expect(http.expectOne(WRITE).request.body).toEqual({
+            site: 'docs', version: 'v1', changes: [{ line: 3, value: '/new', field: 'allow' }], group: null,
+        });
+    });
+
+    it('sends a removed crawler as its line with no value, and nothing for the lines left alone', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        fixture.componentInstance.form[0].agents[1].removed = true;
+
+        fixture.componentInstance.save();
+
+        expect(http.expectOne(WRITE).request.body.changes).toEqual([{ line: 2, value: null }]);
+    });
+
+    it('adds a group from a listed crawler and a typed one, with its rules', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const card = fixture.componentInstance;
+        card.addAgent('Claude-User');
+        card.addAgent('my-bot ');
+        card.addAgent('claude-user');
+        card.added.rules.push({ kind: 'disallow', value: ' /private ' });
+
+        card.save();
+
+        expect(http.expectOne(WRITE).request.body).toEqual({
+            site: 'docs', version: 'v1', changes: [],
+            group: { agents: ['Claude-User', 'my-bot'], rules: [{ field: 'disallow', value: '/private' }] },
+        });
+    });
+
+    it('lists the built-in crawlers by what they read a site for', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        const groups = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('#robots-pick optgroup'))
+            .map((g) => g.getAttribute('label'));
+
+        expect(groups).toEqual(['Search engines', 'AI training', 'AI assistants and answers']);
+    });
+
+    it('cannot save a form that changes nothing', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+
+        expect(fixture.componentInstance.changed(fixture.componentInstance.robots()!)).toBeFalse();
+        fixture.componentInstance.form[0].rules[0].value = '/old ';
+        expect(fixture.componentInstance.changed(fixture.componentInstance.robots()!)).toBeFalse();
+    });
+
+    it('after a refused form save, reads the current file again into the form', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer(two()));
+        fixture.detectChanges();
+        fixture.componentInstance.form[0].rules[0].value = '/mine';
+        fixture.componentInstance.save();
+        http.expectOne(WRITE).flush({}, { status: 412, statusText: 'Precondition Failed' });
+
+        fixture.componentInstance.readAgain();
+        http.expectOne(READ).flush(answer({ ...two(), version: 'v2' }));
+
+        expect(fixture.componentInstance.form[0].rules[0].value).toBe('/old');
+        expect(fixture.componentInstance.robots()?.version).toBe('v2');
     });
 });
