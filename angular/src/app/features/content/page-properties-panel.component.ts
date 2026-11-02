@@ -69,7 +69,12 @@ export interface PropertyCard {
         @if (view(); as v) {
             @for (c of cards(); track c.name) {
                 <section class="pp-card" [attr.aria-label]="c.name">
-                    <h4 class="pp-card__title">{{ c.name }}</h4>
+                    <h4 class="pp-card__title">
+                        {{ c.name }}
+                        @if (v.failed[c.name]) {
+                            <span class="pp-card__failed-mark">a template is left out</span>
+                        }
+                    </h4>
                     @if (v.properties[c.name]; as applied) {
                         @if (applied.stoppedAt) {
                             <p class="pp-card__stop">
@@ -77,11 +82,16 @@ export interface PropertyCard {
                             </p>
                         }
                         @for (key of keysOf(applied.values); track key) {
-                            <div class="pp-card__applied">
+                            <div class="pp-card__applied" [class.pp-card__applied--failed]="v.failed[c.name]?.[key]">
                                 <span class="pp-card__key">{{ key === '' ? c.name : key }}</span>
                                 <span class="pp-card__value">{{ applied.values[key] }}</span>
                                 @if (applied.sources[key]; as source) {
                                     <span class="pp-card__source">from {{ sourceText(source, v.path) }}</span>
+                                }
+                                @if (v.failed[c.name]?.[key]; as why) {
+                                    <span class="pp-card__failed" role="note">
+                                        Left out of this {{ subject() }}: {{ why }}.
+                                    </span>
                                 }
                             </div>
                         } @empty {
@@ -176,6 +186,11 @@ export interface PropertyCard {
         .pp-card__title { margin: 0; font-size: .8125rem; font-weight: 600; }
         .pp-card__applied { display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: .75rem; overflow-wrap: anywhere; }
         .pp-card__key { font-family: var(--cms-font-mono, monospace); }
+        .pp-card__applied--failed .pp-card__value { text-decoration: line-through; }
+        .pp-card__failed { flex-basis: 100%; color: var(--cms-warning-text); }
+        .pp-card__failed-mark { margin-left: 6px; padding: 0 6px; border-radius: var(--cms-radius-sm, 4px);
+                                font-size: .6875rem; font-weight: 500;
+                                background: var(--cms-warning-light); color: var(--cms-warning-text); }
         .pp-card__source, .pp-card__hint, .pp-card__stop { color: var(--cms-text-muted); font-size: .75rem; margin: 0; }
         .pp-card__own, .pp-card__controls { display: flex; flex-direction: column; gap: 6px; }
         .pp-card__row { display: flex; gap: 4px; }
