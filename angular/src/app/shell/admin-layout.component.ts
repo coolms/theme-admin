@@ -16,6 +16,7 @@ import {
     ToastOutletComponent,
 } from '@coolms/ui-angular';
 import { AdminTopbarComponent } from './admin-topbar.component';
+import { InstallationBannerComponent } from './installation-banner.component';
 import { SidebarNavItemComponent } from './sidebar-nav-item.component';
 import { navFollowsElevation } from './nav-follows-elevation';
 import { togglePanelByRule } from './open-panel';
@@ -46,7 +47,7 @@ import { PageReload } from './page-reload';
     ],
     imports: [
         RouterOutlet, NgClass, NgComponentOutlet, AdminTopbarComponent, ToastOutletComponent, ContextMenuComponent,
-        SidebarNavItemComponent, ElevationRequiredComponent,
+        SidebarNavItemComponent, ElevationRequiredComponent, InstallationBannerComponent,
     ],
     styles: [`
         .coolms-admin-shell {
@@ -315,6 +316,8 @@ import { PageReload } from './page-reload';
             <header class="coolms-topbar">
                 <app-admin-topbar (panelToggle)="requestPanel($event)" />
             </header>
+
+            <app-installation-banner />
 
             <!-- Body: sidebar + main — collapses when terminal is maximized -->
             <div class="coolms-body" [class.terminal-maximized]="panelMaximized().size > 0">
