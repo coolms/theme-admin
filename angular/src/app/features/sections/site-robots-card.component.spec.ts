@@ -82,6 +82,25 @@ describe('SiteRobotsCardComponent', () => {
         expect(text()).toContain('Someone saved the robots.txt meanwhile');
     });
 
+    it('reads the current version again after a refused save, keeping the typed text, and the next save names it', () => {
+        const { fixture, http } = render();
+        http.expectOne(READ).flush(answer({ version: 'v1' }));
+        fixture.detectChanges();
+        const typed = 'User-agent: *\nDisallow: /mine\n';
+        fixture.componentInstance.draft = typed;
+        fixture.componentInstance.save();
+        http.expectOne(WRITE).flush({}, { status: 412, statusText: 'Precondition Failed' });
+        expect(fixture.componentInstance.stale()).toBeTrue();
+
+        fixture.componentInstance.readAgain();
+        http.expectOne(READ).flush(answer({ version: 'v2', text: 'User-agent: *\nDisallow: /theirs\n' }));
+
+        expect(fixture.componentInstance.draft).toBe(typed);
+        expect(fixture.componentInstance.stale()).toBeFalse();
+        fixture.componentInstance.save();
+        expect(http.expectOne(WRITE).request.body.version).toBe('v2');
+    });
+
     it('shows the findings, errors and warnings apart, with their lines', () => {
         const { fixture, http } = render();
         http.expectOne(READ).flush(answer({

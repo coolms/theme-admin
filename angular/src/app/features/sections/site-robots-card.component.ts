@@ -77,6 +77,11 @@ export interface SiteRobotsTxt {
                         <p class="robots__error" role="alert">{{ e }}</p>
                     }
                     <div class="robots__actions">
+                        @if (stale()) {
+                            <button type="button" class="cms-btn cms-btn-secondary cms-btn-sm" (click)="readAgain()">
+                                Read it again, keeping my text
+                            </button>
+                        }
                         <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" (click)="save()"
                                 [disabled]="saving() || draft === r.text">
                             Save robots.txt
@@ -113,6 +118,8 @@ export class SiteRobotsCardComponent {
     readonly robots = signal<SiteRobotsTxt | null>(null);
     readonly error  = signal<string | null>(null);
     readonly saving = signal(false);
+    /** A save was refused because someone saved meanwhile: the version this card holds is not the current one. */
+    readonly stale  = signal(false);
     draft = '';
 
     constructor() {
@@ -139,6 +146,7 @@ export class SiteRobotsCardComponent {
             error: (err: unknown) => {
                 this.saving.set(false);
                 if (err instanceof HttpErrorResponse && err.status === 412) {
+                    this.stale.set(true);
                     this.error.set('Someone saved the robots.txt meanwhile: read it again and make the change on theirs.');
                     return;
                 }
@@ -147,18 +155,30 @@ export class SiteRobotsCardComponent {
         });
     }
 
-    private load(slug: string): void {
+    /**
+     * After a refused save: the current text and its version, read again, with the person's own text kept in the
+     * editor, so the next save names the current version and nothing typed is lost.
+     */
+    readAgain(): void {
+        this.load(this.slug(), true);
+    }
+
+    private load(slug: string, keepDraft = false): void {
         this.http.get<SiteRobotsTxt>(`${this.apiBase}/web/robots-txt`, { params: { site: slug } })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: (robots) => this.show(robots),
+                next: (robots) => this.show(robots, keepDraft),
                 error: (err: unknown) => this.error.set(this.errors.humanize(err)),
             });
     }
 
-    private show(robots: SiteRobotsTxt): void {
+    private show(robots: SiteRobotsTxt, keepDraft = false): void {
         this.robots.set(robots);
-        this.draft = robots.text;
+        this.stale.set(false);
+        this.error.set(null);
+        if (!keepDraft) {
+            this.draft = robots.text;
+        }
     }
 
     private get apiBase(): string {
