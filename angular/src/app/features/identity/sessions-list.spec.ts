@@ -186,6 +186,21 @@ describe('SessionsListComponent', () => {
         expect(page.total()).toBe(0);
     });
 
+    it('drops a refusal of a page asked before a reset, so it does not cover the list since loaded', () => {
+        const late = new Subject<{ members: ActiveSessionDto[]; total: number }>();
+        answers = [() => of({ members: [ROW], total: 45 }), () => late, () => of({ members: [ROW], total: 1 })];
+        const page = build();
+        page.onLoadMore(FIRST);
+        page.onLoadMore({ ...FIRST, reset: false, offset: 30 });
+        page.onLoadMore(FIRST);
+
+        late.error(stamped());
+
+        expect(page.elevationRequired()).toBeFalse();
+        expect(page.rows()).toEqual([ROW]);
+        expect(toasts).toEqual([]);
+    });
+
     it('says so when the sign-ins being ended are the administrator\'s own, and only then', () => {
         const page = build();
         page.onLoadMore(FIRST);

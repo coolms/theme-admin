@@ -149,6 +149,7 @@ export class SessionsListComponent implements OnInit {
                     this.elevationRequired.set(false);
                 },
                 error: (err: unknown) => {
+                    if (epoch < this._resetEpoch) return;
                     if (isElevationRefusal(err)) {
                         this.elevationRequired.set(true);
                     } else {
