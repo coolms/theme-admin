@@ -1,7 +1,7 @@
 import { consoleEntry } from '@coolms/core-angular';
 
 /**
- * Identity's console entry: the profile page, users, groups, deletions (console@1). The profile page owns the profile.tab slot other modules fill.
+ * Identity's console entry: the profile page, users, groups, deletions, signed-in sessions (console@1). The profile page owns the profile.tab slot other modules fill.
  */
 export default consoleEntry({
     module:   'identity',
@@ -28,6 +28,11 @@ export default consoleEntry({
             path:      'identity/deletions',
             component: () => import('../deletions-list.component').then(m => m.DeletionsListComponent),
             nav:       { activeNav: '/identity/deletions', fullHeight: true },
+        },
+        {
+            path:      'identity/sessions',
+            component: () => import('../sessions-list.component').then(m => m.SessionsListComponent),
+            nav:       { activeNav: '/identity/sessions', fullHeight: true },
         },
     ],
 });

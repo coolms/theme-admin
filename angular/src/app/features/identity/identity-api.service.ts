@@ -11,6 +11,7 @@ import {
     type ProfileSection,
     type IdentityGroupDto,
     type AccountDeletionDto,
+    type ActiveSessionDto,
     type LegalHoldDto,
     type FootprintDto,
     type IdentityUserDto,
@@ -220,6 +221,50 @@ export class IdentityApiService {
 
     releaseLegalHold(userId: string, holdId: string): Observable<void> {
         const url = resolvePattern(this.manifest.identity!.userLegalHoldsUrl!, { id: userId }) + '/' + encodeURIComponent(holdId);
+        return this.http.delete<void>(url);
+    }
+
+    // -- Signed-in sessions ---------------------------------------------------
+    //
+    // People's data: the list answers an elevated administrator only, and
+    // every read and ending is audited by the server. Ending is an elevated
+    // act: the 403 is handled by the elevation interceptor, which prompts and
+    // re-sends, so a caller only reloads on success.
+
+    /** Whether the server exposes the sessions page at all. */
+    get hasSessionsPage(): boolean {
+        const m = this.manifest.identity;
+        return !!(m?.sessionsUrl && m?.sessionUrl && m?.userSessionsUrl);
+    }
+
+    listSessions(params: {
+        page?:         number;
+        itemsPerPage?: number;
+        personId?:     string;
+        audience?:     string;
+    } = {}): Observable<{ members: ActiveSessionDto[]; total: number }> {
+        let httpParams = new HttpParams();
+        if (params.page && params.page > 1) httpParams = httpParams.set('page', String(params.page));
+        if (params.itemsPerPage)            httpParams = httpParams.set('itemsPerPage', String(params.itemsPerPage));
+        if (params.personId)                httpParams = httpParams.set('personId', params.personId);
+        if (params.audience)                httpParams = httpParams.set('audience', params.audience);
+        return this.http
+            .get<HydraCollection<ActiveSessionDto>>(this.manifest.identity!.sessionsUrl!, {
+                headers: this.collectionHeaders.headers,
+                params:  httpParams,
+            })
+            .pipe(map(r => ({ members: r['member'], total: r['totalItems'] })));
+    }
+
+    /** Ends one sign-in: its tokens are revoked and its realtime connections closed. */
+    endSession(sessionId: string): Observable<void> {
+        const url = resolvePattern(this.manifest.identity!.sessionUrl!, { sessionId });
+        return this.http.delete<void>(url);
+    }
+
+    /** Ends every sign-in of one account, and forgets its known devices. */
+    endAllSessions(userId: string): Observable<void> {
+        const url = resolvePattern(this.manifest.identity!.userSessionsUrl!, { id: userId });
         return this.http.delete<void>(url);
     }
 
