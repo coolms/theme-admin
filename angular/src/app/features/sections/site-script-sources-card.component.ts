@@ -138,10 +138,11 @@ export class SiteScriptSourcesCardComponent {
         });
     }
 
+    /** The site's list; an answer for a site the card no longer shows (the page reused for another) is dropped. */
     private load(sectionId: string): void {
         this.api.listScriptSources(sectionId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next:  sources => this.sources.set(sources),
-            error: (err: unknown) => this.error.set(this.errors.humanize(err)),
+            next:  sources => { if (sectionId === this.sectionId()) this.sources.set(sources); },
+            error: (err: unknown) => { if (sectionId === this.sectionId()) this.error.set(this.errors.humanize(err)); },
         });
     }
 }

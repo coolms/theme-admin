@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
@@ -30,6 +30,7 @@ describe('SiteScriptSourcesCardComponent', () => {
     let confirmed: boolean;
     let addAnswer: () => Observable<SiteScriptSourceDto>;
     let removeAnswer: () => Observable<void>;
+    let lists: Array<() => Observable<SiteScriptSourceDto[]>>;
 
     function create() {
         added = [];
@@ -42,7 +43,7 @@ describe('SiteScriptSourcesCardComponent', () => {
                 {
                     provide: SectionsApiService,
                     useValue: {
-                        listScriptSources: () => { reads++; return of([SOURCE]); },
+                        listScriptSources: () => { reads++; return (lists.shift() ?? (() => of([SOURCE])))(); },
                         addScriptSource: (_id: string, dto: AddSiteScriptSourceDto) => { added.push(dto); return addAnswer(); },
                         removeScriptSource: (_id: string, sourceId: string) => { removed.push(sourceId); return removeAnswer(); },
                     },
@@ -63,6 +64,7 @@ describe('SiteScriptSourcesCardComponent', () => {
         confirmed = true;
         addAnswer = () => of(SOURCE);
         removeAnswer = () => of(undefined);
+        lists = [];
     });
 
     it('shows each entry of the list', () => {
@@ -109,6 +111,20 @@ describe('SiteScriptSourcesCardComponent', () => {
 
         expect(removed).toEqual(['e1']);
         expect(reads).toBe(2);
+    });
+
+    it('drops a list answered for a site the card no longer shows', () => {
+        const late = new Subject<SiteScriptSourceDto[]>();
+        const fixture = create();
+        lists = [() => late, () => of([])];
+        fixture.componentInstance.sources.set([]);
+        (fixture.componentInstance as unknown as { load(id: string): void }).load('s1');
+        fixture.componentRef.setInput('sectionId', 's2');
+        fixture.detectChanges();
+
+        late.next([SOURCE]);
+
+        expect(fixture.componentInstance.sources()).toEqual([]);
     });
 
     it('shows a refused removal, a page still naming the file', () => {
