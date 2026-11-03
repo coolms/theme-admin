@@ -30,6 +30,7 @@ import {
 import { SectionFormComponent } from './section-form.component';
 import { SectionHostsCardComponent } from './section-hosts-card.component';
 import { SiteRobotsCardComponent } from './site-robots-card.component';
+import { SiteScriptSourcesCardComponent } from './site-script-sources-card.component';
 import { LoadSections } from './section.actions';
 
 /**
@@ -59,7 +60,7 @@ import { LoadSections } from './section.actions';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
-        SectionHostsCardComponent, SiteRobotsCardComponent, ElevationRequiredComponent,
+        SectionHostsCardComponent, SiteRobotsCardComponent, SiteScriptSourcesCardComponent, ElevationRequiredComponent,
     ],
     template: `
         @if (loading()) {
@@ -146,6 +147,7 @@ Status / role chips project into the header-meta
                         @if (s.slug) {
                             <app-site-robots-card [slug]="s.slug" />
                         }
+                        <app-site-script-sources-card [sectionId]="s.sectionId" />
                     }
 
                     <!-- NaviTrees -->

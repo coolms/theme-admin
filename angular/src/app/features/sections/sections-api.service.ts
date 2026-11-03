@@ -14,6 +14,8 @@ import {
     type SectionApplyResultDto,
     type SiteDto,
     type SiteMemberDto,
+    type SiteScriptSourceDto,
+    type AddSiteScriptSourceDto,
 } from './sections.types';
 
 @Injectable({ providedIn: 'root' })
@@ -54,6 +56,31 @@ export class SectionsApiService {
     deleteSection(id: string): Observable<void> {
         const url = resolvePattern(this.manifest.sections!.delete, { id });
         return this.http.delete<void>(url);
+    }
+
+    // -- A site's allow-list of external scripts and style sheets --------------
+    //
+    // A sub-collection of the section: its address is the section's own plus
+    // `/script-sources` (the manifest names no block for it yet). Read by every
+    // member of admin; adding and removing are elevated acts, prompted for by
+    // the elevation interceptor, which re-sends the request.
+
+    private scriptSourcesUrl(sectionId: string): string {
+        return resolvePattern(this.manifest.sections!.item, { id: sectionId }) + '/script-sources';
+    }
+
+    listScriptSources(sectionId: string): Observable<SiteScriptSourceDto[]> {
+        return this.http
+            .get<HydraCollection<SiteScriptSourceDto>>(this.scriptSourcesUrl(sectionId), this.collectionHeaders)
+            .pipe(map(r => r['member']));
+    }
+
+    addScriptSource(sectionId: string, dto: AddSiteScriptSourceDto): Observable<SiteScriptSourceDto> {
+        return this.http.post<SiteScriptSourceDto>(this.scriptSourcesUrl(sectionId), dto);
+    }
+
+    removeScriptSource(sectionId: string, sourceId: string): Observable<void> {
+        return this.http.delete<void>(this.scriptSourcesUrl(sectionId) + '/' + encodeURIComponent(sourceId));
     }
 
     /**

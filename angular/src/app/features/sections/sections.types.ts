@@ -163,3 +163,21 @@ export interface SiteMemberDto {
     readonly isOwner:  boolean;
     readonly isEditor: boolean;
 }
+
+/** One entry of a site's allow-list (`GET /api/v1/sections/{id}/script-sources`): one external file, by address. */
+export interface SiteScriptSourceDto {
+    readonly id:        string;
+    readonly kind:      'script' | 'style';
+    readonly url:       string;
+    /** One sha256-, sha384- or sha512- hash: what a page's tag carries, so the browser refuses other bytes. */
+    readonly integrity: string;
+    readonly addedBy:   string;
+    readonly addedAt:   string | null;
+}
+
+/** `POST /api/v1/sections/{id}/script-sources`. */
+export interface AddSiteScriptSourceDto {
+    kind:      'script' | 'style';
+    url:       string;
+    integrity: string;
+}
