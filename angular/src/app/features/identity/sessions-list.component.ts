@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { filter, switchMap } from 'rxjs';
-import { AppConfigState, ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
+import { AppConfigState, AuthState, ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
@@ -26,6 +26,9 @@ import { IdentityApiService } from './identity-api.service';
 import { ActiveSessionDto } from './identity.types';
 
 const LIMIT = 30;
+
+/** Said when the sign-ins being ended are the administrator's own: the page cannot tell which one is this one. */
+const OWN_SIGN_IN = ' These are your own sign-ins: if this one is where you are now, you will be signed out.';
 
 type LoadEvent = { offset: number; sort: string | null; reset: boolean; columnFilters: ReadonlyArray<string> };
 
@@ -123,19 +126,22 @@ export class SessionsListComponent implements OnInit {
     }
 
     onLoadMore(event: LoadEvent): void {
+        const epoch = ++this._loadEpoch;
         if (event.reset) {
             this.rows.set([]);
             this.hasMore.set(true);
             this.lastLoad = event;
+            this._resetEpoch = epoch;
         }
-        const epoch = ++this._loadEpoch;
         const page = Math.floor(event.offset / LIMIT) + 1;
 
         this.identityApi.listSessions({ page, itemsPerPage: LIMIT })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ members, total }) => {
-                    if (epoch !== this._loadEpoch && event.reset) return;
+                    // An answer asked before the latest reset belongs to the list it replaced: a page still in
+                    // flight when a sign-in was ended would bring the ended row back.
+                    if (epoch < this._resetEpoch) return;
                     this.total.set(total);
                     this.rows.set(event.reset ? members : [...this.rows(), ...members]);
                     this.hasMore.set(this.rows().length < total);
@@ -182,7 +188,8 @@ export class SessionsListComponent implements OnInit {
     private endSession(s: ActiveSessionDto): void {
         this.confirmSvc.open({
             title:        `End this sign-in of ${personLabel(s)}?`,
-            message:      'Its tokens stop working and its live connections close at once.',
+            message:      'Its tokens stop working and its live connections close at once.'
+                + (this.isOwn(s) ? OWN_SIGN_IN : ''),
             confirmLabel: 'End sign-in',
             danger:       true,
         }).pipe(
@@ -198,7 +205,8 @@ export class SessionsListComponent implements OnInit {
     private endAllSessions(s: ActiveSessionDto): void {
         this.confirmSvc.open({
             title:        `End every sign-in of ${personLabel(s)}?`,
-            message:      'Every session of this account ends at once, on every device, and its known devices are forgotten.',
+            message:      'Every session of this account ends at once, on every device, and its known devices are forgotten.'
+                + (this.isOwn(s) ? OWN_SIGN_IN : ''),
             confirmLabel: 'End all sign-ins',
             danger:       true,
         }).pipe(
@@ -216,7 +224,13 @@ export class SessionsListComponent implements OnInit {
         this.grid?.reload();
     }
 
+    /** The signed-in administrator's own sign-ins: ending them signs them out too. */
+    private isOwn(s: ActiveSessionDto): boolean {
+        return s.person.id === this.store.selectSnapshot(AuthState.currentUser)?.id;
+    }
+
     private _loadEpoch = 0;
+    private _resetEpoch = 0;
 }
 
 /** The person as the list names them: their name, else their sign-in identifier, else their id. */

@@ -60,7 +60,7 @@ major number means here.
 
 - **Identity has a Signed-in sessions page.** It lists who is signed in, since when, from where (address and
   browser) and with which audience, 30 a page. A selected row can end that sign-in (its tokens stop working and its
-  live connections close) or every sign-in of its person. Both ask first. The list is people's data, read in an
+  live connections close) or every sign-in of its person. Both ask first, and say so when the sign-ins are the administrator's own. The list is people's data, read in an
   elevated session only: without elevation the Elevate state stands in its place. Built against `/auth/sessions`.
 
 - **A mailbox's settings have a Filters pane.** Filters sort arriving mail: conditions on the sender, recipients,

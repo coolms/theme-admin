@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
-import { Observable, of, throwError } from 'rxjs';
-import { ELEVATION_REQUIRED_PROBLEM_TYPE, ErrorHandlerService } from '@coolms/core-angular';
+import { Observable, Subject, of, throwError } from 'rxjs';
+import { AuthState, ELEVATION_REQUIRED_PROBLEM_TYPE, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, PageTitleService, RELOAD_PAGE, ToastService } from '@coolms/ui-angular';
 import { SessionsListComponent } from './sessions-list.component';
 import { IdentityApiService } from './identity-api.service';
@@ -30,6 +30,8 @@ describe('SessionsListComponent', () => {
     let ended: string[];
     let endedAll: string[];
     let confirmed: boolean;
+    let asking: string[];
+    let me: string;
     let toasts: string[];
     let reloaded: number;
 
@@ -42,8 +44,16 @@ describe('SessionsListComponent', () => {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
-                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
-                { provide: ConfirmDialogService, useValue: { open: () => of(confirmed) } },
+                {
+                    provide: Store,
+                    useValue: {
+                        selectSnapshot: (s: unknown) => (s === AuthState.currentUser ? { id: me } : { apiBase: '/api/v1' }),
+                    },
+                },
+                {
+                    provide: ConfirmDialogService,
+                    useValue: { open: (o: { message: string }) => { asking.push(o.message); return of(confirmed); } },
+                },
                 {
                     provide: ToastService,
                     useValue: { error: (m: string) => toasts.push('error: ' + m), success: (m: string) => toasts.push(m) },
@@ -70,6 +80,8 @@ describe('SessionsListComponent', () => {
 
     beforeEach(() => {
         confirmed = true;
+        asking = [];
+        me = 'p-admin';
         answers = [() => of({ members: [ROW], total: 1 })];
     });
 
@@ -156,6 +168,38 @@ describe('SessionsListComponent', () => {
 
         expect(endedAll).toEqual(['p-1']);
         expect(ended).toEqual([]);
+    });
+
+    it('drops a page asked before a reset, so a row just ended does not come back', () => {
+        const late = new Subject<{ members: ActiveSessionDto[]; total: number }>();
+        const fresh = new Subject<{ members: ActiveSessionDto[]; total: number }>();
+        answers = [() => of({ members: [ROW], total: 45 }), () => late, () => fresh];
+        const page = build();
+        page.onLoadMore(FIRST);
+        page.onLoadMore({ ...FIRST, reset: false, offset: 30 });
+        page.onLoadMore(FIRST);
+
+        fresh.next({ members: [], total: 0 });
+        late.next({ members: [ROW], total: 45 });
+
+        expect(page.rows()).toEqual([]);
+        expect(page.total()).toBe(0);
+    });
+
+    it('says so when the sign-ins being ended are the administrator\'s own, and only then', () => {
+        const page = build();
+        page.onLoadMore(FIRST);
+        // An ending that succeeds clears the selection, so the row is chosen again before each.
+        page.onRowSelected({ id: 's-1' });
+        page.onToolbarAction('end-session');
+        me = 'p-1';
+        page.onRowSelected({ id: 's-1' });
+        page.onToolbarAction('end-session');
+        page.onRowSelected({ id: 's-1' });
+        page.onToolbarAction('end-all-sessions');
+
+        const own = asking.map(m => m.includes('your own sign-ins'));
+        expect(own).toEqual([false, true, true]);
     });
 
     it('ends nothing when the confirmation is declined, or no row is selected', () => {
