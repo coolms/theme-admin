@@ -1306,10 +1306,16 @@ body.cms-resizing {
     transition: background .1s, border-color .1s;
     user-select: none;
 
+    // An unchecked box shows no mark: the check icon is in the markup either way, and drawn only when checked.
+    // Hidden, not removed, so the box keeps its size.
+    > .bi { visibility: hidden; }
+
     &.cms-checkbox--checked {
         background: var(--cms-accent);
         border-color: var(--cms-accent);
         color: var(--cms-accent-fg);
+
+        > .bi { visibility: visible; }
     }
 }
 
