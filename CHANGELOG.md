@@ -58,6 +58,11 @@ major number means here.
 
 ### Added
 
+- **A site's page has an External scripts and styles card: its allow-list.** The only files from outside the site its
+  pages may load, each by its exact https address and integrity hash. Add one (kind, address, hash) or remove one; both
+  are elevated acts, and a refusal is shown in the server's words: an address that redirects or is not https, a
+  malformed hash, or a file a page still names. Built against `/sections/{id}/script-sources`.
+
 - **Identity has a Signed-in sessions page.** It lists who is signed in, since when, from where (address and browser)
   and with which audience, 30 a page. A selected row can end that sign-in (its tokens stop working and its live
   connections close) or every sign-in of its person. Both ask first, and say when the ending signs the reader out: their
