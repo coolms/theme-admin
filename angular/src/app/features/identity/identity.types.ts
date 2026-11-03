@@ -86,6 +86,18 @@ export interface AccountDeletionDto {
     coverage?:        AccountDeletionCoverageDto | null;
 }
 
+/** One live sign-in of GET /auth/sessions: who, since when, from where, with which audience. */
+export interface ActiveSessionDto {
+    sessionId:        string;
+    person:           { id: string; primaryIdentifier?: string | null; displayName?: string | null };
+    audience?:        string | null;
+    startedAt?:       string | null;
+    lastRefreshedAt?: string | null;
+    expiresAt?:       string | null;
+    ipAddress?:       string | null;
+    userAgent?:       string | null;
+}
+
 /** One hold of GET /auth/users/{id}/legal-holds. */
 export interface LegalHoldDto {
     id:          string;
