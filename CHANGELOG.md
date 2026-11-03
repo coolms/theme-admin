@@ -10,6 +10,10 @@ major number means here.
 
 ### Changed
 
+- **Page properties: the `scripts` and `styles` cards ask for an https address and its integrity hash**, instead of a
+  name and a value, and say what a change needs: each file on the site's allow-list with that very hash, in an
+  elevated session. Every other card is unchanged.
+
 - A site's page has an "Other hosts" card: each other host either serves the site as its host does, or redirects to
   it (permanent or temporary), edited as a list and saved whole. It shows what the server refuses in its own words,
   names the hosts the server does not trust yet, and says whether the section is a redirect. The section form switches
