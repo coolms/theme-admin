@@ -129,6 +129,22 @@ describe('Page properties: each card shows where its values come from and saves 
         expect(names).toEqual(['meta', 'og', 'twitter', 'x_default', 'robots']);
     });
 
+    it('asks scripts and styles for an address and a hash, says what they need, and leaves the other cards as they were', () => {
+        const files = { merge: 'ordered_list', values: {}, sources: {}, stoppedAt: null };
+        const { el, panel, detect } = open(view({}, 'v1', { scripts: files, styles: files }));
+        panel.addRow('scripts');
+        panel.addRow('meta');
+        detect();
+
+        const card = (name: string) => el.querySelector(`section.pp-card[aria-label="${name}"]`) as HTMLElement;
+        const hints = (name: string) => Array.from(card(name).querySelectorAll('.pp-card__row input')).map(i => i.getAttribute('placeholder'));
+        expect(hints('scripts')).toEqual(['https:// address', 'sha384- hash']);
+        expect(hints('meta')).toEqual(['name', 'value']);
+        expect(card('scripts').textContent).toContain('allow-list with this very hash');
+        expect(card('styles').textContent).toContain('elevated session');
+        expect(card('meta').textContent).not.toContain('allow-list');
+    });
+
     it('names each source: this page, a folder by its path and language, a node the reader cannot open by name only', () => {
         const { el } = open();
 

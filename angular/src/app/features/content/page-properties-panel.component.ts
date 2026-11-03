@@ -124,12 +124,12 @@ export interface PropertyCard {
                             @for (r of c.rows; track $index; let i = $index) {
                                 <div class="pp-card__row">
                                     @if (c.merge !== 'single') {
-                                        <input class="cms-input cms-input-sm" placeholder="name"
-                                               [attr.aria-label]="c.name + ' name ' + (i + 1)"
+                                        <input class="cms-input cms-input-sm" [placeholder]="keyHint(c.name)"
+                                               [attr.aria-label]="c.name + ' ' + keyHint(c.name) + ' ' + (i + 1)"
                                                [ngModel]="r.key" (ngModelChange)="setRow(c.name, i, 'key', $event)" />
                                     }
-                                    <input class="cms-input cms-input-sm" placeholder="value"
-                                           [attr.aria-label]="c.name + ' value ' + (i + 1)"
+                                    <input class="cms-input cms-input-sm" [placeholder]="valueHint(c.name)"
+                                           [attr.aria-label]="c.name + ' ' + valueHint(c.name) + ' ' + (i + 1)"
                                            [ngModel]="r.value" (ngModelChange)="setRow(c.name, i, 'value', $event)" />
                                     @if (c.merge !== 'single') {
                                         <button class="cms-btn cms-btn-sm" type="button"
@@ -137,6 +137,12 @@ export interface PropertyCard {
                                                 (click)="removeRow(c.name, i)"><i class="bi bi-x"></i></button>
                                     }
                                 </div>
+                            }
+                            @if (namesFiles(c.name)) {
+                                <p class="pp-card__hint">
+                                    Each file must be on the site's allow-list with this very hash, and changing them
+                                    needs an elevated session.
+                                </p>
                             }
                             @if (c.merge !== 'single') {
                                 <button class="cms-btn cms-btn-sm pp-card__add" type="button"
@@ -316,6 +322,21 @@ export class PagePropertiesPanelComponent {
         this.send(c, c.op, valuesOf(c.rows), v.version);
     }
 
+    /** Whether a property names external files: each row an address and its integrity hash. */
+    namesFiles(property: string): boolean {
+        return FILE_PROPERTIES.includes(property);
+    }
+
+    /** What a row's first field holds: a file's address for scripts and styles, a name otherwise. */
+    keyHint(property: string): string {
+        return this.namesFiles(property) ? 'https:// address' : 'name';
+    }
+
+    /** What a row's value holds: a file's integrity hash for scripts and styles. */
+    valueHint(property: string): string {
+        return this.namesFiles(property) ? 'sha384- hash' : 'value';
+    }
+
     /** Reads the properties again, as they now are: after a restore wrote them, for one. */
     refresh(): void {
         this.load(this.path(), this.localeScope() ?? ALL_LANGUAGES);
@@ -418,6 +439,9 @@ export class PagePropertiesPanelComponent {
 }
 
 /** A clean card for `name` in `scope`, as the answer has it. */
+/** The properties whose rows name external files: an address and its integrity hash. */
+const FILE_PROPERTIES: ReadonlyArray<string> = ['scripts', 'styles'];
+
 function fresh(name: string, merge: string, scope: string, v: PagePropertiesDto): PropertyCard {
     const base = v.own[scope]?.[name] ?? null;
     const rows = Object.entries(base?.values ?? {}).map(([key, value]) => ({ key, value }));
