@@ -201,20 +201,25 @@ describe('SessionsListComponent', () => {
         expect(toasts).toEqual([]);
     });
 
-    it('says so when the sign-ins being ended are the administrator\'s own, and only then', () => {
+    it('says it signs the reader out exactly when it does: their sign-in here, or all of their own account', () => {
+        const here: ActiveSessionDto = { ...ROW, sessionId: 's-here', current: true };
+        answers = [() => of({ members: [ROW, here], total: 2 })];
+        me = 'p-1';
         const page = build();
         page.onLoadMore(FIRST);
         // An ending that succeeds clears the selection, so the row is chosen again before each.
-        page.onRowSelected({ id: 's-1' });
-        page.onToolbarAction('end-session');
-        me = 'p-1';
-        page.onRowSelected({ id: 's-1' });
-        page.onToolbarAction('end-session');
-        page.onRowSelected({ id: 's-1' });
-        page.onToolbarAction('end-all-sessions');
+        const end = (id: string, action: string): void => {
+            page.onRowSelected({ id });
+            page.onToolbarAction(action);
+        };
+        end('s-1', 'end-session');
+        end('s-here', 'end-session');
+        end('s-1', 'end-all-sessions');
+        me = 'p-admin';
+        end('s-1', 'end-all-sessions');
 
-        const own = asking.map(m => m.includes('your own sign-ins'));
-        expect(own).toEqual([false, true, true]);
+        const signsOut = asking.map(m => m.includes('you will be signed out'));
+        expect(signsOut).toEqual([false, true, true, false]);
     });
 
     it('ends nothing when the confirmation is declined, or no row is selected', () => {
