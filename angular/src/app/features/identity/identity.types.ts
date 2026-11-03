@@ -96,6 +96,8 @@ export interface ActiveSessionDto {
     expiresAt?:       string | null;
     ipAddress?:       string | null;
     userAgent?:       string | null;
+    /** The sign-in this very request comes from: the reader's own, here. */
+    current?:         boolean;
 }
 
 /** One hold of GET /auth/users/{id}/legal-holds. */

@@ -27,8 +27,8 @@ import { ActiveSessionDto } from './identity.types';
 
 const LIMIT = 30;
 
-/** Said when the sign-ins being ended are the administrator's own: the page cannot tell which one is this one. */
-const OWN_SIGN_IN = ' These are your own sign-ins: if this one is where you are now, you will be signed out.';
+/** Said when ending signs the reader out here: the sign-in is the one this page uses, or among those ended. */
+const SIGNS_YOU_OUT = ' This includes your sign-in here: you will be signed out.';
 
 type LoadEvent = { offset: number; sort: string | null; reset: boolean; columnFilters: ReadonlyArray<string> };
 
@@ -41,7 +41,8 @@ type LoadEvent = { offset: number; sort: string | null; reset: boolean; columnFi
  * Ending one sign-in revokes its tokens and closes its realtime connections;
  * ending all of a person's also forgets their known devices. Both are
  * elevated acts: the 403 prompts elevation through the interceptor and the
- * same request is re-sent; the list reloads on success.
+ * same request is re-sent; the list reloads on success. Ending the reader's own sign-in here (the row the server
+ * marks `current`), or every sign-in of their own account, says first that it signs them out.
  */
 @Component({
     selector: 'app-sessions-list',
@@ -190,7 +191,7 @@ export class SessionsListComponent implements OnInit {
         this.confirmSvc.open({
             title:        `End this sign-in of ${personLabel(s)}?`,
             message:      'Its tokens stop working and its live connections close at once.'
-                + (this.isOwn(s) ? OWN_SIGN_IN : ''),
+                + (s.current === true ? SIGNS_YOU_OUT : ''),
             confirmLabel: 'End sign-in',
             danger:       true,
         }).pipe(
@@ -207,7 +208,7 @@ export class SessionsListComponent implements OnInit {
         this.confirmSvc.open({
             title:        `End every sign-in of ${personLabel(s)}?`,
             message:      'Every session of this account ends at once, on every device, and its known devices are forgotten.'
-                + (this.isOwn(s) ? OWN_SIGN_IN : ''),
+                + (this.isOwn(s) ? SIGNS_YOU_OUT : ''),
             confirmLabel: 'End all sign-ins',
             danger:       true,
         }).pipe(
@@ -225,7 +226,7 @@ export class SessionsListComponent implements OnInit {
         this.grid?.reload();
     }
 
-    /** The signed-in administrator's own sign-ins: ending them signs them out too. */
+    /** The signed-in administrator's own account: ending all its sign-ins ends the one this page uses too. */
     private isOwn(s: ActiveSessionDto): boolean {
         return s.person.id === this.store.selectSnapshot(AuthState.currentUser)?.id;
     }
