@@ -60,13 +60,18 @@ export class SectionsApiService {
 
     // -- A site's allow-list of external scripts and style sheets --------------
     //
-    // A sub-collection of the section: its address is the section's own plus
-    // `/script-sources` (the manifest names no block for it yet). Read by every
-    // member of admin; adding and removing are elevated acts, prompted for by
-    // the elevation interceptor, which re-sends the request.
+    // A sub-collection of the section, named by the section module's own block
+    // of the manifest (`modules.section.siteScriptSources`, the site's id as
+    // `{id}`). A server from before that block names none: its address is then
+    // the section's own plus `/script-sources`. Read by every member of admin;
+    // adding and removing are elevated acts, prompted for by the elevation
+    // interceptor, which re-sends the request.
 
     private scriptSourcesUrl(sectionId: string): string {
-        return resolvePattern(this.manifest.sections!.item, { id: sectionId }) + '/script-sources';
+        const named = this.manifest.modules?.['section']?.['siteScriptSources'];
+        return typeof named === 'string' && named !== ''
+            ? resolvePattern(named, { id: sectionId })
+            : resolvePattern(this.manifest.sections!.item, { id: sectionId }) + '/script-sources';
     }
 
     listScriptSources(sectionId: string): Observable<SiteScriptSourceDto[]> {
