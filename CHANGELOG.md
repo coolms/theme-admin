@@ -109,6 +109,7 @@ major number means here.
   answers `POST /call/originate` with `placing` and adds `POST /call/{callId}/cancel`.
 
 ### Fixed
+- **The default calendar picker names calendars**: its first row read `(Personal — personal-<id>)`, and every other row carried its slug. They now read "Personal calendar" and the calendar's name.
 
 - **A dialog fits a phone**: the shared dialog rule held a dialog at 360 to 540 wide whatever the viewport, so at 390 the Override Field dialog ran off the right edge and its submit could not be pressed. It now stays 16px inside the viewport on each side.
 - **The toast's count badge reads.** The design tokens move from 0.1.0 to 0.3.0. 0.3.0 adds `accent-contrast`, the
