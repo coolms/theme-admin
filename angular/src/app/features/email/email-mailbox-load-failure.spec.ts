@@ -57,7 +57,7 @@ describe('EmailMailboxPageComponent -- a failed read of the mailboxes or the mes
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
                 { provide: ToastService, useValue: { error: recordToast, success: recordToast, info: recordToast } },
                 { provide: Router, useValue: { events: NEVER } },
-                { provide: ActivatedRoute, useValue: {} },
+                { provide: ActivatedRoute, useValue: { queryParamMap: NEVER } },
                 { provide: Store, useValue: { selectSnapshot: () => null } },
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: DraftStoreService, useValue: {} },
