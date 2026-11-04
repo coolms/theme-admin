@@ -94,7 +94,8 @@ import { DesignerI18nService } from './designer-i18n.service';
     selector: 'app-dmn-editor-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, 
+    imports: [
+    StateComponent,
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,

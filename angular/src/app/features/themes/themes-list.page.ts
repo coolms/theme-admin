@@ -14,7 +14,8 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { SiteSectionDto, ThemeDto, ThemeTemplateDto, ThemesService } from './themes.service';
 

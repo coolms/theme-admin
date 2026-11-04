@@ -17,7 +17,8 @@ import {
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
-    ToolbarAction, StateComponent
+    StateComponent,
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { type ContactDto, ContactsService } from './contacts.service';
 import { type LeadChannel, type LeadDto, type LeadStatus, LeadsService } from '../leads/leads.service';

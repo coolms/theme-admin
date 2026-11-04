@@ -21,10 +21,11 @@ import {
     EmptyStateComponent,
     ErrorBannerComponent,
     PageToolbarComponent,
+    StateComponent,
     TagInputComponent,
     TagOption,
     ToastService,
-    ToolbarAction, StateComponent
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailPreferencesService } from './mail-preferences.service';
@@ -115,7 +116,8 @@ interface ComposeDraft {
     changeDetection: ChangeDetectionStrategy.OnPush,
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
-    imports: [StateComponent, 
+    imports: [
+        StateComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
     ],

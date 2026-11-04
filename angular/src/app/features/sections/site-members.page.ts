@@ -27,9 +27,10 @@ import {
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
+    StateComponent,
     ToastService,
     ToolbarAction,
-    UserSearchSelectComponent, StateComponent
+    UserSearchSelectComponent,
 } from '@coolms/ui-angular';
 
 /**
@@ -61,7 +62,8 @@ import {
     selector: 'app-site-members-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, 
+    imports: [
+        StateComponent,
         UserSearchSelectComponent, LoadingComponent, CmsPageHeaderComponent, ElevationRequiredComponent,
     ],
     template: `

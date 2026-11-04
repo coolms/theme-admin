@@ -24,7 +24,8 @@ import {
     DataGridData,
     DateTimeFormatService,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 
 /**

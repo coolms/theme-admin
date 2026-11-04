@@ -17,8 +17,9 @@ import {
     CmsListPageComponent,
     DataGridComponent,
     PageTitleService,
+    StateComponent,
     ToastService,
-    type DataGridData, StateComponent
+    type DataGridData,
 } from '@coolms/ui-angular';
 import {
     DocumentFontService,

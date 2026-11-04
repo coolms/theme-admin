@@ -22,7 +22,8 @@ import {
     DataGridComponent,
     DataGridData,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
 import { SiteWizardComponent } from './site-wizard.component';

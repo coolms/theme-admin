@@ -16,8 +16,9 @@ import {
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
+    StateComponent,
     ToastService,
-    ToolbarAction, StateComponent
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import { CockpitService } from './cockpit.service';

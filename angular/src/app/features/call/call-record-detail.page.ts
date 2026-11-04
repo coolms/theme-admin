@@ -20,7 +20,8 @@ import {
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
-    ToolbarAction, StateComponent
+    StateComponent,
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { formatCallDuration } from './call-format';
 

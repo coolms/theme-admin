@@ -22,7 +22,8 @@ import {
     DataGridComponent,
     DataGridData,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
 

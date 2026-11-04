@@ -33,8 +33,9 @@ import {
   bindKeys,
   CmsPageHeaderComponent,
   LoadingComponent,
+  StateComponent,
   ToastService,
-  UnsavedChangesService, StateComponent
+  UnsavedChangesService,
 } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
@@ -75,7 +76,8 @@ import { DesignerI18nService } from './designer-i18n.service';
 @Component({
     selector: 'app-decision-drd-editor-page',
     standalone: true,
-    imports: [StateComponent, 
+    imports: [
+    StateComponent,
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,

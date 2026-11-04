@@ -22,7 +22,8 @@ import {
     DataGridComponent,
     DataGridData,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { NaviTreeFormComponent } from './navi-tree-form.component';
 
