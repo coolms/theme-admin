@@ -24,7 +24,7 @@ import { CrumbNamesService } from './crumb-names.service';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [RouterLink, NgComponentOutlet, AdminTopbarProfileComponent, ElevationBadgeComponent],
     template: `
-        <div class="d-flex align-items-center h-100 px-3 gap-3">
+        <div class="cms-topbar-row d-flex align-items-center h-100 px-3 gap-3">
 
             <!-- Logo / brand -->
             <a routerLink="/" class="text-white text-decoration-none fw-bold me-2"
@@ -32,7 +32,7 @@ import { CrumbNamesService } from './crumb-names.service';
                 CoolMS
             </a>
 
-            <div class="vr opacity-25 mx-1"></div>
+            <div class="cms-topbar-divider vr opacity-25 mx-1"></div>
 
             <!-- Breadcrumbs. The last crumb is whatever the page resolved: a
                  title, or a raw UUID when it did not. flex-nowrap stops the
@@ -42,7 +42,7 @@ import { CrumbNamesService } from './crumb-names.service';
                  is the only one allowed to shrink, and it ellipsises; the
                  ancestors are short and stay whole. Hover shows the full value.
                  (NO BACKTICKS in this comment - one would end the template.) -->
-            <nav class="flex-grow-1 overflow-hidden" style="min-width: 0" aria-label="breadcrumb">
+            <nav class="cms-topbar-crumbs flex-grow-1 overflow-hidden" style="min-width: 0" aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 flex-nowrap" style="font-size: .8rem">
                     @for (crumb of breadcrumbs(); track crumb.path; let last = $last) {
                         <li class="breadcrumb-item"
@@ -65,7 +65,7 @@ import { CrumbNamesService } from './crumb-names.service';
             </nav>
 
             <!-- Right actions: site selector + terminal toggle + drawer toggle + profile -->
-            <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+            <div class="cms-topbar-actions d-flex align-items-center gap-2 ms-auto flex-shrink-0">
 
                 <!-- ⚠️ NO SITE SELECTOR HERE, AND THE MEASUREMENT SAYS WHY.
                      It sat in this bar on every screen, including Users,
@@ -125,6 +125,17 @@ import { CrumbNamesService } from './crumb-names.service';
             </div>
         </div>
     `,
+    styles: [`
+        /* A phone keeps the logo, the panel buttons and the profile on the bar: the page header already says where
+           you are, so the breadcrumb and its divider give their room, and the gaps and buttons tighten. No scroll
+           container: the buttons' own popovers would be clipped by it. */
+        @media (max-width: 599.98px) {
+            .cms-topbar-row { gap: 4px !important; padding-left: 8px !important; padding-right: 8px !important; }
+            .cms-topbar-divider, .cms-topbar-crumbs { display: none !important; }
+            .cms-topbar-actions { gap: 4px !important; }
+            :host ::ng-deep .cms-topbar-actions .cms-btn { min-width: 32px; height: 32px; padding: 4px 8px !important; }
+        }
+    `],
 })
 export class AdminTopbarComponent implements OnInit {
     /** The modules' console contributions, filtered by what the manifest says is installed. */

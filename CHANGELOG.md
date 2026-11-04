@@ -10,6 +10,7 @@ major number means here.
 
 ### Changed
 
+- **The top bar fits a phone.** Below 600px the breadcrumb and its divider give their room (the page header already says where you are), and the gaps and the panel buttons tighten: at 390, five panel buttons and the profile fit, where the profile ran past the right edge.
 - **A failed read that stands in place of a page's content is the state component's error state** (`cms-state kind="error"`), with Retry where the page had it: the detail pages (a call, a contact, a lead, a schedule, a site, a process), the lists whose grid stays mounted hidden, the designers, the cockpit, Settings, Email's mailboxes and messages, and the rest -- 40 in 36 files. A refusal for want of elevation is still the elevation state, and a plain refusal is said as one. Four banners stay banners, beside content still shown: a failed restore, an older page and a version's changes in the page history, and a failed next page of mail.
 - **Media: a list refused for want of access is said as a refusal** (`cms-state kind="denied"`), not as an empty
   folder.
