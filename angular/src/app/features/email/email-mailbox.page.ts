@@ -147,7 +147,8 @@ interface ComposeDraft {
                     </button>
                 </div>
             } @else {
-                <div class="mbx__body">
+                <div class="mbx__body" [class.mbx__body--reading]="loadingDetail() || selectedMessage() !== null"
+                     [class.mbx__body--folders]="phoneFolders()">
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
                         <span class="mbx__rail-label">Mailbox</span>
@@ -209,6 +210,13 @@ interface ComposeDraft {
 
                     <!-- MIDDLE: message list (or search results) -->
                     <section class="mbx__list">
+                        <!-- On a phone the folders are one press away, above the list they choose. -->
+                        <button type="button" class="mbx__phone-bar" data-test="phone-folders"
+                                [attr.aria-expanded]="phoneFolders()" (click)="phoneFolders.set(true)">
+                            <i class="bi bi-folder2" aria-hidden="true"></i>
+                            <span class="mbx__phone-bar-label">{{ selectedFolder() || 'Folders' }}</span>
+                            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                        </button>
                         <div class="mbx__search">
                             <i class="bi bi-search mbx__search-icon"></i>
                             <input type="text" class="mbx__search-input" [(ngModel)]="searchQuery"
@@ -330,6 +338,11 @@ interface ComposeDraft {
 
                     <!-- RIGHT: message detail -->
                     <section class="mbx__detail">
+                        <!-- On a phone a message fills the screen; Back returns to the list. -->
+                        <button type="button" class="mbx__phone-bar" data-test="phone-back" (click)="closeMessage()">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                            <span class="mbx__phone-bar-label">Back</span>
+                        </button>
                         @if (loadingDetail()) {
                             <p class="mbx__note">Loading…</p>
                         } @else if (selectedMessage()) {
@@ -773,6 +786,25 @@ interface ComposeDraft {
         .mbx__top-title h1 { margin: 0; font-size: 1.125rem; }
         .mbx__empty-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
         .mbx__body { flex: 1; display: flex; min-height: 0; }
+        .mbx__phone-bar { display: none; }
+        @media (max-width: 599.98px) {
+            /* One pane at a time: the list; the folders when asked for; a message once one is opened. */
+            .mbx__body .mbx__rail, .mbx__body .mbx__list, .mbx__body .mbx__detail, .mbx__body > cms-pane-splitter { display: none; }
+            .mbx__body--folders .mbx__rail { display: flex; width: 100%; flex: 1 1 auto; }
+            .mbx__body:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
+                display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
+            }
+            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: block; padding: 8px 12px; }
+            .mbx__phone-bar {
+                display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
+                border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
+                font: inherit; text-align: left; cursor: pointer;
+            }
+            .mbx__detail .mbx__phone-bar { margin: -8px -12px 8px; width: calc(100% + 24px); }
+            .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .mbx__detail .mbx__thread-item { grid-template-columns: minmax(0, 1fr) auto; }
+            .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
+        }
 
         .mbx__rail {
             width: 230px; flex: 0 0 230px;
@@ -1151,6 +1183,9 @@ export class EmailMailboxPageComponent implements OnInit {
         ? trashRetentionText(this.mailboxes().find(m => m.id === this.selectedMailboxId())?.trashRetentionDays)
         : null);
     readonly selectedMessage = signal<EmailMessageDetailDto | null>(null);
+
+    /** On a phone, the folders stand in place of the list until one is chosen. */
+    readonly phoneFolders = signal(false);
     readonly hasMore = signal<boolean>(false);
 
     /**
@@ -1624,6 +1659,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     selectFolder(folder: string): void {
+        this.phoneFolders.set(false);
         this.selectedFolder.set(folder);
         this.selectedMessage.set(null);
         this.clearSelection();
@@ -1634,6 +1670,13 @@ export class EmailMailboxPageComponent implements OnInit {
     loadMore(): void {
         this.page += 1;
         this.loadMessages(false);
+    }
+
+    /** Back to the list: the open message is closed, and a detail still loading is dropped when it answers. */
+    closeMessage(): void {
+        this.openSeq += 1;
+        this.loadingDetail.set(false);
+        this.selectedMessage.set(null);
     }
 
     openMessage(m: EmailMessageDto): void {
