@@ -56,7 +56,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             icon="signpost-split"
             subtitle="A/B experiments over the exposure + conversion store"
             [toolbarTreeSlug]="toolbarTree"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onHeaderAction($event)">
             <div class="cms-exp">
             <!-- A failed load is shown in place of the cards: the failure itself goes to the banner, so a refusal

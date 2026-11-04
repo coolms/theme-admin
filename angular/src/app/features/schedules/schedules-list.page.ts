@@ -49,7 +49,7 @@ import {
             icon="alarm"
             toolbarTreeSlug="navi.toolbar.scheduler.schedules"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <!-- A failed load is shown in place of the grid: the failure itself goes to the banner, so a refusal for
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays

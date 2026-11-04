@@ -37,7 +37,7 @@ import { NaviTreeFormComponent } from './navi-tree-form.component';
             icon="diagram-3"
             toolbarTreeSlug="navi.toolbar.navi.trees"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config fetched from /api/v1/datagrids/navi:trees (no externalConfig).
                  All trees are loaded at once via (loadMore) (no server-side pagination). -->

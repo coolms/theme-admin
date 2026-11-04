@@ -70,7 +70,7 @@ import { InboxTab, InboxTaskDto, TaskState } from './inbox.types';
             icon="inbox"
             toolbarTreeSlug="navi.toolbar.inbox.tasks"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
 
             <!-- Bucket tabs (My / Claimable / Recent) — route by URL query param. -->
