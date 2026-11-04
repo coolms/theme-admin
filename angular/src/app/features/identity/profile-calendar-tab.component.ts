@@ -195,12 +195,12 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
                         [value]="defaultCalendarSlug ?? ''"
                         [allowClear]="false"
                         [entityLabel]="'calendar'"
-                        [placeholder]="'(Personal — ' + (personalSlugHint() || 'personal') + ')'"
+                        [placeholder]="'Personal calendar'"
                         (valueChange)="onDefaultCalendarChange($event)" />
             }
             <p class="group-help">
                 Opens when you click the calendar icon in the top bar.
-                Leave on "Personal" to use your private calendar.
+                Leave on "Personal calendar" to use your private calendar.
             </p>
         </div>
         }
@@ -262,26 +262,24 @@ export class ProfileCalendarTabComponent implements OnInit {
     weekStart:  'monday' | 'sunday' = 'monday';
     defaultCalendarSlug: string | null = null;
 
-    /** Quick label that fills the "Personal" option hint with the resolved slug. */
-    readonly personalSlugHint = computed(() => this.prefs.defaultCalendarSlug());
-
     /**
      * Task -- option projection for `<app-lazy-select>`.
      *
-     * Prepends a synthetic "(Personal)" row so users can revert to the
-     * personal-calendar default without scrolling. The lazy-select uses
+     * Prepends a "Personal calendar" row so users can revert to the
+     * personal-calendar default without scrolling, in place of that calendar's
+     * own row. A row shows a name: a slug or an id means nothing to a person.
+     * The lazy-select uses
      * `id` for both wire value and UI lookups, so the personal-slug
      * sentinel is the empty string (mapped back to `null` in
      * {@link onDefaultCalendarChange}).
      */
     readonly defaultCalendarOptions = computed<readonly LazySelectOption[]>(() => {
-        const personalLabel = `(Personal — ${this.personalSlugHint() || 'personal'})`;
-        const personal: LazySelectOption = { id: '', label: personalLabel };
+        const personal: LazySelectOption = { id: '', label: 'Personal calendar' };
         const rest: LazySelectOption[] = this.calendars()
-            .filter(c => !!c.slug)
+            .filter(c => !!c.slug && !(c.isDefaultPersonal && c.currentUserAccess === 'owned'))
             .map(c => ({
                 id:    c.slug!,
-                label: c.label ? `${c.label} — ${c.slug}` : c.slug!,
+                label: c.label || 'Untitled calendar',
             }));
         return [personal, ...rest];
     });

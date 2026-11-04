@@ -57,4 +57,22 @@ describe('ProfileCalendarTabComponent -- a failed read of the calendar list', ()
         expect(tab.calendars().map(c => c.slug)).toEqual(['team']);
         expect(toasts).toEqual([]);
     });
+
+    it('names each calendar in the picker: no slug or id in any row, and one row for the personal calendar', () => {
+        const own = 'personal-019cbd7f-0000-7000-8000-000000000000';
+        answers = [() => of([
+            { id: 'c1', slug: own, label: 'Personal', isDefaultPersonal: true, currentUserAccess: 'owned' } as CalendarDto,
+            { id: 'c2', slug: 'team', label: 'Team' } as CalendarDto,
+            { id: 'c3', slug: 'nameless' } as CalendarDto,
+        ])];
+        const tab = build();
+
+        tab.loadCalendars();
+
+        expect(tab.defaultCalendarOptions()).toEqual([
+            { id: '', label: 'Personal calendar' },
+            { id: 'team', label: 'Team' },
+            { id: 'nameless', label: 'Untitled calendar' },
+        ]);
+    });
 });
