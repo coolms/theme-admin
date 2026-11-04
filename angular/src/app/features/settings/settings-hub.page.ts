@@ -18,7 +18,6 @@ import {
     type CmsSettingsSection,
     ConfirmDialogService,
     DynamicFormComponent,
-    ErrorBannerComponent,
     type HasUnsavedChanges,
     LoadingComponent,
     PageTitleService,
@@ -26,7 +25,7 @@ import {
     SlotComponent,
     ToastService,
     ToolbarAction,
-    UnsavedChangesService,
+    UnsavedChangesService, StateComponent
 } from '@coolms/ui-angular';
 import { ComponentRegistry, ErrorHandlerService } from '@coolms/core-angular';
 
@@ -64,13 +63,12 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
     selector: 'coolms-admin-settings-hub',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [StateComponent, 
         CmsSettingsShellComponent,
         CmsSettingsPaneComponent,
         PageToolbarComponent,
         DynamicFormComponent,
         LoadingComponent,
-        ErrorBannerComponent,
         SiteSelectorComponent,
         SlotComponent,
     ],
@@ -100,7 +98,7 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
                 <app-loading label="Loading settings…" />
             }
             @if (loadError(); as err) {
-                <app-error-banner [message]="err" [error]="loadErrorFailure()" [showRetry]="true" (retry)="load()" />
+                <cms-state kind="error" [title]="err" [error]="loadErrorFailure()" actionLabel="Retry" (acted)="load()" />
             }
 
             @if (selected(); as b) {

@@ -19,9 +19,8 @@ import {
     CmsListPageComponent,
     DataGridComponent,
     DataGridData,
-    ErrorBannerComponent,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 
 /**
@@ -42,7 +41,7 @@ import {
     selector: 'app-document-generation-list-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
+    imports: [StateComponent, DataGridComponent, CmsListPageComponent],
     template: `
         <cms-list-page
             title="Document generations"
@@ -55,11 +54,7 @@ import {
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays
                  mounted, hidden, so a retry keeps its sort, filters and column widths. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load generations"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="retryLoad()" />
+                <cms-state kind="error" title="Failed to load generations" [error]="loadFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             <coolms-datagrid
                 [hidden]="loadFailure() !== null"

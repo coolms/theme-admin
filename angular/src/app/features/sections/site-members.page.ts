@@ -24,13 +24,12 @@ import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
     ElevationRequiredComponent,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
     ToastService,
     ToolbarAction,
-    UserSearchSelectComponent,
+    UserSearchSelectComponent, StateComponent
 } from '@coolms/ui-angular';
 
 /**
@@ -62,8 +61,8 @@ import {
     selector: 'app-site-members-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
-        UserSearchSelectComponent, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, ElevationRequiredComponent,
+    imports: [StateComponent, 
+        UserSearchSelectComponent, LoadingComponent, CmsPageHeaderComponent, ElevationRequiredComponent,
     ],
     template: `
         @if (loading()) {
@@ -74,7 +73,7 @@ import {
             <cms-elevation-required data-test="members-elevation-required"
                 title="A site's members need an elevated session" (elevated)="reloadAll()" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" />
+            <cms-state kind="error" [title]="error()!" />
         } @else if (site()) {
             @let s = site()!;
 

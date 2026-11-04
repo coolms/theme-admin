@@ -17,11 +17,10 @@ import { ErrorHandlerService, ConfigService, type LayoutConfig } from '@coolms/c
 import {
     CmsPageHeaderComponent,
     DateTimeFormatService,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { formatCallDuration } from './call-format';
 
@@ -44,12 +43,12 @@ import { formatCallDuration } from './call-format';
     selector: 'coolms-admin-call-record-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent],
+    imports: [StateComponent, LoadingComponent, CmsPageHeaderComponent],
     template: `
         @if (loading()) {
             <app-loading label="Loading call…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else {
           @if (record(); as c) {
             <cms-page-header

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { CmsLoaderComponent } from '@coolms/core-angular';
-import { ErrorBannerComponent } from '@coolms/ui-angular';
+import { StateComponent } from '@coolms/ui-angular';
 import { DomainExplorerStateService } from './domain-explorer-state.service';
 
 /**
@@ -12,7 +12,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
     selector: 'app-domain-explorer-tree',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsLoaderComponent],
     template: `
         <!-- Filter bar -->
         <div class="de-filter-bar cms-field-box">
@@ -41,11 +41,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
                 <!-- A failed read of the domain stands in place of the module list (which is then empty), with
                      Retry reading it again. -->
                 @if (st.domainFailure() !== null) {
-                    <app-error-banner
-                        message="Failed to load domain data"
-                        [error]="st.domainFailure()"
-                        [showRetry]="true"
-                        (retry)="st.loadDomain()" />
+                    <cms-state kind="error" title="Failed to load domain data" [error]="st.domainFailure()" actionLabel="Retry" (acted)="st.loadDomain()" />
                 }
 
                 @for (group of st.filteredModules(); track group.module) {
@@ -114,11 +110,7 @@ import { DomainExplorerStateService } from './domain-explorer-state.service';
                     <!-- A failed read of the root types stands in place of the type tree (which is then empty), with
                          Retry reading it again. -->
                     @if (st.dynamicTypesFailure() !== null) {
-                        <app-error-banner
-                            message="Failed to load dynamic types"
-                            [error]="st.dynamicTypesFailure()"
-                            [showRetry]="true"
-                            (retry)="st.loadRoot()" />
+                        <cms-state kind="error" title="Failed to load dynamic types" [error]="st.dynamicTypesFailure()" actionLabel="Retry" (acted)="st.loadRoot()" />
                     } @else if (st.flatTypes().length === 0 && !st.filterText()) {
                         <div class="de-empty-section">No runtime types yet.</div>
                     }

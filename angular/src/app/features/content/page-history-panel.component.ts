@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ConfirmDialogService, DateTimeFormatService, ErrorBannerComponent } from '@coolms/ui-angular';
+import { ConfirmDialogService, DateTimeFormatService, ErrorBannerComponent, StateComponent } from '@coolms/ui-angular';
 import { PageBlameDto, PageRestoreDto, PageVersionDiffDto, PageVersionDto, groupVersions } from './page-versions';
 import { PageVersionsService } from './page-versions.service';
 import { PageVersionDiffComponent } from './page-version-diff.component';
@@ -39,7 +39,7 @@ type DiffState =
     selector: 'app-page-history-panel',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ErrorBannerComponent, NgTemplateOutlet, PageVersionDiffComponent],
+    imports: [StateComponent, ErrorBannerComponent, NgTemplateOutlet, PageVersionDiffComponent],
     template: `
         <div class="ph">
             <div class="ph__head">
@@ -102,8 +102,7 @@ type DiffState =
             }
             @if (view() === 'blame') {
                 @if (blameFailure() !== null) {
-                    <app-error-banner message="Who changed the sections could not be read" [error]="blameFailure()"
-                                      [showRetry]="true" (retry)="loadBlame()" />
+                    <cms-state kind="error" title="Who changed the sections could not be read" [error]="blameFailure()" actionLabel="Retry" (acted)="loadBlame()" />
                 } @else if (blame(); as b) {
                     @if (b.blocks.length === 0) {
                         <p class="ph__msg" data-test="blame-empty">This page has no sections.</p>
@@ -140,8 +139,7 @@ type DiffState =
                 }
             } @else if (failure() !== null && versions().length === 0) {
                 <!-- Nothing read yet: the failure stands in place of the list. -->
-                <app-error-banner message="The history could not be read" [error]="failure()" [showRetry]="true"
-                                  (retry)="reload()" />
+                <cms-state kind="error" title="The history could not be read" [error]="failure()" actionLabel="Retry" (acted)="reload()" />
             } @else if (loading() && versions().length === 0) {
                 <p class="ph__msg">Loading…</p>
             } @else if (versions().length === 0) {

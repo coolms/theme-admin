@@ -15,10 +15,9 @@ import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
-    ErrorBannerComponent,
     PageTitleService,
     ToastService,
-    type DataGridData,
+    type DataGridData, StateComponent
 } from '@coolms/ui-angular';
 import { BackupService, BackupBundleDto, CreateBackupResult } from './backup.service';
 import { BackupCreateDialogComponent } from './backup-create-dialog.component';
@@ -52,7 +51,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
     selector: 'coolms-admin-backups',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsListPageComponent, DataGridComponent],
     template: `
         <cms-list-page
             title="Backups"
@@ -66,11 +65,7 @@ import { RestorePreviewDialogComponent } from './restore-preview-dialog.componen
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays
                  mounted, hidden, so a retry keeps its sort, filters and column widths. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load backups"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="load()" />
+                <cms-state kind="error" title="Failed to load backups" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
             }
             <coolms-datagrid
                 [hidden]="loadFailure() !== null"

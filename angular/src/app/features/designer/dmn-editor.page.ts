@@ -44,7 +44,7 @@ function isNewDecisionBody(err: unknown): boolean {
     );
 }
 
-import { CmsPageHeaderComponent, ErrorBannerComponent, LoadingComponent, ToastService, UnsavedChangesService } from '@coolms/ui-angular';
+import { CmsPageHeaderComponent, LoadingComponent, ToastService, UnsavedChangesService, StateComponent } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
 import { DesignerService, type DraftVersion } from './designer.service';
@@ -94,11 +94,10 @@ import { DesignerI18nService } from './designer-i18n.service';
     selector: 'app-dmn-editor-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [StateComponent, 
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent,
     DraftConflictBannerComponent,
     RouterLink
 ],
@@ -114,8 +113,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 </div>
             }
             @if (loadError()) {
-                <app-error-banner [message]="loadError()!" [error]="loadErrorFailure()" [showRetry]="true"
-                                  (retry)="retryLoad()" />
+                <cms-state kind="error" [title]="loadError()!" [error]="loadErrorFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             @if (conflict(); as c) {
                 <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
@@ -310,7 +308,7 @@ export class DmnEditorPage implements AfterViewInit, OnDestroy {
                 this.noDecisionTable.set(true);
                 this.draftUnread.set(true);
             } else {
-                // Banner ONLY -- no toast. `ErrorBannerComponent` exists
+                // Error state ONLY -- no toast. The error state exists
                 // precisely "instead of a blank panel + a transient toast
                 // that scrolls away"; firing both showed the author the
                 // same sentence twice, once in a place they cannot

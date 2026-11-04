@@ -20,11 +20,10 @@ import {
     ContextMenuService,
     DataGridComponent,
     DataGridData,
-    ErrorBannerComponent,
     ExplorerToolbarRowComponent,
     PageFooterService,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 import { PageService } from './page.service';
 import { PageSpaceStateService } from './page-space-state.service';
@@ -41,7 +40,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
     selector: 'app-pages-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, ErrorBannerComponent, ExplorerToolbarRowComponent, PageTilesComponent],
+    imports: [StateComponent, DataGridComponent, ExplorerToolbarRowComponent, PageTilesComponent],
     // / -- this is now the `content.main` SLOT of the Pages
     // explorer, not a routed page. The shell it used to carry
     // (`<cms-list-page>`: title, toolbar, footer) comes from
@@ -74,11 +73,7 @@ import { CreateCollectionDialogComponent } from './create-collection-dialog.comp
              want of elevation is the Elevate state and anything else the message with Retry. The grid stays
              mounted, hidden, so a retry keeps its sort, filters and column widths. -->
         @if (loadFailure() !== null) {
-            <app-error-banner
-                message="Failed to load pages"
-                [error]="loadFailure()"
-                [showRetry]="true"
-                (retry)="retryLoad()" />
+            <cms-state kind="error" title="Failed to load pages" [error]="loadFailure()" actionLabel="Retry" (acted)="retryLoad()" />
         }
         @if (viewMode() === 'details') {
             <!-- Grid config from /api/v1/datagrids/content:pages. Rows are the

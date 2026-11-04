@@ -15,12 +15,11 @@ import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
     DateTimeFormatService,
-    ErrorBannerComponent,
     LoadingComponent,
     PageTitleService,
     PageToolbarComponent,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { LeadChannel, LeadDto, LeadsService } from './leads.service';
 
@@ -51,12 +50,12 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
     selector: 'coolms-admin-lead-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, PageToolbarComponent, RouterLink],
+    imports: [StateComponent, LoadingComponent, CmsPageHeaderComponent, PageToolbarComponent, RouterLink],
     template: `
         @if (loading()) {
             <app-loading label="Loading lead…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else {
           @if (lead(); as l) {
             <cms-page-header

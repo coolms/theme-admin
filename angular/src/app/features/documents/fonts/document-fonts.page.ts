@@ -16,10 +16,9 @@ import { refreshDocumentFonts } from '@coolms/editor-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
-    ErrorBannerComponent,
     PageTitleService,
     ToastService,
-    type DataGridData,
+    type DataGridData, StateComponent
 } from '@coolms/ui-angular';
 import {
     DocumentFontService,
@@ -65,7 +64,7 @@ import {
     selector: 'coolms-admin-document-fonts',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsListPageComponent, DataGridComponent],
     template: `
         <cms-list-page
             title="Document fonts"
@@ -79,11 +78,7 @@ import {
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays
                  mounted, hidden, so a retry keeps its sort, filters and column widths. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load installed fonts"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="load()" />
+                <cms-state kind="error" title="Failed to load installed fonts" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
             }
             <coolms-datagrid
                 [hidden]="loadFailure() !== null"

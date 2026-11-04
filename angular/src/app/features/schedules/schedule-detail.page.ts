@@ -22,13 +22,12 @@ import {
     ConfirmDialogService,
     CronFormComponent,
     DateTimeFormatService,
-    ErrorBannerComponent,
     LayoutActionsService,
     LazySelectComponent,
     LoadingComponent,
     PageTitleService,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 
@@ -42,12 +41,12 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
     selector: 'app-schedule-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, LazySelectComponent, CronFormComponent, RecurrenceFormComponent, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent],
+    imports: [StateComponent, FormsModule, LazySelectComponent, CronFormComponent, RecurrenceFormComponent, LoadingComponent, CmsPageHeaderComponent, CmsDetailFooterComponent],
     template: `
         @if (loading()) {
             <app-loading label="Loading schedule…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else if (schedule()) {
             @let s = schedule()!;
 

@@ -13,14 +13,13 @@ import {
     CalendarPrefs,
     CmsPageHeaderComponent,
     DynamicFormComponent,
-    ErrorBannerComponent,
     PageTitleService,
     SlotComponent,
     TabStripComponent,
     TabStripItem,
     ToastService,
     UserAvatarComponent,
-    UserCalendarPreferencesService,
+    UserCalendarPreferencesService, StateComponent
 } from '@coolms/ui-angular';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -54,12 +53,11 @@ type Tab = 'personal' | string;
     selector: 'app-profile-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, 
+    imports: [StateComponent, CmsLoaderComponent, 
         FormsModule,
         DatePipe,
         CmsPageHeaderComponent,
         DynamicFormComponent,
-        ErrorBannerComponent,
         UserAvatarComponent,
         ProfileCalendarTabComponent,
         SlotComponent,
@@ -224,11 +222,7 @@ type Tab = 'personal' | string;
             <!-- A failed read of the profile is shown in place of the profile form: the failure itself goes to the
                  banner, with Retry reading it again. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load profile"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="load()" />
+                <cms-state kind="error" title="Failed to load profile" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
             }
             <div class="profile-layout cms-card" [hidden]="loadFailure() !== null">
 

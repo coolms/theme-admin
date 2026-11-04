@@ -21,9 +21,8 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
-    ErrorBannerComponent,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 import { NaviNodeFormComponent } from './navi-node-form.component';
 
@@ -31,7 +30,7 @@ import { NaviNodeFormComponent } from './navi-node-form.component';
     selector: 'coolms-admin-navi-nodes-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
+    imports: [StateComponent, DataGridComponent, CmsListPageComponent],
     template: `
         <!-- The toolbar tree slug is a string literal and unrelated to
              treeSlug() (route param). The page title is dynamic (Nodes — {slug}). -->
@@ -50,11 +49,7 @@ import { NaviNodeFormComponent } from './navi-node-form.component';
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays
                  mounted, hidden, so a retry keeps its sort, filters and column widths. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load nodes"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="retryLoad()" />
+                <cms-state kind="error" title="Failed to load nodes" [error]="loadFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             <coolms-datagrid
                 [hidden]="loadFailure() !== null"

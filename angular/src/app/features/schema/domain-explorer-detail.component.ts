@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { DataGridComponent, DataGridData, DynamicRecordListComponent, ErrorBannerComponent } from '@coolms/ui-angular';
+import { DataGridComponent, DataGridData, DynamicRecordListComponent, StateComponent } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
 import { DomainExplorerStateService } from './domain-explorer-state.service';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
@@ -16,7 +16,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
     selector: 'app-domain-explorer-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsLoaderComponent, DataGridComponent, DynamicRecordListComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsLoaderComponent, DataGridComponent, DynamicRecordListComponent],
     template: `
         <!-- -- Sticky breadcrumb band (above all content) ------------------ -->
         @if (st.toolbarBreadcrumb()) {
@@ -154,11 +154,7 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
                         <!-- A failed read of the records stands in place of the grid, with Retry reading them
                              again; a grid already shown stays mounted, hidden, so it keeps its sort and filters. -->
                         @if (st.recordsFailure() !== null) {
-                            <app-error-banner
-                                message="Failed to load records"
-                                [error]="st.recordsFailure()"
-                                [showRetry]="true"
-                                (retry)="st.retryEntityRecords()" />
+                            <cms-state kind="error" title="Failed to load records" [error]="st.recordsFailure()" actionLabel="Retry" (acted)="st.retryEntityRecords()" />
                         }
                         @if (!st.entityRecordsData() || !entityRecordsGridId()) {
                             @if (st.recordsFailure() === null) {
