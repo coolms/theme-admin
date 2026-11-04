@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Changed
+- **Email on a phone: the folders pane has its own Back** ("Back to <the current folder>"), and the note under Raw source says the raw source is missing ("No raw source stored for this message."), where it said the body was.
 - **Email fits a phone.** Below 600px the page shows one pane at a time: the message list; the mailboxes and folders behind a button naming the current folder, put away once one is chosen; and an opened message, with Back to the list. A message still loading when Back is pressed does not open when it answers. The pane dividers are hidden there. 600px and up are unchanged.
 - **No count under a failed read.** A list page whose read failed no longer says a count in its footer ("0 schedules" under "Failed to load schedules"); the count returns with a read that succeeds. 13 list pages.
 
