@@ -105,6 +105,20 @@ export class CallOverlayPreferencesService {
         );
     }
 
+    /**
+     * What is stored, read from the server now and applied: for the pane that edits it. Unlike {@link refresh}, a
+     * failed read is not the defaults -- a form seeded from defaults it could not read would store them on Save.
+     */
+    readStored(): Observable<CallOverlayPrefs> {
+        return this.identityApi.getSettings().pipe(
+            map(all => this.merge((all['call'] as Partial<CallOverlayPrefs> | undefined) ?? {})),
+            tap(prefs => {
+                this._prefs.set(prefs);
+                this.loaded$.next(prefs);
+            }),
+        );
+    }
+
     /** Force a re-fetch, bypassing the cache (e.g. a fresh login in the same tab). */
     refresh(): Observable<CallOverlayPrefs> {
         this.loadOnce$ = undefined;

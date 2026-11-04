@@ -10,6 +10,15 @@ major number means here.
 
 ### Changed
 
+- **My Profile: the Mail and Calls tabs show their reads with the one state component** (`cms-state`): "Reading your
+  ... settings", then the form, or the error state with "Read them again" (and Elevate, for a refusal for want of
+  elevation).
+- **My Profile, Calls: settings it could not read are no longer shown as the defaults.** The tab showed the defaults
+  in place of a failed read, and its Save would have stored them over what was kept. It now shows no form until the
+  settings are read (`CallOverlayPreferencesService::readStored()`, a read that lets a failure through; the overlay
+  keeps `refresh()`).
+- **My Profile stacks at phone width.** Side by side, the 200px panel left the tabs about 80px at 390.
+
 - **Page properties: the `scripts` and `styles` cards ask for an https address and its integrity hash**, instead of a
   name and a value, and say what a change needs: each file on the site's allow-list with that very hash, in an
   elevated session. Every other card is unchanged.

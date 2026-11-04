@@ -11,7 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CmsLoaderComponent } from '@coolms/core-angular';
-import { ToastService } from '@coolms/ui-angular';
+import { StateComponent, ToastService } from '@coolms/ui-angular';
 
 import { CallOverlayPrefs, CallOverlayPreferencesService } from './call-overlay-preferences.service';
 import { WebPhoneService } from './web-phone.service';
@@ -41,7 +41,7 @@ import { WebPhoneService } from './web-phone.service';
     selector: 'app-profile-call-tab',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CmsLoaderComponent],
+    imports: [FormsModule, CmsLoaderComponent, StateComponent],
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; }
         .tab-body { padding: 20px; flex: 1; }
@@ -87,6 +87,15 @@ import { WebPhoneService } from './web-phone.service';
         }
     `],
     template: `
+        @if (loading()) {
+            <div class="tab-body"><cms-state kind="loading" title="Reading your call settings" /></div>
+        } @else if (failure() !== null) {
+            <div class="tab-body">
+                <cms-state kind="error" title="Your call settings could not be read"
+                           description="They are not shown to change until they are read."
+                           [error]="failure()" [action]="readAgain" (elevated)="load()" />
+            </div>
+        } @else {
         <div class="tab-body">
             <div class="group">
                 <span class="group-label">Incoming-call popup</span>
@@ -159,6 +168,7 @@ import { WebPhoneService } from './web-phone.service';
                 Save changes
             </button>
         </div>
+        }
     `,
 })
 export class ProfileCallTabComponent implements OnInit {
@@ -183,6 +193,12 @@ export class ProfileCallTabComponent implements OnInit {
      */
     readonly section = input<string>('call');
 
+    /** True until the stored settings are read: the form is not shown before. */
+    protected readonly loading = signal(true);
+    /** Why the stored settings could not be read; the form is not shown, so Save cannot store defaults. */
+    protected readonly failure = signal<unknown>(null);
+    protected readonly readAgain = { label: 'Read them again', run: () => this.load() };
+
     /** True while a save is in flight (disables the button). */
     readonly saving = signal(false);
 
@@ -192,14 +208,30 @@ export class ProfileCallTabComponent implements OnInit {
     sipEndpoint = '';
 
     ngOnInit(): void {
-        // Ask the server, not the cache: a value this pane never saw is a
-        // value the next Save clears, so the form must start from what is
-        // actually stored -- also after a change made in another browser tab.
-        this.prefs.refresh()
+        this.load();
+    }
+
+    /**
+     * Ask the server, not the cache: a value this pane never saw is a value the next Save clears, so the form starts
+     * from what is actually stored -- also after a change made in another browser tab -- and is not shown at all when
+     * that could not be read.
+     */
+    load(): void {
+        this.loading.set(true);
+        this.failure.set(null);
+        this.prefs.readStored()
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(stored => {
-                this.seed(stored);
-                this.cdr.markForCheck();
+            .subscribe({
+                next: stored => {
+                    this.seed(stored);
+                    this.loading.set(false);
+                    this.cdr.markForCheck();
+                },
+                error: (e: unknown) => {
+                    this.failure.set(e);
+                    this.loading.set(false);
+                    this.cdr.markForCheck();
+                },
             });
     }
 
