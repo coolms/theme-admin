@@ -10,6 +10,8 @@ major number means here.
 
 ### Changed
 
+- **Media: a list refused for want of access is said as a refusal** (`cms-state kind="denied"`), not as an empty
+  folder.
 - **My Profile: the Mail and Calls tabs show their reads with the one state component** (`cms-state`): "Reading your
   ... settings", then the form, or the error state with "Read them again" (and Elevate, for a refusal for want of
   elevation).
