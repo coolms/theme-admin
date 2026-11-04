@@ -194,6 +194,11 @@ export interface EmailOAuthProviderDto {
 /** Per-folder counts for the folder rail (`GET /email/mailboxes/{id}/folders`, ). */
 export interface EmailFolderDto {
     folder: string;
+    /**
+     * Whose the folder is, as the mail server marks it: `inbox`, a special use (`sent`, `drafts`, `trash`, `junk`,
+     * `archive`, `all`, `flagged`), or `system` for a Gmail system label; null or absent for the person's own folders.
+     */
+    role?: string | null;
     /** How many messages have been IMPORTED into this folder. */
     total: number;
     unseen: number;

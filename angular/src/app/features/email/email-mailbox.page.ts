@@ -43,6 +43,7 @@ import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, imported
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
+import { folderDisplayName } from './folder-name.util';
 import {
     EmailAttachmentDto,
     EmailFolderDto,
@@ -161,7 +162,7 @@ type PhonePane = 'folders' | 'message';
                         <!-- On a phone the folders stand in place of the list; Back returns to it unchanged. -->
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders-back" (click)="leavePane('folders')">
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
-                            <span class="mbx__phone-bar-label">Back to {{ selectedFolder() || 'the list' }}</span>
+                            <span class="mbx__phone-bar-label">Back to {{ selectedFolderName() || 'the list' }}</span>
                         </button>
                         <span class="mbx__rail-label">Mailbox</span>
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
@@ -198,7 +199,7 @@ type PhonePane = 'folders' | 'message';
                                         [class.mbx__folder--active]="f.folder === selectedFolder()"
                                         [title]="folderCountTitle(f)"
                                         (click)="selectFolder(f.folder)">
-                                    <span class="mbx__folder-name">{{ f.folder }}</span>
+                                    <span class="mbx__folder-name">{{ folderName(f) }}</span>
                                     @if (folderUnread(f) > 0) {
                                         <span class="mbx__badge">{{ folderUnread(f) }}</span>
                                     }
@@ -226,7 +227,7 @@ type PhonePane = 'folders' | 'message';
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders"
                                 [attr.aria-expanded]="phoneFolders()" (click)="showPane('folders')">
                             <i class="bi bi-folder2" aria-hidden="true"></i>
-                            <span class="mbx__phone-bar-label">{{ selectedFolder() || 'Folders' }}</span>
+                            <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
                         </button>
                         <div class="mbx__search">
@@ -1199,6 +1200,16 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** On a phone, the folders stand in place of the list until one is chosen. */
     readonly phoneFolders = signal(false);
+
+    /** A folder's name as a person reads it: by its role when it has one, else by its path. */
+    readonly folderName = folderDisplayName;
+    /** The selected folder's name, as the rail shows it. */
+    readonly selectedFolderName = computed(() => {
+        const path = this.selectedFolder();
+        const folder = this.folders().find(f => f.folder === path);
+
+        return folder !== undefined ? folderDisplayName(folder) : path;
+    });
 
     private readonly location = inject(Location);
     /** The width at which the page shows one pane at a time; the pane shown is then in the address. */
