@@ -970,8 +970,8 @@ html .form-group :is(input[type="text"], input[type="number"], select, textarea)
     background: var(--cms-surface);
     border-radius: var(--cms-radius-lg);
     box-shadow: var(--cms-shadow-lg);
-    min-width: 360px;
-    max-width: 540px;
+    min-width: min(360px, calc(100vw - 32px));
+    max-width: min(540px, calc(100vw - 32px));
 }
 
 /* An object's settings in a modal over its page (the settings shell: list and panes): most of the window, the
