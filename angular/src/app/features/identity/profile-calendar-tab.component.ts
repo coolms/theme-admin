@@ -10,10 +10,9 @@ import { CalendarDto } from '../calendars/calendars.types';
 import { CalendarsApiService } from '../calendars/calendars-api.service';
 import {
     CalendarPrefs,
-    ErrorBannerComponent,
     LazySelectComponent,
     LazySelectOption,
-    UserCalendarPreferencesService,
+    UserCalendarPreferencesService, StateComponent
 } from '@coolms/ui-angular';
 import { NaviGraphService } from '@coolms/core-angular';
 import { navOffers } from '../../shell/nav-offers';
@@ -54,7 +53,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
     selector: 'app-profile-calendar-tab',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, DatePipe, ErrorBannerComponent, LazySelectComponent],
+    imports: [StateComponent, CommonModule, FormsModule, DatePipe, LazySelectComponent],
     styles: [`
         :host { display: block; }
         .group { display: flex; flex-direction: column; gap: 4px; }
@@ -188,11 +187,7 @@ const DATE_FORMAT_CHOICES: ReadonlyArray<DateFormatChoice> = [
                 <p class="group-help">Loading your calendars…</p>
             } @else if (calendarsFailure() !== null) {
                 <!-- A failed read of the calendar list stands in place of the picker, with Retry. -->
-                <app-error-banner
-                    message="Failed to load calendar list"
-                    [error]="calendarsFailure()"
-                    [showRetry]="true"
-                    (retry)="loadCalendars()" />
+                <cms-state kind="error" title="Failed to load calendar list" [error]="calendarsFailure()" actionLabel="Retry" (acted)="loadCalendars()" />
             } @else {
                 <app-lazy-select
                         [options]="defaultCalendarOptions()"

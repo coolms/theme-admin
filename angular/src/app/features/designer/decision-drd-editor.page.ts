@@ -32,10 +32,9 @@ import {
 import {
   bindKeys,
   CmsPageHeaderComponent,
-  ErrorBannerComponent,
   LoadingComponent,
   ToastService,
-  UnsavedChangesService,
+  UnsavedChangesService, StateComponent
 } from '@coolms/ui-angular';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
 import { errorMessage } from './shared/error-message';
@@ -76,11 +75,10 @@ import { DesignerI18nService } from './designer-i18n.service';
 @Component({
     selector: 'app-decision-drd-editor-page',
     standalone: true,
-    imports: [
+    imports: [StateComponent, 
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent,
     DraftConflictBannerComponent
 ],
     template: `
@@ -93,8 +91,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 </div>
             }
             @if (loadError()) {
-                <app-error-banner [message]="loadError()!" [error]="loadErrorFailure()" [showRetry]="true"
-                                  (retry)="retryLoad()" />
+                <cms-state kind="error" [title]="loadError()!" [error]="loadErrorFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             @if (conflict(); as c) {
                 <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />

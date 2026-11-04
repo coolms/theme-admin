@@ -18,12 +18,11 @@ import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
     DateTimeFormatService,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import { CockpitService } from './cockpit.service';
@@ -66,12 +65,12 @@ import type {
     selector: 'app-cockpit-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [KeyValuePipe, CmsPageHeaderComponent, CmsDetailFooterComponent, CockpitDiagramComponent, LoadingComponent, ErrorBannerComponent],
+    imports: [StateComponent, KeyValuePipe, CmsPageHeaderComponent, CmsDetailFooterComponent, CockpitDiagramComponent, LoadingComponent],
     template: `
         @if (loading()) {
             <app-loading label="Loading process instance…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else if (instance()) {
             @let i = instance()!;
 

@@ -368,7 +368,7 @@ describe('PageHistoryPanelComponent', () => {
         answers = [() => throwError(() => new HttpErrorResponse({ status: 500 }))];
         const el = open();
 
-        expect(el.querySelector('app-error-banner')).not.toBeNull();
+        expect(el.querySelector('cms-state[kind="error"]')).not.toBeNull();
         expect(el.querySelector('[data-test="history-empty"]')).toBeNull();
     });
 });

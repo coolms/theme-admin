@@ -13,12 +13,11 @@ import { Router, RouterLink } from '@angular/router';
 import {
     CmsPageHeaderComponent,
     EmptyStateComponent,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { ErrorHandlerService, ConfigService, LayoutConfig } from '@coolms/core-angular';
 import { CockpitService } from './cockpit.service';
@@ -47,7 +46,7 @@ interface StateTile {
     selector: 'app-cockpit-report-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, CmsPageHeaderComponent, LoadingComponent, ErrorBannerComponent, EmptyStateComponent],
+    imports: [StateComponent, RouterLink, CmsPageHeaderComponent, LoadingComponent, EmptyStateComponent],
     template: `
         <cms-page-header
             title="Process report"
@@ -59,7 +58,7 @@ interface StateTile {
         @if (loading()) {
             <app-loading label="Loading report…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" [showRetry]="true" (retry)="load()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" actionLabel="Retry" (acted)="load()" />
         } @else if (report()) {
             @let r = report()!;
 

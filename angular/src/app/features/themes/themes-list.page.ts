@@ -13,9 +13,8 @@ import { filter, switchMap } from 'rxjs';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
-    ErrorBannerComponent,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 import { SiteSectionDto, ThemeDto, ThemeTemplateDto, ThemesService } from './themes.service';
 
@@ -62,7 +61,7 @@ interface TemplateGroup {
     selector: 'app-themes-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsListPageComponent],
     template: `
         <cms-list-page title="Themes" icon="palette"
                        subtitle="Which theme skins each site, and what it overrides">
@@ -72,11 +71,7 @@ interface TemplateGroup {
             } @else if (loadFailure() !== null) {
                 <!-- A failed load is shown in place of the list: the failure itself goes to the banner, so a refusal
                      for want of elevation is the Elevate state and anything else the message with Retry. -->
-                <app-error-banner
-                    message="Could not load themes."
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="load()" />
+                <cms-state kind="error" title="Could not load themes." [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
             } @else if (themes().length === 0) {
                 <p class="state">
                     No themes installed. Themes are installed from the command line:

@@ -16,11 +16,10 @@ import { AppConfigState } from '@coolms/core-angular';
 import {
     CmsListPageComponent,
     DataGridComponent,
-    ErrorBannerComponent,
     PageTitleService,
     TabStripComponent,
     ToastService,
-    type DataGridData,
+    type DataGridData, StateComponent
 } from '@coolms/ui-angular';
 import { NewsletterComposeDialogComponent } from './newsletter-compose-dialog.component';
 import { SubscriberDto, SubscriptionStatus, NewsletterService } from './newsletter.service';
@@ -71,7 +70,7 @@ interface StatusTab {
     selector: 'coolms-admin-newsletter',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, DataGridComponent, ErrorBannerComponent, TabStripComponent],
+    imports: [StateComponent, CmsListPageComponent, DataGridComponent, TabStripComponent],
     template: `
         <cms-list-page
             title="Newsletter"
@@ -91,11 +90,7 @@ interface StatusTab {
                          refusal for want of elevation is the Elevate state and anything else the message with Retry.
                          The grid stays mounted, hidden, so a retry keeps its sort, filters and column widths. -->
                     @if (loadFailure() !== null) {
-                        <app-error-banner
-                            message="Failed to load subscribers"
-                            [error]="loadFailure()"
-                            [showRetry]="true"
-                            (retry)="retryLoad()" />
+                        <cms-state kind="error" title="Failed to load subscribers" [error]="loadFailure()" actionLabel="Retry" (acted)="retryLoad()" />
                     }
                     <coolms-datagrid
                         [hidden]="loadFailure() !== null"

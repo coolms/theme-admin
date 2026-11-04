@@ -20,12 +20,11 @@ import {
     CmsPageHeaderComponent,
     ConfirmDialogService,
     ElevationRequiredComponent,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
 import { SectionHostsCardComponent } from './section-hosts-card.component';
@@ -58,15 +57,15 @@ import { LoadSections } from './section.actions';
     selector: 'app-site-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
-        RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
+    imports: [StateComponent, 
+        RouterLink, LoadingComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
         SectionHostsCardComponent, SiteRobotsCardComponent, SiteScriptSourcesCardComponent, ElevationRequiredComponent,
     ],
     template: `
         @if (loading()) {
             <app-loading label="Loading site…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else if (site()) {
             @let s = site()!;
 

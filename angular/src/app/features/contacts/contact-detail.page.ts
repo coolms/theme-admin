@@ -14,11 +14,10 @@ import { ErrorHandlerService, ConfigService, type LayoutConfig } from '@coolms/c
 import {
     CmsPageHeaderComponent,
     DateTimeFormatService,
-    ErrorBannerComponent,
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { type ContactDto, ContactsService } from './contacts.service';
 import { type LeadChannel, type LeadDto, type LeadStatus, LeadsService } from '../leads/leads.service';
@@ -50,12 +49,12 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
     selector: 'coolms-admin-contact-detail',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterLink, LoadingComponent, ErrorBannerComponent, CmsPageHeaderComponent],
+    imports: [StateComponent, RouterLink, LoadingComponent, CmsPageHeaderComponent],
     template: `
         @if (loading()) {
             <app-loading label="Loading contact…" />
         } @else if (error()) {
-            <app-error-banner [message]="error()!" [error]="errorFailure()" />
+            <cms-state kind="error" [title]="error()!" [error]="errorFailure()" />
         } @else {
           @if (contact(); as c) {
             <cms-page-header

@@ -83,7 +83,7 @@ describe('SiteMembersPageComponent -- refused for want of elevation', () => {
         setup(() => throwError(stamped));
 
         expect(el('[data-test="members-elevation-required"]')).not.toBeNull();
-        expect(el('app-error-banner')).toBeNull();
+        expect(el('cms-state[kind="error"]')).toBeNull();
     });
 
     it('loads again once the session is elevated from it, and shows the members', () => {
@@ -102,7 +102,7 @@ describe('SiteMembersPageComponent -- refused for want of elevation', () => {
         setup(() => throwError(otherForbidden));
 
         expect(el('[data-test="members-elevation-required"]')).toBeNull();
-        expect(el('app-error-banner')).not.toBeNull();
+        expect(el('cms-state[kind="error"]')).not.toBeNull();
     });
 
     it('asks again when the elevation ends while the members are shown, and shows the Elevate state if refused', () => {

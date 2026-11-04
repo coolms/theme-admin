@@ -35,11 +35,10 @@ import {
 
 import {
     CmsPageHeaderComponent,
-    ErrorBannerComponent,
     KeyboardScopeService,
     LoadingComponent,
     ToastService,
-    UnsavedChangesService,
+    UnsavedChangesService, StateComponent
 } from '@coolms/ui-angular';
 import { contributorSourceVersion, isContributorSource409 } from './shared/contributor-source';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
@@ -108,11 +107,10 @@ import { DesignerI18nService } from './designer-i18n.service';
     selector: 'app-bpmn-editor-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [StateComponent, 
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,
-    ErrorBannerComponent,
     DraftConflictBannerComponent
 ],
     template: `
@@ -130,11 +128,7 @@ import { DesignerI18nService } from './designer-i18n.service';
                 </div>
             }
             @if (loadError()) {
-                <app-error-banner
-                    [message]="loadError()!" [error]="loadErrorFailure()"
-                    [showRetry]="true"
-                    (retry)="retryLoad()"
-                />
+                <cms-state kind="error" [title]="loadError()!" [error]="loadErrorFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             @if (conflict(); as c) {
                 <app-draft-conflict [kind]="c" (reload)="reloadAfterConflict()" />
@@ -810,7 +804,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
             this.loadBody(payload.body, key);
         } catch (err) {
             /**
-             * Banner ONLY, no toast. `ErrorBannerComponent` was built
+             * Error state ONLY, no toast. The error state was built
              * "instead of a blank panel + a transient toast that scrolls
              * away" -- emitting both showed the same sentence twice and
              * was what the designer's error UI got flagged for. Toasts
@@ -859,7 +853,7 @@ export class BpmnEditorPage implements AfterViewInit, OnDestroy {
     }
 
     /**
-     * UI-polish -- retry handler for the shared `<app-error-banner>` shown
+     * UI-polish -- retry handler for the error state (`cms-state`) shown
      * on a failed initial load. Re-runs the correct load path (the pinned
      * version in viewer mode, else the editable draft). No-op until the
      * definition key is known (the malformed-route case).

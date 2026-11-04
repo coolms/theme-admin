@@ -24,7 +24,7 @@ import {
     TagInputComponent,
     TagOption,
     ToastService,
-    ToolbarAction,
+    ToolbarAction, StateComponent
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailPreferencesService } from './mail-preferences.service';
@@ -115,7 +115,7 @@ interface ComposeDraft {
     changeDetection: ChangeDetectionStrategy.OnPush,
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
-    imports: [
+    imports: [StateComponent, 
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
     ],
@@ -154,11 +154,7 @@ interface ComposeDraft {
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
                              with Retry reading it again. The message pane is not touched. -->
                         @if (mailboxesFailure() !== null) {
-                            <app-error-banner
-                                message="Could not load mailboxes."
-                                [error]="mailboxesFailure()"
-                                [showRetry]="true"
-                                (retry)="loadMailboxes()" />
+                            <cms-state kind="error" title="Could not load mailboxes." [error]="mailboxesFailure()" actionLabel="Retry" (acted)="loadMailboxes()" />
                         }
                         <div class="mbx__accounts" role="tablist" aria-label="Mailboxes">
                             @for (mb of mailboxes(); track mb.id) {
@@ -280,11 +276,7 @@ interface ComposeDraft {
                         } @else if (messagesFailure() !== null && !messagesFailedOnAppend()) {
                             <!-- A failed read of the folder's messages stands in place of the message list, with
                                  Retry reading it again. The mailbox pane is not touched. -->
-                            <app-error-banner
-                                message="Could not load messages."
-                                [error]="messagesFailure()"
-                                [showRetry]="true"
-                                (retry)="retryMessages()" />
+                            <cms-state kind="error" title="Could not load messages." [error]="messagesFailure()" actionLabel="Retry" (acted)="retryMessages()" />
                         } @else if (loadingMessages() && messages().length === 0) {
                             <p class="mbx__note">Loading…</p>
                         } @else if (messages().length === 0) {

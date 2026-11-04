@@ -21,9 +21,8 @@ import {
     ConfirmDialogService,
     DataGridComponent,
     DataGridData,
-    ErrorBannerComponent,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
 
@@ -47,7 +46,7 @@ import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
     selector: 'coolms-admin-calendars-list',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DataGridComponent, CmsListPageComponent, ErrorBannerComponent],
+    imports: [StateComponent, DataGridComponent, CmsListPageComponent],
     template: `
         <cms-list-page
             title="Calendars"
@@ -60,11 +59,7 @@ import { CalendarFormDialogComponent } from './calendar-form-dialog.component';
                  want of elevation is the Elevate state and anything else the message with Retry. The grid stays
                  mounted, hidden, so a retry keeps its sort, filters and column widths. -->
             @if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load calendars"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="retryLoad()" />
+                <cms-state kind="error" title="Failed to load calendars" [error]="loadFailure()" actionLabel="Retry" (acted)="retryLoad()" />
             }
             <coolms-datagrid
                 [hidden]="loadFailure() !== null"

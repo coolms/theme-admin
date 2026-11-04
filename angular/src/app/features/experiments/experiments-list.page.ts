@@ -13,9 +13,8 @@ import { filter, switchMap } from 'rxjs';
 import {
     CmsListPageComponent,
     ConfirmDialogService,
-    ErrorBannerComponent,
     PageTitleService,
-    ToastService,
+    ToastService, StateComponent
 } from '@coolms/ui-angular';
 import { ExperimentDto, ExperimentResult, ExperimentsService } from './experiments.service';
 import { ExperimentFormDialogComponent } from './experiment-form-dialog.component';
@@ -50,7 +49,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
     selector: 'coolms-admin-experiments',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsListPageComponent, ErrorBannerComponent],
+    imports: [StateComponent, CmsListPageComponent],
     template: `
         <cms-list-page
             title="Experiments"
@@ -66,11 +65,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             @if (loading()) {
                 <p class="cms-exp__hint">Loading experiments…</p>
             } @else if (loadFailure() !== null) {
-                <app-error-banner
-                    message="Failed to load experiments"
-                    [error]="loadFailure()"
-                    [showRetry]="true"
-                    (retry)="load()" />
+                <cms-state kind="error" title="Failed to load experiments" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
             } @else if (experiments().length === 0) {
                 <div class="cms-exp__empty">
                     <i class="bi bi-signpost-split"></i>

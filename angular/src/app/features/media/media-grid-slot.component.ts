@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 
 import {
-    ContextMenuService, DropZoneDirective, ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent,
+    ContextMenuService, DropZoneDirective, ElevationRequiredComponent, EmptyStateComponent,
     ExplorerToolbarRowComponent, StateComponent,
 } from '@coolms/ui-angular';
 import { CmsLoaderComponent, NaviGraphNode, NaviGraphService } from '@coolms/core-angular';
@@ -31,7 +31,7 @@ import { MediaGridComponent } from './media-grid.component';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         CmsLoaderComponent, MediaGridComponent, DropZoneDirective, ExplorerToolbarRowComponent,
-        ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent, StateComponent,
+        ElevationRequiredComponent, EmptyStateComponent, StateComponent,
     ],
     template: `
         <div class="media-grid-slot"
@@ -70,8 +70,7 @@ import { MediaGridComponent } from './media-grid.component';
                                        title="You don't have access to these files" [description]="failed.message" />
                         }
                         @default {
-                            <app-error-banner data-test="media-list-error" [message]="failed.message"
-                                              [showRetry]="true" (retry)="state.reloadRequested$.next()" />
+                            <cms-state kind="error" data-test="media-list-error" [title]="failed.message" actionLabel="Retry" (acted)="state.reloadRequested$.next()" />
                         }
                     }
                 } @else if (!state.loading() && state.assets().length === 0 && state.viewMode() !== 'details') {
