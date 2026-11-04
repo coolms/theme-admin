@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, com
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/router';
 import { Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
@@ -1210,9 +1210,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * The address leads: a pane leaving it (the browser's Back, or the page's own) is closed; `?pane=folders` opens
-     * the folders. A message pane named on a load with no message open (a reload) is dropped from the address.
+     * the folders. A message pane named on a load with no message open (a reload, a shared link) is dropped from the
+     * address. Called from the constructor: the query replays at once on subscribe, so every field it reads must be set.
      */
-    private readonly followsPane = this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => {
+    private followPane(query: ParamMap): void {
         const named = query.get(PANE_PARAM);
         const was = this.paneInAddress;
         this.paneInAddress = named === 'folders' || named === 'message' ? named : null;
@@ -1223,7 +1224,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (this.paneInAddress === 'message' && was !== 'message' && this.selectedMessage() === null && !this.loadingDetail()) {
             this.dropPane();
         }
-    });
+    }
 
     /** Shows a pane on a phone, as an entry of its own in the history; the list to message step from the folders replaces. */
     showPane(pane: PhonePane): void {
@@ -1561,6 +1562,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Deployed workflow definitions offered by the inbound-workflow picker. */
     readonly inboundWorkflowOptions = signal<InboundWorkflowOption[]>([]);
+
+    constructor() {
+        this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
+    }
 
     ngOnInit(): void {
         // C.4.b: debounced contact typeahead for the To/Cc/Bcc chips. An empty

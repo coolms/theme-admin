@@ -35,9 +35,10 @@ describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
     /** The address as the browser would leave it: with this pane named, or none. */
     const address = (pane: string | null) => query.next(convertToParamMap(pane === null ? {} : { pane }));
 
-    function build(phone = false): EmailMailboxPageComponent {
+    /** The page, at a phone's width or not, loaded at an address that may already name a pane (as the router replays it). */
+    function build(phone = false, loadedAt: string | null = null): EmailMailboxPageComponent {
         details = new Subject<EmailMessageDetailDto>();
-        query = new BehaviorSubject<ParamMap>(convertToParamMap({}));
+        query = new BehaviorSubject<ParamMap>(convertToParamMap(loadedAt === null ? {} : { pane: loadedAt }));
         navigations = [];
         backs = 0;
         spyOn(window, 'matchMedia').and.returnValue({ matches: phone } as MediaQueryList);
@@ -166,7 +167,17 @@ describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
         expect(navigations).toEqual([{ pane: null, replaceUrl: true }]);
     });
 
-    it('at 600px and up the address is never touched', () => {
+    it('a page loaded at ?pane=message (a reload, a shared link) drops it, and the next message is a history entry', () => {
+        const page = build(true, 'message');
+        expect(navigations).toEqual([{ pane: null, replaceUrl: true }]);
+        address(null);
+
+        page.openMessage(message);
+
+        expect(navigations).toEqual([{ pane: null, replaceUrl: true }, { pane: 'message', replaceUrl: false }]);
+    });
+
+    it('at 600px and up, opening and closing a pane never touches the address', () => {
         const page = build(false);
 
         page.showPane('folders');
