@@ -1,5 +1,5 @@
 import {
-    ChangeDetectionStrategy, Component, computed, inject, OnInit, output, signal,
+    ChangeDetectionStrategy, Component, computed, HostBinding, HostListener, inject, OnInit, output, signal,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -27,7 +27,7 @@ import { CrumbNamesService } from './crumb-names.service';
         <div class="cms-topbar-row d-flex align-items-center h-100 px-3 gap-3">
 
             <!-- Logo / brand -->
-            <a routerLink="/" class="text-white text-decoration-none fw-bold me-2"
+            <a routerLink="/" class="cms-topbar-logo text-white text-decoration-none fw-bold me-2"
                style="font-size: 1rem; letter-spacing: .02em; flex-shrink: 0">
                 CoolMS
             </a>
@@ -89,7 +89,7 @@ import { CrumbNamesService } from './crumb-names.service';
                 @for (panel of console.panels(); track panel.id) {
                     @if (panelAccess(panel.id); as access) {
                         <button type="button"
-                                class="cms-btn cms-btn-sm position-relative"
+                                class="cms-topbar-panel cms-btn cms-btn-sm position-relative"
                                 style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
                                 [title]="panel.toggle.label + (access === 'elevate' ? ' -- needs an elevated session' : '')"
                                 [attr.aria-label]="panel.toggle.label + (access === 'elevate' ? ', needs an elevated session' : '')"
@@ -109,6 +109,31 @@ import { CrumbNamesService } from './crumb-names.service';
                 <!-- The modules' quick-access tiles, from their console entries
                      (console@1), in their declared order and only for the
                      modules the manifest says are installed. -->
+                @if (offeredPanels().length >= 2) {
+                    <div class="cms-topbar-more position-relative">
+                        <button type="button" class="cms-btn cms-btn-sm" data-test="topbar-more"
+                                aria-label="More panels" title="More panels" aria-haspopup="menu"
+                                [attr.aria-expanded]="moreOpen()" (click)="toggleMore($event)">
+                            <i class="bi bi-three-dots" aria-hidden="true"></i>
+                        </button>
+                        @if (moreOpen()) {
+                            <div class="cms-topbar-more__menu cms-page-surface position-absolute end-0 mt-1 py-1 rounded shadow"
+                                 role="menu" aria-label="More panels">
+                                @for (o of offeredPanels(); track o.panel.id) {
+                                    <button type="button" role="menuitem" class="dropdown-item d-flex align-items-center gap-2"
+                                            [attr.data-panel]="o.panel.id" (click)="openPanel(o.panel.id)">
+                                        <span>{{ o.panel.toggle.label }}</span>
+                                        @if (o.access === 'elevate') {
+                                            <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                                            <span class="visually-hidden">, needs an elevated session</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
                 @for (item of console.topbar(); track item.id) {
                     <ng-container *ngComponentOutlet="item.component" />
                 }
@@ -129,15 +154,61 @@ import { CrumbNamesService } from './crumb-names.service';
         /* A phone keeps the logo, the panel buttons and the profile on the bar: the page header already says where
            you are, so the breadcrumb and its divider give their room, and the gaps and buttons tighten. No scroll
            container: the buttons' own popovers would be clipped by it. */
+        .cms-topbar-more { display: none; }
+        .cms-topbar-more__menu { z-index: 30; min-width: 220px; }
         @media (max-width: 599.98px) {
             .cms-topbar-row { gap: 4px !important; padding-left: 8px !important; padding-right: 8px !important; }
             .cms-topbar-divider, .cms-topbar-crumbs { display: none !important; }
+            .cms-topbar-logo { margin-right: 0 !important; font-size: .9rem !important; }
             .cms-topbar-actions { gap: 4px !important; }
-            :host ::ng-deep .cms-topbar-actions .cms-btn { min-width: 32px; height: 32px; padding: 4px 8px !important; }
+            /* A stated exception to the 44px touch target (--cms-touch-target-min): the top bar's items are 32px on a
+               phone, until the modules' top-bar items have a menu form that lets them go behind the "More panels"
+               menu. 32px stays above WCAG 2.5.8's 24px minimum target size (AA); every other control keeps 44px. */
+            :host ::ng-deep .cms-topbar-actions .cms-btn,
+            :host ::ng-deep .cms-topbar-actions .btn {
+                min-width: 32px; height: 32px; padding: 4px 8px !important;
+            }
+            /* Two or more panel toggles go behind one menu; a single one stays on the bar. */
+            :host(.cms-topbar--panels-menu) .cms-topbar-panel { display: none !important; }
+            :host(.cms-topbar--panels-menu) .cms-topbar-more { display: block; }
+            /* 44px: the touch target (design-tokens' touch-target-min, not yet in the tokens this admin installs). */
+            .cms-topbar-more__menu .dropdown-item { min-height: 44px; }
         }
     `],
 })
 export class AdminTopbarComponent implements OnInit {
+    /** The panel toggles this account is offered, in the console's order, each with its access. */
+    protected readonly offeredPanels = computed(() =>
+        this.console.panels()
+            .map(panel => ({ panel, access: this.panelAccess(panel.id) }))
+            .filter((o): o is { panel: typeof o.panel; access: NaviAccess } => o.access !== null),
+    );
+
+    /** The phone's "More panels" menu is open. */
+    protected readonly moreOpen = signal(false);
+
+    @HostBinding('class.cms-topbar--panels-menu')
+    protected get panelsMenu(): boolean {
+        return this.offeredPanels().length >= 2;
+    }
+
+    protected toggleMore(event: Event): void {
+        event.stopPropagation();
+        this.moreOpen.update(open => !open);
+    }
+
+    protected openPanel(id: string): void {
+        this.moreOpen.set(false);
+        this.panelToggle.emit(id);
+    }
+
+    /** Escape, or a press anywhere else, closes the menu. */
+    @HostListener('document:keydown.escape')
+    @HostListener('document:click')
+    protected closeMore(): void {
+        this.moreOpen.set(false);
+    }
+
     /** The modules' console contributions, filtered by what the manifest says is installed. */
     protected readonly console        = inject(ConsoleActivation);
     private readonly router           = inject(Router);
