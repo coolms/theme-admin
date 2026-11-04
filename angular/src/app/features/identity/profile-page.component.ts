@@ -15,11 +15,12 @@ import {
     DynamicFormComponent,
     PageTitleService,
     SlotComponent,
+    StateComponent,
     TabStripComponent,
     TabStripItem,
     ToastService,
     UserAvatarComponent,
-    UserCalendarPreferencesService, StateComponent
+    UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';

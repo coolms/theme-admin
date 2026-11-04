@@ -23,8 +23,9 @@ import {
     LayoutActionsService,
     LoadingComponent,
     PageTitleService,
+    StateComponent,
     ToastService,
-    ToolbarAction, StateComponent
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { SectionFormComponent } from './section-form.component';
 import { SectionHostsCardComponent } from './section-hosts-card.component';
@@ -57,7 +58,8 @@ import { LoadSections } from './section.actions';
     selector: 'app-site-detail-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, 
+    imports: [
+        StateComponent,
         RouterLink, LoadingComponent, CmsPageHeaderComponent, CmsDetailFooterComponent,
         SectionHostsCardComponent, SiteRobotsCardComponent, SiteScriptSourcesCardComponent, ElevationRequiredComponent,
     ],

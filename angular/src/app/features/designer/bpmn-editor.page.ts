@@ -37,8 +37,9 @@ import {
     CmsPageHeaderComponent,
     KeyboardScopeService,
     LoadingComponent,
+    StateComponent,
     ToastService,
-    UnsavedChangesService, StateComponent
+    UnsavedChangesService,
 } from '@coolms/ui-angular';
 import { contributorSourceVersion, isContributorSource409 } from './shared/contributor-source';
 import { DesignerActionFooterComponent } from './shared/designer-action-footer.component';
@@ -107,7 +108,8 @@ import { DesignerI18nService } from './designer-i18n.service';
     selector: 'app-bpmn-editor-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, 
+    imports: [
+    StateComponent,
     CmsPageHeaderComponent,
     DesignerActionFooterComponent,
     LoadingComponent,

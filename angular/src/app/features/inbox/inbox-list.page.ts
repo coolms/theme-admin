@@ -20,8 +20,9 @@ import {
     DataGridComponent,
     DataGridData,
     PageTitleService,
+    StateComponent,
     TabStripComponent,
-    ToastService, StateComponent
+    ToastService,
 } from '@coolms/ui-angular';
 
 import { InboxLiveEventsService } from './inbox-live-events.service';

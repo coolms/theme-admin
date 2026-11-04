@@ -15,6 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
     CmsSettingsPaneComponent,
     CmsSettingsShellComponent,
+    StateComponent,
     type CmsSettingsSection,
     ConfirmDialogService,
     DynamicFormComponent,
@@ -25,7 +26,7 @@ import {
     SlotComponent,
     ToastService,
     ToolbarAction,
-    UnsavedChangesService, StateComponent
+    UnsavedChangesService,
 } from '@coolms/ui-angular';
 import { ComponentRegistry, ErrorHandlerService } from '@coolms/core-angular';
 
@@ -63,7 +64,8 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
     selector: 'coolms-admin-settings-hub',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, 
+    imports: [
+        StateComponent,
         CmsSettingsShellComponent,
         CmsSettingsPaneComponent,
         PageToolbarComponent,

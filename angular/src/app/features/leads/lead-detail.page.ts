@@ -18,8 +18,9 @@ import {
     LoadingComponent,
     PageTitleService,
     PageToolbarComponent,
+    StateComponent,
     ToastService,
-    ToolbarAction, StateComponent
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { LeadChannel, LeadDto, LeadsService } from './leads.service';
 

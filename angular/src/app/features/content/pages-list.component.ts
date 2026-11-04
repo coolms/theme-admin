@@ -23,7 +23,8 @@ import {
     ExplorerToolbarRowComponent,
     PageFooterService,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { PageService } from './page.service';
 import { PageSpaceStateService } from './page-space-state.service';

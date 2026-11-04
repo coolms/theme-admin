@@ -12,7 +12,8 @@ import {
     CalendarPrefs,
     LazySelectComponent,
     LazySelectOption,
-    UserCalendarPreferencesService, StateComponent
+    StateComponent,
+    UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
 import { NaviGraphService } from '@coolms/core-angular';
 import { navOffers } from '../../shell/nav-offers';

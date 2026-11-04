@@ -17,9 +17,10 @@ import {
     CmsListPageComponent,
     DataGridComponent,
     PageTitleService,
+    StateComponent,
     TabStripComponent,
     ToastService,
-    type DataGridData, StateComponent
+    type DataGridData,
 } from '@coolms/ui-angular';
 import { NewsletterComposeDialogComponent } from './newsletter-compose-dialog.component';
 import { SubscriberDto, SubscriptionStatus, NewsletterService } from './newsletter.service';

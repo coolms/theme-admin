@@ -26,8 +26,9 @@ import {
     LazySelectComponent,
     LoadingComponent,
     PageTitleService,
+    StateComponent,
     ToastService,
-    ToolbarAction, StateComponent
+    ToolbarAction,
 } from '@coolms/ui-angular';
 import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence-form.component';
 

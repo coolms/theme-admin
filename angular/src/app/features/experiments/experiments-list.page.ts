@@ -14,7 +14,8 @@ import {
     CmsListPageComponent,
     ConfirmDialogService,
     PageTitleService,
-    ToastService, StateComponent
+    StateComponent,
+    ToastService,
 } from '@coolms/ui-angular';
 import { ExperimentDto, ExperimentResult, ExperimentsService } from './experiments.service';
 import { ExperimentFormDialogComponent } from './experiment-form-dialog.component';
