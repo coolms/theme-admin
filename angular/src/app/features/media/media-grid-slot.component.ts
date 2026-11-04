@@ -11,7 +11,7 @@ import {
 
 import {
     ContextMenuService, DropZoneDirective, ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent,
-    ExplorerToolbarRowComponent,
+    ExplorerToolbarRowComponent, StateComponent,
 } from '@coolms/ui-angular';
 import { CmsLoaderComponent, NaviGraphNode, NaviGraphService } from '@coolms/core-angular';
 import { MediaPageStateService } from './media-page-state.service';
@@ -31,7 +31,7 @@ import { MediaGridComponent } from './media-grid.component';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
         CmsLoaderComponent, MediaGridComponent, DropZoneDirective, ExplorerToolbarRowComponent,
-        ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent,
+        ElevationRequiredComponent, EmptyStateComponent, ErrorBannerComponent, StateComponent,
     ],
     template: `
         <div class="media-grid-slot"
@@ -66,8 +66,8 @@ import { MediaGridComponent } from './media-grid.component';
                                                     (elevated)="state.reloadRequested$.next()" />
                         }
                         @case ('denied') {
-                            <app-empty-state icon="shield-x" data-test="media-access-denied"
-                                             title="You don't have access to these files" [hint]="failed.message" />
+                            <cms-state kind="denied" data-test="media-access-denied"
+                                       title="You don't have access to these files" [description]="failed.message" />
                         }
                         @default {
                             <app-error-banner data-test="media-list-error" [message]="failed.message"
