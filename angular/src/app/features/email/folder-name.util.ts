@@ -19,5 +19,6 @@ const ROLE_NAMES: Readonly<Record<string, string>> = {
 export function folderDisplayName(folder: Pick<EmailFolderDto, 'folder' | 'role'>): string {
     const role = folder.role ?? null;
 
-    return (role !== null ? ROLE_NAMES[role] : undefined) ?? folder.folder;
+    // Own keys only: a role named like an object's built-in (toString, constructor) is not a role this map names.
+    return role !== null && Object.hasOwn(ROLE_NAMES, role) ? ROLE_NAMES[role] : folder.folder;
 }

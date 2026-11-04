@@ -17,5 +17,7 @@ describe('folderDisplayName', () => {
 
     it('names a folder by its path when its role is one the admin has no words for', () => {
         expect(folderDisplayName({ folder: 'Important', role: 'important' })).toBe('Important');
+        expect(folderDisplayName({ folder: 'Odd', role: 'toString' })).toBe('Odd');
+        expect(folderDisplayName({ folder: 'Odder', role: 'constructor' })).toBe('Odder');
     });
 });
