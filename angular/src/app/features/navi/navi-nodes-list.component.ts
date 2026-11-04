@@ -39,7 +39,7 @@ import { NaviNodeFormComponent } from './navi-node-form.component';
             icon="diagram-3"
             toolbarTreeSlug="navi.toolbar.navi.nodes"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config fetched from /api/v1/datagrids/navi:nodes (no externalConfig).
                  Tree datagrid Ship B (Item 6) -- root rows load via (loadMore) with

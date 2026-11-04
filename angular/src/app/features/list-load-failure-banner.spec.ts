@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Dialog } from '@angular/cdk/dialog';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { type ProviderToken, signal } from '@angular/core';
+import { Component, NO_ERRORS_SCHEMA, type ProviderToken, input, signal } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { NEVER, Observable, of, throwError } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -52,6 +52,12 @@ import { TaxonomyService } from './taxonomy/taxonomy.service';
  * that then succeeds clears the failure. Each row builds the real page directly, not rendered, and drives its real
  * load path; only the API method the load reaches is answered, the rest of construction is stubbed.
  */
+/** Stands in for the list page frame and keeps the footer count it is handed. */
+@Component({ selector: 'cms-list-page', template: '' })
+class FooterProbeComponent {
+    readonly footerCount = input('');
+}
+
 describe('List pages show a failed load in the error banner', () => {
     const FIRST = { offset: 0, sort: null, reset: true, columnFilters: [] as string[] };
     const PAGED = { items: [], totalItems: 0 };
@@ -63,6 +69,7 @@ describe('List pages show a failed load in the error banner', () => {
     interface Row {
         name: string;
         build: () => Loadable;
+        type: new () => Loadable;
         api: ProviderToken<unknown>;
         method: string;
         /** Answers every other method the load path asks, always successfully. */
@@ -85,6 +92,7 @@ describe('List pages show a failed load in the error banner', () => {
         return {
             name,
             build: () => new page(),
+            type: page,
             api,
             method,
             ok,
@@ -207,6 +215,36 @@ describe('List pages show a failed load in the error banner', () => {
             expect(api.asked()).withContext('Retry asked the API again').toBe(2);
             expect(page.loadFailure()).withContext('a load that succeeds clears the failure').toBeNull();
             expect(toasts).toEqual([]);
+        });
+    }
+
+    /** One row of whichever shape the page's load answers with. */
+    function oneRow(ok: unknown): unknown {
+        // Enough fields for every page's row mapping: a tree's slug, a bundle's tiers and contributors.
+        if (Array.isArray(ok)) return [{ id: 'x1', slug: 'navi.x1', tiers: [], contributors: [] }];
+        if (ok !== null && typeof ok === 'object' && 'families' in ok) return { families: [{ family: 'X', faces: [] }] };
+        return { items: [{ id: 'x1' }], totalItems: 1 };
+    }
+
+    // The pages frame (no footer count) is the one row without one.
+    for (const r of ROWS.filter(x => x.name !== 'pages')) {
+        it(`${r.name}: under a failed load the footer says no count`, () => {
+            let fail = false;
+            configure(r.api, r.method, [() => (fail ? throwError(() => new HttpErrorResponse({ status: 500 })) : of(oneRow(r.ok)))], [], r.alongside);
+            TestBed.overrideComponent(r.type, { set: { imports: [FooterProbeComponent], schemas: [NO_ERRORS_SCHEMA] } });
+            const fixture = TestBed.createComponent(r.type);
+            const footer = (): string => (fixture.debugElement.query(d => d.componentInstance instanceof FooterProbeComponent).componentInstance as FooterProbeComponent).footerCount();
+
+            r.load(fixture.componentInstance);
+            fixture.detectChanges();
+            expect(footer()).withContext('a loaded row is counted').not.toBe('');
+
+            fail = true;
+            r.load(fixture.componentInstance);
+            fixture.detectChanges();
+
+            expect(fixture.componentInstance.loadFailure()).withContext('the load failed').not.toBeNull();
+            expect(footer()).withContext('no count under the failure').toBe('');
         });
     }
 

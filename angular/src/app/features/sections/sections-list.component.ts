@@ -39,7 +39,7 @@ import { ApplyNginxChanges } from './section.actions';
             icon="layout-text-sidebar"
             toolbarTreeSlug="navi.toolbar.section.sections"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config fetched from /api/v1/datagrids/section:sections (no externalConfig).
                  All sections are loaded at once via (loadMore) (no server-side pagination). -->

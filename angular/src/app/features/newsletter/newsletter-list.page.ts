@@ -77,7 +77,7 @@ interface StatusTab {
             icon="envelope-paper"
             subtitle="Manage subscribers and send campaigns"
             toolbarTreeSlug="navi.toolbar.newsletter.list"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <div class="cms-news">
                 <section class="cms-news__list">

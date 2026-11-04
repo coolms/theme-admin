@@ -60,7 +60,7 @@ const TREE_CODE = 'categories';
             subtitle="Organize content into a hierarchical category tree"
             toolbarTreeSlug="navi.toolbar.taxonomy.categories"
             [toolbarContext]="toolbarContext()"
-            [footerCount]="footerLabel()"
+            [footerCount]="loadFailure() === null ? footerLabel() : ''"
             (actionClick)="onToolbarAction($event)">
             <!-- Grid config from /api/v1/datagrids/taxonomy:categories; rows fed via
                  [externalData] from TaxonomyService (the full tree, loaded at once).
