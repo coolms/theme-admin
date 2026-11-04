@@ -50,6 +50,11 @@ describe('Switches are the kit\'s control', () => {
         (filterable.closest('label') as HTMLLabelElement).querySelector<HTMLElement>('.fdf-toggle-label')?.click();
         fixture.detectChanges();
         expect(filterable.checked).withContext('pressing its name turns it on').toBeTrue();
+
+        form.activeTab.set(0);
+        fixture.detectChanges();
+        const [required] = expectKitSwitches(host, 1);
+        expect(required.id).toBe('so-required');
     });
 
     it('the checkbox field widget: a switch that reports its value', () => {

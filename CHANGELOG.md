@@ -110,6 +110,7 @@ major number means here.
 
 ### Fixed
 
+- **A dialog fits a phone**: the shared dialog rule held a dialog at 360 to 540 wide whatever the viewport, so at 390 the Override Field dialog ran off the right edge and its submit could not be pressed. It now stays 16px inside the viewport on each side.
 - **The toast's count badge reads.** The design tokens move from 0.1.0 to 0.3.0. 0.3.0 adds `accent-contrast`, the
   token the badge asks for and nothing defined, so it painted white on the amber at 2.03:1. It is now `accent-fg`,
   at 8.59:1. 0.2.0's chrome danger and success tokens come with it; nothing existing changed.
