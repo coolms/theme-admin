@@ -142,11 +142,13 @@ type TabIndex = 0 | 1 | 2;
                                 </div>
                             }
 
-                            <div class="form-check form-switch fdf-toggle-row">
-                                <input id="so-required" class="form-check-input" type="checkbox"
-                                       role="switch" formControlName="isRequired" />
-                                <label for="so-required" class="form-check-label">Required</label>
-                            </div>
+                            <label class="fdf-toggle-row" for="so-required">
+                                <span class="cms-toggle">
+                                    <input id="so-required" type="checkbox" role="switch" formControlName="isRequired" />
+                                    <span class="cms-toggle__slider"></span>
+                                </span>
+                                <span class="fdf-toggle-label">Required</span>
+                            </label>
 
                         </div>
                     }
@@ -208,23 +210,29 @@ type TabIndex = 0 | 1 | 2;
                                 <div class="cms-field-hint">Lower values appear first.</div>
                             </div>
 
-                            <div class="form-check form-switch fdf-toggle-row">
-                                <input id="so-filterable" class="form-check-input" type="checkbox"
-                                       role="switch" formControlName="isFilterable" />
-                                <label for="so-filterable" class="form-check-label">Filterable in API</label>
-                            </div>
+                            <label class="fdf-toggle-row" for="so-filterable">
+                                <span class="cms-toggle">
+                                    <input id="so-filterable" type="checkbox" role="switch" formControlName="isFilterable" />
+                                    <span class="cms-toggle__slider"></span>
+                                </span>
+                                <span class="fdf-toggle-label">Filterable in API</span>
+                            </label>
 
-                            <div class="form-check form-switch fdf-toggle-row">
-                                <input id="so-sortable" class="form-check-input" type="checkbox"
-                                       role="switch" formControlName="isSortable" />
-                                <label for="so-sortable" class="form-check-label">Sortable in API</label>
-                            </div>
+                            <label class="fdf-toggle-row" for="so-sortable">
+                                <span class="cms-toggle">
+                                    <input id="so-sortable" type="checkbox" role="switch" formControlName="isSortable" />
+                                    <span class="cms-toggle__slider"></span>
+                                </span>
+                                <span class="fdf-toggle-label">Sortable in API</span>
+                            </label>
 
-                            <div class="form-check form-switch fdf-toggle-row">
-                                <input id="so-searchable" class="form-check-input" type="checkbox"
-                                       role="switch" formControlName="isSearchable" />
-                                <label for="so-searchable" class="form-check-label">Searchable in API</label>
-                            </div>
+                            <label class="fdf-toggle-row" for="so-searchable">
+                                <span class="cms-toggle">
+                                    <input id="so-searchable" type="checkbox" role="switch" formControlName="isSearchable" />
+                                    <span class="cms-toggle__slider"></span>
+                                </span>
+                                <span class="fdf-toggle-label">Searchable in API</span>
+                            </label>
 
                             <div>
                                 <label class="cms-label" for="so-serial-name">Serialized name</label>
@@ -236,11 +244,13 @@ type TabIndex = 0 | 1 | 2;
                                 </div>
                             </div>
 
-                            <div class="form-check form-switch fdf-toggle-row">
-                                <input id="so-ignore" class="form-check-input" type="checkbox"
-                                       role="switch" formControlName="ignoreInApi" />
-                                <label for="so-ignore" class="form-check-label">Ignore in API responses</label>
-                            </div>
+                            <label class="fdf-toggle-row" for="so-ignore">
+                                <span class="cms-toggle">
+                                    <input id="so-ignore" type="checkbox" role="switch" formControlName="ignoreInApi" />
+                                    <span class="cms-toggle__slider"></span>
+                                </span>
+                                <span class="fdf-toggle-label">Ignore in API responses</span>
+                            </label>
 
                         </div>
                     }
@@ -509,27 +519,18 @@ type TabIndex = 0 | 1 | 2;
         }
 
         /* -- Toggle row alignment ----------------------------------------- */
-        /* Bootstrap .form-check.form-switch adds padding-left:2.5em — reset it
-           so the switch aligns flush with the input fields above it.           */
         .fdf-toggle-row {
             display: flex;
             align-items: center;
             gap: 10px;
             margin: 0;
             padding: 4px 0;
-            padding-left: 0 !important;
+            cursor: pointer;
         }
-        .fdf-toggle-row .form-check-input {
-            margin-left: 0;
-            float: none;
-            flex-shrink: 0;
-        }
-        .fdf-toggle-row .form-check-label {
+        .fdf-toggle-label {
             font-size: .8125rem;
             font-weight: 500;
             color: var(--cms-text-secondary);
-            margin: 0;
-            cursor: pointer;
         }
 
         .fdf-no-roles {

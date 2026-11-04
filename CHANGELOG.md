@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Changed
+- **The Override Field dialog's switches are the kit's** (`.cms-toggle`): they drew two dots when off and a tick when on, a collision between Bootstrap's `form-switch` and the kit's global checkbox rules. Pressing a switch's name toggles it.
 - **Email names a folder by its role.** A folder the mail server marks with a special use reads Inbox, Sent, Drafts, Archive, Spam, Trash, All mail or Starred, as in the web Workspace, where it read INBOX, [Gmail]/Sent Mail or Junk E-mail; any other folder keeps its path. In the folder list and the phone's folder bars.
 - **Email on a phone: the browser's Back closes a pane.** The folders and an opened message are in the address (`?pane=folders`, `?pane=message`), as entries in the history, so Back (or a phone's back gesture) returns to the list rather than leaving the page; the page's own Back steps back through the same history. 600px and up are unchanged.
 - **Email on a phone: the folders pane has its own Back** ("Back to <the current folder>"), and the note under Raw source says the raw source is missing ("No raw source stored for this message."), where it said the body was.
