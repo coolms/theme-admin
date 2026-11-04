@@ -80,6 +80,11 @@ type Tab = 'personal' | string;
             display: flex;
             min-height: 480px;
         }
+        /* A phone stacks the two: side by side, the tabs had the width the 200px panel left them, about 80px at 390. */
+        @media (max-width: 599.98px) {
+            .profile-layout { flex-direction: column; }
+            .profile-layout .profile-sidebar { width: auto; border-right: 0; border-bottom: 1px solid var(--cms-border); }
+        }
 
         /* -- Left sidebar ------------------------------------------------------- */
         .profile-sidebar {

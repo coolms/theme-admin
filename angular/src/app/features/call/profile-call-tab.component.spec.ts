@@ -202,6 +202,28 @@ describe('ProfileCallTabComponent -- the Calls pane on My Profile', () => {
         expect(again.sipEndpoint).toBe('PJSIP/2002');
     });
 
+ it('settings it could not read are not shown as defaults to save over them: the error state, then the form once read', () => {
+        page.activeTab.set('call');
+        fixture.detectChanges();
+        const host = fixture.nativeElement as HTMLElement;
+        expect(host.querySelector('cms-state[kind="loading"]')).withContext('reading: the loading state').not.toBeNull();
+        expect(host.querySelector('#call-endpoint')).withContext('no form while reading').toBeNull();
+
+        http.expectOne(SETTINGS_URL).flush({ detail: 'down' }, { status: 503, statusText: 'Unavailable' });
+        fixture.detectChanges();
+
+        expect(host.querySelector('cms-state[kind="error"]')).withContext('the error state').not.toBeNull();
+        expect(host.querySelector('#call-endpoint')).withContext('no form to save defaults from').toBeNull();
+        expect(host.querySelector('.tab-footer')).withContext('no Save').toBeNull();
+
+        (host.querySelector('[data-test="state-action"]') as HTMLButtonElement).click();
+        http.expectOne(SETTINGS_URL).flush({ call: STORED });
+        fixture.detectChanges();
+
+        expect((host.querySelector('#call-endpoint') as HTMLInputElement | null)).withContext('read again: the form').not.toBeNull();
+        expect(saveButton().textContent).toContain('Save changes');
+    });
+
  it('a rejected save leaves the live prefs alone and re-enables the button', () => {
         const pane = openCallsTab(STORED);
         pane.sipEndpoint = 'PJSIP/2002';

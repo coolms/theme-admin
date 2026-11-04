@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
 import { CmsLoaderComponent, ErrorHandlerService } from '@coolms/core-angular';
-import { ToastService } from '@coolms/ui-angular';
+import { StateComponent, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto } from './email.types';
@@ -40,7 +40,7 @@ export function mailPreferencesPatch(read: MailPreferences, draft: MailPreferenc
     selector: 'app-profile-mail-tab',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CmsLoaderComponent],
+    imports: [FormsModule, CmsLoaderComponent, StateComponent],
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; }
         .tab-body { padding: 20px; flex: 1; }
@@ -64,10 +64,11 @@ export function mailPreferencesPatch(read: MailPreferences, draft: MailPreferenc
     template: `
         <div class="tab-body">
             @if (loading()) {
-                <cms-loader label="Reading your mail settings" />
+                <cms-state kind="loading" title="Reading your mail settings" />
             } @else if (unreadable()) {
-                <p class="error" role="alert">Your mail settings could not be read, so they are not shown to change.</p>
-                <button type="button" class="cms-btn cms-btn-sm" (click)="load()">Read them again</button>
+                <cms-state kind="error" title="Your mail settings could not be read"
+                           description="They are not shown to change until they are read."
+                           [error]="failure()" [action]="readAgain" (elevated)="load()" />
             } @else {
                 @if (changedElsewhere()) {
                     <div class="notice" role="alert">
@@ -139,6 +140,9 @@ export class ProfileMailTabComponent implements OnInit {
 
     readonly loading = signal(true);
     readonly unreadable = signal(false);
+    /** Why the settings could not be read: a refusal for want of elevation offers Elevate. */
+    protected readonly failure = signal<unknown>(null);
+    protected readonly readAgain = { label: 'Read them again', run: () => this.load() };
     readonly saving = signal(false);
     readonly changedElsewhere = signal(false);
     /** What a save sent that did not stand, in words. */
@@ -177,7 +181,8 @@ export class ProfileMailTabComponent implements OnInit {
                 this.mailboxes.set(mailboxes);
                 this.loading.set(false);
             },
-            error: () => {
+            error: (e: unknown) => {
+                this.failure.set(e);
                 this.unreadable.set(true);
                 this.loading.set(false);
             },
