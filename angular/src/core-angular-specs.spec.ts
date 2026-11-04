@@ -13,6 +13,7 @@
  * add a spec to the package, add it here.
  */
 import '../../../core-angular/src/interceptors/section.interceptor.spec';
+import '../../../core-angular/src/loader/cms-loader.component.spec';
 import '../../../core-angular/src/auth/auth-refresh.coordinator.spec';
 import '../../../core-angular/src/auth/auth.interceptor.spec';
 import '../../../core-angular/src/auth/elevation-refusal.spec';
