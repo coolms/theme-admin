@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, Router, convertToParamMap, type ParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, of, Subject } from 'rxjs';
+import { BehaviorSubject, NEVER, of, Subject } from 'rxjs';
 import { NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -21,14 +22,25 @@ import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 /**
  * On a phone the mail page shows one pane at a time. Choosing a folder puts the folders away; Back closes the open
- * message, and a message still loading when Back is pressed does not open when its answer comes. The page is built
- * directly, not rendered.
+ * message, and a message still loading when Back is pressed does not open when its answer comes. The pane shown is
+ * in the address, so the browser's Back closes it too. The page is built directly, not rendered; the address is a
+ * query map the test moves, and the navigations the page asks for are recorded.
  */
 describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
     let details: Subject<EmailMessageDetailDto>;
+    let query: BehaviorSubject<ParamMap>;
+    let navigations: Array<{ pane: unknown; replaceUrl: boolean }>;
+    let backs: number;
 
-    function build(): EmailMailboxPageComponent {
+    /** The address as the browser would leave it: with this pane named, or none. */
+    const address = (pane: string | null) => query.next(convertToParamMap(pane === null ? {} : { pane }));
+
+    function build(phone = false): EmailMailboxPageComponent {
         details = new Subject<EmailMessageDetailDto>();
+        query = new BehaviorSubject<ParamMap>(convertToParamMap({}));
+        navigations = [];
+        backs = 0;
+        spyOn(window, 'matchMedia').and.returnValue({ matches: phone } as MediaQueryList);
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
@@ -47,8 +59,18 @@ describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
                     useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS), current: () => MAIL_PREFERENCE_DEFAULTS },
                 },
                 { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (): void => {} } },
-                { provide: Router, useValue: { events: NEVER } },
-                { provide: ActivatedRoute, useValue: {} },
+                {
+                    provide: Router,
+                    useValue: {
+                        events: NEVER,
+                        navigate: (_c: unknown[], extras: { queryParams: Record<string, unknown>; replaceUrl: boolean }) => {
+                            navigations.push({ pane: extras.queryParams['pane'], replaceUrl: extras.replaceUrl });
+                            return Promise.resolve(true);
+                        },
+                    },
+                },
+                { provide: ActivatedRoute, useValue: { queryParamMap: query } },
+                { provide: Location, useValue: { back: () => { backs += 1; } } },
                 { provide: Store, useValue: { selectSnapshot: () => null } },
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: DraftStoreService, useValue: {} },
@@ -100,5 +122,58 @@ describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
 
         expect(page.loadingDetail()).toBe(false);
         expect(page.selectedMessage()).toBeNull();
+    });
+
+    it('on a phone, the folders and a message are entries in the history; the list to message step from the folders replaces', () => {
+        const page = build(true);
+
+        page.showPane('folders');
+        address('folders');
+        expect(page.phoneFolders()).toBe(true);
+        page.openMessage(message);
+
+        expect(navigations).toEqual([{ pane: 'folders', replaceUrl: false }, { pane: 'message', replaceUrl: true }]);
+    });
+
+    it("the browser's Back, taking the pane out of the address, closes it", () => {
+        const page = build(true);
+        page.openMessage(message);
+        address('message');
+        details.next(detail);
+        expect(page.selectedMessage()).toEqual(detail);
+
+        address(null);
+
+        expect(page.selectedMessage()).toBeNull();
+    });
+
+    it("the page's own Back steps back through the history when the page added the entry", () => {
+        const page = build(true);
+        page.showPane('folders');
+        address('folders');
+
+        page.leavePane('folders');
+
+        expect(backs).toBe(1);
+        expect(navigations.length).toBe(1);
+    });
+
+    it('a message pane named on a load with nothing open is dropped from the address', () => {
+        build(true);
+
+        address('message');
+
+        expect(navigations).toEqual([{ pane: null, replaceUrl: true }]);
+    });
+
+    it('at 600px and up the address is never touched', () => {
+        const page = build(false);
+
+        page.showPane('folders');
+        page.openMessage(message);
+        page.leavePane('message');
+
+        expect(navigations).toEqual([]);
+        expect(backs).toBe(0);
     });
 });

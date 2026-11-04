@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
@@ -93,6 +94,10 @@ interface ComposeDraft {
     rich: boolean;
 }
 
+/** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
+const PANE_PARAM = 'pane';
+type PhonePane = 'folders' | 'message';
+
 /**
  * The Email mailbox client (`/admin/email`). A three-pane reader over
  * the read/send/reply/folders/seen APIs-):
@@ -154,7 +159,7 @@ interface ComposeDraft {
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
                         <!-- On a phone the folders stand in place of the list; Back returns to it unchanged. -->
-                        <button type="button" class="mbx__phone-bar" data-test="phone-folders-back" (click)="phoneFolders.set(false)">
+                        <button type="button" class="mbx__phone-bar" data-test="phone-folders-back" (click)="leavePane('folders')">
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back to {{ selectedFolder() || 'the list' }}</span>
                         </button>
@@ -219,7 +224,7 @@ interface ComposeDraft {
                     <section class="mbx__list">
                         <!-- On a phone the folders are one press away, above the list they choose. -->
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders"
-                                [attr.aria-expanded]="phoneFolders()" (click)="phoneFolders.set(true)">
+                                [attr.aria-expanded]="phoneFolders()" (click)="showPane('folders')">
                             <i class="bi bi-folder2" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">{{ selectedFolder() || 'Folders' }}</span>
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
@@ -346,7 +351,7 @@ interface ComposeDraft {
                     <!-- RIGHT: message detail -->
                     <section class="mbx__detail">
                         <!-- On a phone a message fills the screen; Back returns to the list. -->
-                        <button type="button" class="mbx__phone-bar" data-test="phone-back" (click)="closeMessage()">
+                        <button type="button" class="mbx__phone-bar" data-test="phone-back" (click)="leavePane('message')">
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back</span>
                         </button>
@@ -1194,6 +1199,62 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** On a phone, the folders stand in place of the list until one is chosen. */
     readonly phoneFolders = signal(false);
+
+    private readonly location = inject(Location);
+    /** The width at which the page shows one pane at a time; the pane shown is then in the address. */
+    private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 599.98px)') : null;
+    /** The pane the address names now, and whether this page added that entry to the history (so Back can return). */
+    private paneInAddress: PhonePane | null = null;
+    private addedPaneEntry = false;
+
+    /**
+     * The address leads: a pane leaving it (the browser's Back, or the page's own) is closed; `?pane=folders` opens
+     * the folders. A message pane named on a load with no message open (a reload) is dropped from the address.
+     */
+    private readonly followsPane = this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => {
+        const named = query.get(PANE_PARAM);
+        const was = this.paneInAddress;
+        this.paneInAddress = named === 'folders' || named === 'message' ? named : null;
+        if (this.paneInAddress === null) this.addedPaneEntry = false;
+        if (was === 'folders' && this.paneInAddress !== 'folders') this.phoneFolders.set(false);
+        if (was === 'message' && this.paneInAddress !== 'message') this.closeMessage();
+        if (this.paneInAddress === 'folders') this.phoneFolders.set(true);
+        if (this.paneInAddress === 'message' && was !== 'message' && this.selectedMessage() === null && !this.loadingDetail()) {
+            this.dropPane();
+        }
+    });
+
+    /** Shows a pane on a phone, as an entry of its own in the history; the list to message step from the folders replaces. */
+    showPane(pane: PhonePane): void {
+        if (pane === 'folders') this.phoneFolders.set(true);
+        if (this.phoneWidth?.matches !== true || this.paneInAddress === pane) return;
+        const replace = this.paneInAddress !== null;
+        void this.router.navigate([], {
+            relativeTo: this.route, queryParams: { [PANE_PARAM]: pane }, queryParamsHandling: 'merge', replaceUrl: replace,
+        });
+        if (!replace) this.addedPaneEntry = true;
+    }
+
+    /** The page's own Back: the history's when this page added the entry, so the browser's Back then agrees. */
+    leavePane(pane: PhonePane): void {
+        if (this.paneInAddress !== pane) {
+            if (pane === 'folders') this.phoneFolders.set(false); else this.closeMessage();
+            return;
+        }
+        if (this.addedPaneEntry) {
+            this.addedPaneEntry = false;
+            this.location.back();
+            return;
+        }
+        this.dropPane();
+    }
+
+    private dropPane(): void {
+        void this.router.navigate([], {
+            relativeTo: this.route, queryParams: { [PANE_PARAM]: null }, queryParamsHandling: 'merge', replaceUrl: true,
+        });
+    }
     readonly hasMore = signal<boolean>(false);
 
     /**
@@ -1667,7 +1728,8 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     selectFolder(folder: string): void {
-        this.phoneFolders.set(false);
+        // Choosing a folder ends the folders pane as its Back would, so the history holds no step back into it.
+        this.leavePane('folders');
         this.selectedFolder.set(folder);
         this.selectedMessage.set(null);
         this.clearSelection();
@@ -1688,11 +1750,13 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openMessage(m: EmailMessageDto): void {
+        this.showPane('message');
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
     /** Open a search hit -- same detail path as a folder message. */
     openSearchHit(hit: EmailSearchHitDto): void {
+        this.showPane('message');
         this.openById(hit.id, hit.seen ?? true, hit.folder ?? this.selectedFolder());
     }
 
