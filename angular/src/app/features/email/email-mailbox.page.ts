@@ -153,6 +153,11 @@ interface ComposeDraft {
                      [class.mbx__body--folders]="phoneFolders()">
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
+                        <!-- On a phone the folders stand in place of the list; Back returns to it unchanged. -->
+                        <button type="button" class="mbx__phone-bar" data-test="phone-folders-back" (click)="phoneFolders.set(false)">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                            <span class="mbx__phone-bar-label">Back to {{ selectedFolder() || 'the list' }}</span>
+                        </button>
                         <span class="mbx__rail-label">Mailbox</span>
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
                              with Retry reading it again. The message pane is not touched. -->
@@ -442,7 +447,7 @@ interface ComposeDraft {
                                         <pre>{{ msg.rawBody }}</pre>
                                     </details>
                                 } @else {
-                                    <p class="mbx__note">No body stored for this message.</p>
+                                    <p class="mbx__note">No raw source stored for this message.</p>
                                 }
                             </div>
                         } @else {
@@ -803,6 +808,7 @@ interface ComposeDraft {
                 font: inherit; text-align: left; cursor: pointer;
             }
             .mbx__detail .mbx__phone-bar { margin: -8px -12px 8px; width: calc(100% + 24px); }
+            .mbx__rail .mbx__phone-bar { margin: -12px -12px 4px; width: calc(100% + 24px); }
             .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .mbx__detail .mbx__thread-item { grid-template-columns: minmax(0, 1fr) auto; }
             .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
