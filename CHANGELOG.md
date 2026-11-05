@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Changed
+- Corner radii that spelled out a token's value name the token. Nothing changes on screen.
 - **Design tokens at v0.7.0**, from v0.3.0. Muted text and the danger colour are darker in light and danger is lighter in dark, for contrast. Every pair measured is at least 4.5:1. The fallbacks in the stylesheets follow the new values, and the top bar's menu items read the touch target token.
 - **On a phone the sidebar is a rail** that opens over the page, and a phone does not change the person's saved choice for wider screens.
 - **What people may set, for the whole installation.** The settings page for it draws each setting's default and lock from what the server declares, instead of showing stored values as text.

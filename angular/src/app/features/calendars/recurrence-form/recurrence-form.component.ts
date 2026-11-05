@@ -426,7 +426,7 @@ import {
             display: inline-flex; align-items: center;
             gap: 4px;
             background: var(--cms-surface-muted);
-            border-radius: 12px;
+            border-radius: var(--cms-radius-card, 12px);
             padding: 2px 4px 2px 10px;
             font-size: .8rem;
         }

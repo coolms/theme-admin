@@ -946,8 +946,8 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__avatar-spacer { flex: 0 0 auto; width: 24px; }
         /* Sender name above an incoming bubble in a group/channel (first of a run). */
         .msg__sender { display: block; margin-bottom: .12rem; font-size: .7rem; font-weight: 600; line-height: 1.2; color: var(--cms-text-secondary, #525a66); }
-        .msg__bubble { max-width: 100%; min-width: 0; background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; border-bottom-left-radius: 3px; padding: .45rem .7rem; font-size: .9rem; line-height: 1.4; word-wrap: break-word; }
-        .msg__bubble--me { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-color: transparent; border-bottom-left-radius: 12px; border-bottom-right-radius: 3px; }
+        .msg__bubble { max-width: 100%; min-width: 0; background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-card, 12px); border-bottom-left-radius: 3px; padding: .45rem .7rem; font-size: .9rem; line-height: 1.4; word-wrap: break-word; }
+        .msg__bubble--me { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-color: transparent; border-bottom-left-radius: var(--cms-radius-card, 12px); border-bottom-right-radius: 3px; }
         /* A message that @-mentions YOU. The class binding was live and
            mentionsMe() worked, but NOTHING matched the class — so the one message
            in a busy thread that needs to stand out looked exactly like every other
@@ -996,7 +996,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
          * Send) beneath it, like a modern chat composer. .msg__composer stays the
          * relatively-positioned padding wrapper so the emoji popover anchors to it. */
         .msg__composer { position: relative; padding: .7rem 1.1rem; border-top: 1px solid var(--cms-border, #e5e7eb); flex-shrink: 0; background: var(--cms-surface); }
-        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 12px; background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-card, 12px); background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
         /* The rich editor now spans the full shell width (was flex:0 0 auto -> cramped). */
         .msg__editor { display: block; width: 100%; }
         .msg__composer .cms-editor { min-height: 0; border: 0; background: transparent; }
@@ -1049,7 +1049,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__chan-hash { flex: 0 0 auto; width: 1.4rem; text-align: center; font-weight: 700; color: var(--cms-text-muted, #4b5563); }
         /* Pending attachment chips (composer, above the input row). */
         .msg__pending { display: flex; flex-wrap: wrap; gap: .4rem; padding: .5rem 1.1rem 0; flex-shrink: 0; background: var(--cms-surface); }
-        .msg__chip { display: inline-flex; align-items: center; gap: .35rem; max-width: 220px; padding: .25rem .5rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 16px; background: var(--cms-bg, #f8f9fa); font-size: .8rem; }
+        .msg__chip { display: inline-flex; align-items: center; gap: .35rem; max-width: 220px; padding: .25rem .5rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-bubble, 16px); background: var(--cms-bg, #f8f9fa); font-size: .8rem; }
         .msg__chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .msg__chip-x { border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
         .msg__chip-x:hover { color: var(--cms-danger-text); }
