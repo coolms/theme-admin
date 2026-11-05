@@ -3,7 +3,7 @@ import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { AppConfigState, SidebarStateService } from '@coolms/core-angular';
 import { type ExplorerViewMode, type VfsViewMode } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
-import { catchError, map, type Observable, of, tap, timeout } from 'rxjs';
+import { catchError, map, type Observable, of, tap, timeout, TimeoutError } from 'rxjs';
 
 /** Rows per request when the section cannot be read; what the lists asked for before it was declared. */
 const FALLBACK_PAGE_SIZE = 50;
@@ -133,8 +133,9 @@ export class ConsoleSettingsService {
                 this.saving.set(false);
             },
             error: (err: unknown) => {
-                if (err instanceof HttpErrorResponse && 412 === err.status) {
-                    // Saved on another device since this one read it: that value stands.
+                if (err instanceof TimeoutError || (err instanceof HttpErrorResponse && 412 === err.status)) {
+                    // Saved on another device since this one read it, or this save may have gone through unanswered:
+                    // what the server holds stands.
                     this.load().subscribe(() => this.saving.set(false));
                     return;
                 }

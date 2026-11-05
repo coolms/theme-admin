@@ -69,7 +69,7 @@ describe('ConsoleSettingsService', () => {
         expect(service.pageSize()).toBe(50);
     }));
 
-    it('a save that does not answer does not stop the next one', fakeAsync(() => {
+    it('a save that does not answer may have gone through: the next one names the version the server has now', fakeAsync(() => {
         answer([key('sidebarCollapsed', false, false)]);
 
         collapsed.set(true);
@@ -77,12 +77,35 @@ describe('ConsoleSettingsService', () => {
         const first = http.expectOne(SAVE);
         tick(5000);
         expect(first.cancelled).toBe(true);
+        http.expectOne(READ).flush([
+            { section: 'console', version: 'v2', keys: [key('sidebarCollapsed', true, true)] },
+        ]);
         TestBed.flushEffects();
+        expect(collapsed()).toBe(true);
+        http.expectNone(SAVE);
 
         collapsed.set(false);
         TestBed.flushEffects();
-        http.expectOne(SAVE).flush({}, { headers: { ETag: '"v2"' } });
+        const next = http.expectOne(SAVE);
+        expect(next.request.headers.get('If-Match')).toBe('"v2"');
+        next.flush({}, { headers: { ETag: '"v3"' } });
         TestBed.flushEffects();
+    }));
+
+    it('a save that does not answer and was not applied: the value the server holds stands', fakeAsync(() => {
+        answer([key('sidebarCollapsed', false, false)]);
+
+        collapsed.set(true);
+        TestBed.flushEffects();
+        http.expectOne(SAVE);
+        tick(5000);
+        http.expectOne(READ).flush([
+            { section: 'console', version: 'v1', keys: [key('sidebarCollapsed', false, false)] },
+        ]);
+        TestBed.flushEffects();
+
+        expect(collapsed()).toBe(false);
+        http.expectNone(SAVE);
     }));
 
     it('a read that fails keeps nothing of the last read: it may have been another person', () => {
