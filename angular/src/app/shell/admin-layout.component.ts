@@ -50,10 +50,13 @@ import { PageReload } from './page-reload';
         SidebarNavItemComponent, ElevationRequiredComponent, InstallationBannerComponent,
     ],
     styles: [`
+        /* The shell takes the height the document leaves it; only its panes scroll (styles.scss, body). */
+        :host { display: contents; }
         .coolms-admin-shell {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow: hidden;
         }
         .coolms-topbar {

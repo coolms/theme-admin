@@ -317,6 +317,22 @@
     // invisible on navy; these are the same geometry at usable opacity.
 }
 
+// --- The app shell -------------------------------------------------------------
+// A page in the shell never scrolls as a document: the body is the screen's height, and whatever else lands in it
+// takes its share from the shell instead of adding to the page.
+body:has(.coolms-admin-shell) {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+
+    > coolms-admin-root {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+}
+
 // --- Typography --------------------------------------------------------------
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
