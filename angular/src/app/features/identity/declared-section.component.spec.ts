@@ -145,6 +145,7 @@ describe('DeclaredSectionComponent', () => {
         fixture.detectChanges();
 
         expect(button(el, 'Save changes').disabled).toBe(true);
+        expect(input.value).toBe('25');
     });
 
     it('going back to the default keeps what is still being edited in the section', () => {

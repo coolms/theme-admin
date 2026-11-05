@@ -196,8 +196,12 @@ export class DeclaredSectionComponent {
 
     protected setNumber(k: DeclaredKey, event: Event): void {
         // An emptied field is no edit: as JSON its NaN would be a null, which removes the person's own value.
-        const value = (event.target as HTMLInputElement).valueAsNumber;
-        this.edit(k, Number.isNaN(value) ? k.value : value);
+        const input = event.target as HTMLInputElement;
+        if (Number.isNaN(input.valueAsNumber)) {
+            input.value = String(this.current(k) ?? '');
+            return;
+        }
+        this.edit(k, input.valueAsNumber);
     }
 
     protected setText(k: DeclaredKey, event: Event): void {

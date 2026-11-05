@@ -5,7 +5,6 @@ import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { SidebarStateService } from '@coolms/core-angular';
 import { UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
-import { of } from 'rxjs';
 
 import { ConsoleSettingsService } from './console-settings.service';
 
@@ -38,7 +37,7 @@ describe('ConsoleSettingsService', () => {
                 { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
                 {
                     provide: UserCalendarPreferencesService,
-                    useValue: { ensureLoaded: () => of({}), update: (p: unknown) => zones.push(p) },
+                    useValue: { followDeviceZone: (z: string | null) => zones.push(z) },
                 },
                 {
                     provide: SidebarStateService,
@@ -145,14 +144,14 @@ describe('ConsoleSettingsService', () => {
         expect(told.request.method).toBe('PUT');
         expect(told.request.body).toEqual({ timezone: here });
         told.flush(null, { status: 204, statusText: 'No Content' });
-        expect(zones).toEqual([{ tz: here }]);
+        expect(zones).toEqual([here]);
     });
 
     it('a person who chose a zone: the device is not reported, and nothing overrides their zone', () => {
         region('Europe/Berlin');
 
         http.expectNone('/api/v1/auth/me/device-timezone');
-        expect(zones).toEqual([]);
+        expect(zones).toEqual([null]);
     });
 
     it('answers the value in force', () => {

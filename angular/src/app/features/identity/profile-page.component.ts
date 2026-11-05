@@ -442,9 +442,11 @@ export class ProfilePageComponent implements OnInit {
     ]);
     /** The declared sections, read apart: a server without them still draws its older tabs. */
     readonly declaredSections = signal<ReadonlyArray<DeclaredSection>>([]);
+    private readonly declaredAnswered = signal(false);
     /** The sections drawn from their own forms: every one, less those the declared tabs now hold. */
     readonly moduleSections = computed(() => {
-        const moved = this.sectionNamed('region') && this.sectionNamed('appearance');
+        // Until the first answer the old forms are held back, or they would flash and go.
+        const moved = !this.declaredAnswered() || (this.sectionNamed('region') && this.sectionNamed('appearance'));
         return this.sections().filter(sec => !(moved && MOVED_SECTIONS.has(sec.section))
             && (sec.formId !== CALENDAR_FORM_ID || this.calendarOffered()));
     });
@@ -500,8 +502,14 @@ export class ProfilePageComponent implements OnInit {
 
     readDeclared(): void {
         this.declared.read().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-            next: sections => this.declaredSections.set(sections),
-            error: (err: unknown) => this.declaredReadFailed(err),
+            next: sections => {
+                this.declaredSections.set(sections);
+                this.declaredAnswered.set(true);
+            },
+            error: (err: unknown) => {
+                this.declaredAnswered.set(true);
+                this.declaredReadFailed(err);
+            },
         });
     }
 
@@ -539,7 +547,7 @@ export class ProfilePageComponent implements OnInit {
                 this.settings.set(settings);
                 const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
                 if (cal) this.calPrefs.update(cal);
-                // The old section has no zone for a person on automatic: this puts the device's over what it answered.
+                // Whether the person now follows their device is in the declared read.
                 this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
             });
         }

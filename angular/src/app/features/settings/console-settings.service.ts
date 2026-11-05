@@ -124,14 +124,14 @@ export class ConsoleSettingsService {
 
     private followDeviceZone(region: DeclaredSection | undefined): void {
         if (AUTOMATIC_ZONE !== region?.keys.find(k => 'timezone' === k.key)?.value) {
+            this.calendarPrefs.followDeviceZone(null);
             return;
         }
         const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.calendarPrefs.followDeviceZone(zone);
         this.http.put<void>(`${this.base.replace(/\/settings$/, '')}/device-timezone`, { timezone: zone }, {
             headers: new HttpHeaders({ Accept: 'application/json' }),
         }).pipe(timeout(NO_ANSWER_MS), catchError(() => of(undefined))).subscribe();
-        // After the lazy read of the old section, or that read would put the installation's zone back.
-        this.calendarPrefs.ensureLoaded().subscribe(() => this.calendarPrefs.update({ tz: zone }));
     }
 
     private saveSidebar(collapsed: boolean): void {

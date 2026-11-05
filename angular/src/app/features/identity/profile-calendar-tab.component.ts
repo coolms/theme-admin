@@ -69,8 +69,6 @@ import { navOffers } from '../../shell/nav-offers';
 
         select.form-select,
         input.form-control { max-width: 480px; }
-
-
     `],
     template: `
         <!-- Default calendar — Task : lazy-select with debounced search. Only where the account's navigation

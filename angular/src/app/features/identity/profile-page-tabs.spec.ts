@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
-import { type Observable, of, throwError } from 'rxjs';
+import { type Observable, of, Subject, throwError } from 'rxjs';
 import { ComponentRegistry, NaviGraphService, ThemeService } from '@coolms/core-angular';
 import { PageTitleService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 
@@ -95,6 +95,16 @@ describe('ProfilePageComponent -- its tabs', () => {
 
         expect(ids(page)).toEqual(['personal', 'calendar', 'preferences', 'ui', 'mail', 'security']);
         expect(page.loadFailure()).toBeNull();
+    });
+
+    it('while the first read has not answered, the older forms are held back', () => {
+        const pending = new Subject<ReadonlyArray<DeclaredSection>>();
+        const page = build(() => pending);
+
+        expect(ids(page)).not.toContain('preferences');
+
+        pending.next([declared('region')]);
+        expect(ids(page)).toContain('preferences');
     });
 
     it('a first read that fails shows the banner, and does not bring the older forms back as if chosen', () => {
