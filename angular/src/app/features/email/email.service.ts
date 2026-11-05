@@ -35,6 +35,14 @@ import {
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
 
 /** The actions on a mailbox's settings the page asks about. */
+/** The server's answer to a sync asked for. */
+export interface MailboxSyncStarted {
+    readonly id: string;
+    readonly syncId: string;
+    readonly startedAt: string;
+    readonly repeated: boolean;
+}
+
 export type MailboxAction = 'email.mailbox.update' | 'email.mailbox.authorize';
 
 /** A section save of a mailbox read with no version is not sent: it could only go over what is stored now, unseen. */
@@ -170,6 +178,15 @@ export class EmailService {
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}/retry`,
             {},
         );
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/sync -- ask the server to sync the mailbox's inbox now. It answers at once; how it
+     * ended arrives as a frame on the person's mailbox channel. A press inside 30 seconds is answered with the sync
+     * already asked for, `repeated`.
+     */
+    syncMailbox(id: string): Observable<MailboxSyncStarted> {
+        return this.http.post<MailboxSyncStarted>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}/sync`, {});
     }
 
     /**

@@ -16,6 +16,16 @@ export interface EmailLiveEvent {
     readonly newCount: number;
 }
 
+/** How a sync the person asked for ended. `skipped`: another import held the mailbox, or it was switched off; not an error. */
+export interface EmailSyncFinishedEvent {
+    readonly type: 'mail.sync.finished';
+    readonly mailboxId: string;
+    readonly syncId: string;
+    readonly outcome: 'ok' | 'failed' | 'skipped';
+    readonly newCount: number;
+    readonly finishedAt: string;
+}
+
 /**
  * FE -- typed wrapper over the realtime transport for the per-user
  * channel `email.user.{userIdRfc4122}`. Mirror of `InboxLiveEventsService`: the
@@ -36,10 +46,10 @@ export class EmailLiveEventsService {
      * Subscribe to the current user's per-user mailbox channel. `userId` is the
      * user's UUID (rfc4122), matching the backend `MailboxChannelNameBuilder`.
      */
-    watch(userId: string): Observable<EmailLiveEvent> {
+    watch(userId: string): Observable<EmailLiveEvent | EmailSyncFinishedEvent> {
         const channel = `email.user.${userId}`;
 
-        return new Observable<EmailLiveEvent>(subscriber => {
+        return new Observable<EmailLiveEvent | EmailSyncFinishedEvent>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
 
@@ -84,12 +94,17 @@ export class EmailLiveEventsService {
         }
     }
 
-    private tryParse(raw: unknown): EmailLiveEvent | null {
+    private tryParse(raw: unknown): EmailLiveEvent | EmailSyncFinishedEvent | null {
         if (typeof raw !== 'object' || raw === null) {
             return null;
         }
         const obj = raw as Record<string, unknown>;
         const type = obj['type'];
+        if (type === 'mail.sync.finished') {
+            return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'
+                ? raw as EmailSyncFinishedEvent
+                : null;
+        }
         if (typeof type !== 'string' || type !== 'mail.received') {
             return null;
         }
