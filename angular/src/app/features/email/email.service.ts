@@ -11,7 +11,7 @@ import {
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
     EmailDeleteResultDto,
-    EmailFolderDto,
+    EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailImportResultDto,
     EmailMessageDetailDto,
@@ -243,6 +243,16 @@ export class EmailService {
     }
 
     /** GET /email/mailboxes/{id}/folders -- per-folder total + unread counts. */
+    /** GET /email/mailboxes/{id}/folders/tree -- the mailbox's folders as the server nests and orders them. */
+    folderTree(mailboxId: string): Observable<EmailFolderTreeNodeDto[]> {
+        return this.http
+            .get<{ folders?: EmailFolderTreeNodeDto[] }>(
+                `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/tree`,
+                { headers: this.jsonHeaders },
+            )
+            .pipe(map(answer => answer.folders ?? []));
+    }
+
     listFolders(mailboxId: string): Observable<EmailFolderDto[]> {
         return this.http
             .get<unknown>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`, {
