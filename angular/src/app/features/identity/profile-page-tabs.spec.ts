@@ -1,7 +1,9 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { type Observable, of, throwError } from 'rxjs';
-import { ComponentRegistry, ThemeService } from '@coolms/core-angular';
+import { ComponentRegistry, NaviGraphService, ThemeService } from '@coolms/core-angular';
 import { PageTitleService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 
 import { ConsoleSettingsService } from '../settings/console-settings.service';
@@ -15,7 +17,7 @@ function declared(section: string, keys: ReadonlyArray<Record<string, unknown>> 
 }
 
 const OLD: ReadonlyArray<ProfileSection> = ['calendar', 'preferences', 'ui', 'mail'].map(section => ({
-    section, label: section, icon: 'x', formId: `f:${section}`,
+    section, label: section, icon: 'x', formId: 'calendar' === section ? 'calendar:user_preferences' : `f:${section}`,
 }));
 
 describe('ProfilePageComponent -- its tabs', () => {
@@ -24,6 +26,11 @@ describe('ProfilePageComponent -- its tabs', () => {
     let consoleLoads: number;
     let settingsReads: number;
     let calendars: unknown[];
+    let offered = true;
+
+    beforeEach(() => {
+        offered = true;
+    });
 
     function build(read: () => Observable<ReadonlyArray<DeclaredSection>>): ProfilePageComponent {
         themes = [];
@@ -64,6 +71,10 @@ describe('ProfilePageComponent -- its tabs', () => {
                     },
                 },
                 { provide: ComponentRegistry, useValue: { has: () => false } },
+                {
+                    provide: NaviGraphService,
+                    useValue: { adminNav: signal(offered ? [{ id: 'calendars', path: '/calendars', title: 'Calendars', parentId: null, sortOrder: 0, isActive: true, isVisible: true, meta: { resource: '/api/v1/calendar' }, children: [] }] : []) },
+                },
             ],
         });
         const page = TestBed.runInInjectionContext(() => new ProfilePageComponent());
@@ -80,9 +91,43 @@ describe('ProfilePageComponent -- its tabs', () => {
     });
 
     it('a server without the declared read keeps its older tabs', () => {
-        const page = build(() => throwError(() => new Error('404')));
+        const page = build(() => throwError(() => new HttpErrorResponse({ status: 404 })));
 
         expect(ids(page)).toEqual(['personal', 'calendar', 'preferences', 'ui', 'mail', 'security']);
+        expect(page.loadFailure()).toBeNull();
+    });
+
+    it('a first read that fails shows the banner, and does not bring the older forms back as if chosen', () => {
+        const failure = new HttpErrorResponse({ status: 500 });
+        const page = build(() => throwError(() => failure));
+
+        expect(page.loadFailure()).toBe(failure);
+    });
+
+    it('a read again that fails keeps the tab and what it held', () => {
+        let answers = 0;
+        const page = build(() => (0 === answers++
+            ? of([declared('region'), declared('appearance')])
+            : throwError(() => new HttpErrorResponse({ status: 500 }))));
+        page.activeTab.set('region');
+
+        page.readDeclared();
+
+        expect(page.declaredTab()?.map(s => s.section)).toEqual(['region']);
+        expect(page.loadFailure()).toBeNull();
+    });
+
+    it('the old preferences go only when both sections that took their keys are there', () => {
+        const page = build(() => of([declared('region')]));
+
+        expect(ids(page)).toContain('preferences');
+    });
+
+    it('an account not offered Calendar has no Calendar tab: it would hold only a Save button', () => {
+        offered = false;
+        const page = build(() => of([declared('region'), declared('appearance')]));
+
+        expect(ids(page)).not.toContain('calendar');
     });
 
     it('Appearance holds the shared section and the console, and leaves out a console with no keys', () => {

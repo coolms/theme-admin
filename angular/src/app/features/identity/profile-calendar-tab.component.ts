@@ -70,25 +70,12 @@ import { navOffers } from '../../shell/nav-offers';
         select.form-select,
         input.form-control { max-width: 480px; }
 
-        .radio-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .radio-row label {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-size: .85rem;
-        }
-        .radio-row input[type="radio"] { margin: 0; }
 
     `],
     template: `
         <!-- Default calendar — Task : lazy-select with debounced search. Only where the account's navigation
              offers Calendar: the list is the calendar group's (Dmitry, 2026-10-06), and outside it the request is
-             refused. The preferences above are every account's and stay. -->
+             refused. -->
         @if (offered()) {
         <div class="group-row">
             <label class="group-label" for="cal-default">Default calendar</label>
@@ -147,7 +134,7 @@ export class ProfileCalendarTabComponent implements OnInit {
     /** Why the calendar list could not be read; null once it was. The banner shows it in place of the picker. */
     readonly calendarsFailure = signal<unknown>(null);
 
-    // ngModel-bound fields. ngOnInit seeds them from `initial`.
+    // ngOnInit seeds it from `initial`.
     defaultCalendarSlug: string | null = null;
 
     /**

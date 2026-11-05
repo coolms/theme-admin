@@ -136,6 +136,53 @@ describe('DeclaredSectionComponent', () => {
         expect(offered).toContain('Europe/Berlin');
     });
 
+    it('an emptied number is no edit: it does not become a null that removes their own value', () => {
+        const el = draw([key({ key: 'pageSize', type: 'integer', choices: null, min: 10, max: 200, value: 25, own: 25 })]);
+        const input = el.querySelector('input[type=number]') as HTMLInputElement;
+
+        input.value = '';
+        input.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+
+        expect(button(el, 'Save changes').disabled).toBe(true);
+    });
+
+    it('going back to the default keeps what is still being edited in the section', () => {
+        const el = draw([key({ value: 'sunday', own: 'sunday' }), key({ key: 'timeFormat', choices: ['12h', '24h'], value: '24h' })]);
+        const time = el.querySelectorAll('select')[1] as HTMLSelectElement;
+        time.value = '12h';
+        time.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+
+        button(el, 'Use the default').click();
+        http.expectOne(SAVE).flush({});
+        draw([key({}), key({ key: 'timeFormat', choices: ['12h', '24h'], value: '24h' })]);
+
+        expect(button(el, 'Save changes').disabled).toBe(false);
+        button(el, 'Save changes').click();
+        const next = http.expectOne(SAVE);
+        expect(next.request.body).toEqual({ timeFormat: '12h' });
+        next.flush({});
+    });
+
+    it('text is typed, and a structure has no field here', () => {
+        const el = draw([
+            key({ key: 'note', type: 'string', choices: null, value: 'x' }),
+            key({ key: 'grid', type: 'structure', choices: null, value: {} }),
+        ]);
+
+        expect(el.querySelector('input[type=text]')).not.toBeNull();
+        expect(el.querySelectorAll('.field').length).toBe(1);
+        expect(el.querySelector('select')).toBeNull();
+    });
+
+    it('a time zone is offered once', () => {
+        const el = draw([key({ key: 'timezone', type: 'timezone', choices: ['automatic'], value: 'UTC' })]);
+
+        const offered = [...el.querySelectorAll('option')].map(o => o.value);
+        expect(offered.filter(z => 'UTC' === z).length).toBe(1);
+    });
+
     it('a plain word reads as one, and a format is shown as it is', () => {
         const el = draw([key({ key: 'dateFormat', choices: ['yyyy-MM-dd'], value: 'yyyy-MM-dd' }), key({})]);
 

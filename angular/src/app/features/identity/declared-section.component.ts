@@ -4,12 +4,10 @@ import {
     Component,
     computed,
     DestroyRef,
-    effect,
     inject,
     input,
     output,
     signal,
-    untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
@@ -17,12 +15,18 @@ import { Store } from '@ngxs/store';
 
 import { type DeclaredKey, type DeclaredSection, DeclaredSettingsService } from './declared-settings.service';
 
-const AUTOMATIC = 'automatic';
-
 interface Option {
     readonly value: string;
     readonly label: string;
 }
+
+const AUTOMATIC = 'automatic';
+
+/** Automatic, UTC, and the zones this browser knows, once each. */
+const ZONES: ReadonlyArray<Option> = [
+    { value: AUTOMATIC, label: 'Automatic, from this device' },
+    ...[...new Set(['UTC', ...Intl.supportedValuesOf('timeZone')])].map(zone => ({ value: zone, label: zone })),
+];
 
 /** A choice that is a plain word reads as one; a format such as `yyyy-MM-dd` is shown as it is. */
 function words(value: string): string {
@@ -58,7 +62,7 @@ function words(value: string): string {
         @if (showTitle()) {
             <h3 class="section-title">{{ section().label }}</h3>
         }
-        @for (k of section().keys; track k.key) {
+        @for (k of drawn(); track k.key) {
             <div class="field">
                 @switch (k.type) {
                     @case ('boolean') {
@@ -90,6 +94,15 @@ function words(value: string): string {
                                type="color"
                                [id]="id(k)"
                                [value]="current(k) ?? colourInForce()"
+                               [disabled]="fixed(k)"
+                               (change)="setText(k, $event)" />
+                    }
+                    @case ('string') {
+                        <label class="field-label" [attr.for]="id(k)">{{ k.label }}</label>
+                        <input class="cms-input"
+                               type="text"
+                               [id]="id(k)"
+                               [value]="current(k) ?? ''"
                                [disabled]="fixed(k)"
                                (change)="setText(k, $event)" />
                     }
@@ -143,14 +156,16 @@ export class DeclaredSectionComponent {
     private readonly edits = signal<Readonly<Record<string, unknown>>>({});
     protected readonly saving = signal(false);
     protected readonly error = signal<string | null>(null);
-    protected readonly changed = computed(() => Object.keys(this.edits()).length > 0);
-
-    constructor() {
-        effect(() => {
-            this.section();
-            untracked(() => this.edits.set({}));
-        });
-    }
+    /** What differs from the section as last read: an edit the server now holds is no longer one. */
+    private readonly unsaved = computed<Readonly<Record<string, unknown>>>(() => {
+        const edits = this.edits();
+        return Object.fromEntries(this.section().keys
+            .filter(k => k.key in edits && edits[k.key] !== k.value)
+            .map(k => [k.key, edits[k.key]]));
+    });
+    protected readonly changed = computed(() => Object.keys(this.unsaved()).length > 0);
+    /** A structure has no form here: it is set by the client that declared it. */
+    protected readonly drawn = computed(() => this.section().keys.filter(k => 'structure' !== k.type));
 
     /** What a colour with no value of its own is drawn in: the page's, which a person sees as the default. */
     protected colourInForce(): string {
@@ -180,7 +195,9 @@ export class DeclaredSectionComponent {
     }
 
     protected setNumber(k: DeclaredKey, event: Event): void {
-        this.edit(k, (event.target as HTMLInputElement).valueAsNumber);
+        // An emptied field is no edit: as JSON its NaN would be a null, which removes the person's own value.
+        const value = (event.target as HTMLInputElement).valueAsNumber;
+        this.edit(k, Number.isNaN(value) ? k.value : value);
     }
 
     protected setText(k: DeclaredKey, event: Event): void {
@@ -192,7 +209,7 @@ export class DeclaredSectionComponent {
     }
 
     protected save(): void {
-        this.send(this.edits());
+        this.send(this.unsaved());
     }
 
     private optionsOf(k: DeclaredKey): ReadonlyArray<Option> {
@@ -201,11 +218,7 @@ export class DeclaredSectionComponent {
             return locales.map(l => ({ value: l.code, label: l.label }));
         }
         if ('timezone' === k.type) {
-            return [
-                { value: AUTOMATIC, label: 'Automatic, from this device' },
-                { value: 'UTC', label: 'UTC' },
-                ...Intl.supportedValuesOf('timeZone').map(zone => ({ value: zone, label: zone })),
-            ];
+            return ZONES;
         }
         return (k.choices ?? []).map(choice => ({ value: choice, label: words(choice) }));
     }
@@ -231,12 +244,16 @@ export class DeclaredSectionComponent {
             .subscribe({
                 next: () => {
                     this.saving.set(false);
+                    this.edits.update(edits => Object.fromEntries(
+                        Object.entries(edits).filter(([key]) => !(key in changes)),
+                    ));
                     this.saved.emit(section.section);
                 },
                 error: (err: unknown) => {
                     this.saving.set(false);
                     if (err instanceof HttpErrorResponse && 412 === err.status) {
                         this.error.set('These settings were changed somewhere else. The latest values are shown.');
+                        this.edits.set({});
                         this.stale.emit();
                         return;
                     }

@@ -25,8 +25,10 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
-import { CmsLoaderComponent, ComponentRegistry, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
+import { CmsLoaderComponent, ComponentRegistry, NaviGraphService, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
+import { navOffers } from '../../shell/nav-offers';
 import { ConsoleSettingsService } from '../settings/console-settings.service';
 import { DeclaredSectionComponent } from './declared-section.component';
 import { type DeclaredSection, DeclaredSettingsService } from './declared-settings.service';
@@ -441,9 +443,13 @@ export class ProfilePageComponent implements OnInit {
     /** The declared sections, read apart: a server without them still draws its older tabs. */
     readonly declaredSections = signal<ReadonlyArray<DeclaredSection>>([]);
     /** The sections drawn from their own forms: every one, less those the declared tabs now hold. */
-    readonly moduleSections = computed(() => this.sectionNamed('region')
-        ? this.sections().filter(sec => !MOVED_SECTIONS.has(sec.section))
-        : this.sections());
+    readonly moduleSections = computed(() => {
+        const moved = this.sectionNamed('region') && this.sectionNamed('appearance');
+        return this.sections().filter(sec => !(moved && MOVED_SECTIONS.has(sec.section))
+            && (sec.formId !== CALENDAR_FORM_ID || this.calendarOffered()));
+    });
+    /** The Calendar tab holds the default calendar, which only an account offered Calendar can choose. */
+    private readonly calendarOffered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/calendar');
     /** What the open tab draws from the declared sections; null when it draws none. */
     readonly declaredTab = computed<ReadonlyArray<DeclaredSection> | null>(() => {
         const tab = this.activeTab();
@@ -486,7 +492,6 @@ export class ProfilePageComponent implements OnInit {
     ngOnInit(): void {
         this.titleSvc.set('My Profile');
         this.load();
-        this.readDeclared();
     }
 
     private sectionNamed(name: string): boolean {
@@ -496,8 +501,23 @@ export class ProfilePageComponent implements OnInit {
     readDeclared(): void {
         this.declared.read().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: sections => this.declaredSections.set(sections),
-            error: () => this.declaredSections.set([]),
+            error: (err: unknown) => this.declaredReadFailed(err),
         });
+    }
+
+    /**
+     * Only a server that has no such read draws the older tabs. Any other failure keeps what was read, and with
+     * nothing read yet shows the banner: older forms must not come back because one read failed.
+     */
+    private declaredReadFailed(err: unknown): void {
+        if (err instanceof HttpErrorResponse && 404 === err.status) {
+            return;
+        }
+        if (0 === this.declaredSections().length) {
+            this.loadFailure.set(err);
+            return;
+        }
+        this.toast.error('The latest settings could not be read');
     }
 
     /** What a declared save changed takes effect here at once, and the old keys it wrote reach their readers. */
@@ -509,6 +529,7 @@ export class ProfilePageComponent implements OnInit {
                 this.theme.update(appearance.find(k => 'theme' === k.key)?.value);
                 this.theme.updateAccent(appearance.find(k => 'accentColor' === k.key)?.value);
             },
+            error: (err: unknown) => this.declaredReadFailed(err),
         });
         if ('console' === section) {
             this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
@@ -518,6 +539,8 @@ export class ProfilePageComponent implements OnInit {
                 this.settings.set(settings);
                 const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
                 if (cal) this.calPrefs.update(cal);
+                // The old section has no zone for a person on automatic: this puts the device's over what it answered.
+                this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
             });
         }
         this.toast.success('Settings saved');
@@ -526,6 +549,7 @@ export class ProfilePageComponent implements OnInit {
     /** The profile, its sections and its settings read, the first time or again from the banner's Retry. */
     load(): void {
         this.loadFailure.set(null);
+        this.readDeclared();
         forkJoin([
             this.identityApi.getMe(),
             this.identityApi.getSettingsSections(),
