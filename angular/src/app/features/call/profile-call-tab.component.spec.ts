@@ -1,4 +1,6 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
+import { of } from 'rxjs';
+import { DeclaredSettingsService } from '../identity/declared-settings.service';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
@@ -119,6 +121,7 @@ describe('ProfileCallTabComponent -- the Calls pane on My Profile', () => {
             providers: [
                 provideHttpClient(withXhr()),
                 provideHttpClientTesting(),
+                { provide: DeclaredSettingsService, useValue: { read: () => of([]) } },
                 { provide: Store, useValue: { selectSnapshot: () => MANIFEST } },
             ],
         });

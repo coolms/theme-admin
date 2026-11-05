@@ -187,14 +187,14 @@ describe('Settings-section echo -> profile caches', () => {
         const tab = TestBed.createComponent(ProfileCalendarTabComponent);
         tab.componentRef.setInput('initial', echo);
 
-        let emitted: CalendarPrefs | undefined;
+        let emitted: Partial<CalendarPrefs> | undefined;
         tab.componentInstance.saved.subscribe(v => (emitted = v));
 
         tab.componentInstance.ngOnInit();
         http.expectOne(`${MANIFEST.apiBase}/calendar`).flush({ member: [] });
         tab.componentInstance.save();
 
-        expect(emitted).toEqual(CALENDAR_SAVED);
+        expect(emitted).toEqual({ defaultCalendarSlug: CALENDAR_SAVED.defaultCalendarSlug });
     });
 
  // -- Preferences tab ------------------------------------------------------
