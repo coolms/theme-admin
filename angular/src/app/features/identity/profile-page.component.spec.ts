@@ -1,4 +1,6 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
+import { of } from 'rxjs';
+import { DeclaredSettingsService } from './declared-settings.service';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -200,6 +202,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
             providers: [
                 provideHttpClient(withXhr()),
                 provideHttpClientTesting(),
+                { provide: DeclaredSettingsService, useValue: { read: () => of([]) } },
  // Covers both roles this graph asks of the store: the API
  // manifest (ApiService, FormRenderService, ThemeService) and
  // `AuthState.currentUser` (the calendar prefs' personal-calendar
@@ -319,22 +322,12 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         http.expectOne(CALENDAR_LIST_URL).flush({ member: [] });
  // The tab's timezone picker is a lazy-select over the
  // `calendar.timezones` OptionSource -- rows keyed by `value`, not `id`.
-        http.expectOne(r => r.url === TIMEZONE_OPTIONS_URL).flush({
-            member: [
-                { value: 'UTC',           label: 'UTC',    group: 'Other'  },
-                { value: 'Europe/Berlin', label: 'Berlin', group: 'Europe' },
-            ],
-        });
         fixture.detectChanges();
 
         const tab = fixture.debugElement
             .query(de => de.componentInstance instanceof ProfileCalendarTabComponent)
             .componentInstance as ProfileCalendarTabComponent;
 
-        expect(tab.tz).toBe('Europe/Berlin');
-        expect(tab.dateFormat).toBe('dd.MM.yyyy');
-        expect(tab.timeFormat).toBe('12h');
-        expect(tab.weekStart).toBe('sunday');
         expect(tab.defaultCalendarSlug).toBe('team-ops');
     });
 

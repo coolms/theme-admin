@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { AppConfigState, SidebarStateService } from '@coolms/core-angular';
-import { type ExplorerViewMode, type VfsViewMode } from '@coolms/ui-angular';
+import { type ExplorerViewMode, UserCalendarPreferencesService, type VfsViewMode } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
 import { catchError, map, type Observable, of, tap, timeout, TimeoutError } from 'rxjs';
 
@@ -17,6 +17,9 @@ interface ConsoleKey {
     readonly own: unknown;
     readonly locked: boolean;
 }
+
+/** The person's choice of a time zone that follows the device. */
+const AUTOMATIC_ZONE = 'automatic';
 
 interface DeclaredSection {
     readonly section: string;
@@ -39,12 +42,15 @@ function versionOf(etag: string | null): string | null {
  * The sidebar's state also stays on the device, so a reload draws it at once. A value the server holds wins over the
  * device's; with none held, the device's differing state is saved once as the first value. A locked key is applied
  * and never written.
+ *
+ * A person whose time zone is automatic has this device's: the server is told it, and the dates here are shown in it.
  */
 @Injectable({ providedIn: 'root' })
 export class ConsoleSettingsService {
     private readonly http = inject(HttpClient);
     private readonly store = inject(Store);
     private readonly sidebar = inject(SidebarStateService);
+    private readonly calendarPrefs = inject(UserCalendarPreferencesService);
 
     private readonly keys = signal<ReadonlyArray<ConsoleKey>>([]);
     private readonly saving = signal(false);
@@ -87,7 +93,10 @@ export class ConsoleSettingsService {
             headers: new HttpHeaders({ Accept: 'application/json' }),
         }).pipe(
             timeout(NO_ANSWER_MS),
-            tap(sections => this.adopt(sections.find(s => 'console' === s.section))),
+            tap(sections => {
+                this.adopt(sections.find(s => 'console' === s.section));
+                this.followDeviceZone(sections.find(s => 'region' === s.section));
+            }),
             map(() => undefined),
             catchError(() => of(undefined)),
         );
@@ -111,6 +120,18 @@ export class ConsoleSettingsService {
             this.sidebar.toggle();
         }
         this.keys.set(keys);
+    }
+
+    private followDeviceZone(region: DeclaredSection | undefined): void {
+        if (AUTOMATIC_ZONE !== region?.keys.find(k => 'timezone' === k.key)?.value) {
+            this.calendarPrefs.followDeviceZone(null);
+            return;
+        }
+        const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        this.calendarPrefs.followDeviceZone(zone);
+        this.http.put<void>(`${this.base.replace(/\/settings$/, '')}/device-timezone`, { timezone: zone }, {
+            headers: new HttpHeaders({ Accept: 'application/json' }),
+        }).pipe(timeout(NO_ANSWER_MS), catchError(() => of(undefined))).subscribe();
     }
 
     private saveSidebar(collapsed: boolean): void {

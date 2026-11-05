@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { SidebarStateService } from '@coolms/core-angular';
+import { UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
 
 import { ConsoleSettingsService } from './console-settings.service';
@@ -18,6 +19,7 @@ describe('ConsoleSettingsService', () => {
     let http: HttpTestingController;
     let service: ConsoleSettingsService;
     let collapsed: ReturnType<typeof signal<boolean>>;
+    let zones: unknown[];
 
     function answer(keys: ReadonlyArray<Record<string, unknown>>, version: string | null = 'v1'): void {
         service.load().subscribe();
@@ -26,12 +28,17 @@ describe('ConsoleSettingsService', () => {
     }
 
     beforeEach(() => {
+        zones = [];
         collapsed = signal(false);
         TestBed.configureTestingModule({
             providers: [
                 provideHttpClient(),
                 provideHttpClientTesting(),
                 { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+                {
+                    provide: UserCalendarPreferencesService,
+                    useValue: { followDeviceZone: (z: string | null) => zones.push(z) },
+                },
                 {
                     provide: SidebarStateService,
                     useValue: { collapsed, toggle: () => collapsed.update(v => !v) },
@@ -118,6 +125,33 @@ describe('ConsoleSettingsService', () => {
 
         expect(service.pageSize()).toBe(50);
         expect(service.explorerView()).toBeNull();
+    });
+
+    function region(timezone: string): void {
+        service.load().subscribe();
+        http.expectOne(READ).flush([
+            { section: 'region', version: 'r', keys: [key('timezone', timezone, timezone)] },
+        ]);
+        TestBed.flushEffects();
+    }
+
+    it('a person on automatic: the server is told this device\'s zone, and the dates here use it', () => {
+        const here = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        region('automatic');
+
+        const told = http.expectOne('/api/v1/auth/me/device-timezone');
+        expect(told.request.method).toBe('PUT');
+        expect(told.request.body).toEqual({ timezone: here });
+        told.flush(null, { status: 204, statusText: 'No Content' });
+        expect(zones).toEqual([here]);
+    });
+
+    it('a person who chose a zone: the device is not reported, and nothing overrides their zone', () => {
+        region('Europe/Berlin');
+
+        http.expectNone('/api/v1/auth/me/device-timezone');
+        expect(zones).toEqual([null]);
     });
 
     it('answers the value in force', () => {

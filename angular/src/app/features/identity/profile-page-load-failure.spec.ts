@@ -4,6 +4,8 @@ import { Store } from '@ngxs/store';
 import { Observable, of, throwError } from 'rxjs';
 import { ComponentRegistry, ThemeService } from '@coolms/core-angular';
 import { PageTitleService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
+import { DeclaredSettingsService } from './declared-settings.service';
 import { IdentityApiService } from './identity-api.service';
 import { type IdentityUserDto } from './identity.types';
 import { ProfilePageComponent } from './profile-page.component';
@@ -38,6 +40,8 @@ describe('ProfilePageComponent -- a failed read of the profile', () => {
                 { provide: PageTitleService, useValue: { set: (): void => {} } },
                 { provide: UserCalendarPreferencesService, useValue: { update: (): void => {} } },
                 { provide: ThemeService, useValue: {} },
+                { provide: DeclaredSettingsService, useValue: { read: () => of([]) } },
+                { provide: ConsoleSettingsService, useValue: {} },
                 { provide: ComponentRegistry, useValue: { has: () => false } },
             ],
         });

@@ -25,11 +25,17 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
-import { CmsLoaderComponent, ComponentRegistry, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
+import { CmsLoaderComponent, ComponentRegistry, NaviGraphService, PatchCurrentUser, ThemeService } from '@coolms/core-angular';
+import { navOffers } from '../../shell/nav-offers';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
+import { DeclaredSectionComponent } from './declared-section.component';
+import { type DeclaredSection, DeclaredSettingsService } from './declared-settings.service';
 import { IdentityApiService } from './identity-api.service';
 import { IdentityUserDto, ProfileSection } from './identity.types';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
+import { SessionsListComponent } from './sessions-list.component';
 
 /** Marker key the Calendar contributor emits for `formId` -- matches
  *  CalendarPreferencesContributor::getFormId() on the backend. The FE
@@ -48,13 +54,16 @@ const CALENDAR_FORM_ID = 'calendar:user_preferences';
  */
 const PROFILE_TAB_SLOT = 'profile.tab';
 
+/** The old sections whose keys the declared tabs now hold: their forms are not offered beside them. */
+const MOVED_SECTIONS: ReadonlySet<string> = new Set(['preferences', 'ui']);
+
 type Tab = 'personal' | string;
 
 @Component({
     selector: 'app-profile-page',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, CmsLoaderComponent, 
+    imports: [DeclaredSectionComponent, SessionsListComponent, StateComponent, CmsLoaderComponent, 
         FormsModule,
         DatePipe,
         CmsPageHeaderComponent,
@@ -328,8 +337,25 @@ type Tab = 'personal' | string;
                         </div>
                     }
 
+                    @if (declaredTab(); as tabSections) {
+                        <div class="profile-tab-body">
+                            @for (sec of tabSections; track sec.section) {
+                                <app-declared-section [section]="sec"
+                                                      [showTitle]="tabSections.length > 1"
+                                                      (saved)="declaredSaved($event)"
+                                                      (stale)="readDeclared()" />
+                            }
+                        </div>
+                    }
+
+                    @if (activeTab() === 'security') {
+                        <div class="profile-tab-body">
+                            <app-sessions-list />
+                        </div>
+                    }
+
                     <!-- Dynamic settings tabs -->
-                    @for (sec of sections(); track sec.section) {
+                    @for (sec of moduleSections(); track sec.section) {
                         @if (activeTab() === sec.section) {
                             @if (hasProfileTab(sec.section)) {
                                 <!-- Another module's pane for this section, through
@@ -386,6 +412,8 @@ export class ProfilePageComponent implements OnInit {
     private readonly calPrefs   = inject(UserCalendarPreferencesService);
     private readonly theme      = inject(ThemeService);
     private readonly registry   = inject(ComponentRegistry);
+    private readonly declared   = inject(DeclaredSettingsService);
+    private readonly consoleSettings = inject(ConsoleSettingsService);
 
     readonly PALETTE = ['#E8834A','#4A90E8','#7B6BE8','#4AC4A0','#E84A6B','#4ACA5A','#E8C44A','#9B59B6'];
 
@@ -407,8 +435,35 @@ export class ProfilePageComponent implements OnInit {
     /** The tab bar: Personal, then one tab per section the server listed. */
     readonly tabItems       = computed<TabStripItem[]>(() => [
         { id: 'personal', label: 'Personal', icon: 'person' },
-        ...this.sections().map(sec => ({ id: sec.section, label: sec.label, icon: sec.icon })),
+        ...(this.sectionNamed('region') ? [{ id: 'region', label: 'Language & region', icon: 'globe' }] : []),
+        ...(this.sectionNamed('appearance') ? [{ id: 'appearance', label: 'Appearance', icon: 'palette' }] : []),
+        ...this.moduleSections().map(sec => ({ id: sec.section, label: sec.label, icon: sec.icon })),
+        { id: 'security', label: 'Security', icon: 'shield-lock' },
     ]);
+    /** The declared sections, read apart: a server without them still draws its older tabs. */
+    readonly declaredSections = signal<ReadonlyArray<DeclaredSection>>([]);
+    private readonly declaredAnswered = signal(false);
+    /** The sections drawn from their own forms: every one, less those the declared tabs now hold. */
+    readonly moduleSections = computed(() => {
+        // Until the first answer the old forms are held back, or they would flash and go.
+        const moved = !this.declaredAnswered() || (this.sectionNamed('region') && this.sectionNamed('appearance'));
+        return this.sections().filter(sec => !(moved && MOVED_SECTIONS.has(sec.section))
+            && (sec.formId !== CALENDAR_FORM_ID || this.calendarOffered()));
+    });
+    /** The Calendar tab holds the default calendar, which only an account offered Calendar can choose. */
+    private readonly calendarOffered = navOffers(inject(NaviGraphService).adminNav, '/api/v1/calendar');
+    /** What the open tab draws from the declared sections; null when it draws none. */
+    readonly declaredTab = computed<ReadonlyArray<DeclaredSection> | null>(() => {
+        const tab = this.activeTab();
+        if ('region' === tab) {
+            return this.declaredSections().filter(sec => 'region' === sec.section);
+        }
+        if ('appearance' === tab) {
+            return this.declaredSections().filter(sec => 'appearance' === sec.section
+                || ('console' === sec.section && sec.keys.length > 0));
+        }
+        return null;
+    });
     readonly settings       = signal<Record<string, Record<string, unknown> | undefined>>({});
     /** Why the profile could not be read; null once it was. The banner shows it in place of the profile form. */
     readonly loadFailure    = signal<unknown>(null);
@@ -441,9 +496,68 @@ export class ProfilePageComponent implements OnInit {
         this.load();
     }
 
+    private sectionNamed(name: string): boolean {
+        return this.declaredSections().some(sec => name === sec.section);
+    }
+
+    readDeclared(): void {
+        this.declared.read().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: sections => {
+                this.declaredSections.set(sections);
+                this.declaredAnswered.set(true);
+            },
+            error: (err: unknown) => {
+                this.declaredAnswered.set(true);
+                this.declaredReadFailed(err);
+            },
+        });
+    }
+
+    /**
+     * Only a server that has no such read draws the older tabs. Any other failure keeps what was read, and with
+     * nothing read yet shows the banner: older forms must not come back because one read failed.
+     */
+    private declaredReadFailed(err: unknown): void {
+        if (err instanceof HttpErrorResponse && 404 === err.status) {
+            return;
+        }
+        if (0 === this.declaredSections().length) {
+            this.loadFailure.set(err);
+            return;
+        }
+        this.toast.error('The latest settings could not be read');
+    }
+
+    /** What a declared save changed takes effect here at once, and the old keys it wrote reach their readers. */
+    declaredSaved(section: string): void {
+        this.declared.read().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: sections => {
+                this.declaredSections.set(sections);
+                const appearance = sections.find(sec => 'appearance' === sec.section)?.keys ?? [];
+                this.theme.update(appearance.find(k => 'theme' === k.key)?.value);
+                this.theme.updateAccent(appearance.find(k => 'accentColor' === k.key)?.value);
+            },
+            error: (err: unknown) => this.declaredReadFailed(err),
+        });
+        if ('console' === section) {
+            this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+        }
+        if ('region' === section) {
+            this.identityApi.getSettings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(settings => {
+                this.settings.set(settings);
+                const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
+                if (cal) this.calPrefs.update(cal);
+                // Whether the person now follows their device is in the declared read.
+                this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+            });
+        }
+        this.toast.success('Settings saved');
+    }
+
     /** The profile, its sections and its settings read, the first time or again from the banner's Retry. */
     load(): void {
         this.loadFailure.set(null);
+        this.readDeclared();
         forkJoin([
             this.identityApi.getMe(),
             this.identityApi.getSettingsSections(),
@@ -555,7 +669,7 @@ export class ProfilePageComponent implements OnInit {
      * quick-access, mini-cal, FullCalendar config, event editor, and
      * quick panel all pick the change up immediately (no page reload).
      */
-    saveCalendarPrefs(section: string, data: CalendarPrefs): void {
+    saveCalendarPrefs(section: string, data: Pick<CalendarPrefs, 'defaultCalendarSlug'>): void {
         this.savingCalendar.set(true);
         // The API service strips `null` from PATCH bodies by stringify
         // serialisation -- explicit null is fine here, the backend processor

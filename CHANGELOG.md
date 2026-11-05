@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Changed
+- **My Profile's settings are drawn from what the server declares.** Tabs: Personal, Language & region, Appearance (with the admin console's own settings), one per module, Security with the signed-in sessions. Language lists the server's supported locales. A locked setting says "Set by your administrator". The old Preferences and Interface forms and the Calendar tab's moved fields are gone.
 - A person's console settings are declared in `theme.yaml` and read: rows per request on the lists, the default view on the explorers, and the sidebar's state kept on the server.
 - **The Override Field dialog's switches are the kit's** (`.cms-toggle`): they drew two dots when off and a tick when on, a collision between Bootstrap's `form-switch` and the kit's global checkbox rules. Pressing a switch's name toggles it.
 - **Email names a folder by its role.** A folder the mail server marks with a special use reads Inbox, Sent, Drafts, Archive, Spam, Trash, All mail or Starred, as in the web Workspace, where it read INBOX, [Gmail]/Sent Mail or Junk E-mail; any other folder keeps its path. In the folder list and the phone's folder bars.
