@@ -199,14 +199,14 @@ import { formatCallDuration } from './call-format';
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
+        dt { color: var(--cms-text-muted, #4b5563); font-weight: 500; }
         dd { margin: 0; word-break: break-word; }
 
         .recording { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
         .recording audio { width: 100%; max-width: 480px; }
 
-        .hint { color: var(--cms-text-muted, #69707c); font-size: .85rem; margin: 0; }
-        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; margin: 0; }
+        .hint { color: var(--cms-text-muted, #4b5563); font-size: .85rem; margin: 0; }
+        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; margin: 0; }
         .mono { font-family: var(--cms-font-mono, monospace); }
 
         .btn {

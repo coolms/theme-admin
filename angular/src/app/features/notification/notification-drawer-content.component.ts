@@ -197,7 +197,7 @@ import { NotificationStore } from './notification-store.service';
             background: transparent;
             border: 0;
             padding: 0;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-size: .85rem;
             line-height: 1;
             cursor: pointer;
@@ -217,7 +217,7 @@ import { NotificationStore } from './notification-store.service';
         }
         .cms-notification-drawer__empty {
             text-align: center;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-size: .8rem;
             padding: 2rem 1rem;
         }

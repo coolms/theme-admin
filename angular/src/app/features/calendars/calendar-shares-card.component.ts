@@ -179,7 +179,7 @@ type ShareeKind = 'user' | 'group';
         }
         .card__count {
             font-size: .8rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             background: var(--cms-surface-muted);
             border-radius: var(--cms-radius-lg, 10px);
             padding: 1px 8px;
@@ -224,14 +224,14 @@ type ShareeKind = 'user' | 'group';
         .chip--group { background: var(--cms-meta-subtle); color: var(--cms-meta-text); }
 
         .mono { font-family: var(--cms-font-mono, monospace); font-size: .8rem; }
-        .mono--muted { color: var(--cms-text-muted, #69707c); }
+        .mono--muted { color: var(--cms-text-muted, #4b5563); }
 
-        .empty { color: var(--cms-text-muted, #69707c); margin: 0 0 8px; }
-        .error { color: var(--cms-danger, #dc2626); margin: 0 0 8px; }
+        .empty { color: var(--cms-text-muted, #4b5563); margin: 0 0 8px; }
+        .error { color: var(--cms-danger, #b91c1c); margin: 0 0 8px; }
         .hint {
             margin: 8px 0 0;
             font-size: .75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .hint--warn { color: var(--cms-warning-text); }
 

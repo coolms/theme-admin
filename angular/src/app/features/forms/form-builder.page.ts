@@ -402,7 +402,7 @@ type FieldModel = Record<string, unknown>;
         /* The last good render stays up; the reason the newest one failed sits under it. */
         .fb__preview-error {
             margin-top: 8px; padding: 8px 10px; font-size: .75rem;
-            color: var(--cms-danger, #dc2626); border: 1px solid var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c); border: 1px solid var(--cms-danger, #b91c1c);
             border-radius: var(--cms-radius, 6px); background: var(--cms-surface);
         }
         .fb__id {
@@ -428,7 +428,7 @@ type FieldModel = Record<string, unknown>;
         .fb__cell--type { flex: 0 0 160px; }
         .fb__cell--req { flex: 0 0 70px; align-items: flex-start; }
         .cms-label--sm { font-size: .6875rem; }
-        .fb__danger { color: var(--cms-danger, #dc2626); }
+        .fb__danger { color: var(--cms-danger, #b91c1c); }
         .fb__choices {
             flex: 0 0 100%; display: flex; flex-direction: column; gap: 6px;
             border: 1px dashed var(--cms-border); border-radius: var(--cms-radius, 6px); padding: 8px;

@@ -202,7 +202,7 @@ const HARD_MAX_MS = 15 * 60 * 1000;
             width: 30px; height: 30px;
             display: flex; align-items: center; justify-content: center;
             border: none; border-radius: var(--cms-radius-md, 8px);
-            background: transparent; color: var(--cms-text-muted, #69707c);
+            background: transparent; color: var(--cms-text-muted, #4b5563);
             cursor: pointer; font-size: .9rem;
             transition: background .12s ease, color .12s ease;
         }

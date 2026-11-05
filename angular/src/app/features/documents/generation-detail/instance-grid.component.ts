@@ -213,7 +213,7 @@ export type InstanceFilterTab = 'all' | 'failed' | 'pending' | 'done';
         }
         .cms-instance-grid__badge--failed {
             background: var(--cms-danger-light, #fef2f2);
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
 
         .cms-instance-grid__expand {

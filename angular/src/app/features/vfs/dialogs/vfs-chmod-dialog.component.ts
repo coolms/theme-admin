@@ -239,7 +239,7 @@ function rowsToOctal(rows: [PermRow, PermRow, PermRow], special = 0): string {
         }
         .recursive-opts       { padding-left: 24px; display: flex; flex-direction: column; }
         .text-muted           { color: var(--cms-text-secondary, #525a66); font-size: .8rem; margin-bottom: 6px; }
-        .bit-desc             { color: var(--cms-text-muted, #69707c); font-size: .78rem; margin-left: 2px; }
+        .bit-desc             { color: var(--cms-text-muted, #4b5563); font-size: .78rem; margin-left: 2px; }
     `],
 })
 export class VfsChmodDialogComponent {

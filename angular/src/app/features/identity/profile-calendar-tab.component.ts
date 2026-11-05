@@ -53,7 +53,7 @@ import { navOffers } from '../../shell/nav-offers';
         }
         .group-help {
             font-size: .75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             margin: 0;
         }
         .preview {

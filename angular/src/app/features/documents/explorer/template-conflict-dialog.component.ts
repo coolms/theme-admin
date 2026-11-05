@@ -208,7 +208,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__option small {
             display: block;
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             line-height: 1.4;
         }
 
@@ -220,7 +220,7 @@ export interface TemplateConflictDialogResult {
         }
         .cms-template-conflict-dialog__name-field span {
             font-size: 0.75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-weight: 500;
         }
         .cms-template-conflict-dialog__name-field input {
@@ -234,7 +234,7 @@ export interface TemplateConflictDialogResult {
         .cms-template-conflict-dialog__error {
             margin: 4px 0 0 36px;
             font-size: 0.75rem;
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
 
         .cms-template-conflict-dialog__footer {

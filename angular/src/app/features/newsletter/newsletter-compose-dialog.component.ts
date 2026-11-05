@@ -179,10 +179,10 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         </app-modal>
     `,
     styles: [`
-        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #69707c); }
+        .hint { margin: 0 0 0.85rem; font-size: 0.82rem; color: var(--cms-text-muted, #4b5563); }
         .field { display: flex; flex-direction: column; margin-bottom: 0.85rem; }
-        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #69707c); }
-        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #69707c); }
+        .note { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--cms-text-muted, #4b5563); }
+        .langs { margin: 0 0 0.85rem; font-size: 0.78rem; color: var(--cms-text-muted, #4b5563); }
         app-locale-switcher { display: block; margin-bottom: 0.6rem; }
         .attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.5rem; }
         .attachment {
@@ -193,16 +193,16 @@ import { NewsletterService, type NewsletterSiteDto } from './newsletter.service'
         .attachment__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .attachment__remove {
             border: 0; background: transparent; cursor: pointer; line-height: 1;
-            font-size: 1rem; color: var(--cms-text-muted, #69707c); padding: 0 2px;
+            font-size: 1rem; color: var(--cms-text-muted, #4b5563); padding: 0 2px;
         }
-        .attachment__remove:hover { color: var(--cms-danger, #dc2626); }
+        .attachment__remove:hover { color: var(--cms-danger, #b91c1c); }
         /* The editor sizes to its content; cap it so a long campaign scrolls
            inside the dialog instead of pushing the footer off-screen. */
         .body { display: block; max-height: 22rem; overflow: auto; }
         .recipients {
             margin-right: auto;
             font-size: 0.82rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
     `],
 })

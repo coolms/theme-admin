@@ -235,7 +235,7 @@ type SortDir = 'asc' | 'desc';
             font-size: 0.8rem;
         }
         .cms-instances-zone__status--error {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
         .cms-instances-zone__empty {
             text-align: center;
@@ -348,7 +348,7 @@ type SortDir = 'asc' | 'desc';
             opacity: 0.75;
         }
         .cms-instance-card--failed {
-            border-color: var(--cms-danger, #dc2626);
+            border-color: var(--cms-danger, #b91c1c);
         }
         .cms-instance-card__icon {
             font-size: 2.5rem;
@@ -448,7 +448,7 @@ type SortDir = 'asc' | 'desc';
             opacity: 0.75;
         }
         .cms-instances-zone__row--failed {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
         .cms-instances-zone__row td {
             padding: 8px;

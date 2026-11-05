@@ -449,12 +449,12 @@ import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
             padding: 2px 4px;
             border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-size: .8rem;
             line-height: 1;
         }
         .de-field-btn:hover { background: var(--cms-hover-bg, #f3f4f6); color: var(--cms-text); }
-        .de-field-btn--danger:hover { color: var(--cms-danger, #dc2626); }
+        .de-field-btn--danger:hover { color: var(--cms-danger, #b91c1c); }
 
         .de-mini-badge {
             display: inline-block;

@@ -338,7 +338,7 @@ const TABS: readonly TabStripItem[] = [
         }
         .spd__channel-title { font-size: .8125rem; font-weight: 600; }
 
-        .spd__req { color: var(--cms-danger, #dc2626); }
+        .spd__req { color: var(--cms-danger, #b91c1c); }
 
         .spd__warn {
             display: flex;

@@ -109,7 +109,7 @@ export interface TemplateSourceData {
         :host ::ng-deep .cm-editor { height: 100%; }
 
         .src__state { margin: 0; padding: 12px 2px; color: var(--cms-text-secondary, #525a66); font-size: 13px; }
-        .src__state--error { color: var(--cms-danger, #dc2626); }
+        .src__state--error { color: var(--cms-danger, #b91c1c); }
 
         .src__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
         .src__meta { color: var(--cms-text-secondary, #525a66); font-size: 12px; }

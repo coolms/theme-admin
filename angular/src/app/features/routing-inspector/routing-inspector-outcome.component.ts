@@ -67,7 +67,7 @@ import { RoutingInspectorStateService } from './routing-inspector-state.service'
         .placeholder {
             padding: 32px 16px;
             text-align: center;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             border: 1px dashed var(--cms-border, #e5e7eb);
             border-radius: var(--cms-radius-md, 8px);
         }

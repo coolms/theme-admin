@@ -131,7 +131,7 @@ import {
             gap: 14px;
         }
         .error {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
             margin: 0;
             font-size: .8125rem;
         }
