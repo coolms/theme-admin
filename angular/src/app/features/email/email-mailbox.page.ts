@@ -44,6 +44,7 @@ import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernames
 import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
+import { MailboxSyncComponent } from './mailbox-sync.component';
 import { folderDisplayName } from './folder-name.util';
 import {
     EmailAttachmentDto,
@@ -124,7 +125,7 @@ type PhonePane = 'folders' | 'message';
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
     imports: [
-        StateComponent, MailboxSwitcherComponent,
+        StateComponent, MailboxSwitcherComponent, MailboxSyncComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
     ],
@@ -212,6 +213,7 @@ type PhonePane = 'folders' | 'message';
                             <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
                         </button>
+                        <app-mailbox-sync [mailbox]="selectedMailbox()" (finished)="onSyncFinished($event)" />
                         <div class="mbx__search">
                             <i class="bi bi-search mbx__search-icon"></i>
                             <input type="text" class="mbx__search-input" [(ngModel)]="searchQuery"
@@ -1095,6 +1097,8 @@ export class EmailMailboxPageComponent implements OnInit {
         const mb = id === null ? undefined : this.mailboxes().find(m => m.id === id);
         this.crumbs.setTail(mb ? (mb.label || mb.emailAddress || null) : null);
     });
+    readonly selectedMailbox = computed(() => this.mailboxes().find(m => m.id === this.selectedMailboxId()) ?? null);
+    private readonly syncBar = viewChild(MailboxSyncComponent);
     /** The toolbar tree's nodes: the context menu is built from the same declaration as the action bar. */
     readonly toolbarNodes = signal<NaviGraphNode[]>([]);
 
@@ -1591,7 +1595,13 @@ export class EmailMailboxPageComponent implements OnInit {
             this.emailLive.watch(uid)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
-                    next: evt => this.onMailReceived(evt),
+                    next: evt => {
+                        if ('mail.sync.finished' === evt.type) {
+                            this.syncBar()?.frame(evt);
+                        } else {
+                            this.onMailReceived(evt);
+                        }
+                    },
                     error: () => { /* swallow -- manual reload still works */ },
                 });
         }
@@ -1642,6 +1652,17 @@ export class EmailMailboxPageComponent implements OnInit {
         this.email.listFolders(evt.mailboxId).subscribe({
             next: folders => this.patchMailboxUnread(evt.mailboxId, folders),
             error: () => { /* leave the badge as-is on a transient failure */ },
+        });
+    }
+
+    /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
+    onSyncFinished(id: string): void {
+        if (id === this.selectedMailboxId()) {
+            this.loadFolders();
+        }
+        this.email.getMailbox(id).subscribe({
+            next: read => this.mailboxes.set(this.mailboxes().map(m => m.id === id ? read : m)),
+            error: () => { /* the synced-at stays as it was; the list above is already read */ },
         });
     }
 

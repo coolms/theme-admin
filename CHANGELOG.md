@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Added
+- **Refresh in the mail list.** It asks the server to sync the open mailbox now, shows that it runs, and says when the mailbox last synced. If no answer arrives within a minute, the list is read anyway.
 - **A stopped mailbox can be retried from its settings.** The Connection pane shows what the provider said and when, for those who may manage it, and a Retry button beside the status. Reconnect stays beside the sign-in.
 ### Changed
 - **The mail rail is one mailbox card above that mailbox's folders.** With more than one mailbox the card opens the list of them, each with its unread count, so a long list no longer pushes the folders down.
