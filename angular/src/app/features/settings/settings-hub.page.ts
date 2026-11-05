@@ -109,6 +109,7 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
                     [icon]="b.moduleIcon ?? 'sliders'"
                     [owner]="b.moduleLabel ?? deslug(b.module)"
                     [settingKey]="b.key"
+                    [editable]="null !== b.formId"
                     [meta]="b.storedAt ? 'saved to ' + b.storedAt : ''"
                     [dirty]="dirty()"
                     [saving]="saving()"
@@ -170,7 +171,7 @@ export const SETTINGS_PANE_SLOT = 'settings.pane';
                                 }
                             </p>
                         }
-                    } @else {
+                    } @else if (!hasPaneExtra(b.key)) {
                         <p class="cms-field-hint">
                             This module declared a setting but no form for it, so there is nothing to render here. The
                             values below are what is stored; they remain editable over the API.

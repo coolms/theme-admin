@@ -1,5 +1,7 @@
 import { consoleEntry } from '@coolms/core-angular';
 
+import { PersonSettingsPaneComponent } from '../person-settings-pane.component';
+
 /**
  * Identity's console entry: the profile page, users, groups, deletions, signed-in sessions (console@1). The profile page owns the profile.tab slot other modules fill.
  */
@@ -7,6 +9,10 @@ export default consoleEntry({
     module:   'identity',
     contract: 'console',
     range:    '^1.0',
+    // Settings' settings.pane slot: what people may set, for the whole installation.
+    bindings: [
+        { name: 'settings.pane:identity.person_settings', component: PersonSettingsPaneComponent },
+    ],
     routes: [
         {
             path:      'profile',
