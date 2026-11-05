@@ -72,13 +72,28 @@ describe('MailboxSyncComponent', () => {
         expect(toast.error).not.toHaveBeenCalled();
     });
 
-    it('a frame for another sync or another mailbox ends nothing', () => {
+    it('a frame for another sync ends nothing; one for another mailbox only has its time read', () => {
         const { finished, press, sync } = make();
         press();
         sync.frame(frame({ syncId: 'other' }));
-        sync.frame(frame({ mailboxId: 'other' }));
-        expect(sync.syncing()).toBeTrue();
         expect(finished).toEqual([]);
+        sync.frame(frame({ mailboxId: 'other', syncId: 'elsewhere' }));
+        expect(sync.syncing()).toBeTrue();
+        expect(finished).toEqual(['other']);
+    });
+
+    it('back on a mailbox whose sync ended meanwhile, a press answered with that sync ends at once', () => {
+        const { fixture, finished, press, sync } = make();
+        press();
+        fixture.componentRef.setInput('mailbox', { id: 'mb-2' });
+        fixture.detectChanges();
+        sync.frame(frame());
+        fixture.componentRef.setInput('mailbox', BOX);
+        fixture.detectChanges();
+        email.syncMailbox.and.returnValue(of({ ...STARTED, repeated: true }));
+        press();
+        expect(sync.syncing()).toBeFalse();
+        expect(finished).toEqual(['mb-1', 'mb-1']);
     });
 
     it('a failed sync is said; a skipped one is not an error', () => {
@@ -131,6 +146,53 @@ describe('MailboxSyncComponent', () => {
         expect(finished).toEqual(['mb-1']);
     });
 
+    it('a frame later than the wait still ends its sync, and says a failure', () => {
+        const { finished, press, sync } = make();
+        press();
+        jasmine.clock().tick(SYNC_ANSWER_WAIT_MS);
+        expect(finished).toEqual(['mb-1']);
+
+        sync.frame(frame({ outcome: 'failed' }));
+
+        expect(finished).toEqual(['mb-1', 'mb-1']);
+        expect(toast.error).toHaveBeenCalledTimes(1);
+        sync.frame(frame({ outcome: 'failed' }));
+        expect(finished).toEqual(['mb-1', 'mb-1']);
+    });
+
+    it('an answer to a press left behind changes nothing for the mailbox open now', () => {
+        const first = new Subject<MailboxSyncStarted>();
+        const second = new Subject<MailboxSyncStarted>();
+        email.syncMailbox.and.returnValues(first, second);
+        const { fixture, finished, press, sync } = make();
+        press();
+        fixture.componentRef.setInput('mailbox', { id: 'mb-2' });
+        fixture.detectChanges();
+        press();
+        expect(sync.syncing()).toBeTrue();
+
+        first.error(new HttpErrorResponse({ status: 409 }));
+        expect(sync.syncing()).toBeTrue();
+        expect(toast.error).not.toHaveBeenCalled();
+
+        second.next({ ...STARTED, id: 'mb-2', syncId: 's-2' });
+        sync.frame(frame({ mailboxId: 'mb-2', syncId: 's-2' }));
+        expect(sync.syncing()).toBeFalse();
+        expect(finished).toEqual(['mb-2']);
+    });
+
+    it('an answer arriving after the sync was left behind sets no wait', () => {
+        const answer = new Subject<MailboxSyncStarted>();
+        email.syncMailbox.and.returnValue(answer);
+        const { fixture, finished, press } = make();
+        press();
+        fixture.componentRef.setInput('mailbox', { id: 'mb-2' });
+        fixture.detectChanges();
+        answer.next(STARTED);
+        jasmine.clock().tick(SYNC_ANSWER_WAIT_MS);
+        expect(finished).toEqual([]);
+    });
+
     it('a refusal is said in the server\'s words, and the button comes back', () => {
         email.syncMailbox.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
         const { press, sync, finished } = make();
@@ -146,8 +208,10 @@ describe('MailboxSyncComponent', () => {
         fixture.componentRef.setInput('mailbox', { id: 'mb-2' });
         fixture.detectChanges();
         expect(sync.syncing()).toBeFalse();
-        sync.frame(frame());
         jasmine.clock().tick(SYNC_ANSWER_WAIT_MS);
         expect(finished).toEqual([]);
+        sync.frame(frame());
+        expect(finished).toEqual(['mb-1']);
+        expect(sync.syncing()).toBeFalse();
     });
 });

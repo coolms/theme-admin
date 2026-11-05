@@ -34,7 +34,6 @@ import {
 } from './email.types';
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
 
-/** The actions on a mailbox's settings the page asks about. */
 /** The server's answer to a sync asked for. */
 export interface MailboxSyncStarted {
     readonly id: string;
@@ -43,6 +42,7 @@ export interface MailboxSyncStarted {
     readonly repeated: boolean;
 }
 
+/** The actions on a mailbox's settings the page asks about. */
 export type MailboxAction = 'email.mailbox.update' | 'email.mailbox.authorize';
 
 /** A section save of a mailbox read with no version is not sent: it could only go over what is stored now, unseen. */

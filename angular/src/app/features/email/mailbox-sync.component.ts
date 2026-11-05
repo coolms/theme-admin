@@ -13,7 +13,8 @@ export const SYNC_ANSWER_WAIT_MS = 60_000;
  * Refresh for the open mailbox: asks the server to sync it now, shows that it runs, and says when it last synced.
  * The server answers at once and says later, on the person's mailbox channel, how the sync it started ended. A frame
  * can arrive before the answer that names its sync, and a press inside the server's 30 seconds is answered with the
- * sync already running or just finished, so the last frame seen is kept.
+ * sync already running or just finished, so the last frame seen is kept. An answer counts only for the press it
+ * answers, and a frame later than the wait still ends its sync: a slow one is not left saying the old time.
  */
 @Component({
     selector: 'app-mailbox-sync',
@@ -50,7 +51,9 @@ export class MailboxSyncComponent {
     readonly syncing = signal(false);
 
     private waitingFor: string | null = null;
-    private lastFrame: EmailSyncFinishedEvent | null = null;
+    /** Which press an answer belongs to: moved on by a new press, and by whatever ends or leaves one behind. */
+    private press = 0;
+    private readonly lastFrames = new Map<string, EmailSyncFinishedEvent>();
     private timer: ReturnType<typeof setTimeout> | null = null;
     private openId: string | null = null;
 
@@ -74,19 +77,24 @@ export class MailboxSyncComponent {
             return;
         }
         this.syncing.set(true);
+        const press = ++this.press;
         this.email.syncMailbox(id).subscribe({
             next: started => {
-                if (id !== this.openId) {
+                if (press !== this.press) {
                     return;
                 }
-                if (this.lastFrame?.syncId === started.syncId) {
-                    this.end(this.lastFrame);
+                const seen = this.lastFrames.get(id);
+                if (seen?.syncId === started.syncId) {
+                    this.end(seen);
                     return;
                 }
                 this.waitingFor = started.syncId;
-                this.timer = setTimeout(() => this.end(null), SYNC_ANSWER_WAIT_MS);
+                this.timer = setTimeout(() => this.waitedLongEnough(), SYNC_ANSWER_WAIT_MS);
             },
             error: (err: unknown) => {
+                if (press !== this.press) {
+                    return;
+                }
                 this.stop();
                 this.toast.error(this.errors.humanize(err));
             },
@@ -95,19 +103,30 @@ export class MailboxSyncComponent {
 
     /** A frame from the person's mailbox channel. */
     frame(event: EmailSyncFinishedEvent): void {
+        this.lastFrames.set(event.mailboxId, event);
         if (event.mailboxId !== this.openId) {
+            // A sync that ended while another mailbox is open: its time is worth reading, and nothing else here moves.
+            this.finished.emit(event.mailboxId);
             return;
         }
-        this.lastFrame = event;
         if (event.syncId === this.waitingFor) {
             this.end(event);
         }
     }
 
-    private end(event: EmailSyncFinishedEvent | null): void {
+    /** No frame in time: read the list anyway, and keep listening, since a frame may still come. */
+    private waitedLongEnough(): void {
+        this.timer = null;
+        this.syncing.set(false);
+        if (this.openId !== null) {
+            this.finished.emit(this.openId);
+        }
+    }
+
+    private end(event: EmailSyncFinishedEvent): void {
         const id = this.openId;
         this.stop();
-        if ('failed' === event?.outcome) {
+        if ('failed' === event.outcome) {
             this.toast.error('The mailbox could not be synced.');
         }
         if (id !== null) {
@@ -116,6 +135,7 @@ export class MailboxSyncComponent {
     }
 
     private stop(): void {
+        this.press += 1;
         this.clearTimer();
         this.waitingFor = null;
         this.syncing.set(false);
