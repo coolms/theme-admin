@@ -9,6 +9,7 @@ major number means here.
 ## Unreleased
 
 ### Changed
+- **On a phone the sidebar is a rail** that opens over the page, and a phone does not change the person's saved choice for wider screens.
 - **What people may set, for the whole installation.** The settings page for it draws each setting's default and lock from what the server declares, instead of showing stored values as text.
 - **My Profile's settings are drawn from what the server declares.** Tabs: Personal, Language & region, Appearance (with the admin console's own settings), one per module, Security with the signed-in sessions. Language lists the server's supported locales. A locked setting says "Set by your administrator". The old Preferences and Interface forms and the Calendar tab's moved fields are gone.
 - A person's console settings are declared in `theme.yaml` and read: rows per request on the lists, the default view on the explorers, and the sidebar's state kept on the server.

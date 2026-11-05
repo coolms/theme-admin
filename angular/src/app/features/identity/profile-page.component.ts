@@ -202,11 +202,12 @@ type Tab = 'personal' | string;
         .profile-identifiers { display: flex; flex-direction: column; gap: 6px; }
         .profile-identifier-row {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 8px;
             font-size: .875rem;
         }
-        .profile-identifier-value { flex: 1; }
+        .profile-identifier-value { flex: 1 1 12em; min-width: 0; overflow-wrap: anywhere; }
 
         /* Footer */
         .profile-footer {
