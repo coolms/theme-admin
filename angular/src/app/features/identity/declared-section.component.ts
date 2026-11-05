@@ -13,25 +13,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
 import { Store } from '@ngxs/store';
 
+import { colourInForce, type Option, optionsFor } from './declared-options';
 import { type DeclaredKey, type DeclaredSection, DeclaredSettingsService } from './declared-settings.service';
-
-interface Option {
-    readonly value: string;
-    readonly label: string;
-}
-
-const AUTOMATIC = 'automatic';
-
-/** Automatic, UTC, and the zones this browser knows, once each. */
-const ZONES: ReadonlyArray<Option> = [
-    { value: AUTOMATIC, label: 'Automatic, from this device' },
-    ...[...new Set(['UTC', ...Intl.supportedValuesOf('timeZone')])].map(zone => ({ value: zone, label: zone })),
-];
-
-/** A choice that is a plain word reads as one; a format such as `yyyy-MM-dd` is shown as it is. */
-function words(value: string): string {
-    return /^[a-z]+$/.test(value) ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-}
 
 /** One declared section as a form, drawn from its declaration: a setting's server rules are not repeated here. */
 @Component({
@@ -167,10 +150,7 @@ export class DeclaredSectionComponent {
     /** A structure has no form here: it is set by the client that declared it. */
     protected readonly drawn = computed(() => this.section().keys.filter(k => 'structure' !== k.type));
 
-    /** What a colour with no value of its own is drawn in: the page's, which a person sees as the default. */
-    protected colourInForce(): string {
-        return getComputedStyle(document.documentElement).getPropertyValue('--cms-accent').trim() || '#000000';
-    }
+    protected readonly colourInForce = colourInForce;
 
     protected id(k: DeclaredKey): string {
         return `setting-${this.section().section}-${k.key}`;
@@ -186,8 +166,8 @@ export class DeclaredSectionComponent {
     }
 
     protected options(k: DeclaredKey): ReadonlyArray<Option> {
-        const held = typeof k.value === 'string' ? k.value : '';
-        return this.withHeld(this.optionsOf(k), held);
+        const locales = this.store.selectSnapshot(AppConfigState.manifest)?.supportedLocales ?? [];
+        return optionsFor(k, locales, k.value);
     }
 
     protected setChecked(k: DeclaredKey, event: Event): void {
@@ -214,22 +194,6 @@ export class DeclaredSectionComponent {
 
     protected save(): void {
         this.send(this.unsaved());
-    }
-
-    private optionsOf(k: DeclaredKey): ReadonlyArray<Option> {
-        if ('language' === k.type) {
-            const locales = this.store.selectSnapshot(AppConfigState.manifest)?.supportedLocales ?? [];
-            return locales.map(l => ({ value: l.code, label: l.label }));
-        }
-        if ('timezone' === k.type) {
-            return ZONES;
-        }
-        return (k.choices ?? []).map(choice => ({ value: choice, label: words(choice) }));
-    }
-
-    /** A value the server holds stays selectable even when the list no longer offers it. */
-    private withHeld(options: ReadonlyArray<Option>, held: string): ReadonlyArray<Option> {
-        return '' === held || options.some(o => o.value === held) ? options : [{ value: held, label: held }, ...options];
     }
 
     private edit(k: DeclaredKey, value: unknown): void {
