@@ -47,7 +47,7 @@ import { EditorPeer } from './editor-collab.service';
         .epb__more {
             display: inline-flex; align-items: center; justify-content: center;
             min-width: 24px; height: 24px; padding: 0 5px; margin-left: -8px;
-            border-radius: 12px; font-size: .6875rem; font-weight: 600;
+            border-radius: var(--cms-radius-card, 12px); font-size: .6875rem; font-weight: 600;
             background: var(--cms-border-light); color: var(--cms-text-muted);
             box-shadow: 0 0 0 2px var(--cms-surface);
         }

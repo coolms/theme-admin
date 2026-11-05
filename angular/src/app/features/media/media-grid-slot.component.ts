@@ -151,7 +151,7 @@ import { MediaGridComponent } from './media-grid.component';
             pointer-events: none;
         }
         .drop-card {
-            background: var(--cms-surface); border-radius: 12px; padding: 24px 40px;
+            background: var(--cms-surface); border-radius: var(--cms-radius-card, 12px); padding: 24px 40px;
             text-align: center; box-shadow: var(--cms-shadow-md, 0 4px 12px rgba(0,0,0,.10));
         }
     `],

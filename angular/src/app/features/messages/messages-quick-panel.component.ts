@@ -178,7 +178,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__msgs { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .3rem; padding: .2rem 0; }
         .mqp__line { display: flex; }
         .mqp__line--mine { justify-content: flex-end; }
-        .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: 12px; background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
         .mqp__bubble :is(p) { margin: 0; }
         /* Per-bubble timestamp + per-day separator chip — same model as
