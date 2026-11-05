@@ -73,7 +73,6 @@ import { PageReload } from './page-reload';
             z-index: 100;
         }
         .coolms-body {
-            position: relative;
             display: flex;
             flex: 1;
             min-height: 0;
@@ -114,19 +113,25 @@ import { PageReload } from './page-reload';
            horizontal padding on each side comfortably. Labels and
            section captions hide; the active-item left bar stays visible
            via the existing :is(.cms-nav-item.active) box-shadow rule. */
-        /* On a phone the sidebar opens over the page, which keeps the width beside the rail. */
+        /*
+         * On a phone the sidebar opens over the page, which keeps the width beside the rail. Under the top bar's 100,
+         * so what the top bar opens is not left behind them.
+         */
+        @media (max-width: 768px) {
+            .coolms-body { position: relative; }
+        }
         .coolms-sidebar--over {
             position: absolute;
             top: 0;
             bottom: 0;
             left: 0;
-            z-index: 1000;
+            z-index: 99;
         }
         .coolms-sidebar--over ~ .coolms-main { margin-left: 56px; }
         .coolms-sidebar__backdrop {
             position: absolute;
             inset: 0;
-            z-index: 999;
+            z-index: 98;
             background: rgba(0, 0, 0, .4);
         }
         .coolms-sidebar--collapsed {
@@ -609,6 +614,11 @@ export class AdminLayoutComponent implements OnInit {
      * inside collapsed sections. Centralised here so the template stays
      * readable.
      */
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        this.phoneNavOpen.set(false);
+    }
+
     toggleSidebar(): void {
         if (this.phone()) {
             this.phoneNavOpen.update(open => !open);

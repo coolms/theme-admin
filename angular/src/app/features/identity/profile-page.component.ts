@@ -207,7 +207,7 @@ type Tab = 'personal' | string;
             gap: 8px;
             font-size: .875rem;
         }
-        .profile-identifier-value { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+        .profile-identifier-value { flex: 1 1 12em; min-width: 0; overflow-wrap: anywhere; }
 
         /* Footer */
         .profile-footer {
