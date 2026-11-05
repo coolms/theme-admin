@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 
 import { EmailMailboxDto } from './email.types';
 
@@ -20,7 +20,7 @@ import { EmailMailboxDto } from './email.types';
                 <button type="button" class="mbs__card" aria-haspopup="true"
                         [attr.aria-expanded]="open()"
                         [attr.aria-label]="'Mailbox: ' + name(mailbox)"
-                        (click)="open.set(!open())"
+                        (click)="toggle()"
                         (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
                     <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox }" />
                     <!-- The other mailboxes' unread mail shows on the card, so it is not missed while one is open. -->
@@ -80,9 +80,15 @@ import { EmailMailboxDto } from './email.types';
             color: var(--cms-text-inverse); font-size: .875rem; font-weight: 600; line-height: 1; user-select: none;
         }
         .mbs__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-        .mbs__label, .mbs__address { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbs__label { font-size: .875rem; font-weight: 600; }
-        .mbs__address { font-size: .75rem; color: var(--cms-text-muted); }
+        /* Two lines for the name: on one, a long list of similar names reads as the same name over and over. */
+        .mbs__label {
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+            overflow-wrap: anywhere; font-size: .875rem; font-weight: 600; line-height: 1.25;
+        }
+        .mbs__address {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: .75rem; color: var(--cms-text-muted);
+        }
         .mbs__count {
             flex: 0 0 auto; background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a);
             border-radius: 999px; font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
@@ -100,6 +106,7 @@ import { EmailMailboxDto } from './email.types';
 })
 export class MailboxSwitcherComponent {
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+    private readonly injector = inject(Injector);
 
     readonly mailboxes = input.required<readonly EmailMailboxDto[]>();
     readonly currentId = input.required<string | null>();
@@ -127,6 +134,13 @@ export class MailboxSwitcherComponent {
         }
         this.open.set(false);
         this.host.nativeElement.querySelector<HTMLButtonElement>('.mbs__card')?.focus();
+    }
+
+    protected toggle(): void {
+        this.open.set(!this.open());
+        if (this.open()) {
+            afterNextRender(() => this.host.nativeElement.querySelector<HTMLButtonElement>('[aria-current="true"]')?.focus(), { injector: this.injector });
+        }
     }
 
     protected choose(id: string): void {

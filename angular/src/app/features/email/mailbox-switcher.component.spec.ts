@@ -61,6 +61,19 @@ describe('MailboxSwitcherComponent', () => {
         expect(el.querySelector('.mbs__list')).toBeNull();
     });
 
+    it('opening puts the focus on the current mailbox, and Escape gives it back to the card', async () => {
+        const { el, fixture } = make([WORK, HOME], 'b');
+        document.body.appendChild(el);
+        el.querySelector<HTMLButtonElement>('.mbs__card')?.click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(document.activeElement).toBe(el.querySelectorAll('.mbs__choice')[1]);
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        fixture.detectChanges();
+        expect(document.activeElement).toBe(el.querySelector('.mbs__card'));
+        el.remove();
+    });
+
     it('Escape and a press elsewhere close it', () => {
         const { el, fixture } = make([WORK, HOME], 'a');
         el.querySelector<HTMLButtonElement>('.mbs__card')?.click();
