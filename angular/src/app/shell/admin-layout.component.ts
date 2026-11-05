@@ -73,6 +73,7 @@ import { PageReload } from './page-reload';
             z-index: 100;
         }
         .coolms-body {
+            position: relative;
             display: flex;
             flex: 1;
             min-height: 0;
@@ -113,6 +114,21 @@ import { PageReload } from './page-reload';
            horizontal padding on each side comfortably. Labels and
            section captions hide; the active-item left bar stays visible
            via the existing :is(.cms-nav-item.active) box-shadow rule. */
+        /* On a phone the sidebar opens over the page, which keeps the width beside the rail. */
+        .coolms-sidebar--over {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .coolms-sidebar--over ~ .coolms-main { margin-left: 56px; }
+        .coolms-sidebar__backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, .4);
+        }
         .coolms-sidebar--collapsed {
             width: 56px;
         }
@@ -323,15 +339,19 @@ import { PageReload } from './page-reload';
             <div class="coolms-body" [class.terminal-maximized]="panelMaximized().size > 0">
 
                 <!-- Sidebar -->
+                @if (phone() && phoneNavOpen()) {
+                    <div class="coolms-sidebar__backdrop" (click)="phoneNavOpen.set(false)"></div>
+                }
                 <nav class="coolms-sidebar"
-                     [class.coolms-sidebar--collapsed]="sidebarState.collapsed()">
+                     [class.coolms-sidebar--collapsed]="railed()"
+                     [class.coolms-sidebar--over]="phone() && phoneNavOpen()">
                     <ul class="coolms-sidebar__nav nav flex-column gap-1 px-2 py-3">
                         @for (section of sections(); track section.id) {
                             @if (section.caption) {
                                 <li class="cms-nav-separator">
                                     <button type="button"
                                             class="cms-nav-separator__toggle"
-                                            [title]="sidebarState.collapsed() ? section.caption : null"
+                                            [title]="railed() ? section.caption : null"
                                             (click)="sidebarState.toggleSection(section.id)">
                                         <span class="cms-nav-separator-label">{{ section.caption }}</span>
                                         <i class="bi cms-nav-separator__chevron"
@@ -344,7 +364,7 @@ import { PageReload } from './page-reload';
                                     <cms-sidebar-nav-item
                                         [node]="node"
                                         [depth]="0"
-                                        [collapsed]="sidebarState.collapsed()"
+                                        [collapsed]="railed()"
                                         [activeOverride]="activeNavOverride()"
                                         (specialClick)="handleSpecialNav($event)" />
                                 }
@@ -357,10 +377,10 @@ import { PageReload } from './page-reload';
                          the next click will perform. -->
                     <button type="button"
                             class="coolms-sidebar__toggle"
-                            [title]="sidebarState.collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-                            (click)="sidebarState.toggle()">
+                            [title]="railed() ? 'Expand sidebar' : 'Collapse sidebar'"
+                            (click)="toggleSidebar()">
                         <i class="bi"
-                           [ngClass]="sidebarState.collapsed() ? 'bi-chevron-double-right' : 'bi-chevron-double-left'"></i>
+                           [ngClass]="railed() ? 'bi-chevron-double-right' : 'bi-chevron-double-left'"></i>
                     </button>
                 </nav>
 
@@ -459,6 +479,13 @@ export class AdminLayoutComponent implements OnInit {
     readonly drawerService = inject(DrawerService);
     readonly bottomDrawer  = inject(BottomDrawerService);
     readonly sidebarState  = inject(SidebarStateService);
+    /** A phone's width has room for a rail only. Asked of the browser, since it moves when a phone turns. */
+    private readonly phoneWidth = window.matchMedia('(max-width: 768px)');
+    readonly phone = signal(this.phoneWidth.matches);
+    /** The sidebar opened over the page on a phone. Not the person's saved choice, which is for wider screens. */
+    readonly phoneNavOpen = signal(false);
+    /** Whether the sidebar is drawn as icons only. */
+    readonly railed = computed(() => (this.phone() ? !this.phoneNavOpen() : this.sidebarState.collapsed()));
     private readonly store      = inject(Store);
     private readonly router     = inject(Router);
     private readonly prefs      = inject(UserPreferencesService);
@@ -582,8 +609,16 @@ export class AdminLayoutComponent implements OnInit {
      * inside collapsed sections. Centralised here so the template stays
      * readable.
      */
+    toggleSidebar(): void {
+        if (this.phone()) {
+            this.phoneNavOpen.update(open => !open);
+            return;
+        }
+        this.sidebarState.toggle();
+    }
+
     showSectionItems(sectionId: string): boolean {
-        if (this.sidebarState.collapsed()) return true;
+        if (this.railed()) return true;
         return !this.sidebarState.isSectionCollapsed(sectionId);
     }
 
@@ -677,6 +712,13 @@ export class AdminLayoutComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        const onWidth = (e: MediaQueryListEvent): void => {
+            this.phone.set(e.matches);
+            this.phoneNavOpen.set(false);
+        };
+        this.phoneWidth.addEventListener('change', onWidth);
+        this.destroyRef.onDestroy(() => this.phoneWidth.removeEventListener('change', onWidth));
+
         // The stored `preferences.theme` has existed since the profile
         // Preferences tab shipped (light / dark / system default) and nothing
         // ever applied it. Loading it here -- the authenticated shell -- is what
@@ -708,6 +750,7 @@ export class AdminLayoutComponent implements OnInit {
             filter(e => e instanceof NavigationEnd),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe((e) => {
+            this.phoneNavOpen.set(false);
             this.updateRouteData();
             this.expandActiveSection();
             const url = (e).urlAfterRedirects;
