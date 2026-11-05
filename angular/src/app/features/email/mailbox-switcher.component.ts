@@ -85,7 +85,7 @@ import { EmailMailboxDto } from './email.types';
         }
         .mbs__card { position: relative; flex: 1 1 auto; gap: 6px; border: 0; border-radius: var(--cms-radius-md, 8px); }
         /* The others' unread sits on the avatar: beside the chevron and the gear it left the name no room. */
-        .mbs__card > .mbs__count { position: absolute; top: 2px; left: 26px; box-shadow: 0 0 0 2px var(--cms-surface); }
+        .mbs__card > .mbs__count { position: absolute; top: 2px; left: 20px; box-shadow: 0 0 0 2px var(--cms-surface); }
         .mbs__settings {
             flex: 0 0 auto; width: 28px; padding: 0; border: 0; background: transparent; cursor: pointer;
             color: var(--cms-text-muted); border-radius: var(--cms-radius-md, 8px);
