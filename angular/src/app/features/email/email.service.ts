@@ -162,6 +162,17 @@ export class EmailService {
     }
 
     /**
+     * POST /email/mailboxes/{id}/retry -- ask the next fetch to try a stopped mailbox again. `lifted` is false when
+     * it was not stopped; that is still a success.
+     */
+    retryMailbox(id: string): Observable<{ connectionKind?: string | null; lifted?: boolean | null }> {
+        return this.http.post<{ connectionKind?: string | null; lifted?: boolean | null }>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(id)}/retry`,
+            {},
+        );
+    }
+
+    /**
      * POST /email/mailboxes/{id}/authorize -- begin the OAuth connect flow for an
      * EXISTING OAuth mailbox (re-authorising one whose grant died). Returns the
      * provider consent URL; the caller redirects the browser there. Empty body (the

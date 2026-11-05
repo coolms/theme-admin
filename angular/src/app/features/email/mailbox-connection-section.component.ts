@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
-import { type CapabilityState, ToastService } from '@coolms/ui-angular';
+import { type CapabilityState, DateTimePipe, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest, SendVia } from './email.types';
@@ -135,7 +135,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
 @Component({
     selector: 'app-mailbox-connection-section',
     standalone: true,
-    imports: [FormsModule],
+    imports: [FormsModule, DateTimePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (readOnly()) {
@@ -145,12 +145,25 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
         }
 
         @if (part() === 'connection') {
-            <p class="mb-3">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <span class="cms-badge"
                       [class.text-success]="'ok' === status().tone"
                       [class.text-warning]="'warn' === status().tone"
                       [class.text-danger]="'stop' === status().tone">{{ status().text }}</span>
-            </p>
+                @if ('stop' === status().tone && authorizeAccess() !== 'denied') {
+                    <button type="button" class="cms-btn cms-btn-sm" data-test="mailbox-retry"
+                            [disabled]="retrying()" (click)="retry()">
+                        @if (authorizeAccess() === 'elevate') { <i class="bi bi-lock"></i> }
+                        Retry
+                    </button>
+                }
+            </div>
+            @if ('stop' === status().tone && mailbox().connectionErrorDetail) {
+                <p class="cms-field-hint mb-3" data-test="mailbox-error-detail">
+                    The provider said: {{ mailbox().connectionErrorDetail }}
+                    @if (mailbox().connectionErrorAt) { ({{ mailbox().connectionErrorAt | appDateTime:'datetime' }}) }
+                </p>
+            }
         }
 
         <fieldset class="border-0 p-0 m-0" [disabled]="readOnly() || saving()">
@@ -312,6 +325,7 @@ export class MailboxConnectionSectionComponent {
     readonly draft = signal<ConnectionDraft>(connectionDraftOf({ id: '' }));
     readonly password = signal('');
     readonly saving = signal(false);
+    readonly retrying = signal(false);
 
     readonly readOnly = computed(() => this.access() === 'denied');
     readonly versioned = computed(() => {
@@ -399,6 +413,23 @@ export class MailboxConnectionSectionComponent {
 
     save(): void {
         afterAccess(this.access(), this.elevation, () => this.send());
+    }
+
+    /** Asks the next fetch to try a stopped mailbox again, then reads the mailbox, which now waits for that fetch. */
+    retry(): void {
+        afterAccess(this.authorizeAccess(), this.elevation, () => {
+            this.retrying.set(true);
+            this.email.retryMailbox(this.mailbox().id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                next: () => {
+                    this.retrying.set(false);
+                    this.reload.emit();
+                },
+                error: (err: unknown) => {
+                    this.retrying.set(false);
+                    this.toast.error(this.errors.humanize(err));
+                },
+            });
+        });
     }
 
     reconnect(): void {

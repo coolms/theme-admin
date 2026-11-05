@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+### Added
+- **A stopped mailbox can be retried from its settings.** The Connection pane shows what the provider said and when, for those who may manage it, and a Retry button beside the status. Reconnect stays beside the sign-in.
+
 ### Fixed
 - **A page in the admin no longer scrolls as a document.** The shell was the full screen height, so anything else in the body, such as a 36 pixel toolbar on a development server, added a scrollbar beside the panes. The body is now the screen's height and the shell takes what remains.
 
