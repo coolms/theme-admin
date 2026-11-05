@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+### Fixed
+- **A page in the admin no longer scrolls as a document.** The shell was the full screen height, so anything else in the body, such as a 36 pixel toolbar on a development server, added a scrollbar beside the panes. The body is now the screen's height and the shell takes what remains.
+
 ### Changed
 - Corner radii that spelled out a token's value name the token. Nothing changes on screen.
 - **Design tokens at v0.7.0**, from v0.3.0. Muted text and the danger colour are darker in light and danger is lighter in dark, for contrast. Every pair measured is at least 4.5:1. The fallbacks in the stylesheets follow the new values, and the top bar's menu items read the touch target token.
