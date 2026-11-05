@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
-import { ToastService } from '@coolms/ui-angular';
+import { DateTimeFormatService, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto } from './email.types';
@@ -64,13 +64,14 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         }
 
         beforeEach(() => {
-            email = jasmine.createSpyObj<EmailService>('EmailService', ['saveMailboxSection', 'authorizeMailbox', 'testMailbox']);
+            email = jasmine.createSpyObj<EmailService>('EmailService', ['saveMailboxSection', 'authorizeMailbox', 'retryMailbox', 'testMailbox']);
             toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'show']);
             TestBed.configureTestingModule({
                 imports: [MailboxConnectionSectionComponent],
                 providers: [
                     { provide: EmailService, useValue: email },
                     { provide: ToastService, useValue: toast },
+                    { provide: DateTimeFormatService, useValue: { dateTime: () => '5 Nov, 10:00' } },
                     { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
                     { provide: ElevationService, useValue: { elevated: () => false, offerFor: () => of(true) } },
                 ],
@@ -260,6 +261,67 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             expect((render(MAILBOX, 'allowed', 'sync').nativeElement as HTMLElement).querySelector('[name=backfillDepthMonths]')).toBeNull();
             expect((render({ ...MAILBOX, backfillDepthMonths: 6 } as EmailMailboxDto, 'allowed', 'sync').nativeElement as HTMLElement)
                 .querySelector('[name=backfillDepthMonths]')).not.toBeNull();
+        });
+
+        describe('a stopped mailbox', () => {
+            const STOPPED: EmailMailboxDto = {
+                ...MAILBOX, connectionKind: 'permanent', connectionErrorKind: 'auth_refused',
+                connectionErrorDetail: 'Invalid credentials (Failure)', connectionErrorAt: '2026-11-05T10:00:00+00:00',
+            };
+            function retryButton(fixture: { nativeElement: unknown }): HTMLButtonElement | null {
+                return (fixture.nativeElement as HTMLElement).querySelector('[data-test=mailbox-retry]');
+            }
+            function shown(mailbox: EmailMailboxDto, manage: 'allowed' | 'elevate' | 'denied') {
+                const fixture = TestBed.createComponent(MailboxConnectionSectionComponent);
+                fixture.componentRef.setInput('mailbox', mailbox);
+                fixture.componentRef.setInput('authorizeAccess', manage);
+                fixture.detectChanges();
+                return fixture;
+            }
+
+            it('says what the provider said, and offers Retry to who may manage it', () => {
+                const fixture = shown(STOPPED, 'allowed');
+                const detail = (fixture.nativeElement as HTMLElement).querySelector('[data-test=mailbox-error-detail]');
+                expect(detail?.textContent).toContain('Invalid credentials (Failure)');
+                expect(detail?.textContent).toContain('5 Nov, 10:00');
+                expect(retryButton(fixture)).not.toBeNull();
+            });
+
+            it('offers no Retry to who may not, and none to a mailbox that is not stopped', () => {
+                expect(retryButton(shown(STOPPED, 'denied'))).toBeNull();
+                expect(retryButton(shown({ ...STOPPED, connectionKind: 'ok' }, 'allowed'))).toBeNull();
+            });
+
+            it('keeps an old error to itself once the mailbox has recovered', () => {
+                const fixture = shown({ ...STOPPED, connectionKind: 'ok' }, 'allowed');
+                expect((fixture.nativeElement as HTMLElement).querySelector('[data-test=mailbox-error-detail]')).toBeNull();
+            });
+
+            it('Retry asks once, then reads the mailbox again', () => {
+                email.retryMailbox.and.returnValue(of({ connectionKind: 'pending_recheck', lifted: true }));
+                const fixture = shown(STOPPED, 'allowed');
+                const reload = jasmine.createSpy('reload');
+                fixture.componentInstance.reload.subscribe(reload);
+
+                retryButton(fixture)?.click();
+
+                expect(email.retryMailbox).toHaveBeenCalledOnceWith('mb-1');
+                expect(reload).toHaveBeenCalledTimes(1);
+                expect(fixture.componentInstance.retrying()).toBeFalse();
+            });
+
+            it('a refused Retry is said, and the button comes back', () => {
+                email.retryMailbox.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+                const fixture = shown(STOPPED, 'allowed');
+                const reload = jasmine.createSpy('reload');
+                fixture.componentInstance.reload.subscribe(reload);
+
+                retryButton(fixture)?.click();
+
+                expect(toast.error).toHaveBeenCalledOnceWith('failed');
+                expect(reload).not.toHaveBeenCalled();
+                expect(fixture.componentInstance.retrying()).toBeFalse();
+            });
         });
     });
 });
