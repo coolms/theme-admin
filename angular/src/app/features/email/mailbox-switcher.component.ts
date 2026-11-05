@@ -12,6 +12,7 @@ import { EmailMailboxDto } from './email.types';
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         @if (current(); as mailbox) {
+            <div class="mbs__head">
             @if (mailboxes().length < 2) {
                 <div class="mbs__card" (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
                     <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox }" />
@@ -31,6 +32,15 @@ import { EmailMailboxDto } from './email.types';
                     }
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </button>
+            }
+            @if (hasSettings()) {
+                <button type="button" class="mbs__settings" data-test="mailbox-settings"
+                        title="Mailbox settings" aria-label="Mailbox settings" (click)="settings.emit()">
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                </button>
+            }
+            </div>
+            @if (mailboxes().length > 1) {
                 @if (open()) {
                     <ul class="mbs__list" aria-label="Choose a mailbox">
                         @for (m of mailboxes(); track m.id) {
@@ -69,9 +79,18 @@ import { EmailMailboxDto } from './email.types';
             display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; text-align: left;
             padding: 8px; background: transparent; color: var(--cms-text); font: inherit;
         }
-        .mbs__card {
+        .mbs__head {
+            display: flex; align-items: stretch; min-width: 0;
             border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); background: var(--cms-surface);
         }
+        .mbs__card { position: relative; flex: 1 1 auto; gap: 6px; border: 0; border-radius: var(--cms-radius-md, 8px); }
+        /* The others' unread sits on the avatar: beside the chevron and the gear it left the name no room. */
+        .mbs__card > .mbs__count { position: absolute; top: 2px; left: 20px; box-shadow: 0 0 0 2px var(--cms-surface); }
+        .mbs__settings {
+            flex: 0 0 auto; width: 28px; padding: 0; border: 0; background: transparent; cursor: pointer;
+            color: var(--cms-text-muted); border-radius: var(--cms-radius-md, 8px);
+        }
+        .mbs__settings:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
         button.mbs__card { cursor: pointer; }
         button.mbs__card:hover, .mbs__choice:hover { background: var(--cms-surface-hover); }
         .mbs__avatar {
@@ -91,7 +110,7 @@ import { EmailMailboxDto } from './email.types';
         }
         .mbs__count {
             flex: 0 0 auto; background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a);
-            border-radius: 999px; font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
+            border-radius: 999px; font-size: .6875rem; line-height: 1.2; padding: 1px 5px; min-width: 16px; text-align: center;
         }
         .mbs__list {
             position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 10;
@@ -111,7 +130,10 @@ export class MailboxSwitcherComponent {
     readonly mailboxes = input.required<readonly EmailMailboxDto[]>();
     readonly currentId = input.required<string | null>();
     readonly unread = input.required<Readonly<Record<string, number>>>();
+    /** The server offers this person the mailbox's settings. */
+    readonly hasSettings = input(false);
     readonly chosen = output<string>();
+    readonly settings = output<void>();
     readonly menu = output<{ event: MouseEvent; id: string }>();
 
     protected readonly open = signal(false);

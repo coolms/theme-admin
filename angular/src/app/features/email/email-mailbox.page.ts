@@ -40,15 +40,15 @@ import { MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, rowTargetIds } from 
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
+import { folderRows } from './folder-tree.util';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
-import { folderDisplayName } from './folder-name.util';
 import {
     EmailAttachmentDto,
-    EmailFolderDto,
+    EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
     EmailMessageDto,
@@ -174,28 +174,38 @@ type PhonePane = 'folders' | 'message';
                         <app-mailbox-switcher [mailboxes]="mailboxes()"
                                               [currentId]="selectedMailboxId()"
                                               [unread]="mailboxUnread()"
+                                              [hasSettings]="hasMailboxSettings()"
                                               (chosen)="pickMailbox($event)"
+                                              (settings)="openMailboxSettings()"
                                               (menu)="onMailboxContextMenu($event.event, $event.id)" />
                         <nav class="mbx__folders">
-                            @for (f of folders(); track f.folder) {
-                                <button type="button" class="mbx__folder"
-                                        [class.mbx__folder--active]="f.folder === selectedFolder()"
-                                        [title]="folderCountTitle(f)"
-                                        (click)="selectFolder(f.folder)">
-                                    <span class="mbx__folder-name">{{ folderName(f) }}</span>
-                                    @if (folderUnread(f) > 0) {
-                                        <span class="mbx__badge">{{ folderUnread(f) }}</span>
-                                    }
-                                    <span class="mbx__folder-total">{{ folderCount(f) }}</span>
-                                    @if (importedFraction(f) !== null) {
-                                        <span class="mbx__folder-progress" aria-hidden="true">
-                                            <span class="mbx__folder-progress-bar"
-                                                  [style.width.%]="importedFraction(f)"></span>
-                                        </span>
-                                    }
-                                </button>
+                            @for (row of folderRows(); track row.folder.folder) {
+                                @if (row.selectable) {
+                                    <button type="button" class="mbx__folder"
+                                            [style.padding-left.px]="9 + row.depth * 14"
+                                            [class.mbx__folder--active]="row.folder.folder === selectedFolder()"
+                                            [title]="folderCountTitle(row.folder)"
+                                            (click)="selectFolder(row.folder.folder)">
+                                        <span class="mbx__folder-name">{{ row.name }}</span>
+                                        @if (folderUnread(row.folder) > 0) {
+                                            <span class="mbx__badge">{{ folderUnread(row.folder) }}</span>
+                                        }
+                                        <span class="mbx__folder-total">{{ folderCount(row.folder) }}</span>
+                                        @if (importedFraction(row.folder) !== null) {
+                                            <span class="mbx__folder-progress" aria-hidden="true">
+                                                <span class="mbx__folder-progress-bar"
+                                                      [style.width.%]="importedFraction(row.folder)"></span>
+                                            </span>
+                                        }
+                                    </button>
+                                } @else {
+                                    <div class="mbx__folder mbx__folder--holder"
+                                         [style.padding-left.px]="9 + row.depth * 14">
+                                        <span class="mbx__folder-name">{{ row.name }}</span>
+                                    </div>
+                                }
                             }
-                            @if (folders().length === 0) {
+                            @if (folderRows().length === 0) {
                                 <p class="mbx__rail-note">No folders yet.</p>
                             }
                         </nav>
@@ -816,6 +826,9 @@ type PhonePane = 'folders' | 'message';
             color: var(--cms-text); font-size: .875rem;
         }
         .mbx__folder:hover { background: var(--cms-surface-hover); }
+        .mbx__folder--holder, .mbx__folder--holder:hover {
+            background: transparent; cursor: default; color: var(--cms-text-muted);
+        }
         .mbx__folder--active { background: var(--cms-selected-light); font-weight: 600; }
         .mbx__folder-name { flex: 1; }
         .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
@@ -1164,15 +1177,18 @@ export class EmailMailboxPageComponent implements OnInit {
     /** On a phone, the folders stand in place of the list until one is chosen. */
     readonly phoneFolders = signal(false);
 
-    /** A folder's name as a person reads it: by its role when it has one, else by its path. */
-    readonly folderName = folderDisplayName;
+    /** The mailbox's folders as the server nests and orders them; empty when that could not be read. */
+    private readonly folderTree = signal<EmailFolderTreeNodeDto[]>([]);
+    /** The rail's rows: the server's tree, its counts as they stand now; the flat list until a tree is answered. */
+    readonly folderRows = computed(() => folderRows(this.folderTree(), this.folders()));
     /** The selected folder's name, as the rail shows it. */
     readonly selectedFolderName = computed(() => {
         const path = this.selectedFolder();
-        const folder = this.folders().find(f => f.folder === path);
 
-        return folder !== undefined ? folderDisplayName(folder) : path;
+        return this.folderRows().find(row => row.folder.folder === path)?.name ?? path;
     });
+    /** The server offers this person the mailbox's settings. */
+    readonly hasMailboxSettings = computed(() => this.toolbarNodes().some(n => 'mailbox-settings' === n.meta['action']));
 
     private readonly location = inject(Location);
     /** The width at which the page shows one pane at a time; the pane shown is then in the address. */
@@ -2875,18 +2891,24 @@ export class EmailMailboxPageComponent implements OnInit {
         if (id === null) {
             return;
         }
-        this.email.listFolders(id).subscribe({
-            next: list => {
+        forkJoin({
+            list: this.email.listFolders(id),
+            // The tree only arranges what the list holds: without it the rail shows the list.
+            tree: this.email.folderTree(id).pipe(catchError(() => of<EmailFolderTreeNodeDto[]>([]))),
+        }).subscribe({
+            next: ({ list, tree }) => {
                 this.folders.set(list);
+                this.folderTree.set(tree);
                 this.patchMailboxUnread(id, list);
                 const current = this.selectedFolder();
                 if (list.length > 0 && !list.some(f => f.folder === current)) {
-                    this.selectedFolder.set(list[0].folder);
+                    this.selectedFolder.set(folderRows(tree, list).find(row => row.selectable)?.folder.folder ?? list[0].folder);
                 }
                 this.loadMessages(true);
             },
             error: () => {
                 this.folders.set([]);
+                this.folderTree.set([]);
                 this.loadMessages(true);
             },
         });

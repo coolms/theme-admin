@@ -398,6 +398,15 @@ export interface EmailImportResultDto {
  * The Gmail/Workspace "delegate access" model: `delegateUserId` may read + send-as
  * the mailbox. Soft-ref uuids -- the FE shows shortened ids (no name resolution).
  */
+/** A folder in its mailbox's tree, as the server orders and names it. */
+export interface EmailFolderTreeNodeDto extends EmailFolderDto {
+    /** How a person reads it, when no role names it. */
+    name: string;
+    /** False for a folder that only holds folders, with nothing to open. */
+    selectable: boolean;
+    children: EmailFolderTreeNodeDto[];
+}
+
 export interface MailboxDelegationDto {
     id: string;
     mailboxId?: string;

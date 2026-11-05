@@ -8,6 +8,10 @@ major number means here.
 
 ## Unreleased
 
+### Changed
+- **The mail rail draws the server's folder tree**, nested and ordered as the server answers, with its names. A folder that only holds folders opens nothing. Until a tree is answered the rail shows the flat list as before.
+- **A mailbox's settings open from its card.** The gear leaves the page's toolbar; Email settings at the top right holds mail-wide settings only.
+
 ### Added
 - **Refresh in the mail list.** It asks the server to sync the open mailbox now, shows that it runs, and says when the mailbox last synced. If no answer arrives within a minute, the list is read anyway.
 - **A stopped mailbox can be retried from its settings.** The Connection pane shows what the provider said and when, for those who may manage it, and a Retry button beside the status. Reconnect stays beside the sign-in.
