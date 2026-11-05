@@ -25,6 +25,7 @@ import {
     type DataGridLoadRequest,
 } from '@coolms/ui-angular';
 import { LeadDto, LeadStatus, LeadsService } from './leads.service';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 
 interface StatusTab {
     readonly id:    LeadStatus;
@@ -33,7 +34,6 @@ interface StatusTab {
 }
 
 /** Rows per lazy page -- matches the grid YAML's `dataSource.pageSize`. */
-const PAGE_SIZE = 50;
 
 /**
  * Lead inbox admin page (/admin/leads).
@@ -117,7 +117,7 @@ export class LeadsListComponent implements OnInit {
      * its query style -- this page names no list route. The tab is the operation's SCOPE (`?status=`, applied
      * before its RQL), sent with every request.
      */
-    readonly rows    = declaredRowsSource({ pageSize: PAGE_SIZE, extraParams: () => ({ status: this.status() }) });
+    readonly rows    = declaredRowsSource({ pageSize: inject(ConsoleSettingsService).pageSize(), extraParams: () => ({ status: this.status() }) });
     readonly leads   = computed(() => this.rows.data().items as unknown as LeadDto[]);
     /** Server's count for the CURRENT bucket + filter -- drives the footer. */
     readonly totalItems = computed(() => this.rows.data().totalItems);

@@ -1,7 +1,9 @@
+import { inject } from '@angular/core';
 import { type Routes } from '@angular/router';
 import { authGuard, consoleChildren, loginPageGuard, LoginComponent } from '@coolms/core-angular';
 import { AdminLayoutComponent } from './shell/admin-layout.component';
 import { CONSOLE_ENTRIES } from './console.registry';
+import { ConsoleSettingsService } from './features/settings/console-settings.service';
 import { MODULE_SETTINGS_ROUTE } from './features/settings/settings.routes';
 
 export const routes: Routes = [
@@ -16,6 +18,7 @@ export const routes: Routes = [
         path: '',
         component: AdminLayoutComponent,
         canActivate: [authGuard],
+        resolve: { consoleSettings: () => inject(ConsoleSettingsService).load() },
         children: [
             // `/admin` lands on the dashboard now, which is what it was asked
             // for. It redirected to `sections` only because there was

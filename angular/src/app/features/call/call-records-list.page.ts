@@ -19,6 +19,7 @@ import {
     PageTitleService,
     type DataGridLoadRequest,
 } from '@coolms/ui-angular';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 
 /**
  * Call history admin list page (/admin/call/records).
@@ -67,7 +68,6 @@ export class CallRecordsListComponent implements OnInit {
     private readonly router     = inject(Router);
     private readonly titleSvc   = inject(PageTitleService);
 
-    private readonly PAGE_SIZE = 50;
 
     /** DataGrid config base URL from the API manifest. */
     readonly configBaseUrl = computed(() =>
@@ -78,7 +78,7 @@ export class CallRecordsListComponent implements OnInit {
      * The rows, from where the grid's definition says they come from (`rows.operation`, `call.record.list`) and in
      * its query style -- this page names no list route.
      */
-    readonly rows       = declaredRowsSource({ pageSize: this.PAGE_SIZE });
+    readonly rows       = declaredRowsSource({ pageSize: inject(ConsoleSettingsService).pageSize() });
     /** Total rows matching the current filter set, server-reported. */
     readonly totalItems = computed(() => this.rows.data().totalItems);
     /** True after the first response (success OR error); the footer stays blank before it. */

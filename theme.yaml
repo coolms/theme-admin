@@ -15,3 +15,21 @@ license: MIT
 # manifest (`ui.contracts`, `ui.modules`), which is what activates a module.
 contracts:
   console: "1.0"
+
+# The person's settings for this host, section `console`: what a person may keep on the server for the admin.
+settings:
+  sidebarCollapsed:
+    type: boolean
+    default: false
+    label: Collapse the sidebar
+  pageSize:
+    type: integer
+    default: 50
+    label: Rows loaded at a time
+    min: 10
+    max: 200
+  viewMode:
+    type: choice
+    default: page
+    label: Default view
+    choices: [page, list, tiles]

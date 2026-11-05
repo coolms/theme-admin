@@ -3,6 +3,7 @@ import { Subject } from 'rxjs';
 import { MediaAssetDto, CollectionNode, MediaViewMode } from './media.types';
 import { toExplorerViewMode } from '@coolms/ui-angular';
 import { NaviGraphNode, UserPreferencesService } from '@coolms/core-angular';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 /**
  * Scoped shared state for the Media Library page.
  *
@@ -20,6 +21,7 @@ import { NaviGraphNode, UserPreferencesService } from '@coolms/core-angular';
 export class MediaPageStateService {
 
     private readonly prefs = inject(UserPreferencesService);
+    private readonly consoleSettings = inject(ConsoleSettingsService);
 
     // -- Navigation & selection ------------------------------------------------
 
@@ -125,8 +127,9 @@ export class MediaPageStateService {
         const restored = 'list' === saved?.viewMode
             ? 'content'
             : toExplorerViewMode(saved?.viewMode);
-        if (null !== restored) {
-            this.viewMode.set(restored);
+        const viewMode = restored ?? this.consoleSettings.explorerView();
+        if (null !== viewMode) {
+            this.viewMode.set(viewMode);
         }
 
         // Persist currentDir changes
