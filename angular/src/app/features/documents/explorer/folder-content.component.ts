@@ -182,7 +182,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
             justify-content: center;
         }
         .cms-folder-content__status--error {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
         .cms-folder-content__empty {
             padding: 2rem;

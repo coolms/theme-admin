@@ -275,7 +275,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             display: flex; align-items: center; gap: 8px;
             margin-top: 4px;
             font-size: .8rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .recurrence-summary__text { flex: 1; }
         .recurrence-summary__edit {
@@ -284,7 +284,7 @@ const STATUSES: ReadonlyArray<{ value: CalendarItemStatusCode; label: string }> 
             font-size: .8rem; cursor: pointer;
             text-decoration: underline;
         }
-        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; margin: 0; }
+        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; margin: 0; }
 
         /* Footer slot is "display: flex; justify-content: flex-end; gap: 8px"
            (see styles.scss .cms-dialog-footer). Pushing the Delete button

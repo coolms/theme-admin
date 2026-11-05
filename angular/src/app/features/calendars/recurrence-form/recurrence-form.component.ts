@@ -308,7 +308,7 @@ import {
         }
         .rrule-row__unit {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             margin-bottom: 6px;
         }
         .field {
@@ -433,14 +433,14 @@ import {
         .exclude__remove {
             background: transparent;
             border: none;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             cursor: pointer;
             font-size: 1rem;
             line-height: 1;
             padding: 0 4px;
         }
         .exclude__remove:hover:not(:disabled) {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
 
         /* Preview */
@@ -456,7 +456,7 @@ import {
         }
         .preview__pending {
             font-size: .75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .preview__list {
             list-style: disc;
@@ -468,9 +468,9 @@ import {
         .preview__list li { margin: 1px 0; }
 
 
-        .hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: 4px 0 0; }
+        .hint { font-size: .75rem; color: var(--cms-text-muted, #4b5563); margin: 4px 0 0; }
         .hint--inline { margin: 0; }
-        .error { font-size: .8rem; color: var(--cms-danger, #dc2626); margin: 4px 0 0; }
+        .error { font-size: .8rem; color: var(--cms-danger, #b91c1c); margin: 4px 0 0; }
         code {
             font-family: var(--cms-font-mono, monospace);
             background: var(--cms-surface-muted); padding: 1px 4px; border-radius: 3px;

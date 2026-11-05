@@ -160,7 +160,7 @@ import { VfsNodeDto } from '@coolms/ui-angular';
 
         .detail-muted {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
 
         /* Metadata definition list — no background, clean two-column rows */
@@ -181,7 +181,7 @@ import { VfsNodeDto } from '@coolms/ui-angular';
         .detail-row:last-child { border-bottom: none; }
         dt {
             font-size: .8125rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-weight: 400;
             margin: 0;
         }

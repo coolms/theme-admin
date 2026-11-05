@@ -119,8 +119,8 @@ interface EventBreakdownRow {
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .cms-subj { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; overflow-y: auto; }
-        .cms-subj__hint { color: var(--cms-text-muted, #69707c); }
-        .cms-subj__error { color: var(--cms-danger, #dc2626); font-size: 0.88rem; }
+        .cms-subj__hint { color: var(--cms-text-muted, #4b5563); }
+        .cms-subj__error { color: var(--cms-danger, #b91c1c); font-size: 0.88rem; }
         .cms-subj__card {
             border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px);
             background: var(--cms-surface, #fff); padding: 0.875rem 1rem; max-width: 46rem;
@@ -132,7 +132,7 @@ interface EventBreakdownRow {
         .cms-subj__grid {
             display: grid; grid-template-columns: 8rem 1fr; gap: 0.4rem 0.75rem; margin: 0; font-size: 0.9rem;
         }
-        .cms-subj__grid dt { color: var(--cms-text-muted, #69707c); }
+        .cms-subj__grid dt { color: var(--cms-text-muted, #4b5563); }
         .cms-subj__grid dd { margin: 0; color: var(--cms-text, #111827); }
         .cms-subj__num { font-variant-numeric: tabular-nums; font-weight: 600; }
         .cms-subj__code {
@@ -144,7 +144,7 @@ interface EventBreakdownRow {
         .cms-subj__badge { font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; text-transform: capitalize; }
         .cms-subj__badge--known      { background: var(--cms-info-light, #eff6ff); color: var(--cms-primary, #2563eb); }
         .cms-subj__badge--recognised { background: var(--cms-success-light, #f0fdf4); color: var(--cms-success, #16a34a); }
-        .cms-subj__badge--anon       { background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #69707c); }
+        .cms-subj__badge--anon       { background: var(--cms-surface-muted, #f3f4f6); color: var(--cms-text-muted, #4b5563); }
         .cms-subj__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
         .cms-subj__row { display: grid; grid-template-columns: minmax(0, 14rem) 1fr auto; align-items: center; gap: 0.75rem; }
         .cms-subj__label {

@@ -107,7 +107,7 @@ interface MiniCell {
             border: 0;
             background: transparent;
             border-radius: var(--cms-radius-sm, 4px);
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             cursor: pointer;
         }
         .nav:hover { background: var(--cms-surface-muted); color: var(--cms-text); }
@@ -134,7 +134,7 @@ interface MiniCell {
             text-align: center;
             font-size: .65rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             text-transform: uppercase;
         }
 

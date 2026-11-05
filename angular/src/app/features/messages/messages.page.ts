@@ -756,7 +756,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__newmode { display: flex; gap: .25rem; margin-bottom: .5rem; }
         .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__newmode-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); font-weight: 500; }
-        .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #69707c); }
+        .msg__newhint { margin: .4rem 0 .1rem; font-size: .75rem; color: var(--cms-text-muted, #4b5563); }
         .msg__channels { border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         .msg__channels-head { display: flex; align-items: center; justify-content: space-between; padding: .55rem 1rem; font-size: .8rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-canvas, #f3f4f6); }
         .msg__channels-refresh { border: 0; background: transparent; color: var(--cms-text-secondary, #525a66); cursor: pointer; padding: .1rem .3rem; font-size: .9rem; }
@@ -888,7 +888,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__members-list { list-style: none; margin: 0 0 .5rem; padding: 0; display: flex; flex-direction: column; gap: .1rem; max-height: 220px; overflow-y: auto; }
         .msg__member { display: flex; align-items: center; gap: .5rem; padding: .25rem .1rem; }
         .msg__member-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .85rem; }
-        .msg__member-role { font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #69707c); background: var(--cms-border-light, #f0f2f5); border-radius: 999px; padding: .05rem .4rem; }
+        .msg__member-role { font-size: .65rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cms-text-muted, #4b5563); background: var(--cms-border-light, #f0f2f5); border-radius: 999px; padding: .05rem .4rem; }
         .msg__member-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 0; border-radius: 999px; background: transparent; color: var(--cms-text-secondary, #525a66); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0; }
         .msg__member-x:hover { background: rgba(220,38,38,.1); color: var(--cms-danger); }
         .msg__members-add { display: flex; flex-direction: column; gap: .4rem; }
@@ -1032,12 +1032,12 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__mention-opt--active { background: var(--cms-border-light, #f0f2f5); }
         .msg__mention-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
         /* "not in chat" tag on a directory (non-member) mention candidate. */
-        .msg__mention-tag { flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .02em; color: var(--cms-text-muted, #69707c); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: .05rem .3rem; }
+        .msg__mention-tag { flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .02em; color: var(--cms-text-muted, #4b5563); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: .05rem .3rem; }
         /* "Add {name} to conversation?" prompt after mentioning a non-member. */
         .msg__mention-addbar { position: absolute; bottom: calc(100% - .3rem); left: 1.1rem; right: 1.1rem; z-index: 21; display: flex; align-items: center; gap: .5rem; padding: .4rem .6rem; background: var(--cms-surface, #fff); border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12)); font-size: .82rem; }
         .msg__mention-addtxt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cms-text, #111827); }
         .msg__mention-addbtn { flex: 0 0 auto; border: 0; border-radius: var(--cms-radius, 6px); padding: .3rem .6rem; font: inherit; font-size: .8rem; font-weight: 600; color: var(--cms-text-inverse); background: var(--cms-primary, #2563eb); cursor: pointer; }
-        .msg__mention-dismiss { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-muted, #69707c); font-size: .9rem; line-height: 1; cursor: pointer; padding: .2rem; }
+        .msg__mention-dismiss { flex: 0 0 auto; border: 0; background: transparent; color: var(--cms-text-muted, #4b5563); font-size: .9rem; line-height: 1; cursor: pointer; padding: .2rem; }
         /* An @-mention token inside a rendered message body. */
         .msg__mention { color: var(--cms-primary, #2563eb); background: var(--cms-border-light, #f0f2f5); border-radius: var(--cms-radius-sm, 4px); padding: 0 .2rem; font-weight: 600; }
         .msg__bubble--me .msg__mention { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
@@ -1046,7 +1046,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__chanref:hover { text-decoration: underline; }
         .msg__bubble--me .msg__chanref { color: var(--cms-text-inverse); background: rgba(255, 255, 255, .22); }
         /* The leading hash in a #channel typeahead row. */
-        .msg__chan-hash { flex: 0 0 auto; width: 1.4rem; text-align: center; font-weight: 700; color: var(--cms-text-muted, #69707c); }
+        .msg__chan-hash { flex: 0 0 auto; width: 1.4rem; text-align: center; font-weight: 700; color: var(--cms-text-muted, #4b5563); }
         /* Pending attachment chips (composer, above the input row). */
         .msg__pending { display: flex; flex-wrap: wrap; gap: .4rem; padding: .5rem 1.1rem 0; flex-shrink: 0; background: var(--cms-surface); }
         .msg__chip { display: inline-flex; align-items: center; gap: .35rem; max-width: 220px; padding: .25rem .5rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: 16px; background: var(--cms-bg, #f8f9fa); font-size: .8rem; }
@@ -2205,7 +2205,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     statusColor(status: string | null): string {
-        return this.STATUSES.find(s => s.value === status)?.color ?? 'var(--cms-text-muted, #69707c)';
+        return this.STATUSES.find(s => s.value === status)?.color ?? 'var(--cms-text-muted, #4b5563)';
     }
 
     statusLabel(status: string | null): string {

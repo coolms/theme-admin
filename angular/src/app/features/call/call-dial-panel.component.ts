@@ -178,7 +178,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
         }
         .dial__attempt--failed { background: var(--cms-warning-light); color: var(--cms-warning-text); }
         .dial__attempt-text { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-        .dial__elapsed { font-variant-numeric: tabular-nums; color: var(--cms-text-muted, #69707c); }
+        .dial__elapsed { font-variant-numeric: tabular-nums; color: var(--cms-text-muted, #4b5563); }
         .dial__reason { font-size: .78rem; overflow-wrap: anywhere; }
         .dial__cancel, .dial__retry {
             flex: 0 0 auto; height: 32px; padding: 0 12px;
@@ -189,7 +189,7 @@ import { CallOverlayPreferencesService } from './call-overlay-preferences.servic
         .dial__cancel:disabled, .dial__retry:disabled { opacity: .5; cursor: default; }
         .dial__aux--sm { width: 32px; height: 32px; }
 
-        .dial__hint { margin: 0; font-size: .75rem; color: var(--cms-text-muted, #69707c); text-align: center; }
+        .dial__hint { margin: 0; font-size: .75rem; color: var(--cms-text-muted, #4b5563); text-align: center; }
     `],
 })
 export class CallDialPanelComponent implements OnInit {

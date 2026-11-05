@@ -702,7 +702,7 @@ type RailTab = string;
         .page-editor--landing .page-editor__post { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         /* Layout panel: a page-size max-width caps + centers the editing canvas. */
         .page-editor__canvas { width: 100%; margin-inline: auto; }
-        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #69707c); margin: .5rem 0 0; }
+        .page-editor__rail-hint { font-size: .75rem; color: var(--cms-text-muted, #4b5563); margin: .5rem 0 0; }
         .page-editor__body-history { margin-top: 12px; font-size: .8125rem; }
         .page-editor__body-history > summary { cursor: pointer; color: var(--cms-text-muted); }
 

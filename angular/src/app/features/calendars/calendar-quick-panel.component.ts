@@ -176,8 +176,8 @@ const LOOKAHEAD_DAYS = 14;
             justify-content: stretch;
         }
 
-        .status { color: var(--cms-text-muted, #69707c); padding: 8px 4px; margin: 0; }
-        .status--error { color: var(--cms-danger, #dc2626); }
+        .status { color: var(--cms-text-muted, #4b5563); padding: 8px 4px; margin: 0; }
+        .status--error { color: var(--cms-danger, #b91c1c); }
 
         .empty {
             display: flex;
@@ -185,7 +185,7 @@ const LOOKAHEAD_DAYS = 14;
             align-items: center;
             gap: 8px;
             padding: 24px 12px;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             text-align: center;
         }
         .empty i { font-size: 1.6rem; }
@@ -196,7 +196,7 @@ const LOOKAHEAD_DAYS = 14;
             margin: 0;
             font-size: .72rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             text-transform: uppercase;
             letter-spacing: .03em;
             padding: 2px 0;
@@ -238,14 +238,14 @@ const LOOKAHEAD_DAYS = 14;
         .ev__time {
             flex-shrink: 0;
             font-size: .72rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-variant-numeric: tabular-nums;
         }
         .horizon {
             margin: 8px 0 0;
             text-align: center;
             font-size: .7rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             font-style: italic;
         }
     `],

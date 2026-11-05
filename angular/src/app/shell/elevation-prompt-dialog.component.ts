@@ -123,7 +123,7 @@ import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
         .cms-input--invalid { border-color: var(--cms-danger) !important; }
         .ep-error         { margin-top: 6px; font-size: .8rem; color: var(--cms-danger-text); }
         .ep-note          { margin: 14px 0 0; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
-        .ep-note--muted   { margin-top: 6px; color: var(--cms-text-muted, #69707c); }
+        .ep-note--muted   { margin-top: 6px; color: var(--cms-text-muted, #4b5563); }
     `],
 })
 export class ElevationPromptDialogComponent implements AfterViewInit {

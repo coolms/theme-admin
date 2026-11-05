@@ -229,9 +229,9 @@ import { type FcViewName, viewTitle } from './view-title.util';
             align-items: center;
             gap: 12px;
             padding: 48px 24px;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
-        .detail-status--error { color: var(--cms-danger, #dc2626); }
+        .detail-status--error { color: var(--cms-danger, #b91c1c); }
 
         .page {
             display: flex;
@@ -321,7 +321,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             margin: 0 0 8px;
             font-size: .75rem;
             font-weight: 600;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             text-transform: uppercase;
             letter-spacing: .03em;
             display: flex;
@@ -335,7 +335,7 @@ import { type FcViewName, viewTitle } from './view-title.util';
             margin: 0 0 8px;
             font-size: .8rem;
         }
-        .meta dt { color: var(--cms-text-muted, #69707c); }
+        .meta dt { color: var(--cms-text-muted, #4b5563); }
         .meta dd { margin: 0; color: var(--cms-text); }
         .side-card__btn {
             display: flex;

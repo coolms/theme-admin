@@ -127,7 +127,7 @@ export interface ScopePromptDialogData {
         .choice strong { font-size: .8125rem; font-weight: 500; }
         .choice small {
             font-size: .75rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .choice--disabled {
             opacity: .55;

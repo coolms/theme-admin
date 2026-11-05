@@ -243,8 +243,8 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             font-family: inherit;
         }
         .params { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .hint { color: var(--cms-text-muted, #69707c); font-size: .8rem; margin: 4px 0; }
-        .error { color: var(--cms-danger, #dc2626); font-size: .85rem; }
+        .hint { color: var(--cms-text-muted, #4b5563); font-size: .8rem; margin: 4px 0; }
+        .error { color: var(--cms-danger, #b91c1c); font-size: .85rem; }
 
         /* One-off date row — keep the year/month/day inputs reasonably
            wide while leaving room for the X button on the right. */
@@ -261,10 +261,10 @@ const WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
             background: transparent;
             border-radius: var(--cms-radius-sm, 4px);
             cursor: pointer;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .icon-btn:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
-        .icon-btn--danger:hover { color: var(--cms-danger, #dc2626); border-color: var(--cms-danger, #dc2626); }
+        .icon-btn--danger:hover { color: var(--cms-danger, #b91c1c); border-color: var(--cms-danger, #b91c1c); }
 
         .link-btn {
             background: none;

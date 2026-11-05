@@ -180,7 +180,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
                highlight entirely. */
             --fc-classic-today:               color-mix(in srgb, var(--cms-accent) 10%, transparent);
             --fc-classic-highlight:           color-mix(in srgb, var(--cms-accent) 22%, transparent);
-            --fc-classic-now:                 var(--cms-danger, #dc2626);
+            --fc-classic-now:                 var(--cms-danger, #b91c1c);
 
             /* The default event colour, for items with no colour of their own.
                The theme wires these into its eventColor / eventContrastColor
@@ -287,7 +287,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
         }
 
         .error {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
             padding: 8px 16px;
             margin: 0;
             font-size: .85rem;
@@ -321,7 +321,7 @@ const HOLIDAY_WORKING_COLOR = '#dcfce7'; // light green — working compensation
             border-radius: var(--cms-radius-sm, 4px);
         }
         .cmenu__item:hover { background: var(--cms-btn-hover-bg, #f3f4f6); }
-        .cmenu__item--danger { color: var(--cms-danger, #dc2626); }
+        .cmenu__item--danger { color: var(--cms-danger, #b91c1c); }
         .cmenu__item--danger:hover { background: var(--cms-danger-light, #fef2f2); }
         /* — thin divider between cmenu action groups (Duplicate
            / Status / Delete). 1px line that respects the 4px outer

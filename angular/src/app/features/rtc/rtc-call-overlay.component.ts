@@ -258,7 +258,7 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
         .rtc-btn:hover { filter: brightness(1.08); }
         .rtc-btn--accept { background: var(--cms-success); }
         .rtc-btn--end    { background: var(--cms-danger); }
-        .rtc-btn--mute   { background: var(--cms-text-muted, #69707c); }
+        .rtc-btn--mute   { background: var(--cms-text-muted, #4b5563); }
         .rtc-btn--mute.rtc-btn--on { background: var(--cms-warning, #d97706); }
 
         /* Video stage (Slice 4d) — a floating 1:1 call window. */
@@ -336,12 +336,12 @@ import { RtcSrcObjectDirective } from './rtc-src-object.directive';
         .rtc-rec {
             display: inline-flex; align-items: center; gap: 4px;
             padding: 1px 8px; border-radius: 999px;
-            background: color-mix(in srgb, var(--cms-danger, #dc2626) 88%, black);
+            background: color-mix(in srgb, var(--cms-danger, #b91c1c) 88%, black);
             color: var(--cms-text-inverse); font-size: .64rem; font-weight: 700; letter-spacing: .04em;
             animation: rtc-rec-blink 1.6s ease-in-out infinite;
         }
         @keyframes rtc-rec-blink { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        .rtc-btn--rec { background: var(--cms-danger, #dc2626); }
+        .rtc-btn--rec { background: var(--cms-danger, #b91c1c); }
         .rtc-group-time { flex: 0 0 auto; font-size: .72rem; opacity: .8; }
         .rtc-group-connecting {
             padding: 22px; text-align: center;

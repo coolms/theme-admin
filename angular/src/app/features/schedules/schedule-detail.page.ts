@@ -289,15 +289,15 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
 
         .form-actions { display: flex; gap: 8px; }
 
-        .hint { color: var(--cms-text-muted, #69707c); font-size: .8rem; margin: 4px 0 0; }
-        .error { color: var(--cms-danger, #dc2626); font-size: .8rem; margin: 4px 0 0; }
+        .hint { color: var(--cms-text-muted, #4b5563); font-size: .8rem; margin: 4px 0 0; }
+        .error { color: var(--cms-danger, #b91c1c); font-size: .8rem; margin: 4px 0 0; }
         .mono { font-family: var(--cms-font-mono, monospace); }
 
         .history dl {
             display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px;
             font-size: .9rem; margin: 0;
         }
-        .history dt { color: var(--cms-text-muted, #69707c); font-weight: 500; }
+        .history dt { color: var(--cms-text-muted, #4b5563); font-weight: 500; }
 
     `],
 })

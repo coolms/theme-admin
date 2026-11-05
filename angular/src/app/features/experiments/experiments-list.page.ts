@@ -180,7 +180,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
                card the region is simply short, not an unfilled block. */
             overflow-y: auto;
         }
-        .cms-exp__hint { color: var(--cms-text-muted, #69707c); }
+        .cms-exp__hint { color: var(--cms-text-muted, #4b5563); }
         .cms-exp__hint--inset { margin: 0 0 0.6rem; font-size: 0.82rem; }
         .cms-exp__empty {
             display: flex;
@@ -189,7 +189,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             gap: 0.6rem;
             padding: 3rem 1rem;
             text-align: center;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .cms-exp__empty .bi { font-size: 2rem; }
         .cms-exp__card {
@@ -210,7 +210,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
         .cms-exp__heading { display: flex; align-items: center; gap: 0.5rem; }
         .cms-exp__name { margin: 0; font-size: 1rem; color: var(--cms-text, #111827); }
         .cms-exp__head-right { display: flex; align-items: center; gap: 0.4rem; }
-        .cms-exp__meta { font-size: 0.8rem; color: var(--cms-text-muted, #69707c); margin-right: 0.35rem; }
+        .cms-exp__meta { font-size: 0.8rem; color: var(--cms-text-muted, #4b5563); margin-right: 0.35rem; }
         .cms-exp__meta code {
             font-family: var(--cms-font-mono, ui-monospace, monospace);
             font-size: 0.78rem;
@@ -221,7 +221,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             padding: 0.1rem 0.5rem;
             border-radius: 999px;
             background: var(--cms-surface-muted, #f3f4f6);
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .cms-exp__badge--running { background: var(--cms-success-subtle); color: var(--cms-success-text); }
         .cms-exp__badge--stopped { background: var(--cms-danger-subtle); color: var(--cms-danger-text); }
@@ -232,7 +232,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             gap: 0.4rem;
             margin: 0 0 0.7rem;
             font-size: 0.82rem;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .cms-exp__verdict--win { color: var(--cms-success-text); font-weight: 600; }
         .cms-exp__variants {
@@ -253,7 +253,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
         }
         .cms-exp__bar-head { /* header label over the bar column */ }
         .cms-exp__variant {
@@ -266,7 +266,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             color: var(--cms-text, #111827);
             font-size: 0.9rem;
         }
-        .cms-exp__row--head .cms-exp__variant { font-size: 0.7rem; color: var(--cms-text-muted, #69707c); }
+        .cms-exp__row--head .cms-exp__variant { font-size: 0.7rem; color: var(--cms-text-muted, #4b5563); }
         .cms-exp__leading {
             display: inline-flex;
             align-items: center;
@@ -275,7 +275,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.02em;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             background: var(--cms-surface-muted, #f3f4f6);
             padding: 0.05rem 0.4rem;
             border-radius: 999px;
@@ -285,7 +285,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
             font-size: 0.68rem;
             text-transform: uppercase;
             letter-spacing: 0.02em;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             background: var(--cms-surface-muted, #f3f4f6);
             padding: 0.05rem 0.4rem;
             border-radius: 999px;
@@ -317,7 +317,7 @@ import { ExperimentFormDialogComponent } from './experiment-form-dialog.componen
         .cms-exp__row--head .cms-exp__rate { font-weight: 400; }
         .cms-exp__counts {
             font-variant-numeric: tabular-nums;
-            color: var(--cms-text-muted, #69707c);
+            color: var(--cms-text-muted, #4b5563);
             text-align: right;
             font-size: 0.85rem;
         }

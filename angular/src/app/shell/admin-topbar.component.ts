@@ -171,8 +171,7 @@ import { CrumbNamesService } from './crumb-names.service';
             /* Two or more panel toggles go behind one menu; a single one stays on the bar. */
             :host(.cms-topbar--panels-menu) .cms-topbar-panel { display: none !important; }
             :host(.cms-topbar--panels-menu) .cms-topbar-more { display: block; }
-            /* 44px: the touch target (design-tokens' touch-target-min, not yet in the tokens this admin installs). */
-            .cms-topbar-more__menu .dropdown-item { min-height: 44px; }
+            .cms-topbar-more__menu .dropdown-item { min-height: var(--cms-touch-target-min, 44px); }
         }
     `],
 })

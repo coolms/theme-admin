@@ -336,7 +336,7 @@ const CLASS_DESCRIPTION: Readonly<Record<ReplacePreviewResponse['classification'
 
         .cms-replace-template-dialog__error {
             font-size: 0.8rem;
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
             margin: 0;
         }
     `],

@@ -148,7 +148,7 @@ import { filenameOf, formatLocation, formatSize } from './vfs-location.helpers';
             border-radius: var(--cms-radius-sm);
         }
         .cms-instance-detail__error {
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
             font-size: 0.8rem;
         }
     `],

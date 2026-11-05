@@ -145,7 +145,7 @@ import type { DocumentGenerationDto } from '../documents.types';
         }
         .cms-gen-status__badge--failed {
             background: var(--cms-danger-light, #fef2f2);
-            color: var(--cms-danger, #dc2626);
+            color: var(--cms-danger, #b91c1c);
         }
 
         .cms-gen-status__progress { display: flex; flex-direction: column; gap: .25rem; }
