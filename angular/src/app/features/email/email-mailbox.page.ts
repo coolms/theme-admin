@@ -43,6 +43,7 @@ import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, imported
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
+import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { folderDisplayName } from './folder-name.util';
 import {
     EmailAttachmentDto,
@@ -123,7 +124,7 @@ type PhonePane = 'folders' | 'message';
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
     imports: [
-        StateComponent,
+        StateComponent, MailboxSwitcherComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
     ],
@@ -164,35 +165,16 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back to {{ selectedFolderName() || 'the list' }}</span>
                         </button>
-                        <span class="mbx__rail-label">Mailbox</span>
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
                              with Retry reading it again. The message pane is not touched. -->
                         @if (mailboxesFailure() !== null) {
                             <cms-state kind="error" title="Could not load mailboxes." [error]="mailboxesFailure()" actionLabel="Retry" (acted)="loadMailboxes()" />
                         }
-                        <div class="mbx__accounts" role="tablist" aria-label="Mailboxes">
-                            @for (mb of mailboxes(); track mb.id) {
-                                <button type="button" class="mbx__account"
-                                        role="tab"
-                                        [class.mbx__account--active]="mb.id === selectedMailboxId()"
-                                        [attr.aria-selected]="mb.id === selectedMailboxId()"
-                                        [title]="mb.label || mb.emailAddress || mb.id"
-                                        (click)="pickMailbox(mb.id)"
-                                        (contextmenu)="onMailboxContextMenu($event, mb.id)">
-                                    <span class="mbx__account-avatar"
-                                          [style.background]="avatarColor(mb.id)">
-                                        {{ mailboxInitial(mb) }}
-                                        @if (mailboxUnread()[mb.id] > 0) {
-                                            <span class="mbx__account-badge"
-                                                  [attr.aria-label]="mailboxUnread()[mb.id] + ' unread'">
-                                                {{ mailboxUnread()[mb.id] > 99 ? '99+' : mailboxUnread()[mb.id] }}
-                                            </span>
-                                        }
-                                    </span>
-                                    <span class="mbx__account-label">{{ mb.label || mb.emailAddress || mb.id }}</span>
-                                </button>
-                            }
-                        </div>
+                        <app-mailbox-switcher [mailboxes]="mailboxes()"
+                                              [currentId]="selectedMailboxId()"
+                                              [unread]="mailboxUnread()"
+                                              (chosen)="pickMailbox($event)"
+                                              (menu)="onMailboxContextMenu($event.event, $event.id)" />
                         <nav class="mbx__folders">
                             @for (f of folders(); track f.folder) {
                                 <button type="button" class="mbx__folder"
@@ -823,29 +805,6 @@ type PhonePane = 'folders' | 'message';
         .mbx__rail {
             width: 230px; flex: 0 0 230px;
             padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
-        }
-        .mbx__rail-label { font-size: .75rem; color: var(--cms-text-muted); text-transform: uppercase; }
-        .mbx__accounts { display: flex; flex-direction: column; gap: 2px; }
-        .mbx__account {
-            display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
-            padding: 6px 8px; border: 0; border-radius: var(--cms-radius-md, 8px); background: transparent; cursor: pointer;
-            color: var(--cms-text); font: inherit;
-        }
-        .mbx__account:hover { background: var(--cms-surface-hover); }
-        .mbx__account--active { background: var(--cms-selected-light); }
-        .mbx__account-avatar {
-            position: relative; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
-            display: inline-flex; align-items: center; justify-content: center;
-            color: var(--cms-text-inverse); font-size: .95rem; font-weight: 600; line-height: 1; user-select: none;
-        }
-        .mbx__account--active .mbx__account-avatar { box-shadow: 0 0 0 2px var(--cms-surface), 0 0 0 4px var(--cms-selected); }
-        .mbx__account-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; }
-        .mbx__account--active .mbx__account-label { font-weight: 600; }
-        .mbx__account-badge {
-            position: absolute; top: -3px; right: -3px;
-            background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
-            font-size: .625rem; font-weight: 600; line-height: 1; padding: 2px 5px; min-width: 16px;
-            text-align: center; box-shadow: 0 0 0 2px var(--cms-surface);
         }
         .mbx__folders { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
         .mbx__folder {
@@ -1707,22 +1666,6 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         this.selectMailbox(id);
         localStorage.setItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY, id);
-    }
-
-    /** First letter for a mailbox avatar (label > address), uppercased; '?' when unknown. */
-    mailboxInitial(mb: EmailMailboxDto): string {
-        const label = mb.label ?? '';
-        const src = (label.trim() !== '' ? label : (mb.emailAddress ?? '')).trim();
-        return src.length > 0 ? src.charAt(0).toUpperCase() : '?';
-    }
-
-    /** Deterministic avatar colour from the mailbox id (stable hue per mailbox). */
-    avatarColor(id: string): string {
-        let hash = 0;
-        for (let i = 0; i < id.length; i++) {
-            hash = (hash * 31 + id.charCodeAt(i)) % 360;
-        }
-        return `hsl(${hash}, 48%, 45%)`;
     }
 
     /** Fetch each mailbox's unread total (sum of folder `unseen`) for the switcher badges. */
