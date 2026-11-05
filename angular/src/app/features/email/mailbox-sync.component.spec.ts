@@ -160,6 +160,24 @@ describe('MailboxSyncComponent', () => {
         expect(finished).toEqual(['mb-1', 'mb-1']);
     });
 
+    it('a late frame of the sync before does not end a new press whose answer is on the way', () => {
+        const answer = new Subject<MailboxSyncStarted>();
+        const { fixture, finished, press, sync } = make();
+        press();
+        jasmine.clock().tick(SYNC_ANSWER_WAIT_MS);
+        fixture.detectChanges();
+        email.syncMailbox.and.returnValue(answer);
+        press();
+
+        sync.frame(frame());
+        expect(sync.syncing()).toBeTrue();
+
+        answer.next({ ...STARTED, syncId: 's-2' });
+        sync.frame(frame({ syncId: 's-2' }));
+        expect(sync.syncing()).toBeFalse();
+        expect(finished).toEqual(['mb-1', 'mb-1']);
+    });
+
     it('an answer to a press left behind changes nothing for the mailbox open now', () => {
         const first = new Subject<MailboxSyncStarted>();
         const second = new Subject<MailboxSyncStarted>();

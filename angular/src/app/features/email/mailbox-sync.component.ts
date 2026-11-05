@@ -77,6 +77,8 @@ export class MailboxSyncComponent {
             return;
         }
         this.syncing.set(true);
+        // A frame still due from an earlier sync must not end this one while its answer is on the way.
+        this.waitingFor = null;
         const press = ++this.press;
         this.email.syncMailbox(id).subscribe({
             next: started => {
