@@ -17,6 +17,7 @@ import {
     type ToolbarAction,
 } from '@coolms/ui-angular';
 import { PageSpaceStateService } from './page-space-state.service';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 
 /**
  * Pages explorer -- thin shell.
@@ -122,6 +123,8 @@ export class PagesExplorerPage {
     /** Whether the layout's declared default has already been taken. */
     private adopted = false;
 
+    private readonly consoleSettings = inject(ConsoleSettingsService);
+
     constructor() {
         // Adopt the layout's declared default once the config resolves. The
         // service seeds a literal for the frames before that lands; without
@@ -135,7 +138,7 @@ export class PagesExplorerPage {
                 return;
             }
             this.adopted = true;
-            untracked(() => this.state.viewMode.set(declared));
+            untracked(() => this.state.viewMode.set(this.consoleSettings.explorerView() ?? declared));
         });
     }
 

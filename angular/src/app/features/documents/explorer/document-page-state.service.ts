@@ -7,6 +7,7 @@ import type { DocumentInstance } from '@coolms/document-angular';
 import { AppConfigState, UserPreferencesService, NaviGraphService, NaviGraphNode } from '@coolms/core-angular';
 import { ExplorerViewMode, toExplorerViewMode } from '@coolms/ui-angular';
 import { type DocumentFolder, type DocumentTemplate } from '../shared/document-explorer.types';
+import { ConsoleSettingsService } from '../../settings/console-settings.service';
 
 /**
  * Is a persisted path worth restoring at all?
@@ -86,6 +87,7 @@ export class DocumentPageStateService {
     private readonly store = inject(Store);
     private readonly destroyRef = inject(DestroyRef);
     private readonly prefs = inject(UserPreferencesService);
+    private readonly consoleSettings = inject(ConsoleSettingsService);
 
     constructor() {
         // Restore the last folder BEFORE the space list is fetched.
@@ -138,11 +140,12 @@ export class DocumentPageStateService {
         // No `list` remap here -- this key
         // has never been written before, so there is no legacy value to
         // translate.
-        const restoredView = toExplorerViewMode(saved?.viewMode);
+        const restoredView = toExplorerViewMode(saved?.viewMode) ?? this.consoleSettings.explorerView();
         if (null !== restoredView) {
             this.viewMode.set(restoredView);
         }
-        const restoredInstances = toExplorerViewMode(saved?.instancesViewMode);
+        const restoredInstances = toExplorerViewMode(saved?.instancesViewMode)
+            ?? this.consoleSettings.explorerView();
         if (null !== restoredInstances) {
             this.instancesViewMode.set(restoredInstances);
         }

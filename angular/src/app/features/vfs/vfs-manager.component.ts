@@ -29,6 +29,7 @@ import {
     ToolbarAction,
     VfsViewMode,
 } from '@coolms/ui-angular';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 import { VfsPageStateService } from './vfs-page-state.service';
 
 @Component({
@@ -110,6 +111,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
     private readonly route          = inject(ActivatedRoute);
     private readonly naviGraph      = inject(NaviGraphService);
     private readonly prefs          = inject(UserPreferencesService);
+    private readonly consoleSettings = inject(ConsoleSettingsService);
     protected readonly vfsActions   = inject(VfsActionsService);
     protected readonly clipboard    = inject(VfsClipboardService);
     readonly state                  = inject(VfsPageStateService);
@@ -386,8 +388,9 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
         } else {
             this.state.navigateTo(startPath);
         }
-        if (saved?.viewMode) {
-            this.state.setViewMode(saved.viewMode);
+        const viewMode = saved?.viewMode ?? this.consoleSettings.vfsView();
+        if (null !== viewMode) {
+            this.state.setViewMode(viewMode);
         }
 
         // Load toolbar nodes from NaviGraph; state.vfsToolbarNodes is shared

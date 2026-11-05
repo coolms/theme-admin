@@ -26,9 +26,8 @@ import {
     type DataGridChangeEvent,
     type DataGridLoadRequest,
 } from '@coolms/ui-angular';
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 import { UserEditDialogComponent } from './user-edit-dialog.component';
-
-const LIMIT = 50;
 
 @Component({
     selector: 'app-users-list',
@@ -83,7 +82,10 @@ export class UsersListComponent implements OnInit {
      * The rows, from where the grid's definition says they come from (`rows.operation`, `identity.user.list`) and
      * in its query style -- this page names no list route. Each row is shaped as the grid draws it.
      */
-    readonly rows    = declaredRowsSource({ pageSize: LIMIT, mapRow: row => userRow(row as unknown as IdentityUserDto) });
+    readonly rows    = declaredRowsSource({
+        pageSize: inject(ConsoleSettingsService).pageSize(),
+        mapRow: row => userRow(row as unknown as IdentityUserDto),
+    });
     readonly users   = computed(() => this.rows.data().items as unknown as IdentityUserDto[]);
     readonly total   = computed((): number | null => (this.rows.loaded() ? this.rows.data().totalItems : null));
 

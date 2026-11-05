@@ -34,9 +34,7 @@ import {
     type LinkUserDialogData,
     type LinkUserDialogResult,
 } from './contact-link-user.dialog';
-
-/** Rows per server page. */
-const PAGE_SIZE = 50;
+import { ConsoleSettingsService } from '../settings/console-settings.service';
 
 /**
  * C.3 -- the Contacts admin list page (/admin/contacts).
@@ -105,7 +103,7 @@ export class ContactsListComponent implements OnInit {
      * and in its query style -- this page names no list route. Paging, sort, filters, out-of-order answers and the
      * caller's state (allowed / elevate / denied) are the source's.
      */
-    readonly rows        = declaredRowsSource({ pageSize: PAGE_SIZE });
+    readonly rows        = declaredRowsSource({ pageSize: inject(ConsoleSettingsService).pageSize() });
     readonly contacts    = computed(() => this.rows.data().items as unknown as ContactDto[]);
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
     /** Server's count for the CURRENT filter -- drives the footer. */
