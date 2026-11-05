@@ -33,7 +33,8 @@ interface Row {
  * What people may set, for the whole installation: each setting's default for people who have chosen nothing, and
  * whether it is locked. Identity's guest in the settings pane, drawn from what the server declares.
  *
- * The block is saved whole, so every key the server holds is sent back, changed or not.
+ * A save replaces the block, so what was stored is sent back with the changes. A value equal to its default is left
+ * out: stored, it would hide every later change to that default from people who chose nothing.
  */
 @Component({
     selector: 'app-person-settings-pane',
@@ -54,6 +55,7 @@ interface Row {
         .row-label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; color: var(--cms-text); }
         .row-colour { width: 48px; height: 32px; padding: 2px; }
         .row-lock { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--cms-text); }
+        .row-none { margin-left: 8px; font-size: 12px; color: var(--cms-text-muted); }
         .note { margin: 0 0 12px; font-size: 13px; color: var(--cms-text-muted); }
         .form-error { margin: 0 0 12px; font-size: 13px; color: var(--cms-danger); }
     `],
@@ -81,6 +83,9 @@ interface Row {
                                                [id]="valueKey"
                                                [value]="value(valueKey) ?? colourInForce()"
                                                (change)="setText(valueKey, $event)" />
+                                        @if (null === value(valueKey)) {
+                                            <span class="row-none">None set</span>
+                                        }
                                     }
                                     @default {
                                         <select class="cms-input" [id]="valueKey" (change)="setText(valueKey, $event)">
@@ -140,6 +145,8 @@ export class PersonSettingsPaneComponent {
     protected readonly error = signal<string | null>(null);
     private readonly sections = signal<ReadonlyArray<DeclaredSection>>([]);
     private readonly held = signal<Readonly<Record<string, unknown>>>({});
+    private readonly stored = signal<Readonly<Record<string, unknown>>>({});
+    private readonly defaults = signal<Readonly<Record<string, unknown>>>({});
     private readonly edits = signal<Readonly<Record<string, unknown>>>({});
 
     protected readonly changed = computed(() => Object.keys(this.edits()).length > 0);
@@ -182,9 +189,12 @@ export class PersonSettingsPaneComponent {
 
     protected options(row: Row, valueKey: string): ReadonlyArray<{ readonly value: string; readonly label: string }> {
         const locales = this.store.selectSnapshot(AppConfigState.manifest)?.supportedLocales ?? [];
-        // A default is for people who chose nothing, and there is no device to follow on an installation's behalf.
-        const options = optionsFor(row.key, locales, this.held()[valueKey]);
-        return 'timezone' === row.key.type ? options.filter(o => 'automatic' !== o.value) : options;
+        // Not offered as a default, but shown when the block holds it: the select says what is held.
+        const held = this.held()[valueKey];
+        const options = optionsFor(row.key, locales, held);
+        return 'timezone' === row.key.type && 'automatic' !== held
+            ? options.filter(o => 'automatic' !== o.value)
+            : options;
     }
 
     protected setText(blockKey: string, event: Event): void {
@@ -198,7 +208,7 @@ export class PersonSettingsPaneComponent {
     protected save(): void {
         this.saving.set(true);
         this.error.set(null);
-        this.blocks.save(this.settingKey(), { ...this.held(), ...this.edits() })
+        this.blocks.save(this.settingKey(), this.body())
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: block => {
@@ -213,6 +223,13 @@ export class PersonSettingsPaneComponent {
                     this.error.set('string' === typeof detail ? detail : 'These settings could not be saved.');
                 },
             });
+    }
+
+    /** What was stored and what changed, without what only repeats a default. */
+    private body(): Record<string, unknown> {
+        const defaults = this.defaults();
+        return Object.fromEntries(Object.entries({ ...this.stored(), ...this.edits() })
+            .filter(([key, value]) => value !== defaults[key]));
     }
 
     private read(): void {
@@ -233,7 +250,10 @@ export class PersonSettingsPaneComponent {
 
     private adopt(block: ModuleSettingsBlockDto): void {
         this.held.set(block.effective);
+        this.stored.set(block.data);
+        this.defaults.set(block.defaults);
         this.edits.set({});
+        this.error.set(null);
     }
 
     private edit(blockKey: string, value: unknown): void {

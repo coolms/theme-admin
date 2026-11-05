@@ -29,6 +29,9 @@ const BLOCK = {
     'region.timezone.locked': false,
 };
 
+/** As the server answers a block nobody has saved: everything in force is a default. */
+const UNSAVED = { effective: BLOCK, data: {}, defaults: BLOCK };
+
 describe('PersonSettingsPaneComponent', () => {
     let fixture: ComponentFixture<PersonSettingsPaneComponent>;
     let saved: unknown[];
@@ -48,7 +51,7 @@ describe('PersonSettingsPaneComponent', () => {
 
     beforeEach(() => {
         saved = [];
-        answer = () => of({ effective: { ...BLOCK, 'region.weekStart': 'sunday', 'region.weekStart.locked': true } });
+        answer = () => of({ ...UNSAVED, effective: { ...BLOCK, 'region.weekStart': 'sunday', 'region.weekStart.locked': true } });
         TestBed.configureTestingModule({
             imports: [PersonSettingsPaneComponent],
             providers: [
@@ -56,7 +59,7 @@ describe('PersonSettingsPaneComponent', () => {
                 {
                     provide: ModuleSettingsService,
                     useValue: {
-                        get: () => of({ effective: BLOCK }),
+                        get: () => of(UNSAVED),
                         save: (key: string, data: unknown) => {
                             saved.push({ key, data });
                             return answer();
@@ -85,7 +88,7 @@ describe('PersonSettingsPaneComponent', () => {
         expect(zones).toContain('UTC');
     });
 
-    it('saves the whole block, with what changed', () => {
+    it('sends what changed and no default it did not touch, so a later change to a default still arrives', () => {
         const el = draw();
         expect(button(el).disabled).toBe(true);
 
@@ -101,7 +104,7 @@ describe('PersonSettingsPaneComponent', () => {
 
         expect(saved).toEqual([{
             key: KEY,
-            data: { ...BLOCK, 'region.weekStart': 'sunday', 'region.weekStart.locked': true },
+            data: { 'region.weekStart': 'sunday', 'region.weekStart.locked': true },
         }]);
         expect(button(el).disabled).toBe(true);
     });
@@ -117,11 +120,12 @@ describe('PersonSettingsPaneComponent', () => {
             keys: [{ key: 'accentColor', type: 'colour', label: 'Accent colour', value: null, own: null, locked: false }],
         }]);
         const blocks = TestBed.inject(ModuleSettingsService) as unknown as { get: () => unknown };
-        blocks.get = () => of({ effective: { 'appearance.accentColor': null } });
+        blocks.get = () => of({ effective: { 'appearance.accentColor': null }, data: {}, defaults: { 'appearance.accentColor': null } });
 
         const el = draw();
 
         expect((el.querySelector('input[type=color]') as HTMLInputElement).value).toBe('#f59e0b');
+        expect(el.textContent).toContain('None set');
         expect(button(el).disabled).toBe(true);
         document.documentElement.style.removeProperty('--cms-accent');
     });
@@ -131,12 +135,61 @@ describe('PersonSettingsPaneComponent', () => {
         const el = draw();
         expect((el.querySelector('select[id="region.weekStart"]') as HTMLSelectElement).value).toBe('monday');
 
-        blocks.get = () => of({ effective: { ...BLOCK, 'region.weekStart': 'sunday' } });
+        blocks.get = () => of({ ...UNSAVED, effective: { ...BLOCK, 'region.weekStart': 'sunday' } });
         fixture.componentRef.setInput('revision', 1);
         fixture.detectChanges();
         fixture.detectChanges();
 
         expect((el.querySelector('select[id="region.weekStart"]') as HTMLSelectElement).value).toBe('sunday');
+    });
+
+    it('keeps what was stored, and drops a stored value set back to its default', () => {
+        const blocks = TestBed.inject(ModuleSettingsService) as unknown as { get: () => unknown };
+        blocks.get = () => of({
+            effective: { ...BLOCK, 'region.weekStart': 'sunday', 'region.timezone': 'Asia/Tokyo' },
+            data: { 'region.weekStart': 'sunday', 'region.timezone': 'Asia/Tokyo' },
+            defaults: BLOCK,
+        });
+        const el = draw();
+        const week = el.querySelector('select[id="region.weekStart"]') as HTMLSelectElement;
+
+        week.value = 'monday';
+        week.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+        button(el).click();
+
+        expect(saved).toEqual([{ key: KEY, data: { 'region.timezone': 'Asia/Tokyo' } }]);
+    });
+
+    it('a block that holds automatic shows it, rather than a zone it does not hold', () => {
+        const blocks = TestBed.inject(ModuleSettingsService) as unknown as { get: () => unknown };
+        blocks.get = () => of({
+            effective: { ...BLOCK, 'region.timezone': 'automatic' },
+            data: { 'region.timezone': 'automatic' },
+            defaults: BLOCK,
+        });
+
+        const el = draw();
+
+        expect((el.querySelector('select[id="region.timezone"]') as HTMLSelectElement).value).toBe('automatic');
+    });
+
+    it('a read that succeeds clears an old failure', () => {
+        answer = () => throwError(() => new HttpErrorResponse({ status: 422, error: { detail: 'refused' } }));
+        const el = draw();
+        const lock = el.querySelector('input[type=checkbox]') as HTMLInputElement;
+        lock.checked = true;
+        lock.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+        button(el).click();
+        fixture.detectChanges();
+        expect(el.querySelector('[role=alert]')).not.toBeNull();
+
+        fixture.componentRef.setInput('revision', 1);
+        fixture.detectChanges();
+        fixture.detectChanges();
+
+        expect(el.querySelector('[role=alert]')).toBeNull();
     });
 
     it('going back to what was read leaves nothing to save', () => {
