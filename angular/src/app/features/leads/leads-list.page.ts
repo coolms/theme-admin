@@ -33,8 +33,6 @@ interface StatusTab {
     readonly icon:  string;
 }
 
-/** Rows per lazy page -- matches the grid YAML's `dataSource.pageSize`. */
-
 /**
  * Lead inbox admin page (/admin/leads).
  *
@@ -117,7 +115,10 @@ export class LeadsListComponent implements OnInit {
      * its query style -- this page names no list route. The tab is the operation's SCOPE (`?status=`, applied
      * before its RQL), sent with every request.
      */
-    readonly rows    = declaredRowsSource({ pageSize: inject(ConsoleSettingsService).pageSize(), extraParams: () => ({ status: this.status() }) });
+    readonly rows    = declaredRowsSource({
+        pageSize: inject(ConsoleSettingsService).pageSize(),
+        extraParams: () => ({ status: this.status() }),
+    });
     readonly leads   = computed(() => this.rows.data().items as unknown as LeadDto[]);
     /** Server's count for the CURRENT bucket + filter -- drives the footer. */
     readonly totalItems = computed(() => this.rows.data().totalItems);

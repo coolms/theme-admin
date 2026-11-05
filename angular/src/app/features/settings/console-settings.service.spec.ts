@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { SidebarStateService } from '@coolms/core-angular';
 import { Store } from '@ngxs/store';
 
@@ -53,6 +53,48 @@ describe('ConsoleSettingsService', () => {
         expect(service.pageSize()).toBe(50);
         expect(service.explorerView()).toBeNull();
         expect(service.vfsView()).toBeNull();
+    });
+
+    it('a read that does not answer lets the console open, with nothing chosen', fakeAsync(() => {
+        let done = false;
+        service.load().subscribe(() => { done = true; });
+        const read = http.expectOne(READ);
+
+        tick(4999);
+        expect(done).toBe(false);
+        tick(1);
+
+        expect(done).toBe(true);
+        expect(read.cancelled).toBe(true);
+        expect(service.pageSize()).toBe(50);
+    }));
+
+    it('a save that does not answer does not stop the next one', fakeAsync(() => {
+        answer([key('sidebarCollapsed', false, false)]);
+
+        collapsed.set(true);
+        TestBed.flushEffects();
+        const first = http.expectOne(SAVE);
+        tick(5000);
+        expect(first.cancelled).toBe(true);
+        TestBed.flushEffects();
+
+        collapsed.set(false);
+        TestBed.flushEffects();
+        http.expectOne(SAVE).flush({}, { headers: { ETag: '"v2"' } });
+        TestBed.flushEffects();
+    }));
+
+    it('a read that fails keeps nothing of the last read: it may have been another person', () => {
+        answer([key('pageSize', 25, 25), key('viewMode', 'tiles', 'tiles'), key('sidebarCollapsed', false, false)]);
+
+        service.load().subscribe();
+        http.expectOne(READ).flush('no', { status: 500, statusText: 'Server Error' });
+        collapsed.set(true);
+        TestBed.flushEffects();
+
+        expect(service.pageSize()).toBe(50);
+        expect(service.explorerView()).toBeNull();
     });
 
     it('answers the value in force', () => {

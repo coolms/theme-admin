@@ -36,8 +36,6 @@ import {
 } from './contact-link-user.dialog';
 import { ConsoleSettingsService } from '../settings/console-settings.service';
 
-/** Rows per server page. */
-
 /**
  * C.3 -- the Contacts admin list page (/admin/contacts).
  *

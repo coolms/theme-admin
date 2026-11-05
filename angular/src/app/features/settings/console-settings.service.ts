@@ -3,10 +3,13 @@ import { effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { AppConfigState, SidebarStateService } from '@coolms/core-angular';
 import { type ExplorerViewMode, type VfsViewMode } from '@coolms/ui-angular';
 import { Store } from '@ngxs/store';
-import { catchError, map, type Observable, of, tap } from 'rxjs';
+import { catchError, map, type Observable, of, tap, timeout } from 'rxjs';
 
 /** Rows per request when the section cannot be read; what the lists asked for before it was declared. */
 const FALLBACK_PAGE_SIZE = 50;
+
+/** How long entering the console, or the next sidebar save, waits on a call that does not answer. */
+const NO_ANSWER_MS = 5000;
 
 interface ConsoleKey {
     readonly key: string;
@@ -30,7 +33,8 @@ function versionOf(etag: string | null): string | null {
  * The person's `console` settings, which theme-admin's theme.yaml declares, read once on entering the console.
  *
  * A page reads `pageSize()` and the view modes as it is built, so the layout route resolves {@link load} first; a read
- * that fails leaves the pages as they would be with nothing chosen.
+ * that fails or does not answer leaves the pages as they would be with nothing chosen. What an earlier read held is
+ * forgotten first: it may have been another person's.
  *
  * The sidebar's state also stays on the device, so a reload draws it at once. A value the server holds wins over the
  * device's; with none held, the device's differing state is saved once as the first value. A locked key is applied
@@ -77,9 +81,12 @@ export class ConsoleSettingsService {
 
     /** Never fails: a route waits on it, and a console with no settings still opens. */
     load(): Observable<void> {
+        this.keys.set([]);
+        this.version = null;
         return this.http.get<ReadonlyArray<DeclaredSection>>(`${this.base}/declared?host=console`, {
             headers: new HttpHeaders({ Accept: 'application/json' }),
         }).pipe(
+            timeout(NO_ANSWER_MS),
             tap(sections => this.adopt(sections.find(s => 'console' === s.section))),
             map(() => undefined),
             catchError(() => of(undefined)),
@@ -119,7 +126,7 @@ export class ConsoleSettingsService {
                 Accept: 'application/json',
                 'If-Match': `"${this.version}"`,
             }),
-        }).subscribe({
+        }).pipe(timeout(NO_ANSWER_MS)).subscribe({
             next: response => {
                 this.version = versionOf(response.headers.get('ETag'));
                 this.heldOnThisDevice(collapsed);
