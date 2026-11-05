@@ -340,7 +340,8 @@ type Tab = 'personal' | string;
                             @for (sec of tabSections; track sec.section) {
                                 <app-declared-section [section]="sec"
                                                       [showTitle]="tabSections.length > 1"
-                                                      (saved)="declaredSaved($event)" />
+                                                      (saved)="declaredSaved($event)"
+                                                      (stale)="readDeclared()" />
                             }
                         </div>
                     }
@@ -492,7 +493,7 @@ export class ProfilePageComponent implements OnInit {
         return this.declaredSections().some(sec => name === sec.section);
     }
 
-    private readDeclared(): void {
+    readDeclared(): void {
         this.declared.read().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: sections => this.declaredSections.set(sections),
             error: () => this.declaredSections.set([]),

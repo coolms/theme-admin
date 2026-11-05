@@ -9,6 +9,7 @@ import {
     input,
     output,
     signal,
+    untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppConfigState, CmsLoaderComponent } from '@coolms/core-angular';
@@ -134,8 +135,10 @@ export class DeclaredSectionComponent {
 
     readonly section = input.required<DeclaredSection>();
     readonly showTitle = input(false);
-    /** Saved, or saved elsewhere since it was read: the parent reads the sections again. */
+    /** Saved: the parent reads the sections again and applies them. */
     readonly saved = output<string>();
+    /** Saved elsewhere since it was read: the parent reads the sections again, and nothing here was saved. */
+    readonly stale = output<void>();
 
     private readonly edits = signal<Readonly<Record<string, unknown>>>({});
     protected readonly saving = signal(false);
@@ -145,7 +148,7 @@ export class DeclaredSectionComponent {
     constructor() {
         effect(() => {
             this.section();
-            this.edits.set({});
+            untracked(() => this.edits.set({}));
         });
     }
 
@@ -234,7 +237,7 @@ export class DeclaredSectionComponent {
                     this.saving.set(false);
                     if (err instanceof HttpErrorResponse && 412 === err.status) {
                         this.error.set('These settings were changed somewhere else. The latest values are shown.');
-                        this.saved.emit(section.section);
+                        this.stale.emit();
                         return;
                     }
                     const detail = err instanceof HttpErrorResponse

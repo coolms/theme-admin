@@ -165,7 +165,9 @@ describe('DeclaredSectionComponent', () => {
         expect(saved).toEqual([]);
     });
 
-    it('saved elsewhere: says so, and asks the parent to read again', () => {
+    it('saved elsewhere: says so, asks the parent to read again, and does not claim a save', () => {
+        let stale = 0;
+        fixture.componentInstance.stale.subscribe(() => ++stale);
         const el = draw([key({})]);
         choose(el, 'sunday');
         button(el, 'Save changes').click();
@@ -174,7 +176,8 @@ describe('DeclaredSectionComponent', () => {
         fixture.detectChanges();
 
         expect(el.querySelector('[role=alert]')?.textContent).toContain('changed somewhere else');
-        expect(saved).toEqual(['region']);
+        expect(stale).toBe(1);
+        expect(saved).toEqual([]);
     });
 
     it('new values from the server replace what was being edited', () => {
