@@ -33,10 +33,11 @@ describe('MailboxSwitcherComponent', () => {
         expect(el.querySelector('.mbs__card')?.textContent).not.toContain('Home');
     });
 
-    it('shows each mailbox with its unread count, and the card counts only the others', () => {
+    it('the card counts only the open mailbox, and a dot says others have unread mail', () => {
         const { el, fixture } = make([WORK, HOME], 'a', { a: 3, b: 120 });
-        expect(el.querySelector('.mbs__card .mbs__count')?.getAttribute('aria-label')).toBe('120 unread in other mailboxes');
-        expect(el.querySelector('.mbs__card .mbs__count')?.textContent?.trim()).toBe('99+');
+        expect(el.querySelector('.mbs__card .mbs__count')?.getAttribute('aria-label')).toBe('3 unread');
+        expect(el.querySelector('.mbs__card .mbs__count')?.textContent?.trim()).toBe('3');
+        expect(el.querySelector('.mbs__card .mbs__elsewhere')?.getAttribute('title')).toBe('120 unread in other mailboxes');
         el.querySelector<HTMLButtonElement>('.mbs__card')?.click();
         fixture.detectChanges();
         const rows = Array.from(el.querySelectorAll('.mbs__choice'));
@@ -72,6 +73,18 @@ describe('MailboxSwitcherComponent', () => {
         fixture.detectChanges();
         expect(document.activeElement).toBe(el.querySelector('.mbs__card'));
         el.remove();
+    });
+
+    it('an open mailbox with nothing unread shows no number, whatever the others hold', () => {
+        const { el } = make([WORK, HOME], 'a', { a: 0, b: 120 });
+        expect(el.querySelector('.mbs__card .mbs__count')).toBeNull();
+        expect(el.querySelector('.mbs__card .mbs__elsewhere')).not.toBeNull();
+    });
+
+    it('no dot when no other mailbox has unread mail', () => {
+        const { el } = make([WORK, HOME], 'a', { a: 3, b: 0 });
+        expect(el.querySelector('.mbs__card .mbs__count')?.textContent?.trim()).toBe('3');
+        expect(el.querySelector('.mbs__card .mbs__elsewhere')).toBeNull();
     });
 
     it('Escape and a press elsewhere close it', () => {
