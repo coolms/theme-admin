@@ -23,11 +23,16 @@ import { EmailMailboxDto } from './email.types';
                         (click)="toggle()"
                         (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
                     <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox }" />
-                    <!-- The other mailboxes' unread mail shows on the card, so it is not missed while one is open. -->
-                    @if (elsewhere() > 0) {
-                        <span class="mbs__count" [attr.aria-label]="elsewhere() + ' unread in other mailboxes'">
-                            {{ shown(elsewhere()) }}
+                    <!-- A number on the card is the open mailbox's own; other mailboxes' unread mail is a dot. -->
+                    @if ((unread()[mailbox.id] ?? 0) > 0) {
+                        <span class="mbs__count" [attr.aria-label]="unread()[mailbox.id] + ' unread'">
+                            {{ shown(unread()[mailbox.id]) }}
                         </span>
+                    }
+                    @if (elsewhere() > 0) {
+                        <span class="mbs__elsewhere" role="img"
+                              [attr.title]="elsewhere() + ' unread in other mailboxes'"
+                              [attr.aria-label]="elsewhere() + ' unread in other mailboxes'"></span>
                     }
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </button>
@@ -92,6 +97,10 @@ import { EmailMailboxDto } from './email.types';
         .mbs__count {
             flex: 0 0 auto; background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a);
             border-radius: 999px; font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
+        }
+        .mbs__elsewhere {
+            flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--cms-accent, #F5A623);
         }
         .mbs__list {
             position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 10;
