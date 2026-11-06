@@ -22,8 +22,10 @@ import {
     RELOAD_PAGE,
     ToastService,
 } from '@coolms/ui-angular';
+import { Dialog } from '@angular/cdk/dialog';
 import { IdentityApiService } from './identity-api.service';
 import { ActiveSessionDto } from './identity.types';
+import { UserEditDialogComponent } from './user-edit-dialog.component';
 
 const LIMIT = 30;
 
@@ -65,7 +67,9 @@ type LoadEvent = { offset: number; sort: string | null; reset: boolean; columnFi
                 gridId="identity:sessions"
                 [configBaseUrl]="configBaseUrl()"
                 [externalData]="gridData()"
+                [groupBy]="grouped() ? 'person' : null"
                 (rowSelected)="onRowSelected($event)"
+                (rowActionTriggered)="onRowAction($event)"
                 (loadMore)="onLoadMore($event)">
             </coolms-datagrid>
         </cms-list-page>
@@ -75,6 +79,7 @@ type LoadEvent = { offset: number; sort: string | null; reset: boolean; columnFi
 export class SessionsListComponent implements OnInit {
     @ViewChild(DataGridComponent) private readonly grid?: DataGridComponent;
     private readonly identityApi = inject(IdentityApiService);
+    private readonly dialog     = inject(Dialog);
     private readonly store      = inject(Store);
     private readonly confirmSvc = inject(ConfirmDialogService);
     private readonly toast      = inject(ToastService);
@@ -103,9 +108,12 @@ export class SessionsListComponent implements OnInit {
     });
 
     readonly selectedRow = signal<Record<string, unknown> | null>(null);
+    /** Rows under a heading per person: the list then comes sorted by person, the grid's own sort within that. */
+    readonly grouped = signal(false);
 
     readonly toolbarContext = computed((): Record<string, unknown> => ({
         _selected: this.selected() !== null,
+        _grouped:  this.grouped(),
     }));
 
     readonly gridData = computed((): DataGridData => ({
@@ -136,7 +144,12 @@ export class SessionsListComponent implements OnInit {
         }
         const page = Math.floor(event.offset / LIMIT) + 1;
 
-        this.identityApi.listSessions({ page, itemsPerPage: LIMIT })
+        this.identityApi.listSessions({
+            page,
+            itemsPerPage: LIMIT,
+            ...(event.columnFilters.length > 0 ? { filters: event.columnFilters } : {}),
+            ...this.sortFor(event.sort),
+        })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ members, total }) => {
@@ -175,10 +188,39 @@ export class SessionsListComponent implements OnInit {
     }
 
     onToolbarAction(id: string): void {
+        if (id === 'group-by-person' || id === 'ungroup') {
+            this.grouped.set(id === 'group-by-person');
+            this.reload();
+            return;
+        }
         const s = this.selected();
         if (!s) return;
         if (id === 'end-session')      this.endSession(s);
         if (id === 'end-all-sessions') this.endAllSessions(s);
+    }
+
+    /** A row's menu acts on the row it was opened on, which right-click has also selected. */
+    onRowAction(event: { action: string; row: Record<string, unknown> }): void {
+        const s = this.rows().find(r => r.sessionId === (event.row['id'] as string));
+        if (!s) return;
+        if (event.action === 'end-session')      this.endSession(s);
+        if (event.action === 'end-all-sessions') this.endAllSessions(s);
+        if (event.action === 'open-account')     this.openAccount(s);
+    }
+
+    private sortFor(sort: string | null): { sort?: string } {
+        if (!this.grouped()) return sort ? { sort } : {};
+        return { sort: sort ? `person,${sort}` : 'person,-lastRefreshedAt' };
+    }
+
+    private openAccount(s: ActiveSessionDto): void {
+        this.dialog.open(UserEditDialogComponent, {
+            data: {
+                userId:       s.person.id,
+                triggerIcon:  'pencil-fill',
+                triggerLabel: 'Edit User',
+            },
+        });
     }
 
     private selected(): ActiveSessionDto | null {

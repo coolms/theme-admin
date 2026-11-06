@@ -8,6 +8,10 @@ major number means here.
 
 ## Unreleased
 
+- **The signed-in sessions page.** A row's menu ends that sign-in, ends all of that person's sign-ins, or opens
+  the account. Every column sorts and filters, by the grid's declared definition, and the toolbar groups the
+  list by person. Browser and device show as columns.
+
 ### Added
 - **Refresh in the mail list.** It asks the server to sync the open mailbox now, shows that it runs, and says when the mailbox last synced. If no answer arrives within a minute, the list is read anyway.
 - **A stopped mailbox can be retried from its settings.** The Connection pane shows what the provider said and when, for those who may manage it, and a Retry button beside the status. Reconnect stays beside the sign-in.
