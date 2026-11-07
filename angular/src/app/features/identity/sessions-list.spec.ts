@@ -6,6 +6,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AuthState, ELEVATION_REQUIRED_PROBLEM_TYPE, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, PageTitleService, RELOAD_PAGE, ToastService } from '@coolms/ui-angular';
 import { SessionsListComponent } from './sessions-list.component';
+import { Dialog } from '@angular/cdk/dialog';
 import { IdentityApiService } from './identity-api.service';
 import { type ActiveSessionDto } from './identity.types';
 
@@ -34,6 +35,7 @@ describe('SessionsListComponent', () => {
     let me: string;
     let toasts: string[];
     let reloaded: number;
+    let opened: unknown[];
 
     function build(withShell = false): SessionsListComponent {
         asked = [];
@@ -41,6 +43,7 @@ describe('SessionsListComponent', () => {
         endedAll = [];
         toasts = [];
         reloaded = 0;
+        opened = [];
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
@@ -59,6 +62,7 @@ describe('SessionsListComponent', () => {
                     useValue: { error: (m: string) => toasts.push('error: ' + m), success: (m: string) => toasts.push(m) },
                 },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'failed' } },
+                { provide: Dialog, useValue: { open: (_: unknown, o: { data: unknown }) => { opened.push(o.data); } } },
                 { provide: PageTitleService, useValue: { set: (): void => {} } },
                 {
                     provide: IdentityApiService,
@@ -157,6 +161,77 @@ describe('SessionsListComponent', () => {
         expect(ended).toEqual(['s-1']);
         expect(endedAll).toEqual([]);
         expect(toasts).toEqual(['Sign-in ended']);
+    });
+
+    it('asks the server for the grid\'s filters and sort', () => {
+        const page = build();
+        page.onLoadMore({ ...FIRST, sort: '-ipAddress', columnFilters: ['device cn "Phone"', 'person cn "ann"'] });
+
+        expect(asked[0]).toEqual({
+            page: 1,
+            itemsPerPage: 30,
+            filters: ['device cn "Phone"', 'person cn "ann"'],
+            sort: '-ipAddress',
+        });
+    });
+
+    it('grouped by person, the list comes by person first, and the grid\'s sort applies within', () => {
+        const page = build();
+        page.onToolbarAction('group-by-person');
+        page.onLoadMore(FIRST);
+        expect(asked[0]['sort']).toBe('person,-lastRefreshedAt');
+
+        page.onLoadMore({ ...FIRST, sort: 'ipAddress' });
+        expect(asked[1]['sort']).toBe('person,ipAddress');
+
+        // Sorted on the person already, either way: that sort alone, the key once, its direction kept.
+        page.onLoadMore({ ...FIRST, sort: '-person' });
+        expect(asked[2]['sort']).toBe('-person');
+        page.onLoadMore({ ...FIRST, sort: 'person' });
+        expect(asked[3]['sort']).toBe('person');
+
+        page.onToolbarAction('ungroup');
+        page.onLoadMore(FIRST);
+        expect(Object.keys(asked[4])).not.toContain('sort');
+        expect(page.grouped()).toBeFalse();
+    });
+
+    it('names no sort until the grid has one', () => {
+        const page = build();
+        page.onLoadMore(FIRST);
+
+        expect(Object.keys(asked[0])).not.toContain('sort');
+    });
+
+    it('a row\'s menu ends that row\'s sign-in, or all of its person\'s, whatever else is selected', () => {
+        const page = build();
+        page.onLoadMore(FIRST);
+        page.onRowSelected(null);
+
+        page.onRowAction({ action: 'end-session', row: { id: 's-1' } });
+        expect(ended).toEqual(['s-1']);
+
+        page.onRowAction({ action: 'end-all-sessions', row: { id: 's-1' } });
+        expect(endedAll).toEqual(['p-1']);
+    });
+
+    it('a row\'s menu opens the account of that row\'s person', () => {
+        const page = build();
+        page.onLoadMore(FIRST);
+
+        page.onRowAction({ action: 'open-account', row: { id: 's-1' } });
+
+        expect((opened[0] as { userId: string }).userId).toBe('p-1');
+        expect(ended).toEqual([]);
+    });
+
+    it('a row\'s menu does nothing for a row the list no longer has', () => {
+        const page = build();
+        page.onLoadMore(FIRST);
+
+        page.onRowAction({ action: 'end-session', row: { id: 'gone' } });
+
+        expect(ended).toEqual([]);
     });
 
     it('ends every sign-in of the selected row\'s person by the person\'s id', () => {
