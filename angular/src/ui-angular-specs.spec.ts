@@ -19,6 +19,7 @@
 import '../../../ui-angular/src/context-menu/context-menu.service.spec';
 import '../../../ui-angular/src/datagrid/datagrid-declared-rows.spec';
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
+import '../../../ui-angular/src/datagrid/datagrid-group-by.spec';
 import '../../../ui-angular/src/datagrid/datagrid-keyboard-overlay.spec';
 import '../../../ui-angular/src/datagrid/datagrid-range-filters.spec';
 import '../../../ui-angular/src/datagrid/datagrid-refused-list.spec';
