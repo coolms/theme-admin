@@ -184,9 +184,15 @@ describe('SessionsListComponent', () => {
         page.onLoadMore({ ...FIRST, sort: 'ipAddress' });
         expect(asked[1]['sort']).toBe('person,ipAddress');
 
+        // Sorted on the person already, either way: that sort alone, the key once, its direction kept.
+        page.onLoadMore({ ...FIRST, sort: '-person' });
+        expect(asked[2]['sort']).toBe('-person');
+        page.onLoadMore({ ...FIRST, sort: 'person' });
+        expect(asked[3]['sort']).toBe('person');
+
         page.onToolbarAction('ungroup');
         page.onLoadMore(FIRST);
-        expect(Object.keys(asked[2])).not.toContain('sort');
+        expect(Object.keys(asked[4])).not.toContain('sort');
         expect(page.grouped()).toBeFalse();
     });
 

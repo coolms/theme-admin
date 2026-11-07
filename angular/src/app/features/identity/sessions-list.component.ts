@@ -210,7 +210,9 @@ export class SessionsListComponent implements OnInit {
 
     private sortFor(sort: string | null): { sort?: string } {
         if (!this.grouped()) return sort ? { sort } : {};
-        return { sort: sort ? `person,${sort}` : 'person,-lastRefreshedAt' };
+        if (!sort) return { sort: 'person,-lastRefreshedAt' };
+        // Sorted on the person already: that order groups them, in the direction the grid asks.
+        return { sort: sort.replace(/^-/, '') === 'person' ? sort : `person,${sort}` };
     }
 
     private openAccount(s: ActiveSessionDto): void {
