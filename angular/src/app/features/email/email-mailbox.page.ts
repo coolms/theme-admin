@@ -29,6 +29,7 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
+import { type MailMessagesChangedEvent, MailSeqMarks, applyMessagesChanged } from './mail-messages-changed';
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
@@ -1077,6 +1078,8 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
+    /** The last seq applied per row, folder and mailbox badge: what makes a late or repeated event change nothing. */
+    private readonly mailSeq = new MailSeqMarks();
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
     private readonly route = inject(ActivatedRoute);
@@ -1598,6 +1601,8 @@ export class EmailMailboxPageComponent implements OnInit {
                     next: evt => {
                         if ('mail.sync.finished' === evt.type) {
                             this.syncBar()?.frame(evt);
+                        } else if ('mail.messages.changed' === evt.type) {
+                            this.onMessagesChanged(evt);
                         } else {
                             this.onMailReceived(evt);
                         }
@@ -1653,6 +1658,29 @@ export class EmailMailboxPageComponent implements OnInit {
             next: folders => this.patchMailboxUnread(evt.mailboxId, folders),
             error: () => { /* leave the badge as-is on a transient failure */ },
         });
+    }
+
+    /**
+     * What changed in a mailbox, from this tab, another tab or device, or the server's sync: applied in place, the
+     * list not read again. The rows shown, the open message and its thread take their flags; a row that left the open
+     * folder or is gone leaves the list; the folders take their counts and the switcher its number. Each by seq: what
+     * arrives late or twice changes nothing.
+     */
+    private onMessagesChanged(evt: MailMessagesChangedEvent): void {
+        const after = applyMessagesChanged({
+            mailboxId: this.selectedMailboxId(),
+            folder: this.selectedFolder(),
+            messages: this.messages(),
+            thread: this.thread(),
+            openMessage: this.selectedMessage(),
+            folders: this.folders(),
+            mailboxUnread: this.mailboxUnread(),
+        }, evt, this.mailSeq);
+        this.messages.set([...after.messages]);
+        this.thread.set([...after.thread]);
+        this.selectedMessage.set(after.openMessage);
+        this.folders.set([...after.folders]);
+        this.mailboxUnread.set(after.mailboxUnread);
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
