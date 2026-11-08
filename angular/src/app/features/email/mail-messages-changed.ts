@@ -109,6 +109,12 @@ export function readMessagesChanged(raw: unknown): MailMessagesChangedEvent | nu
     return { type: 'mail.messages.changed', mailboxId: raw['mailboxId'], origin, seq: raw['seq'], changes, counts, mailboxUnseen: raw['mailboxUnseen'] };
 }
 
+/**
+ * The view after an event, and whether a message arrived in the folder shown that its list does not hold: the event
+ * carries no subject, sender or date, so the list is read again rather than the row placed by guess.
+ */
+export type MailApplied<D extends EmailMessageDto = EmailMessageDto> = MailView<D> & { readonly arrived: boolean };
+
 /** What a page shows that the event can change: the open mailbox and folder, its list, its folders, the badges. */
 export interface MailView<D extends EmailMessageDto = EmailMessageDto> {
     readonly mailboxId: string | null;
@@ -168,12 +174,13 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
     view: MailView<D>,
     event: MailMessagesChangedEvent,
     marks: MailSeqMarks,
-): MailView<D> {
+): MailApplied<D> {
     const mailbox = event.mailboxId;
     const open = view.mailboxId === mailbox;
     let messages = view.messages;
     let thread = view.thread;
     let openMessage = view.openMessage;
+    let arrived = false;
     for (const change of event.changes) {
         if (!marks.row(mailbox, change.id, event.seq) || !open) {
             continue;
@@ -184,6 +191,10 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
             continue;
         }
         const leaves = 'movedTo' in change && change.movedTo !== view.folder;
+        // Moved into the folder shown, and not in its list: a restore, an undo, a move from another tab or device.
+        if ('movedTo' in change && change.movedTo === view.folder && !messages.some(m => m.id === change.id)) {
+            arrived = true;
+        }
         messages = leaves
             ? messages.filter(m => m.id !== change.id)
             : messages.map(m => m.id === change.id ? withFlags(m, change) : m);
@@ -204,5 +215,40 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
         mailboxUnread = { ...mailboxUnread, [mailbox]: event.mailboxUnseen };
     }
 
-    return { ...view, messages, thread, openMessage, folders, mailboxUnread };
+    return { ...view, messages, thread, openMessage, folders, mailboxUnread, arrived };
+}
+
+/**
+ * One page's follower of the event: it applies each event by seq, and when messages arrive in the folder shown, it
+ * asks for that folder's list once, after the burst settles, so a bulk restore makes one read, not one per message.
+ */
+export class MailLiveFollower {
+    readonly marks = new MailSeqMarks();
+    private timer: ReturnType<typeof setTimeout> | null = null;
+
+    constructor(private readonly reread: () => void, private readonly settleMs = 300) {
+    }
+
+    apply<D extends EmailMessageDto>(view: MailView<D>, event: MailMessagesChangedEvent): MailView<D> {
+        const { arrived, ...after } = applyMessagesChanged(view, event, this.marks);
+        if (arrived) {
+            if (this.timer !== null) {
+                clearTimeout(this.timer);
+            }
+            this.timer = setTimeout(() => {
+                this.timer = null;
+                this.reread();
+            }, this.settleMs);
+        }
+
+        return after;
+    }
+
+    /** The page is gone: a read still waiting is not made. */
+    stop(): void {
+        if (this.timer !== null) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+    }
 }

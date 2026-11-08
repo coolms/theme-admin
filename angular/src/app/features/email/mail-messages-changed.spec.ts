@@ -1,9 +1,9 @@
 import { EnvironmentInjector, createEnvironmentInjector, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { type EmailFolderDto, type EmailMessageDto } from './email.types';
-import { type MailView, MailSeqMarks, applyMessagesChanged, readMessagesChanged } from './mail-messages-changed';
+import { MailLiveFollower, type MailView, readMessagesChanged } from './mail-messages-changed';
 
 const MAILBOX = 'mb-1';
 
@@ -23,13 +23,21 @@ function messages(): EmailMessageDto[] {
     ];
 }
 
-/** One admin tab: the realtime service as the page uses it, its own view of the open INBOX, and its own marks. */
+/**
+ * One admin tab: the realtime service as the page uses it, its own view of the open INBOX, and its own follower, whose
+ * re-read takes the open folder's list as the server has it now, and is counted.
+ */
 class Client {
     view: MailView;
-    readonly marks = new MailSeqMarks();
+    readonly follower: MailLiveFollower;
+    reads = 0;
     private readonly injector: EnvironmentInjector;
 
     constructor(server: FakeServer) {
+        this.follower = new MailLiveFollower(() => {
+            this.reads++;
+            this.view = { ...this.view, messages: server.listOf(this.view.folder) };
+        }, 300);
         this.view = {
             mailboxId: MAILBOX, folder: 'INBOX', messages: messages(), thread: [], openMessage: null,
             folders: folders(), mailboxUnread: { [MAILBOX]: 2 },
@@ -40,7 +48,7 @@ class Client {
         ], TestBed.inject(EnvironmentInjector));
         this.injector.get(EmailLiveEventsService).watch('user-1').subscribe(evt => {
             if (evt.type === 'mail.messages.changed') {
-                this.view = applyMessagesChanged(this.view, evt, this.marks);
+                this.view = this.follower.apply(this.view, evt);
             }
         });
     }
@@ -54,13 +62,22 @@ class Client {
     }
 
     destroy(): void {
+        this.follower.stop();
         this.injector.destroy();
     }
 }
 
-/** The realtime server: every publication on the person's channel reaches every client subscribed to it. */
+/**
+ * The realtime server: every publication on the person's channel reaches every client subscribed to it. It also holds
+ * the mailbox's messages, as a list read answers them.
+ */
 class FakeServer {
     private readonly handlers: ((ctx: { data: unknown }) => void)[] = [];
+    mailbox: EmailMessageDto[] = [...messages(), { id: 'r1', folder: 'Trash', seen: true, flagged: false }];
+
+    listOf(folder: string): EmailMessageDto[] {
+        return this.mailbox.filter(m => m.folder === folder);
+    }
 
     client(): object {
         const subscription = {
@@ -158,7 +175,7 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
         expect(b.view.mailboxUnread[MAILBOX]).toBe(1);
     });
 
-    it('a message moved out of the open folder leaves its list; one moved in is left to the next read', () => {
+    it('a message moved out of the open folder leaves its list; one moved in is not placed from the event itself', () => {
         server.publish(changed(30, [
             { id: 'm3', threadId: 't3', folder: 'INBOX', movedTo: 'Archive', seen: true, flagged: false },
             { id: 'x9', threadId: 't9', folder: 'Archive', movedTo: 'INBOX', seen: true, flagged: false },
@@ -168,7 +185,7 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
         }));
 
         expect(b.row('m3')).withContext('moved to Archive: no longer in the INBOX list').toBeUndefined();
-        expect(b.row('x9')).withContext('moved in: its subject and date are not in the event, so it is not guessed').toBeUndefined();
+        expect(b.row('x9')).withContext('moved in: the event has no subject or date, so the row waits for the list read, never a guess').toBeUndefined();
         expect(b.view.messages.map(m => m.id)).toEqual(['m1', 'm2']);
     });
 
@@ -179,6 +196,32 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
         expect(b.view.messages.map(m => m.id)).toEqual(['m3']);
         expect(a.view.messages.map(m => m.id)).toEqual(['m3']);
     });
+
+    it('a message restored in one tab appears in the other tab open on its folder, with no reload by the person', fakeAsync(() => {
+        expect(b.row('r1')).withContext('the subject: the restored message is not in the INBOX list yet').toBeUndefined();
+        // Tab A restores r1 from Trash; the server moved it, and the event reaches both tabs.
+        server.mailbox = server.mailbox.map(m => m.id === 'r1' ? { ...m, folder: 'INBOX' } : m);
+        server.publish(changed(60, [{ id: 'r1', threadId: 't9', folder: 'Trash', movedTo: 'INBOX', seen: true, flagged: false }],
+            { INBOX: { total: 4, unseen: 2, serverTotal: 4, serverUnseen: 2 }, Trash: { total: 0, unseen: 0, serverTotal: 0, serverUnseen: 0 } }));
+        tick(300);
+
+        expect(b.row('r1')).withContext('B shows the restored message').toBeDefined();
+        expect(b.folder('INBOX')?.total).toBe(4);
+        expect(b.reads).toBe(1);
+    }));
+
+    it('a bulk restore of several messages reads the open folder\'s list exactly once', fakeAsync(() => {
+        const ids = ['r1', 'r2', 'r3'];
+        server.mailbox = [...server.mailbox.filter(m => !ids.includes(m.id)), ...ids.map(id => ({ id, folder: 'INBOX', seen: true, flagged: false }))];
+        // One event per request, and a sync may split a burst over chunks: here, one event and then a second chunk.
+        server.publish(changed(70, ids.slice(0, 2).map(id => ({ id, threadId: id, folder: 'Trash', movedTo: 'INBOX', seen: true, flagged: false }))));
+        tick(100);
+        server.publish(changed(71, ids.slice(2).map(id => ({ id, threadId: id, folder: 'Trash', movedTo: 'INBOX', seen: true, flagged: false }))));
+        tick(300);
+
+        expect(b.reads).withContext('one read for the burst, not one per message or per chunk').toBe(1);
+        expect(ids.every(id => b.row(id) !== undefined)).toBeTrue();
+    }));
 
     it('an event for another mailbox moves only its number in the switcher', () => {
         const before = b.view.messages;

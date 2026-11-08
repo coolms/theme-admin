@@ -29,7 +29,7 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
-import { type MailMessagesChangedEvent, MailSeqMarks, applyMessagesChanged } from './mail-messages-changed';
+import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
@@ -1078,8 +1078,11 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
-    /** The last seq applied per row, folder and mailbox badge: what makes a late or repeated event change nothing. */
-    private readonly mailSeq = new MailSeqMarks();
+    /**
+     * Applies each mail change by seq (a late or repeated event changes nothing), and reads the open folder's list
+     * again, once per burst, when messages arrive in it from another tab, device or a restore.
+     */
+    private readonly mailFollower = new MailLiveFollower(() => this.loadMessages(true));
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
     private readonly route = inject(ActivatedRoute);
@@ -1593,6 +1596,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // mailbox channel; every nudge (ids/counts only, never content) refetches
         // over REST. Non-fatal: on any realtime error the page still works via
         // manual reload, so we swallow rather than toast on a stale token.
+        this.destroyRef.onDestroy(() => this.mailFollower.stop());
         const uid = this.currentUserId();
         if (uid !== null) {
             this.emailLive.watch(uid)
@@ -1667,7 +1671,7 @@ export class EmailMailboxPageComponent implements OnInit {
      * arrives late or twice changes nothing.
      */
     private onMessagesChanged(evt: MailMessagesChangedEvent): void {
-        const after = applyMessagesChanged({
+        const after = this.mailFollower.apply({
             mailboxId: this.selectedMailboxId(),
             folder: this.selectedFolder(),
             messages: this.messages(),
@@ -1675,7 +1679,7 @@ export class EmailMailboxPageComponent implements OnInit {
             openMessage: this.selectedMessage(),
             folders: this.folders(),
             mailboxUnread: this.mailboxUnread(),
-        }, evt, this.mailSeq);
+        }, evt);
         this.messages.set([...after.messages]);
         this.thread.set([...after.thread]);
         this.selectedMessage.set(after.openMessage);
