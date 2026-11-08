@@ -11,6 +11,7 @@ import {
 import { DatePipe } from '@angular/common';
 import {
     CalendarPrefs,
+    calendarPrefsFromSettings,
     CmsPageHeaderComponent,
     DynamicFormComponent,
     PageTitleService,
@@ -546,8 +547,7 @@ export class ProfilePageComponent implements OnInit {
         if ('region' === section) {
             this.identityApi.getSettings().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(settings => {
                 this.settings.set(settings);
-                const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
-                if (cal) this.calPrefs.update(cal);
+                this.calPrefs.update(calendarPrefsFromSettings(settings));
                 // Whether the person now follows their device is in the declared read.
                 this.consoleSettings.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
             });
@@ -575,8 +575,7 @@ export class ProfilePageComponent implements OnInit {
                 // calendar consumers (FullCalendar config, MiniCalendar,
                 // topbar QuickAccess) pick up user TZ / first-day / default
                 // calendar without each running its own request.
-                const cal = settings['calendar'] as Partial<CalendarPrefs> | undefined;
-                if (cal) this.calPrefs.update(cal);
+                this.calPrefs.update(calendarPrefsFromSettings(settings));
                 // Sections another module owns a pane for (profile.tab) are
                 // not seeded here: the guest asks the server when it opens.
             },
@@ -680,7 +679,8 @@ export class ProfilePageComponent implements OnInit {
             .subscribe({
                 next: updated => {
                     this.settings.update(s => ({ ...s, [section]: updated }));
-                    this.calPrefs.update(updated);
+                    // Only the default calendar is this section's: the zone and formats are region's.
+                    this.calPrefs.update(calendarPrefsFromSettings({ calendar: updated }));
                     this.savingCalendar.set(false);
                     this.toast.success('Calendar preferences saved');
                 },

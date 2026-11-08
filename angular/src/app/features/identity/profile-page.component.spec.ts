@@ -97,6 +97,13 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
     /** What GET /auth/me/settings serves -- i.e. what the user had on load. */
     const SETTINGS_ON_LOAD = {
+        region: {
+            timezone:   'Europe/Kyiv',
+            dateFormat: 'yyyy-MM-dd',
+            timeFormat: '24h',
+            weekStart:  'monday',
+        },
+        // The keys this section held before region: the page must not read them.
         calendar: {
             tz:                  'UTC',
             dateFormat:          'yyyy-MM-dd',
@@ -259,10 +266,10 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
  // -- ngOnInit seeding -----------------------------------------------------
 
- it('seeds the calendar prefs from the load response', () => {
+ it('seeds the calendar prefs from the load response: the zone from region, never the calendar section', () => {
  // The service is shared with widgets mounted elsewhere in the shell,
  // so the page loading is what saves it a request.
-        expect(calPrefs.tz()).toBe('UTC');
+        expect(calPrefs.tz()).toBe('Europe/Kyiv');
     });
 
  // -- saveCalendarPrefs ----------------------------------------------------
@@ -275,8 +282,8 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         defaultCalendarSlug: 'team-ops',
     };
 
- it('saveCalendarPrefs pushes the echo into the live prefs the widgets read', () => {
-        expect(calPrefs.tz()).toBe('UTC');
+ it('saveCalendarPrefs moves the default calendar, and leaves the zone and formats to region', () => {
+        expect(calPrefs.tz()).toBe('Europe/Kyiv');
 
         page.saveCalendarPrefs('calendar', CALENDAR_SAVED);
         flushSave('calendar', { ...CALENDAR_SAVED });
@@ -285,12 +292,13 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
  // timeZone and firstDay, MiniCalendar, the date/time formatting
  // service, the topbar calendar quick-access. The handler's
  // `this.calPrefs.update(updated)` is the only thing that moves them.
-        expect(calPrefs.tz()).toBe('Europe/Berlin');
-        expect(calPrefs.dateFormat()).toBe('dd.MM.yyyy');
-        expect(calPrefs.timeFormat()).toBe('12h');
-        expect(calPrefs.weekStart()).toBe('sunday');
-        expect(calPrefs.firstDay()).toBe(0);
         expect(calPrefs.defaultCalendarSlug()).toBe('team-ops');
+ // A calendar echo still carrying the keys region took over moves none of them.
+        expect(calPrefs.tz()).toBe('Europe/Kyiv');
+        expect(calPrefs.dateFormat()).toBe('yyyy-MM-dd');
+        expect(calPrefs.timeFormat()).toBe('24h');
+        expect(calPrefs.weekStart()).toBe('monday');
+        expect(calPrefs.firstDay()).toBe(1);
     });
 
  it('saveCalendarPrefs caches the echo under its section and clears the spinner', () => {
@@ -337,7 +345,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
 
  // A half-applied save is worse than a failed one: the widgets would
  // show a timezone the server does not have.
-        expect(calPrefs.tz()).toBe('UTC');
+        expect(calPrefs.tz()).toBe('Europe/Kyiv');
         expect(page.settings()['calendar']).toEqual(SETTINGS_ON_LOAD.calendar);
         expect(page.savingCalendar()).toBeFalse();
     });
