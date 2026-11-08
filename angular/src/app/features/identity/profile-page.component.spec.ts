@@ -282,6 +282,21 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         defaultCalendarSlug: 'team-ops',
     };
 
+ it('a Region saved as automatic leaves the explicit zone behind: the device zone, or the default', () => {
+        expect(calPrefs.tz()).toBe('Europe/Kyiv');
+
+        page.declaredSaved('region');
+        http.expectOne(SETTINGS_URL).flush({
+            ...SETTINGS_ON_LOAD,
+            region: { ...SETTINGS_ON_LOAD.region, timezone: 'automatic' },
+        });
+ // The console's declared read is where the device zone would come from;
+ // answered with nothing, the platform default is what is left.
+        http.expectOne(`${SETTINGS_URL}/declared?host=console`).flush([]);
+
+        expect(calPrefs.tz()).toBe('UTC');
+    });
+
  it('saveCalendarPrefs moves the default calendar, and leaves the zone and formats to region', () => {
         expect(calPrefs.tz()).toBe('Europe/Kyiv');
 
