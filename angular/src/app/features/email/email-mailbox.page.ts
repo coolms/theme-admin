@@ -29,6 +29,7 @@ import {
     ToolbarAction,
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
+import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
 import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
@@ -1077,6 +1078,11 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
+    /**
+     * Applies each mail change by seq (a late or repeated event changes nothing), and reads the open folder's list
+     * again, once per burst, when messages arrive in it from another tab, device or a restore.
+     */
+    private readonly mailFollower = new MailLiveFollower(() => this.loadMessages(true));
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
     private readonly route = inject(ActivatedRoute);
@@ -1590,6 +1596,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // mailbox channel; every nudge (ids/counts only, never content) refetches
         // over REST. Non-fatal: on any realtime error the page still works via
         // manual reload, so we swallow rather than toast on a stale token.
+        this.destroyRef.onDestroy(() => this.mailFollower.stop());
         const uid = this.currentUserId();
         if (uid !== null) {
             this.emailLive.watch(uid)
@@ -1598,6 +1605,8 @@ export class EmailMailboxPageComponent implements OnInit {
                     next: evt => {
                         if ('mail.sync.finished' === evt.type) {
                             this.syncBar()?.frame(evt);
+                        } else if ('mail.messages.changed' === evt.type) {
+                            this.onMessagesChanged(evt);
                         } else {
                             this.onMailReceived(evt);
                         }
@@ -1653,6 +1662,29 @@ export class EmailMailboxPageComponent implements OnInit {
             next: folders => this.patchMailboxUnread(evt.mailboxId, folders),
             error: () => { /* leave the badge as-is on a transient failure */ },
         });
+    }
+
+    /**
+     * What changed in a mailbox, from this tab, another tab or device, or the server's sync: applied in place, the
+     * list not read again. The rows shown, the open message and its thread take their flags; a row that left the open
+     * folder or is gone leaves the list; the folders take their counts and the switcher its number. Each by seq: what
+     * arrives late or twice changes nothing.
+     */
+    private onMessagesChanged(evt: MailMessagesChangedEvent): void {
+        const after = this.mailFollower.apply({
+            mailboxId: this.selectedMailboxId(),
+            folder: this.selectedFolder(),
+            messages: this.messages(),
+            thread: this.thread(),
+            openMessage: this.selectedMessage(),
+            folders: this.folders(),
+            mailboxUnread: this.mailboxUnread(),
+        }, evt);
+        this.messages.set([...after.messages]);
+        this.thread.set([...after.thread]);
+        this.selectedMessage.set(after.openMessage);
+        this.folders.set([...after.folders]);
+        this.mailboxUnread.set(after.mailboxUnread);
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */

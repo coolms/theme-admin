@@ -3,6 +3,8 @@ import { Observable } from 'rxjs';
 
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
+import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
+
 /**
  * A realtime "new mail appeared" nudge for a mailbox the current user can see.
  * Ids and a count only -- never subject, sender, or snippet (the backend never puts
@@ -46,10 +48,10 @@ export class EmailLiveEventsService {
      * Subscribe to the current user's per-user mailbox channel. `userId` is the
      * user's UUID (rfc4122), matching the backend `MailboxChannelNameBuilder`.
      */
-    watch(userId: string): Observable<EmailLiveEvent | EmailSyncFinishedEvent> {
+    watch(userId: string): Observable<EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent> {
         const channel = `email.user.${userId}`;
 
-        return new Observable<EmailLiveEvent | EmailSyncFinishedEvent>(subscriber => {
+        return new Observable<EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
 
@@ -94,12 +96,15 @@ export class EmailLiveEventsService {
         }
     }
 
-    private tryParse(raw: unknown): EmailLiveEvent | EmailSyncFinishedEvent | null {
+    private tryParse(raw: unknown): EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | null {
         if (typeof raw !== 'object' || raw === null) {
             return null;
         }
         const obj = raw as Record<string, unknown>;
         const type = obj['type'];
+        if (type === 'mail.messages.changed') {
+            return readMessagesChanged(raw);
+        }
         if (type === 'mail.sync.finished') {
             return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'
                 ? raw as EmailSyncFinishedEvent
