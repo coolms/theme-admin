@@ -1751,6 +1751,70 @@ figure > figcaption {
     }
 }
 
+/* -- Printing a PDF: its pages alone, edge to edge, no browser header or footer --
+ *
+ * While the PDF viewer prints, it marks <html> and <body> with
+ * `data-pdfjsprinting` and puts each page, drawn as an image, into
+ * `#printContainer` under <body>. The rules that lay that out are here, in the
+ * admin's own stylesheet, not only in the viewer's: the viewer's arrive as
+ * <style> elements added at run time, which a policy without 'unsafe-inline' in
+ * style-src refuses. A stylesheet file loaded from the admin's own address is
+ * never refused.
+ *
+ * The printed pages use a named page whose margin is 0: a browser draws its
+ * header and footer (the date, the title, the address, "1/3") in the page
+ * margin, so with none there is nowhere to draw them. Printing anything else
+ * from the admin keeps the browser's own margins. Each page's size comes from
+ * the viewer, which adds `@page { size: <width>pt <height>pt }` while printing;
+ * if that rule is refused, the pages are fitted to the paper instead.
+ */
+@page cms-pdf-print {
+    margin: 0;
+}
+
+@media print {
+    html[data-pdfjsprinting],
+    body[data-pdfjsprinting] {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100%;
+        overflow: visible !important;
+        background: none !important;
+    }
+    body[data-pdfjsprinting] > *:not(#printContainer) {
+        display: none !important;
+    }
+    body[data-pdfjsprinting] > #printContainer {
+        page: cms-pdf-print;
+        display: block !important;
+        position: static;
+        width: 100%;
+        height: 100%;
+        visibility: visible !important;
+    }
+    body[data-pdfjsprinting] > #printContainer > .printedPage {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        break-after: page;
+        break-inside: avoid;
+        visibility: visible !important;
+    }
+    body[data-pdfjsprinting] > #printContainer > .printedPage:last-child {
+        break-after: auto;
+    }
+    body[data-pdfjsprinting] > #printContainer > .printedPage img,
+    body[data-pdfjsprinting] > #printContainer > .printedPage canvas {
+        display: block !important;
+        max-width: 100%;
+        max-height: 100%;
+        visibility: visible !important;
+    }
+}
+
 
 // ═══ Bootstrap bridge ═══════════════════════════════════════════════
 //
