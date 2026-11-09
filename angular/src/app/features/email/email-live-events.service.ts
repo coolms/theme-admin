@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, share } from 'rxjs';
 
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
+import { type MailAliasesChangedEvent, readAliasesChanged } from './mail-aliases';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 
 /**
@@ -28,6 +29,9 @@ export interface EmailSyncFinishedEvent {
     readonly finishedAt: string;
 }
 
+/** Every event of the person's mail channel. */
+export type EmailEvent = EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent;
+
 /**
  * FE -- typed wrapper over the realtime transport for the per-user
  * channel `email.user.{userIdRfc4122}`. Mirror of `InboxLiveEventsService`: the
@@ -38,20 +42,31 @@ export interface EmailSyncFinishedEvent {
  * Malformed events (missing/unknown `type`) are silently dropped so a schema bump
  * across a partial roll-out can't blank the subscription. The returned Observable
  * opens the centrifuge subscription on the first RxJS subscriber and closes it when
- * the last unsubscribes.
+ * the last unsubscribes. Every caller on the same channel shares that one subscription: the realtime client holds one
+ * subscription per channel, so a second watcher that closed its own would close the first's too.
  */
 @Injectable({ providedIn: 'root' })
 export class EmailLiveEventsService {
     private readonly client = inject(CentrifugoClientService);
+    private readonly watching = new Map<string, Observable<EmailEvent>>();
 
     /**
      * Subscribe to the current user's per-user mailbox channel. `userId` is the
      * user's UUID (rfc4122), matching the backend `MailboxChannelNameBuilder`.
      */
-    watch(userId: string): Observable<EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent> {
+    watch(userId: string): Observable<EmailEvent> {
         const channel = `email.user.${userId}`;
+        let shared = this.watching.get(channel);
+        if (shared === undefined) {
+            shared = this.open(channel).pipe(share());
+            this.watching.set(channel, shared);
+        }
 
-        return new Observable<EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent>(subscriber => {
+        return shared;
+    }
+
+    private open(channel: string): Observable<EmailEvent> {
+        return new Observable<EmailEvent>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
 
@@ -96,7 +111,7 @@ export class EmailLiveEventsService {
         }
     }
 
-    private tryParse(raw: unknown): EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | null {
+    private tryParse(raw: unknown): EmailEvent | null {
         if (typeof raw !== 'object' || raw === null) {
             return null;
         }
@@ -104,6 +119,9 @@ export class EmailLiveEventsService {
         const type = obj['type'];
         if (type === 'mail.messages.changed') {
             return readMessagesChanged(raw);
+        }
+        if (type === 'mail.aliases.changed') {
+            return readAliasesChanged(raw);
         }
         if (type === 'mail.sync.finished') {
             return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'

@@ -16,6 +16,7 @@ import {
 import { EmailDelegationsCardComponent } from './email-delegations-card.component';
 import { EmailService, type MailboxAction } from './email.service';
 import { EmailMailboxDto } from './email.types';
+import { MailboxAliasesSectionComponent } from './mailbox-aliases-section.component';
 import { MailboxConnectionSectionComponent } from './mailbox-connection-section.component';
 import { MailboxDetailsSectionComponent } from './mailbox-details-section.component';
 import { MailboxFiltersSectionComponent } from './mailbox-filters-section.component';
@@ -24,13 +25,14 @@ import { afterAccess } from './mailbox-section-save';
 
 /** A pane of a mailbox's settings: its id in the URL, its title and help. */
 export interface MailboxPane {
-    readonly id: 'general' | 'connection' | 'sync' | 'filters' | 'rules' | 'access' | 'delete';
+    readonly id: 'general' | 'addresses' | 'connection' | 'sync' | 'filters' | 'rules' | 'access' | 'delete';
     readonly title: string;
     readonly help: string;
 }
 
 const PANES: readonly MailboxPane[] = [
     { id: 'general', title: 'General', help: 'The mailbox\'s name and address.' },
+    { id: 'addresses', title: 'Addresses you send from', help: 'The addresses a message from this mailbox may come from.' },
     { id: 'connection', title: 'Connection', help: 'The incoming and outgoing servers, and how the mailbox signs in.' },
     { id: 'sync', title: 'Sync', help: 'Whether new mail is fetched, and how much past mail.' },
     { id: 'filters', title: 'Filters', help: 'Sort arriving mail: where it goes, and how it is marked.' },
@@ -68,7 +70,7 @@ interface PaneBody {
     imports: [
         CmsSettingsShellComponent, CmsSettingsPaneComponent,
         MailboxDetailsSectionComponent, MailboxConnectionSectionComponent, MailboxInboundSectionComponent,
-        EmailDelegationsCardComponent, MailboxFiltersSectionComponent,
+        EmailDelegationsCardComponent, MailboxFiltersSectionComponent, MailboxAliasesSectionComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
@@ -95,6 +97,13 @@ interface PaneBody {
                             <app-mailbox-details-section #paneBody
                                 [mailbox]="mb" [access]="access()['email.mailbox.update']"
                                 [reset]="resetToken()" (saved)="mailbox.set($event)" (reload)="load()" />
+                        </cms-settings-pane>
+                    }
+                    @case ('addresses') {
+                        <!-- Each address is added, sent again or withdrawn on its own: nothing to Save. -->
+                        <cms-settings-pane [title]="current().title" icon="at" owner="Email" [help]="current().help"
+                                           settingKey="email.mailbox.addresses" [editable]="false">
+                            <app-mailbox-aliases-section [mailboxId]="mb.id" [ownAddress]="mb.emailAddress ?? null" />
                         </cms-settings-pane>
                     }
                     @case ('connection') {
