@@ -75,8 +75,8 @@ export function mailboxChangedSinceRead(err: unknown): boolean {
  * `Accept: application/json` on collection reads forces the BARE array (not a
  * Hydra envelope); {@link unwrap} tolerates both shapes regardless.
  */
-/** Whether the server offers opening a server hit; until it does, opening one says it is coming. */
-export const SERVER_MESSAGE_OPEN_SERVED: boolean = false;
+/** Whether the server offers opening a server hit. */
+export const SERVER_MESSAGE_OPEN_SERVED: boolean = true;
 
 @Injectable({ providedIn: 'root' })
 export class EmailService {
@@ -335,8 +335,8 @@ export class EmailService {
     }
 
     /**
-     * Opens a server hit the platform does not hold: stores it and answers its id. Null while the server does not
-     * offer it yet ({@link SERVER_MESSAGE_OPEN_SERVED}); the caller says it is coming.
+     * Opens a server hit the platform does not hold: stores it and answers its id. Null where the server does not offer
+     * it ({@link SERVER_MESSAGE_OPEN_SERVED}).
      */
     openServerMessage(mailboxId: string, hit: ServerSearchHitDto): Observable<ServerMessageOpenedDto> | null {
         return SERVER_MESSAGE_OPEN_SERVED ? this.postServerMessageOpen(mailboxId, hit.ref) : null;

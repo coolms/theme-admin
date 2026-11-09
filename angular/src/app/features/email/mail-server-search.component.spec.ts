@@ -1,10 +1,13 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Store } from '@ngxs/store';
 import { type WritableSignal, signal } from '@angular/core';
-import { type Observable, Subject, of, throwError } from 'rxjs';
+import { Subject, throwError } from 'rxjs';
 import { DateTimeFormatService } from '@coolms/ui-angular';
 
-import type { ServerMessageOpenedDto, ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
+import { EmailService, SERVER_MESSAGE_OPEN_SERVED } from './email.service';
+import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
 import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch } from './mail-server-search';
 
@@ -36,7 +39,10 @@ describe('MailServerSearchComponent', () => {
     function render(localIds: string[] = []): HTMLElement {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
-            providers: [{ provide: DateTimeFormatService, useValue: { auto: (iso: string | null | undefined) => iso ?? '' } }],
+            providers: [
+                { provide: DateTimeFormatService, useValue: { auto: (iso: string | null | undefined) => iso ?? '' } },
+                provideHttpClient(), provideHttpClientTesting(), { provide: Store, useValue: { selectSnapshot: () => null } },
+            ],
         });
         fixture = TestBed.createComponent(MailServerSearchComponent);
         fixture.componentRef.setInput('search', search);
@@ -104,21 +110,6 @@ describe('MailServerSearchComponent', () => {
         expect(text(el, 'server-search-all-local')).toContain('in the results above');
     });
 
-    it('a hit the platform does not hold: the open action says it is coming, and asks nothing', () => {
-        const el = render();
-        search.run('q');
-        replies.next(answer('q', [hit(3)]));
-        fixture.detectChanges();
-        const before = asked;
-
-        el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
-        fixture.detectChanges();
-
-        expect(text(el, 'server-hit-notice')).toBe('Opening older mail is coming soon.');
-        expect(opened).toEqual([]);
-        expect(asked).toBe(before);
-    });
-
     it('once open is offered: the stored id opens, and a hit gone from the server leaves the list', () => {
         const el = render();
         search.run('q');
@@ -134,27 +125,39 @@ describe('MailServerSearchComponent', () => {
         expect(search.hits().map(h => h.ref)).toEqual(['ref-4']);
     });
 
-    describe('opening a hit once open is offered', () => {
-        const openWith = (reply: Observable<ServerMessageOpenedDto>): HTMLElement => {
+    describe('opening a hit, through EmailService.openServerMessage', () => {
+        const OPEN = '/api/v1/email/mailboxes/mb1/server-messages/ref-3/open';
+        /** Renders, presses the first hit, and answers the open the service sends as given. */
+        const openWith = (body: Record<string, string>, status = 200): HTMLElement => {
             const el = render();
+            const email = TestBed.inject(EmailService);
+            const http = TestBed.inject(HttpTestingController);
             search.run('q');
             replies.next(answer('q', [hit(3), hit(4)]));
-            fixture.componentRef.setInput('opener', () => reply);
+            fixture.componentRef.setInput('opener', (h: ServerSearchHitDto) => email.openServerMessage('mb1', h));
             fixture.detectChanges();
             el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
+            const req = http.expectOne(OPEN);
+            expect(req.request.method).toBe('POST');
+            req.flush(body, { status, statusText: String(status) });
             fixture.detectChanges();
+            http.verify();
             return el;
         };
 
+        it('the flag is on', () => {
+            expect(SERVER_MESSAGE_OPEN_SERVED).toBeTrue();
+        });
+
         it('200: the stored id opens, and the hit is now held', () => {
-            openWith(of({ id: 'm42', folder: 'Archive' }));
+            openWith({ id: 'm42', folder: 'Archive' });
 
             expect(opened).toEqual([{ id: 'm42', folder: 'Archive', seen: true }]);
             expect(search.hits()[0]).toEqual(jasmine.objectContaining({ ref: 'ref-3', local: true, localId: 'm42' }));
         });
 
         it('404 gone: the row leaves, and the section says so', () => {
-            const el = openWith(throwError(() => refused(404, 'gone')));
+            const el = openWith({ type: '/errors/email/server-search/gone' }, 404);
 
             expect(search.hits().map(h => h.ref)).toEqual(['ref-4']);
             expect(text(el, 'server-hit-gone')).toBe('No longer on the server.');
@@ -162,14 +165,14 @@ describe('MailServerSearchComponent', () => {
         });
 
         it('503 unavailable: said under the row, with the reason', () => {
-            const el = openWith(throwError(() => refused(503, 'unavailable', { reason: 'unreachable' })));
+            const el = openWith({ type: '/errors/email/server-search/unavailable', reason: 'unreachable' }, 503);
 
             expect(text(el, 'server-hit-notice')).toBe('Can\'t reach the mail server right now: unreachable.');
             expect(search.hits().length).toBe(2);
         });
 
         it('502 failed: said under the row, naming the server', () => {
-            const el = openWith(throwError(() => refused(502, 'failed', { server: 'imap.example.test' })));
+            const el = openWith({ type: '/errors/email/server-search/failed', server: 'imap.example.test' }, 502);
 
             expect(text(el, 'server-hit-notice')).toBe('imap.example.test couldn\'t open this message.');
         });
