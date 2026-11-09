@@ -1,10 +1,10 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { type WritableSignal, signal } from '@angular/core';
-import { Subject, throwError } from 'rxjs';
+import { type Observable, Subject, of, throwError } from 'rxjs';
 import { DateTimeFormatService } from '@coolms/ui-angular';
 
-import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
+import type { ServerMessageOpenedDto, ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
 import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch } from './mail-server-search';
 
@@ -132,6 +132,47 @@ describe('MailServerSearchComponent', () => {
         fixture.detectChanges();
 
         expect(search.hits().map(h => h.ref)).toEqual(['ref-4']);
+    });
+
+    describe('opening a hit once open is offered', () => {
+        const openWith = (reply: Observable<ServerMessageOpenedDto>): HTMLElement => {
+            const el = render();
+            search.run('q');
+            replies.next(answer('q', [hit(3), hit(4)]));
+            fixture.componentRef.setInput('opener', () => reply);
+            fixture.detectChanges();
+            el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
+            fixture.detectChanges();
+            return el;
+        };
+
+        it('200: the stored id opens, and the hit is now held', () => {
+            openWith(of({ id: 'm42', folder: 'Archive' }));
+
+            expect(opened).toEqual([{ id: 'm42', folder: 'Archive', seen: true }]);
+            expect(search.hits()[0]).toEqual(jasmine.objectContaining({ ref: 'ref-3', local: true, localId: 'm42' }));
+        });
+
+        it('404 gone: the row leaves, and the section says so', () => {
+            const el = openWith(throwError(() => refused(404, 'gone')));
+
+            expect(search.hits().map(h => h.ref)).toEqual(['ref-4']);
+            expect(text(el, 'server-hit-gone')).toBe('No longer on the server.');
+            expect(opened).toEqual([]);
+        });
+
+        it('503 unavailable: said under the row, with the reason', () => {
+            const el = openWith(throwError(() => refused(503, 'unavailable', { reason: 'unreachable' })));
+
+            expect(text(el, 'server-hit-notice')).toBe('Can\'t reach the mail server right now: unreachable.');
+            expect(search.hits().length).toBe(2);
+        });
+
+        it('502 failed: said under the row, naming the server', () => {
+            const el = openWith(throwError(() => refused(502, 'failed', { server: 'imap.example.test' })));
+
+            expect(text(el, 'server-hit-notice')).toBe('imap.example.test couldn\'t open this message.');
+        });
     });
 
     it('unsupported on the mailbox: said before any search, with the reason', () => {

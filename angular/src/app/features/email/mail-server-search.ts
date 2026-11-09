@@ -101,7 +101,7 @@ export type ServerSearchView =
 /** One page of a server search: the first without a cursor. Unsubscribing aborts it. */
 export type ServerSearchFetch = (q: string, cursor: string | null) => Observable<ServerSearchAnswerDto>;
 
-/** The views a first page ends in; a rate-limited one is still waiting. */
+/** The views a first page ends in; a rate-limited one is still waiting until its last countdown ends. */
 const SETTLED = new Set<ServerSearchView['kind']>(['answered', 'unsupported', 'unavailable', 'failed', 'query-invalid', 'error']);
 
 /**
@@ -183,7 +183,9 @@ export class MailServerSearch {
 
     /** Whether the first page has ended in what it shows for good (a rate-limited one is still waiting). */
     isSettled(): boolean {
-        return SETTLED.has(this.shown().kind);
+        const shown = this.shown();
+        // A rate-limited search that will not ask again on its own has ended once its countdown has.
+        return SETTLED.has(shown.kind) || (shown.kind === 'rate-limited' && !shown.willRetry && shown.seconds === 0);
     }
 
     /** Emits each time a first page ends in what it shows for good. */
@@ -230,11 +232,16 @@ export class MailServerSearch {
     }
 
     private answered(answer: ServerSearchAnswerDto, cursor: string | null): void {
-        if (answer.q !== this.query()) {
-            return;
-        }
         this.request = null;
         this.loadingMore.set(false);
+        if (answer.q !== this.query()) {
+            // An answer for another query is dropped: the page asked ends with nothing from it.
+            this.view.set({ kind: 'answered' });
+            if (cursor === null) {
+                this.settled.next();
+            }
+            return;
+        }
         this.hits.set(cursor === null ? [...answer.hits] : [...this.hits(), ...answer.hits]);
         this.next.set(answer.next ?? null);
         this.capped.set(answer.capped === true);
@@ -293,6 +300,7 @@ export class MailServerSearch {
                 this.start(this.query(), cursor, true);
             } else {
                 this.view.set({ kind: 'rate-limited', seconds: 0, willRetry: false });
+                this.settled.next();
             }
         });
     }

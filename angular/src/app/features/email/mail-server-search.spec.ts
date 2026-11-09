@@ -1,11 +1,11 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { type WritableSignal, signal } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Subject } from 'rxjs';
+import { type Observable, Subject, throwError } from 'rxjs';
 
-import { EmailService } from './email.service';
+import { EmailService, SERVER_MESSAGE_OPEN_SERVED } from './email.service';
 import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
 import { MailServerSearch, OtherMailboxesSearch, retryAfterSeconds, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
 
@@ -137,7 +137,28 @@ describe('Mail server search', () => {
             firstPage().flush(serverAnswer('invoices', [serverHit(1)]));
 
             expect(search.hits()).withContext('a stale answer shows nothing').toEqual([]);
-            expect(search.view().kind).withContext('still waiting for its own answer').toBe('searching');
+        });
+
+        it('a dropped answer ends its request: the first page settles with nothing, and a next page is not blocked', () => {
+            let settled = 0;
+            search.run('invoice');
+            search.whenSettled().subscribe(() => { settled += 1; });
+            firstPage().flush(serverAnswer('invoices', [serverHit(1)]));
+
+            expect(search.view().kind).withContext('answered, with nothing').toBe('answered');
+            expect(search.hits()).toEqual([]);
+            expect(settled).withContext('the first page settled').toBe(1);
+
+            search.run('invoice');
+            firstPage().flush(serverAnswer('invoice', [serverHit(1)], { next: 'c1' }));
+            search.more();
+            cursorPage('c1').flush(serverAnswer('other', [serverHit(2)], { next: 'c2' }));
+
+            expect(search.loadingMore()).withContext('the dropped page is not loading').toBeFalse();
+            expect(search.hits().map(h => h.ref)).withContext('the rows shown stay').toEqual(['ref-1']);
+            search.more();
+            cursorPage('c1').flush(serverAnswer('invoice', [serverHit(2)]));
+            expect(search.hits().length).withContext('the next page was asked again').toBe(2);
         });
 
         it('unsupported: said with the server\'s reason, and kept on the mailbox', () => {
@@ -241,6 +262,20 @@ describe('Mail server search', () => {
             expect(search.view().kind).toBe('answered');
         });
 
+        it('opening a hit: a POST with no body, answering the stored id; null while it is not offered', () => {
+            const email = TestBed.inject(EmailService);
+            let stored: unknown = null;
+            email.postServerMessageOpen('mb1', 'r/1').subscribe(a => { stored = a; });
+            const req = http.expectOne('/api/v1/email/mailboxes/mb1/server-messages/r%2F1/open');
+            expect(req.request.method).toBe('POST');
+            expect(req.request.body).toBeNull();
+            req.flush({ id: 'm42', folder: 'Archive' });
+            expect(stored).toEqual({ id: 'm42', folder: 'Archive' });
+
+            expect(SERVER_MESSAGE_OPEN_SERVED).toBeFalse();
+            expect(email.openServerMessage('mb1', serverHit(1))).withContext('not offered yet: nothing asked').toBeNull();
+        });
+
         it('capped: the answer says so', () => {
             search.run('a');
             firstPage().flush(serverAnswer('a', [serverHit(1)], { next: null, capped: true }));
@@ -251,6 +286,37 @@ describe('Mail server search', () => {
     });
 
     describe('on the other mailboxes', () => {
+        it('a mailbox rate-limited twice ends its wait, and the next mailbox is still searched', fakeAsync(() => {
+            const asked: string[] = [];
+            const limited = (): HttpErrorResponse => new HttpErrorResponse({
+                status: 429,
+                error: { type: '/errors/email/server-search/rate-limited' },
+                headers: new HttpHeaders({ 'Retry-After': '2' }),
+            });
+            const section = (id: string, answer: () => Observable<ServerSearchAnswerDto>) => ({
+                mailboxId: id,
+                title: id,
+                search: new MailServerSearch(() => {
+                    asked.push(id);
+                    return answer();
+                }),
+                open: () => null,
+            });
+            const others = new OtherMailboxesSearch();
+            const first = section('mb2', () => throwError(() => limited()));
+            others.start('x', [first, section('mb3', () => new Subject<ServerSearchAnswerDto>())]);
+            expect(asked).toEqual(['mb2']);
+
+            tick(2000);
+            expect(asked).withContext('one search again at zero, rate-limited again').toEqual(['mb2', 'mb2']);
+            expect(first.search.view()).toEqual({ kind: 'rate-limited', seconds: 2, willRetry: false });
+
+            tick(2000);
+            expect(first.search.view()).withContext('its Retry stays').toEqual({ kind: 'rate-limited', seconds: 0, willRetry: false });
+            expect(asked).withContext('the chain reached the next mailbox').toEqual(['mb2', 'mb2', 'mb3']);
+            others.stop();
+        }));
+
         it('one after another, each once the one before has answered', () => {
             const asked: string[] = [];
             const answers = new Map<string, Subject<ServerSearchAnswerDto>>();

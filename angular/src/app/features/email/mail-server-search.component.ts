@@ -4,7 +4,7 @@ import type { Observable } from 'rxjs';
 
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearch, matchesText, serverSearchRefusal, sizeText } from './mail-server-search';
+import { MailServerSearch, matchesText, serverSearchRefusal, sizeText, type ServerSearchRefusal } from './mail-server-search';
 
 /** A message to open in the reader: its stored id, the folder it is in, and whether it was read. */
 export interface ServerHitOpened {
@@ -38,6 +38,10 @@ export interface ServerHitOpened {
                 @if (notice()?.ref === h.ref) {
                     <p class="mss__note mss__note--row" role="status" data-test="server-hit-notice">{{ notice()?.text }}</p>
                 }
+            }
+
+            @if (gone()) {
+                <p class="mss__note" role="status" data-test="server-hit-gone">No longer on the server.</p>
             }
 
             @switch (shown().kind) {
@@ -166,9 +170,12 @@ export class MailServerSearchComponent {
     readonly matchesNote = computed(() => (this.search().view().kind === 'answered' ? matchesText(this.search().matches()) : null));
     /** A word under one row: opening it is not offered yet, or did not work. */
     readonly notice = signal<{ ref: string; text: string } | null>(null);
+    /** The message last opened was gone from the server, and its row left the list. */
+    readonly gone = signal(false);
 
     open(hit: ServerSearchHitDto): void {
         this.notice.set(null);
+        this.gone.set(false);
         if (hit.local && typeof hit.localId === 'string' && hit.localId !== '') {
             this.opened.emit({ id: hit.localId, folder: hit.folder, seen: hit.seen ?? true });
             return;
@@ -184,11 +191,13 @@ export class MailServerSearchComponent {
                 this.opened.emit({ id: stored.id, folder: stored.folder, seen: hit.seen ?? true });
             },
             error: (error: unknown) => {
-                if (serverSearchRefusal(error).reason === 'gone' || (error instanceof HttpErrorResponse && error.status === 404)) {
+                const refusal = serverSearchRefusal(error);
+                if (refusal.reason === 'gone' || (error instanceof HttpErrorResponse && error.status === 404)) {
                     this.search().drop(hit.ref);
+                    this.gone.set(true);
                     return;
                 }
-                this.notice.set({ ref: hit.ref, text: 'Couldn\'t open this message from the mail server.' });
+                this.notice.set({ ref: hit.ref, text: openFailureText(refusal) });
             },
         });
     }
@@ -216,5 +225,17 @@ export class MailServerSearchComponent {
 
     willRetry(view: { kind: string; willRetry?: boolean }): boolean {
         return view.willRetry === true;
+    }
+}
+
+/** Why opening a server hit did not work, in the page's words. */
+function openFailureText(refusal: ServerSearchRefusal): string {
+    switch (refusal.reason) {
+        case 'unavailable':
+            return `Can't reach the mail server right now${refusal.said !== null ? `: ${refusal.said}` : ''}.`;
+        case 'failed':
+            return `${refusal.server ?? 'The mail server'} couldn't open this message.`;
+        default:
+            return 'Couldn\'t open this message from the mail server.';
     }
 }
