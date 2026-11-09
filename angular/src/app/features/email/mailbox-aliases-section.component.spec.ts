@@ -157,9 +157,67 @@ describe('MailboxAliasesSectionComponent -- the addresses a mailbox sends from',
         expect(buttonsOf(row(host, PENDING.address))).toEqual(['Send again', 'Withdraw']);
         expect(row(host, EXPIRED.address).textContent).toContain('Link expired');
         expect(buttonsOf(row(host, EXPIRED.address))).toEqual(['Send again', 'Withdraw']);
-        expect(row(host, DECLINED.address).textContent).toContain('Declined');
-        expect(buttonsOf(row(host, DECLINED.address))).toEqual(['Withdraw']);
+        expect(row(host, DECLINED.address).textContent).toContain('Declined by the address\'s owner.');
+        expect(buttonsOf(row(host, DECLINED.address))).toEqual([]);
         expect(host.querySelector('input[name=address]')).not.toBeNull();
+    });
+
+    it('a declined row offers no action, and says when it can be asked for again only when the list carries the date', async () => {
+        const dated = alias('a-5', 'stranger@example.test', 'declined', {
+            declinedAt: '2026-11-09T09:00:00+00:00', askAgainAt: '2026-12-09T09:00:00+00:00',
+        });
+        const fixture = await render({ canManage: true, aliases: [DECLINED, dated] });
+        const host = fixture.nativeElement as HTMLElement;
+
+        for (const declined of [DECLINED, dated]) {
+            expect(row(host, declined.address).textContent).toContain('Declined by the address\'s owner.');
+            expect(buttonsOf(row(host, declined.address))).withContext(declined.address).toEqual([]);
+        }
+        expect(row(host, dated.address).textContent).toContain('It can be asked for again after Dec 9, 2026');
+        expect(row(host, DECLINED.address).textContent).not.toContain('asked for again');
+
+        fixture.componentInstance.withdraw(DECLINED);
+        expect(asked).withContext('a declined address is never withdrawn').toBeNull();
+        expect(email.withdrawAlias).not.toHaveBeenCalled();
+    });
+
+    it('a withdraw refused as declined-recently (a stale list) says so on the row, with Retry-After\'s date, and reads the list again', async () => {
+        const fixture = await render({ canManage: true, aliases: [PENDING] });
+        const host = fixture.nativeElement as HTMLElement;
+        email.withdrawAlias.and.returnValue(throwError(() => new HttpErrorResponse({
+            status: 409,
+            error: { type: '/errors/email/alias/declined-recently', title: 'Declined', status: 409 },
+            headers: new HttpHeaders({ 'Retry-After': String(30 * 86400) }),
+        })));
+        // The list read again still shows the row as it was (no date on it): the row keeps what the refusal said.
+        const now = Date.now();
+
+        button(row(host, PENDING.address), 'Withdraw').click();
+        fixture.detectChanges();
+
+        expect(email.listAliases).toHaveBeenCalledTimes(2);
+        expect(toast.error).not.toHaveBeenCalled();
+        expect(row(host, PENDING.address).textContent).toContain('Declined by the address\'s owner.');
+        expect(row(host, PENDING.address).textContent).toContain('It can be asked for again after');
+        expect(buttonsOf(row(host, PENDING.address))).toEqual([]);
+        const when = Date.parse(fixture.componentInstance.askAgainAt(PENDING) ?? '');
+        expect(Math.abs(when - (now + 30 * 86400 * 1000))).toBeLessThan(60_000);
+    });
+
+    it('a reader refused send-as is told the provider\'s addresses are shown to who may send, not that the list failed', async () => {
+        served = { canManage: false, aliases: [] };
+        email.listAliases.and.callFake(() => of(served));
+        email.getSendAs.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        const fixture = TestBed.createComponent(MailboxAliasesSectionComponent);
+        fixture.componentRef.setInput('mailboxId', MAILBOX);
+        fixture.componentRef.setInput('ownAddress', OWN);
+        fixture.detectChanges();
+        const host = fixture.nativeElement as HTMLElement;
+
+        expect(rows(host).length).toBe(1);
+        const hints = Array.from(host.querySelectorAll('.sfa__hint')).map(h => (h.textContent ?? '').trim());
+        expect(hints).toContain('The addresses the mail provider verified are shown to those who may send from this mailbox.');
+        expect(hints.join(' ')).not.toContain('could not be read');
     });
 
     it('Add mails the link: the row waits for confirmation, with the line that names the address and the 24 hours', async () => {

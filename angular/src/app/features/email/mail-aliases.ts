@@ -11,6 +11,9 @@ export interface MailAlias {
     readonly requestedAt: string;
     readonly confirmedAt?: string | null;
     readonly expiresAt?: string | null;
+    /** A declined address: when its owner declined it, and when it may be asked for again (absent when not served). */
+    readonly declinedAt?: string | null;
+    readonly askAgainAt?: string | null;
 }
 
 /** The list, and whether the caller may ask for an address and withdraw one. */
@@ -112,6 +115,24 @@ const REFUSALS: Readonly<Record<string, string>> = {
     'too-many-pending': 'Ten addresses are already waiting for confirmation. Withdraw one, or wait until its link is '
         + 'answered or expires.',
 };
+
+/**
+ * A withdraw refused because the address's owner declined it lately (409 `/errors/email/alias/declined-recently`): the
+ * decline is kept, so the address cannot be mailed again before its time. Answers when it may be asked for again, from
+ * Retry-After, or null when the answer does not say; undefined when the error is not this refusal.
+ */
+export function declinedRecently(err: unknown, now: number = Date.now()): string | null | undefined {
+    if (!(err instanceof HttpErrorResponse) || err.status !== 409) {
+        return undefined;
+    }
+    const type = typeof err.error === 'object' && err.error !== null ? (err.error as Record<string, unknown>)['type'] : null;
+    if (type !== '/errors/email/alias/declined-recently') {
+        return undefined;
+    }
+    const after = Number(err.headers?.get('Retry-After'));
+
+    return Number.isFinite(after) && after > 0 ? new Date(now + after * 1000).toISOString() : null;
+}
 
 /**
  * An ask's refusal in words, or null when it is not one of the contract's (the caller words it as any other error).

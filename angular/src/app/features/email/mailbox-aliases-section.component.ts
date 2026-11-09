@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngxs/store';
@@ -9,7 +10,14 @@ import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailService } from './email.service';
-import { type MailAlias, type MailboxSendAsDto, refusalInWords, sendFromRows, type SendFromRow } from './mail-aliases';
+import {
+    declinedRecently,
+    type MailAlias,
+    type MailboxSendAsDto,
+    refusalInWords,
+    sendFromRows,
+    type SendFromRow,
+} from './mail-aliases';
 
 /** The line under the list after an ask: the link sent, or why not. */
 interface Notice {
@@ -81,7 +89,10 @@ interface Notice {
                                             @if (row.alias.expiresAt) { Expires at {{ row.alias.expiresAt | date: 'medium' }} }
                                         }
                                         @case ('expired') { Its owner did not answer within 24 hours. }
-                                        @case ('declined') { Its owner answered that it is not theirs. }
+                                    }
+                                    @if (isDeclined(row.alias)) {
+                                        Declined by the address's owner.
+                                        @if (askAgainAt(row.alias); as when) { It can be asked for again after {{ when | date: 'medium' }}. }
                                     }
                                 </span>
                             } @else if (row.kind === 'own') {
@@ -90,7 +101,9 @@ interface Notice {
                                 <span class="sfa__meta">Verified at the mail provider; not changed here.</span>
                             }
                         </div>
-                        @if (row.kind === 'alias' && canManage()) {
+                        <!-- A declined address has no action: withdrawing it would drop the decline, and the owner
+                             could be mailed again. -->
+                        @if (row.kind === 'alias' && canManage() && !isDeclined(row.alias)) {
                             <div class="sfa__actions">
                                 @if (row.alias.status === 'pending' || row.alias.status === 'expired') {
                                     <button type="button" class="cms-btn cms-btn-sm" [disabled]="busy()"
@@ -107,7 +120,9 @@ interface Notice {
                     </li>
                 }
             </ul>
-            @if (unreadable()) {
+            @if (sendAsRefused()) {
+                <p class="sfa__hint">The addresses the mail provider verified are shown to those who may send from this mailbox.</p>
+            } @else if (unreadable()) {
                 <p class="sfa__hint">The provider's own list could not be read just now, so its addresses are not shown.</p>
             }
 
@@ -185,6 +200,13 @@ export class MailboxAliasesSectionComponent {
     readonly busy = signal(false);
     readonly address = signal('');
     readonly notice = signal<Notice | null>(null);
+    /** Send-as answered 403: one who may read the mailbox but not send from it. */
+    readonly sendAsRefused = signal(false);
+    /**
+     * Aliases a withdraw found declined (a list read before the decline, in this tab), by id: when each may be asked
+     * for again, null when the answer did not say. Kept across reads, for a list that does not carry the date.
+     */
+    readonly declinedSeen = signal<Readonly<Record<string, string | null>>>({});
 
     readonly rows = computed((): SendFromRow[] =>
         sendFromRows(this.ownAddress(), this.sendAs()?.addresses ?? [], this.aliases()));
@@ -214,13 +236,16 @@ export class MailboxAliasesSectionComponent {
     load(id: string = this.mailboxId()): void {
         forkJoin({
             list: this.email.listAliases(id),
-            sendAs: this.email.getSendAs(id).pipe(catchError(() => of(null))),
+            sendAs: this.email.getSendAs(id).pipe(catchError((err: unknown) => of(
+                err instanceof HttpErrorResponse && err.status === 403 ? 'refused' as const : null,
+            ))),
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ list, sendAs }) => {
                 this.loadError.set(null);
+                this.sendAsRefused.set(sendAs === 'refused');
                 this.canManage.set(list.canManage);
                 this.aliases.set(list.aliases);
-                this.sendAs.set(sendAs);
+                this.sendAs.set(sendAs === 'refused' ? null : sendAs);
                 this.loading.set(false);
             },
             error: (err: unknown) => {
@@ -247,9 +272,19 @@ export class MailboxAliasesSectionComponent {
         this.ask(alias.address);
     }
 
-    /** Withdraws an address after the person confirms it. */
+    /** Declined by the address's owner: the list says so, or a withdraw found it so. */
+    isDeclined(alias: MailAlias): boolean {
+        return alias.status === 'declined' || alias.id in this.declinedSeen();
+    }
+
+    /** When a declined address may be asked for again: the list's date, else the one a refused withdraw gave. */
+    askAgainAt(alias: MailAlias): string | null {
+        return alias.askAgainAt ?? this.declinedSeen()[alias.id] ?? null;
+    }
+
+    /** Withdraws an address after the person confirms it; a declined one is kept, never withdrawn. */
     withdraw(alias: MailAlias): void {
-        if (!this.canManage()) {
+        if (!this.canManage() || this.isDeclined(alias)) {
             return;
         }
         this.confirm.open({
@@ -273,6 +308,12 @@ export class MailboxAliasesSectionComponent {
                 },
                 error: (err: unknown) => {
                     this.busy.set(false);
+                    const askAgain = declinedRecently(err);
+                    if (askAgain !== undefined) {
+                        this.declinedSeen.update(seen => ({ ...seen, [alias.id]: askAgain }));
+                        this.load();
+                        return;
+                    }
                     this.toast.error(this.errors.humanize(err));
                 },
             });
