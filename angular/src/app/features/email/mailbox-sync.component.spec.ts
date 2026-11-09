@@ -28,7 +28,7 @@ describe('MailboxSyncComponent', () => {
         fixture.componentInstance.finished.subscribe(id => finished.push(id));
         const el = fixture.nativeElement as HTMLElement;
         const press = () => {
-            el.querySelector<HTMLButtonElement>('[data-test=mail-refresh]')?.click();
+            el.querySelector<HTMLButtonElement>('[data-action=refresh]')?.click();
             fixture.detectChanges();
         };
         return { fixture, el, finished, press, sync: fixture.componentInstance };
@@ -52,22 +52,48 @@ describe('MailboxSyncComponent', () => {
 
     afterEach(() => jasmine.clock().uninstall());
 
-    it('says when the mailbox last synced, and nothing when it never has', () => {
-        expect(make().el.querySelector('[data-test=mail-synced-at]')?.textContent).toContain('Synced at 09:12');
-        expect(make({ id: 'mb-1' }).el.querySelector('[data-test=mail-synced-at]')).toBeNull();
+    it('is a pane row: Refresh, its icon and label, and at the end when the mailbox last synced, nothing when it never has', () => {
+        const { el } = make();
+        const refresh = el.querySelector<HTMLButtonElement>('.cms-pane-toolbar [data-action=refresh]');
+        expect(refresh?.getAttribute('aria-label')).toBe('Refresh');
+        expect(refresh?.querySelector('.bi-arrow-clockwise')).not.toBeNull();
+        expect(el.querySelector('.cms-pane-toolbar__status')?.textContent).toContain('Synced at 09:12');
+        expect(make({ id: 'mb-1' }).el.querySelector('.cms-pane-toolbar__status')).toBeNull();
+    });
+
+    it("takes Refresh as the server's tree gives it once served, and still asks for the sync", () => {
+        const { el, fixture, press } = make();
+        fixture.componentRef.setInput('served', [{ id: 'refresh', label: 'Sync now', icon: 'arrow-repeat', group: 'list', overflow: 5 }]);
+        fixture.detectChanges();
+        const refresh = el.querySelector('[data-action=refresh]');
+        expect(refresh?.getAttribute('aria-label')).toBe('Sync now');
+        expect(refresh?.hasAttribute('data-pinned')).toBeFalse();
+        press();
+        expect(email.syncMailbox).toHaveBeenCalledOnceWith('mb-1');
+    });
+
+    it('with no mailbox open, Refresh is disabled and asks nothing', () => {
+        const { el, press } = make(null);
+        expect(el.querySelector('[data-action=refresh]')?.getAttribute('aria-disabled')).toBe('true');
+        press();
+        expect(email.syncMailbox).not.toHaveBeenCalled();
     });
 
     it('a press asks once, shows the state, and its frame ends it', () => {
         const { el, finished, press, sync, fixture } = make();
         press();
         expect(email.syncMailbox).toHaveBeenCalledOnceWith('mb-1');
-        expect(el.querySelector('cms-state')).not.toBeNull();
-        expect(el.querySelector<HTMLButtonElement>('[data-test=mail-refresh]')?.disabled).toBeTrue();
+        expect(el.querySelector('[data-test=mail-syncing]')?.textContent).toContain('Syncing this mailbox');
+        expect(el.querySelector('[data-action=refresh]')?.getAttribute('aria-busy')).toBe('true');
+        expect(el.querySelector('.cms-pane-toolbar__status')?.textContent).toContain('Synced at 09:12');
+        press();
+        expect(email.syncMailbox).toHaveBeenCalledTimes(1);
 
         sync.frame(frame());
         fixture.detectChanges();
 
-        expect(el.querySelector('cms-state')).toBeNull();
+        expect(el.querySelector('[data-test=mail-syncing]')?.textContent?.trim()).toBe('');
+        expect(el.querySelector('[data-action=refresh]')?.hasAttribute('aria-busy')).toBeFalse();
         expect(finished).toEqual(['mb-1']);
         expect(toast.error).not.toHaveBeenCalled();
     });

@@ -13,6 +13,16 @@ major number means here.
   list by person. Browser and device show as columns.
 
 ### Changed
+- **The mail screen's panes start with one row of actions, the same height in each** (the kit's `cms-pane-toolbar`).
+  The list pane's row is Refresh, busy while a sync runs, with "Synced at" at its end; Refresh comes from the server's
+  `navi.toolbar.email.list` once that tree is served, and is the page's own until then. The message pane's row is
+  above the subject, kept at its height while no message is open; the checked rows' bar uses the same row. Both
+  message rows draw the server's toolbar nodes (`navi.toolbar.email.message`) that the page has a handler for, and
+  map only what a node carries: a node with no `group` is in the one group in the tree's order, and one with no
+  `overflow` number never goes behind "More actions". The served nodes carry neither today, so these rows hide
+  their labels when narrow and do not overflow until the server sends the fields. An action chosen by key opens
+  its second step (Move's folders, Delete's choice) under its button. The folder column starts at the panes' top,
+  its first element level with their rows, and its content at the page header's content edge (it was 8px short).
 - **The mail rail draws the server's folder tree**, nested, ordered and named as the server answers: Inbox, the folders with a role, then the rest by name, a server's own containers such as Gmail's left out, and a role's name in the reader's language. The admin no longer sorts or names folders itself: the open folder's title, a search result's folder and Move use the tree's names and order too. A folder that only holds folders opens nothing. A tree that cannot be read shows the error with Retry instead of a list. The flat folder list and realtime changes still move the counts, matched by path, and never a row.
 - **A mailbox's settings open from its card.** One gear, on the mailbox card, shown when the server offers the settings; the page's action bar no longer draws a second one. Email settings at the top right holds mail-wide settings only.
 

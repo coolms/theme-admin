@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { DateTimePipe, StateComponent, ToastService } from '@coolms/ui-angular';
+import { CmsPaneToolbarComponent, DateTimeFormatService, type PaneToolbarAction, ToastService } from '@coolms/ui-angular';
 
 import { EmailSyncFinishedEvent } from './email-live-events.service';
 import { EmailService } from './email.service';
@@ -10,7 +10,8 @@ import { EmailMailboxDto } from './email.types';
 export const SYNC_ANSWER_WAIT_MS = 60_000;
 
 /**
- * Refresh for the open mailbox: asks the server to sync it now, shows that it runs, and says when it last synced.
+ * The list pane's row (the pane toolbar): Refresh for the open mailbox, which asks the server to sync it now and is busy
+ * while it runs, and at the row's end when the mailbox last synced, kept until the sync ends.
  * The server answers at once and says later, on the person's mailbox channel, how the sync it started ended. A frame
  * can arrive before the answer that names its sync, and a press inside the server's 30 seconds is answered with the
  * sync already running or just finished, so the last frame seen is kept. An answer counts only for the press it
@@ -19,24 +20,16 @@ export const SYNC_ANSWER_WAIT_MS = 60_000;
 @Component({
     selector: 'app-mailbox-sync',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [StateComponent, DateTimePipe],
+    imports: [CmsPaneToolbarComponent],
     template: `
-        <button type="button" class="cms-btn cms-btn-sm" data-test="mail-refresh"
-                [disabled]="syncing() || mailbox() === null" (click)="refresh()">
-            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh
-        </button>
-        @if (syncing()) {
-            <cms-state kind="loading" title="Syncing this mailbox" placement="inline" />
-        } @else if (mailbox()?.lastSuccessAt; as at) {
-            <span class="mbsync__at" data-test="mail-synced-at">Synced at {{ at | appDateTime }}</span>
-        }
+        <cms-pane-toolbar [actions]="actions()" label="Mailbox" [status]="status()" (action)="onAction($event)" />
+        <span class="mbsync__sr" role="status" data-test="mail-syncing">{{ syncing() ? 'Syncing this mailbox' : '' }}</span>
     `,
     styles: [`
-        :host {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px;
-            border-bottom: 1px solid var(--cms-border); min-height: 40px;
+        :host { display: block; padding: 0 10px; border-bottom: 1px solid var(--cms-border); }
+        .mbsync__sr {
+            position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
         }
-        .mbsync__at { color: var(--cms-text-muted); font-size: .75rem; }
     `],
 })
 export class MailboxSyncComponent {
@@ -45,10 +38,31 @@ export class MailboxSyncComponent {
     private readonly errors = inject(ErrorHandlerService);
 
     readonly mailbox = input.required<EmailMailboxDto | null>();
+    /** The list pane's actions from the server's tree (navi.toolbar.email.list), mapped by the page; none while it serves none. */
+    readonly served = input<readonly PaneToolbarAction[]>([]);
     /** A sync ended, however it ended: the list and the mailbox's synced-at are worth reading again. */
     readonly finished = output<string>();
 
     readonly syncing = signal(false);
+
+    private readonly dates = inject(DateTimeFormatService);
+    /**
+     * Refresh as the server's tree gives it (its label, icon, group and overflow), or the page's own while the tree has
+     * no refresh node; disabled with no mailbox, busy while a sync runs.
+     */
+    readonly actions = computed((): PaneToolbarAction[] => {
+        const node = this.served().find(a => a.id === 'refresh') ?? { id: 'refresh', label: 'Refresh', icon: 'arrow-clockwise', group: 'sync' };
+        return [{
+            ...node,
+            ...(this.mailbox() === null ? { disabled: true } : {}),
+            ...(this.syncing() ? { busy: true } : {}),
+        }];
+    });
+    /** When the open mailbox last synced, as the server says; nothing when it never has. */
+    readonly status = computed(() => {
+        const at = this.mailbox()?.lastSuccessAt;
+        return at !== undefined && at !== null && at !== '' ? 'Synced at ' + this.dates.auto(at) : null;
+    });
 
     private waitingFor: string | null = null;
     /** Which press an answer belongs to: moved on by a new press, and by whatever ends or leaves one behind. */
@@ -69,6 +83,13 @@ export class MailboxSyncComponent {
             });
         });
         inject(DestroyRef).onDestroy(() => this.clearTimer());
+    }
+
+    /** The row's one action: Refresh. */
+    onAction(id: string): void {
+        if (id === 'refresh') {
+            this.refresh();
+        }
     }
 
     refresh(): void {

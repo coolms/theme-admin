@@ -13,6 +13,7 @@ import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
+    CmsPaneToolbarComponent,
     ContextMenuItem,
     ConfirmDialogService,
     ContextMenuService,
@@ -46,7 +47,10 @@ import {
 import { messageFrameDoc } from './message-frame-doc';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
-import { MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
+import {
+    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
+    rowTargetIds,
+} from './message-actions';
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
@@ -147,7 +151,7 @@ type PhonePane = 'folders' | 'message';
     imports: [
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
-        CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
+        CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent,
     ],
     template: `
@@ -221,7 +225,7 @@ type PhonePane = 'folders' | 'message';
                             <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
                         </button>
-                        <app-mailbox-sync [mailbox]="selectedMailbox()" (finished)="onSyncFinished($event)" />
+                        <app-mailbox-sync [mailbox]="selectedMailbox()" [served]="listActions()" (finished)="onSyncFinished($event)" />
                         <div class="mbx__search">
                             <i class="bi bi-search mbx__search-icon"></i>
                             <input type="text" class="mbx__search-input" [(ngModel)]="searchQuery"
@@ -241,9 +245,10 @@ type PhonePane = 'folders' | 'message';
                         @if (!searchActive() && selectedCount() > 0) {
                             <div class="mbx__bulkbar">
                                 <span class="mbx__bulkbar-count">{{ selectedCount() }} selected</span>
-                                <div class="mbx__bulkbar-actions" (pointerdown)="noteActionPoint($event)">
-                                    <app-page-toolbar [treeSlug]="messageTree" [context]="bulkFacts()" [iconsOnly]="true"
-                                                      (actionClick)="onBulkAction($event)" />
+                                <div #bulkRow class="mbx__bulkbar-actions">
+                                    <cms-pane-toolbar class="mbx__bulkbar-row" [actions]="bulkActions()"
+                                                      label="Actions on the selected messages"
+                                                      (action)="atAction(bulkRow, $event); onBulkAction($event)" />
                                     <button type="button" class="mbx__btn mbx__btn--sm" (click)="selectAllLoaded()"
                                             title="Select all loaded messages">All</button>
                                     <button type="button" class="mbx__btn mbx__btn--sm" (click)="clearSelection()"
@@ -362,6 +367,12 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back</span>
                         </button>
+                        <!-- The open message's actions, the server's tree (navi.toolbar.email.message): a row above the
+                             subject, kept empty at its height while no message is open. -->
+                        <div #detailRow class="mbx__pane-row" data-test="detail-row">
+                            <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
+                                              (action)="atAction(detailRow, $event); onDetailAction($event)" />
+                        </div>
                         @if (loadingDetail()) {
                             <p class="mbx__note">Loading…</p>
                         } @else if (selectedMessage()) {
@@ -372,12 +383,6 @@ type PhonePane = 'folders' | 'message';
                                     <div><strong>From:</strong> {{ msg.fromName ? msg.fromName + ' · ' : '' }}{{ msg.fromAddress }}</div>
                                     <div><strong>To:</strong> {{ (msg.toAddresses || []).join(', ') }}</div>
                                     <div><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
-                                </div>
-                                <!-- The actions on the open message: the explorers' bar, icons only, from the server's tree
-                                     (navi.toolbar.email.message), the same nodes as a message row's menu. -->
-                                <div class="mbx__detail-actions" (pointerdown)="noteActionPoint($event)">
-                                    <app-page-toolbar [treeSlug]="messageTree" [context]="detailFacts()" [iconsOnly]="true"
-                                                      (actionClick)="onDetailAction($event)" />
                                 </div>
                             </div>
                             @if (thread().length > 1) {
@@ -822,14 +827,18 @@ type PhonePane = 'folders' | 'message';
             .mbx__body:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
                 display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
             }
-            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: block; padding: 8px 12px; }
+            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: block; padding: 0 12px 8px; }
             .mbx__phone-bar {
                 display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
                 border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
                 font: inherit; text-align: left; cursor: pointer;
             }
-            .mbx__detail .mbx__phone-bar { margin: -8px -12px 8px; width: calc(100% + 24px); }
-            .mbx__rail .mbx__phone-bar { margin: -12px -12px 4px; width: calc(100% + 24px); }
+            .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
+            .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }
+            .mbx__rail .mbx__phone-bar {
+                margin: 0 calc(-1 * var(--cms-panel-padding)) 4px calc(-1 * var(--cms-content-padding));
+                width: calc(100% + var(--cms-panel-padding) + var(--cms-content-padding));
+            }
             .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .mbx__detail .mbx__thread-item { grid-template-columns: minmax(0, 1fr) auto; }
             .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
@@ -838,9 +847,12 @@ type PhonePane = 'folders' | 'message';
         /* Feeds the page header only: the bar's nodes are drawn on the mailbox's card and in its menu. */
         .mbx__header-feed { display: none; }
 
+        /* Starts at the panes' top, its first element level with their rows, and its content at the page header's
+           content edge. */
         .mbx__rail {
             width: 230px; flex: 0 0 230px;
-            padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+            padding: 0 var(--cms-panel-padding) var(--cms-panel-padding) var(--cms-content-padding);
+            overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
         }
         .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
 
@@ -871,11 +883,12 @@ type PhonePane = 'folders' | 'message';
         /* Bulk action bar (backlog slice 3). Not sticky — the search box above it already is. */
         .mbx__bulkbar {
             display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            padding: 6px 10px; border-bottom: 1px solid var(--cms-border);
+            padding: 0 10px; border-bottom: 1px solid var(--cms-border);
             background: var(--cms-surface-alt, var(--cms-surface-hover));
         }
-        .mbx__bulkbar-count { font-size: .8125rem; font-weight: 600; }
-        .mbx__bulkbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .mbx__bulkbar-count { flex: 0 0 auto; font-size: .8125rem; font-weight: 600; }
+        .mbx__bulkbar-actions { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
+        .mbx__bulkbar-row { flex: 1 1 auto; min-width: 0; }
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
@@ -905,12 +918,12 @@ type PhonePane = 'folders' | 'message';
             border-bottom: 1px solid var(--cms-border);
         }
 
-        .mbx__detail { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
+        .mbx__detail { flex: 1; overflow-y: auto; padding: 0 20px 16px; min-width: 0; }
+        /* The message pane's row of actions, at the pane's top, above the subject. */
+        .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__detail-head { border-bottom: 1px solid var(--cms-border); padding-bottom: 12px; margin-bottom: 12px; }
         .mbx__detail-subject { margin: 0 0 8px; font-size: 1.125rem; }
         .mbx__detail-meta { display: flex; flex-direction: column; gap: 2px; font-size: .8125rem; color: var(--cms-text-secondary); }
-        /* No box of its own: the explorers' bar inside keeps its spacing. */
-        .mbx__detail-actions { display: contents; }
         .mbx__detail-snippet { white-space: pre-wrap; }
         .mbx__thread {
             margin-top: 14px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md, 8px); overflow: hidden;
@@ -1367,6 +1380,9 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly messageTree = MESSAGE_TOOLBAR_TREE;
     readonly messageNodes = signal<NaviGraphNode[]>([]);
+    /** The list pane's actions, the server's tree (navi.toolbar.email.list); empty while it serves none. */
+    readonly listNodes = signal<NaviGraphNode[]>([]);
+    readonly listActions = computed(() => paneActionsOf(this.listNodes(), {}, LIST_ACTIONS_HANDLED, this.naviGraph));
     readonly detailFacts = computed(() => {
         const m = this.selectedMessage();
         return messageFacts(m ? [m] : []);
@@ -1375,6 +1391,13 @@ export class EmailMailboxPageComponent implements OnInit {
         const ids = this.selectedIds();
         return messageFacts(this.messages().filter(m => ids.has(m.id)));
     });
+    /** The open message's row: the tree's nodes for it that this page can run; none while no message is open. */
+    readonly detailActions = computed(() => (this.selectedMessage() && !this.loadingDetail()
+        ? paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph)
+        : []));
+    /** The checked rows' row: the same nodes, for them. */
+    readonly bulkActions = computed(() =>
+        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph));
     /** Where the pointer last went down on a message bar, or a row was right-clicked: Move's and Delete's second step
      *  (the folders; Trash or permanent) opens there. */
     private actionPoint = { x: 0, y: 0 };
@@ -1418,8 +1441,17 @@ export class EmailMailboxPageComponent implements OnInit {
         );
     }
 
-    noteActionPoint(event: PointerEvent): void {
-        this.actionPoint = { x: event.clientX, y: event.clientY };
+    /**
+     * An action chosen in a pane row, by pointer or by key: its second step opens under its button, or under More
+     * actions when it was chosen from there.
+     */
+    atAction(row: HTMLElement, id: string): void {
+        const shown = row.querySelector<HTMLElement>(`[data-action="${CSS.escape(id)}"]:not([hidden])`);
+        const anchor = shown ?? row.querySelector<HTMLElement>('[data-action="more"]');
+        if (anchor) {
+            const rect = anchor.getBoundingClientRect();
+            this.actionPoint = { x: rect.left, y: rect.bottom };
+        }
     }
 
     /** The open message's bar. */
@@ -1622,6 +1654,10 @@ export class EmailMailboxPageComponent implements OnInit {
             this.naviGraph.loadTree(pattern.replace('{slug}', this.messageTree))
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.messageNodes.set(nodes));
+            // An unanswered tree reads as empty, and the list pane then keeps its own Refresh.
+            this.naviGraph.loadTree(pattern.replace('{slug}', LIST_TOOLBAR_TREE))
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.listNodes.set(nodes));
         }
         this.loadMailboxes();
 
