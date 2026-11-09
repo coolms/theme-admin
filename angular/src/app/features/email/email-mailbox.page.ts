@@ -34,6 +34,15 @@ import { MailPreferencesService } from './mail-preferences.service';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
+import { ComposeAttachmentsComponent } from './compose-attachments.component';
+import {
+    expiredAttachmentId,
+    restoredAttachments,
+    storedAttachments,
+    tooLargeSend,
+    type ComposeAttachment,
+    type StoredComposeAttachment,
+} from './compose-attachments';
 import { messageFrameDoc } from './message-frame-doc';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
@@ -96,6 +105,8 @@ interface ComposeDraft {
     text: string;
     html: string;
     rich: boolean;
+    /** The files attached to a new message, by their server ids; absent from older drafts. */
+    attachments?: StoredComposeAttachment[];
 }
 
 /** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
@@ -129,6 +140,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
+        ComposeAttachmentsComponent,
     ],
     template: `
         <div class="mbx">
@@ -519,6 +531,15 @@ type PhonePane = 'folders' | 'message';
                                     <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
                                 }
                             </div>
+                            @if (composeMode() === 'compose' && selectedMailboxId(); as composeMailboxId) {
+                                <app-compose-attachments class="mbx__field"
+                                                         [mailboxId]="composeMailboxId"
+                                                         [limitBytes]="composeLimit()"
+                                                         [bodyBytes]="composeBodyBytes()"
+                                                         [sendRefused]="composeSendRefused()"
+                                                         [(attachments)]="composeAttachments"
+                                                         (changed)="onComposeChange()" />
+                            }
                             @if (composeMode() === 'reply') {
                                 <p class="mbx__compose-hint">
                                     Recipient + subject default from the original message if left blank.
@@ -1281,6 +1302,17 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeMode = signal<'compose' | 'reply'>('compose');
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
+    /** The files of a new message; a reply sends none (the reply endpoint takes no attachments). */
+    readonly composeAttachments = signal<ComposeAttachment[]>([]);
+    /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
+    readonly composeSendRefused = signal<{ limitBytes: number; sizeBytes: number } | null>(null);
+    /** The selected mailbox's limit on a message, or null when it is not known. */
+    readonly composeLimit = computed<number | null>(() => {
+        const id = this.selectedMailboxId();
+        const limit = this.mailboxes().find(m => m.id === id)?.maxMessageBytes;
+
+        return typeof limit === 'number' && limit > 0 ? limit : null;
+    });
     /** Dock minimized state: the window collapses to just its header bar,
      *  keeping the form (and its draft) alive so it restores exactly as left. */
     readonly composeMinimized = signal<boolean>(false);
@@ -2444,8 +2476,27 @@ export class EmailMailboxPageComponent implements OnInit {
             || this.composeSubject !== this.composeSubjectInitial
             || this.composeText !== this.composeTextInitial
             || this.composeHtml() !== this.composeHtmlInitial
-            || this.composeRich() !== this.composeRichInitial;
+            || this.composeRich() !== this.composeRichInitial
+            || storedAttachments(this.composeAttachments()).length > 0;
     }
+
+    /** The body's bytes as the composer counts them against the mailbox's limit: the text and, when rich, the HTML. */
+    composeBodyBytes(): number {
+        const rich = this.composeRich();
+        const source = rich ? this.composeHtml() : this.composeText;
+        if (this.bodyBytesMemo === null || this.bodyBytesMemo.rich !== rich || this.bodyBytesMemo.source !== source) {
+            const encoder = new TextEncoder();
+            const bytes = rich
+                ? encoder.encode(this.htmlToPlainText(source)).length + encoder.encode(source).length
+                : encoder.encode(source).length;
+            this.bodyBytesMemo = { rich, source, bytes };
+        }
+
+        return this.bodyBytesMemo.bytes;
+    }
+
+    /** The last body measured, so a check of the view does not parse the HTML again. */
+    private bodyBytesMemo: { rich: boolean; source: string; bytes: number } | null = null;
 
     /** Load + apply a saved draft for the current key into the composer, if present. */
     private restoreDraftIfAny(): void {
@@ -2466,6 +2517,9 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeText = draft.text;
         this.composeRich.set(draft.rich);
         this.composeHtml.set(draft.html);
+        if (this.composeMode() === 'compose') {
+            this.composeAttachments.set(restoredAttachments(draft.attachments));
+        }
         this.composeKey.update(k => String(Number(k) + 1)); // re-mount the editor with the draft
         this.draftSaved.set(true);
     }
@@ -2493,6 +2547,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 text: this.composeText,
                 html: this.composeHtml(),
                 rich: this.composeRich(),
+                attachments: storedAttachments(this.composeAttachments()),
             } satisfies ComposeDraft);
             this.draftSaved.set(true);
         } else {
@@ -2506,6 +2561,13 @@ export class EmailMailboxPageComponent implements OnInit {
         const key = this.composeDraftKey();
         if (key !== null) {
             this.drafts.clear(key);
+        }
+        // The draft's files go with it: each is removed on the server (a Drive file stays in Drive).
+        const mailboxId = this.selectedMailboxId();
+        for (const a of storedAttachments(this.composeAttachments())) {
+            if (mailboxId !== null) {
+                this.email.removeAttachment(mailboxId, a.id).subscribe({ error: () => undefined });
+            }
         }
         this.draftSaved.set(false);
         this.composeOpen.set(false);
@@ -2536,6 +2598,8 @@ export class EmailMailboxPageComponent implements OnInit {
     private clearComposeBody(): void {
         this.composeText = '';
         this.composeHtml.set('');
+        this.composeAttachments.set([]);
+        this.composeSendRefused.set(null);
         this.composeKey.update(k => String(Number(k) + 1));
     }
 
@@ -2599,6 +2663,22 @@ export class EmailMailboxPageComponent implements OnInit {
         if (subject !== '') {
             request.subject = subject;
         }
+        if (!isReply) {
+            const files = this.composeAttachments();
+            if (files.some(a => a.status === 'uploading' || a.status === 'attaching')) {
+                this.toast.error('Wait for the files to finish attaching.');
+                return;
+            }
+            if (files.some(a => a.status === 'refused')) {
+                this.toast.error('Remove the files that could not be attached, then send.');
+                return;
+            }
+            const ids = storedAttachments(files).map(a => a.id);
+            if (ids.length > 0) {
+                request.attachments = ids;
+            }
+        }
+        this.composeSendRefused.set(null);
 
         const replyId = this.replyTargetId();
         const draftKey = this.composeDraftKey();
@@ -2623,6 +2703,22 @@ export class EmailMailboxPageComponent implements OnInit {
             },
             error: (e: unknown) => {
                 this.sending.set(false);
+                // A file no longer there to send is marked on its chip; a message over the limit shows both sizes.
+                const expired = expiredAttachmentId(e);
+                if (expired !== null) {
+                    const words = 'This file is no longer there to send. Remove it and attach it again.';
+                    this.composeAttachments.update(list => list.map(a => (a.id === expired
+                        ? { ...a, status: 'refused' as const, refusal: words }
+                        : a)));
+                    this.toast.error('A file is no longer there to send. Attach it again.');
+                    return;
+                }
+                const tooLarge = tooLargeSend(e);
+                if (tooLarge !== null) {
+                    this.composeSendRefused.set(tooLarge);
+                    this.toast.error('The message is over the mailbox’s size limit. Remove a file and send again.');
+                    return;
+                }
                 // The cause by the problem's type (SMTP or the provider's API), never the server's detail.
                 this.toast.error(sendFailureText(e));
             },

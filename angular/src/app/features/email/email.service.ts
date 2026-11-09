@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEvent, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Observable, map, throwError } from 'rxjs';
@@ -7,6 +7,7 @@ import { type CapabilityState } from '@coolms/ui-angular';
 import {
     CreateDelegationRequest,
     DefinitionCatalogDto,
+    DriveAttachResultDto,
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
@@ -27,6 +28,7 @@ import {
     MailboxTestRequest,
     MailboxTestResult,
     MailboxWriteRequest,
+    OutgoingAttachmentDto,
     OutgoingEmailRequest,
     SystemMailChoice,
     SystemMailDto,
@@ -393,6 +395,34 @@ export class EmailService {
         return this.http.post<EmailSendResultDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/send`,
             request,
+        );
+    }
+
+    /** POST /email/mailboxes/{id}/attachments -- upload one file to send, with its progress events. */
+    uploadAttachment(mailboxId: string, file: File): Observable<HttpEvent<OutgoingAttachmentDto>> {
+        const body = new FormData();
+        body.append('file', file, file.name);
+
+        return this.http.post<OutgoingAttachmentDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments`,
+            body,
+            { reportProgress: true, observe: 'events' },
+        );
+    }
+
+    /** POST /email/mailboxes/{id}/attachments/from-drive -- attach Drive files by node id (at most 50), one row each. */
+    attachFromDrive(mailboxId: string, nodes: readonly string[]): Observable<DriveAttachResultDto> {
+        return this.http.post<DriveAttachResultDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/from-drive`,
+            { nodes },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/attachments/{id} -- take a file out; a Drive file stays in Drive. */
+    removeAttachment(mailboxId: string, id: string): Observable<void> {
+        return this.http.delete<void>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/${encodeURIComponent(id)}`,
         );
     }
 

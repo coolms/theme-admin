@@ -62,6 +62,31 @@ export interface EmailMailboxDto {
     sendApi?: SendApi | null;
     /** The days after which the SERVER empties Trash, where CoolMS knows it for the provider (a cited source); else null. */
     trashRetentionDays?: number | null;
+    /** The largest message this mailbox sends, in bytes; absent when it is not known. */
+    maxMessageBytes?: number | null;
+}
+
+/** A file attached to a message being written: an upload, or a reference to a file of the person's Drive. */
+export interface OutgoingAttachmentDto {
+    id: string;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    /** The file's part body as sent (base64 with line breaks), to the byte. */
+    encodedBytes: number;
+    source?: 'drive';
+}
+
+/** Why Drive did not attach a node. */
+export type DriveAttachRefusal = 'not-found' | 'folder' | 'too-large' | 'over-message-limit';
+
+/** One row of an attach from Drive, in the order the nodes were named: attached, or refused with why. */
+export type DriveAttachRowDto =
+    | (OutgoingAttachmentDto & { node: string; refused?: undefined })
+    | { node: string; refused: DriveAttachRefusal };
+
+export interface DriveAttachResultDto {
+    attachments: DriveAttachRowDto[];
 }
 
 /** Who the caller is to a mailbox: may change its settings (`owner`, `manager`), or may read them (a delegate). */
@@ -320,6 +345,8 @@ export interface OutgoingEmailRequest {
     html?: string;
     cc?: string[];
     bcc?: string[];
+    /** Ids of uploads and Drive references to send with a new message; their bytes are read at send. */
+    attachments?: string[];
 }
 
 /** The small confirmation a send/reply echoes. */
