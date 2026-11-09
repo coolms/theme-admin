@@ -531,7 +531,7 @@ type PhonePane = 'folders' | 'message';
                                     <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
                                 }
                             </div>
-                            @if (composeMode() === 'compose' && selectedMailboxId(); as composeMailboxId) {
+                            @if (selectedMailboxId(); as composeMailboxId) {
                                 <app-compose-attachments class="mbx__field"
                                                          [mailboxId]="composeMailboxId"
                                                          [limitBytes]="composeLimit()"
@@ -1302,7 +1302,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeMode = signal<'compose' | 'reply'>('compose');
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
-    /** The files of a new message; a reply sends none (the reply endpoint takes no attachments). */
+    /** The files of the message being written: a new message, a forward or a reply. */
     readonly composeAttachments = signal<ComposeAttachment[]>([]);
     /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
     readonly composeSendRefused = signal<{ limitBytes: number; sizeBytes: number } | null>(null);
@@ -2517,9 +2517,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeText = draft.text;
         this.composeRich.set(draft.rich);
         this.composeHtml.set(draft.html);
-        if (this.composeMode() === 'compose') {
-            this.composeAttachments.set(restoredAttachments(draft.attachments));
-        }
+        this.composeAttachments.set(restoredAttachments(draft.attachments));
         this.composeKey.update(k => String(Number(k) + 1)); // re-mount the editor with the draft
         this.draftSaved.set(true);
     }
@@ -2663,20 +2661,19 @@ export class EmailMailboxPageComponent implements OnInit {
         if (subject !== '') {
             request.subject = subject;
         }
-        if (!isReply) {
-            const files = this.composeAttachments();
-            if (files.some(a => a.status === 'uploading' || a.status === 'attaching')) {
-                this.toast.error('Wait for the files to finish attaching.');
-                return;
-            }
-            if (files.some(a => a.status === 'refused')) {
-                this.toast.error('Remove the files that could not be attached, then send.');
-                return;
-            }
-            const ids = storedAttachments(files).map(a => a.id);
-            if (ids.length > 0) {
-                request.attachments = ids;
-            }
+        // A reply takes the same attachment ids as a new message, read at send as the sender.
+        const files = this.composeAttachments();
+        if (files.some(a => a.status === 'uploading' || a.status === 'attaching')) {
+            this.toast.error('Wait for the files to finish attaching.');
+            return;
+        }
+        if (files.some(a => a.status === 'refused')) {
+            this.toast.error('Remove the files that could not be attached, then send.');
+            return;
+        }
+        const ids = storedAttachments(files).map(a => a.id);
+        if (ids.length > 0) {
+            request.attachments = ids;
         }
         this.composeSendRefused.set(null);
 
