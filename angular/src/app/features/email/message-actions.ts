@@ -27,10 +27,13 @@ export function messageFacts(targets: readonly Pick<EmailMessageDto, 'seen' | 'f
     };
 }
 
-/** Move's second step: the mailbox's folders other than the one the messages are in. */
-export function moveMenuItems(folders: readonly string[], current: string): ContextMenuItem[] {
-    const targets = folders.filter(f => f !== current);
+/** Move's second step: the folders given other than the one the messages are in, in that order and by those names. */
+export function moveMenuItems(
+    folders: readonly { readonly folder: string; readonly name: string }[],
+    current: string,
+): ContextMenuItem[] {
+    const targets = folders.filter(f => f.folder !== current);
     return targets.length > 0
-        ? targets.map(f => ({ id: `move:${f}`, label: f, icon: 'folder' }))
+        ? targets.map(f => ({ id: `move:${f.folder}`, label: f.name, icon: 'folder' }))
         : [{ id: 'none', label: 'No other folders', disabled: true }];
 }

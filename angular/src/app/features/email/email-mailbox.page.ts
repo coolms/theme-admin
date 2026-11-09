@@ -49,16 +49,17 @@ import { buildForward } from './forward.util';
 import { MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, rowTargetIds } from './message-actions';
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
-import { applyUnreadDelta, folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
+import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
+import { folderRows } from './folder-tree.util';
+import { MailFolderRailComponent } from './mail-folder-rail.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
-import { folderDisplayName } from './folder-name.util';
 import {
     EmailAttachmentDto,
-    EmailFolderDto,
+    EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
     EmailMessageDto,
@@ -117,8 +118,9 @@ type PhonePane = 'folders' | 'message';
  * The Email mailbox client (`/admin/email`). A three-pane reader over
  * the read/send/reply/folders/seen APIs-):
  *
- *  - LEFT rail: the mailbox picker + folder list (each folder shows its unread
- *    count, `GET /email/mailboxes/{id}/folders`).
+ *  - LEFT rail: the mailbox card + the folder tree as the server orders and names
+ *    it (`GET /email/mailboxes/{id}/folders/tree`), each folder's counts from
+ *    `GET /email/mailboxes/{id}/folders`.
  *  - MIDDLE: the selected folder's messages, newest-sent first, offset-paginated
  *    ("Load more"). Unread rows are bold; opening one marks it read.
  *  - RIGHT: the opened message -- headers + snippet + a collapsible raw RFC-822
@@ -137,7 +139,7 @@ type PhonePane = 'folders' | 'message';
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
     imports: [
-        StateComponent, MailboxSwitcherComponent, MailboxSyncComponent,
+        StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
         ComposeAttachmentsComponent,
@@ -147,10 +149,12 @@ type PhonePane = 'folders' | 'message';
             <cms-page-header icon="envelope" [title]="'Email'"
                              [actions]="headerActions()" (actionClick)="onHeaderAction($event)" />
 
-            <!-- Declares nothing: the tree names the three actions, says which
+            <!-- Declares nothing: the tree names the page's actions, says which
                  need a mailbox, and says that Import greys out while one is
-                 running. Every node sits in the header, so no bar renders. -->
-            <app-page-toolbar
+                 running. The header takes the header's nodes; the bar is not
+                 drawn, since the mailbox's own actions sit on its card (the gear)
+                 and in its right-click menu. -->
+            <app-page-toolbar class="mbx__header-feed"
                 [treeSlug]="toolbarTree"
                 [context]="toolbarContext()"
                 [iconsOnly]="true"
@@ -187,31 +191,16 @@ type PhonePane = 'folders' | 'message';
                         <app-mailbox-switcher [mailboxes]="mailboxes()"
                                               [currentId]="selectedMailboxId()"
                                               [unread]="mailboxUnread()"
+                                              [hasSettings]="hasMailboxSettings()"
                                               (chosen)="pickMailbox($event)"
+                                              (settings)="openMailboxSettings()"
                                               (menu)="onMailboxContextMenu($event.event, $event.id)" />
-                        <nav class="mbx__folders">
-                            @for (f of folders(); track f.folder) {
-                                <button type="button" class="mbx__folder"
-                                        [class.mbx__folder--active]="f.folder === selectedFolder()"
-                                        [title]="folderCountTitle(f)"
-                                        (click)="selectFolder(f.folder)">
-                                    <span class="mbx__folder-name">{{ folderName(f) }}</span>
-                                    @if (folderUnread(f) > 0) {
-                                        <span class="mbx__badge">{{ folderUnread(f) }}</span>
-                                    }
-                                    <span class="mbx__folder-total">{{ folderCount(f) }}</span>
-                                    @if (importedFraction(f) !== null) {
-                                        <span class="mbx__folder-progress" aria-hidden="true">
-                                            <span class="mbx__folder-progress-bar"
-                                                  [style.width.%]="importedFraction(f)"></span>
-                                        </span>
-                                    }
-                                </button>
-                            }
-                            @if (folders().length === 0) {
-                                <p class="mbx__rail-note">No folders yet.</p>
-                            }
-                        </nav>
+                        <app-mail-folder-rail [rows]="folderRows()"
+                                              [selected]="selectedFolder()"
+                                              [failure]="foldersFailure()"
+                                              [answered]="folderTree() !== null"
+                                              (chosen)="selectFolder($event)"
+                                              (retry)="retryFolders()" />
                     </aside>
 
                     <cms-pane-splitter [minWidth]="180" [maxWidth]="380"
@@ -280,7 +269,7 @@ type PhonePane = 'folders' | 'message';
                                         </div>
                                         <div class="mbx__row-subject">{{ h.subject || '(no subject)' }}</div>
                                         <div class="mbx__row-snippet">
-                                            <span class="mbx__row-folder">{{ h.folder }}</span>{{ h.snippet }}
+                                            <span class="mbx__row-folder">{{ folderNameOf(h.folder) }}</span>{{ h.snippet }}
                                         </div>
                                     </button>
                                 }
@@ -826,34 +815,14 @@ type PhonePane = 'folders' | 'message';
             .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
         }
 
+        /* Feeds the page header only: the bar's nodes are drawn on the mailbox's card and in its menu. */
+        .mbx__header-feed { display: none; }
+
         .mbx__rail {
             width: 230px; flex: 0 0 230px;
             padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
         }
-        .mbx__folders { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
-        .mbx__folder {
-            position: relative;
-            display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
-            padding: 7px 9px; border: 0; border-radius: var(--cms-radius, 6px); background: transparent; cursor: pointer;
-            color: var(--cms-text); font-size: .875rem;
-        }
-        .mbx__folder:hover { background: var(--cms-surface-hover); }
-        .mbx__folder--active { background: var(--cms-selected-light); font-weight: 600; }
-        .mbx__folder-name { flex: 1; }
-        .mbx__folder-total { color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
-        /* A half-imported folder shows how far the backfill has walked it. */
-        .mbx__folder-progress {
-            position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-            background: var(--cms-border); border-radius: 0 0 4px 4px; overflow: hidden;
-        }
-        .mbx__folder-progress-bar {
-            display: block; height: 100%; background: var(--cms-text-muted); opacity: .55;
-        }
-        .mbx__badge {
-            background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); border-radius: 999px;
-            font-size: .6875rem; padding: 1px 7px; min-width: 18px; text-align: center;
-        }
-        .mbx__rail-note, .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
+        .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
 
         .mbx__list {
             width: 340px; flex: 0 0 340px; border-right: 1px solid var(--cms-border);
@@ -1191,15 +1160,20 @@ export class EmailMailboxPageComponent implements OnInit {
     /** On a phone, the folders stand in place of the list until one is chosen. */
     readonly phoneFolders = signal(false);
 
-    /** A folder's name as a person reads it: by its role when it has one, else by its path. */
-    readonly folderName = folderDisplayName;
-    /** The selected folder's name, as the rail shows it. */
+    /** The mailbox's folders as the server nests, orders and names them; null until it answers or when it failed. */
+    readonly folderTree = signal<EmailFolderTreeNodeDto[] | null>(null);
+    /** Why the tree could not be read: the rail shows it with Retry, and no rows. */
+    readonly foldersFailure = signal<unknown>(null);
+    /** The rail's rows: the server's tree, its counts as they stand now. */
+    readonly folderRows = computed(() => folderRows(this.folderTree() ?? [], this.folders()));
+    /** The selected folder's name, as the server gives it; empty until the tree names it. */
     readonly selectedFolderName = computed(() => {
         const path = this.selectedFolder();
-        const folder = this.folders().find(f => f.folder === path);
 
-        return folder !== undefined ? folderDisplayName(folder) : path;
+        return this.folderRows().find(row => row.folder.folder === path)?.name ?? '';
     });
+    /** The server offers this person the mailbox's settings. */
+    readonly hasMailboxSettings = computed(() => this.toolbarNodes().some(n => 'mailbox-settings' === n.meta['action']));
 
     private readonly location = inject(Location);
     /** The width at which the page shows one pane at a time; the pane shown is then in the address. */
@@ -1467,7 +1441,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.bulkFlag(action === 'star', new Set(ids));
                 break;
             case 'move':
-                this.openFollowUp(moveMenuItems(this.folders().map(f => f.folder), this.folderOf(ids[0])), id => {
+                this.openFollowUp(moveMenuItems(this.moveChoices(), this.folderOf(ids[0])), id => {
                     if (id.startsWith('move:')) {
                         this.bulkMoveTo(id.slice('move:'.length), new Set(ids));
                     }
@@ -1976,31 +1950,20 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** The mailbox's folders minus the one the message is already in -- the move targets. */
-    moveTargets(current: string): string[] {
-        return this.folders()
-            .map(f => f.folder)
-            .filter(f => f !== current);
+    /** The folders a message may move to: the tree's folders that open, in its order and by its names. */
+    private moveChoices(): Array<{ folder: string; name: string }> {
+        return this.folderRows()
+            .filter(row => row.selectable)
+            .map(row => ({ folder: row.folder.folder, name: row.name }));
     }
 
-    /** How much of a folder is here (percent), or null when it is whole or unmeasured. */
-    importedFraction(f: EmailFolderDto): number | null {
-        return importedFraction(f);
-    }
+    /** A folder's name as the server's tree gives it; the path itself for one the tree does not hold. */
+    folderNameOf(path: string | undefined): string {
+        if (path === undefined) {
+            return '';
+        }
 
-    /** `1,314 / 5,512` while a folder is part-imported, otherwise just the count. */
-    folderCount(f: EmailFolderDto): string {
-        return folderCount(f);
-    }
-
-    /** The sentence the rail's fraction stands for, as a tooltip. */
-    folderCountTitle(f: EmailFolderDto): string {
-        return folderCountTitle(f);
-    }
-
-    /** The unread badge: the SERVER's count when known, else the imported one. */
-    folderUnread(f: EmailFolderDto): number {
-        return folderUnread(f);
+        return this.folderRows().find(row => row.folder.folder === path)?.name ?? path;
     }
 
     /** Move every selected message to a folder in one action (mirrors {@link bulkFlag}). */
@@ -2985,6 +2948,8 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (next === null) {
                     this.selectedMailboxId.set(null);
                     this.folders.set([]);
+                    this.folderTree.set(null);
+                    this.foldersFailure.set(null);
                     this.messages.set([]);
                     this.selectedMessage.set(null);
                 } else {
@@ -2995,25 +2960,40 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
+    /** The rail's Retry: the tree, its counts and the open folder's messages, read again. */
+    retryFolders(): void {
+        this.loadFolders();
+    }
+
+    /**
+     * The mailbox's folders: the tree draws the rail, in its order and by its names; the flat list carries the counts,
+     * matched by path. A tree that cannot be read is the rail's error, never a list made here. Without the flat list
+     * the tree's own counts stand.
+     */
     private loadFolders(): void {
         const id = this.selectedMailboxId();
         if (id === null) {
             return;
         }
-        this.email.listFolders(id).subscribe({
-            next: list => {
-                this.folders.set(list);
+        forkJoin({
+            tree: this.email.folderTree(id).pipe(
+                map(nodes => ({ nodes, failure: null })),
+                catchError((failure: unknown) => of({ nodes: null, failure })),
+            ),
+            list: this.email.listFolders(id).pipe(catchError(() => of(null))),
+        }).subscribe(({ tree, list }) => {
+            this.folders.set(list ?? []);
+            this.folderTree.set(tree.nodes);
+            this.foldersFailure.set(tree.failure);
+            if (list !== null) {
                 this.patchMailboxUnread(id, list);
-                const current = this.selectedFolder();
-                if (list.length > 0 && !list.some(f => f.folder === current)) {
-                    this.selectedFolder.set(list[0].folder);
-                }
-                this.loadMessages(true);
-            },
-            error: () => {
-                this.folders.set([]);
-                this.loadMessages(true);
-            },
+            }
+            const selectable = this.folderRows().filter(row => row.selectable);
+            const current = this.selectedFolder();
+            if (selectable.length > 0 && !selectable.some(row => row.folder.folder === current)) {
+                this.selectedFolder.set(selectable[0].folder.folder);
+            }
+            this.loadMessages(true);
         });
     }
 

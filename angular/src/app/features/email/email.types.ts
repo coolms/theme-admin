@@ -420,6 +420,15 @@ export interface EmailImportResultDto {
     total?: number;
 }
 
+/** A folder in its mailbox's tree, as the server orders and names it. */
+export interface EmailFolderTreeNodeDto extends EmailFolderDto {
+    /** The name to draw: a role's in the reader's language, any other folder's own; a server's brackets dropped. */
+    name: string;
+    /** False for a folder that only holds folders, with nothing to open. */
+    selectable: boolean;
+    children: EmailFolderTreeNodeDto[];
+}
+
 /**
  * A mailbox delegate grant (`GET /email/mailboxes/{mailboxId}/delegations`, ).
  * The Gmail/Workspace "delegate access" model: `delegateUserId` may read + send-as

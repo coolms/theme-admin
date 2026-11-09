@@ -12,7 +12,7 @@ import {
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
     EmailDeleteResultDto,
-    EmailFolderDto,
+    EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailImportResultDto,
     EmailMessageDetailDto,
@@ -243,6 +243,20 @@ export class EmailService {
                 const name = (row.displayName ?? '').trim();
                 return [{ key, label: name !== '' && name !== key ? `${name} (${key})` : key }];
             })));
+    }
+
+    /**
+     * GET /email/mailboxes/{id}/folders/tree -- the mailbox's folders as the server nests, orders and names them. A role's
+     * name is in the reader's language, which the server takes from the person's language setting, and without one from
+     * the browser's Accept-Language, which every request carries.
+     */
+    folderTree(mailboxId: string): Observable<EmailFolderTreeNodeDto[]> {
+        return this.http
+            .get<{ folders?: EmailFolderTreeNodeDto[] }>(
+                `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/tree`,
+                { headers: this.jsonHeaders },
+            )
+            .pipe(map(answer => answer.folders ?? []));
     }
 
     /** GET /email/mailboxes/{id}/folders -- per-folder total + unread counts. */

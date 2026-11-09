@@ -50,6 +50,7 @@ describe('EmailMailboxPageComponent -- one pane at a time on a phone', () => {
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
+                        folderTree: () => of([]),
                         listMessages: () => of([]),
                         getMessage: () => details,
                         listThread: () => of([]),
