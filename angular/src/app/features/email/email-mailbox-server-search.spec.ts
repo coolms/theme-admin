@@ -138,6 +138,42 @@ describe('EmailMailboxPageComponent -- hybrid search', () => {
         page.clearSearch();
     }));
 
+    it('what was typed before the first mailbox opened is kept and searched; switching mailboxes ends it', fakeAsync(() => {
+        const page = build();
+        page.selectedMailboxId.set(null);
+        type(page, 'invoice');
+        tick(600);
+        expect(serverAsked).withContext('no mailbox open yet').toEqual([]);
+
+        page.selectMailbox('mb1');
+
+        expect(page.searchQuery).withContext('the first open keeps the box').toBe('invoice');
+        expect(page.searchActive()).toBeTrue();
+        expect(serverAsked).withContext('and searches the mailbox it opened').toEqual([{ mailboxId: 'mb1', q: 'invoice' }]);
+        expect(localAsked).toEqual(['invoice']);
+
+        page.selectMailbox('mb1');
+        expect(page.searchQuery).withContext('the same mailbox again is no switch').toBe('invoice');
+
+        page.selectMailbox('mb2');
+        expect(page.searchQuery).withContext('a switch clears the box').toBe('');
+        expect(page.searchActive()).toBeFalse();
+        tick(3000);
+        expect(serverAsked.length).withContext('nothing more asked').toBe(1);
+    }));
+
+    it('a pause still pending when the first mailbox opens asks nothing twice', fakeAsync(() => {
+        const page = build();
+        page.selectedMailboxId.set(null);
+        type(page, 'invoice');
+        tick(100);
+        page.selectMailbox('mb1');
+        tick(1000);
+
+        expect(serverAsked).toEqual([{ mailboxId: 'mb1', q: 'invoice' }]);
+        page.clearSearch();
+    }));
+
     it('the other mailboxes are searched only on the press, one after another', fakeAsync(() => {
         const page = build();
         type(page, 'report');

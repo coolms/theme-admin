@@ -57,6 +57,7 @@ import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
+import { MailHitRowComponent } from './mail-hit-row.component';
 import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
 import {
@@ -147,7 +148,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
-        ComposeAttachmentsComponent, MailServerSearchComponent,
+        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent,
     ],
     template: `
         <div class="mbx">
@@ -265,19 +266,11 @@ type PhonePane = 'folders' | 'message';
                             } @else {
                                 <div class="mbx__search-summary">Results for “{{ searchQuery }}”</div>
                                 @for (h of searchResults(); track h.id) {
-                                    <button type="button" class="mbx__row"
-                                            [class.mbx__row--active]="h.id === selectedMessage()?.id"
-                                            [class.mbx__row--unread]="!h.seen"
-                                            (click)="openSearchHit(h)">
-                                        <div class="mbx__row-top">
-                                            <span class="mbx__row-from">{{ h.fromName || h.fromAddress || '(unknown)' }}</span>
-                                            <span class="mbx__row-date">{{ hitDate(h) | appDateTime }}</span>
-                                        </div>
-                                        <div class="mbx__row-subject">{{ h.subject || '(no subject)' }}</div>
-                                        <div class="mbx__row-snippet">
-                                            <span class="mbx__row-folder">{{ folderNameOf(h.folder) }}</span>{{ h.snippet }}
-                                        </div>
-                                    </button>
+                                    <!-- Drawn as the server section draws a hit: the two read as one list in two parts. -->
+                                    <app-mail-hit-row testId="local-hit" [from]="h.fromName || h.fromAddress" [date]="hitDate(h)"
+                                                      [subject]="h.subject" [chips]="localChips(h)" [snippet]="h.snippet"
+                                                      [unread]="h.seen === false" [active]="h.id === selectedMessage()?.id"
+                                                      (chosen)="openSearchHit(h)" />
                                 }
                                 @if (searchHasMore()) {
                                     <button type="button" class="mbx__more" [disabled]="searching()"
@@ -910,10 +903,6 @@ type PhonePane = 'folders' | 'message';
         .mbx__search-summary {
             padding: 6px 12px; font-size: .75rem; color: var(--cms-text-muted);
             border-bottom: 1px solid var(--cms-border);
-        }
-        .mbx__row-folder {
-            display: inline-block; font-size: .6875rem; background: var(--cms-surface-alt, var(--cms-surface-hover));
-            border-radius: var(--cms-radius-sm, 4px); padding: 0 5px; margin-right: 5px; color: var(--cms-text-secondary);
         }
 
         .mbx__detail { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
@@ -1760,13 +1749,23 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
+    /**
+     * Opens a mailbox. Switching from another one ends the search; the first open keeps what was typed before it and
+     * searches the mailbox for it.
+     */
     selectMailbox(id: string): void {
+        const previous = this.selectedMailboxId();
         this.selectedMailboxId.set(id);
         this.selectedMessage.set(null);
         this.messages.set([]);
         this.clearSelection();
-        this.clearSearch();
+        if (previous !== null && previous !== id) {
+            this.clearSearch();
+        }
         this.loadFolders();
+        if (previous === null && this.searchQuery.trim() !== '') {
+            this.runSearch(this.searchQuery);
+        }
     }
 
     /**
@@ -2012,6 +2011,12 @@ export class EmailMailboxPageComponent implements OnInit {
     /** What a server search learned of a mailbox's server (it cannot search): kept on the mailbox, so it is not asked again. */
     private learnServerSearch(mailboxId: string | null, capability: ServerSearchCapability): void {
         this.mailboxes.update(list => list.map(m => (m.id === mailboxId ? { ...m, serverSearch: capability } : m)));
+    }
+
+    /** A stored hit's folder, by the name the folder tree gives it. */
+    localChips(hit: EmailSearchHitDto): string[] {
+        const name = this.folderNameOf(hit.folder);
+        return name === '' ? [] : [name];
     }
 
     /** A search hit's `sentAt` is Unix SECONDS; the date pipe wants an ISO string. */

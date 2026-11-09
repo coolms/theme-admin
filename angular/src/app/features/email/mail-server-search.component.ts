@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
-import { DateTimePipe } from '@coolms/ui-angular';
 
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
+import { MailHitRowComponent } from './mail-hit-row.component';
 import { MailServerSearch, matchesText, serverSearchRefusal, sizeText } from './mail-server-search';
 
 /** A message to open in the reader: its stored id, the folder it is in, and whether it was read. */
@@ -21,7 +21,7 @@ export interface ServerHitOpened {
 @Component({
     selector: 'app-mail-server-search',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [DateTimePipe],
+    imports: [MailHitRowComponent],
     template: `
         <section class="mss" data-test="server-search" [attr.aria-label]="heading()">
             <div class="mss__head">
@@ -32,29 +32,9 @@ export interface ServerHitOpened {
             </div>
 
             @for (h of rows(); track h.ref) {
-                <button type="button" class="mss__row" data-test="server-hit"
-                        [class.mss__row--unread]="h.seen === false" (click)="open(h)">
-                    <span class="mss__row-top">
-                        <span class="mss__from">{{ h.from?.name || h.from?.address || '(unknown)' }}</span>
-                        <span class="mss__date">{{ h.date | appDateTime }}</span>
-                    </span>
-                    <span class="mss__subject">{{ h.subject || '(no subject)' }}</span>
-                    <span class="mss__meta">
-                        @if (h.labels && h.labels.length > 0) {
-                            @for (l of h.labels; track l) {
-                                <span class="mss__chip">{{ l }}</span>
-                            }
-                        } @else {
-                            <span class="mss__chip">{{ folderName()(h.folder) }}</span>
-                        }
-                        @if (size(h); as s) {
-                            <span class="mss__size">{{ s }}</span>
-                        }
-                        @if (h.local) {
-                            <span class="mss__kept">Kept here</span>
-                        }
-                    </span>
-                </button>
+                <app-mail-hit-row testId="server-hit" [from]="h.from?.name || h.from?.address" [date]="h.date"
+                                  [subject]="h.subject" [chips]="chipsOf(h)" [size]="size(h)" [kept]="h.local"
+                                  [unread]="h.seen === false" (chosen)="open(h)" />
                 @if (notice()?.ref === h.ref) {
                     <p class="mss__note mss__note--row" role="status" data-test="server-hit-notice">{{ notice()?.text }}</p>
                 }
@@ -145,24 +125,6 @@ export interface ServerHitOpened {
         }
         .mss__title { font-size: .8125rem; font-weight: 600; color: var(--cms-text); }
         .mss__matches { font-size: .6875rem; color: var(--cms-text-muted); }
-        .mss__row {
-            display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 8px 12px; text-align: left;
-            border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: inherit;
-            font: inherit; cursor: pointer; min-width: 0;
-        }
-        .mss__row:hover { background: var(--cms-surface-hover); }
-        .mss__row-top { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
-        .mss__from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mss__date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
-        .mss__subject { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mss__row--unread .mss__from, .mss__row--unread .mss__subject { font-weight: 700; }
-        .mss__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
-        .mss__chip {
-            font-size: .6875rem; background: var(--cms-surface-alt); color: var(--cms-text-secondary);
-            border-radius: var(--cms-radius-sm); padding: 0 5px; max-width: 100%;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        .mss__size, .mss__kept { font-size: .6875rem; color: var(--cms-text-muted); }
         .mss__note { margin: 0; padding: 8px 12px; font-size: .75rem; color: var(--cms-text-muted); }
         .mss__note--row { padding-top: 4px; border-bottom: 1px solid var(--cms-border); }
         .mss__state {
@@ -229,6 +191,11 @@ export class MailServerSearchComponent {
                 this.notice.set({ ref: hit.ref, text: 'Couldn\'t open this message from the mail server.' });
             },
         });
+    }
+
+    /** Gmail's labels where it names them, else the folder. */
+    chipsOf(hit: ServerSearchHitDto): string[] {
+        return hit.labels !== undefined && hit.labels.length > 0 ? hit.labels : [this.folderName()(hit.folder)];
     }
 
     size(hit: ServerSearchHitDto): string {
