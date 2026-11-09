@@ -16,7 +16,7 @@ export interface ServerHitOpened {
 /**
  * One mailbox's "More on the server" section: the hits its server search found, headers only, under the local results.
  * A hit the local results already show is not shown again; a hit the platform holds opens as stored; any other opens
- * through `opener`, which answers null while opening one is not offered yet. Each refusal is said in its own words.
+ * through `opener`, which answers null where opening one is not offered. Each refusal is said in its own words.
  */
 @Component({
     selector: 'app-mail-server-search',
@@ -182,7 +182,6 @@ export class MailServerSearchComponent {
         }
         const call = this.opener()(hit);
         if (call === null) {
-            this.notice.set({ ref: hit.ref, text: 'Opening older mail is coming soon.' });
             return;
         }
         call.subscribe({

@@ -262,7 +262,7 @@ describe('Mail server search', () => {
             expect(search.view().kind).toBe('answered');
         });
 
-        it('opening a hit: a POST with no body, answering the stored id; null while it is not offered', () => {
+        it('opening a hit: a POST with no body, answering the stored id; offered', () => {
             const email = TestBed.inject(EmailService);
             let stored: unknown = null;
             email.postServerMessageOpen('mb1', 'r/1').subscribe(a => { stored = a; });
@@ -272,8 +272,12 @@ describe('Mail server search', () => {
             req.flush({ id: 'm42', folder: 'Archive' });
             expect(stored).toEqual({ id: 'm42', folder: 'Archive' });
 
-            expect(SERVER_MESSAGE_OPEN_SERVED).toBeFalse();
-            expect(email.openServerMessage('mb1', serverHit(1))).withContext('not offered yet: nothing asked').toBeNull();
+            expect(SERVER_MESSAGE_OPEN_SERVED).toBeTrue();
+            email.openServerMessage('mb1', serverHit(7))?.subscribe(a => { stored = a; });
+            const open = http.expectOne('/api/v1/email/mailboxes/mb1/server-messages/ref-7/open');
+            expect(open.request.method).toBe('POST');
+            open.flush({ id: 'm7', folder: 'INBOX' });
+            expect(stored).withContext('openServerMessage posts').toEqual({ id: 'm7', folder: 'INBOX' });
         });
 
         it('capped: the answer says so', () => {
