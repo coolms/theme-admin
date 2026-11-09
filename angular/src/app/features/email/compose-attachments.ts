@@ -91,11 +91,14 @@ export function restoredAttachments(stored: readonly StoredComposeAttachment[] |
         }, s.source === 'drive' ? 'drive' : 'upload'));
 }
 
-/** The bytes the composer counts against the limit: every file not refused, at its encoded size, and the body. */
+/** The message's own headers (addresses, subject, date, ids and the MIME structure), about this many bytes, once. */
+export const MESSAGE_HEADER_BYTES = 1024;
+
+/** The bytes the composer counts against the limit: the message headers, the body, and every file not refused. */
 export function messageBytes(list: readonly ComposeAttachment[], bodyBytes: number): number {
     return list
         .filter((a) => a.status !== 'refused')
-        .reduce((sum, a) => sum + attachmentCost(a.sizeBytes, a.encodedBytes), bodyBytes);
+        .reduce((sum, a) => sum + attachmentCost(a.sizeBytes, a.encodedBytes), MESSAGE_HEADER_BYTES + bodyBytes);
 }
 
 /** A Drive refusal, in a sentence. */

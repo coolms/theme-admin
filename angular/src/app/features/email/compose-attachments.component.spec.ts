@@ -167,7 +167,8 @@ describe('ComposeAttachmentsComponent', () => {
     });
 
     it('gives the picker a cost of the encoded size plus the part headers: a file exactly at the edge fits, 1 byte less of limit does not', async () => {
-        // 3000 bytes: base64 4000, line breaks 2 * ceil(4000 / 76) = 106, part headers 200 -- 4306 in all.
+        // 3000 bytes: base64 4000, line breaks 2 * ceil(4000 / 76) = 106, part headers 200 -- 4306 for the file, on top of
+        // the 1024 bytes of message headers already counted as used: the edge is a limit of 5330.
         const edgeFile = { id: 'n1', name: 'edge.bin', kind: 'file' as const, size: 3000, mimeType: 'application/octet-stream' };
         const reasonAt = async (limit: number): Promise<string | null> => {
             const host = create(limit);
@@ -180,9 +181,9 @@ describe('ComposeAttachmentsComponent', () => {
             return row.getAttribute('aria-disabled');
         };
         expect(pickerOptions).toBeNull();
-        expect(await reasonAt(4306)).toBeNull();
-        // The base64 alone (4106) would still fit in 4305; with the part headers it does not.
-        expect(await reasonAt(4305)).toBe('true');
+        expect(await reasonAt(5330)).toBeNull();
+        // The base64 alone (4106) would still fit in 5329; with the part headers it does not.
+        expect(await reasonAt(5329)).toBe('true');
     });
 
     it('lists the person\'s own files under their home, and a refused folder as denied', async () => {
@@ -196,6 +197,30 @@ describe('ComposeAttachmentsComponent', () => {
         expect(listed).toEqual(['/home/u1/Docs']);
     });
 
+    it('keeps a Drive batch going when one of its chips is removed before the answer, and removes that one on the server', () => {
+        const answer = new Subject<DriveAttachResultDto>();
+        driveAnswer = () => answer;
+        const f = create();
+        f.componentInstance.attachFromFiles([
+            { id: 'n1', name: 'first.pdf', kind: 'file', size: 100, mimeType: 'application/pdf', space: 'home', path: '' },
+            { id: 'n2', name: 'second.pdf', kind: 'file', size: 200, mimeType: 'application/pdf', space: 'home', path: '' },
+        ]);
+        f.detectChanges();
+        chipNamed(f, 'first.pdf').querySelector<HTMLElement>('[data-test="attachment-remove"]')!.click();
+        f.detectChanges();
+        expect(removed).toEqual([]);
+
+        answer.next({ attachments: [
+            { node: 'n1', ...dto('d1', 'first.pdf', 100), source: 'drive' },
+            { node: 'n2', ...dto('d2', 'second.pdf', 200), source: 'drive' },
+        ] });
+        f.detectChanges();
+        expect(chips(f).map((c) => c.getAttribute('data-status') + ':' + c.querySelector('[data-test="attachment-name"]')!.textContent!.trim()))
+            .toEqual(['ready:second.pdf']);
+        expect(f.componentInstance.attachments().map((a) => a.id)).toEqual(['d2']);
+        expect(removed).toEqual(['d1']);
+    });
+
     it('removes a file from the message and from the server', () => {
         const f = create(null, [readyAttachment(dto('a1', 'notes.txt', 10), 'upload')]);
         chipNamed(f, 'notes.txt').querySelector<HTMLElement>('[data-test="attachment-remove"]')!.click();
@@ -207,9 +232,9 @@ describe('ComposeAttachmentsComponent', () => {
 
     it('shows only the size used when the mailbox has no limit, and what is left when it has one', () => {
         const file = readyAttachment(dto('a1', 'notes.txt', 3000), 'upload');
-        // 3000 bytes encode to 4000 + 2 * ceil(4000 / 76) = 4106, and its part headers make 4306.
+        // 3000 bytes encode to 4000 + 2 * ceil(4000 / 76) = 4106, its part headers make 4306, and the message headers 5330.
         const open = create(null, [file]);
-        expect(sizeLine(open)).toBe('4.3 KB used');
+        expect(sizeLine(open)).toBe('5.3 KB used');
         expect(sizeLine(open)).not.toContain('left');
 
         const limited = create(25_000_000, [file]);

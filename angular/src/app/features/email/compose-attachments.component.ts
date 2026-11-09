@@ -201,6 +201,8 @@ export class ComposeAttachmentsComponent {
     private readonly store = inject(Store);
     private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
     private readonly running = new Map<string, Subscription>();
+    /** Chips taken out while their Drive batch was still attaching: their ids are removed when the answer comes. */
+    private readonly removedInFlight = new Set<string>();
     /** Why a listed file cannot be chosen, by node id, from the listing that showed it. */
     private readonly reasons = new Map<string, string>();
 
@@ -328,12 +330,21 @@ export class ComposeAttachmentsComponent {
         }))]);
         for (let i = 0; i < keyed.length; i += DRIVE_BATCH) {
             const batch = keyed.slice(i, i + DRIVE_BATCH);
-            const runKey = batch[0].key;
+            // The batch's own key: removing one of its chips never stops the others' answer.
+            const runKey = 'batch-' + attachmentKey();
             const sub = this.email.attachFromDrive(this.mailboxId(), batch.map((b) => b.choice.id)).subscribe({
                 next: (res) => {
                     this.running.delete(runKey);
                     batch.forEach(({ choice, key }, n) => {
                         const row = res.attachments.find((r) => r.node === choice.id) ?? res.attachments[n];
+                        if (this.removedInFlight.delete(key)) {
+                            // Taken out before the answer: what the server attached for it is removed, not shown.
+                            if (row && row.refused === undefined) {
+                                this.email.removeAttachment(this.mailboxId(), row.id).subscribe({ error: () => undefined });
+                            }
+
+                            return;
+                        }
                         if (!row) {
                             this.patch(key, { status: 'refused', refusal: driveRefusalText('not-found') });
                         } else if (row.refused !== undefined) {
@@ -346,7 +357,10 @@ export class ComposeAttachmentsComponent {
                 },
                 error: () => {
                     this.running.delete(runKey);
-                    batch.forEach(({ key }) => this.patch(key, { status: 'refused', refusal: 'Not attached: the server could not take it.' }));
+                    batch.forEach(({ key }) => {
+                        this.removedInFlight.delete(key);
+                        this.patch(key, { status: 'refused', refusal: 'Not attached: the server could not take it.' });
+                    });
                 },
             });
             this.running.set(runKey, sub);
@@ -355,6 +369,7 @@ export class ComposeAttachmentsComponent {
 
     /** Take a file out: an upload in flight is stopped; an attached one is removed on the server, a Drive file staying in Drive. */
     remove(a: ComposeAttachment): void {
+        if (a.status === 'attaching') this.removedInFlight.add(a.key);
         this.running.get(a.key)?.unsubscribe();
         this.running.delete(a.key);
         this.attachments.update((list) => list.filter((x) => x.key !== a.key));
