@@ -242,12 +242,17 @@ export class IdentityApiService {
         itemsPerPage?: number;
         personId?:     string;
         audience?:     string;
+        filters?:      ReadonlyArray<string>;
+        sort?:         string;
     } = {}): Observable<{ members: ActiveSessionDto[]; total: number }> {
         let httpParams = new HttpParams();
         if (params.page && params.page > 1) httpParams = httpParams.set('page', String(params.page));
         if (params.itemsPerPage)            httpParams = httpParams.set('itemsPerPage', String(params.itemsPerPage));
         if (params.personId)                httpParams = httpParams.set('personId', params.personId);
         if (params.audience)                httpParams = httpParams.set('audience', params.audience);
+        if (params.sort)                    httpParams = httpParams.set('sort', params.sort);
+        // Repeated `filter=...` keys: the list reads them all, as AND conditions.
+        for (const f of params.filters ?? []) httpParams = httpParams.append('filter', f);
         return this.http
             .get<HydraCollection<ActiveSessionDto>>(this.manifest.identity!.sessionsUrl!, {
                 headers: this.collectionHeaders.headers,

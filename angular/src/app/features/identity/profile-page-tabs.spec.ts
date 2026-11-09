@@ -48,7 +48,8 @@ describe('ProfilePageComponent -- its tabs', () => {
                         getSettingsSections: () => of(OLD),
                         getSettings: () => {
                             ++settingsReads;
-                            return of({ calendar: { tz: 'Europe/Berlin' } });
+                            // The zone is region's; the calendar section still carries an old copy until it is removed.
+                            return of({ region: { timezone: 'Europe/Berlin' }, calendar: { tz: 'Europe/Paris' } });
                         },
                     },
                 },
@@ -170,7 +171,7 @@ describe('ProfilePageComponent -- its tabs', () => {
         expect(consoleLoads).toBe(1);
     });
 
-    it('a saved region reaches the calendar readers, through the old keys it also wrote', () => {
+    it('a saved region reaches the calendar readers from region, never from the calendar section\'s old keys', () => {
         const page = build(() => of([declared('region')]));
         const before = settingsReads;
 
@@ -178,5 +179,6 @@ describe('ProfilePageComponent -- its tabs', () => {
 
         expect(settingsReads).toBe(before + 1);
         expect(calendars).toContain({ tz: 'Europe/Berlin' });
+        expect(calendars).not.toContain(jasmine.objectContaining({ tz: 'Europe/Paris' }));
     });
 });

@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEvent, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Observable, map, throwError } from 'rxjs';
@@ -7,6 +7,7 @@ import { type CapabilityState } from '@coolms/ui-angular';
 import {
     CreateDelegationRequest,
     DefinitionCatalogDto,
+    DriveAttachResultDto,
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
@@ -27,12 +28,14 @@ import {
     MailboxTestRequest,
     MailboxTestResult,
     MailboxWriteRequest,
+    OutgoingAttachmentDto,
     OutgoingEmailRequest,
     SystemMailChoice,
     SystemMailDto,
     SystemMailSendAsDto,
 } from './email.types';
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
+import type { MailAliasAsked, MailAliasesDto, MailboxSendAsDto } from './mail-aliases';
 
 /** The server's answer to a sync asked for. */
 export interface MailboxSyncStarted {
@@ -406,6 +409,34 @@ export class EmailService {
         );
     }
 
+    /** POST /email/mailboxes/{id}/attachments -- upload one file to send, with its progress events. */
+    uploadAttachment(mailboxId: string, file: File): Observable<HttpEvent<OutgoingAttachmentDto>> {
+        const body = new FormData();
+        body.append('file', file, file.name);
+
+        return this.http.post<OutgoingAttachmentDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments`,
+            body,
+            { reportProgress: true, observe: 'events' },
+        );
+    }
+
+    /** POST /email/mailboxes/{id}/attachments/from-drive -- attach Drive files by node id (at most 50), one row each. */
+    attachFromDrive(mailboxId: string, nodes: readonly string[]): Observable<DriveAttachResultDto> {
+        return this.http.post<DriveAttachResultDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/from-drive`,
+            { nodes },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/attachments/{id} -- take a file out; a Drive file stays in Drive. */
+    removeAttachment(mailboxId: string, id: string): Observable<void> {
+        return this.http.delete<void>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/${encodeURIComponent(id)}`,
+        );
+    }
+
     /** POST /email/messages/{id}/reply -- reply to a stored message, threaded. */
     reply(messageId: string, request: OutgoingEmailRequest): Observable<EmailSendResultDto> {
         return this.http.post<EmailSendResultDto>(
@@ -496,6 +527,31 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<FilterFolder>(raw)));
     }
 
+    /** GET /email/mailboxes/{mailboxId}/send-as -- the addresses a message may come from: own first, then the provider's, then confirmed aliases. */
+    getSendAs(mailboxId: string): Observable<MailboxSendAsDto> {
+        return this.http.get<MailboxSendAsDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/send-as`,
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/aliases -- the typed addresses, each with its status, and `canManage`. */
+    listAliases(mailboxId: string): Observable<MailAliasesDto> {
+        return this.http
+            .get<Partial<MailAliasesDto> | null>(`${this.aliasesBase(mailboxId)}`, { headers: this.jsonHeaders })
+            .pipe(map(raw => ({ canManage: raw?.canManage === true, aliases: Array.isArray(raw?.aliases) ? raw.aliases : [] })));
+    }
+
+    /** POST /email/mailboxes/{mailboxId}/aliases -- mails the address a confirmation link (202); again: a fresh link. */
+    askAlias(mailboxId: string, address: string): Observable<MailAliasAsked> {
+        return this.http.post<MailAliasAsked>(this.aliasesBase(mailboxId), { address }, { headers: this.jsonHeaders });
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/aliases/{id} -- a pending link stops working; a confirmed address leaves send-as. */
+    withdrawAlias(mailboxId: string, id: string): Observable<unknown> {
+        return this.http.delete<unknown>(`${this.aliasesBase(mailboxId)}/${encodeURIComponent(id)}`);
+    }
+
     /** GET /email/system-mail -- the system mail choice and its state (an elevated administrator). */
     getSystemMail(): Observable<SystemMailDto> {
         return this.http.get<SystemMailDto>(`${this.apiBase}/email/system-mail`, { headers: this.jsonHeaders });
@@ -527,6 +583,10 @@ export class EmailService {
         const body = undefined === to || '' === to.trim() ? {} : { to: to.trim() };
 
         return this.http.post<unknown>(`${this.apiBase}/email/system-mail/test`, body, { headers: this.jsonHeaders });
+    }
+
+    private aliasesBase(mailboxId: string): string {
+        return `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/aliases`;
     }
 
     private rulesBase(mailboxId: string): string {

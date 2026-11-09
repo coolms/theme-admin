@@ -19,6 +19,7 @@
 import '../../../ui-angular/src/context-menu/context-menu.service.spec';
 import '../../../ui-angular/src/datagrid/datagrid-declared-rows.spec';
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
+import '../../../ui-angular/src/datagrid/datagrid-group-by.spec';
 import '../../../ui-angular/src/datagrid/datagrid-keyboard-overlay.spec';
 import '../../../ui-angular/src/datagrid/datagrid-range-filters.spec';
 import '../../../ui-angular/src/datagrid/datagrid-refused-list.spec';
@@ -38,6 +39,7 @@ import '../../../ui-angular/src/ui/dtmpl-token-input/cms-dtmpl-token-input.compo
 import '../../../ui-angular/src/ui/esc-coordinator/esc-coordinator.service.spec';
 import '../../../ui-angular/src/ui/keyboard-scope/keyboard-scope.service.spec';
 import '../../../ui-angular/src/ui/explorer-accordion/space-selection.store.spec';
+import '../../../ui-angular/src/ui/files-picker/cms-files-picker.component.spec';
 import '../../../ui-angular/src/ui/filter-builder/cms-filter-builder.component.spec';
 import '../../../ui-angular/src/ui/item-interactions/cms-item-interactions.directive.spec';
 import '../../../ui-angular/src/ui/layout-actions.service.spec';

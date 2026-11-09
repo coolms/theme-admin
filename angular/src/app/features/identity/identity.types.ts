@@ -95,6 +95,8 @@ export interface ActiveSessionDto {
     lastRefreshedAt?: string | null;
     expiresAt?:       string | null;
     ipAddress?:       string | null;
+    browser?: string | null;
+    device?: string | null;
     userAgent?:       string | null;
     /** The sign-in this very request comes from: the reader's own, here. */
     current?:         boolean;

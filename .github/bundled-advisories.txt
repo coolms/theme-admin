@@ -9,4 +9,4 @@
 # A review date is at most 30 days out for critical and high, 90 for the rest. Clearing an entry means a release
 # of ngx-extended-pdf-viewer that bundles a newer pdf.js: an install, proposed and decided as one.
 
-pdfjs-dist  GHSA-hq66-cqwq-w95j  high  2026-11-06  Bundled pdf.js 6.1.1164 (in >=5.6.83 <6.2.108). The advisory needs scripting on; the viewer pins enableScripting, enableOpenActionJavaScript and enableCatalogAAJavaScript off and does not ship the scripting sandbox. Cleared by a viewer release bundling pdf.js 6.2.108 or later.
+pdfjs-dist  GHSA-hq66-cqwq-w95j  high  2026-12-06  Bundled pdf.js 6.1.1164 (in >=5.6.83 <6.2.108). The advisory needs scripting on; the viewer pins enableScripting, enableOpenActionJavaScript and enableCatalogAAJavaScript off and does not ship the scripting sandbox. Cleared by a viewer release bundling pdf.js 6.2.108 or later.

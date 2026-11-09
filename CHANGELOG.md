@@ -8,11 +8,21 @@ major number means here.
 
 ## Unreleased
 
+- **The signed-in sessions page.** A row's menu ends that sign-in, ends all of that person's sign-ins, or opens
+  the account. Every column sorts and filters, by the grid's declared definition, and the toolbar groups the
+  list by person. Browser and device show as columns.
+
 ### Changed
 - **The mail rail draws the server's folder tree**, nested and ordered as the server answers, with its names. A folder that only holds folders opens nothing. Until a tree is answered the rail shows the flat list as before.
 - **A mailbox's settings open from its card.** The gear leaves the page's toolbar; Email settings at the top right holds mail-wide settings only.
 
 ### Added
+- **Attachments in a new message, a forward or a reply.** Attach files offers From device, an upload, and From files, a picker over the
+  person's own files and everything they may read; a file from there is attached by reference and read at send. Each
+  file is a chip with its size, its upload's progress, why it was refused, and Remove. Beside them is the size used
+  and, when the mailbox has a limit, what is left. A file still uploading, or one refused, holds the send back. A
+  send refused because a file is no longer there marks that file. A send over the limit shows the size the server
+  measured. A reply takes attachments the same way.
 - **Refresh in the mail list.** It asks the server to sync the open mailbox now, shows that it runs, and says when the mailbox last synced. If no answer arrives within a minute, the list is read anyway.
 - **A stopped mailbox can be retried from its settings.** The Connection pane shows what the provider said and when, for those who may manage it, and a Retry button beside the status. Reconnect stays beside the sign-in.
 ### Changed

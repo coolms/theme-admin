@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { NaviGraphService, ThemeService } from '@coolms/core-angular';
 import { IdentityApiService } from './identity-api.service';
-import { CalendarPrefs, UserCalendarPreferencesService } from '@coolms/ui-angular';
+import { CalendarPrefs, calendarPrefsFromSettings, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { ProfileCalendarTabComponent } from './profile-calendar-tab.component';
 
 /**
@@ -155,22 +155,20 @@ describe('Settings-section echo -> profile caches', () => {
         defaultCalendarSlug: 'team-ops',
     };
 
- it('a calendar save reaches the live prefs — the widgets do not keep the pre-save values', () => {
+ it('a calendar save reaches the live prefs — the default calendar moves, and only it', () => {
         calPrefs.update(CALENDAR_BEFORE);              // page ngOnInit seeds from GET /settings
         expect(calPrefs.tz()).toBe('UTC');
 
         const echo = saveSection('calendar', { ...CALENDAR_SAVED });
-        calPrefs.update(echo as Partial<CalendarPrefs>);   // profile-page.component.ts:572
+        calPrefs.update(calendarPrefsFromSettings({ calendar: echo }));   // as saveCalendarPrefs maps it
 
- // Every one of these is read by something already on screen:
- // FullCalendar's timeZone and firstDay, MiniCalendar, the date/time
- // formatting service, and the topbar calendar quick-access.
-        expect(calPrefs.tz()).toBe('Europe/Berlin');
-        expect(calPrefs.dateFormat()).toBe('dd.MM.yyyy');
-        expect(calPrefs.timeFormat()).toBe('12h');
-        expect(calPrefs.weekStart()).toBe('sunday');
-        expect(calPrefs.firstDay()).toBe(0);
+ // The default calendar is read by the topbar calendar quick-access. The
+ // zone, the formats and the week start are region's: an echo that still
+ // carries them moves none of them.
         expect(calPrefs.defaultCalendarSlug()).toBe('team-ops');
+        expect(calPrefs.tz()).toBe('UTC');
+        expect(calPrefs.dateFormat()).toBe('yyyy-MM-dd');
+        expect(calPrefs.weekStart()).toBe('monday');
     });
 
  it('re-opening the Calendar tab after a save offers the saved values back, not defaults', () => {
