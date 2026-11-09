@@ -64,6 +64,59 @@ export interface EmailMailboxDto {
     trashRetentionDays?: number | null;
     /** The largest message this mailbox sends, in bytes; absent when it is not known. */
     maxMessageBytes?: number | null;
+    /** Whether the mail server can search mail the platform does not hold; absent from a server that predates it. */
+    serverSearch?: ServerSearchCapability | null;
+}
+
+/**
+ * A mailbox's server search, as last learned: `supported`; `unsupported` (the server cannot search, `reason` is what it
+ * answered); `unknown` (not probed yet, the first search decides); `unavailable` (the mailbox cannot be reached now,
+ * `reason` is the connection's).
+ */
+export type ServerSearchState = 'supported' | 'unsupported' | 'unknown' | 'unavailable';
+
+export interface ServerSearchCapability {
+    state: ServerSearchState;
+    reason?: string | null;
+}
+
+/** One message the mail server found: its headers only. `local` with `localId` when the platform already holds it. */
+export interface ServerSearchHitDto {
+    /** Names the message on the server; opaque, passed back as it came. */
+    ref: string;
+    folder: string;
+    uid: number;
+    from?: { name?: string | null; address?: string | null } | null;
+    /** Absent when the message has none. */
+    subject?: string;
+    /** ISO 8601 with its offset. */
+    date?: string | null;
+    sizeBytes?: number | null;
+    seen?: boolean;
+    flagged?: boolean;
+    /** Gmail only: where the message shows (Inbox, Sent, a label), as its folder is All Mail. */
+    labels?: string[];
+    local: boolean;
+    localId?: string | null;
+}
+
+/** `GET /email/mailboxes/{id}/server-search`: one page of hits, newest first, `q` trimmed as the server searched it. */
+export interface ServerSearchAnswerDto {
+    q: string;
+    folder?: string | null;
+    state: string;
+    /** What was searched: the folders, and a stable code for what the server matches (`gmail-raw`, `imap-text`). */
+    searched?: { folders?: string[]; matches?: string } | null;
+    hits: ServerSearchHitDto[];
+    next: string | null;
+    /** True once the search reached its limit of hits. */
+    capped: boolean;
+}
+
+/** What opening a server hit answers: the stored message's id and the folder it is stored in. */
+export interface ServerMessageOpenedDto {
+    id: string;
+    folder: string;
 }
 
 /** A file attached to a message being written: an upload, or a reference to a file of the person's Drive. */

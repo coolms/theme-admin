@@ -30,6 +30,9 @@ import {
     MailboxWriteRequest,
     OutgoingAttachmentDto,
     OutgoingEmailRequest,
+    ServerMessageOpenedDto,
+    ServerSearchAnswerDto,
+    ServerSearchHitDto,
     SystemMailChoice,
     SystemMailDto,
     SystemMailSendAsDto,
@@ -72,6 +75,9 @@ export function mailboxChangedSinceRead(err: unknown): boolean {
  * `Accept: application/json` on collection reads forces the BARE array (not a
  * Hydra envelope); {@link unwrap} tolerates both shapes regardless.
  */
+/** Whether the server offers opening a server hit; until it does, opening one says it is coming. */
+export const SERVER_MESSAGE_OPEN_SERVED: boolean = false;
+
 @Injectable({ providedIn: 'root' })
 export class EmailService {
     private readonly http = inject(HttpClient);
@@ -308,6 +314,44 @@ export class EmailService {
         return this.http
             .get<unknown>(`${this.apiBase}/email/search`, { headers: this.jsonHeaders, params })
             .pipe(map(raw => this.unwrap<EmailSearchHitDto>(raw)));
+    }
+
+    /**
+     * GET /email/mailboxes/{id}/server-search -- one page of what the mail server finds for `q`, headers only, newest
+     * first. Without `cursor` the first page; with it the page `next` named. Unsubscribing aborts the request.
+     */
+    serverSearch(mailboxId: string, q: string, cursor: string | null = null, folder: string | null = null): Observable<ServerSearchAnswerDto> {
+        let params = new HttpParams().set('q', q);
+        if (folder !== null && folder !== '') {
+            params = params.set('folder', folder);
+        }
+        if (cursor !== null) {
+            params = params.set('cursor', cursor);
+        }
+        return this.http.get<ServerSearchAnswerDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-search`,
+            { headers: this.jsonHeaders, params },
+        );
+    }
+
+    /**
+     * Opens a server hit the platform does not hold: stores it and answers its id. Null while the server does not
+     * offer it yet ({@link SERVER_MESSAGE_OPEN_SERVED}); the caller says it is coming.
+     */
+    openServerMessage(mailboxId: string, hit: ServerSearchHitDto): Observable<ServerMessageOpenedDto> | null {
+        return SERVER_MESSAGE_OPEN_SERVED ? this.postServerMessageOpen(mailboxId, hit.ref) : null;
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/server-messages/{ref}/open, no body: the message is stored and its id answered; opening
+     * it again answers the same id. Refused 404 `gone`, 503 `unavailable`, 502 `failed`.
+     */
+    postServerMessageOpen(mailboxId: string, ref: string): Observable<ServerMessageOpenedDto> {
+        return this.http.post<ServerMessageOpenedDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-messages/${encodeURIComponent(ref)}/open`,
+            null,
+            { headers: this.jsonHeaders },
+        );
     }
 
     /** GET /email/messages/{id} -- one message with its raw RFC-822 body (detail). */
