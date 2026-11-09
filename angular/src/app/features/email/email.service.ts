@@ -35,6 +35,7 @@ import {
     SystemMailSendAsDto,
 } from './email.types';
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
+import type { MailAliasAsked, MailAliasesDto, MailboxSendAsDto } from './mail-aliases';
 
 /** The server's answer to a sync asked for. */
 export interface MailboxSyncStarted {
@@ -516,6 +517,31 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<FilterFolder>(raw)));
     }
 
+    /** GET /email/mailboxes/{mailboxId}/send-as -- the addresses a message may come from: own first, then the provider's, then confirmed aliases. */
+    getSendAs(mailboxId: string): Observable<MailboxSendAsDto> {
+        return this.http.get<MailboxSendAsDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/send-as`,
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/aliases -- the typed addresses, each with its status, and `canManage`. */
+    listAliases(mailboxId: string): Observable<MailAliasesDto> {
+        return this.http
+            .get<Partial<MailAliasesDto> | null>(`${this.aliasesBase(mailboxId)}`, { headers: this.jsonHeaders })
+            .pipe(map(raw => ({ canManage: raw?.canManage === true, aliases: Array.isArray(raw?.aliases) ? raw.aliases : [] })));
+    }
+
+    /** POST /email/mailboxes/{mailboxId}/aliases -- mails the address a confirmation link (202); again: a fresh link. */
+    askAlias(mailboxId: string, address: string): Observable<MailAliasAsked> {
+        return this.http.post<MailAliasAsked>(this.aliasesBase(mailboxId), { address }, { headers: this.jsonHeaders });
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/aliases/{id} -- a pending link stops working; a confirmed address leaves send-as. */
+    withdrawAlias(mailboxId: string, id: string): Observable<unknown> {
+        return this.http.delete<unknown>(`${this.aliasesBase(mailboxId)}/${encodeURIComponent(id)}`);
+    }
+
     /** GET /email/system-mail -- the system mail choice and its state (an elevated administrator). */
     getSystemMail(): Observable<SystemMailDto> {
         return this.http.get<SystemMailDto>(`${this.apiBase}/email/system-mail`, { headers: this.jsonHeaders });
@@ -547,6 +573,10 @@ export class EmailService {
         const body = undefined === to || '' === to.trim() ? {} : { to: to.trim() };
 
         return this.http.post<unknown>(`${this.apiBase}/email/system-mail/test`, body, { headers: this.jsonHeaders });
+    }
+
+    private aliasesBase(mailboxId: string): string {
+        return `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/aliases`;
     }
 
     private rulesBase(mailboxId: string): string {

@@ -1639,7 +1639,7 @@ export class EmailMailboxPageComponent implements OnInit {
                             this.syncBar()?.frame(evt);
                         } else if ('mail.messages.changed' === evt.type) {
                             this.onMessagesChanged(evt);
-                        } else {
+                        } else if ('mail.received' === evt.type) {
                             this.onMailReceived(evt);
                         }
                     },
