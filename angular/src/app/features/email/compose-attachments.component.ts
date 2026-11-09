@@ -110,7 +110,8 @@ const TOO_LARGE = 'Larger than 25 MB, the most a file can be.';
         </div>
     `,
     styles: [`
-        :host { display: block; }
+        /* Its full height in the composer's column: the body scrolls as one, the files never shrink under the bar. */
+        :host { display: block; flex-shrink: 0; }
         .cma { display: flex; flex-direction: column; gap: 6px; }
         .cma__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
         .cma__menu-wrap { position: relative; }
@@ -144,7 +145,7 @@ const TOO_LARGE = 'Larger than 25 MB, the most a file can be.';
         .cma__size { font-size: var(--cms-font-size-meta, 13px); color: var(--cms-text-muted); }
         .cma__size--over { color: var(--cms-danger-text); font-weight: 600; }
         .cma__refused-send { margin: 0; font-size: var(--cms-font-size-meta, 13px); color: var(--cms-danger-text); }
-        .cma__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: 9rem; overflow-y: auto; }
+        .cma__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
         .cma__chip {
             display: flex;
             align-items: flex-start;
