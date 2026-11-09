@@ -36,8 +36,17 @@ describe('message actions', () => {
         });
     });
 
-    it('offers the folders the messages are not in, or says there are none', () => {
-        expect(moveMenuItems(['INBOX', 'Archive', 'Trash'], 'INBOX').map(i => i.label)).toEqual(['Archive', 'Trash']);
-        expect(moveMenuItems(['INBOX'], 'INBOX')).toEqual([{ id: 'none', label: 'No other folders', disabled: true }]);
+    it('offers the folders the messages are not in, in the order and by the names given, or says there are none', () => {
+        const folders = [
+            { folder: 'INBOX', name: 'Вхідні' },
+            { folder: 'Zeta', name: 'Zeta' },
+            { folder: '[Gmail]/Trash', name: 'Кошик' },
+        ];
+
+        expect(moveMenuItems(folders, 'INBOX').map(i => [i.id, i.label])).toEqual([
+            ['move:Zeta', 'Zeta'], ['move:[Gmail]/Trash', 'Кошик'],
+        ]);
+        expect(moveMenuItems([{ folder: 'INBOX', name: 'Inbox' }], 'INBOX'))
+            .toEqual([{ id: 'none', label: 'No other folders', disabled: true }]);
     });
 });

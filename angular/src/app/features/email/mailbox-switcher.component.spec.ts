@@ -100,4 +100,21 @@ describe('MailboxSwitcherComponent', () => {
         fixture.detectChanges();
         expect(el.querySelector('.mbs__list')).toBeNull();
     });
+
+    it('one gear, on the mailbox card, only when the server offers the settings; it emits settings', () => {
+        const without = make([WORK, HOME], 'a');
+        expect(without.el.querySelectorAll('[data-test="mailbox-settings"]').length).toBe(0);
+
+        TestBed.resetTestingModule();
+        const { el, fixture } = make([WORK, HOME], 'a');
+        fixture.componentRef.setInput('hasSettings', true);
+        let opened = 0;
+        fixture.componentInstance.settings.subscribe(() => { opened += 1; });
+        fixture.detectChanges();
+        const gears = el.querySelectorAll<HTMLButtonElement>('[data-test="mailbox-settings"]');
+        expect(gears.length).toBe(1);
+        expect(gears[0].closest('.mbs__head')?.querySelector('.mbs__card')).withContext('beside the card, in its frame').not.toBeNull();
+        gears[0].click();
+        expect(opened).toBe(1);
+    });
 });

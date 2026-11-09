@@ -420,20 +420,20 @@ export interface EmailImportResultDto {
     total?: number;
 }
 
-/**
- * A mailbox delegate grant (`GET /email/mailboxes/{mailboxId}/delegations`, ).
- * The Gmail/Workspace "delegate access" model: `delegateUserId` may read + send-as
- * the mailbox. Soft-ref uuids -- the FE shows shortened ids (no name resolution).
- */
 /** A folder in its mailbox's tree, as the server orders and names it. */
 export interface EmailFolderTreeNodeDto extends EmailFolderDto {
-    /** How a person reads it, when no role names it. */
+    /** The name to draw: a role's in the reader's language, any other folder's own; a server's brackets dropped. */
     name: string;
     /** False for a folder that only holds folders, with nothing to open. */
     selectable: boolean;
     children: EmailFolderTreeNodeDto[];
 }
 
+/**
+ * A mailbox delegate grant (`GET /email/mailboxes/{mailboxId}/delegations`, ).
+ * The Gmail/Workspace "delegate access" model: `delegateUserId` may read + send-as
+ * the mailbox. Soft-ref uuids -- the FE shows shortened ids (no name resolution).
+ */
 export interface MailboxDelegationDto {
     id: string;
     mailboxId?: string;

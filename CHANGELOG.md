@@ -13,8 +13,8 @@ major number means here.
   list by person. Browser and device show as columns.
 
 ### Changed
-- **The mail rail draws the server's folder tree**, nested and ordered as the server answers, with its names. A folder that only holds folders opens nothing. Until a tree is answered the rail shows the flat list as before.
-- **A mailbox's settings open from its card.** The gear leaves the page's toolbar; Email settings at the top right holds mail-wide settings only.
+- **The mail rail draws the server's folder tree**, nested, ordered and named as the server answers: Inbox, the folders with a role, then the rest by name, a server's own containers such as Gmail's left out, and a role's name in the reader's language. The admin no longer sorts or names folders itself: the open folder's title, a search result's folder and Move use the tree's names and order too. A folder that only holds folders opens nothing. A tree that cannot be read shows the error with Retry instead of a list. The flat folder list and realtime changes still move the counts, matched by path, and never a row.
+- **A mailbox's settings open from its card.** One gear, on the mailbox card, shown when the server offers the settings; the page's action bar no longer draws a second one. Email settings at the top right holds mail-wide settings only.
 
 ### Added
 - **Attachments in a new message, a forward or a reply.** Attach files offers From device, an upload, and From files, a picker over the

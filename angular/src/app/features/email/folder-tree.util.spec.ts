@@ -5,43 +5,54 @@ function node(folder: string, name: string, over: Partial<EmailFolderTreeNodeDto
     return { folder, name, selectable: true, total: 1, unseen: 0, role: null, children: [], ...over };
 }
 
-describe('folderRows', () => {
-    it('keeps the order the server answers, and the depth of each', () => {
-        const rows = folderRows([
-            node('INBOX', 'INBOX', { role: 'inbox' }),
-            node('Zebra', 'Zebra', { children: [node('Zebra/Two', 'Two'), node('Zebra/One', 'One')] }),
-            node('Alpha', 'Alpha'),
-        ], []);
+/**
+ * A tree whose names are neither alphabetical nor what a role would be called, and whose order is neither: any
+ * sorting or naming done here instead of by the server reads differently.
+ */
+const TREE: EmailFolderTreeNodeDto[] = [
+    node('INBOX', 'Mail that came in', { role: 'inbox' }),
+    node('[Gmail]/Sent Mail', 'Gone out', { role: 'sent' }),
+    node('Zulu', 'Zulu', { children: [node('Zulu/Yankee', 'Yankee'), node('Zulu/Bravo', 'Bravo')] }),
+    node('Projects', 'Projects', { selectable: false, children: [node('Projects/Mango', 'Mango')] }),
+    node('Alpha', 'Alpha'),
+];
 
-        expect(rows.map(r => [r.folder.folder, r.depth])).toEqual([
-            ['INBOX', 0], ['Zebra', 0], ['Zebra/Two', 1], ['Zebra/One', 1], ['Alpha', 0],
+describe('folderRows', () => {
+    it('keeps the order and the names the server answers, and the depth of each', () => {
+        expect(folderRows(TREE, []).map(r => [r.folder.folder, r.name, r.depth])).toEqual([
+            ['INBOX', 'Mail that came in', 0],
+            ['[Gmail]/Sent Mail', 'Gone out', 0],
+            ['Zulu', 'Zulu', 0],
+            ['Zulu/Yankee', 'Yankee', 1],
+            ['Zulu/Bravo', 'Bravo', 1],
+            ['Projects', 'Projects', 0],
+            ['Projects/Mango', 'Mango', 1],
+            ['Alpha', 'Alpha', 0],
         ]);
     });
 
-    it('draws the name the server gives, whatever the role or the path says', () => {
-        const rows = folderRows([
-            node('[Gmail]/Sent Mail', 'Надіслані', { role: 'sent' }),
-            node('Partners/Demo requests', 'Demo requests'),
-        ], []);
-
-        expect(rows.map(r => r.name)).toEqual(['Надіслані', 'Demo requests']);
-    });
-
     it('a folder that only holds folders opens nothing', () => {
-        expect(folderRows([node('Clients', 'Clients', { selectable: false })], [])[0].selectable).toBeFalse();
+        expect(folderRows(TREE, []).filter(r => !r.selectable).map(r => r.folder.folder)).toEqual(['Projects']);
     });
 
-    it('takes the counts as they stand now from the flat list', () => {
-        const flat: EmailFolderDto[] = [{ folder: 'INBOX', total: 5, unseen: 2 }];
-        const rows = folderRows([node('INBOX', 'INBOX', { unseen: 9 }), node('Other', 'Other', { unseen: 3 })], flat);
+    it('takes the counts from the flat list by path; the flat list adds, orders and names nothing', () => {
+        const flat: EmailFolderDto[] = [
+            { folder: 'Alpha', total: 7, unseen: 4 },
+            { folder: 'INBOX', role: 'inbox', total: 5, unseen: 2 },
+            { folder: 'Not in the tree', total: 1, unseen: 1 },
+        ];
+        const rows = folderRows(TREE, flat);
 
+        expect(rows.map(r => r.folder.folder)).toEqual(folderRows(TREE, []).map(r => r.folder.folder));
+        expect(rows.map(r => r.name)).toEqual(folderRows(TREE, []).map(r => r.name));
         expect(rows[0].folder.unseen).toBe(2);
-        expect(rows[1].folder.unseen).toBe(3);
+        expect(rows[7].folder.unseen).toBe(4);
+        expect(rows[1].folder.unseen).withContext('a folder the flat list lacks keeps the tree\'s count').toBe(0);
     });
 
-    it('with no tree shows the flat list as it stands, named as before', () => {
+    it('with no tree there are no rows, whatever the flat list holds', () => {
         const flat: EmailFolderDto[] = [{ folder: 'INBOX', role: 'inbox', total: 1, unseen: 0 }, { folder: 'A/B', total: 1, unseen: 0 }];
 
-        expect(folderRows([], flat).map(r => [r.name, r.depth, r.selectable])).toEqual([['Inbox', 0, true], ['A/B', 0, true]]);
+        expect(folderRows([], flat)).toEqual([]);
     });
 });
