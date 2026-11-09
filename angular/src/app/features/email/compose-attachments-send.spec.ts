@@ -24,15 +24,17 @@ import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 /**
  * Sending a new message with files: the ids of the attached files go in the send, a file still uploading or refused
  * holds the send back, a 422 naming a file no longer there marks that file's chip, and a 413 keeps both sizes for the
- * composer to show. A reply sends no files. The page is built directly, not rendered.
+ * composer to show. A reply carries its files the same way. The page is built directly, not rendered.
  */
 describe('EmailMailboxPageComponent -- sending with attachments', () => {
     let sent: OutgoingEmailRequest[];
     let sendAnswer: () => Observable<unknown>;
     let toasts: string[];
+    let replied: string[];
 
     function build(): EmailMailboxPageComponent {
         sent = [];
+        replied = [];
         toasts = [];
         const recordToast = (m: string): void => { toasts.push(m); };
         TestBed.resetTestingModule();
@@ -45,7 +47,7 @@ describe('EmailMailboxPageComponent -- sending with attachments', () => {
                         listFolders: () => of([]),
                         listMessages: () => of([]),
                         send: (_id: string, request: OutgoingEmailRequest) => { sent.push(request); return sendAnswer(); },
-                        reply: (_id: string, request: OutgoingEmailRequest) => { sent.push(request); return sendAnswer(); },
+                        reply: (id: string, request: OutgoingEmailRequest) => { replied.push(id); sent.push(request); return sendAnswer(); },
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
@@ -142,13 +144,32 @@ describe('EmailMailboxPageComponent -- sending with attachments', () => {
         ]);
     });
 
-    it('sends no files with a reply', () => {
+    /** The page as a reply to message m1 leaves it: the reply endpoint, for that message. */
+    const asReply = (page: EmailMailboxPageComponent): void => {
+        page.composeMode.set('reply');
+        (page as unknown as { replyTargetId: { set(v: string | null): void } }).replyTargetId.set('m1');
+    };
+
+    it('sends the ids of the attached files with a reply, through the reply endpoint', () => {
         sendAnswer = () => NEVER;
         const page = build();
-        page.composeMode.set('reply');
-        page.composeAttachments.set([file('a1', 'one.txt')]);
+        asReply(page);
+        page.composeAttachments.set([file('a1', 'one.txt'), file('a2', 'two.txt')]);
         page.sendCompose();
-        expect(sent.length).toBe(1);
-        expect(sent[0].attachments).toBeUndefined();
+        expect(replied).toEqual(['m1']);
+        expect(sent[0].attachments).toEqual(['a1', 'a2']);
+    });
+
+    it('marks the file a 422 names on a reply', () => {
+        sendAnswer = () => throwError(() => new HttpErrorResponse({
+            status: 422,
+            error: { type: '/errors/email/attachment-not-found', detail: 'This attachment has expired, attach it again: "a1".', attachmentId: 'a1' },
+        }));
+        const page = build();
+        asReply(page);
+        page.composeAttachments.set([file('a1', 'one.txt'), file('a2', 'two.txt')]);
+        page.sendCompose();
+        expect(replied).toEqual(['m1']);
+        expect(page.composeAttachments().map((a) => a.status)).toEqual(['refused', 'ready']);
     });
 });
