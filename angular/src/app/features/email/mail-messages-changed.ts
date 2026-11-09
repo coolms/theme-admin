@@ -14,11 +14,15 @@ export interface MailMessageMoved extends MailMessageFlags {
     readonly movedTo: string;
 }
 
-/** A message no longer in the mailbox: purged from Trash, or retired by a sync because the server no longer lists it. */
+/**
+ * A message no longer in the mailbox: purged from Trash, or retired by a sync because the server no longer lists it.
+ * With `reason: 'evicted'`, a copy opened from the server that is no longer kept here; the server still has it.
+ */
 export interface MailMessageGone {
     readonly id: string;
     readonly folder: string;
     readonly gone: true;
+    readonly reason?: 'evicted';
 }
 
 export type MailMessageChange = MailMessageFlags | MailMessageMoved | MailMessageGone;
@@ -55,7 +59,9 @@ function readChange(raw: unknown): MailMessageChange | null {
         return null;
     }
     if (raw['gone'] === true) {
-        return { id: raw['id'], folder: raw['folder'], gone: true };
+        return raw['reason'] === 'evicted'
+            ? { id: raw['id'], folder: raw['folder'], gone: true, reason: 'evicted' }
+            : { id: raw['id'], folder: raw['folder'], gone: true };
     }
     if (typeof raw['seen'] !== 'boolean' || typeof raw['flagged'] !== 'boolean') {
         return null;
@@ -113,7 +119,11 @@ export function readMessagesChanged(raw: unknown): MailMessagesChangedEvent | nu
  * The view after an event, and whether a message arrived in the folder shown that its list does not hold: the event
  * carries no subject, sender or date, so the list is read again rather than the row placed by guess.
  */
-export type MailApplied<D extends EmailMessageDto = EmailMessageDto> = MailView<D> & { readonly arrived: boolean };
+export type MailApplied<D extends EmailMessageDto = EmailMessageDto> = MailView<D> & {
+    readonly arrived: boolean;
+    /** The message open in the reader was evicted: it stays shown, as no longer kept here. */
+    readonly evictedOpen: boolean;
+};
 
 /** What a page shows that the event can change: the open mailbox and folder, its list, its folders, the badges. */
 export interface MailView<D extends EmailMessageDto = EmailMessageDto> {
@@ -181,11 +191,15 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
     let thread = view.thread;
     let openMessage = view.openMessage;
     let arrived = false;
+    let evictedOpen = false;
     for (const change of event.changes) {
         if (!marks.row(mailbox, change.id, event.seq) || !open) {
             continue;
         }
         if ('gone' in change) {
+            if (change.reason === 'evicted' && openMessage !== null && openMessage.id === change.id) {
+                evictedOpen = true;
+            }
             messages = messages.filter(m => m.id !== change.id);
             thread = thread.filter(m => m.id !== change.id);
             continue;
@@ -215,7 +229,7 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
         mailboxUnread = { ...mailboxUnread, [mailbox]: event.mailboxUnseen };
     }
 
-    return { ...view, messages, thread, openMessage, folders, mailboxUnread, arrived };
+    return { ...view, messages, thread, openMessage, folders, mailboxUnread, arrived, evictedOpen };
 }
 
 /**
@@ -229,7 +243,7 @@ export class MailLiveFollower {
     constructor(private readonly reread: () => void, private readonly settleMs = 300) {
     }
 
-    apply<D extends EmailMessageDto>(view: MailView<D>, event: MailMessagesChangedEvent): MailView<D> {
+    apply<D extends EmailMessageDto>(view: MailView<D>, event: MailMessagesChangedEvent): MailView<D> & { readonly evictedOpen: boolean } {
         const { arrived, ...after } = applyMessagesChanged(view, event, this.marks);
         if (arrived) {
             if (this.timer !== null) {

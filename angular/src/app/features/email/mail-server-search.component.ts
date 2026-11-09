@@ -6,6 +6,49 @@ import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
 import { MailHitRowComponent } from './mail-hit-row.component';
 import { MailServerSearch, matchesText, serverSearchRefusal, sizeText, type ServerSearchRefusal } from './mail-server-search';
 
+/** The section's sentences, so one section lists a search's hits or a folder's older mail. */
+export interface ServerSectionWords {
+    working: string;
+    empty: string;
+    allLocal: string;
+    rateLimited: string;
+    /** Before a countdown that asks again by itself. */
+    againIn: string;
+    /** Before a countdown after which the person asks. */
+    youCanIn: string;
+    /** After the server's name. */
+    failed: string;
+    invalid: string;
+    error: string;
+    more: string;
+}
+
+export const SEARCH_WORDS: ServerSectionWords = {
+    working: 'Searching the mail server…',
+    empty: 'The mail server found nothing more.',
+    allLocal: 'Everything the mail server found is in the results above.',
+    rateLimited: 'Too many server searches in a minute.',
+    againIn: 'Searching again in',
+    youCanIn: 'You can search again in',
+    failed: 'answered the search with an error.',
+    invalid: 'The mail server searches for 1 to 200 characters; this search is not one it takes.',
+    error: 'Couldn\'t search the mail server.',
+    more: 'Load more from the server',
+};
+
+export const OLDER_WORDS: ServerSectionWords = {
+    working: 'Loading older mail from the server…',
+    empty: 'No older mail on the server.',
+    allLocal: 'This older mail is already in the list above.',
+    rateLimited: 'Too many pages asked of the mail server in a minute.',
+    againIn: 'Loading again in',
+    youCanIn: 'You can load more in',
+    failed: 'answered with an error.',
+    invalid: 'The mail server has no such folder.',
+    error: 'Couldn\'t load older mail from the server.',
+    more: 'Load older from the server',
+};
+
 /** A message to open in the reader: its stored id, the folder it is in, and whether it was read. */
 export interface ServerHitOpened {
     id: string;
@@ -46,7 +89,7 @@ export interface ServerHitOpened {
 
             @switch (shown().kind) {
                 @case ('searching') {
-                    <p class="mss__note" role="status">Searching the mail server…</p>
+                    <p class="mss__note" role="status">{{ words().working }}</p>
                     @if (capabilityState() === 'unknown') {
                         <p class="mss__note" data-test="server-search-unknown">
                             It is not known yet whether this mail server can search; this first search decides.
@@ -55,9 +98,9 @@ export interface ServerHitOpened {
                 }
                 @case ('answered') {
                     @if (search().hits().length === 0) {
-                        <p class="mss__note" data-test="server-search-empty">The mail server found nothing more.</p>
+                        <p class="mss__note" data-test="server-search-empty">{{ words().empty }}</p>
                     } @else if (rows().length === 0) {
-                        <p class="mss__note" data-test="server-search-all-local">Everything the mail server found is in the results above.</p>
+                        <p class="mss__note" data-test="server-search-all-local">{{ words().allLocal }}</p>
                     }
                 }
                 @case ('unsupported') {
@@ -78,10 +121,10 @@ export interface ServerHitOpened {
                 }
                 @case ('rate-limited') {
                     <div class="mss__state mss__state--warn" role="status" data-test="server-search-rate-limited">
-                        <p class="mss__state-text">Too many server searches in a minute.</p>
+                        <p class="mss__state-text">{{ words().rateLimited }}</p>
                         @if (secondsOf(shown()) > 0) {
                             <p class="mss__state-detail" data-test="server-search-countdown">
-                                {{ willRetry(shown()) ? 'Searching again in' : 'You can search again in' }} {{ secondsOf(shown()) }} s.
+                                {{ willRetry(shown()) ? words().againIn : words().youCanIn }} {{ secondsOf(shown()) }} s.
                             </p>
                         } @else {
                             <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
@@ -91,19 +134,19 @@ export interface ServerHitOpened {
                 @case ('failed') {
                     <div class="mss__state mss__state--error" role="status" data-test="server-search-failed">
                         <p class="mss__state-text">
-                            {{ serverOf(shown()) ?? 'The mail server' }} answered the search with an error.
+                            {{ serverOf(shown()) ?? 'The mail server' }} {{ words().failed }}
                         </p>
                         <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
                     </div>
                 }
                 @case ('query-invalid') {
                     <div class="mss__state mss__state--warn" role="status" data-test="server-search-query-invalid">
-                        <p class="mss__state-text">The mail server searches for 1 to 200 characters; this search is not one it takes.</p>
+                        <p class="mss__state-text">{{ words().invalid }}</p>
                     </div>
                 }
                 @case ('error') {
                     <div class="mss__state mss__state--error" role="status" data-test="server-search-error">
-                        <p class="mss__state-text">Couldn't search the mail server.</p>
+                        <p class="mss__state-text">{{ words().error }}</p>
                         <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
                     </div>
                 }
@@ -112,7 +155,7 @@ export interface ServerHitOpened {
             @if (search().next() !== null && shown().kind === 'answered') {
                 <button type="button" class="mss__more" data-test="server-search-more"
                         [disabled]="search().loadingMore()" (click)="search().more()">
-                    {{ search().loadingMore() ? 'Loading…' : 'Load more from the server' }}
+                    {{ search().loadingMore() ? 'Loading…' : words().more }}
                 </button>
             }
             @if (search().capped()) {
@@ -152,6 +195,8 @@ export interface ServerHitOpened {
 export class MailServerSearchComponent {
     readonly search = input.required<MailServerSearch>();
     readonly heading = input('More on the server');
+    /** What the section says, by what it lists: a search's hits, or a folder's older mail. */
+    readonly words = input<ServerSectionWords>(SEARCH_WORDS);
     /** The ids of the messages the local results show: a hit among them is not shown again. */
     readonly localIds = input<ReadonlySet<string>>(new Set<string>());
     readonly folderName = input<(path: string) => string>((path: string) => path);

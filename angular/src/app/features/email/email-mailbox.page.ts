@@ -62,7 +62,7 @@ import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
 import {
     EmailAttachmentDto,
@@ -355,6 +355,19 @@ type PhonePane = 'folders' | 'message';
                                 </button>
                             }
                         }
+                        <!-- Once the folder's own pages are read: its older mail, from the server, on demand. -->
+                        @if (!searchActive() && selectedMailboxId() !== null && messagesFailure() === null
+                             && !loadingMessages() && !hasMore()) {
+                            @if (olderMessages.view().kind === 'idle') {
+                                <button type="button" class="mbx__more" data-test="load-older" (click)="loadOlder()">
+                                    Load older from the server
+                                </button>
+                            } @else {
+                                <app-mail-server-search [search]="olderMessages" heading="On the server" [words]="olderWords"
+                                                        [localIds]="listedIds()" [folderName]="folderNameFn"
+                                                        [opener]="openServerHitFn" (opened)="onServerHitOpened($event)" />
+                            }
+                        }
                     </section>
 
                     <cms-pane-splitter [minWidth]="280" [maxWidth]="620"
@@ -377,6 +390,10 @@ type PhonePane = 'folders' | 'message';
                             <p class="mbx__note">Loading…</p>
                         } @else if (selectedMessage()) {
                             @let msg = selectedMessage()!;
+                            @if (openEvicted()) {
+                                <!-- A copy opened from the server that is no longer kept: it stays shown, and says so. -->
+                                <p class="mbx__evicted" role="status" data-test="reader-evicted">No longer kept here; open it from the server again.</p>
+                            }
                             <div class="mbx__detail-head">
                                 <h2 class="mbx__detail-subject">{{ msg.subject || '(no subject)' }}</h2>
                                 <div class="mbx__detail-meta">
@@ -921,6 +938,11 @@ type PhonePane = 'folders' | 'message';
         .mbx__detail { flex: 1; overflow-y: auto; padding: 0 20px 16px; min-width: 0; }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
+        .mbx__evicted {
+            margin: 0 0 12px; padding: 8px 10px; border: 1px solid var(--cms-warning-subtle-border);
+            border-radius: var(--cms-radius-md); background: var(--cms-warning-subtle); color: var(--cms-warning-text);
+            font-size: .8125rem;
+        }
         .mbx__detail-head { border-bottom: 1px solid var(--cms-border); padding-bottom: 12px; margin-bottom: 12px; }
         .mbx__detail-subject { margin: 0 0 8px; font-size: 1.125rem; }
         .mbx__detail-meta { display: flex; flex-direction: column; gap: 2px; font-size: .8125rem; color: var(--cms-text-secondary); }
@@ -1586,6 +1608,24 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
     readonly otherServerSearches = new OtherMailboxesSearch();
+    /** The folder whose older mail is being read from the server; read in pages on demand, under the list. */
+    private olderFolder = '';
+    /** Which mailbox and folder the older mail shown belongs to: another one starts it again. */
+    private olderKey = '';
+    /** The open folder's mail older than the oldest held here, from the server, page by page (the answer's folder is its q). */
+    readonly olderMessages = new MailServerSearch(
+        (_folder, cursor) => this.email.olderMessages(this.selectedMailboxId() ?? '', this.olderFolder, cursor).pipe(
+            map(answer => ({
+                q: answer.folder.trim(), folder: answer.folder, state: 'supported', searched: null,
+                hits: answer.hits, next: answer.next, capped: false,
+            })),
+        ),
+    );
+    readonly olderWords = OLDER_WORDS;
+    /** The ids the folder's list shows: an older row the platform holds and lists already is not shown again. */
+    readonly listedIds = computed(() => new Set(this.messages().map(m => m.id)));
+    /** The message open in the reader was evicted: shown still, as no longer kept here. */
+    readonly openEvicted = signal(false);
     readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
     /** The stored results' ids: a server hit among them is not shown twice. */
     readonly localResultIds = computed(() => new Set(this.searchResults().map(h => h.id)));
@@ -1770,6 +1810,9 @@ export class EmailMailboxPageComponent implements OnInit {
         this.messages.set([...after.messages]);
         this.thread.set([...after.thread]);
         this.selectedMessage.set(after.openMessage);
+        if (after.evictedOpen) {
+            this.openEvicted.set(true);
+        }
         this.folders.set([...after.folders]);
         this.mailboxUnread.set(after.mailboxUnread);
     }
@@ -1871,6 +1914,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Load a message's detail; mark it read if it was unread. Shared by list + search. */
     private openById(id: string, seen: boolean, folder: string, then?: () => void): void {
+        this.openEvicted.set(false);
         const seq = ++this.openSeq;
         this.attachments.set([]);
         this.loadingAttachments.set(false);
@@ -2018,6 +2062,16 @@ export class EmailMailboxPageComponent implements OnInit {
         this.searchHasMore.set(false);
         this.serverSearch.stop();
         this.otherServerSearches.stop();
+    }
+
+    /** The next page of the open folder's older mail on the server; the first press starts it. */
+    loadOlder(): void {
+        if (this.olderMessages.view().kind === 'idle') {
+            this.olderFolder = this.selectedFolder();
+            this.olderMessages.run(this.olderFolder);
+            return;
+        }
+        this.olderMessages.more();
     }
 
     /** The same query on the server of each of the person's other mailboxes, one after another. */
@@ -3173,6 +3227,12 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         if (reset) {
             this.page = 1;
+            const key = `${id}
+${this.selectedFolder()}`;
+            if (key !== this.olderKey) {
+                this.olderKey = key;
+                this.olderMessages.stop();
+            }
         }
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);

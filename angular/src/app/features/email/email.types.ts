@@ -113,6 +113,17 @@ export interface ServerSearchAnswerDto {
     capped: boolean;
 }
 
+/**
+ * `GET /email/mailboxes/{id}/server-messages`: one page of a folder's messages older than the oldest the platform holds
+ * there, headers only, newest first, in the server search's hit shape.
+ */
+export interface ServerOlderMessagesDto {
+    id: string;
+    folder: string;
+    hits: ServerSearchHitDto[];
+    next: string | null;
+}
+
 /** What opening a server hit answers: the stored message's id and the folder it is stored in. */
 export interface ServerMessageOpenedDto {
     id: string;
