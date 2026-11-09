@@ -3,7 +3,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/router';
-import { Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -57,6 +57,8 @@ import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
+import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
 import {
     EmailAttachmentDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
@@ -71,6 +73,9 @@ import {
     MailboxSecurity,
     MailboxWriteRequest,
     OutgoingEmailRequest,
+    ServerMessageOpenedDto,
+    ServerSearchCapability,
+    ServerSearchHitDto,
 } from './email.types';
 
 /** The two-way-bound model behind the mailbox connection editor form. */
@@ -142,7 +147,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, TagInputComponent,
-        ComposeAttachmentsComponent,
+        ComposeAttachmentsComponent, MailServerSearchComponent,
     ],
     template: `
         <div class="mbx">
@@ -219,8 +224,9 @@ type PhonePane = 'folders' | 'message';
                         <div class="mbx__search">
                             <i class="bi bi-search mbx__search-icon"></i>
                             <input type="text" class="mbx__search-input" [(ngModel)]="searchQuery"
-                                   placeholder="Search this mailbox…"
-                                   (keyup.enter)="runSearch()" />
+                                   placeholder="Search this mailbox…" data-test="mail-search"
+                                   (ngModelChange)="onSearchTyped($event)"
+                                   (keyup.enter)="onSearchEnter()" />
                             @if (searchActive() || searchQuery) {
                                 <button type="button" class="mbx__search-clear" (click)="clearSearch()"
                                         aria-label="Clear search">
@@ -278,6 +284,27 @@ type PhonePane = 'folders' | 'message';
                                             (click)="loadMoreSearch()">
                                         {{ searching() ? 'Searching…' : 'Load more' }}
                                     </button>
+                                }
+                            }
+                            <!-- Older mail the open mailbox's server finds, headers only, under the stored results. -->
+                            <app-mail-server-search [search]="serverSearch"
+                                                    [localIds]="localResultIds()"
+                                                    [folderName]="folderNameFn"
+                                                    [opener]="openServerHitFn"
+                                                    (opened)="onServerHitOpened($event)" />
+                            @if (otherMailboxes().length > 0) {
+                                @if (otherServerSearches.sections().length === 0) {
+                                    <button type="button" class="mbx__others" data-test="server-search-others"
+                                            (click)="searchOtherMailboxes()">
+                                        <i class="bi bi-search" aria-hidden="true"></i>
+                                        Search other mailboxes on the server
+                                    </button>
+                                } @else {
+                                    @for (s of otherServerSearches.sections(); track s.mailboxId) {
+                                        <app-mail-server-search [search]="s.search" [heading]="'On the server of ' + s.title"
+                                                                [opener]="s.open"
+                                                                (opened)="onServerHitOpened($event)" />
+                                    }
                                 }
                             }
                         } @else if (messagesFailure() !== null && !messagesFailedOnAppend()) {
@@ -862,6 +889,12 @@ type PhonePane = 'folders' | 'message';
         .mbx__row-subject { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
+        .mbx__others {
+            display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; text-align: left;
+            border: 0; border-top: 1px solid var(--cms-border); border-bottom: 1px solid var(--cms-border);
+            background: transparent; color: var(--cms-accent-text); font: inherit; font-size: .8125rem; cursor: pointer;
+        }
+        .mbx__others:hover { background: var(--cms-surface-hover); }
 
         .mbx__search {
             display: flex; align-items: center; gap: 6px; padding: 8px 10px;
@@ -1520,6 +1553,24 @@ export class EmailMailboxPageComponent implements OnInit {
     searchQuery = '';
     private searchPage = 1;
     private searchSeq = 0;
+    /** The query the results shown were asked for, trimmed. */
+    private activeQuery = '';
+    /** The search box's keys: a search runs once typing pauses, or at Enter. */
+    private readonly searchKeys = new Subject<SearchKey>();
+    /** The open mailbox's server search, under the stored results. */
+    readonly serverSearch = new MailServerSearch(
+        (q, cursor) => this.email.serverSearch(this.selectedMailboxId() ?? '', q, cursor),
+        () => this.selectedMailbox()?.serverSearch,
+        capability => this.learnServerSearch(this.selectedMailboxId(), capability),
+    );
+    /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
+    readonly otherServerSearches = new OtherMailboxesSearch();
+    readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
+    /** The stored results' ids: a server hit among them is not shown twice. */
+    readonly localResultIds = computed(() => new Set(this.searchResults().map(h => h.id)));
+    readonly folderNameFn = (path: string): string => this.folderNameOf(path);
+    readonly openServerHitFn = (hit: ServerSearchHitDto): Observable<ServerMessageOpenedDto> | null =>
+        this.email.openServerMessage(this.selectedMailboxId() ?? '', hit);
 
     // Import: upload a .eml/.mbox file into the current folder.
     readonly importing = signal<boolean>(false);
@@ -1551,6 +1602,11 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
+        searchCommits(this.searchKeys).pipe(takeUntilDestroyed()).subscribe(commit => this.onSearchCommit(commit));
+        this.destroyRef.onDestroy(() => {
+            this.serverSearch.stop();
+            this.otherServerSearches.stop();
+        });
     }
 
     ngOnInit(): void {
@@ -1833,9 +1889,33 @@ export class EmailMailboxPageComponent implements OnInit {
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
 
-    /** Run a full-text search across the selected mailbox. */
-    runSearch(): void {
-        const q = this.searchQuery.trim();
+    /** The search box's text changed: a search follows once typing pauses. */
+    onSearchTyped(text: string): void {
+        this.searchKeys.next({ kind: 'typed', q: text });
+    }
+
+    /** Enter in the search box: the search runs at once. */
+    onSearchEnter(): void {
+        this.searchKeys.next({ kind: 'entered', q: this.searchQuery });
+    }
+
+    /** A pause or Enter asked for a search: an emptied box leaves search; a pause on the query shown asks nothing. */
+    private onSearchCommit(commit: SearchCommit): void {
+        if (commit.q === '') {
+            if (commit.entered || this.searchActive()) {
+                this.clearSearch();
+            }
+            return;
+        }
+        if (!commit.entered && this.searchActive() && commit.q === this.activeQuery) {
+            return;
+        }
+        this.runSearch(commit.q);
+    }
+
+    /** Run a full-text search across the selected mailbox: the stored messages, and the open mailbox's server under them. */
+    runSearch(query: string = this.searchQuery): void {
+        const q = query.trim();
         const mailboxId = this.selectedMailboxId();
         if (q === '') {
             this.clearSearch();
@@ -1845,6 +1925,9 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         this.clearSelection(); // the bulk bar is folder-view only; drop any lingering selection
+        this.activeQuery = q;
+        this.otherServerSearches.stop();
+        this.serverSearch.run(q);
         this.searchPage = 1;
         this.searchActive.set(true);
         const seq = ++this.searchSeq;
@@ -1865,7 +1948,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     loadMoreSearch(): void {
-        const q = this.searchQuery.trim();
+        const q = this.activeQuery;
         const mailboxId = this.selectedMailboxId();
         if (q === '' || mailboxId === null) {
             return;
@@ -1891,11 +1974,44 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Exit search and return to the folder message list. */
     clearSearch(): void {
         this.searchSeq++; // invalidate any in-flight search so its late response can't resurrect results
+        this.searchKeys.next({ kind: 'cleared' });
         this.searchQuery = '';
+        this.activeQuery = '';
         this.searchActive.set(false);
         this.searching.set(false);
         this.searchResults.set([]);
         this.searchHasMore.set(false);
+        this.serverSearch.stop();
+        this.otherServerSearches.stop();
+    }
+
+    /** The same query on the server of each of the person's other mailboxes, one after another. */
+    searchOtherMailboxes(): void {
+        const q = this.activeQuery;
+        if (q === '') {
+            return;
+        }
+        this.otherServerSearches.start(q, this.otherMailboxes().map(mb => ({
+            mailboxId: mb.id,
+            title: [mb.label, mb.emailAddress].find((v): v is string => typeof v === 'string' && v !== '') ?? 'Mailbox',
+            search: new MailServerSearch(
+                (query, cursor) => this.email.serverSearch(mb.id, query, cursor),
+                () => this.mailboxes().find(m => m.id === mb.id)?.serverSearch,
+                capability => this.learnServerSearch(mb.id, capability),
+            ),
+            open: hit => this.email.openServerMessage(mb.id, hit),
+        })));
+    }
+
+    /** A server hit to read: opened by its stored id, as a search hit is. */
+    onServerHitOpened(hit: ServerHitOpened): void {
+        this.showPane('message');
+        this.openById(hit.id, hit.seen, hit.folder);
+    }
+
+    /** What a server search learned of a mailbox's server (it cannot search): kept on the mailbox, so it is not asked again. */
+    private learnServerSearch(mailboxId: string | null, capability: ServerSearchCapability): void {
+        this.mailboxes.update(list => list.map(m => (m.id === mailboxId ? { ...m, serverSearch: capability } : m)));
     }
 
     /** A search hit's `sentAt` is Unix SECONDS; the date pipe wants an ISO string. */

@@ -30,6 +30,9 @@ import {
     MailboxWriteRequest,
     OutgoingAttachmentDto,
     OutgoingEmailRequest,
+    ServerMessageOpenedDto,
+    ServerSearchAnswerDto,
+    ServerSearchHitDto,
     SystemMailChoice,
     SystemMailDto,
     SystemMailSendAsDto,
@@ -308,6 +311,34 @@ export class EmailService {
         return this.http
             .get<unknown>(`${this.apiBase}/email/search`, { headers: this.jsonHeaders, params })
             .pipe(map(raw => this.unwrap<EmailSearchHitDto>(raw)));
+    }
+
+    /**
+     * GET /email/mailboxes/{id}/server-search -- one page of what the mail server finds for `q`, headers only, newest
+     * first. Without `cursor` the first page; with it the page `next` named. Unsubscribing aborts the request.
+     */
+    serverSearch(mailboxId: string, q: string, cursor: string | null = null, folder: string | null = null): Observable<ServerSearchAnswerDto> {
+        let params = new HttpParams().set('q', q);
+        if (folder !== null && folder !== '') {
+            params = params.set('folder', folder);
+        }
+        if (cursor !== null) {
+            params = params.set('cursor', cursor);
+        }
+        return this.http.get<ServerSearchAnswerDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-search`,
+            { headers: this.jsonHeaders, params },
+        );
+    }
+
+    /**
+     * Opens a server hit the platform does not hold: stores it and answers its id. Null while the server does not
+     * offer it yet (POST /email/mailboxes/{id}/server-messages/{ref}/open); the caller says it is coming.
+     */
+    openServerMessage(mailboxId: string, hit: ServerSearchHitDto): Observable<ServerMessageOpenedDto> | null {
+        void mailboxId;
+        void hit;
+        return null;
     }
 
     /** GET /email/messages/{id} -- one message with its raw RFC-822 body (detail). */
