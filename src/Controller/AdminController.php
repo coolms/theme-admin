@@ -85,6 +85,31 @@ final class AdminController
         'xml' => 'application/xml',
     ];
 
+    /**
+     * The mail frame page's Content-Security-Policy: one text for every host, written in the components contract
+     * (pane-toolbar, mail "mail frame page"). No script, no plugin, no frame, no form, no base address;
+     * inline styles on this page only; images from this origin and data: URIs.
+     */
+    public const string MAIL_FRAME_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
+        . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
+        . "img-src 'self' data:; frame-ancestors 'self'";
+
+    /** The same, once the person chose Load images for the message: remote https images too. */
+    public const string MAIL_FRAME_IMAGES_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
+        . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
+        . "img-src 'self' data: https:; frame-ancestors 'self'";
+
+    /**
+     * The two mail frame pages, by their path under /admin, and the policy each answers with. They are static files of
+     * the build (angular/public); only their headers are this class's.
+     *
+     * @var array<string, string>
+     */
+    public const array MAIL_FRAME_PAGES = [
+        'mail-frame.html' => self::MAIL_FRAME_POLICY,
+        'mail-frame-images.html' => self::MAIL_FRAME_IMAGES_POLICY,
+    ];
+
     /** Everything under this prefix comes from coolms/document-engine. */
     private const string FONTS_PREFIX = 'assets/document-fonts/';
 
@@ -130,7 +155,7 @@ final class AdminController
             return new Response(
                 $body,
                 Response::HTTP_OK,
-                ['Content-Type' => $this->mimeType($filePath)],
+                ['Content-Type' => $this->mimeType($filePath)] + $this->mailFrameHeaders($path),
             );
         }
 
@@ -235,6 +260,28 @@ final class AdminController
     private function extension(string $path): string
     {
         return strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    }
+
+    /**
+     * The mail frame page's own headers: its policy, no referrer for the remote images it may load, framed by this
+     * origin only, no sniffing. The application's policy listener leaves a response that carries its own policy alone.
+     * Empty for any other path.
+     *
+     * @return array<string, string>
+     */
+    private function mailFrameHeaders(string $path): array
+    {
+        $policy = self::MAIL_FRAME_PAGES[$path] ?? null;
+        if (null === $policy) {
+            return [];
+        }
+
+        return [
+            'Content-Security-Policy' => $policy,
+            'Referrer-Policy' => 'no-referrer',
+            'X-Frame-Options' => 'SAMEORIGIN',
+            'X-Content-Type-Options' => 'nosniff',
+        ];
     }
 
     private function mimeType(string $path): string

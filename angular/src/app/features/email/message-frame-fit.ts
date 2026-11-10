@@ -2,10 +2,10 @@
  * The message frame grows to its document's height and never scrolls itself, so the message pane keeps one scroll
  * region (contract `pane-toolbar`, mail "message pane scroll", form (a)).
  *
- * The frame's sandbox is `allow-same-origin` alone: no script ever runs inside it, it opens no window and navigates
- * nothing, and the host reads its document from outside. The height is read when the frame loads (after its images),
- * again as the frame's width changes (a ResizeObserver on the frame: a narrower frame rewraps its text taller), as
- * its document changes (a MutationObserver on it) and as an image in it loads -- each time on the next animation
+ * The frame's sandbox never has allow-scripts: no script ever runs inside it, and the host reads its
+ * document from outside. The height is read when the frame loads, again as the frame's width changes (a ResizeObserver
+ * on the frame: a narrower frame rewraps its text taller), as its document changes (a MutationObserver on it) and as
+ * an image in it loads or fails -- each time on the next animation
  * frame, and written only when it moves by a whole pixel. The document itself is not given to a ResizeObserver: the
  * page's observer watching an element of another document is reported as a resize loop by the browser, whatever the
  * callback does.
@@ -67,8 +67,11 @@ export class MessageFrameFit {
             this.mutations = new MutationObserver(later);
             this.mutations.observe(doc.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
         }
-        // An image loading, now or added later: load does not bubble, so it is caught on its way down.
+        // An image loading or failing, now or added later: neither event bubbles, so both are caught on their way
+        // down. A failed image changes the height too (its box falls back to its alt text or nothing), and missing it
+        // would clip the end of the message.
         doc.addEventListener('load', later, true);
+        doc.addEventListener('error', later, true);
         const onClick = (event: MouseEvent): void => {
             const link = linkOf(event.target);
             if (link === null) {
@@ -84,6 +87,7 @@ export class MessageFrameFit {
         this.unlisten = () => {
             doc.removeEventListener('click', onClick);
             doc.removeEventListener('load', later, true);
+            doc.removeEventListener('error', later, true);
         };
     }
 

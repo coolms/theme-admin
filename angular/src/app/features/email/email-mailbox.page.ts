@@ -7,7 +7,6 @@ import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/r
 import { Observable, Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
@@ -45,7 +44,6 @@ import {
     type ComposeAttachment,
     type StoredComposeAttachment,
 } from './compose-attachments';
-import { messageFrameDoc } from './message-frame-doc';
 import { MessageFrameComponent } from './message-frame.component';
 import { openMessageSource } from './message-source-viewer.component';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
@@ -434,7 +432,7 @@ type PhonePane = 'folders' | 'message';
                                         </div>
                                     }
                                     <!-- Sandboxed to same-origin alone, as tall as its document; its links open through the page. -->
-                                    <app-message-frame [doc]="bodyFrameDoc()" />
+                                    <app-message-frame [html]="msg.bodyHtml" [images]="loadRemoteImages()" />
                                 } @else if (msg.bodyText) {
                                     <pre class="mbx__body-text">{{ msg.bodyText }}</pre>
                                 } @else if (msg.snippet) {
@@ -1162,25 +1160,10 @@ export class EmailMailboxPageComponent implements OnInit {
         return (u?.roles ?? []).includes('ROLE_ADMIN');
     });
 
-    private readonly domSanitizer = inject(DomSanitizer);
 
     /** Per-message opt-in to load the remote images the server flagged; reset on open. */
     readonly loadRemoteImages = signal(false);
 
-    /**
-     * The `srcdoc` for the message-body iframe: the server-sanitised HTML wrapped in a
-     * minimal document whose CSP blocks EVERY remote fetch until the reader loads
-     * images. The iframe itself is `sandbox`ed (no scripts, no same-origin), so this is
-     * defence in depth over the server sanitiser -- and `bypassSecurityTrustHtml` is
-     * safe here precisely because the content is already sanitised AND contained.
-     */
-    readonly bodyFrameDoc = computed<SafeHtml | null>(() => {
-        const html = this.selectedMessage()?.bodyHtml;
-        if (html === null || html === undefined || html === '') {
-            return null;
-        }
-        return this.domSanitizer.bypassSecurityTrustHtml(messageFrameDoc(html, this.loadRemoteImages()));
-    });
 
     /**
      * localStorage key for the last-selected mailbox, so a reload restores it instead
