@@ -8,6 +8,7 @@ import {
     CreateDelegationRequest,
     DefinitionCatalogDto,
     DriveAttachResultDto,
+    EmailArchiveResultDto,
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
@@ -455,6 +456,26 @@ export class EmailService {
             `${this.apiBase}/email/messages/delete`,
             permanent ? { ids, permanent } : { ids },
         );
+    }
+
+    /**
+     * POST /email/messages/{id}/archive -- archives as the mail server does; the answer names the folder the message
+     * is in now. 422 `/errors/email/cannot-archive` with a `reason` when it cannot be; 502 when the server did not
+     * complete it.
+     */
+    archiveMessage(messageId: string): Observable<EmailArchiveResultDto> {
+        return this.http.post<EmailArchiveResultDto>(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/archive`,
+            null,
+        );
+    }
+
+    /**
+     * POST /email/messages/archive -- the bulk form, at most 200 ids of one mailbox: one outcome per id, in order,
+     * `archived` with its folder or `refused` with a reason.
+     */
+    archiveMessages(ids: readonly string[]): Observable<EmailBulkResultDto> {
+        return this.http.post<EmailBulkResultDto>(`${this.apiBase}/email/messages/archive`, { ids });
     }
 
     /**

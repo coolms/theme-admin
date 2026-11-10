@@ -31,14 +31,14 @@ describe('message actions', () => {
 
     describe('messageFacts', () => {
         it('says one message, and what it can still become', () => {
-            expect(messageFacts([{ seen: false, flagged: true }])).toEqual({
-                _single: true, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true,
+            expect(messageFacts([{ seen: false, flagged: true, canArchive: true }])).toEqual({
+                _single: true, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
             });
         });
 
         it('says several, and offers each change any of them can take', () => {
-            expect(messageFacts([{ seen: true, flagged: false }, { seen: false, flagged: false }])).toEqual({
-                _single: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false,
+            expect(messageFacts([{ seen: true, flagged: false, canArchive: false }, { seen: false, flagged: false, canArchive: true }])).toEqual({
+                _single: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
             });
         });
 
@@ -46,6 +46,14 @@ describe('message actions', () => {
             const facts = messageFacts([{}]);
             expect(facts['_anyUnread']).toBeTrue();
             expect(facts['_anyFlagged']).toBeFalse();
+        });
+
+        it('can archive only when the server says so of one target: a missing, null or false canArchive is no', () => {
+            expect(messageFacts([{}])['_anyCanArchive']).toBeFalse();
+            expect(messageFacts([{ canArchive: null }])['_anyCanArchive']).toBeFalse();
+            expect(messageFacts([{ canArchive: false }, { canArchive: null }])['_anyCanArchive']).toBeFalse();
+            expect(messageFacts([{ canArchive: false }, { canArchive: true }])['_anyCanArchive']).toBeTrue();
+            expect(messageFacts([])['_anyCanArchive']).toBeFalse();
         });
     });
 
@@ -98,12 +106,25 @@ describe('message actions', () => {
             ]);
         });
 
-        it('draws no action the page has no handler for, such as an Archive the server may send', () => {
-            const withArchive = [...served, node('/archive', { icon: 'archive', label: 'Archive', action: 'archive' })];
-            expect(paneActionsOf(withArchive, { _single: true }, MESSAGE_ACTIONS_HANDLED, conditions).map(a => a.id))
-                .not.toContain('archive');
-            expect(paneActionsOf(withArchive, { _single: true }, new Set([...MESSAGE_ACTIONS_HANDLED, 'archive']), conditions).map(a => a.id))
-                .toContain('archive');
+        it('draws no action the page has no handler for, such as a Snooze the server may send', () => {
+            const withSnooze = [...served, node('/snooze', { icon: 'clock', label: 'Snooze', action: 'snooze' })];
+            expect(paneActionsOf(withSnooze, { _single: true }, MESSAGE_ACTIONS_HANDLED, conditions).map(a => a.id))
+                .not.toContain('snooze');
+            expect(paneActionsOf(withSnooze, { _single: true }, new Set([...MESSAGE_ACTIONS_HANDLED, 'snooze']), conditions).map(a => a.id))
+                .toContain('snooze');
+        });
+
+        it('draws the served Archive only when a target can archive, as its node says: place, icon and group from the node', () => {
+            const archive = node('/archive', { icon: 'archive', label: 'Archive', action: 'archive', group: 'file', surface: 'both',
+                showWhen: { field: '_anyCanArchive', op: 'eq', value: true } });
+            const sent = [...served, archive];
+            const drawn = (targets: Parameters<typeof messageFacts>[0]) =>
+                paneActionsOf(sent, messageFacts(targets), MESSAGE_ACTIONS_HANDLED, conditions).find(a => a.id === 'archive');
+
+            expect(drawn([{ canArchive: true }])).toEqual({ id: 'archive', label: 'Archive', icon: 'archive', group: 'file' });
+            expect(drawn([{ canArchive: false }])).withContext('the server says it cannot').toBeUndefined();
+            expect(drawn([{}])).withContext('a message read before canArchive was served').toBeUndefined();
+            expect(drawn([{ canArchive: false }, { canArchive: true }])).withContext('one of several can').toBeDefined();
         });
 
         it("follows showWhen for the target, and leaves out the context menu's and the header's nodes and separators", () => {
