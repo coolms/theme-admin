@@ -1552,6 +1552,9 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
                 break;
+            case 'reply-all':
+                this.withOpen(ids[0], () => this.openReplyAll());
+                break;
             case 'archive':
                 this.archiveFlow.archive(this.listed(ids));
                 break;
@@ -2605,6 +2608,35 @@ export class EmailMailboxPageComponent implements OnInit {
         this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+    }
+
+    /**
+     * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
+     * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
+     */
+    openReplyAll(): void {
+        const msg = this.selectedMessage();
+        if (!msg) {
+            return;
+        }
+        this.openReply();
+        if (this.draftSaved()) {
+            return;
+        }
+        this.email.compose(msg.id, 'reply_all').subscribe({
+            next: prepared => {
+                if (this.replyTargetId() !== msg.id || this.draftSaved()) {
+                    return;
+                }
+                this.composeTo = prepared.to.map(a => a.address);
+                this.composeCc = prepared.cc.map(a => a.address);
+                if (this.composeCc.length > 0) {
+                    this.composeShowCcBcc.set(true);
+                }
+                this.snapshotComposeInitial();
+            },
+            error: () => this.toast.error('Could not prepare the reply to all; the reply goes to the sender alone.'),
+        });
     }
 
     /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */

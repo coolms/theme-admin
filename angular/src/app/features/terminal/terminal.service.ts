@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
-import { AppConfigState, AuthState, ELEVATION_REQUIRED_HEADER, Logout, SetTokens } from '@coolms/core-angular';
+import { AppConfigState, audienceRefusalOf, AuthState, ELEVATION_REQUIRED_HEADER, Logout, SetTokens } from '@coolms/core-angular';
 import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalCompletions, TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
@@ -96,7 +96,11 @@ export class TerminalService {
         return `HTTP ${res.status}`;
     }
 
-    /** Attempt a token refresh. Returns true and updates the store on success. */
+    /**
+     * Attempt a token refresh. Returns true and updates the store on success. The session ends only when the refresh
+     * says it is over -- a 401, or a refusal of entry by audience -- never on another refusal (a token for the other
+     * interface, `wrong-interface`) or a failure to ask.
+     */
     private async tryRefresh(): Promise<boolean> {
         const refreshToken = this.store.selectSnapshot(AuthState.refreshToken);
         if (!refreshToken) {
@@ -107,8 +111,10 @@ export class TerminalService {
             const tokens = await firstValueFrom(this.api.refresh(refreshToken));
             this.store.dispatch(new SetTokens(tokens));
             return true;
-        } catch {
-            this.store.dispatch(new Logout());
+        } catch (e: unknown) {
+            if ((e instanceof HttpErrorResponse && e.status === 401) || audienceRefusalOf(e) !== null) {
+                this.store.dispatch(new Logout());
+            }
             return false;
         }
     }

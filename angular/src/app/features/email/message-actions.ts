@@ -19,9 +19,12 @@ export function rowTargetIds(checked: ReadonlySet<string>, rowId: string): strin
  * one message or several, whether any of them can still be marked read / unread / starred / unstarred, and whether
  * the server says any of them can be archived (a missing or null `canArchive` is no).
  */
-export function messageFacts(targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive'>[]): Record<string, boolean> {
+export function messageFacts(
+    targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful'>[],
+): Record<string, boolean> {
     return {
         _single:        targets.length === 1,
+        _replyAll:      targets.length === 1 && targets[0].replyAllUseful === true,
         _anyUnread:     targets.some(m => !(m.seen ?? false)),
         _anyRead:       targets.some(m => m.seen ?? false),
         _anyUnflagged:  targets.some(m => !(m.flagged ?? false)),
@@ -49,7 +52,7 @@ export const LIST_ACTIONS_HANDLED: ReadonlySet<string> = new Set(['refresh']);
 
 /** The actions on messages this page can run (onMessageAction): a node naming any other is not drawn. */
 export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
-    'reply', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
+    'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
 ]);
 
 /** How a node's conditions are read: the NaviGraph service's own evaluation. */
@@ -114,14 +117,15 @@ export function paneActionsOf(
 }
 
 /**
- * The list row with the message's state as the detail answered it (canArchive, seen, flagged, folder) written over
- * it: the one record the toolbar, the row's menu and the checked-rows bar read. A field the detail does not carry is
- * kept.
+ * The list row with the message's state as the detail answered it (canArchive, replyAllUseful, seen, flagged,
+ * folder) written over it: the one record the toolbar, the row's menu and the checked-rows bar read. A field the
+ * detail does not carry is kept.
  */
 export function rowWithDetailState<T extends EmailMessageDto>(row: T, detail: EmailMessageDto): T {
     return {
         ...row,
         ...(detail.canArchive !== undefined ? { canArchive: detail.canArchive } : {}),
+        ...(detail.replyAllUseful !== undefined ? { replyAllUseful: detail.replyAllUseful } : {}),
         ...(detail.seen !== undefined ? { seen: detail.seen } : {}),
         ...(detail.flagged !== undefined ? { flagged: detail.flagged } : {}),
         ...(detail.folder !== undefined ? { folder: detail.folder } : {}),

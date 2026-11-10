@@ -32,14 +32,21 @@ describe('message actions', () => {
     describe('messageFacts', () => {
         it('says one message, and what it can still become', () => {
             expect(messageFacts([{ seen: false, flagged: true, canArchive: true }])).toEqual({
-                _single: true, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
+                _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
             });
         });
 
         it('says several, and offers each change any of them can take', () => {
             expect(messageFacts([{ seen: true, flagged: false, canArchive: false }, { seen: false, flagged: false, canArchive: true }])).toEqual({
-                _single: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
+                _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
             });
+        });
+
+        it('offers Reply all for one message the server says it is of use for: null, missing or several is no', () => {
+            expect(messageFacts([{ replyAllUseful: true }])['_replyAll']).toBeTrue();
+            expect(messageFacts([{ replyAllUseful: null }])['_replyAll']).toBeFalse();
+            expect(messageFacts([{}])['_replyAll']).toBeFalse();
+            expect(messageFacts([{ replyAllUseful: true }, { replyAllUseful: true }])['_replyAll']).toBeFalse();
         });
 
         it('reads a missing seen or flagged as false', () => {

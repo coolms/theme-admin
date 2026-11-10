@@ -338,6 +338,25 @@ export interface EmailMessageDto {
     hasBody?: boolean;
     /** Whether the mail server can archive this message, as the server answers; missing or null reads as no. */
     canArchive?: boolean | null;
+    /**
+     * Whether Reply all would reach someone Reply does not, as the server answers; null while it cannot tell (a row
+     * whose Cc and Reply-To are not read yet), which reads as no.
+     */
+    replyAllUseful?: boolean | null;
+}
+
+/** One address of a prepared answer. */
+export interface EmailComposeAddressDto {
+    name: string | null;
+    address: string;
+}
+
+/** What an answer or a forward starts with, prepared by the server (`GET /email/messages/{id}/compose`). */
+export interface EmailComposeDto {
+    id: string;
+    mode: 'reply' | 'reply_all' | 'forward';
+    to: EmailComposeAddressDto[];
+    cc: EmailComposeAddressDto[];
 }
 
 /** The answer of an archive (`POST /email/messages/{id}/archive`): the folder the message is in now. */

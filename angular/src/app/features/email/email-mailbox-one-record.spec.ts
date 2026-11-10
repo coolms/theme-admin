@@ -32,6 +32,7 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
     const node = (action: string, showWhen: Record<string, unknown> = {}): NaviGraphNode =>
         ({ path: `navi.toolbar.email.message.${action}`, title: action, meta: { action, label: action, icon: 'star', group: 'g', showWhen } } as unknown as NaviGraphNode);
     const NODES = [
+        node('reply-all', { _replyAll: true }),
         node('archive', { _anyCanArchive: true }),
         node('delete'),
         node('mark-read', { _anyUnread: true }),
@@ -149,6 +150,19 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
         expect(menuFor(page, 'm1')['_anyCanArchive']).withContext('the row menu').toBeTrue();
         page.selectedIds.set(new Set(['m1']));
         expect(shown(page.bulkActions())).withContext('the checked-rows bar').toContain('archive');
+    });
+
+    it('the list says Reply all is of no use (null) and the detail says it is: the toolbar and the row menu both show it', () => {
+        listed = listed.map(m => ({ ...m, replyAllUseful: null }));
+        detailOf = id => (id === 'm2' ? { replyAllUseful: true } : {});
+        const page = build();
+        expect(menuFor(page, 'm2')['_replyAll']).withContext('the row menu before the detail').toBeFalse();
+
+        open(page, 'm2');
+
+        expect(page.messages().find(m => m.id === 'm2')?.replyAllUseful).withContext('the row took the detail state').toBeTrue();
+        expect(shown(page.detailActions())).toContain('reply-all');
+        expect(menuFor(page, 'm2')['_replyAll']).withContext('the row menu').toBeTrue();
     });
 
     it('the list says it can be archived and the detail says it cannot: neither shows Archive', () => {
