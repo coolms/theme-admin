@@ -214,7 +214,8 @@ type PhonePane = 'folders' | 'message';
                                               (retry)="retryFolders()" />
                     </aside>
 
-                    <cms-pane-splitter [minWidth]="180" [maxWidth]="380"
+                    <!-- Where folders show beside the list the column is at least 200px wide. -->
+                    <cms-pane-splitter [minWidth]="200" [maxWidth]="380"
                                        storageKey="coolms.email.railWidth" />
 
                     <!-- MIDDLE: message list (or search results) -->
@@ -868,7 +869,7 @@ type PhonePane = 'folders' | 'message';
         /* Starts at the panes' top, its first element level with their rows, and its content at the page header's
            content edge. */
         .mbx__rail {
-            width: 230px; flex: 0 0 230px;
+            width: 230px; flex: 0 0 230px; min-width: 200px;
             padding: 0 var(--cms-panel-padding) var(--cms-panel-padding) var(--cms-content-padding);
             overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
         }

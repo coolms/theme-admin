@@ -14,22 +14,19 @@ import { EmailMailboxDto } from './email.types';
         @if (current(); as mailbox) {
             <div class="mbs__head">
             @if (mailboxes().length < 2) {
-                <div class="mbs__card" (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
-                    <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox }" />
+                <div class="mbs__card" role="group" [attr.title]="full(mailbox)" [attr.aria-label]="'Mailbox: ' + full(mailbox)"
+                     (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
+                    <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox, count: 0 }" />
                 </div>
             } @else {
                 <button type="button" class="mbs__card" aria-haspopup="true"
                         [attr.aria-expanded]="open()"
-                        [attr.aria-label]="'Mailbox: ' + name(mailbox)"
+                        [attr.title]="full(mailbox)"
+                        [attr.aria-label]="'Mailbox: ' + full(mailbox) + unreadSaid(unread()[mailbox.id] ?? 0)"
                         (click)="toggle()"
                         (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
-                    <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox }" />
-                    <!-- A number on the card is the open mailbox's own; other mailboxes' unread mail is a dot. -->
-                    @if ((unread()[mailbox.id] ?? 0) > 0) {
-                        <span class="mbs__count" [attr.aria-label]="unread()[mailbox.id] + ' unread'">
-                            {{ shown(unread()[mailbox.id]) }}
-                        </span>
-                    }
+                    <!-- A number on the card is the open mailbox's own, on its avatar; other mailboxes' unread mail is a dot. -->
+                    <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox, count: unread()[mailbox.id] ?? 0 }" />
                     @if (elsewhere() > 0) {
                         <span class="mbs__elsewhere" role="img"
                               [attr.title]="elsewhere() + ' unread in other mailboxes'"
@@ -54,7 +51,7 @@ import { EmailMailboxDto } from './email.types';
                                         [attr.aria-current]="m.id === currentId()"
                                         (click)="choose(m.id)"
                                         (contextmenu)="menu.emit({ event: $event, id: m.id })">
-                                    <ng-container *ngTemplateOutlet="face; context: { $implicit: m }" />
+                                    <ng-container *ngTemplateOutlet="face; context: { $implicit: m, count: 0 }" />
                                     @if ((unread()[m.id] ?? 0) > 0) {
                                         <span class="mbs__count" [attr.aria-label]="unread()[m.id] + ' unread'">
                                             {{ shown(unread()[m.id]) }}
@@ -68,12 +65,19 @@ import { EmailMailboxDto } from './email.types';
             }
         }
 
-        <ng-template #face let-m>
-            <span class="mbs__avatar" [style.background]="colour(m.id)" aria-hidden="true">{{ initial(m) }}</span>
+        <!-- The avatar, then the name and the address on one line each, cut with an ellipsis; a count sits on the
+             avatar's top-right corner, the avatar its positioning container. -->
+        <ng-template #face let-m let-count="count">
+            <span class="mbs__avatar" [style.background]="colour(m.id)">
+                <span class="mbs__initial" aria-hidden="true">{{ initial(m) }}</span>
+                @if (count > 0) {
+                    <span class="mbs__count mbs__count--avatar" [attr.aria-label]="count + ' unread'">{{ shown(count) }}</span>
+                }
+            </span>
             <span class="mbs__text">
-                <span class="mbs__label" [title]="name(m)">{{ name(m) }}</span>
+                <span class="mbs__label">{{ name(m) }}</span>
                 @if (m.emailAddress && m.emailAddress !== name(m)) {
-                    <span class="mbs__address" [title]="m.emailAddress">{{ m.emailAddress }}</span>
+                    <span class="mbs__address">{{ m.emailAddress }}</span>
                 }
             </span>
         </ng-template>
@@ -90,7 +94,7 @@ import { EmailMailboxDto } from './email.types';
         }
         .mbs__card { position: relative; flex: 1 1 auto; gap: 6px; border: 0; border-radius: var(--cms-radius-md, 8px); }
         /* The others' unread sits on the avatar: beside the chevron and the gear it left the name no room. */
-        .mbs__card > .mbs__count { position: absolute; top: 2px; left: 20px; box-shadow: 0 0 0 2px var(--cms-surface); }
+
         .mbs__settings {
             flex: 0 0 auto; width: 28px; padding: 0; border: 0; background: transparent; cursor: pointer;
             color: var(--cms-text-muted); border-radius: var(--cms-radius-md, 8px);
@@ -99,15 +103,16 @@ import { EmailMailboxDto } from './email.types';
         button.mbs__card { cursor: pointer; }
         button.mbs__card:hover, .mbs__choice:hover { background: var(--cms-surface-hover); }
         .mbs__avatar {
+            position: relative;
             flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
             display: inline-flex; align-items: center; justify-content: center;
             color: var(--cms-text-inverse); font-size: .875rem; font-weight: 600; line-height: 1; user-select: none;
         }
         .mbs__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-        /* Two lines for the name: on one, a long list of similar names reads as the same name over and over. */
+        /* One line each, so the card is one height at every width; the whole of both is the card's tooltip and name. */
         .mbs__label {
-            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
-            overflow-wrap: anywhere; font-size: .875rem; font-weight: 600; line-height: 1.25;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: .875rem; font-weight: 600; line-height: 1.25;
         }
         .mbs__address {
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -116,6 +121,11 @@ import { EmailMailboxDto } from './email.types';
         .mbs__count {
             flex: 0 0 auto; background: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a);
             border-radius: 999px; font-size: .6875rem; line-height: 1.2; padding: 1px 5px; min-width: 16px; text-align: center;
+        }
+        /* On the avatar's top-right corner, above its letter and short of the name. */
+        .mbs__count--avatar {
+            position: absolute; bottom: calc(100% - 7px); right: -2px; min-width: 0;
+            box-shadow: 0 0 0 2px var(--cms-surface); font-weight: 600; white-space: nowrap;
         }
         .mbs__elsewhere {
             flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
@@ -187,6 +197,16 @@ export class MailboxSwitcherComponent {
 
     protected initial(m: EmailMailboxDto): string {
         return (this.name(m).trim().charAt(0) || '?').toUpperCase();
+    }
+
+    /** The name and, when it is not the name, the address: the card's tooltip and accessible name. */
+    protected full(m: EmailMailboxDto): string {
+        const name = this.name(m);
+        return m.emailAddress && m.emailAddress !== name ? `${name}, ${m.emailAddress}` : name;
+    }
+
+    protected unreadSaid(count: number): string {
+        return count > 0 ? `, ${count} unread` : '';
     }
 
     protected shown(count: number): string {
