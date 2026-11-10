@@ -112,3 +112,45 @@ export function paneActionsOf(
 
     return actions;
 }
+
+/**
+ * The list row with the message's state as the detail answered it (canArchive, seen, flagged, folder) written over
+ * it: the one record the toolbar, the row's menu and the checked-rows bar read. A field the detail does not carry is
+ * kept.
+ */
+export function rowWithDetailState<T extends EmailMessageDto>(row: T, detail: EmailMessageDto): T {
+    return {
+        ...row,
+        ...(detail.canArchive !== undefined ? { canArchive: detail.canArchive } : {}),
+        ...(detail.seen !== undefined ? { seen: detail.seen } : {}),
+        ...(detail.flagged !== undefined ? { flagged: detail.flagged } : {}),
+        ...(detail.folder !== undefined ? { folder: detail.folder } : {}),
+    };
+}
+
+/** An action pressed and not yet answered by the server: which one, and the messages it is on. */
+export interface PendingAction {
+    readonly action: string;
+    readonly ids: ReadonlySet<string>;
+}
+
+/** The actions a press waits on the server for: pressed again before it answers, it is not run again. */
+export const ACTIONS_THAT_WAIT: ReadonlySet<string> = new Set([
+    'archive', 'delete', 'move', 'mark-read', 'mark-unread', 'star', 'unstar',
+]);
+
+/**
+ * A row's actions while an action on any of its messages waits for the server: that one busy, every other one
+ * disabled. A row with none of those messages is drawn as it is.
+ */
+export function withPending(
+    actions: readonly PaneToolbarAction[],
+    pending: PendingAction | null,
+    ids: readonly string[],
+): PaneToolbarAction[] {
+    if (pending === null || !ids.some(id => pending.ids.has(id))) {
+        return [...actions];
+    }
+
+    return actions.map(a => (a.id === pending.action ? { ...a, busy: true } : { ...a, disabled: true }));
+}
