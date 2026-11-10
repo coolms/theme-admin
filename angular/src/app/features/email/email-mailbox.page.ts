@@ -1,3 +1,4 @@
+import { Dialog } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location } from '@angular/common';
@@ -46,6 +47,7 @@ import {
 } from './compose-attachments';
 import { messageFrameDoc } from './message-frame-doc';
 import { MessageFrameComponent } from './message-frame.component';
+import { openMessageSource } from './message-source-viewer.component';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
 import {
@@ -384,7 +386,7 @@ type PhonePane = 'folders' | 'message';
                             <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
                                               (action)="atAction(detailRow, $event); onDetailAction($event)" />
                         </div>
-                        <!-- Under the row, the message pane's one scroll region: header, banner, body, raw source. -->
+                        <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
                         <div class="mbx__detail-scroll" data-test="detail-scroll">
                         @if (loadingDetail()) {
                             <p class="mbx__note">Loading…</p>
@@ -473,14 +475,6 @@ type PhonePane = 'folders' | 'message';
                                             </div>
                                         }
                                     </div>
-                                }
-                                @if (msg.rawBody) {
-                                    <details class="mbx__raw">
-                                        <summary>Raw source</summary>
-                                        <pre>{{ msg.rawBody }}</pre>
-                                    </details>
-                                } @else {
-                                    <p class="mbx__note">No raw source stored for this message.</p>
                                 }
                             </div>
                         } @else {
@@ -976,12 +970,6 @@ type PhonePane = 'folders' | 'message';
         .mbx__thread-item--active .mbx__thread-subject,
         .mbx__thread-item--unread .mbx__thread-subject { color: var(--cms-text); }
         .mbx__thread-date { color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
-        .mbx__raw { margin-top: 12px; }
-        .mbx__raw summary { cursor: pointer; color: var(--cms-text-muted); font-size: .8125rem; }
-        .mbx__raw pre {
-            margin-top: 8px; padding: 12px; background: var(--cms-surface-alt, var(--cms-surface)); border: 1px solid var(--cms-border);
-            border-radius: var(--cms-radius, 6px); overflow-x: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
-        }
 
         /* Rendered message body (sandboxed iframe) + its remote-image gate. */
         .mbx__body-text {
@@ -1137,6 +1125,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly naviGraph = inject(NaviGraphService);
     private readonly contextMenu = inject(ContextMenuService);
     private readonly crumbs = inject(CrumbNamesService);
+    private readonly dialog = inject(Dialog);
     private readonly settingsModal = inject(MailboxSettingsModal);
     /**
      * Each navigation that ends on this page. The breadcrumb's names are cleared when ANY navigation starts, and this
@@ -1577,6 +1566,12 @@ export class EmailMailboxPageComponent implements OnInit {
                     }
                 });
                 break;
+            case 'show-original':
+                // One message's source, never several.
+                if (ids.length === 1) {
+                    this.showOriginal(ids[0]);
+                }
+                break;
             case 'delete':
                 // Outside Trash, Delete moves to Trash without asking, with an Undo; in Trash it is for good, and asks.
                 if (isTrashFolder(this.folderOf(ids[0]))) {
@@ -1586,6 +1581,14 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
                 break;
         }
+    }
+
+    /** A message's original source, in the full-screen viewer; focus goes back where it was when it closes. */
+    private showOriginal(id: string): void {
+        const open = this.selectedMessage();
+        const m = open?.id === id ? open : this.messages().find(x => x.id === id);
+        const subject = m?.subject ?? '';
+        openMessageSource(this.dialog, { messageId: id, subject: subject !== '' ? subject : '(no subject)' });
     }
 
     /** Run `then` on this message open in the detail pane, opening it first when another one is. */

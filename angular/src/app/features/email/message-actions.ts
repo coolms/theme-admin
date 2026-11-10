@@ -52,7 +52,7 @@ export const LIST_ACTIONS_HANDLED: ReadonlySet<string> = new Set(['refresh']);
 
 /** The actions on messages this page can run (onMessageAction): a node naming any other is not drawn. */
 export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
-    'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
+    'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete', 'show-original',
 ]);
 
 /** How a node's conditions are read: the NaviGraph service's own evaluation. */
