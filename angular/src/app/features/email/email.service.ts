@@ -12,6 +12,8 @@ import {
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
+    EmailComposeDto,
+    EmailComposeMode,
     EmailDeleteResultDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
@@ -519,6 +521,17 @@ export class EmailService {
     removeAttachment(mailboxId: string, id: string): Observable<void> {
         return this.http.delete<void>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /**
+     * GET /email/messages/{id}/compose?mode= -- what an answer or a forward of the message starts with, prepared by the
+     * server. 404 for a message that is not there to read; 422 for a mode it does not know.
+     */
+    composePrefill(messageId: string, mode: EmailComposeMode): Observable<EmailComposeDto> {
+        return this.http.get<EmailComposeDto>(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/compose`,
+            { headers: this.jsonHeaders, params: { mode } },
         );
     }
 

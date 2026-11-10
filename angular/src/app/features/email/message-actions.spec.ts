@@ -1,5 +1,5 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
-import { MESSAGE_ACTIONS_HANDLED, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds, type NodeConditions } from './message-actions';
+import { MESSAGE_ACTIONS_HANDLED, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds, type NodeConditions } from './message-actions';
 
 /** A node as the server's tree serves it: the meta it carries, and nothing more. */
 function node(path: string, meta: Record<string, unknown>, title = path.slice(1)): NaviGraphNode {
@@ -32,13 +32,13 @@ describe('message actions', () => {
     describe('messageFacts', () => {
         it('says one message, and what it can still become', () => {
             expect(messageFacts([{ seen: false, flagged: true, canArchive: true }])).toEqual({
-                _single: true, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
+                _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
             });
         });
 
         it('says several, and offers each change any of them can take', () => {
             expect(messageFacts([{ seen: true, flagged: false, canArchive: false }, { seen: false, flagged: false, canArchive: true }])).toEqual({
-                _single: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
+                _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
             });
         });
 
@@ -54,6 +54,39 @@ describe('message actions', () => {
             expect(messageFacts([{ canArchive: false }, { canArchive: null }])['_anyCanArchive']).toBeFalse();
             expect(messageFacts([{ canArchive: false }, { canArchive: true }])['_anyCanArchive']).toBeTrue();
             expect(messageFacts([])['_anyCanArchive']).toBeFalse();
+        });
+
+        it('offers Reply all only for one message the server says it reaches someone more for: null, missing or false is no', () => {
+            expect(messageFacts([{ replyAllUseful: true }])['_replyAll']).toBeTrue();
+            expect(messageFacts([{ replyAllUseful: null }])['_replyAll']).withContext('not known yet').toBeFalse();
+            expect(messageFacts([{}])['_replyAll']).withContext('a row read before it was served').toBeFalse();
+            expect(messageFacts([{ replyAllUseful: false }])['_replyAll']).toBeFalse();
+            expect(messageFacts([{ replyAllUseful: true }, { replyAllUseful: true }])['_replyAll'])
+                .withContext('several targets').toBeFalse();
+            expect(messageFacts([])['_replyAll']).toBeFalse();
+        });
+    });
+
+    describe('the served Reply all node', () => {
+        const replyAll = node('/reply-all', { icon: 'reply-all', label: 'Reply all', action: 'reply-all', group: 'respond',
+            overflow: 50, surface: 'both', showWhen: { field: '_replyAll', op: 'eq', value: true } });
+
+        it('is drawn with its handler and its fact, with its place, icon and group from the node', () => {
+            expect(paneActionsOf([replyAll], messageFacts([{ replyAllUseful: true }]), MESSAGE_ACTIONS_HANDLED, conditions))
+                .toEqual([{ id: 'reply-all', label: 'Reply all', icon: 'reply-all', group: 'respond', overflow: 50 }]);
+        });
+
+        it('is not drawn without its fact', () => {
+            for (const targets of [[{ replyAllUseful: null }], [{ replyAllUseful: false }], [{ replyAllUseful: true }, {}]]) {
+                expect(paneActionsOf([replyAll], messageFacts(targets), MESSAGE_ACTIONS_HANDLED, conditions)).toEqual([]);
+            }
+        });
+
+        it('is not drawn, in a bar or in a row\'s menu, by a page without its handler', () => {
+            const without = new Set([...MESSAGE_ACTIONS_HANDLED].filter(a => a !== 'reply-all'));
+            expect(paneActionsOf([replyAll], { _replyAll: true }, without, conditions)).toEqual([]);
+            expect(handledNodes([replyAll], without)).toEqual([]);
+            expect(handledNodes([replyAll], MESSAGE_ACTIONS_HANDLED)).toEqual([replyAll]);
         });
     });
 
