@@ -141,6 +141,10 @@ export interface TrashPorts {
     confirm(question: ConfirmDialogData): Observable<boolean>;
     readonly toast: Pick<ToastService, 'show' | 'success' | 'error'>;
     busy(on: boolean): void;
+    /** A move to Trash was chosen: these rows leave the list at once, before the server answers. */
+    take(ids: readonly string[]): void;
+    /** The server refused these: back as they were, in their places, the open one open again. */
+    putBack(ids: readonly string[]): void;
     /** These rows left the folder (moved or gone): out of the list. `asked`: every row the delete was asked for. */
     drop(ids: readonly string[], asked: readonly string[]): void;
     /** These came back from Trash: the list is read again to show them. */
@@ -157,17 +161,24 @@ export class TrashFlow {
     /** `permanentServed`: whether the server deletes permanently yet (the page passes nothing: today's answer). */
     constructor(private readonly ports: TrashPorts, private readonly permanentServed: boolean = PERMANENT_DELETE_SERVED) {}
 
-    /** Moves to Trash and offers Undo. Messages already in Trash (the folder said otherwise) go to the permanent delete. */
+    /**
+     * Moves to Trash and offers Undo: the rows leave the list at once, and those the server refuses come back.
+     * Messages already in Trash (the folder said otherwise) come back and go to the permanent delete.
+     */
     moveToTrash(ids: readonly string[]): void {
         if (ids.length === 0) {
             return;
         }
         const { toast } = this.ports;
+        this.ports.take(ids);
         this.ports.busy(true);
         inChunks(ids, chunk => this.ports.deleteMessages(chunk)).subscribe({
             next: ({ results }) => {
                 this.ports.busy(false);
                 const outcome = trashOutcome(results);
+                if (outcome.refused.length > 0) {
+                    this.ports.putBack(outcome.refused.map(r => r.id));
+                }
                 this.ports.drop(outcome.removed, ids);
                 const undoable = outcome.undoable;
                 if (undoable.length > 0) {
@@ -184,6 +195,7 @@ export class TrashFlow {
             },
             error: (e: unknown) => {
                 this.ports.busy(false);
+                this.ports.putBack(ids);
                 toast.error(trashRefusalText('delete', problemOf(e), ids.length));
             },
         });

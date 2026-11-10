@@ -19,6 +19,8 @@ function page(answers: { one?: () => Observable<EmailArchiveResultDto>; many?: (
         successes: [] as string[],
         errors: [] as string[],
         archived: [] as (readonly ArchivedMessage[])[],
+        taken: [] as (readonly string[])[],
+        putBack: [] as (readonly string[])[],
     };
     const ports: ArchivePorts = {
         archiveMessage: id => {
@@ -38,6 +40,8 @@ function page(answers: { one?: () => Observable<EmailArchiveResultDto>; many?: (
             error: message => void seen.errors.push(message),
         },
         busy: () => undefined,
+        take: ids => void seen.taken.push(ids),
+        putBack: ids => void seen.putBack.push(ids),
         archived: done => void seen.archived.push(done),
     };
     return { flow: new ArchiveFlow(ports), seen };
@@ -59,6 +63,22 @@ describe('Archive: the server archives, the page says what it answered', () => {
         expect(seen.archived).toEqual([]);
         expect(seen.errors).toEqual(["This mailbox's server has no folder marked as its archive."]);
         expect(seen.shown).toEqual([]);
+    });
+
+    it('takes the rows out at once; a 422 or a 502 puts them back, a bulk refusal only the refused ones', () => {
+        const refused = page({ one: () => throwError(() => cannot('no-archive-folder')) });
+        refused.flow.archive(['a']);
+        expect(refused.seen.taken).toEqual([['a']]);
+        expect(refused.seen.putBack).toEqual([['a']]);
+        const failed = page({ one: () => throwError(() => notCompleted()) });
+        failed.flow.archive(['a']);
+        expect(failed.seen.putBack).toEqual([['a']]);
+        const some = page({ many: () => of({ results: [
+            { id: 'a', outcome: 'archived', folder: 'Archive' }, { id: 'b', outcome: 'refused', folder: 'INBOX', reason: 'no-archive-folder' },
+        ] }) });
+        some.flow.archive(['a', 'b']);
+        expect(some.seen.taken).toEqual([['a', 'b']]);
+        expect(some.seen.putBack).toEqual([['b']]);
     });
 
     it('a sentence for each reason the server names, and one for a reason it may add', () => {

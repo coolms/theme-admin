@@ -38,19 +38,28 @@ describe('EmailMailboxPageComponent -- the next message after Archive or Delete'
     let backs: number;
     let query: BehaviorSubject<ParamMap>;
     let refuse: Set<string>;
+    /** What the server no longer lists in the folder: a read of the list after an action reads it so. */
+    let serverGone: Set<string>;
+    let serverRead: Set<string>;
 
     function build(options: { phone?: boolean; listed?: EmailMessageDto[] } = {}): EmailMailboxPageComponent {
         opened = [];
         markedRead = [];
         backs = 0;
         refuse = new Set<string>();
+        serverGone = new Set<string>();
+        serverRead = new Set<string>();
         query = new BehaviorSubject<ParamMap>(convertToParamMap({}));
         const listed = options.listed ?? FIVE;
         const noop = (): void => undefined;
         const bulk = (ids: readonly string[], outcome: 'moved' | 'archived', folder: string): EmailBulkResultDto => ({
-            results: ids.map(id => (refuse.has(id)
-                ? { id, outcome: 'refused' as const, folder: 'INBOX', reason: 'failed' }
-                : { id, outcome, folder })),
+            results: ids.map(id => {
+                if (refuse.has(id)) {
+                    return { id, outcome: 'refused' as const, folder: 'INBOX', reason: 'failed' };
+                }
+                serverGone.add(id);
+                return { id, outcome, folder };
+            }),
         });
         const media = { matches: options.phone === true } as MediaQueryList;
         if (jasmine.isSpy(window.matchMedia)) {
@@ -67,7 +76,7 @@ describe('EmailMailboxPageComponent -- the next message after Archive or Delete'
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
                         folderTree: () => of([]),
-                        listMessages: () => of(listed),
+                        listMessages: () => of(listed.filter(m => !serverGone.has(m.id)).map(m => (serverRead.has(m.id) ? { ...m, seen: true } : m))),
                         getMessage: (id: string) => {
                             opened.push(id);
                             return of({ ...listed.find(m => m.id === id)!, bodyText: 'Hello' } as EmailMessageDetailDto);
@@ -75,12 +84,19 @@ describe('EmailMailboxPageComponent -- the next message after Archive or Delete'
                         listThread: () => of([]),
                         markSeen: (id: string) => {
                             markedRead.push(id);
+                            serverRead.add(id);
                             return of(null);
                         },
-                        archiveMessage: (id: string) => of({ id, folder: 'Archive' }),
+                        archiveMessage: (id: string) => {
+                            serverGone.add(id);
+                            return of({ id, folder: 'Archive' });
+                        },
                         archiveMessages: (ids: readonly string[]) => of(bulk(ids, 'archived', 'Archive')),
                         deleteMessages: (ids: readonly string[]) => of(bulk(ids, 'moved', 'Trash')),
-                        moveMessage: () => of(null),
+                        moveMessage: (id: string) => {
+                            serverGone.add(id);
+                            return of(null);
+                        },
                     },
                 },
                 {
@@ -267,15 +283,15 @@ describe('EmailMailboxPageComponent -- the next message after Archive or Delete'
         }
     });
 
-    it('Move is not changed: the open message moved away leaves the pane empty', () => {
+    it('Move follows the same rule: the open message moved away, the one that took its place opens', () => {
         const page = build();
         open(page, 'm3');
 
         page.bulkMoveTo('Projects', new Set(['m3']));
 
         expect(ids(page)).toEqual(['m1', 'm2', 'm4', 'm5']);
-        expect(opened).toEqual([]);
-        expect(page.selectedMessage()).toBeNull();
+        expect(opened).toEqual(['m4']);
+        expect(page.selectedMessage()?.id).toBe('m4');
     });
 
     it('nextOpenAfter: the nearest row neither removed nor acted on, below first; null when none or not listed', () => {

@@ -191,22 +191,22 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
         expect(menuFor(page, 'm2')['_anyFlagged']).withContext('the row menu').toBeTrue();
     });
 
-    it('an action pressed is busy where it was pressed, the others disabled, and not run again until the server answers', () => {
+    it('Archive pressed is not run again on that message until the server answers; the next message opened is its own', () => {
         const page = build();
         open(page, 'm2');
 
         page.onDetailAction('archive');
-        page.onDetailAction('archive');
         page.onMessageAction('archive', ['m2']);
 
         expect(archives).withContext('one call while it waits').toEqual(['m2']);
-        const waiting = page.detailActions();
-        expect(waiting.filter(a => a.busy).map(a => a.id)).toEqual(['archive']);
-        expect(waiting.filter(a => a.id !== 'archive').every(a => a.disabled === true)).withContext('the others disabled').toBeTrue();
+        expect(page.pending()?.action).toBe('archive');
+        expect(page.selectedMessage()?.id).withContext('taken out at once: the next one opened').toBe('m1');
+        expect(page.detailActions().some(a => a.busy || a.disabled)).withContext("the next message's row").toBeFalse();
 
         archiveAnswers.error(new Error('offline'));
 
         expect(page.pending()).toBeNull();
+        expect(page.selectedMessage()?.id).withContext('refused: back and open again').toBe('m2');
         expect(page.detailActions().some(a => a.busy || a.disabled)).withContext('after the answer').toBeFalse();
     });
 
@@ -218,8 +218,8 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
         page.onBulkAction('star');
 
         expect(flags).toEqual(['m1', 'm2']);
-        expect(page.bulkActions().filter(a => a.busy).map(a => a.id)).toEqual(['star']);
-        expect(page.bulkActions().filter(a => a.id !== 'star').every(a => a.disabled === true)).toBeTrue();
+        expect(page.bulkActions().filter(a => a.busy).map(a => a.id)).withContext('starred at once: its other state waits').toEqual(['unstar']);
+        expect(page.bulkActions().filter(a => !a.busy).every(a => a.disabled === true)).toBeTrue();
 
         flagAnswers.next(null);
         flagAnswers.complete();

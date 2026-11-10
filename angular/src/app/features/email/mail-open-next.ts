@@ -1,5 +1,5 @@
 /**
- * The message that opens after the open one left the list by Archive or Delete, from the list as it showed then: the
+ * The message that opens after the open one left the list by Archive, Delete or Move, from the list as it showed: the
  * nearest row that neither left nor was acted on, the one below first at the same distance. For one message that is
  * the row that takes its place, or the one above when it was the last; for checked rows, the nearest one not checked.
  * Null when none is left, or when the open message was not in the list.
