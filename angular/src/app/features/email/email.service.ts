@@ -33,6 +33,7 @@ import {
     ServerMessageOpenedDto,
     ServerSearchAnswerDto,
     ServerSearchHitDto,
+    ServerOlderMessagesDto,
     SystemMailChoice,
     SystemMailDto,
     SystemMailSendAsDto,
@@ -330,6 +331,21 @@ export class EmailService {
         }
         return this.http.get<ServerSearchAnswerDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-search`,
+            { headers: this.jsonHeaders, params },
+        );
+    }
+
+    /**
+     * GET /email/mailboxes/{id}/server-messages -- one page of `folder`'s messages older than the oldest the platform
+     * holds there: the first without `cursor`, then the page `next` named. Unsubscribing aborts the request.
+     */
+    olderMessages(mailboxId: string, folder: string, cursor: string | null = null): Observable<ServerOlderMessagesDto> {
+        let params = new HttpParams().set('folder', folder);
+        if (cursor !== null) {
+            params = params.set('cursor', cursor);
+        }
+        return this.http.get<ServerOlderMessagesDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-messages`,
             { headers: this.jsonHeaders, params },
         );
     }

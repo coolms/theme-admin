@@ -242,7 +242,9 @@ export class MailServerSearch {
             }
             return;
         }
-        this.hits.set(cursor === null ? [...answer.hits] : [...this.hits(), ...answer.hits]);
+        // A later page never repeats a hit already listed (a page can overlap the last when the server moved on).
+        const listed = new Set(cursor === null ? [] : this.hits().map(h => h.ref));
+        this.hits.set([...(cursor === null ? [] : this.hits()), ...answer.hits.filter(h => !listed.has(h.ref))]);
         this.next.set(answer.next ?? null);
         this.capped.set(answer.capped === true);
         this.matches.set(answer.searched?.matches ?? null);

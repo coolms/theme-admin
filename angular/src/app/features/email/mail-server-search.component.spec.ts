@@ -8,7 +8,7 @@ import { DateTimeFormatService } from '@coolms/ui-angular';
 
 import { EmailService, SERVER_MESSAGE_OPEN_SERVED } from './email.service';
 import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
-import { MailServerSearchComponent, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch } from './mail-server-search';
 
 const hit = (n: number, extra: Partial<ServerSearchHitDto> = {}): ServerSearchHitDto => ({
@@ -235,6 +235,48 @@ describe('MailServerSearchComponent', () => {
         expect(text(el, 'server-search-rate-limited')).toContain('Too many server searches in a minute.');
         expect(text(el, 'server-search-countdown')).toBe('Searching again in 42 s.');
         search.stop();
+    });
+
+    describe('as the older mail of a folder', () => {
+        const renderOlder = (listed: string[]): HTMLElement => {
+            const el = render(listed);
+            fixture.componentRef.setInput('heading', 'On the server');
+            fixture.componentRef.setInput('words', OLDER_WORDS);
+            fixture.detectChanges();
+            return el;
+        };
+
+        it('a held row the list shows is skipped; one it does not show opens as stored; more reads older', () => {
+            const el = renderOlder(['m2']);
+            search.run('Archive');
+            replies.next(answer('Archive', [hit(1, { local: true, localId: 'm2' }), hit(2, { local: true, localId: 'm7', seen: false }), hit(3)], { next: 'c1' }));
+            fixture.detectChanges();
+
+            const rows = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-test="server-hit"]'));
+            expect(rows.map(r => /Sender (\d)/.exec(r.textContent ?? '')?.[1])).withContext('m2 is in the list above').toEqual(['2', '3']);
+            expect(rows[0].textContent).toContain('Kept here');
+            expect(text(el, 'server-search-more')).toBe('Load older from the server');
+
+            rows[0].click();
+            expect(opened).toEqual([{ id: 'm7', folder: 'INBOX', seen: false }]);
+        });
+
+        it('says it in its own words: nothing older, the rate limit', () => {
+            const el = renderOlder([]);
+            search.run('Archive');
+            replies.next(answer('Archive', []));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-empty')).toBe('No older mail on the server.');
+
+            search.run('Spam');
+            replies.error(new HttpErrorResponse({
+                status: 429, error: { type: '/errors/email/server-search/rate-limited' }, headers: new HttpHeaders({ 'Retry-After': '30' }),
+            }));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-rate-limited')).toContain('Too many pages asked of the mail server in a minute.');
+            expect(text(el, 'server-search-countdown')).toBe('Loading again in 30 s.');
+            search.stop();
+        });
     });
 
     it('capped: "Showing the first 500."', () => {
