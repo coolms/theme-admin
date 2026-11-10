@@ -117,4 +117,64 @@ describe('MailboxSwitcherComponent', () => {
         gears[0].click();
         expect(opened).toBe(1);
     });
+
+    describe('the card, drawn', () => {
+        const LONG: EmailMailboxDto = { id: 'c', label: 'Alexandra Konstantinopoulou @ GMail, the long-standing personal mailbox', emailAddress: 'alexandra.konstantinopoulou.personal@gmail.example.test' };
+
+        /** The card in a column this wide, with a 99+ count. */
+        function drawn(width: number) {
+            const made = make([LONG, HOME], 'c', { c: 250 });
+            const host = made.fixture.nativeElement as HTMLElement;
+            host.style.width = width + 'px';
+            host.style.display = 'block';
+            host.setAttribute('data-card-spec', '');
+            document.body.appendChild(host);
+            made.fixture.detectChanges();
+            return made;
+        }
+        const box = (el: Element | null) => el!.getBoundingClientRect();
+        const overlap = (a: DOMRect, b: DOMRect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+        afterEach(() => document.querySelectorAll('[data-card-spec]').forEach(e => e.remove()));
+
+        it('is one height at every width, the name and the address each on one line with an ellipsis', () => {
+            const heights = [180, 230, 380].map(w => {
+                const { el } = drawn(w);
+                const label = el.querySelector<HTMLElement>('.mbs__label')!;
+                const address = el.querySelector<HTMLElement>('.mbs__address')!;
+                expect(getComputedStyle(label).whiteSpace).withContext(w + 'px').toBe('nowrap');
+                expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+                expect(label.scrollWidth).withContext('the long name is cut').toBeGreaterThan(label.clientWidth);
+                expect(getComputedStyle(address).textOverflow).toBe('ellipsis');
+                const height = box(el.querySelector('.mbs__card')).height;
+                el.remove();
+                return height;
+            });
+            expect(new Set(heights).size).withContext(heights.join(', ')).toBe(1);
+        });
+
+        it('says the whole name and address as its tooltip and its accessible name', () => {
+            const { el } = drawn(230);
+            const card = el.querySelector('.mbs__card')!;
+            expect(card.getAttribute('title')).toBe(LONG.label + ', ' + LONG.emailAddress);
+            expect(card.getAttribute('aria-label')).toBe('Mailbox: ' + LONG.label + ', ' + LONG.emailAddress + ', 250 unread');
+        });
+
+        it('anchors 99+ to the avatar top-right corner, inside the avatar, over neither its letter nor the name', () => {
+            for (const w of [180, 230, 380]) {
+                const { el } = drawn(w);
+                const avatar = el.querySelector<HTMLElement>('.mbs__card .mbs__avatar')!;
+                const badge = avatar.querySelector<HTMLElement>('.mbs__count')!;
+                expect(badge.textContent?.trim()).toBe('99+');
+                expect(getComputedStyle(avatar).position).toBe('relative');
+                expect(getComputedStyle(badge).position).toBe('absolute');
+                const a = box(avatar);
+                const b = box(badge);
+                expect(b.top).withContext(w + 'px: at the top').toBeLessThan(a.top);
+                expect(Math.abs(b.right - a.right)).withContext(w + 'px: at the right').toBeLessThanOrEqual(4);
+                expect(overlap(b, box(el.querySelector('.mbs__card .mbs__label')))).withContext(w + 'px: the name').toBeFalse();
+                expect(overlap(b, box(avatar.querySelector('.mbs__initial')))).withContext(w + 'px: the letter').toBeFalse();
+                el.remove();
+            }
+        });
+    });
 });
