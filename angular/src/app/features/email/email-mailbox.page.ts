@@ -45,6 +45,7 @@ import {
     type StoredComposeAttachment,
 } from './compose-attachments';
 import { messageFrameDoc } from './message-frame-doc';
+import { MessageFrameComponent } from './message-frame.component';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
 import {
@@ -153,7 +154,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
-        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent,
+        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MessageFrameComponent,
     ],
     template: `
         <div class="mbx">
@@ -241,6 +242,8 @@ type PhonePane = 'folders' | 'message';
                             }
                         </div>
 
+                        <!-- Under the list's row and its search field, the list's one scroll region. -->
+                        <div class="mbx__list-scroll" data-test="list-scroll">
                         <!-- Bulk action bar (backlog slice 3): shown once ≥1 message is
                              checked in the folder view; acts on the whole selection. -->
                         @if (!searchActive() && selectedCount() > 0) {
@@ -369,6 +372,7 @@ type PhonePane = 'folders' | 'message';
                                                         [opener]="openServerHitFn" (opened)="onServerHitOpened($event)" />
                             }
                         }
+                        </div>
                     </section>
 
                     <cms-pane-splitter [minWidth]="280" [maxWidth]="620"
@@ -387,6 +391,8 @@ type PhonePane = 'folders' | 'message';
                             <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
                                               (action)="atAction(detailRow, $event); onDetailAction($event)" />
                         </div>
+                        <!-- Under the row, the message pane's one scroll region: header, banner, body, raw source. -->
+                        <div class="mbx__detail-scroll" data-test="detail-scroll">
                         @if (loadingDetail()) {
                             <p class="mbx__note">Loading…</p>
                         } @else if (selectedMessage()) {
@@ -432,9 +438,8 @@ type PhonePane = 'folders' | 'message';
                                             <button type="button" class="mbx__remote-load" (click)="loadRemoteImages.set(true)">Load images</button>
                                         </div>
                                     }
-                                    <iframe class="mbx__body-frame" [srcdoc]="bodyFrameDoc()"
-                                            sandbox="allow-popups allow-popups-to-escape-sandbox"
-                                            referrerpolicy="no-referrer" title="Message body"></iframe>
+                                    <!-- Sandboxed to same-origin alone, as tall as its document; its links open through the page. -->
+                                    <app-message-frame [doc]="bodyFrameDoc()" />
                                 } @else if (msg.bodyText) {
                                     <pre class="mbx__body-text">{{ msg.bodyText }}</pre>
                                 } @else if (msg.snippet) {
@@ -492,6 +497,7 @@ type PhonePane = 'folders' | 'message';
                                                  hint="Pick a message from the list to read it." />
                             </div>
                         }
+                        </div>
                     </section>
                 </div>
             }
@@ -836,7 +842,9 @@ type PhonePane = 'folders' | 'message';
         .mbx__top-title { display: flex; align-items: center; gap: 8px; }
         .mbx__top-title h1 { margin: 0; font-size: 1.125rem; }
         .mbx__empty-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
-        .mbx__body { flex: 1; display: flex; min-height: 0; }
+        /* The page's own spacing between the section header and the grid: the content inset the shell keeps above
+           the header. */
+        .mbx__body { flex: 1; display: flex; min-height: 0; margin-top: var(--cms-content-padding); }
         .mbx__phone-bar { display: none; }
         @media (max-width: 599.98px) {
             /* One pane at a time: the list; the folders when asked for; a message once one is opened. */
@@ -845,7 +853,8 @@ type PhonePane = 'folders' | 'message';
             .mbx__body:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
                 display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
             }
-            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: block; padding: 0 12px 8px; }
+            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
+            .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
             .mbx__phone-bar {
                 display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
                 border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
@@ -874,10 +883,12 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
 
+        /* The row and the search field stay; under them, one scroll region. */
         .mbx__list {
             width: 340px; flex: 0 0 340px; border-right: 1px solid var(--cms-border);
-            overflow-y: auto; display: flex; flex-direction: column;
+            overflow: hidden; display: flex; flex-direction: column;
         }
+        .mbx__list-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
         .mbx__row {
             display: flex; align-items: flex-start; gap: 8px; width: 100%;
             padding: 10px 12px; border-bottom: 1px solid var(--cms-border);
@@ -922,8 +933,8 @@ type PhonePane = 'folders' | 'message';
 
         .mbx__search {
             display: flex; align-items: center; gap: 6px; padding: 8px 10px;
-            border-bottom: 1px solid var(--cms-border); position: sticky; top: 0;
-            background: var(--cms-surface); z-index: 1;
+            border-bottom: 1px solid var(--cms-border); flex: 0 0 auto;
+            background: var(--cms-surface);
         }
         .mbx__search-icon { color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__search-input {
@@ -936,7 +947,16 @@ type PhonePane = 'folders' | 'message';
             border-bottom: 1px solid var(--cms-border);
         }
 
-        .mbx__detail { flex: 1; overflow-y: auto; padding: 0 20px 16px; min-width: 0; }
+        /* The row stays at the top; under it, the message pane's one scroll region. */
+        .mbx__detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0 20px; min-width: 0; }
+        .mbx__detail > .mbx__phone-bar, .mbx__detail > .mbx__pane-row { flex: 0 0 auto; }
+        .mbx__detail-scroll {
+            flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 0 20px 16px;
+            display: flex; flex-direction: column;
+            /* Room for the scrollbar always: the message frame growing never narrows the pane, nor rewraps itself. */
+            scrollbar-gutter: stable;
+        }
+        .mbx__detail-scroll > * { flex-shrink: 0; }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__evicted {
@@ -976,14 +996,10 @@ type PhonePane = 'folders' | 'message';
         .mbx__raw summary { cursor: pointer; color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__raw pre {
             margin-top: 8px; padding: 12px; background: var(--cms-surface-alt, var(--cms-surface)); border: 1px solid var(--cms-border);
-            border-radius: var(--cms-radius, 6px); max-height: 400px; overflow: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
+            border-radius: var(--cms-radius, 6px); overflow-x: auto; font-size: .75rem; white-space: pre-wrap; word-break: break-word;
         }
 
         /* Rendered message body (sandboxed iframe) + its remote-image gate. */
-        .mbx__body-frame {
-            display: block; width: 100%; min-height: 320px; height: 60vh;
-            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: #fff;
-        }
         .mbx__body-text {
             margin: 0 0 12px; padding: 12px; background: var(--cms-surface-alt, var(--cms-surface));
             border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
