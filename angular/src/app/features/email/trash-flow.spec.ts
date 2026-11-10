@@ -14,6 +14,8 @@ function page(answers: { delete?: Observable<EmailBulkResultDto>; deleteChunk?: 
         successes: [] as string[],
         errors: [] as string[],
         dropped: [] as (readonly string[])[],
+        taken: [] as (readonly string[])[],
+        putBack: [] as (readonly string[])[],
         restored: 0,
     };
     const ports: TrashPorts = {
@@ -41,6 +43,8 @@ function page(answers: { delete?: Observable<EmailBulkResultDto>; deleteChunk?: 
             error: message => void seen.errors.push(message),
         },
         busy: () => undefined,
+        take: ids => void seen.taken.push(ids),
+        putBack: ids => void seen.putBack.push(ids),
         drop: ids => void seen.dropped.push(ids),
         restored: () => void seen.restored++,
     };
@@ -80,8 +84,10 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.deletes.map(d => d.ids.length)).toEqual([200, 50]);
         expect(seen.dropped).toEqual([ids.slice(0, 200)]);
         expect(seen.shown.length).toBe(1);
-        expect(seen.shown[0].input.message).toBe('Moved 200 messages to Trash.');
-        expect(seen.errors).toEqual(['Could not delete 50 messages.']);
+        expect(seen.shown[0].input.message).withContext('one notice: the refusal, in place of what was done').toBe('Could not delete 50 messages.');
+        expect(seen.shown[0].input.type).toBe('error');
+        expect(seen.shown[0].input.action?.label).withContext('still offering Undo for the moved').toBe('Undo');
+        expect(seen.errors).toEqual([]);
         seen.shown[0].input.action?.run();
         expect(seen.restores.flat()).toEqual(ids.slice(0, 200));
     });
@@ -109,6 +115,22 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.dropped).toEqual([[]]);
         expect(seen.shown).toEqual([]);
         expect(seen.errors).toEqual(["This mailbox's server cannot move messages, so nothing was deleted."]);
+    });
+
+    it('takes the rows out at once, before the call, and puts back exactly the refused ones', () => {
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'moved' }, { id: 'b', outcome: 'refused', reason: 'no-move' }] }) });
+        flow.moveToTrash(['a', 'b']);
+        expect(seen.taken).toEqual([['a', 'b']]);
+        expect(seen.putBack).toEqual([['b']]);
+        expect(seen.dropped).toEqual([['a']]);
+    });
+
+    it('a call that fails as a whole puts every row back', () => {
+        const { flow, seen } = page({ delete: throwError(() => new HttpErrorResponse({ status: 502 })) });
+        flow.moveToTrash(['a', 'b']);
+        expect(seen.taken).toEqual([['a', 'b']]);
+        expect(seen.putBack).toEqual([['a', 'b']]);
+        expect(seen.errors).toEqual(['Could not delete 2 messages.']);
     });
 
     it('a mailbox with no Trash: Delete says so and deletes nothing', () => {

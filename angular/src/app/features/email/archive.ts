@@ -68,8 +68,15 @@ export interface ArchivePorts {
     archiveMessages(ids: readonly string[]): Observable<EmailBulkResultDto>;
     readonly toast: Pick<ToastService, 'show' | 'success' | 'error'>;
     busy(on: boolean): void;
-    /** These were archived, each into the folder named: a row leaves the list unless that is the folder shown. */
-    archived(done: readonly ArchivedMessage[]): void;
+    /** Archive was chosen: these rows leave the list at once, before the server answers. */
+    take(ids: readonly string[]): void;
+    /** The server refused these, or did not complete them: back as they were, in their places, the open one open again. */
+    putBack(ids: readonly string[]): void;
+    /**
+     * These were archived, each into the folder named: a row leaves the list unless that is the folder shown.
+     * `asked`: every row the archive was asked for.
+     */
+    archived(done: readonly ArchivedMessage[], asked: readonly string[]): void;
 }
 
 const statusOf = (e: unknown): number | null => (e instanceof HttpErrorResponse ? e.status : null);
@@ -85,14 +92,18 @@ export function cannotArchiveReason(e: unknown): string | null {
 }
 
 /**
- * Archive as the mail server archives: one message by its own call, several checked by one bulk call. The page decides
- * no folder; the server answers where each one is now. A refusal is said in the page's words; a server that did not
- * complete it is offered Retry, never retried by itself.
+ * Archive as the mail server archives: one message by its own call, several checked by one bulk call. The rows leave
+ * the list at once; the page decides no folder, and the server answers where each one is now. A refused row comes back
+ * and the refusal is said in the page's words; a server that did not complete it is offered Retry, never retried by
+ * itself.
  */
 export class ArchiveFlow {
     constructor(private readonly ports: ArchivePorts) {}
 
     archive(ids: readonly string[]): void {
+        if (ids.length > 0) {
+            this.ports.take(ids);
+        }
         if (ids.length === 1) {
             this.archiveOne(ids[0]);
         } else if (ids.length > 1) {
@@ -106,11 +117,12 @@ export class ArchiveFlow {
         this.ports.archiveMessage(id).subscribe({
             next: answer => {
                 this.ports.busy(false);
-                this.ports.archived([{ id, folder: answer.folder }]);
+                this.ports.archived([{ id, folder: answer.folder }], [id]);
                 toast.success(archivedText(1));
             },
             error: (e: unknown) => {
                 this.ports.busy(false);
+                this.ports.putBack([id]);
                 const reason = cannotArchiveReason(e);
                 if (reason !== null) {
                     toast.error(archiveReasonText(reason));
@@ -134,12 +146,16 @@ export class ArchiveFlow {
                     .map(r => ({ id: r.id, folder: r.folder ?? '' }));
                 const refused = results.filter(r => r.outcome === 'refused');
                 if (done.length > 0) {
-                    this.ports.archived(done);
-                    toast.success(archivedText(done.length));
+                    this.ports.archived(done, ids);
                 }
+                // One notice: the refusal's (which counts the archived) in place of "Archived".
                 if (refused.length === 0) {
+                    if (done.length > 0) {
+                        toast.success(archivedText(done.length));
+                    }
                     return;
                 }
+                this.ports.putBack(refused.map(r => r.id));
                 const failed = refused.filter(r => problemOf(r.reason ?? null) === 'failed');
                 if (failed.length === refused.length) {
                     this.offerRetry(archiveFailedText(failed.length), failed.map(r => r.id));
@@ -149,6 +165,7 @@ export class ArchiveFlow {
             },
             error: () => {
                 this.ports.busy(false);
+                this.ports.putBack(ids);
                 toast.error(`Could not archive ${messages(ids.length)}.`);
             },
         });

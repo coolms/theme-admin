@@ -49,10 +49,12 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
 import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
-    rowTargetIds,
+    ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
-import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
+import { markRefusalText, movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
+import { nextOpenAfter } from './mail-open-next';
+import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
 import { folderRows } from './folder-tree.util';
@@ -1301,6 +1303,8 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly selectedIds = signal<Set<string>>(new Set<string>());
     readonly selectedCount = computed(() => this.selectedIds().size);
     readonly bulkBusy = signal<boolean>(false);
+    /** The action pressed and not yet answered: busy where it was pressed, the row's others disabled, not run again. */
+    readonly pending = signal<PendingAction | null>(null);
     /** Range-select origin for Shift-click (the last individually (de)selected row). */
     private selectAnchorId: string | null = null;
 
@@ -1407,21 +1411,32 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The list pane's actions, the server's tree (navi.toolbar.email.list); empty while it serves none. */
     readonly listNodes = signal<NaviGraphNode[]>([]);
     readonly listActions = computed(() => paneActionsOf(this.listNodes(), {}, LIST_ACTIONS_HANDLED, this.naviGraph));
+    /**
+     * The open message's facts, from its list row when it is listed -- the record the row's menu and the checked-rows
+     * bar read too, so one message never shows an action on one surface and not on another -- else from the detail.
+     */
     readonly detailFacts = computed(() => {
         const m = this.selectedMessage();
-        return messageFacts(m ? [m] : []);
+        if (!m) {
+            return messageFacts([]);
+        }
+        return messageFacts([this.messages().find(x => x.id === m.id) ?? m]);
     });
     readonly bulkFacts = computed(() => {
         const ids = this.selectedIds();
         return messageFacts(this.messages().filter(m => ids.has(m.id)));
     });
     /** The open message's row: the tree's nodes for it that this page can run; none while no message is open. */
-    readonly detailActions = computed(() => (this.selectedMessage() && !this.loadingDetail()
-        ? paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph)
-        : []));
+    readonly detailActions = computed(() => {
+        const m = this.selectedMessage();
+        return m && !this.loadingDetail()
+            ? withPending(paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph), this.pending(), [m.id])
+            : [];
+    });
     /** The checked rows' row: the same nodes, for them. */
-    readonly bulkActions = computed(() =>
-        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph));
+    readonly bulkActions = computed(() => withPending(
+        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph),
+        this.pending(), [...this.selectedIds()]));
     /** Where the pointer last went down on a message bar, or a row was right-clicked: Move's and Delete's second step
      *  (the folders; Trash or permanent) opens there. */
     private actionPoint = { x: 0, y: 0 };
@@ -1505,13 +1520,50 @@ export class EmailMailboxPageComponent implements OnInit {
         if (ids.length === 0) {
             return;
         }
+        const waiting = this.pending();
+        if (ACTIONS_THAT_WAIT.has(action) && waiting !== null && ids.some(id => waiting.ids.has(id))) {
+            return;
+        }
+        this.moves++;
+        if (ACTIONS_THAT_WAIT.has(action) && action !== 'move') {
+            this.waitFor(action, ids, () => this.runMessageAction(action, ids));
+            return;
+        }
+        this.runMessageAction(action, ids);
+    }
+
+    /**
+     * Runs a call to the server with the action pending on these messages from now until it answers: the flows mark
+     * the answer by bulkBusy going false. One that asked the server nothing (a refusal said at once) ends pending here.
+     */
+    private waitFor(action: string, ids: readonly string[], run: () => void): void {
+        this.pending.set({ action, ids: new Set(ids) });
+        run();
+        if (!this.bulkBusy()) {
+            this.pending.set(null);
+        }
+    }
+
+    /** Ends what was pending: the server answered. */
+    private answered(): void {
+        this.bulkBusy.set(false);
+        this.pending.set(null);
+    }
+
+    private runMessageAction(action: string, ids: string[]): void {
         switch (action) {
             case 'reply':
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
                 break;
+            case 'reply-all':
+                this.withOpen(ids[0], () => this.openReplyAll());
+                break;
             case 'archive':
+                // Archived in All Mail the messages stay shown: nothing leaves at once, the open one stays open.
+                this.keepShown = staysShown(this.roleOf(this.selectedFolder()), 'archive');
                 this.archiveFlow.archive(this.listed(ids));
+                this.keepShown = false;
                 break;
             case 'mark-read':
             case 'mark-unread':
@@ -1524,7 +1576,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'move':
                 this.openFollowUp(moveMenuItems(this.moveChoices(), this.folderOf(ids[0])), id => {
                     if (id.startsWith('move:')) {
-                        this.bulkMoveTo(id.slice('move:'.length), new Set(ids));
+                        this.waitFor('move', ids, () => this.bulkMoveTo(id.slice('move:'.length), new Set(ids)));
                     }
                 });
                 break;
@@ -1901,6 +1953,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Back to the list: the open message is closed, and a detail still loading is dropped when it answers. */
     closeMessage(): void {
+        this.moves++;
         this.openSeq += 1;
         this.loadingDetail.set(false);
         this.selectedMessage.set(null);
@@ -1919,6 +1972,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Load a message's detail; mark it read if it was unread. Shared by list + search. */
     private openById(id: string, seen: boolean, folder: string, then?: () => void): void {
+        this.moves++;
         this.openEvicted.set(false);
         const seq = ++this.openSeq;
         this.attachments.set([]);
@@ -1931,6 +1985,7 @@ export class EmailMailboxPageComponent implements OnInit {
             next: detail => {
                 if (seq !== this.openSeq) { return; }
                 this.selectedMessage.set(detail);
+                this.messages.set(this.messages().map(x => (x.id === detail.id ? rowWithDetailState(x, detail) : x)));
                 this.loadingDetail.set(false);
                 then?.();
                 this.loadThread(id, seq);
@@ -2146,24 +2201,32 @@ export class EmailMailboxPageComponent implements OnInit {
             this.clearSelection();
             return;
         }
-        const changed = new Set(targets.map(m => m.id));
+        // At once: the rows and the open message change now; a row whose call fails changes back.
+        this.setFlaggedHere(new Set(targets.map(m => m.id)), flagged);
         this.bulkBusy.set(true);
-        forkJoin(targets.map(m => this.email.markFlagged(m.id, flagged))).subscribe({
-            next: () => {
-                this.messages.set(this.messages().map(x => (changed.has(x.id) ? { ...x, flagged } : x)));
-                const sel = this.selectedMessage();
-                if (sel && changed.has(sel.id)) {
-                    this.selectedMessage.set({ ...sel, flagged });
-                }
-                this.bulkBusy.set(false);
-                this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length} message(s).`);
-                this.clearSelection();
-            },
-            error: () => {
-                this.bulkBusy.set(false);
-                this.toast.error('Could not update all messages.');
-            },
+        forkJoin(targets.map(m => this.email.markFlagged(m.id, flagged).pipe(
+            map(() => null),
+            catchError(() => of(m.id)),
+        ))).subscribe(answers => {
+            const failed = answers.filter((id): id is string => id !== null);
+            if (failed.length > 0) {
+                this.setFlaggedHere(new Set(failed), !flagged);
+                this.toast.error(markRefusalText(flagged ? 'star' : 'unstar', failed.length));
+            } else {
+                this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`);
+            }
+            this.answered();
+            this.clearSelection();
         });
+    }
+
+    /** The star of these rows, and of the open message when it is one of them, here. */
+    private setFlaggedHere(ids: ReadonlySet<string>, flagged: boolean): void {
+        this.messages.set(this.messages().map(x => (ids.has(x.id) ? { ...x, flagged } : x)));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, flagged });
+        }
     }
 
     /** The folders a message may move to: the tree's folders that open, in its order and by its names. */
@@ -2189,24 +2252,34 @@ export class EmailMailboxPageComponent implements OnInit {
             this.clearSelection();
             return;
         }
-        const moved = new Set(targets.map(m => m.id));
+        const asked = targets.map(m => m.id);
+        const name = this.folderNameOf(folder);
+        // Moved into a label from All Mail the messages stay shown: nothing leaves, the open one stays open.
+        const stays = staysShown(this.roleOf(this.selectedFolder()), 'move', this.roleOf(folder));
+        if (!stays) {
+            this.takeAtOnce(asked);
+        }
         this.bulkBusy.set(true);
-        forkJoin(targets.map(m => this.email.moveMessage(m.id, folder))).subscribe({
-            next: () => {
-                this.messages.set(this.messages().filter(m => !moved.has(m.id)));
-                const sel = this.selectedMessage();
-                if (sel && moved.has(sel.id)) {
-                    this.selectedMessage.set(null);
-                }
-                this.bulkBusy.set(false);
+        forkJoin(targets.map(m => this.email.moveMessage(m.id, folder).pipe(
+            map(() => null),
+            catchError((e: unknown) => of({ id: m.id, problem: problemOf(e) })),
+        ))).subscribe(answers => {
+            const refused = answers.filter((a): a is { id: string; problem: string | null } => a !== null);
+            // One notice: the refusal's when any was refused, in place of what was done.
+            const moved = asked.length - refused.length;
+            if (refused.length > 0) {
+                this.putBack(refused.map(r => r.id));
+                this.toast.error(moveRefusalText(refused[0].problem, refused.length));
+            } else if (moved > 0) {
+                this.toast.success(movedText(moved, name));
+            }
+            const left = stays ? [] : asked.filter(id => !refused.some(r => r.id === id));
+            this.dropRows(left);
+            if (left.length === 0) {
                 this.loadFolders();
-                this.toast.success(`Moved ${targets.length} message(s) to ${folder}.`);
                 this.clearSelection();
-            },
-            error: () => {
-                this.bulkBusy.set(false);
-                this.toast.error('Could not move all messages.');
-            },
+            }
+            this.answered();
         });
     }
 
@@ -2216,8 +2289,10 @@ export class EmailMailboxPageComponent implements OnInit {
         restoreMessages: ids => this.email.restoreMessages(ids),
         confirm:         question => this.confirmDialog.open(question),
         toast:           this.toast,
-        busy:            on => this.bulkBusy.set(on),
-        drop:            ids => this.dropRows(ids),
+        busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
+        take:            ids => this.takeAtOnce(ids),
+        putBack:         ids => this.putBack(ids),
+        drop:            (ids, asked) => this.dropRows(ids, asked),
         restored:        () => {
             this.loadMessages(true);
             this.loadFolders();
@@ -2229,22 +2304,91 @@ export class EmailMailboxPageComponent implements OnInit {
         archiveMessage:  id => this.email.archiveMessage(id),
         archiveMessages: ids => this.email.archiveMessages(ids),
         toast:           this.toast,
-        busy:            on => this.bulkBusy.set(on),
-        archived:        done => this.afterArchive(done),
+        busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
+        take:            ids => this.takeAtOnce(ids),
+        putBack:         ids => this.putBack(ids),
+        archived:        (done, asked) => this.afterArchive(done, asked),
     });
 
     /**
      * Archived rows leave the list as a delete's do, the open message with them; one archived into the folder shown
      * stays. Either way the folders are read again, and with them the list, for the rows' new state.
      */
-    private afterArchive(done: readonly ArchivedMessage[]): void {
+    private afterArchive(done: readonly ArchivedMessage[], asked: readonly string[]): void {
         const shown = this.selectedFolder();
+        const staying = done.filter(d => d.folder === shown).map(d => d.id);
+        if (staying.length > 0) {
+            this.putBack(staying);
+        }
         const leaving = done.filter(d => d.folder !== shown).map(d => d.id);
         if (leaving.length > 0) {
-            this.dropRows(leaving);
+            this.dropRows(leaving, asked);
         } else if (done.length > 0) {
             this.loadFolders();
             this.clearSelection();
+        }
+    }
+
+    /** Rows taken out at once and not yet answered, with their places: what a refusal puts back. */
+    private readonly taken = new Map<string, TakenRow>();
+    /**
+     * The message that was open when it was taken out at once, until the server answers, and how many moves the
+     * person had made by the time the next one opened in its place.
+     */
+    private takenOpen: { message: EmailMessageDetailDto; moves: number } | null = null;
+    /** The action running now leaves its messages shown (staysShown): the flows' take does nothing. */
+    private keepShown = false;
+
+    /** A folder's role as the server's list of folders gives it (`all` for Gmail's All Mail), or null. */
+    private roleOf(folder: string): string | null {
+        return this.folders().find(f => f.folder === folder)?.role ?? null;
+    }
+
+    /** Every move of the person's in the mail page: a message opened or closed, an action run. */
+    private moves = 0;
+
+    /**
+     * Archive, Delete or Move chosen: the rows leave the list at once, before the server answers, and the open
+     * message with them is followed by the next one (dropRows' rule).
+     */
+    private takeAtOnce(ids: readonly string[]): void {
+        if (this.keepShown) {
+            return;
+        }
+        const open = this.selectedMessage();
+        const { taken } = takeRows(this.messages(), new Set(ids));
+        taken.forEach(t => this.taken.set(t.row.id, t));
+        this.dropRows(ids, ids, false);
+        if (open && ids.includes(open.id)) {
+            this.takenOpen = { message: open, moves: this.moves };
+        }
+    }
+
+    /**
+     * The server refused these: back in their places, with their row state. The one that was open opens again only
+     * while what followed it is untouched -- nothing opened, closed or acted on since; otherwise the person stays where
+     * they are, and only its row comes back. Nothing is asked again.
+     */
+    private putBack(ids: readonly string[]): void {
+        const back = ids.map(id => this.taken.get(id)).filter((t): t is TakenRow => t !== undefined);
+        ids.forEach(id => this.taken.delete(id));
+        this.messages.set(putRowsBack(this.messages(), back));
+        const open = this.takenOpen;
+        if (open && ids.includes(open.message.id)) {
+            this.takenOpen = null;
+            if (open.moves === this.moves) {
+                this.closeMessage();
+                this.selectedMessage.set(open.message);
+                this.showPane('message');
+            }
+        }
+    }
+
+    /** The server answered for these: nothing to put back. */
+    private forget(ids: readonly string[]): void {
+        ids.forEach(id => this.taken.delete(id));
+        if (this.takenOpen && ids.includes(this.takenOpen.message.id)) {
+            this.takenOpen = null;
         }
     }
 
@@ -2253,18 +2397,39 @@ export class EmailMailboxPageComponent implements OnInit {
         return this.messages().filter(m => ids.includes(m.id)).map(m => m.id);
     }
 
-    /** The rows a delete took out of this folder leave the list, the open message with them; the counts are read again. */
-    private dropRows(ids: readonly string[]): void {
+    /**
+     * The rows an archive, a delete or a move took out of this folder leave the list. When the open message left with
+     * them: side by side, the next one opens by the normal open (nextOpenAfter, from the list as it showed, `asked`
+     * being the rows acted on), or the pane empties with none left; one pane at a time, the list shows. `answered`:
+     * the server answered for them, so nothing of theirs is kept to put back and the counts are read again; false for
+     * rows taken out at once.
+     */
+    private dropRows(ids: readonly string[], asked: readonly string[] = ids, answered = true): void {
+        if (answered) {
+            this.forget(ids);
+        }
         if (ids.length === 0) {
             return;
         }
         const gone = new Set(ids);
-        this.messages.set(this.messages().filter(m => !gone.has(m.id)));
+        const listed = this.messages();
+        this.messages.set(listed.filter(m => !gone.has(m.id)));
         const open = this.selectedMessage();
         if (open && gone.has(open.id)) {
             this.selectedMessage.set(null);
+            if (this.phoneWidth?.matches === true) {
+                this.leavePane('message');
+            } else {
+                const nextId = nextOpenAfter(listed.map(m => m.id), open.id, gone, new Set(asked));
+                const next = listed.find(m => m.id === nextId);
+                if (next) {
+                    this.openMessage(next);
+                }
+            }
         }
-        this.loadFolders();
+        if (answered) {
+            this.loadFolders();
+        }
         this.clearSelection();
     }
 
@@ -2448,31 +2613,38 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const folder = this.selectedFolder();
-        const changed = new Set(targets.map(m => m.id));
+        // At once: the rows, the open message and the folder's count change now; a row whose call fails changes back.
+        this.setSeenHere(new Set(targets.map(m => m.id)), seen, folder);
         this.bulkBusy.set(true);
-        forkJoin(targets.map(m => this.email.markSeen(m.id, seen))).subscribe({
-            next: () => {
-                this.messages.set(this.messages().map(x => (changed.has(x.id) ? { ...x, seen } : x)));
-                const sel = this.selectedMessage();
-                if (sel && changed.has(sel.id)) {
-                    this.selectedMessage.set({ ...sel, seen });
-                }
-                const delta = seen ? -targets.length : targets.length;
-                this.folders.set(this.folders().map(f =>
-                    f.folder === folder ? applyUnreadDelta(f, delta) : f));
-                const mbId = this.selectedMailboxId();
-                if (mbId !== null) {
-                    this.patchMailboxUnread(mbId, this.folders());
-                }
-                this.bulkBusy.set(false);
-                this.toast.success(`Marked ${targets.length} message(s) ${seen ? 'read' : 'unread'}.`);
-                this.clearSelection();
-            },
-            error: () => {
-                this.bulkBusy.set(false);
-                this.toast.error('Could not update all messages.');
-            },
+        forkJoin(targets.map(m => this.email.markSeen(m.id, seen).pipe(
+            map(() => null),
+            catchError(() => of(m.id)),
+        ))).subscribe(answers => {
+            const failed = answers.filter((id): id is string => id !== null);
+            if (failed.length > 0) {
+                this.setSeenHere(new Set(failed), !seen, folder);
+                this.toast.error(markRefusalText(seen ? 'read' : 'unread', failed.length));
+            } else {
+                this.toast.success(`Marked ${targets.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`);
+            }
+            this.answered();
+            this.clearSelection();
         });
+    }
+
+    /** Read or unread for these rows, the open message among them, and the folder's unread count, here. */
+    private setSeenHere(ids: ReadonlySet<string>, seen: boolean, folder: string): void {
+        this.messages.set(this.messages().map(x => (ids.has(x.id) ? { ...x, seen } : x)));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, seen });
+        }
+        const delta = seen ? -ids.size : ids.size;
+        this.folders.set(this.folders().map(f => (f.folder === folder ? applyUnreadDelta(f, delta) : f)));
+        const mbId = this.selectedMailboxId();
+        if (mbId !== null) {
+            this.patchMailboxUnread(mbId, this.folders());
+        }
     }
 
     openCompose(): void {
@@ -2562,6 +2734,35 @@ export class EmailMailboxPageComponent implements OnInit {
         this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+    }
+
+    /**
+     * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
+     * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
+     */
+    openReplyAll(): void {
+        const msg = this.selectedMessage();
+        if (!msg) {
+            return;
+        }
+        this.openReply();
+        if (this.draftSaved()) {
+            return;
+        }
+        this.email.compose(msg.id, 'reply_all').subscribe({
+            next: prepared => {
+                if (this.replyTargetId() !== msg.id || this.draftSaved()) {
+                    return;
+                }
+                this.composeTo = prepared.to.map(a => a.address);
+                this.composeCc = prepared.cc.map(a => a.address);
+                if (this.composeCc.length > 0) {
+                    this.composeShowCcBcc.set(true);
+                }
+                this.snapshotComposeInitial();
+            },
+            error: () => this.toast.error('Could not prepare the reply to all; the reply goes to the sender alone.'),
+        });
     }
 
     /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */
