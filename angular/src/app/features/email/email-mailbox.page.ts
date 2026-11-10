@@ -49,7 +49,7 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { buildForward } from './forward.util';
 import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
-    rowTargetIds,
+    ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
@@ -1300,6 +1300,8 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly selectedIds = signal<Set<string>>(new Set<string>());
     readonly selectedCount = computed(() => this.selectedIds().size);
     readonly bulkBusy = signal<boolean>(false);
+    /** The action pressed and not yet answered: busy where it was pressed, the row's others disabled, not run again. */
+    readonly pending = signal<PendingAction | null>(null);
     /** Range-select origin for Shift-click (the last individually (de)selected row). */
     private selectAnchorId: string | null = null;
 
@@ -1406,21 +1408,32 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The list pane's actions, the server's tree (navi.toolbar.email.list); empty while it serves none. */
     readonly listNodes = signal<NaviGraphNode[]>([]);
     readonly listActions = computed(() => paneActionsOf(this.listNodes(), {}, LIST_ACTIONS_HANDLED, this.naviGraph));
+    /**
+     * The open message's facts, from its list row when it is listed -- the record the row's menu and the checked-rows
+     * bar read too, so one message never shows an action on one surface and not on another -- else from the detail.
+     */
     readonly detailFacts = computed(() => {
         const m = this.selectedMessage();
-        return messageFacts(m ? [m] : []);
+        if (!m) {
+            return messageFacts([]);
+        }
+        return messageFacts([this.messages().find(x => x.id === m.id) ?? m]);
     });
     readonly bulkFacts = computed(() => {
         const ids = this.selectedIds();
         return messageFacts(this.messages().filter(m => ids.has(m.id)));
     });
     /** The open message's row: the tree's nodes for it that this page can run; none while no message is open. */
-    readonly detailActions = computed(() => (this.selectedMessage() && !this.loadingDetail()
-        ? paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph)
-        : []));
+    readonly detailActions = computed(() => {
+        const m = this.selectedMessage();
+        return m && !this.loadingDetail()
+            ? withPending(paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph), this.pending(), [m.id])
+            : [];
+    });
     /** The checked rows' row: the same nodes, for them. */
-    readonly bulkActions = computed(() =>
-        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph));
+    readonly bulkActions = computed(() => withPending(
+        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph),
+        this.pending(), [...this.selectedIds()]));
     /** Where the pointer last went down on a message bar, or a row was right-clicked: Move's and Delete's second step
      *  (the folders; Trash or permanent) opens there. */
     private actionPoint = { x: 0, y: 0 };
@@ -1504,10 +1517,43 @@ export class EmailMailboxPageComponent implements OnInit {
         if (ids.length === 0) {
             return;
         }
+        const waiting = this.pending();
+        if (ACTIONS_THAT_WAIT.has(action) && waiting !== null && ids.some(id => waiting.ids.has(id))) {
+            return;
+        }
+        if (ACTIONS_THAT_WAIT.has(action) && action !== 'move') {
+            this.waitFor(action, ids, () => this.runMessageAction(action, ids));
+            return;
+        }
+        this.runMessageAction(action, ids);
+    }
+
+    /**
+     * Runs a call to the server with the action pending on these messages from now until it answers: the flows mark
+     * the answer by bulkBusy going false. One that asked the server nothing (a refusal said at once) ends pending here.
+     */
+    private waitFor(action: string, ids: readonly string[], run: () => void): void {
+        this.pending.set({ action, ids: new Set(ids) });
+        run();
+        if (!this.bulkBusy()) {
+            this.pending.set(null);
+        }
+    }
+
+    /** Ends what was pending: the server answered. */
+    private answered(): void {
+        this.bulkBusy.set(false);
+        this.pending.set(null);
+    }
+
+    private runMessageAction(action: string, ids: string[]): void {
         switch (action) {
             case 'reply':
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
+                break;
+            case 'reply-all':
+                this.withOpen(ids[0], () => this.openReplyAll());
                 break;
             case 'archive':
                 this.archiveFlow.archive(this.listed(ids));
@@ -1523,7 +1569,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'move':
                 this.openFollowUp(moveMenuItems(this.moveChoices(), this.folderOf(ids[0])), id => {
                     if (id.startsWith('move:')) {
-                        this.bulkMoveTo(id.slice('move:'.length), new Set(ids));
+                        this.waitFor('move', ids, () => this.bulkMoveTo(id.slice('move:'.length), new Set(ids)));
                     }
                 });
                 break;
@@ -1930,6 +1976,7 @@ export class EmailMailboxPageComponent implements OnInit {
             next: detail => {
                 if (seq !== this.openSeq) { return; }
                 this.selectedMessage.set(detail);
+                this.messages.set(this.messages().map(x => (x.id === detail.id ? rowWithDetailState(x, detail) : x)));
                 this.loadingDetail.set(false);
                 then?.();
                 this.loadThread(id, seq);
@@ -2154,12 +2201,12 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (sel && changed.has(sel.id)) {
                     this.selectedMessage.set({ ...sel, flagged });
                 }
-                this.bulkBusy.set(false);
+                this.answered();
                 this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length} message(s).`);
                 this.clearSelection();
             },
             error: () => {
-                this.bulkBusy.set(false);
+                this.answered();
                 this.toast.error('Could not update all messages.');
             },
         });
@@ -2197,13 +2244,13 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (sel && moved.has(sel.id)) {
                     this.selectedMessage.set(null);
                 }
-                this.bulkBusy.set(false);
+                this.answered();
                 this.loadFolders();
                 this.toast.success(`Moved ${targets.length} message(s) to ${folder}.`);
                 this.clearSelection();
             },
             error: () => {
-                this.bulkBusy.set(false);
+                this.answered();
                 this.toast.error('Could not move all messages.');
             },
         });
@@ -2215,7 +2262,7 @@ export class EmailMailboxPageComponent implements OnInit {
         restoreMessages: ids => this.email.restoreMessages(ids),
         confirm:         question => this.confirmDialog.open(question),
         toast:           this.toast,
-        busy:            on => this.bulkBusy.set(on),
+        busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
         drop:            ids => this.dropRows(ids),
         restored:        () => {
             this.loadMessages(true);
@@ -2228,7 +2275,7 @@ export class EmailMailboxPageComponent implements OnInit {
         archiveMessage:  id => this.email.archiveMessage(id),
         archiveMessages: ids => this.email.archiveMessages(ids),
         toast:           this.toast,
-        busy:            on => this.bulkBusy.set(on),
+        busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
         archived:        done => this.afterArchive(done),
     });
 
@@ -2463,12 +2510,12 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (mbId !== null) {
                     this.patchMailboxUnread(mbId, this.folders());
                 }
-                this.bulkBusy.set(false);
+                this.answered();
                 this.toast.success(`Marked ${targets.length} message(s) ${seen ? 'read' : 'unread'}.`);
                 this.clearSelection();
             },
             error: () => {
-                this.bulkBusy.set(false);
+                this.answered();
                 this.toast.error('Could not update all messages.');
             },
         });
@@ -2561,6 +2608,35 @@ export class EmailMailboxPageComponent implements OnInit {
         this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+    }
+
+    /**
+     * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
+     * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
+     */
+    openReplyAll(): void {
+        const msg = this.selectedMessage();
+        if (!msg) {
+            return;
+        }
+        this.openReply();
+        if (this.draftSaved()) {
+            return;
+        }
+        this.email.compose(msg.id, 'reply_all').subscribe({
+            next: prepared => {
+                if (this.replyTargetId() !== msg.id || this.draftSaved()) {
+                    return;
+                }
+                this.composeTo = prepared.to.map(a => a.address);
+                this.composeCc = prepared.cc.map(a => a.address);
+                if (this.composeCc.length > 0) {
+                    this.composeShowCcBcc.set(true);
+                }
+                this.snapshotComposeInitial();
+            },
+            error: () => this.toast.error('Could not prepare the reply to all; the reply goes to the sender alone.'),
+        });
     }
 
     /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */

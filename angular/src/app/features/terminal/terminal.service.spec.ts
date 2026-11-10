@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, lastValueFrom, of, throwError } from 'rxjs';
 import { Store } from '@ngxs/store';
+import { Logout } from '@coolms/core-angular';
 import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalService } from './terminal.service';
 import { TerminalRefusedError } from './terminal.types';
@@ -158,5 +159,59 @@ describe('TerminalService -- completion carries the shell location', () => {
         await firstValueFrom(service.complete('ls', 2));
 
         expect(posted!.body).toEqual({ input: 'ls', cursorPos: 2, cwd: '/', home: '/' });
+    });
+});
+
+/**
+ * A 401 on execute asks for one refresh. The session ends only when the refresh says it is over: a 401, or a refusal
+ * of entry (`audience-not-granted`). A token for the other interface (403 `wrong-interface`) or any other refusal
+ * keeps the person signed in, and the line fails.
+ */
+describe('TerminalService -- a refused refresh signs out only when the session is over', () => {
+    const problem = (status: number, type: string): HttpErrorResponse =>
+        new HttpErrorResponse({ status, error: { type, title: 'Refused', status } });
+
+    async function runWith(refusal: HttpErrorResponse): Promise<unknown[]> {
+        const dispatched: unknown[] = [];
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                TerminalService,
+                {
+                    provide: Store,
+                    useValue: {
+                        selectSnapshot: () => ({ terminal: { executeUrl: '/api/v1/terminal/execute' } }),
+                        dispatch: (action: unknown) => {
+                            dispatched.push(action);
+                            return of(undefined);
+                        },
+                    },
+                },
+                { provide: ShellApiService, useValue: { refresh: () => throwError(() => refusal) } },
+            ],
+        });
+        spyOn(globalThis, 'fetch').and.resolveTo(new Response('', { status: 401 }));
+        await lastValueFrom(TestBed.inject(TerminalService).execute('ls')).catch(() => undefined);
+        return dispatched;
+    }
+
+    it('keeps the session when the refresh answers 403 wrong-interface', async () => {
+        const dispatched = await runWith(problem(403, '/errors/identity/wrong-interface'));
+        expect(dispatched.some(a => a instanceof Logout)).toBeFalse();
+    });
+
+    it('keeps the session on any other 403', async () => {
+        const dispatched = await runWith(problem(403, '/errors/identity/something-else'));
+        expect(dispatched.some(a => a instanceof Logout)).toBeFalse();
+    });
+
+    it('signs out when the refresh answers 403 audience-not-granted', async () => {
+        const dispatched = await runWith(problem(403, '/errors/identity/audience-not-granted'));
+        expect(dispatched.some(a => a instanceof Logout)).toBeTrue();
+    });
+
+    it('signs out when the refresh answers 401', async () => {
+        const dispatched = await runWith(problem(401, '/errors/identity/invalid-refresh-token'));
+        expect(dispatched.some(a => a instanceof Logout)).toBeTrue();
     });
 });

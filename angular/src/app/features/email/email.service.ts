@@ -12,6 +12,7 @@ import {
     EmailAttachmentDto,
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
+    EmailComposeDto,
     EmailDeleteResultDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
@@ -519,6 +520,14 @@ export class EmailService {
     removeAttachment(mailboxId: string, id: string): Observable<void> {
         return this.http.delete<void>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/attachments/${encodeURIComponent(id)}`,
+        );
+    }
+
+    /** GET /email/messages/{id}/compose -- what an answer or a forward starts with, prepared by the server. */
+    compose(messageId: string, mode: 'reply' | 'reply_all' | 'forward'): Observable<EmailComposeDto> {
+        return this.http.get<EmailComposeDto>(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/compose`,
+            { params: { mode } },
         );
     }
 
