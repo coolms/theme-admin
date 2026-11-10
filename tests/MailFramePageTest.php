@@ -75,6 +75,42 @@ final class MailFramePageTest extends TestCase
         self::assertStringNotContainsStringIgnoringCase('<script', $body);
     }
 
+    /** @return iterable<string, array{string, string}> */
+    public static function otherSpellings(): iterable
+    {
+        yield './mail-frame.html' => ['./mail-frame.html', self::POLICY];
+        yield 'sub/../mail-frame.html' => ['sub/../mail-frame.html', self::POLICY];
+        yield '//mail-frame-images.html' => ['//mail-frame-images.html', self::POLICY_WITH_IMAGES];
+        yield './sub/../mail-frame-images.html' => ['./sub/../mail-frame-images.html', self::POLICY_WITH_IMAGES];
+    }
+
+    /** Another spelling of a frame page's path is the same page, with the same policy: chosen by the file served. */
+    #[Test]
+    #[DataProvider('otherSpellings')]
+    public function anotherSpellingOfThePathCarriesTheSamePolicy(string $path, string $policy): void
+    {
+        $response = (new AdminController($this->dir))($path);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame($policy, $response->headers->get('Content-Security-Policy'));
+        self::assertSame('no-referrer', $response->headers->get('Referrer-Policy'));
+        self::assertSame('SAMEORIGIN', $response->headers->get('X-Frame-Options'));
+        self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+    }
+
+    /** A spelling that names no file is not the page at all: never served without its policy. */
+    #[Test]
+    public function aTrailingSlashIsNotServedWithoutThePolicy(): void
+    {
+        $response = (new AdminController($this->dir))('mail-frame.html/');
+
+        if (Response::HTTP_OK === $response->getStatusCode()) {
+            self::assertNotNull($response->headers->get('Content-Security-Policy'));
+        } else {
+            self::assertStringNotContainsString('<base target', (string) $response->getContent());
+        }
+    }
+
     /** Any other file of the build keeps its own headers: the policy is the frame pages' alone. */
     #[Test]
     public function anyOtherFileCarriesNoneOfThem(): void
@@ -94,6 +130,7 @@ final class MailFramePageTest extends TestCase
             copy(self::SOURCE . '/' . $page, $this->dir . '/' . $page);
         }
         file_put_contents($this->dir . '/chunk-Real.js', 'export const a = 1;');
+        mkdir($this->dir . '/sub');
     }
 
     protected function tearDown(): void
@@ -102,6 +139,9 @@ final class MailFramePageTest extends TestCase
             if (is_file($this->dir . $f)) {
                 unlink($this->dir . $f);
             }
+        }
+        if (is_dir($this->dir . '/sub')) {
+            rmdir($this->dir . '/sub');
         }
         if (is_dir($this->dir)) {
             rmdir($this->dir);
