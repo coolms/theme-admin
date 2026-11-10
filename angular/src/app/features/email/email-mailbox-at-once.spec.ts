@@ -248,7 +248,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             refuse('seen', new HttpErrorResponse({ status: 422 }));
 
             expect(row(page, 'm2')?.seen).toBeFalse();
-            expect(errors).toEqual(['Could not mark 1 message read.']);
+            expect(errors).toEqual(["Couldn't mark as read."]);
         });
 
         it('Move refused (422 no-move): back in its place, open again, the reason said', () => {

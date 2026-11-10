@@ -36,13 +36,23 @@ export function readFlagRefused(raw: unknown): MailFlagRefusedEvent | null {
     };
 }
 
-/** What was asked, in the page's words. */
-function asked(flag: 'seen' | 'flagged', value: boolean): string {
+/** A flag change a person asks for. */
+export type FlagChange = 'read' | 'unread' | 'star' | 'unstar';
+
+/** The change a flag and the value asked for make. */
+export function flagChangeOf(flag: 'seen' | 'flagged', value: boolean): FlagChange {
     if (flag === 'seen') {
-        return value ? 'marking it read' : 'marking it unread';
+        return value ? 'read' : 'unread';
     }
-    return value ? 'starring it' : 'removing its star';
+    return value ? 'star' : 'unstar';
 }
+
+const CHANGE_WORDS: Readonly<Record<FlagChange, string>> = {
+    read: "Couldn't mark as read",
+    unread: "Couldn't mark as unread",
+    star: "Couldn't star",
+    unstar: "Couldn't remove the star",
+};
 
 /** A reason's code in the page's words; null for a code the page does not know (the server's sentence then says it). */
 function codeText(code: string | null): string | null {
@@ -60,16 +70,11 @@ function codeText(code: string | null): string | null {
 }
 
 /**
- * The notice for a refused flag change: what was not accepted, then why -- the page's words for the reason's code when
- * it knows the code, else the server's sentence, else nothing more.
+ * The one notice for a refused read or star change, whether the write's answer refused it or the server refused it
+ * after answering (mail.flag.refused, or the event that rolled it back): "Couldn't mark as unread", then the reason --
+ * the page's words for its code when the page knows the code, else the server's sentence -- when there is one.
  */
-export function flagRefusedText(
-    flag: 'seen' | 'flagged',
-    value: boolean,
-    code: string | null = null,
-    reason: string | null = null,
-): string {
+export function flagRefusalText(change: FlagChange, code: string | null = null, reason: string | null = null): string {
     const why = codeText(code) ?? reason;
-    const head = `The mail server didn't accept ${asked(flag, value)}.`;
-    return why === null ? head : `${head} ${why}`;
+    return why === null ? `${CHANGE_WORDS[change]}.` : `${CHANGE_WORDS[change]}: ${why}`;
 }

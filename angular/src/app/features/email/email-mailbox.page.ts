@@ -53,12 +53,12 @@ import {
     ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
-import { markRefusalText, movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
+import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
-import { flagRefusedText, type MailFlagRefusedEvent } from './mail-flag-refused';
+import { flagChangeOf, flagRefusalText, type MailFlagRefusedEvent } from './mail-flag-refused';
 import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
@@ -1899,7 +1899,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (notice !== null) {
                     this.toast.dismiss(notice);
                 }
-                this.toast.error(flagRefusedText('seen', choice));
+                this.toast.error(flagRefusalText(flagChangeOf('seen', choice)));
             }
         }
         const keep = <T extends EmailMessageDto>(m: T): T => (held.has(m.id) ? { ...m, seen: held.get(m.id) } : m);
@@ -1932,7 +1932,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (notice !== null) {
             this.toast.dismiss(notice);
         }
-        this.toast.error(flagRefusedText(evt.flag, evt.value, evt.code, evt.reason));
+        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.value), evt.code, evt.reason));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
@@ -2269,14 +2269,18 @@ export class EmailMailboxPageComponent implements OnInit {
         // At once: the rows and the open message change now; a row whose call fails changes back.
         this.setFlaggedHere(new Set(targets.map(m => m.id)), flagged);
         this.bulkBusy.set(true);
+        const problems = new Map<string, string | null>();
         forkJoin(targets.map(m => this.email.markFlagged(m.id, flagged).pipe(
             map(() => null),
-            catchError(() => of(m.id)),
+            catchError((e: unknown) => {
+                problems.set(m.id, problemOf(e));
+                return of(m.id);
+            }),
         ))).subscribe(answers => {
             const failed = answers.filter((id): id is string => id !== null);
             if (failed.length > 0) {
                 this.setFlaggedHere(new Set(failed), !flagged);
-                this.toast.error(markRefusalText(flagged ? 'star' : 'unstar', failed.length));
+                this.toast.error(flagRefusalText(flagged ? 'star' : 'unstar', problems.get(failed[0]) ?? null));
             } else {
                 const notice = this.toast.show({
                     type: 'success',
@@ -2690,6 +2694,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.setSeenHere(new Set(targets.filter(m => (m.seen ?? false) !== seen).map(m => m.id)), seen, folder);
         this.bulkBusy.set(true);
         const sequences = new Map<string, number>();
+        const problems = new Map<string, string | null>();
         forkJoin(targets.map(m => this.email.markSeen(m.id, seen).pipe(
             map(answer => {
                 const at = answerSeq(answer);
@@ -2698,7 +2703,10 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
                 return null;
             }),
-            catchError(() => of(m.id)),
+            catchError((e: unknown) => {
+                problems.set(m.id, problemOf(e));
+                return of(m.id);
+            }),
         ))).subscribe(answers => {
             // A choice the person replaced since is not this answer's to apply.
             const failed = answers.filter((id): id is string => id !== null && this.pendingReads.current(id, token));
@@ -2706,7 +2714,7 @@ export class EmailMailboxPageComponent implements OnInit {
             this.pendingReads.refused(failed, token);
             if (failed.length > 0) {
                 this.setSeenHere(new Set(failed), !seen, folder);
-                this.toast.error(markRefusalText(seen ? 'read' : 'unread', failed.length));
+                this.toast.error(flagRefusalText(seen ? 'read' : 'unread', problems.get(failed[0]) ?? null));
                 this.pendingReads.answered(done, token, null, sequences);
             } else {
                 const notice = this.toast.show({

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { NEVER, of, Subject } from 'rxjs';
@@ -180,7 +181,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
 
         expect(row(page, 'm1')?.seen).toBeTrue();
         expect(dismissed).withContext('the "Marked" notice is replaced').toEqual([1]);
-        expect(errors).toEqual(["The mail server didn't accept marking it unread."]);
+        expect(errors).toEqual(["Couldn't mark as unread."]);
     });
 
     it('after the answer, an event with the person\'s value ends the choice silently; a later change elsewhere applies', () => {
@@ -221,7 +222,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         liveSeen(page, 'm2', true);
 
         expect(page.selectedMessage()?.seen).toBeTrue();
-        expect(errors).toEqual(["The mail server didn't accept marking it unread."]);
+        expect(errors).toEqual(["Couldn't mark as unread."]);
     });
 
     it('mail.flag.refused says the refusal in the page\'s words, in place of the "Marked" notice; the next event restores', () => {
@@ -232,7 +233,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         flagRefused(page, 'm3', 'seen', false, { reason: 'The folder was changed elsewhere.', code: 'changed-elsewhere' });
 
         expect(dismissed).toEqual([1]);
-        expect(errors).toEqual(["The mail server didn't accept marking it unread. It was changed elsewhere in the meantime."]);
+        expect(errors).toEqual(["Couldn't mark as unread: It was changed elsewhere in the meantime."]);
         liveSeen(page, 'm3', true);
         expect(row(page, 'm3')?.seen).toBeTrue();
         expect(errors.length).withContext('said once, not inferred again').toBe(1);
@@ -247,7 +248,35 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         flagRefused(page, 'm1', 'flagged', true, { reason: 'The mailbox is read-only.', code: 'something-new' });
 
         expect(dismissed).toEqual([1]);
-        expect(errors).toEqual(["The mail server didn't accept starring it. The mailbox is read-only."]);
+        expect(errors).toEqual(["Couldn't star: The mailbox is read-only."]);
+    });
+
+    it('says a refusal in the same words whether the write\'s answer refused it or the server did after answering', () => {
+        const sync = build();
+        sync.bulkMarkSeen(false, new Set(['m1']));
+        writes[0].answer.error(new HttpErrorResponse({ status: 409, error: { type: '/errors/email/changed-elsewhere' } }));
+        const answered = [...errors];
+
+        const later = build();
+        later.bulkMarkSeen(false, new Set(['m1']));
+        answerWrite();
+        flagRefused(later, 'm1', 'seen', false, { code: 'changed-elsewhere', reason: 'The message was changed elsewhere.' });
+        const afterwards = [...errors];
+
+        expect(answered).toEqual(["Couldn't mark as unread: It was changed elsewhere in the meantime."]);
+        expect(afterwards).toEqual(answered);
+
+        const plain = build();
+        plain.bulkFlag(true, new Set(['m2']));
+        flagWrites[0].error(new HttpErrorResponse({ status: 502 }));
+        const plainSync = [...errors];
+        const plainLater = build();
+        plainLater.bulkFlag(true, new Set(['m2']));
+        flagWrites[0].next(null);
+        flagWrites[0].complete();
+        flagRefused(plainLater, 'm2', 'flagged', true);
+        expect(plainSync).toEqual(["Couldn't star."]);
+        expect([...errors]).toEqual(plainSync);
     });
 
     it('two read writes in flight: the one chosen last wins, and the earlier one\'s answer applies nothing', () => {
