@@ -83,7 +83,8 @@ import { EmailMailboxDto } from './email.types';
         </ng-template>
     `,
     styles: [`
-        :host { display: block; position: relative; flex: 0 0 auto; }
+        /* The card's border and padding sit in the column's gutter: its content starts at the column's edge. */
+        :host { display: block; position: relative; flex: 0 0 auto; margin-left: -9px; }
         .mbs__card, .mbs__choice {
             display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; text-align: left;
             padding: 8px; background: transparent; color: var(--cms-text); font: inherit;

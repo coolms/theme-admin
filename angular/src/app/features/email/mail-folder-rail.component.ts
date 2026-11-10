@@ -53,9 +53,11 @@ import type { FolderRow } from './folder-tree.util';
     styles: [`
         :host { display: block; }
         .mbx__folders { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+        /* The highlight reaches into the column's gutter by its own padding, so the name starts at the column's edge
+           (the section header's icon), children indented from there. */
         .mbx__folder {
-            position: relative;
-            display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+            position: relative; margin-left: -9px;
+            display: flex; align-items: center; gap: 6px; width: calc(100% + 9px); text-align: left;
             padding: 7px 9px; border: 0; border-radius: var(--cms-radius, 6px); background: transparent; cursor: pointer;
             color: var(--cms-text); font-size: .875rem;
         }
