@@ -181,13 +181,19 @@ export class TrashFlow {
                 }
                 this.ports.drop(outcome.removed, ids);
                 const undoable = outcome.undoable;
-                if (undoable.length > 0) {
-                    toast.show({ type: 'success', message: movedToTrashText(undoable.length), action: { label: 'Undo', run: () => this.undo(undoable) } }, UNDO_MS);
-                }
+                const undo = { label: 'Undo', run: () => this.undo(undoable) };
                 const inTrash = outcome.refused.filter(r => problemOf(r.reason ?? null) === 'already-in-trash');
                 const refused = outcome.refused.filter(r => !inTrash.includes(r));
+                // One notice: a refusal's sentence in place of "Moved to Trash", still offering Undo for the moved.
                 if (refused.length > 0) {
-                    toast.error(trashRefusalText('delete', firstProblem(refused), refused.length));
+                    const message = trashRefusalText('delete', firstProblem(refused), refused.length);
+                    if (undoable.length > 0) {
+                        toast.show({ type: 'error', message, action: undo }, UNDO_MS);
+                    } else {
+                        toast.error(message);
+                    }
+                } else if (undoable.length > 0) {
+                    toast.show({ type: 'success', message: movedToTrashText(undoable.length), action: undo }, UNDO_MS);
                 }
                 if (inTrash.length > 0) {
                     this.deletePermanently(inTrash.map(r => r.id));

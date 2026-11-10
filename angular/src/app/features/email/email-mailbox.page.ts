@@ -1523,6 +1523,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (ACTIONS_THAT_WAIT.has(action) && waiting !== null && ids.some(id => waiting.ids.has(id))) {
             return;
         }
+        this.moves++;
         if (ACTIONS_THAT_WAIT.has(action) && action !== 'move') {
             this.waitFor(action, ids, () => this.runMessageAction(action, ids));
             return;
@@ -1948,6 +1949,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Back to the list: the open message is closed, and a detail still loading is dropped when it answers. */
     closeMessage(): void {
+        this.moves++;
         this.openSeq += 1;
         this.loadingDetail.set(false);
         this.selectedMessage.set(null);
@@ -1966,6 +1968,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Load a message's detail; mark it read if it was unread. Shared by list + search. */
     private openById(id: string, seen: boolean, folder: string, then?: () => void): void {
+        this.moves++;
         this.openEvicted.set(false);
         const seq = ++this.openSeq;
         this.attachments.set([]);
@@ -2205,8 +2208,7 @@ export class EmailMailboxPageComponent implements OnInit {
             if (failed.length > 0) {
                 this.setFlaggedHere(new Set(failed), !flagged);
                 this.toast.error(markRefusalText(flagged ? 'star' : 'unstar', failed.length));
-            }
-            if (failed.length < targets.length) {
+            } else {
                 this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`);
             }
             this.answered();
@@ -2255,12 +2257,12 @@ export class EmailMailboxPageComponent implements OnInit {
             catchError((e: unknown) => of({ id: m.id, problem: problemOf(e) })),
         ))).subscribe(answers => {
             const refused = answers.filter((a): a is { id: string; problem: string | null } => a !== null);
+            // One notice: the refusal's when any was refused, in place of what was done.
+            const moved = asked.length - refused.length;
             if (refused.length > 0) {
                 this.putBack(refused.map(r => r.id));
                 this.toast.error(moveRefusalText(refused[0].problem, refused.length));
-            }
-            const moved = asked.length - refused.length;
-            if (moved > 0) {
+            } else if (moved > 0) {
                 this.toast.success(movedText(moved, name));
             }
             const left = asked.filter(id => !refused.some(r => r.id === id));
@@ -2320,8 +2322,13 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Rows taken out at once and not yet answered, with their places: what a refusal puts back. */
     private readonly taken = new Map<string, TakenRow>();
-    /** The message that was open when it was taken out at once, until the server answers. */
-    private takenOpen: EmailMessageDetailDto | null = null;
+    /**
+     * The message that was open when it was taken out at once, until the server answers, and how many moves the
+     * person had made by the time the next one opened in its place.
+     */
+    private takenOpen: { message: EmailMessageDetailDto; moves: number } | null = null;
+    /** Every move of the person's in the mail page: a message opened or closed, an action run. */
+    private moves = 0;
 
     /**
      * Archive, Delete or Move chosen: the rows leave the list at once, before the server answers, and the open
@@ -2331,30 +2338,36 @@ export class EmailMailboxPageComponent implements OnInit {
         const open = this.selectedMessage();
         const { taken } = takeRows(this.messages(), new Set(ids));
         taken.forEach(t => this.taken.set(t.row.id, t));
-        if (open && ids.includes(open.id)) {
-            this.takenOpen = open;
-        }
         this.dropRows(ids, ids, false);
+        if (open && ids.includes(open.id)) {
+            this.takenOpen = { message: open, moves: this.moves };
+        }
     }
 
-    /** The server refused these: back in their places, and the open one open again. Nothing is asked again. */
+    /**
+     * The server refused these: back in their places, with their row state. The one that was open opens again only
+     * while what followed it is untouched -- nothing opened, closed or acted on since; otherwise the person stays where
+     * they are, and only its row comes back. Nothing is asked again.
+     */
     private putBack(ids: readonly string[]): void {
         const back = ids.map(id => this.taken.get(id)).filter((t): t is TakenRow => t !== undefined);
         ids.forEach(id => this.taken.delete(id));
         this.messages.set(putRowsBack(this.messages(), back));
         const open = this.takenOpen;
-        if (open && ids.includes(open.id)) {
+        if (open && ids.includes(open.message.id)) {
             this.takenOpen = null;
-            this.closeMessage();
-            this.selectedMessage.set(open);
-            this.showPane('message');
+            if (open.moves === this.moves) {
+                this.closeMessage();
+                this.selectedMessage.set(open.message);
+                this.showPane('message');
+            }
         }
     }
 
     /** The server answered for these: nothing to put back. */
     private forget(ids: readonly string[]): void {
         ids.forEach(id => this.taken.delete(id));
-        if (this.takenOpen && ids.includes(this.takenOpen.id)) {
+        if (this.takenOpen && ids.includes(this.takenOpen.message.id)) {
             this.takenOpen = null;
         }
     }
@@ -2591,8 +2604,7 @@ export class EmailMailboxPageComponent implements OnInit {
             if (failed.length > 0) {
                 this.setSeenHere(new Set(failed), !seen, folder);
                 this.toast.error(markRefusalText(seen ? 'read' : 'unread', failed.length));
-            }
-            if (failed.length < targets.length) {
+            } else {
                 this.toast.success(`Marked ${targets.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`);
             }
             this.answered();

@@ -295,7 +295,64 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             ]));
 
             expect(ids(page)).toEqual(['m2', 'm3', 'm4']);
-            expect(shown.map(s => s.message)).toEqual(['Moved 2 messages to Trash.']);
+            expect(shown.map(s => s.message)).withContext('one notice, the refusal in place of Moved to Trash')
+                .toEqual(["This mailbox's server cannot move messages, so nothing was deleted."]);
+            expect(shown[0].action?.label).toBe('Undo');
+            expect(errors).toEqual([]);
+            expect(successes).toEqual([]);
+        });
+
+        it('a refusal while the next message is untouched opens the refused one again', () => {
+            const page = build();
+            open(page, 'm2');
+            page.onDetailAction('delete');
+            expect(page.selectedMessage()?.id).toBe('m3');
+
+            refuse('delete', new HttpErrorResponse({ status: 502 }));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m2');
+        });
+
+        it('a refusal after the person opened another message keeps that one; only the row comes back', () => {
+            const page = build();
+            open(page, 'm2');
+            page.onDetailAction('archive');
+            page.openMessage(page.messages().find(m => m.id === 'm5')!);
+
+            refuse('archive', new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason: 'not-in-inbox' } }));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m5');
+            expect(errors).toEqual(['On this server only messages in the Inbox can be archived.']);
+        });
+
+        it('a refusal after the person acted on the next message keeps it; only the row comes back', () => {
+            const page = build();
+            open(page, 'm2');
+            page.onDetailAction('archive');
+            expect(page.selectedMessage()?.id).toBe('m3');
+            page.onDetailAction('star');
+
+            refuse('archive', new HttpErrorResponse({ status: 502 }));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m3');
+        });
+
+        it('a refused row comes back with its row state', () => {
+            const page = build();
+            page.bulkFlag(true, new Set(['m2']));
+            answer('flag', null);
+            expect(row(page, 'm2')?.flagged).toBeTrue();
+            page.selectedIds.set(new Set(['m2']));
+
+            page.onBulkAction('archive');
+            refuse('archive', new HttpErrorResponse({ status: 502 }));
+
+            expect(row(page, 'm2')?.flagged).toBeTrue();
+            expect(row(page, 'm2')?.seen).toBeFalse();
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
         });
 
         it('Move of checked rows: each row by its own answer', () => {
@@ -308,7 +365,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             refuse('move', new HttpErrorResponse({ status: 404, error: { type: '/errors/email/not-found' } }), 1);
 
             expect(ids(page)).toEqual(['m1', 'm3', 'm4', 'm5']);
-            expect(successes).toEqual(['Moved to Projects.']);
+            expect(successes).withContext('one notice: the refusal, in place of what was done').toEqual([]);
             expect(errors).toEqual(['This message no longer exists.']);
         });
     });

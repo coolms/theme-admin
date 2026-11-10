@@ -132,7 +132,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
         expect(seen.singles).toEqual([]);
         expect(seen.bulks).toEqual([['a', 'b', 'c', 'd']]);
         expect(seen.archived).toEqual([[{ id: 'a', folder: 'Archive' }, { id: 'c', folder: 'Archive' }]]);
-        expect(seen.successes).toEqual(['Archived 2 messages.']);
+        expect(seen.successes).withContext('one notice: the refusal, which counts the archived').toEqual([]);
         expect(seen.errors).toEqual(['2 messages of 4 not archived. Messages in this folder cannot be archived.']);
     });
 

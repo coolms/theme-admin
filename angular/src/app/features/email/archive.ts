@@ -147,9 +147,12 @@ export class ArchiveFlow {
                 const refused = results.filter(r => r.outcome === 'refused');
                 if (done.length > 0) {
                     this.ports.archived(done, ids);
-                    toast.success(archivedText(done.length));
                 }
+                // One notice: the refusal's (which counts the archived) in place of "Archived".
                 if (refused.length === 0) {
+                    if (done.length > 0) {
+                        toast.success(archivedText(done.length));
+                    }
                     return;
                 }
                 this.ports.putBack(refused.map(r => r.id));
