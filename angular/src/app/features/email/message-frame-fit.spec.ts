@@ -88,6 +88,32 @@ describe('MessageFrameComponent', () => {
         expect(getComputedStyle(doc.documentElement).overflowY).toBe('hidden');
     });
 
+    it('follows a document whose height changes again and again, with no resize loop', async () => {
+        const errors: string[] = [];
+        const onError = (event: ErrorEvent): void => {
+            errors.push(String(event.message));
+        };
+        window.addEventListener('error', onError, true);
+        try {
+            const frame = await loaded();
+            const doc = frame.contentDocument!;
+            for (let round = 0; round < 12; round++) {
+                const block = doc.createElement('div');
+                block.id = 'grown';
+                block.style.height = (round % 2 === 0 ? 400 + round * 37 : 3) + 'px';
+                doc.getElementById('grown')?.remove();
+                doc.body.appendChild(block);
+                await frames();
+                await frames();
+                expect(Math.abs(frame.clientHeight - frameContentHeight(doc))).withContext('round ' + round).toBeLessThanOrEqual(2);
+                expect(doc.documentElement.scrollHeight).withContext('round ' + round).toBeLessThanOrEqual(frame.clientHeight);
+            }
+            expect(errors).withContext('window errors').toEqual([]);
+        } finally {
+            window.removeEventListener('error', onError, true);
+        }
+    });
+
     it('grows again when its width narrows and the text wraps taller', async () => {
         const frame = await loaded();
         const wide = frame.getBoundingClientRect().height;
@@ -116,7 +142,7 @@ describe('MessageFrameComponent', () => {
         expect(frame.contentDocument!.location.href).withContext('the frame never navigates').toBe('about:srcdoc');
     });
 
-    it('opens an image map area as a link (the sanitiser leaves it no rel): new tab, no opener, no referrer', async () => {
+    it('opens an image-map area as a link, with noopener and noreferrer', async () => {
         const frame = await loaded();
 
         const followed = click(frame, 'area');

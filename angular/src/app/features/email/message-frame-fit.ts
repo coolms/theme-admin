@@ -4,8 +4,11 @@
  *
  * The frame's sandbox is `allow-same-origin` alone: no script ever runs inside it, it opens no window and navigates
  * nothing, and the host reads its document from outside. The height is read when the frame loads (after its images),
- * again as its document resizes (a ResizeObserver on its root element, whose width is the frame's, so a narrower
- * frame that rewraps the text taller is followed too).
+ * again as the frame's width changes (a ResizeObserver on the frame: a narrower frame rewraps its text taller), as
+ * its document changes (a MutationObserver on it) and as an image in it loads -- each time on the next animation
+ * frame, and written only when it moves by a whole pixel. The document itself is not given to a ResizeObserver: the
+ * page's observer watching an element of another document is reported as a resize loop by the browser, whatever the
+ * callback does.
  *
  * Links: the frame may open nothing itself, so the host listens for clicks on its links, keeps the frame from
  * following them, and opens an http(s) or mailto address in a new tab with no opener and no referrer. Any other
@@ -13,7 +16,9 @@
  */
 export class MessageFrameFit {
     private watch: ResizeObserver | null = null;
+    private mutations: MutationObserver | null = null;
     private unlisten: (() => void) | null = null;
+    private cancel: (() => void) | null = null;
 
     constructor(private readonly open: (url: string) => void = url => { window.open(url, '_blank', 'noopener,noreferrer'); }) {}
 
@@ -31,23 +36,39 @@ export class MessageFrameFit {
             }
             // The frame's own border (and padding), whatever its box-sizing: its content box must hold the document.
             const height = frameContentHeight(doc) + (frame.offsetHeight - frame.clientHeight);
-            if (height > 0 && frame.style.height !== `${height}px`) {
+            // Written only when it moves by a whole pixel, so the observer settles instead of chasing subpixels.
+            if (height > 0 && Math.abs(height - frame.getBoundingClientRect().height) >= 1) {
                 frame.style.height = `${height}px`;
+            }
+        };
+        // Observed sizes are written on the next frame, never inside the observer's own delivery: a height written
+        // there can resize what is observed in the same delivery, which the browser reports as a loop.
+        let pending = 0;
+        const later = (): void => {
+            if (pending === 0) {
+                pending = requestAnimationFrame(() => {
+                    pending = 0;
+                    fit();
+                });
+            }
+        };
+        this.cancel = () => {
+            if (pending !== 0) {
+                cancelAnimationFrame(pending);
+                pending = 0;
             }
         };
         fit();
         if (typeof ResizeObserver !== 'undefined') {
-            // The document's root follows the frame's width too (a narrower frame rewraps it taller), so it is the
-            // one element observed. Fitting changes the frame's height, never the root's size, so a fit inside the
-            // observer's delivery asks for no second one.
-            this.watch = new ResizeObserver(fit);
-            this.watch.observe(doc.documentElement);
+            this.watch = new ResizeObserver(later);
+            this.watch.observe(frame);
         }
-        for (const img of Array.from(doc.images)) {
-            if (!img.complete) {
-                img.addEventListener('load', fit, { once: true });
-            }
+        if (typeof MutationObserver !== 'undefined') {
+            this.mutations = new MutationObserver(later);
+            this.mutations.observe(doc.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
         }
+        // An image loading, now or added later: load does not bubble, so it is caught on its way down.
+        doc.addEventListener('load', later, true);
         const onClick = (event: MouseEvent): void => {
             const link = linkOf(event.target);
             if (link === null) {
@@ -60,12 +81,19 @@ export class MessageFrameFit {
             }
         };
         doc.addEventListener('click', onClick);
-        this.unlisten = () => doc.removeEventListener('click', onClick);
+        this.unlisten = () => {
+            doc.removeEventListener('click', onClick);
+            doc.removeEventListener('load', later, true);
+        };
     }
 
     stop(): void {
+        this.cancel?.();
+        this.cancel = null;
         this.watch?.disconnect();
         this.watch = null;
+        this.mutations?.disconnect();
+        this.mutations = null;
         this.unlisten?.();
         this.unlisten = null;
     }

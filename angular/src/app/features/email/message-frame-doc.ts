@@ -27,9 +27,9 @@ export function messageFrameDoc(html: string, loadRemoteImages: boolean): string
 
 /**
  * Every link of the body -- `a[href]` and `area[href]` -- opens apart from the page: `rel="noopener noreferrer"` and
- * `target="_blank"`, whatever the mail carried. Defence in depth under the page's own click handling
- * (MessageFrameFit), for the server's sanitiser forces `rel` on `<a>` and not on `<area>`. Parsed in an inert
- * document (DOMParser: no script runs, nothing loads); a body with no link is returned byte-identical.
+ * `target="_blank"`, whatever the mail carried. Defence in depth over the server's sanitiser (which forces `rel` on
+ * both) and under the page's own click handling (MessageFrameFit). Parsed in an inert document (DOMParser: no script
+ * runs, nothing loads); a body with no link is returned byte-identical.
  */
 export function linksOpenApart(html: string): string {
     if (!/<(a|area)[\s>]/i.test(html) || typeof DOMParser === 'undefined') {
