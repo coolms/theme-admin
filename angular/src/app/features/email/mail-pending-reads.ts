@@ -44,6 +44,19 @@ export class PendingReads {
         return token;
     }
 
+    /**
+     * The same change reached more rows than were chosen (on Gmail, the message's row in each of its labels): they
+     * join this choice, unless the person chose otherwise for one of them since.
+     */
+    join(ids: Iterable<string>, token: number, seen: boolean): void {
+        for (const id of ids) {
+            const entry = this.entries.get(id);
+            if (entry === undefined || entry.token < token) {
+                this.entries.set(id, { seen, token, answerSeq: null, answeredAt: null, noticeId: null });
+            }
+        }
+    }
+
     /** Whether this choice is still the person's last for the message: an earlier one's answer applies nothing. */
     current(id: string, token: number): boolean {
         return this.entries.get(id)?.token === token;
@@ -145,6 +158,7 @@ export class PendingReads {
  * otherwise, and then the live follower's own sequence marks keep stale events out as before.
  */
 export function answerSeq(answer: unknown): number | null {
+    // The answer's shape: {id, seen|flagged, seq, ids}; today's server answers no seq and no ids.
     const seq = answer !== null && typeof answer === 'object' ? (answer as { seq?: unknown }).seq : undefined;
     return typeof seq === 'number' && Number.isFinite(seq) ? seq : null;
 }

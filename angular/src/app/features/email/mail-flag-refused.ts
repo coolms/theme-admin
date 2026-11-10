@@ -11,6 +11,8 @@ export interface MailFlagRefusedEvent {
     readonly value: boolean;
     readonly reason: string | null;
     readonly code: string | null;
+    /** Every row the refused change had reached (on Gmail, the message's row in each label); [messageId] if unsaid. */
+    readonly ids: readonly string[];
 }
 
 /** The event, read strictly: anything not in its shape is no event. */
@@ -33,7 +35,14 @@ export function readFlagRefused(raw: unknown): MailFlagRefusedEvent | null {
         value: o['value'],
         reason: typeof o['reason'] === 'string' && o['reason'] !== '' ? o['reason'] : null,
         code: typeof o['code'] === 'string' && o['code'] !== '' ? o['code'] : null,
+        ids: idsOf(o['ids'], o['messageId']),
     };
+}
+
+/** A list of row ids from the server, or [fallback] when it names none. */
+export function idsOf(raw: unknown, fallback: string): string[] {
+    const ids = Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string' && id !== '') : [];
+    return ids.length > 0 ? [...new Set([fallback, ...ids])] : [fallback];
 }
 
 /** A flag change a person asks for. */

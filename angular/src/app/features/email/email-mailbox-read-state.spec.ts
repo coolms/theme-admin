@@ -138,9 +138,10 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         return lists[lists.length - 1];
     };
     const serverList = (): EmailMessageDto[] => ROWS.map(r => ({ ...r, seen: server.get(r.id) }));
-    const liveSeen = (page: EmailMailboxPageComponent, id: string, seen: boolean): void => {
+    const liveSeen = (page: EmailMailboxPageComponent, id: string, seen: boolean, at?: number): void => {
+        seq = at ?? seq + 1;
         const evt = readMessagesChanged({
-            type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'action', seq: ++seq,
+            type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'action', seq,
             changes: [{ id, threadId: 't-' + id, folder: 'INBOX', seen, flagged: false }], counts: {}, mailboxUnseen: 0,
         }) as MailMessagesChangedEvent;
         (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(evt);
@@ -277,6 +278,64 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         flagRefused(plainLater, 'm2', 'flagged', true);
         expect(plainSync).toEqual(["Couldn't star."]);
         expect([...errors]).toEqual(plainSync);
+    });
+
+    describe('one message on several rows (Gmail: its row in each label)', () => {
+        it('the answer\'s ids: every row shows the choice, and an event below the answer\'s seq for any of them is held off', () => {
+            const page = build();
+            page.bulkMarkSeen(false, new Set(['m1']));
+            expect(row(page, 'm3')?.seen).withContext('only the chosen row before the answer').toBeTrue();
+
+            answerWrite(0, { id: 'm1', seen: false, seq: 10, ids: ['m1', 'm3'] });
+
+            expect(row(page, 'm1')?.seen).toBeFalse();
+            expect(row(page, 'm3')?.seen).withContext('the label row too').toBeFalse();
+            liveSeen(page, 'm3', true, 5);
+            expect(row(page, 'm3')?.seen).withContext('older than the answer: held off').toBeFalse();
+            liveSeen(page, 'm3', false, 10);
+            liveSeen(page, 'm1', false, 10);
+            expect(errors).toEqual([]);
+            liveSeen(page, 'm3', true, 12);
+            expect(row(page, 'm3')?.seen).withContext('the choice has ended: a later change applies').toBeTrue();
+        });
+
+        it('mail.flag.refused naming both rows: said once, in place of the one notice, and the event restores both', () => {
+            const page = build();
+            page.bulkMarkSeen(false, new Set(['m1']));
+            answerWrite(0, { id: 'm1', seen: false, seq: 10, ids: ['m1', 'm3'] });
+
+            flagRefused(page, 'm1', 'seen', false, { ids: ['m1', 'm3'], code: 'renumbered' });
+
+            expect(dismissed).toEqual([1]);
+            expect(errors).toEqual(["Couldn't mark as unread: Its folder changed on the mail server. Try again after it refreshes."]);
+            const evt = readMessagesChanged({
+                type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'action', seq: 11,
+                changes: ['m1', 'm3'].map(id => ({ id, threadId: 't', folder: 'INBOX', seen: true, flagged: false, refused: 'seen', reason: 'renumbered' })),
+                counts: {}, mailboxUnseen: 0,
+            }) as MailMessagesChangedEvent;
+            (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(evt);
+            expect(row(page, 'm1')?.seen).toBeTrue();
+            expect(row(page, 'm3')?.seen).toBeTrue();
+            expect(errors.length).withContext('said once').toBe(1);
+        });
+
+        it('a rollback event naming both rows, with no mail.flag.refused before it, is said once with its code', () => {
+            const page = build();
+            page.bulkMarkSeen(false, new Set(['m1']));
+            answerWrite(0, { id: 'm1', seen: false, seq: 10, ids: ['m1', 'm3'] });
+
+            const evt = readMessagesChanged({
+                type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'action', seq: 11,
+                changes: ['m1', 'm3'].map(id => ({ id, threadId: 't', folder: 'INBOX', seen: true, flagged: false, refused: 'seen', reason: 'not-found' })),
+                counts: {}, mailboxUnseen: 0,
+            }) as MailMessagesChangedEvent;
+            (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(evt);
+
+            expect(row(page, 'm1')?.seen).toBeTrue();
+            expect(row(page, 'm3')?.seen).toBeTrue();
+            expect(dismissed).toEqual([1]);
+            expect(errors).toEqual(["Couldn't mark as unread: The mail server no longer has this message."]);
+        });
     });
 
     it('two read writes in flight: the one chosen last wins, and the earlier one\'s answer applies nothing', () => {

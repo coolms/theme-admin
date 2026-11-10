@@ -58,7 +58,7 @@ import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
-import { flagChangeOf, flagRefusalText, type MailFlagRefusedEvent } from './mail-flag-refused';
+import { flagChangeOf, flagRefusalText, idsOf, type MailFlagRefusedEvent } from './mail-flag-refused';
 import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
@@ -1884,7 +1884,8 @@ export class EmailMailboxPageComponent implements OnInit {
         // keeps the person's value; the first one after the answer is the server's word, and a refusal when it says
         // the other value (when no mail.flag.refused said so first).
         const held = new Map<string, boolean>();
-        const refused: string[] = [];
+        let refusal: string | null = null;
+        const notices = new Set<number>();
         for (const change of evt.changes) {
             if (!('seen' in change) || typeof change.seen !== 'boolean') {
                 continue;
@@ -1895,12 +1896,18 @@ export class EmailMailboxPageComponent implements OnInit {
             if (meant === 'held' && choice !== null) {
                 held.set(change.id, choice);
             } else if (meant === 'refused' && choice !== null) {
-                refused.push(change.id);
+                // An entry that says it rolls a refused change back carries its reason's code.
+                const code = 'refused' in change && change.refused === 'seen' ? change.reason ?? null : null;
+                refusal ??= flagRefusalText(flagChangeOf('seen', choice), code);
                 if (notice !== null) {
-                    this.toast.dismiss(notice);
+                    notices.add(notice);
                 }
-                this.toast.error(flagRefusalText(flagChangeOf('seen', choice)));
             }
+        }
+        // One message's rows (on Gmail, one per label) refused together: said once, in place of its notice.
+        notices.forEach(id => this.toast.dismiss(id));
+        if (refusal !== null) {
+            this.toast.error(refusal);
         }
         const keep = <T extends EmailMessageDto>(m: T): T => (held.has(m.id) ? { ...m, seen: held.get(m.id) } : m);
         this.messages.set(after.messages.map(keep));
@@ -1921,17 +1928,20 @@ export class EmailMailboxPageComponent implements OnInit {
         if (evt.mailboxId !== this.selectedMailboxId()) {
             return;
         }
-        const notice = evt.flag === 'seen'
-            ? this.pendingReads.notice(evt.messageId)
-            : this.flagNotices.get(evt.messageId) ?? null;
-        if (evt.flag === 'seen') {
-            this.pendingReads.refusedByServer(evt.messageId);
-        } else {
-            this.flagNotices.delete(evt.messageId);
+        // Every row the change had reached (on Gmail, the message's row in each label) is named, and said once.
+        const notices = new Set<number>();
+        for (const id of evt.ids) {
+            const notice = evt.flag === 'seen' ? this.pendingReads.notice(id) : this.flagNotices.get(id) ?? null;
+            if (notice !== null) {
+                notices.add(notice);
+            }
+            if (evt.flag === 'seen') {
+                this.pendingReads.refusedByServer(id);
+            } else {
+                this.flagNotices.delete(id);
+            }
         }
-        if (notice !== null) {
-            this.toast.dismiss(notice);
-        }
+        notices.forEach(id => this.toast.dismiss(id));
         this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.value), evt.code, evt.reason));
     }
 
@@ -2270,8 +2280,12 @@ export class EmailMailboxPageComponent implements OnInit {
         this.setFlaggedHere(new Set(targets.map(m => m.id)), flagged);
         this.bulkBusy.set(true);
         const problems = new Map<string, string | null>();
+        const reached = new Set<string>();
         forkJoin(targets.map(m => this.email.markFlagged(m.id, flagged).pipe(
-            map(() => null),
+            map(answer => {
+                idsOf((answer as { ids?: unknown } | null)?.ids, m.id).forEach(id => reached.add(id));
+                return null;
+            }),
             catchError((e: unknown) => {
                 problems.set(m.id, problemOf(e));
                 return of(m.id);
@@ -2286,11 +2300,27 @@ export class EmailMailboxPageComponent implements OnInit {
                     type: 'success',
                     message: `${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`,
                 });
-                targets.forEach(m => this.flagNotices.set(m.id, notice));
+                // Every row the star reached shows it, and a refusal of any of them replaces this notice.
+                this.setFlaggedRows(new Set([...reached].filter(id => !targets.some(m => m.id === id))), flagged);
+                reached.forEach(id => this.flagNotices.set(id, notice));
             }
             this.answered();
             this.clearSelection();
         });
+    }
+
+    /** The star of these rows wherever they show: the list, the open message, its conversation, the search hits. */
+    private setFlaggedRows(ids: ReadonlySet<string>, flagged: boolean): void {
+        if (ids.size === 0) {
+            return;
+        }
+        const apply = <T extends EmailMessageDto>(m: T): T => (ids.has(m.id) ? { ...m, flagged } : m);
+        this.messages.set(this.messages().map(apply));
+        this.thread.set(this.thread().map(apply));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, flagged });
+        }
     }
 
     /** The star of these rows, and of the open message when it is one of them, here. */
@@ -2695,11 +2725,16 @@ export class EmailMailboxPageComponent implements OnInit {
         this.bulkBusy.set(true);
         const sequences = new Map<string, number>();
         const problems = new Map<string, string | null>();
+        const reached = new Set<string>();
         forkJoin(targets.map(m => this.email.markSeen(m.id, seen).pipe(
             map(answer => {
+                // Every row the change was applied to (on Gmail, the message's row in each label), [the row] if unsaid.
                 const at = answerSeq(answer);
-                if (at !== null) {
-                    sequences.set(m.id, at);
+                for (const id of idsOf((answer as { ids?: unknown } | null)?.ids, m.id)) {
+                    reached.add(id);
+                    if (at !== null) {
+                        sequences.set(id, at);
+                    }
                 }
                 return null;
             }),
@@ -2710,7 +2745,11 @@ export class EmailMailboxPageComponent implements OnInit {
         ))).subscribe(answers => {
             // A choice the person replaced since is not this answer's to apply.
             const failed = answers.filter((id): id is string => id !== null && this.pendingReads.current(id, token));
-            const done = chosen.filter(id => !failed.includes(id));
+            // The rows the change reached beyond those chosen join the choice and show it, every one of them.
+            const also = [...reached].filter(id => !chosen.includes(id));
+            this.pendingReads.join(also, token, seen);
+            this.setSeenRows(new Set(also.filter(id => this.pendingReads.current(id, token))), seen);
+            const done = [...chosen.filter(id => !failed.includes(id)), ...also];
             this.pendingReads.refused(failed, token);
             if (failed.length > 0) {
                 this.setSeenHere(new Set(failed), !seen, folder);
@@ -2719,13 +2758,31 @@ export class EmailMailboxPageComponent implements OnInit {
             } else {
                 const notice = this.toast.show({
                     type: 'success',
-                    message: `Marked ${done.length} message(s) ${seen ? 'read' : 'unread'}.`,
+                    message: `Marked ${chosen.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`,
                 });
                 this.pendingReads.answered(done, token, notice, sequences);
             }
             this.answered();
             this.clearSelection();
         });
+    }
+
+    /**
+     * Read or unread for these rows wherever they show -- the list, the open message, its conversation, the search
+     * hits -- and nothing else: the folder counts wait for the server's.
+     */
+    private setSeenRows(ids: ReadonlySet<string>, seen: boolean): void {
+        if (ids.size === 0) {
+            return;
+        }
+        const apply = <T extends EmailMessageDto>(m: T): T => (ids.has(m.id) ? { ...m, seen } : m);
+        this.messages.set(this.messages().map(apply));
+        this.thread.set(this.thread().map(apply));
+        this.searchResults.set(this.searchResults().map(x => (ids.has(x.id) ? { ...x, seen } : x)));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, seen });
+        }
     }
 
     /** Read or unread for these rows, the open message among them, and the folder's unread count, here. */
@@ -3600,8 +3657,12 @@ ${this.selectedFolder()}`;
                     return;
                 }
                 const at = answerSeq(answer);
-                const sequence = at === null ? new Map<string, number>() : new Map([[messageId, at]]);
-                this.pendingReads.answered([messageId], token, null, sequence);
+                const reached = idsOf((answer as { ids?: unknown } | null)?.ids, messageId);
+                const also = reached.filter(id => id !== messageId);
+                this.pendingReads.join(also, token, seen);
+                this.setSeenRows(new Set(also.filter(id => this.pendingReads.current(id, token))), seen);
+                const sequence = new Map<string, number>(at === null ? [] : reached.map(id => [id, at]));
+                this.pendingReads.answered(reached, token, null, sequence);
                 this.messages.set(this.messages().map(x => (x.id === messageId ? { ...x, seen } : x)));
                 // Reflect the flag in any matching search hit too.
                 this.searchResults.set(this.searchResults().map(x => (x.id === messageId ? { ...x, seen } : x)));
