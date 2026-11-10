@@ -25,7 +25,7 @@ import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 /**
  * Archive on the mailbox page: one message by its own call, several checked by one bulk call; a row leaves the list
- * unless the folder shown is the one the server answered; the reader is left as Delete leaves it; a refusal is said;
+ * unless the folder shown is the one the server answered; the reader opens the next message as after Delete; a refusal is said;
  * and a change from elsewhere that moved a row moves it here too. The page is built directly, not rendered.
  */
 describe('EmailMailboxPageComponent -- archive', () => {
@@ -84,13 +84,18 @@ describe('EmailMailboxPageComponent -- archive', () => {
                                 .filter(r => r.outcome === 'archived')
                                 .forEach(r => movedTo.set(r.id, r.folder ?? ''))));
                         },
+                        getMessage: (id: string) => of({ ...LISTED.find(m => m.id === id)!, bodyText: 'Hello' }),
+                        listThread: () => of([]),
                         deleteMessages: (ids: readonly string[]) => {
                             ids.forEach(id => movedTo.set(id, 'Trash'));
                             return of({ results: ids.map(id => ({ id, outcome: 'moved', folder: 'Trash' })) });
                         },
                     },
                 },
-                { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
+                {
+                    provide: MailPreferencesService,
+                    useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS), current: () => MAIL_PREFERENCE_DEFAULTS },
+                },
                 {
                     provide: ToastService,
                     useValue: {
@@ -131,7 +136,7 @@ describe('EmailMailboxPageComponent -- archive', () => {
     const open = (page: EmailMailboxPageComponent, id: string): void =>
         page.selectedMessage.set({ ...page.messages().find(m => m.id === id)!, bodyText: 'Hello' });
 
-    it('the open message: its own call; the row leaves and the reader is left as Delete leaves it', () => {
+    it('the open message: its own call; the row leaves and the reader opens the next, as after Delete', () => {
         const page = build();
         open(page, 'm2');
 
@@ -140,13 +145,13 @@ describe('EmailMailboxPageComponent -- archive', () => {
         expect(singles).toEqual(['m2']);
         expect(bulks).toEqual([]);
         expect(ids(page)).toEqual(['m1', 'm3']);
-        expect(page.selectedMessage()).withContext('the reader after Archive').toBeNull();
+        expect(page.selectedMessage()?.id).withContext('the reader after Archive').toBe('m3');
 
         const deleted = build();
         open(deleted, 'm2');
         deleted.onDetailAction('delete');
         expect(ids(deleted)).toEqual(['m1', 'm3']);
-        expect(deleted.selectedMessage()).withContext('the reader after Delete, the same').toBeNull();
+        expect(deleted.selectedMessage()?.id).withContext('the reader after Delete, the same').toBe('m3');
     });
 
     it("an unchecked row's menu archives that row alone by the single call, whatever else is checked", () => {
