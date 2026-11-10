@@ -1,8 +1,7 @@
 /**
- * The document a message body is drawn in: the server-sanitised HTML in a minimal page whose CSP blocks every remote
- * fetch until the reader loads images. The iframe that shows it is sandboxed to `allow-same-origin` alone (so the page
- * can measure it from outside; no scripts, no popups, no forms), so this is defence in depth over the server
- * sanitiser, and styles cross in neither direction. It never scrolls: the frame is as tall as it (MessageFrameFit).
+ * What a message's frame page holds: the admin's own mail-frame page, served with the contract's policy, into
+ * which the page writes the server-sanitised HTML and these styles. The frame never runs a script, and never scrolls:
+ * it is as tall as its document (MessageFrameFit).
  *
  * Long words and URLs still wrap (`overflow-wrap: break-word`), but nothing makes every character a break opportunity
  * when a table works out its column widths. `overflow-wrap: anywhere` and `word-break: break-word` both do: a
@@ -13,16 +12,22 @@ export const MESSAGE_FRAME_STYLE =
     + 'font-size:14px;line-height:1.5;color:#1f2937;overflow-wrap:break-word;}'
     + 'img{max-width:100%;height:auto;}a{color:#2563eb;}';
 
-export function messageFrameDoc(html: string, loadRemoteImages: boolean): string {
-    // No remote by default: data: images (inlined cid:) and inline styles only.
-    // "Load images" widens img-src to http(s); scripts/objects/frames stay blocked.
-    const imgSrc = loadRemoteImages ? 'data: https: http:' : 'data:';
-    const csp = `default-src 'none'; img-src ${imgSrc}; style-src 'unsafe-inline'; font-src data:`;
-    return '<!doctype html><html><head><meta charset="utf-8">'
-        + `<meta http-equiv="Content-Security-Policy" content="${csp}">`
-        + '<base target="_blank">'
-        + `<style>${MESSAGE_FRAME_STYLE}</style>`
-        + `</head><body>${linksOpenApart(html)}</body></html>`;
+/** The id of the style element the page writes into the frame page, once. */
+export const MESSAGE_FRAME_STYLE_ID = 'cms-mail-frame-style';
+
+/**
+ * Writes a message into its loaded frame page: the frame's styles into its head (once), and the server-sanitised HTML,
+ * its links set to open apart (linksOpenApart), into its body. No script in it runs: the frame has no allow-scripts,
+ * the page's policy has script-src 'none', and HTML set this way never runs its scripts.
+ */
+export function writeMessage(doc: Document, html: string): void {
+    if (doc.getElementById(MESSAGE_FRAME_STYLE_ID) === null) {
+        const style = doc.createElement('style');
+        style.id = MESSAGE_FRAME_STYLE_ID;
+        style.textContent = MESSAGE_FRAME_STYLE;
+        (doc.head ?? doc.documentElement).appendChild(style);
+    }
+    doc.body.innerHTML = linksOpenApart(html);
 }
 
 /**

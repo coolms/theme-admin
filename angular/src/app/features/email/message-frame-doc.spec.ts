@@ -1,10 +1,27 @@
-import { linksOpenApart, messageFrameDoc } from './message-frame-doc';
+import { linksOpenApart, writeMessage } from './message-frame-doc';
+
+/** An empty page like the admin's mail-frame page, in a frame of this width, with the message written into it. */
+function drawn(html: string, width: number, into: (frame: HTMLIFrameElement) => void): Promise<Document> {
+    const frame = document.createElement('iframe');
+    frame.style.width = `${width}px`;
+    frame.style.height = '600px';
+    document.body.appendChild(frame);
+    into(frame);
+    return new Promise(resolve => {
+        frame.onload = () => {
+            const doc = frame.contentDocument as Document;
+            writeMessage(doc, html);
+            resolve(doc);
+        };
+        frame.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><base target="_blank"></head><body></body></html>';
+    });
+}
 
 /**
  * The message frame's own styles must not let a table's narrow column collapse. Measured in the browser the suite runs in: the
  * document is drawn in a real iframe at a reading-pane width, and the header's height is compared with one line.
  */
-describe('messageFrameDoc', () => {
+describe('the message frame styles', () => {
     const NOTIFICATION =
         '<table width="100%" style="border-collapse:collapse"><thead><tr>'
         + '<th align="left">Job</th><th align="left">Annotations</th><th id="status" align="left">Status</th>'
@@ -17,20 +34,11 @@ describe('messageFrameDoc', () => {
 
     afterEach(() => frame?.remove());
 
-    function draw(doc: string, width: number): Promise<Document> {
-        frame = document.createElement('iframe');
-        frame.style.width = `${width}px`;
-        frame.style.height = '600px';
-        document.body.appendChild(frame);
-        return new Promise(resolve => {
-            frame.onload = () => resolve(frame.contentDocument as Document);
-            frame.srcdoc = doc;
-        });
-    }
+    const draw = (html: string, width: number): Promise<Document> => drawn(html, width, f => { frame = f; });
 
     for (const width of [520, 380]) {
         it(`keeps a narrow column's header on one line at ${width}px`, async () => {
-            const doc = await draw(messageFrameDoc(NOTIFICATION, false), width);
+            const doc = await draw(NOTIFICATION, width);
             const th = doc.getElementById('status') as HTMLElement;
             const lineHeight = parseFloat(doc.defaultView!.getComputedStyle(th).lineHeight);
             expect(th.getBoundingClientRect().height).toBeLessThan(lineHeight * 1.5);
@@ -38,14 +46,16 @@ describe('messageFrameDoc', () => {
     }
 
     it('still wraps a long unbroken word instead of widening the page', async () => {
-        const doc = await draw(messageFrameDoc('<p>' + 'x'.repeat(400) + '</p>', false), 380);
+        const doc = await draw('<p>' + 'x'.repeat(400) + '</p>', 380);
         expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(380);
     });
 
-    it('blocks remote images until the reader loads them', () => {
-        expect(messageFrameDoc('<p>x</p>', false)).toContain("img-src data:;");
-        expect(messageFrameDoc('<p>x</p>', true)).toContain('img-src data: https: http:;');
-        expect(messageFrameDoc('<p>x</p>', true)).toContain("default-src 'none'");
+    it('writes its styles once, and the message into the body', async () => {
+        const doc = await draw('<p id="one">one</p>', 380);
+        writeMessage(doc, '<p id="two">two</p>');
+        expect(doc.querySelectorAll('#cms-mail-frame-style').length).toBe(1);
+        expect(doc.getElementById('one')).toBeNull();
+        expect(doc.getElementById('two')?.textContent).toBe('two');
     });
 });
 
@@ -78,8 +88,9 @@ describe('linksOpenApart', () => {
         expect(linksOpenApart(named)).toBe(named);
     });
 
-    it('is applied to the frame document', () => {
-        const doc = parse(messageFrameDoc('<a id="x" href="https://example.com/" rel="opener">x</a>', false));
+    it('is applied as the message is written into its frame page', () => {
+        const doc = parse('<!doctype html><html><head></head><body></body></html>');
+        writeMessage(doc, '<a id="x" href="https://example.com/" rel="opener">x</a>');
         expect(doc.getElementById('x')!.getAttribute('rel')).toBe('noopener noreferrer');
     });
 });
