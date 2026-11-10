@@ -62,6 +62,7 @@ import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
+import { MailBulkBarComponent } from './mail-bulk-bar.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
 import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './mail-server-search.component';
 import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
@@ -153,7 +154,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
-        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent,
+        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent,
     ],
     template: `
         <div class="mbx">
@@ -244,20 +245,9 @@ type PhonePane = 'folders' | 'message';
                         <!-- Bulk action bar (backlog slice 3): shown once ≥1 message is
                              checked in the folder view; acts on the whole selection. -->
                         @if (!searchActive() && selectedCount() > 0) {
-                            <div class="mbx__bulkbar">
-                                <span class="mbx__bulkbar-count">{{ selectedCount() }} selected</span>
-                                <div #bulkRow class="mbx__bulkbar-actions">
-                                    <cms-pane-toolbar class="mbx__bulkbar-row" [actions]="bulkActions()"
-                                                      label="Actions on the selected messages"
-                                                      (action)="atAction(bulkRow, $event); onBulkAction($event)" />
-                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="selectAllLoaded()"
-                                            title="Select all loaded messages">All</button>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="clearSelection()"
-                                            aria-label="Clear selection" title="Clear selection">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
-                                </div>
-                            </div>
+                            <app-mail-bulk-bar #bulkBar [count]="selectedCount()" [actions]="bulkActions()"
+                                               (action)="atAction(bulkBar.element, $event); onBulkAction($event)"
+                                               (selectAll)="selectAllLoaded()" (clear)="clearSelection()" />
                         }
 
                         @if (!searchActive() && trashRetention(); as line) {
@@ -898,15 +888,6 @@ type PhonePane = 'folders' | 'message';
         .mbx__row-star:hover { color: var(--cms-accent, #F5A623); }
         .mbx__row-star--on { color: var(--cms-accent, #F5A623); }
         .mbx__row--unread .mbx__row-from, .mbx__row--unread .mbx__row-subject { font-weight: 700; }
-        /* Bulk action bar (backlog slice 3). Not sticky — the search box above it already is. */
-        .mbx__bulkbar {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            padding: 0 10px; border-bottom: 1px solid var(--cms-border);
-            background: var(--cms-surface-alt, var(--cms-surface-hover));
-        }
-        .mbx__bulkbar-count { flex: 0 0 auto; font-size: .8125rem; font-weight: 600; }
-        .mbx__bulkbar-actions { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; }
-        .mbx__bulkbar-row { flex: 1 1 auto; min-width: 0; }
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
