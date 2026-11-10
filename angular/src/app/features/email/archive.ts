@@ -68,8 +68,11 @@ export interface ArchivePorts {
     archiveMessages(ids: readonly string[]): Observable<EmailBulkResultDto>;
     readonly toast: Pick<ToastService, 'show' | 'success' | 'error'>;
     busy(on: boolean): void;
-    /** These were archived, each into the folder named: a row leaves the list unless that is the folder shown. */
-    archived(done: readonly ArchivedMessage[]): void;
+    /**
+     * These were archived, each into the folder named: a row leaves the list unless that is the folder shown.
+     * `asked`: every row the archive was asked for.
+     */
+    archived(done: readonly ArchivedMessage[], asked: readonly string[]): void;
 }
 
 const statusOf = (e: unknown): number | null => (e instanceof HttpErrorResponse ? e.status : null);
@@ -106,7 +109,7 @@ export class ArchiveFlow {
         this.ports.archiveMessage(id).subscribe({
             next: answer => {
                 this.ports.busy(false);
-                this.ports.archived([{ id, folder: answer.folder }]);
+                this.ports.archived([{ id, folder: answer.folder }], [id]);
                 toast.success(archivedText(1));
             },
             error: (e: unknown) => {
@@ -134,7 +137,7 @@ export class ArchiveFlow {
                     .map(r => ({ id: r.id, folder: r.folder ?? '' }));
                 const refused = results.filter(r => r.outcome === 'refused');
                 if (done.length > 0) {
-                    this.ports.archived(done);
+                    this.ports.archived(done, ids);
                     toast.success(archivedText(done.length));
                 }
                 if (refused.length === 0) {

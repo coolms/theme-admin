@@ -141,8 +141,8 @@ export interface TrashPorts {
     confirm(question: ConfirmDialogData): Observable<boolean>;
     readonly toast: Pick<ToastService, 'show' | 'success' | 'error'>;
     busy(on: boolean): void;
-    /** These rows left the folder (moved or gone): out of the list. */
-    drop(ids: readonly string[]): void;
+    /** These rows left the folder (moved or gone): out of the list. `asked`: every row the delete was asked for. */
+    drop(ids: readonly string[], asked: readonly string[]): void;
     /** These came back from Trash: the list is read again to show them. */
     restored(): void;
 }
@@ -168,7 +168,7 @@ export class TrashFlow {
             next: ({ results }) => {
                 this.ports.busy(false);
                 const outcome = trashOutcome(results);
-                this.ports.drop(outcome.removed);
+                this.ports.drop(outcome.removed, ids);
                 const undoable = outcome.undoable;
                 if (undoable.length > 0) {
                     toast.show({ type: 'success', message: movedToTrashText(undoable.length), action: { label: 'Undo', run: () => this.undo(undoable) } }, UNDO_MS);
@@ -209,7 +209,7 @@ export class TrashFlow {
                 next: ({ results }) => {
                     this.ports.busy(false);
                     const outcome = trashOutcome(results);
-                    this.ports.drop(outcome.removed);
+                    this.ports.drop(outcome.removed, ids);
                     if (outcome.removed.length > 0) {
                         toast.success(deletedForGoodText(outcome.removed.length));
                     }

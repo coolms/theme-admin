@@ -52,6 +52,7 @@ import {
     ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
+import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
@@ -2263,7 +2264,7 @@ export class EmailMailboxPageComponent implements OnInit {
         confirm:         question => this.confirmDialog.open(question),
         toast:           this.toast,
         busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
-        drop:            ids => this.dropRows(ids),
+        drop:            (ids, asked) => this.dropRows(ids, asked),
         restored:        () => {
             this.loadMessages(true);
             this.loadFolders();
@@ -2276,18 +2277,18 @@ export class EmailMailboxPageComponent implements OnInit {
         archiveMessages: ids => this.email.archiveMessages(ids),
         toast:           this.toast,
         busy:            on => (on ? this.bulkBusy.set(true) : this.answered()),
-        archived:        done => this.afterArchive(done),
+        archived:        (done, asked) => this.afterArchive(done, asked),
     });
 
     /**
      * Archived rows leave the list as a delete's do, the open message with them; one archived into the folder shown
      * stays. Either way the folders are read again, and with them the list, for the rows' new state.
      */
-    private afterArchive(done: readonly ArchivedMessage[]): void {
+    private afterArchive(done: readonly ArchivedMessage[], asked: readonly string[]): void {
         const shown = this.selectedFolder();
         const leaving = done.filter(d => d.folder !== shown).map(d => d.id);
         if (leaving.length > 0) {
-            this.dropRows(leaving);
+            this.dropRows(leaving, asked);
         } else if (done.length > 0) {
             this.loadFolders();
             this.clearSelection();
@@ -2299,16 +2300,30 @@ export class EmailMailboxPageComponent implements OnInit {
         return this.messages().filter(m => ids.includes(m.id)).map(m => m.id);
     }
 
-    /** The rows a delete took out of this folder leave the list, the open message with them; the counts are read again. */
-    private dropRows(ids: readonly string[]): void {
+    /**
+     * The rows an archive or a delete took out of this folder leave the list; the counts are read again. When the open
+     * message left with them: side by side, the next one opens by the normal open (nextOpenAfter, from the list as it
+     * showed, `asked` being the rows acted on), or the pane empties with none left; one pane at a time, the list shows.
+     */
+    private dropRows(ids: readonly string[], asked: readonly string[] = ids): void {
         if (ids.length === 0) {
             return;
         }
         const gone = new Set(ids);
-        this.messages.set(this.messages().filter(m => !gone.has(m.id)));
+        const listed = this.messages();
+        this.messages.set(listed.filter(m => !gone.has(m.id)));
         const open = this.selectedMessage();
         if (open && gone.has(open.id)) {
             this.selectedMessage.set(null);
+            if (this.phoneWidth?.matches === true) {
+                this.leavePane('message');
+            } else {
+                const nextId = nextOpenAfter(listed.map(m => m.id), open.id, gone, new Set(asked));
+                const next = listed.find(m => m.id === nextId);
+                if (next) {
+                    this.openMessage(next);
+                }
+            }
         }
         this.loadFolders();
         this.clearSelection();
