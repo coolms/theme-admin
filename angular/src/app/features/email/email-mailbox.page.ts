@@ -58,6 +58,8 @@ import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
+import { flagRefusedText, type MailFlagRefusedEvent } from './mail-flag-refused';
+import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -1135,6 +1137,14 @@ export class EmailMailboxPageComponent implements OnInit {
      * again, once per burst, when messages arrive in it from another tab, device or a restore.
      */
     private readonly mailFollower = new MailLiveFollower(() => this.loadMessages(true));
+    /**
+     * The read state the person chose (Mark read, Mark unread, and the read an open makes) while its write is on its
+     * way: what was read or sent before the write answered keeps the person's value; after it, the server's word is
+     * final (mail-pending-reads).
+     */
+    private readonly pendingReads = new PendingReads();
+    /** The notice that said a star change was made, per message, replaced if the server refuses the change. */
+    private readonly flagNotices = new Map<string, number>();
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
     private readonly route = inject(ActivatedRoute);
@@ -1784,6 +1794,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // over REST. Non-fatal: on any realtime error the page still works via
         // manual reload, so we swallow rather than toast on a stale token.
         this.destroyRef.onDestroy(() => this.mailFollower.stop());
+        this.destroyRef.onDestroy(() => this.pendingReads.clear());
         const uid = this.currentUserId();
         if (uid !== null) {
             this.emailLive.watch(uid)
@@ -1794,6 +1805,8 @@ export class EmailMailboxPageComponent implements OnInit {
                             this.syncBar()?.frame(evt);
                         } else if ('mail.messages.changed' === evt.type) {
                             this.onMessagesChanged(evt);
+                        } else if ('mail.flag.refused' === evt.type) {
+                            this.onFlagRefused(evt);
                         } else if ('mail.received' === evt.type) {
                             this.onMailReceived(evt);
                         }
@@ -1867,14 +1880,59 @@ export class EmailMailboxPageComponent implements OnInit {
             folders: this.folders(),
             mailboxUnread: this.mailboxUnread(),
         }, evt);
-        this.messages.set([...after.messages]);
-        this.thread.set([...after.thread]);
-        this.selectedMessage.set(after.openMessage);
+        // A read state the person chose: an event before its write answered is the old state still arriving and
+        // keeps the person's value; the first one after the answer is the server's word, and a refusal when it says
+        // the other value (when no mail.flag.refused said so first).
+        const held = new Map<string, boolean>();
+        const refused: string[] = [];
+        for (const change of evt.changes) {
+            if (!('seen' in change) || typeof change.seen !== 'boolean') {
+                continue;
+            }
+            const notice = this.pendingReads.notice(change.id);
+            const choice = this.pendingReads.choice(change.id);
+            const meant = this.pendingReads.event(change.id, change.seen, evt.seq);
+            if (meant === 'held' && choice !== null) {
+                held.set(change.id, choice);
+            } else if (meant === 'refused' && choice !== null) {
+                refused.push(change.id);
+                if (notice !== null) {
+                    this.toast.dismiss(notice);
+                }
+                this.toast.error(flagRefusedText('seen', choice));
+            }
+        }
+        const keep = <T extends EmailMessageDto>(m: T): T => (held.has(m.id) ? { ...m, seen: held.get(m.id) } : m);
+        this.messages.set(after.messages.map(keep));
+        this.thread.set(after.thread.map(keep));
+        this.selectedMessage.set(after.openMessage === null ? null : keep(after.openMessage));
         if (after.evictedOpen) {
             this.openEvicted.set(true);
         }
         this.folders.set([...after.folders]);
         this.mailboxUnread.set(after.mailboxUnread);
+    }
+
+    /**
+     * The mail server refused a flag change after its write had answered: said in the page's words, in place of the
+     * notice that said it was made. The mail.messages.changed that follows restores the flag as any change does.
+     */
+    private onFlagRefused(evt: MailFlagRefusedEvent): void {
+        if (evt.mailboxId !== this.selectedMailboxId()) {
+            return;
+        }
+        const notice = evt.flag === 'seen'
+            ? this.pendingReads.notice(evt.messageId)
+            : this.flagNotices.get(evt.messageId) ?? null;
+        if (evt.flag === 'seen') {
+            this.pendingReads.refusedByServer(evt.messageId);
+        } else {
+            this.flagNotices.delete(evt.messageId);
+        }
+        if (notice !== null) {
+            this.toast.dismiss(notice);
+        }
+        this.toast.error(flagRefusedText(evt.flag, evt.value, evt.code, evt.reason));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
@@ -1984,9 +2042,12 @@ export class EmailMailboxPageComponent implements OnInit {
         // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
         this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
         this.loadingDetail.set(true);
+        const readAt = this.pendingReads.stamp();
         this.email.getMessage(id).subscribe({
-            next: detail => {
+            next: answer => {
                 if (seq !== this.openSeq) { return; }
+                // Read before a read-state write answered: the person's value, not the one it carries.
+                const detail = this.pendingReads.held(answer, readAt);
                 this.selectedMessage.set(detail);
                 this.messages.set(this.messages().map(x => (x.id === detail.id ? rowWithDetailState(x, detail) : x)));
                 this.loadingDetail.set(false);
@@ -2014,10 +2075,11 @@ export class EmailMailboxPageComponent implements OnInit {
      * shows it anyway).
      */
     private loadThread(id: string, seq: number): void {
+        const readAt = this.pendingReads.stamp();
         this.email.listThread(id).subscribe({
             next: msgs => {
                 if (seq !== this.openSeq) { return; }
-                this.thread.set(msgs);
+                this.thread.set(this.pendingReads.heldAll(msgs, readAt));
             },
             error: () => { /* the conversation strip is a convenience; degrade silently */ },
         });
@@ -2216,7 +2278,11 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.setFlaggedHere(new Set(failed), !flagged);
                 this.toast.error(markRefusalText(flagged ? 'star' : 'unstar', failed.length));
             } else {
-                this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`);
+                const notice = this.toast.show({
+                    type: 'success',
+                    message: `${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`,
+                });
+                targets.forEach(m => this.flagNotices.set(m.id, notice));
             }
             this.answered();
             this.clearSelection();
@@ -2610,25 +2676,44 @@ export class EmailMailboxPageComponent implements OnInit {
      * the delta. Reuses the existing per-message `/seen` endpoint via forkJoin.
      */
     bulkMarkSeen(seen: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
-        const targets = this.messages().filter(m => ids.has(m.id) && (m.seen ?? false) !== seen);
+        // A row also counts when another read write is in flight for it with the other value: the last choice wins.
+        const targets = this.messages().filter(m => ids.has(m.id)
+            && ((m.seen ?? false) !== seen || (this.pendingReads.choice(m.id) ?? seen) !== seen));
         if (targets.length === 0) {
             this.clearSelection();
             return;
         }
         const folder = this.selectedFolder();
+        const chosen = targets.map(m => m.id);
+        const token = this.pendingReads.chosen(chosen, seen);
         // At once: the rows, the open message and the folder's count change now; a row whose call fails changes back.
-        this.setSeenHere(new Set(targets.map(m => m.id)), seen, folder);
+        this.setSeenHere(new Set(targets.filter(m => (m.seen ?? false) !== seen).map(m => m.id)), seen, folder);
         this.bulkBusy.set(true);
+        const sequences = new Map<string, number>();
         forkJoin(targets.map(m => this.email.markSeen(m.id, seen).pipe(
-            map(() => null),
+            map(answer => {
+                const at = answerSeq(answer);
+                if (at !== null) {
+                    sequences.set(m.id, at);
+                }
+                return null;
+            }),
             catchError(() => of(m.id)),
         ))).subscribe(answers => {
-            const failed = answers.filter((id): id is string => id !== null);
+            // A choice the person replaced since is not this answer's to apply.
+            const failed = answers.filter((id): id is string => id !== null && this.pendingReads.current(id, token));
+            const done = chosen.filter(id => !failed.includes(id));
+            this.pendingReads.refused(failed, token);
             if (failed.length > 0) {
                 this.setSeenHere(new Set(failed), !seen, folder);
                 this.toast.error(markRefusalText(seen ? 'read' : 'unread', failed.length));
+                this.pendingReads.answered(done, token, null, sequences);
             } else {
-                this.toast.success(`Marked ${targets.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`);
+                const notice = this.toast.show({
+                    type: 'success',
+                    message: `Marked ${done.length} message(s) ${seen ? 'read' : 'unread'}.`,
+                });
+                this.pendingReads.answered(done, token, notice, sequences);
             }
             this.answered();
             this.clearSelection();
@@ -3472,9 +3557,12 @@ ${this.selectedFolder()}`;
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
         this.listRereading.set(rereading);
+        const readAt = this.pendingReads.stamp();
         this.email.listMessages(id, this.selectedFolder(), this.page).subscribe({
-            next: list => {
+            next: answer => {
                 if (seq !== this.listSeq) { return; }
+                // A read started before a read-state write answered: those rows keep the person's value.
+                const list = this.pendingReads.heldAll(answer, readAt);
                 this.messages.set(reset ? list : [...this.messages(), ...list]);
                 this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
                 this.loadingMessages.set(false);
@@ -3496,8 +3584,16 @@ ${this.selectedFolder()}`;
 
     /** POST the read/unread flag, then reflect it locally (row + detail + folder count). */
     private applySeen(messageId: string, folder: string, seen: boolean): void {
+        const token = this.pendingReads.chosen([messageId], seen);
         this.email.markSeen(messageId, seen).subscribe({
-            next: () => {
+            next: answer => {
+                // The person chose another read state since (a quick Mark unread): theirs wins, this applies nothing.
+                if (!this.pendingReads.current(messageId, token)) {
+                    return;
+                }
+                const at = answerSeq(answer);
+                const sequence = at === null ? new Map<string, number>() : new Map([[messageId, at]]);
+                this.pendingReads.answered([messageId], token, null, sequence);
                 this.messages.set(this.messages().map(x => (x.id === messageId ? { ...x, seen } : x)));
                 // Reflect the flag in any matching search hit too.
                 this.searchResults.set(this.searchResults().map(x => (x.id === messageId ? { ...x, seen } : x)));
@@ -3514,6 +3610,10 @@ ${this.selectedFolder()}`;
                 }
             },
             error: () => {
+                if (!this.pendingReads.current(messageId, token)) {
+                    return;
+                }
+                this.pendingReads.refused([messageId], token);
                 this.toast.error('Could not update the message.');
             },
         });
