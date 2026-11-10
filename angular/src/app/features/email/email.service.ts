@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpEvent, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEvent, HttpHeaders, HttpParams, type HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngxs/store';
 import { Observable, map, throwError } from 'rxjs';
@@ -372,7 +372,27 @@ export class EmailService {
         );
     }
 
-    /** GET /email/messages/{id} -- one message with its raw RFC-822 body (detail). */
+    /**
+     * GET /email/messages/{id}/raw -- the message's original source as text: the first 1 MB at most, any invalid
+     * UTF-8 already replaced by the server; `X-Raw-Truncated` says whether it was cut.
+     */
+    getMessageSource(messageId: string): Observable<HttpResponse<string>> {
+        return this.http.get(`${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/raw`, {
+            observe: 'response',
+            responseType: 'text',
+        });
+    }
+
+    /** GET /email/messages/{id}/raw?download=1 -- the whole original source, as a .eml file. */
+    downloadMessageSource(messageId: string): Observable<HttpResponse<Blob>> {
+        return this.http.get(`${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/raw`, {
+            params: { download: '1' },
+            observe: 'response',
+            responseType: 'blob',
+        });
+    }
+
+    /** GET /email/messages/{id} -- one message (detail). */
     getMessage(messageId: string): Observable<EmailMessageDetailDto> {
         return this.http.get<EmailMessageDetailDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}`,

@@ -365,9 +365,8 @@ export interface EmailArchiveResultDto {
     folder: string;
 }
 
-/** A message with its raw RFC-822 source (`GET /email/messages/{id}`, detail group). */
+/** A message as opened (`GET /email/messages/{id}`, detail group). Its source is read on its own (getMessageSource). */
 export interface EmailMessageDetailDto extends EmailMessageDto {
-    rawBody?: string | null;
     /** Server-sanitised HTML body for safe display in a sandboxed iframe. */
     bodyHtml?: string | null;
     /** Plain-text body alternative, shown when there is no HTML. */
