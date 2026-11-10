@@ -38,6 +38,13 @@ final class MailFramePageTest extends TestCase
         yield 'mail-frame-images.html' => ['mail-frame-images.html', self::POLICY_WITH_IMAGES];
     }
 
+    /** @return iterable<string, array{string}> */
+    public static function pageNames(): iterable
+    {
+        yield 'mail-frame.html' => ['mail-frame.html'];
+        yield 'mail-frame-images.html' => ['mail-frame-images.html'];
+    }
+
     #[Test]
     #[DataProvider('pages')]
     public function answersWithExactlyTheContractPolicyAndItsHeaders(string $page, string $policy): void
@@ -51,13 +58,6 @@ final class MailFramePageTest extends TestCase
         self::assertSame('SAMEORIGIN', $response->headers->get('X-Frame-Options'));
         self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
         self::assertStringStartsWith('text/html', (string) $response->headers->get('Content-Type'));
-    }
-
-    /** @return iterable<string, array{string}> */
-    public static function pageNames(): iterable
-    {
-        yield 'mail-frame.html' => ['mail-frame.html'];
-        yield 'mail-frame-images.html' => ['mail-frame-images.html'];
     }
 
     /** The page is a document to write into: a doctype, a charset, links opening apart, no base address, no more. */
