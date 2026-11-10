@@ -143,9 +143,15 @@ export const ACTIONS_THAT_WAIT: ReadonlySet<string> = new Set([
     'archive', 'delete', 'move', 'mark-read', 'mark-unread', 'star', 'unstar',
 ]);
 
+/** The other state of a toggle: an action pressed that changed at once is shown by its partner while it waits. */
+const TOGGLE_PARTNER: Readonly<Record<string, string>> = {
+    'star': 'unstar', 'unstar': 'star', 'mark-read': 'mark-unread', 'mark-unread': 'mark-read',
+};
+
 /**
- * A row's actions while an action on any of its messages waits for the server: that one busy, every other one
- * disabled. A row with none of those messages is drawn as it is.
+ * A row's actions while an action on any of its messages waits for the server: that one busy (or, for a toggle the
+ * row already shows in its other state, that state), every other one disabled. A row with none of those messages is
+ * drawn as it is.
  */
 export function withPending(
     actions: readonly PaneToolbarAction[],
@@ -156,5 +162,7 @@ export function withPending(
         return [...actions];
     }
 
-    return actions.map(a => (a.id === pending.action ? { ...a, busy: true } : { ...a, disabled: true }));
+    const busy = actions.some(a => a.id === pending.action) ? pending.action : (TOGGLE_PARTNER[pending.action] ?? pending.action);
+
+    return actions.map(a => (a.id === busy ? { ...a, busy: true } : { ...a, disabled: true }));
 }
