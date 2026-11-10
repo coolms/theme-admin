@@ -17,7 +17,7 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
-import type { EmailArchiveResultDto, EmailBulkResultDto, EmailMailboxDto, EmailMessageDetailDto, EmailMessageDto } from './email.types';
+import type { EmailArchiveResultDto, EmailBulkResultDto, EmailFolderDto, EmailMailboxDto, EmailMessageDetailDto, EmailMessageDto } from './email.types';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
@@ -40,6 +40,8 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
     let shown: ToastInput[];
     /** What the server no longer lists in the folder, as its answers say: a read of the list after reads it so. */
     let serverGone: Set<string>;
+    /** The list shown is All Mail, where an archived or labelled message is still listed by the server. */
+    let allMailKeeps: boolean;
 
     function build(): EmailMailboxPageComponent {
         calls = [];
@@ -48,6 +50,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
         errors = [];
         shown = [];
         serverGone = new Set<string>();
+        allMailKeeps = false;
         const call = (name: string) => (...args: unknown[]) => {
             const answer = new Subject<unknown>();
             calls.push({ name, args: args.length === 1 ? args[0] : args, answer });
@@ -62,7 +65,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
                         folderTree: () => of([]),
-                        listMessages: () => of(FIVE.filter(m => !serverGone.has(m.id))),
+                        listMessages: () => of(FIVE.filter(m => allMailKeeps || !serverGone.has(m.id))),
                         getMessage: (id: string) => {
                             opened.push(id);
                             return of({ ...FIVE.find(m => m.id === id)!, bodyText: 'Hello' } as EmailMessageDetailDto);
@@ -258,6 +261,79 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m3');
             expect(errors).toEqual(["This mailbox's server cannot move messages, so nothing was moved."]);
+        });
+    });
+
+    describe('in All Mail, where the messages stay shown', () => {
+        /** The list shown is Gmail's All Mail (role all); Projects is a label, Trash is Trash. */
+        const inAllMail = (page: EmailMailboxPageComponent): void => {
+            const f = (folder: string, role: string | null) => ({ folder, name: folder, role, total: 5, unseen: 0 }) as EmailFolderDto;
+            page.folders.set([f('[Gmail]/All Mail', 'all'), f('Projects', null), f('[Gmail]/Trash', 'trash'), f('[Gmail]/Spam', 'junk')]);
+            page.selectedFolder.set('[Gmail]/All Mail');
+            allMailKeeps = true;
+        };
+
+        it('Archive while viewing All Mail: the message stays shown and open, and nothing else opens', () => {
+            const page = build();
+            inAllMail(page);
+            open(page, 'm2');
+
+            page.onDetailAction('archive');
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m2');
+            expect(opened).toEqual([]);
+            answer('archive', { id: 'm2', folder: '[Gmail]/All Mail' } as EmailArchiveResultDto);
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m2');
+        });
+
+        it('Move into a label from All Mail: the message stays shown and open', () => {
+            const page = build();
+            inAllMail(page);
+            open(page, 'm3');
+
+            page.bulkMoveTo('Projects', new Set(['m3']));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m3');
+            answer('move', null);
+            expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m3');
+            expect(opened).toEqual([]);
+        });
+
+        it('Move to Trash from All Mail: the message leaves at once and the next opens', () => {
+            const page = build();
+            inAllMail(page);
+            open(page, 'm3');
+
+            page.bulkMoveTo('[Gmail]/Trash', new Set(['m3']));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m4');
+        });
+
+        it('Move to Spam from All Mail: the message leaves at once and the next opens', () => {
+            const page = build();
+            inAllMail(page);
+            open(page, 'm3');
+
+            page.bulkMoveTo('[Gmail]/Spam', new Set(['m3']));
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m4');
+        });
+
+        it('Delete from All Mail: the message leaves at once and the next opens', () => {
+            const page = build();
+            inAllMail(page);
+            open(page, 'm3');
+
+            page.onDetailAction('delete');
+
+            expect(ids(page)).toEqual(['m1', 'm2', 'm4', 'm5']);
+            expect(page.selectedMessage()?.id).toBe('m4');
         });
     });
 

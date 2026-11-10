@@ -52,7 +52,7 @@ import {
     ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
-import { markRefusalText, movedText, moveRefusalText, putRowsBack, type TakenRow, takeRows } from './mail-at-once';
+import { markRefusalText, movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
@@ -1559,7 +1559,10 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.withOpen(ids[0], () => this.openReplyAll());
                 break;
             case 'archive':
+                // Archived in All Mail the messages stay shown: nothing leaves at once, the open one stays open.
+                this.keepShown = staysShown(this.roleOf(this.selectedFolder()), 'archive');
                 this.archiveFlow.archive(this.listed(ids));
+                this.keepShown = false;
                 break;
             case 'mark-read':
             case 'mark-unread':
@@ -2250,7 +2253,11 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         const asked = targets.map(m => m.id);
         const name = this.folderNameOf(folder);
-        this.takeAtOnce(asked);
+        // Moved into a label from All Mail the messages stay shown: nothing leaves, the open one stays open.
+        const stays = staysShown(this.roleOf(this.selectedFolder()), 'move', this.roleOf(folder));
+        if (!stays) {
+            this.takeAtOnce(asked);
+        }
         this.bulkBusy.set(true);
         forkJoin(targets.map(m => this.email.moveMessage(m.id, folder).pipe(
             map(() => null),
@@ -2265,9 +2272,10 @@ export class EmailMailboxPageComponent implements OnInit {
             } else if (moved > 0) {
                 this.toast.success(movedText(moved, name));
             }
-            const left = asked.filter(id => !refused.some(r => r.id === id));
+            const left = stays ? [] : asked.filter(id => !refused.some(r => r.id === id));
             this.dropRows(left);
             if (left.length === 0) {
+                this.loadFolders();
                 this.clearSelection();
             }
             this.answered();
@@ -2327,6 +2335,14 @@ export class EmailMailboxPageComponent implements OnInit {
      * person had made by the time the next one opened in its place.
      */
     private takenOpen: { message: EmailMessageDetailDto; moves: number } | null = null;
+    /** The action running now leaves its messages shown (staysShown): the flows' take does nothing. */
+    private keepShown = false;
+
+    /** A folder's role as the server's list of folders gives it (`all` for Gmail's All Mail), or null. */
+    private roleOf(folder: string): string | null {
+        return this.folders().find(f => f.folder === folder)?.role ?? null;
+    }
+
     /** Every move of the person's in the mail page: a message opened or closed, an action run. */
     private moves = 0;
 
@@ -2335,6 +2351,9 @@ export class EmailMailboxPageComponent implements OnInit {
      * message with them is followed by the next one (dropRows' rule).
      */
     private takeAtOnce(ids: readonly string[]): void {
+        if (this.keepShown) {
+            return;
+        }
         const open = this.selectedMessage();
         const { taken } = takeRows(this.messages(), new Set(ids));
         taken.forEach(t => this.taken.set(t.row.id, t));

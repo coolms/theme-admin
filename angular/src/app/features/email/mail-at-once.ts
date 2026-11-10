@@ -31,6 +31,22 @@ export function putRowsBack<T extends EmailMessageDto>(list: readonly T[], back:
     return next;
 }
 
+/**
+ * Whether the messages an action is on stay in the list as it shows, decided before the server answers: the list
+ * shown is the all-mail role folder (Gmail's All Mail) and the action is Archive, or a Move into a label -- any folder
+ * but Trash and Spam, the two that take a message out of All Mail. Then the open message stays open and nothing else
+ * opens; otherwise the rows leave at once and the next message opens.
+ */
+export function staysShown(shownRole: string | null | undefined, action: 'archive' | 'delete' | 'move', targetRole?: string | null): boolean {
+    if (shownRole !== 'all') {
+        return false;
+    }
+    if (action === 'archive') {
+        return true;
+    }
+    return action === 'move' && targetRole !== 'trash' && targetRole !== 'junk';
+}
+
 const messages = (n: number): string => (n === 1 ? '1 message' : `${n} messages`);
 
 /** What a Move did, in the folder's own name. */
