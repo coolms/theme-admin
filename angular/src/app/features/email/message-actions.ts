@@ -16,15 +16,17 @@ export function rowTargetIds(checked: ReadonlySet<string>, rowId: string): strin
 
 /**
  * What the toolbar tree's `showWhen` conditions read about a target (the facts `navi.toolbar.email.message` names):
- * one message or several, and whether any of them can still be marked read / unread / starred / unstarred.
+ * one message or several, whether any of them can still be marked read / unread / starred / unstarred, and whether
+ * the server says any of them can be archived (a missing or null `canArchive` is no).
  */
-export function messageFacts(targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged'>[]): Record<string, boolean> {
+export function messageFacts(targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive'>[]): Record<string, boolean> {
     return {
-        _single:       targets.length === 1,
-        _anyUnread:    targets.some(m => !(m.seen ?? false)),
-        _anyRead:      targets.some(m => m.seen ?? false),
-        _anyUnflagged: targets.some(m => !(m.flagged ?? false)),
-        _anyFlagged:   targets.some(m => m.flagged ?? false),
+        _single:        targets.length === 1,
+        _anyUnread:     targets.some(m => !(m.seen ?? false)),
+        _anyRead:       targets.some(m => m.seen ?? false),
+        _anyUnflagged:  targets.some(m => !(m.flagged ?? false)),
+        _anyFlagged:    targets.some(m => m.flagged ?? false),
+        _anyCanArchive: targets.some(m => m.canArchive === true),
     };
 }
 
@@ -47,7 +49,7 @@ export const LIST_ACTIONS_HANDLED: ReadonlySet<string> = new Set(['refresh']);
 
 /** The actions on messages this page can run (onMessageAction): a node naming any other is not drawn. */
 export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
-    'reply', 'forward', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
+    'reply', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
 ]);
 
 /** How a node's conditions are read: the NaviGraph service's own evaluation. */

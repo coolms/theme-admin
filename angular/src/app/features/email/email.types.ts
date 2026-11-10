@@ -336,6 +336,14 @@ export interface EmailMessageDto {
     sentAt?: string | null;
     receivedAt?: string | null;
     hasBody?: boolean;
+    /** Whether the mail server can archive this message, as the server answers; missing or null reads as no. */
+    canArchive?: boolean | null;
+}
+
+/** The answer of an archive (`POST /email/messages/{id}/archive`): the folder the message is in now. */
+export interface EmailArchiveResultDto {
+    id: string;
+    folder: string;
 }
 
 /** A message with its raw RFC-822 source (`GET /email/messages/{id}`, detail group). */
@@ -388,7 +396,7 @@ export interface EmailDeleteResultDto {
  */
 export interface EmailMessageOutcomeDto {
     id: string;
-    outcome: 'moved' | 'gone' | 'refused';
+    outcome: 'moved' | 'gone' | 'archived' | 'refused';
     folder?: string;
     reason?: string | null;
 }

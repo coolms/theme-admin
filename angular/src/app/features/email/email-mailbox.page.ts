@@ -51,6 +51,7 @@ import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
     rowTargetIds,
 } from './message-actions';
+import { ArchiveFlow, type ArchivedMessage } from './archive';
 import { TrashFlow, isTrashFolder, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
@@ -1508,6 +1509,9 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
                 break;
+            case 'archive':
+                this.archiveFlow.archive(this.listed(ids));
+                break;
             case 'mark-read':
             case 'mark-unread':
                 this.bulkMarkSeen(action === 'mark-read', new Set(ids));
@@ -2218,6 +2222,30 @@ export class EmailMailboxPageComponent implements OnInit {
             this.loadFolders();
         },
     });
+
+    /** Archive's flow: the server archives and answers where each message is now (archive.ts). */
+    private readonly archiveFlow = new ArchiveFlow({
+        archiveMessage:  id => this.email.archiveMessage(id),
+        archiveMessages: ids => this.email.archiveMessages(ids),
+        toast:           this.toast,
+        busy:            on => this.bulkBusy.set(on),
+        archived:        done => this.afterArchive(done),
+    });
+
+    /**
+     * Archived rows leave the list as a delete's do, the open message with them; one archived into the folder shown
+     * stays. Either way the folders are read again, and with them the list, for the rows' new state.
+     */
+    private afterArchive(done: readonly ArchivedMessage[]): void {
+        const shown = this.selectedFolder();
+        const leaving = done.filter(d => d.folder !== shown).map(d => d.id);
+        if (leaving.length > 0) {
+            this.dropRows(leaving);
+        } else if (done.length > 0) {
+            this.loadFolders();
+            this.clearSelection();
+        }
+    }
 
     /** The listed messages among `ids`: an action names only rows the page shows. */
     private listed(ids: readonly string[]): string[] {
