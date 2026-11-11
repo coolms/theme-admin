@@ -44,7 +44,10 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         sent = [];
         shown = [];
         removed = [];
-        drafts = new Map<string, unknown>();
+        // This test's own store: the mock below closes over it, so a save still pending from an earlier test's
+        // page writes into that page's store, never into this one.
+        const store = new Map<string, unknown>();
+        drafts = store;
         aliases = { canManage: false, aliases: [] };
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
@@ -92,9 +95,9 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                 {
                     provide: DraftStoreService,
                     useValue: {
-                        load: (key: string) => (drafts.has(key) ? structuredClone(drafts.get(key)) : null),
-                        save: (key: string, value: unknown) => void drafts.set(key, structuredClone(value)),
-                        clear: (key: string) => void drafts.delete(key),
+                        load: (key: string) => (store.has(key) ? structuredClone(store.get(key)) : null),
+                        save: (key: string, value: unknown) => void store.set(key, structuredClone(value)),
+                        clear: (key: string) => void store.delete(key),
                     },
                 },
                 { provide: ContactsService, useValue: {} },
