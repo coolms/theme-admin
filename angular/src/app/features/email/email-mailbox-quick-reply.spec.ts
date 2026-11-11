@@ -319,6 +319,15 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(box()).not.toBeNull();
     });
 
+    it('no quick reply on a server row: a row with no id, not yet stored', async () => {
+        fixture.componentInstance.selectedMailboxId.set('mb1');
+        fixture.componentInstance.selectedMessage.set({ ...message(3), id: undefined, fromServer: true, ref: 'INBOX:42' } as unknown as EmailMessageDetailDto);
+        await settle();
+
+        expect(el().querySelector('[data-test="quick-reply"]')).toBeNull();
+        expect(asked).withContext('no reply prefill asked for').toEqual([]);
+    });
+
     it('no quick reply while the message loads, and none for a copy from the server no longer kept', async () => {
         await open(3);
         fixture.componentInstance.openEvicted.set(true);

@@ -1646,13 +1646,13 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly injector = inject(Injector);
 
     /**
-     * The open message's quick reply: shown for a stored message that is open and read, never while it loads, and
-     * never for a copy from the server that is no longer kept here.
+     * The open message's quick reply: shown for a stored message that is open and read, never while it loads, never on
+     * a server row (one with no id, not yet stored), and never for a copy from the server that is no longer kept here.
      */
     readonly quickReplyFor = computed(() => {
         const msg = this.selectedMessage();
         const mailboxId = this.selectedMailboxId();
-        if (msg === null || mailboxId === null || this.loadingDetail() || this.openEvicted() || msg.id === '') {
+        if (msg === null || mailboxId === null || this.loadingDetail() || this.openEvicted() || isServerRow(msg) || msg.id === '') {
             return null;
         }
         const name = (msg.fromName ?? '').trim();
@@ -3575,7 +3575,8 @@ export class EmailMailboxPageComponent implements OnInit {
      * draft and never two. The box then says the reply is open in the window.
      */
     handReplyToWindow(): void {
-        if (!this.selectedMessage() || this.selectedMailboxId() === null) {
+        const msg = this.selectedMessage();
+        if (!msg || isServerRow(msg) || this.selectedMailboxId() === null) {
             return;
         }
         // What the box holds is saved now; the window takes that draft when its prefill is read.
