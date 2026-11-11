@@ -345,18 +345,33 @@ export interface EmailMessageDto {
     replyAllUseful?: boolean | null;
 }
 
-/** One address of a prepared answer. */
-export interface EmailComposeAddressDto {
+/** The ways of starting from a message that the server prepares (`GET /email/messages/{id}/compose?mode=`). */
+export type EmailComposeMode = 'reply' | 'reply_all' | 'forward';
+
+/** A recipient as the compose prefill names one; `name` null when the message names none. */
+export interface EmailComposeRecipientDto {
     name: string | null;
     address: string;
 }
 
-/** What an answer or a forward starts with, prepared by the server (`GET /email/messages/{id}/compose`). */
+/**
+ * What an answer or a forward starts with, prepared by the server: the From and the addresses that may be sent as
+ * (none for a reader who may not send), the recipients, the subject, the quote (null when the message could not be
+ * read: `unreadable` says why) and the threading. `quote.html` goes below the person's own text, as served.
+ */
 export interface EmailComposeDto {
     id: string;
-    mode: 'reply' | 'reply_all' | 'forward';
-    to: EmailComposeAddressDto[];
-    cc: EmailComposeAddressDto[];
+    mode: EmailComposeMode;
+    from: { address: string; choices: string[] };
+    to: EmailComposeRecipientDto[];
+    cc: EmailComposeRecipientDto[];
+    subject: string;
+    quote: { text: string; html: string | null; attribution: string | null } | null;
+    inReplyTo: string | null;
+    references: string[];
+    /** A forward's parts of the original, as references; nothing in this composer sends them yet. */
+    attachments: Record<string, unknown>[];
+    unreadable: string | null;
 }
 
 /** The answer of an archive (`POST /email/messages/{id}/archive`): the folder the message is in now. */
@@ -437,6 +452,10 @@ export interface OutgoingEmailRequest {
     bcc?: string[];
     /** Ids of uploads and Drive references to send with a new message; their bytes are read at send. */
     attachments?: string[];
+    /** The address to send from, one the mailbox may send as; the mailbox's own when left out. */
+    from?: string;
+    /** A reply only: the server quotes the message answered below this one, as its compose prefill showed it. */
+    quote?: boolean;
 }
 
 /** The small confirmation a send/reply echoes. */

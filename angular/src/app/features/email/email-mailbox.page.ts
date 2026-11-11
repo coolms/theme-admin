@@ -20,7 +20,6 @@ import {
     ContextMenuItem,
     ConfirmDialogService,
     ContextMenuService,
-    DateTimeFormatService,
     DateTimePipe,
     DraftStoreService,
     EmptyStateComponent,
@@ -51,11 +50,14 @@ import {
 import { MessageFrameComponent } from './message-frame.component';
 import { openMessageSource } from './message-source-viewer.component';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
-import { buildForward } from './forward.util';
 import {
-    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
-    ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
+    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, handledNodes, messageFacts, moveMenuItems,
+    paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
+import {
+    FORWARD_UNSENT_SENTENCE, NO_SEND_SENTENCE, PREFILLED_ACTIONS, addressesOf, preparingSentence, prefillFailure, recipientOptionsOf, unreadableSentence,
+    type ComposePrefillState,
+} from './compose-prefill';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
 import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
@@ -67,7 +69,6 @@ import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
-import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
@@ -77,6 +78,8 @@ import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './
 import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
 import {
     EmailAttachmentDto,
+    EmailComposeDto,
+    EmailComposeMode,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
@@ -543,6 +546,31 @@ type PhonePane = 'folders' | 'message';
             <!-- The composer's fields and its foot: in the dock, and in the quick reply. -->
             <ng-template #composeForm>
                 <div class="mbx__compose-body">
+                    @if (composePrefill(); as prefill) {
+                        @if (prefill.state === 'loading') {
+                            <p class="mbx__compose-state" role="status" data-testid="compose-preparing">
+                                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                                <span>{{ composePreparing() }}</span>
+                            </p>
+                        } @else if (prefill.state === 'failed') {
+                            <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-prefill-failed">
+                                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                <span>{{ prefill.sentence }}</span>
+                                @if (prefill.retry) {
+                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="retryPrefill()">Retry</button>
+                                }
+                            </div>
+                        } @else if (prefill.answer.from.choices.length === 0) {
+                            <p class="mbx__compose-note" role="status" data-testid="compose-no-send">{{ noSendSentence }}</p>
+                        }
+                    }
+                    @if (composeFieldsShown()) {
+                    @if (composeFrom(); as from) {
+                        <div class="mbx__field">
+                            <span>From</span>
+                            <span class="mbx__static" data-testid="compose-from">{{ from }}</span>
+                        </div>
+                    }
                     <div class="mbx__field">
                         <div class="mbx__field-head">
                             <span>To</span>
@@ -551,20 +579,20 @@ type PhonePane = 'folders' | 'message';
                             }
                         </div>
                         <app-tag-input [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
-                                       [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                       [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                        placeholder="Start typing a name or email…" />
                     </div>
                     @if (composeShowCcBcc()) {
                         <label class="mbx__field">
                             <span>Cc</span>
                             <app-tag-input [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
-                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                            placeholder="Cc…" />
                         </label>
                         <label class="mbx__field">
                             <span>Bcc</span>
                             <app-tag-input [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
-                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                            placeholder="Bcc…" />
                         </label>
                     }
@@ -591,6 +619,18 @@ type PhonePane = 'folders' | 'message';
                             <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
                         }
                     </div>
+                    @if (composeUnreadable(); as reason) {
+                        <p class="mbx__compose-note" data-testid="compose-unreadable">{{ reason }}</p>
+                    }
+                    @if (composeQuoteHtml(); as quoteHtml) {
+                        <app-message-frame class="mbx__quote" data-testid="compose-quote" [html]="quoteHtml"
+                                           label="The message quoted below yours" />
+                    } @else if (composeQuoteText(); as quoteText) {
+                        <pre class="mbx__body-text" data-testid="compose-quote-text">{{ quoteText }}</pre>
+                    }
+                    @if (composeMode() === 'forward' && prefillHasQuote()) {
+                        <p class="mbx__compose-note" data-testid="compose-forward-unsent">{{ forwardUnsentSentence }}</p>
+                    }
                     @if (selectedMailboxId(); as composeMailboxId) {
                         <app-compose-attachments class="mbx__field"
                                                  [mailboxId]="composeMailboxId"
@@ -600,10 +640,6 @@ type PhonePane = 'folders' | 'message';
                                                  [(attachments)]="composeAttachments"
                                                  (changed)="onComposeChange()" />
                     }
-                    @if (composeMode() === 'reply') {
-                        <p class="mbx__compose-hint">
-                            Recipient + subject default from the original message if left blank.
-                        </p>
                     }
                 </div>
                 <div class="mbx__compose-foot mbx__compose-foot--split">
@@ -617,10 +653,12 @@ type PhonePane = 'folders' | 'message';
                     </div>
                     <div class="mbx__compose-foot-side">
                         <button type="button" class="mbx__btn" (click)="closeCompose()">Cancel</button>
-                        <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="sending()"
-                                (click)="sendCompose()">
-                            {{ sending() ? 'Sending…' : 'Send' }}
-                        </button>
+                        @if (composeMaySend()) {
+                            <button type="button" class="mbx__btn mbx__btn--primary" data-testid="compose-send" [disabled]="sending()"
+                                    (click)="sendCompose()">
+                                {{ sending() ? 'Sending…' : 'Send' }}
+                            </button>
+                        }
                     </div>
                 </div>
             </ng-template>
@@ -1105,7 +1143,22 @@ type PhonePane = 'folders' | 'message';
         /* The embedded <coolms-editor> fills the composer width; its own min-height
          * keeps it usable and the overlay body scrolls if it grows. */
         .mbx__editor { display: block; }
-        .mbx__compose-hint { color: var(--cms-text-muted); font-size: .75rem; margin: 0; }
+        /* A prepared composer: while it is read, why it could not be, and what it says of the original or of Send. */
+        .mbx__compose-state {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;
+            font-size: .8125rem; color: var(--cms-text-secondary);
+        }
+        .mbx__compose-state--failed {
+            padding: 8px 10px; border: 1px solid var(--cms-danger-subtle-border); border-radius: var(--cms-radius-md);
+            background: var(--cms-danger-subtle); color: var(--cms-danger-text);
+        }
+        .mbx__compose-note {
+            margin: 0; padding: 8px 10px; border: 1px solid var(--cms-warning-subtle-border);
+            border-radius: var(--cms-radius-md); background: var(--cms-warning-subtle); color: var(--cms-warning-text);
+            font-size: .8125rem;
+        }
+        /* The quoted original below the person's own text, drawn as the message view draws a body. */
+        .mbx__quote { flex: 0 0 auto; }
         .mbx__compose-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--cms-border); }
 
         /* Composer dock: floats bottom-right, does NOT block the mailbox, and
@@ -1170,7 +1223,6 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly confirmDialog = inject(ConfirmDialogService);
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
-    private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
     /**
@@ -1376,9 +1428,52 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly thread = signal<EmailMessageDto[]>([]);
 
     readonly composeOpen = signal<boolean>(false);
-    readonly composeMode = signal<'compose' | 'reply'>('compose');
+    /** What the composer writes: a new message, or an answer or a forward of the message `replyTargetId` names. */
+    readonly composeMode = signal<'compose' | EmailComposeMode>('compose');
     /** The open composer is the quick reply in the message pane, not the dock. */
     readonly composeInline = signal<boolean>(false);
+    /**
+     * An answer's or a forward's start, as the server prepares it: being read, read, or not read and why; null for a
+     * new message. Recipients, subject, From, quote and threading are the server's; none is made up here.
+     */
+    readonly composePrefill = signal<ComposePrefillState | null>(null);
+    /** Drops an answer that arrives after its composer was closed or another was opened. */
+    private prefillSeq = 0;
+    /** The served recipients' names, for their chips. */
+    private readonly prefillOptions = signal<TagOption[]>([]);
+    readonly noSendSentence = NO_SEND_SENTENCE;
+    readonly forwardUnsentSentence = FORWARD_UNSENT_SENTENCE;
+    /** Whether the server served a quote to show. */
+    readonly prefillHasQuote = computed(() => (this.prefillAnswer()?.quote ?? null) !== null);
+    private readonly prefillAnswer = computed<EmailComposeDto | null>(() => {
+        const p = this.composePrefill();
+        return p?.state === 'ready' ? p.answer : null;
+    });
+    /** The fields show for a new message, and for a prepared one once it is read. */
+    readonly composeFieldsShown = computed(() => this.composePrefill() === null || this.prefillAnswer() !== null);
+    /** Send shows for a new message, and for a prepared one read with an address this person may send as. */
+    readonly composeMaySend = computed(() => this.composePrefill() === null
+        || (this.prefillAnswer()?.from.choices.length ?? 0) > 0);
+    /** The served From, sent as served (this composer has no picker). */
+    readonly composeFrom = computed(() => this.prefillAnswer()?.from.address ?? null);
+    readonly composePreparing = computed(() => preparingSentence(this.composeMode() === 'forward' ? 'forward' : 'reply'));
+    /** Why the original is not quoted, when the server could not read it. */
+    readonly composeUnreadable = computed(() => {
+        const reason = this.prefillAnswer()?.unreadable;
+        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(reason) : null;
+    });
+    /** The served `quote.html`, drawn read-only in the message view's frame below the person's text. */
+    readonly composeQuoteHtml = computed<string | null>(() => {
+        const html = this.prefillAnswer()?.quote?.html;
+        return html === null || html === undefined || html === '' ? null : html;
+    });
+    /** A quote served as text alone, shown as text. */
+    readonly composeQuoteText = computed(() => {
+        const quote = this.prefillAnswer()?.quote;
+        return quote && (quote.html === null || quote.html === '') ? quote.text : null;
+    });
+    /** The recipient chips' names: the served ones, then the contacts found while typing. */
+    readonly recipientOptions = computed(() => [...this.prefillOptions(), ...this.contactOptions()]);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
     private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
@@ -1563,7 +1658,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const ids = rowTargetIds(this.selectedIds(), m.id);
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
-        this.contextMenu.openFromNodes(event, this.messageNodes(), messageFacts(targets),
+        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets),
             action => this.onMessageAction(action, ids));
     }
 
@@ -1605,11 +1700,11 @@ export class EmailMailboxPageComponent implements OnInit {
     private runMessageAction(action: string, ids: string[]): void {
         switch (action) {
             case 'reply':
-            case 'forward':
-                this.withOpen(ids[0], () => (action === 'reply' ? this.openQuickReply() : this.openForward()));
-                break;
             case 'reply-all':
-                this.withOpen(ids[0], () => this.openReplyAll());
+            case 'forward':
+                this.withOpen(ids[0], () => (action === 'reply'
+                    ? this.openQuickReply()
+                    : this.openPrefilled(PREFILLED_ACTIONS[action])));
                 break;
             case 'archive':
                 // Archived in All Mail the messages stay shown: nothing leaves at once, the open one stays open.
@@ -2916,33 +3011,30 @@ export class EmailMailboxPageComponent implements OnInit {
         input.value = '';
     }
 
-    openReply(): void {
+    /**
+     * Reply, Reply all or Forward on the open message: the composer opens at once and says it is being prepared, then
+     * takes the server's recipients, subject, From and quote (`GET .../compose?mode=`). The person writes above the
+     * quote; a saved draft of this answer takes the place of what was served.
+     */
+    openPrefilled(mode: EmailComposeMode, inline = false): void {
         const msg = this.selectedMessage();
         if (!msg) {
             return;
         }
-        this.composeMode.set('reply');
+        this.composeInline.set(inline);
+        this.composeMode.set(mode);
         this.replyTargetId.set(msg.id);
-        this.composeTo = (msg.fromAddress ?? '').trim() !== '' ? [msg.fromAddress!.trim()] : [];
+        this.composeTo = [];
         this.composeCc = [];
         this.composeBcc = [];
         this.composeShowCcBcc.set(false);
         this.contactOptions.set([]);
-        this.composeSubject = this.rePrefix(msg.subject ?? '');
-        // Pre-fill the composer with the quoted original so the reply carries the
-        // context of what it answers ("the message we reply to"). clearComposeBody()
-        // resets + bumps composeKey (forces the editor re-mount); the quote is set
-        // after, so the editor mounts with it.
+        this.prefillOptions.set([]);
+        this.composeSubject = '';
         this.clearComposeBody();
-        const quote = buildReplyQuote(msg, this.dtf);
-        this.composeText = quote.text;
-        this.composeHtml.set(quote.html);
-        // Baseline = the pre-filled quote (so an untouched reply isn't "dirty"),
-        // then restore any saved draft for THIS reply target.
-        this.snapshotComposeInitial();
-        this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+        this.readPrefill(msg.id, mode);
     }
 
     /** The quick reply is open as a composer under this message. */
@@ -2959,7 +3051,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Reply, and the quick reply's line: the reply to the open message as a composer at the foot of the message
-     * pane, brought into view and focused. A composer open in the dock is closed first, its draft kept.
+     * pane, prefilled by the server, brought into view and focused. A composer open in the dock is closed first, its
+     * draft kept.
      */
     openQuickReply(): void {
         const msg = this.selectedMessage();
@@ -2970,8 +3063,7 @@ export class EmailMailboxPageComponent implements OnInit {
             if (this.composeOpen()) {
                 this.closeCompose();
             }
-            this.composeInline.set(true);
-            this.openReply();
+            this.openPrefilled('reply', true);
         }
         afterNextRender(() => this.revealQuickReply(), { injector: this.injector });
     }
@@ -2987,58 +3079,40 @@ export class EmailMailboxPageComponent implements OnInit {
         body.focus({ preventScroll: true });
     }
 
-    /**
-     * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
-     * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
-     */
-    openReplyAll(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
+    /** Read the prefill again after a failure that may pass. */
+    retryPrefill(): void {
+        const id = this.replyTargetId();
+        const mode = this.composeMode();
+        if (id !== null && mode !== 'compose') {
+            this.readPrefill(id, mode);
         }
-        this.composeInline.set(false);
-        this.openReply();
-        if (this.draftSaved()) {
-            return;
-        }
-        this.email.compose(msg.id, 'reply_all').subscribe({
-            next: prepared => {
-                if (this.replyTargetId() !== msg.id || this.draftSaved()) {
-                    return;
-                }
-                this.composeTo = prepared.to.map(a => a.address);
-                this.composeCc = prepared.cc.map(a => a.address);
-                if (this.composeCc.length > 0) {
-                    this.composeShowCcBcc.set(true);
-                }
-                this.snapshotComposeInitial();
-            },
-            error: () => this.toast.error('Could not prepare the reply to all; the reply goes to the sender alone.'),
-        });
     }
 
-    /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */
-    openForward(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.composeInline.set(false);
-        this.composeMode.set('compose');
-        this.replyTargetId.set(null);
-        this.composeTo = [];
-        this.composeCc = [];
-        this.composeBcc = [];
-        this.composeShowCcBcc.set(false);
-        this.contactOptions.set([]);
-        const fwd = buildForward(msg, this.dtf);
-        this.composeSubject = fwd.subject;
-        this.clearComposeBody();
-        this.composeText = fwd.text;
-        this.composeHtml.set(fwd.html);
-        this.snapshotComposeInitial();
-        this.composeMinimized.set(false);
-        this.composeOpen.set(true);
+    private readPrefill(id: string, mode: EmailComposeMode): void {
+        const seq = ++this.prefillSeq;
+        this.composePrefill.set({ state: 'loading' });
+        this.email.composePrefill(id, mode).subscribe({
+            next: answer => {
+                if (seq !== this.prefillSeq) {
+                    return;
+                }
+                this.composeTo = addressesOf(answer.to);
+                this.composeCc = addressesOf(answer.cc);
+                this.composeShowCcBcc.set(this.composeCc.length > 0);
+                this.prefillOptions.set(recipientOptionsOf([...answer.to, ...answer.cc]));
+                this.composeSubject = answer.subject;
+                this.composePrefill.set({ state: 'ready', answer });
+                // Baseline = what was served (an untouched answer is no draft), then this answer's saved draft.
+                this.snapshotComposeInitial();
+                this.restoreDraftIfAny();
+            },
+            error: (e: unknown) => {
+                if (seq !== this.prefillSeq) {
+                    return;
+                }
+                this.composePrefill.set({ state: 'failed', ...prefillFailure(e, mode) });
+            },
+        });
     }
 
     /** Toggle the composer dock between full-size and its collapsed header bar.
@@ -3050,7 +3124,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The dock header label: the subject the user typed, else the mode label. */
     composeDockTitle(): string {
         const subject = this.composeSubject.trim();
-        return subject !== '' ? subject : (this.composeMode() === 'reply' ? 'Reply' : 'New message');
+        const titles: Record<string, string> = { reply: 'Reply', reply_all: 'Reply all', forward: 'Forward' };
+        return subject !== '' ? subject : (titles[this.composeMode()] ?? 'New message');
     }
 
     /** localStorage draft key for the current composer, or null when unkeyable. */
@@ -3059,9 +3134,10 @@ export class EmailMailboxPageComponent implements OnInit {
         if (mb === null) {
             return null;
         }
-        if (this.composeMode() === 'reply') {
+        const mode = this.composeMode();
+        if (mode !== 'compose') {
             const rt = this.replyTargetId();
-            return rt !== null ? `email.${mb}.reply.${rt}` : null;
+            return rt !== null ? `email.${mb}.${mode}.${rt}` : null;
         }
         return `email.${mb}.compose`;
     }
@@ -3190,7 +3266,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Persist the draft if dirty, else clear it (so deleting your edits removes it). */
     private saveDraftNow(): void {
         const key = this.composeDraftKey();
-        if (key === null) {
+        if (key === null || !this.composeFieldsShown()) {
             return;
         }
         if (this.isComposeDirty()) {
@@ -3251,6 +3327,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Reset the compose BODY (both plain + rich) and force a clean editor re-mount.
      *  Recipient + subject are managed by the open* methods, not here. */
     private clearComposeBody(): void {
+        this.prefillSeq++;
+        this.composePrefill.set(null);
         this.composeText = '';
         this.composeHtml.set('');
         this.composeAttachments.set([]);
@@ -3276,21 +3354,41 @@ export class EmailMailboxPageComponent implements OnInit {
         return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     }
 
+    /**
+     * What a forward sends: the person's own part alone. The forwarded message is shown in the composer and not sent
+     * with it -- the server has no way yet to add it as it shows it, and an html body sent here is reduced to the mail
+     * editor's profile, which would lose the original's images, tables and layout.
+     */
+    private static forwardBody(ownHtml: string, ownText: string): { html: string; text: string } {
+        return { html: ownHtml, text: ownText };
+    }
+
     sendCompose(): void {
+        // A prepared composer sends once it is read, and only for one who may send from this mailbox.
+        const prefill = this.prefillAnswer();
+        if (this.composePrefill() !== null && (prefill === null || prefill.from.choices.length === 0)) {
+            return;
+        }
+        const quote = prefill?.quote ?? null;
+        const answering = this.composeMode() === 'reply' || this.composeMode() === 'reply_all';
         const rich = this.composeRich();
-        const html = rich ? this.composeHtml() : '';
+        const ownHtml = rich ? this.composeHtml() : '';
         // Rich mode sends an HTML body plus a stripped-tags plain-text fallback;
         // plain mode keeps the textarea text exactly as before.
-        const text = rich ? this.htmlToPlainText(html) : this.composeText.trim();
-        if (text === '') {
+        const ownText = rich ? this.htmlToPlainText(ownHtml) : this.composeText.trim();
+        // An answer with a quote may go with no text of its own: the server adds the quote (`quote: true`).
+        if (ownText === '' && !(answering && quote !== null)) {
             this.toast.error('Enter a message body.');
             return;
         }
+        const { html, text } = this.composeMode() === 'forward'
+            ? EmailMailboxPageComponent.forwardBody(ownHtml, ownText)
+            : { html: ownHtml, text: ownText };
         // Recipients are already parsed address chips; just trim/dedupe empties.
         const to = this.composeTo.map(x => x.trim()).filter(x => x !== '');
         const cc = this.composeCc.map(x => x.trim()).filter(x => x !== '');
         const bcc = this.composeBcc.map(x => x.trim()).filter(x => x !== '');
-        const isReply = this.composeMode() === 'reply';
+        const isReply = answering;
         if (!isReply && to.length === 0) {
             this.toast.error('Enter at least one recipient.');
             return;
@@ -3301,9 +3399,14 @@ export class EmailMailboxPageComponent implements OnInit {
         }
 
         const request: OutgoingEmailRequest = { text };
-        if (rich) {
-            // text passed the non-empty guard above, so html has visible content.
+        if (html !== '') {
             request.html = html;
+        }
+        if (prefill !== null) {
+            request.from = prefill.from.address;
+        }
+        if (isReply && quote !== null) {
+            request.quote = true;
         }
         if (to.length > 0) {
             request.to = to;
@@ -3786,14 +3889,6 @@ ${this.selectedFolder()}`;
                 this.toast.error('Could not update the message.');
             },
         });
-    }
-
-    private rePrefix(subject: string): string {
-        const trimmed = subject.trim();
-        if (trimmed === '') {
-            return 'Re:';
-        }
-        return /^re:/i.test(trimmed) ? trimmed : `Re: ${trimmed}`;
     }
 
     private static blankMailboxForm(): MailboxFormModel {

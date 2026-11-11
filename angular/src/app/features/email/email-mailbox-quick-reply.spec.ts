@@ -53,7 +53,7 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
-                        compose: () => NEVER,
+                        composePrefill: () => NEVER,
                         reply: (id: string, request: OutgoingEmailRequest) => {
                             replies.push({ id, request });
                             return of({});
