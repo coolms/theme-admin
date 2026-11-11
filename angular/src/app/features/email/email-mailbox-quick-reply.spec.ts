@@ -15,11 +15,25 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
-import { type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto, type OutgoingEmailRequest } from './email.types';
+import {
+    type EmailComposeDto, type EmailComposeMode, type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto,
+    type OutgoingEmailRequest,
+} from './email.types';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
+
+/** The server's prefill for an answer or a forward of m1. */
+function prefill(mode: EmailComposeMode): EmailComposeDto {
+    return {
+        id: 'm1', mode, from: { address: 'work@example.com', choices: ['work@example.com'] },
+        to: mode === 'forward' ? [] : [{ name: 'Ann Lee', address: 'ann@example.com' }], cc: [],
+        subject: mode === 'forward' ? 'Fwd: Desk move on Friday' : 'Re: Desk move on Friday',
+        quote: { text: 'Ann Lee wrote:\n> Line 1', html: '<p>Ann Lee wrote:</p><blockquote>Line 1</blockquote>', attribution: null },
+        inReplyTo: null, references: [], attachments: [], unreadable: null,
+    };
+}
 
 /** The open message, its plain body `lines` lines long. */
 function message(lines: number): EmailMessageDetailDto {
@@ -53,7 +67,7 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
-                        compose: () => NEVER,
+                        composePrefill: (id: string, mode: EmailComposeMode) => of(prefill(mode)),
                         reply: (id: string, request: OutgoingEmailRequest) => {
                             replies.push({ id, request });
                             return of({});
