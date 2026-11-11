@@ -53,11 +53,13 @@ import {
     ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
-import { markRefusalText, movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
+import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
 import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
+import { flagChangeOf, flagRefusalText, idsOf, type MailFlagRefusedEvent } from './mail-flag-refused';
+import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
@@ -1135,6 +1137,14 @@ export class EmailMailboxPageComponent implements OnInit {
      * again, once per burst, when messages arrive in it from another tab, device or a restore.
      */
     private readonly mailFollower = new MailLiveFollower(() => this.loadMessages(true));
+    /**
+     * The read state the person chose (Mark read, Mark unread, and the read an open makes) while its write is on its
+     * way: what was read or sent before the write answered keeps the person's value; after it, the server's word is
+     * final (mail-pending-reads).
+     */
+    private readonly pendingReads = new PendingReads();
+    /** The notice that said a star change was made, per message, replaced if the server refuses the change. */
+    private readonly flagNotices = new Map<string, number>();
     private readonly mailPrefs = inject(MailPreferencesService);
     private readonly store = inject(Store);
     private readonly route = inject(ActivatedRoute);
@@ -1784,6 +1794,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // over REST. Non-fatal: on any realtime error the page still works via
         // manual reload, so we swallow rather than toast on a stale token.
         this.destroyRef.onDestroy(() => this.mailFollower.stop());
+        this.destroyRef.onDestroy(() => this.pendingReads.clear());
         const uid = this.currentUserId();
         if (uid !== null) {
             this.emailLive.watch(uid)
@@ -1794,6 +1805,8 @@ export class EmailMailboxPageComponent implements OnInit {
                             this.syncBar()?.frame(evt);
                         } else if ('mail.messages.changed' === evt.type) {
                             this.onMessagesChanged(evt);
+                        } else if ('mail.flag.refused' === evt.type) {
+                            this.onFlagRefused(evt);
                         } else if ('mail.received' === evt.type) {
                             this.onMailReceived(evt);
                         }
@@ -1867,14 +1880,71 @@ export class EmailMailboxPageComponent implements OnInit {
             folders: this.folders(),
             mailboxUnread: this.mailboxUnread(),
         }, evt);
-        this.messages.set([...after.messages]);
-        this.thread.set([...after.thread]);
-        this.selectedMessage.set(after.openMessage);
+        // A read state the person chose: an event before its write answered is the old state still arriving and
+        // keeps the person's value; the first one after the answer is the server's word, and a refusal when it says
+        // the other value (when no mail.flag.refused said so first).
+        const held = new Map<string, boolean>();
+        let refusal: string | null = null;
+        const notices = new Set<number>();
+        for (const change of evt.changes) {
+            if (!('seen' in change) || typeof change.seen !== 'boolean') {
+                continue;
+            }
+            const notice = this.pendingReads.notice(change.id);
+            const choice = this.pendingReads.choice(change.id);
+            const meant = this.pendingReads.event(change.id, change.seen, evt.seq);
+            if (meant === 'held' && choice !== null) {
+                held.set(change.id, choice);
+            } else if (meant === 'refused' && choice !== null) {
+                // An entry that says it rolls a refused change back carries its reason's code. Its value is what the
+                // row went back to; the words are the person's choice, the value asked for.
+                const code = 'refused' in change && change.refused === 'seen' ? change.reason ?? null : null;
+                refusal ??= flagRefusalText(flagChangeOf('seen', choice), code);
+                if (notice !== null) {
+                    notices.add(notice);
+                }
+            }
+        }
+        // One message's rows (on Gmail, one per label) refused together: said once, in place of its notice.
+        notices.forEach(id => this.toast.dismiss(id));
+        if (refusal !== null) {
+            this.toast.error(refusal);
+        }
+        const keep = <T extends EmailMessageDto>(m: T): T => (held.has(m.id) ? { ...m, seen: held.get(m.id) } : m);
+        this.messages.set(after.messages.map(keep));
+        this.thread.set(after.thread.map(keep));
+        this.selectedMessage.set(after.openMessage === null ? null : keep(after.openMessage));
         if (after.evictedOpen) {
             this.openEvicted.set(true);
         }
         this.folders.set([...after.folders]);
         this.mailboxUnread.set(after.mailboxUnread);
+    }
+
+    /**
+     * The mail server refused a flag change after its write had answered: said in the page's words, in place of the
+     * notice that said it was made. The mail.messages.changed that follows restores the flag as any change does.
+     */
+    private onFlagRefused(evt: MailFlagRefusedEvent): void {
+        if (evt.mailboxId !== this.selectedMailboxId()) {
+            return;
+        }
+        // Every row the change had reached (on Gmail, the message's row in each label) is named, and said once.
+        const notices = new Set<number>();
+        for (const id of evt.ids) {
+            const notice = evt.flag === 'seen' ? this.pendingReads.notice(id) : this.flagNotices.get(id) ?? null;
+            if (notice !== null) {
+                notices.add(notice);
+            }
+            if (evt.flag === 'seen') {
+                this.pendingReads.refusedByServer(id);
+            } else {
+                this.flagNotices.delete(id);
+            }
+        }
+        notices.forEach(id => this.toast.dismiss(id));
+        // Said as the change the person asked for, never as the value the row was put back to.
+        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), evt.code, evt.reason));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
@@ -1984,9 +2054,12 @@ export class EmailMailboxPageComponent implements OnInit {
         // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
         this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
         this.loadingDetail.set(true);
+        const readAt = this.pendingReads.stamp();
         this.email.getMessage(id).subscribe({
-            next: detail => {
+            next: answer => {
                 if (seq !== this.openSeq) { return; }
+                // Read before a read-state write answered: the person's value, not the one it carries.
+                const detail = this.pendingReads.held(answer, readAt);
                 this.selectedMessage.set(detail);
                 this.messages.set(this.messages().map(x => (x.id === detail.id ? rowWithDetailState(x, detail) : x)));
                 this.loadingDetail.set(false);
@@ -2014,10 +2087,11 @@ export class EmailMailboxPageComponent implements OnInit {
      * shows it anyway).
      */
     private loadThread(id: string, seq: number): void {
+        const readAt = this.pendingReads.stamp();
         this.email.listThread(id).subscribe({
             next: msgs => {
                 if (seq !== this.openSeq) { return; }
-                this.thread.set(msgs);
+                this.thread.set(this.pendingReads.heldAll(msgs, readAt));
             },
             error: () => { /* the conversation strip is a convenience; degrade silently */ },
         });
@@ -2207,20 +2281,48 @@ export class EmailMailboxPageComponent implements OnInit {
         // At once: the rows and the open message change now; a row whose call fails changes back.
         this.setFlaggedHere(new Set(targets.map(m => m.id)), flagged);
         this.bulkBusy.set(true);
+        const problems = new Map<string, string | null>();
+        const reached = new Set<string>();
         forkJoin(targets.map(m => this.email.markFlagged(m.id, flagged).pipe(
-            map(() => null),
-            catchError(() => of(m.id)),
+            map(answer => {
+                idsOf((answer as { ids?: unknown } | null)?.ids, m.id).forEach(id => reached.add(id));
+                return null;
+            }),
+            catchError((e: unknown) => {
+                problems.set(m.id, problemOf(e));
+                return of(m.id);
+            }),
         ))).subscribe(answers => {
             const failed = answers.filter((id): id is string => id !== null);
             if (failed.length > 0) {
                 this.setFlaggedHere(new Set(failed), !flagged);
-                this.toast.error(markRefusalText(flagged ? 'star' : 'unstar', failed.length));
+                this.toast.error(flagRefusalText(flagged ? 'star' : 'unstar', problems.get(failed[0]) ?? null));
             } else {
-                this.toast.success(`${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`);
+                const notice = this.toast.show({
+                    type: 'success',
+                    message: `${flagged ? 'Flagged' : 'Unflagged'} ${targets.length - failed.length} message(s).`,
+                });
+                // Every row the star reached shows it, and a refusal of any of them replaces this notice.
+                this.setFlaggedRows(new Set([...reached].filter(id => !targets.some(m => m.id === id))), flagged);
+                reached.forEach(id => this.flagNotices.set(id, notice));
             }
             this.answered();
             this.clearSelection();
         });
+    }
+
+    /** The star of these rows wherever they show: the list, the open message, its conversation, the search hits. */
+    private setFlaggedRows(ids: ReadonlySet<string>, flagged: boolean): void {
+        if (ids.size === 0) {
+            return;
+        }
+        const apply = <T extends EmailMessageDto>(m: T): T => (ids.has(m.id) ? { ...m, flagged } : m);
+        this.messages.set(this.messages().map(apply));
+        this.thread.set(this.thread().map(apply));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, flagged });
+        }
     }
 
     /** The star of these rows, and of the open message when it is one of them, here. */
@@ -2610,29 +2712,79 @@ export class EmailMailboxPageComponent implements OnInit {
      * the delta. Reuses the existing per-message `/seen` endpoint via forkJoin.
      */
     bulkMarkSeen(seen: boolean, ids: ReadonlySet<string> = this.selectedIds()): void {
-        const targets = this.messages().filter(m => ids.has(m.id) && (m.seen ?? false) !== seen);
+        // A row also counts when another read write is in flight for it with the other value: the last choice wins.
+        const targets = this.messages().filter(m => ids.has(m.id)
+            && ((m.seen ?? false) !== seen || (this.pendingReads.choice(m.id) ?? seen) !== seen));
         if (targets.length === 0) {
             this.clearSelection();
             return;
         }
         const folder = this.selectedFolder();
+        const chosen = targets.map(m => m.id);
+        const token = this.pendingReads.chosen(chosen, seen);
         // At once: the rows, the open message and the folder's count change now; a row whose call fails changes back.
-        this.setSeenHere(new Set(targets.map(m => m.id)), seen, folder);
+        this.setSeenHere(new Set(targets.filter(m => (m.seen ?? false) !== seen).map(m => m.id)), seen, folder);
         this.bulkBusy.set(true);
+        const sequences = new Map<string, number>();
+        const problems = new Map<string, string | null>();
+        const reached = new Set<string>();
         forkJoin(targets.map(m => this.email.markSeen(m.id, seen).pipe(
-            map(() => null),
-            catchError(() => of(m.id)),
+            map(answer => {
+                // Every row the change was applied to (on Gmail, the message's row in each label), [the row] if unsaid.
+                const at = answerSeq(answer);
+                for (const id of idsOf((answer as { ids?: unknown } | null)?.ids, m.id)) {
+                    reached.add(id);
+                    if (at !== null) {
+                        sequences.set(id, at);
+                    }
+                }
+                return null;
+            }),
+            catchError((e: unknown) => {
+                problems.set(m.id, problemOf(e));
+                return of(m.id);
+            }),
         ))).subscribe(answers => {
-            const failed = answers.filter((id): id is string => id !== null);
+            // A choice the person replaced since is not this answer's to apply.
+            const failed = answers.filter((id): id is string => id !== null && this.pendingReads.current(id, token));
+            // The rows the change reached beyond those chosen join the choice and show it, every one of them.
+            const also = [...reached].filter(id => !chosen.includes(id));
+            this.pendingReads.join(also, token, seen);
+            this.setSeenRows(new Set(also.filter(id => this.pendingReads.current(id, token))), seen);
+            const done = [...chosen.filter(id => !failed.includes(id)), ...also];
+            this.pendingReads.refused(failed, token);
             if (failed.length > 0) {
                 this.setSeenHere(new Set(failed), !seen, folder);
-                this.toast.error(markRefusalText(seen ? 'read' : 'unread', failed.length));
+                this.toast.error(flagRefusalText(seen ? 'read' : 'unread', problems.get(failed[0]) ?? null));
+                this.pendingReads.answered(done, token, null, sequences);
             } else {
-                this.toast.success(`Marked ${targets.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`);
+                const notice = this.toast.show({
+                    type: 'success',
+                    message: `Marked ${chosen.length - failed.length} message(s) ${seen ? 'read' : 'unread'}.`,
+                });
+                this.pendingReads.answered(done, token, notice, sequences);
             }
             this.answered();
             this.clearSelection();
         });
+    }
+
+    /**
+     * Read or unread for these rows wherever they show -- the list, the open message, its conversation, the search
+     * hits -- and nothing else: the folder counts wait for the server's.
+     */
+    private setSeenRows(ids: ReadonlySet<string>, seen: boolean): void {
+        if (ids.size === 0) {
+            return;
+        }
+        const apply = <T extends EmailMessageDto>(m: T): T => (ids.has(m.id) ? { ...m, seen } : m);
+        this.messages.set(this.messages().map(apply));
+        this.thread.set(this.thread().map(apply));
+        this.searchResults.set(this.searchResults().map(x => (ids.has(x.id) ? { ...x, seen } : x)));
+        const sel = this.selectedMessage();
+        if (sel && ids.has(sel.id)) {
+            this.selectedMessage.set({ ...sel, seen });
+        }
     }
 
     /** Read or unread for these rows, the open message among them, and the folder's unread count, here. */
@@ -3472,9 +3624,12 @@ ${this.selectedFolder()}`;
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
         this.listRereading.set(rereading);
+        const readAt = this.pendingReads.stamp();
         this.email.listMessages(id, this.selectedFolder(), this.page).subscribe({
-            next: list => {
+            next: answer => {
                 if (seq !== this.listSeq) { return; }
+                // A read started before a read-state write answered: those rows keep the person's value.
+                const list = this.pendingReads.heldAll(answer, readAt);
                 this.messages.set(reset ? list : [...this.messages(), ...list]);
                 this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
                 this.loadingMessages.set(false);
@@ -3496,8 +3651,20 @@ ${this.selectedFolder()}`;
 
     /** POST the read/unread flag, then reflect it locally (row + detail + folder count). */
     private applySeen(messageId: string, folder: string, seen: boolean): void {
+        const token = this.pendingReads.chosen([messageId], seen);
         this.email.markSeen(messageId, seen).subscribe({
-            next: () => {
+            next: answer => {
+                // The person chose another read state since (a quick Mark unread): theirs wins, this applies nothing.
+                if (!this.pendingReads.current(messageId, token)) {
+                    return;
+                }
+                const at = answerSeq(answer);
+                const reached = idsOf((answer as { ids?: unknown } | null)?.ids, messageId);
+                const also = reached.filter(id => id !== messageId);
+                this.pendingReads.join(also, token, seen);
+                this.setSeenRows(new Set(also.filter(id => this.pendingReads.current(id, token))), seen);
+                const sequence = new Map<string, number>(at === null ? [] : reached.map(id => [id, at]));
+                this.pendingReads.answered(reached, token, null, sequence);
                 this.messages.set(this.messages().map(x => (x.id === messageId ? { ...x, seen } : x)));
                 // Reflect the flag in any matching search hit too.
                 this.searchResults.set(this.searchResults().map(x => (x.id === messageId ? { ...x, seen } : x)));
@@ -3514,6 +3681,10 @@ ${this.selectedFolder()}`;
                 }
             },
             error: () => {
+                if (!this.pendingReads.current(messageId, token)) {
+                    return;
+                }
+                this.pendingReads.refused([messageId], token);
                 this.toast.error('Could not update the message.');
             },
         });

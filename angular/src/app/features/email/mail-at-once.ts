@@ -69,16 +69,3 @@ export function moveRefusalText(problem: string | null, n: number): string {
     return `Could not move ${messages(n)}.`;
 }
 
-/** Why marking read or unread, or a star, changed nothing for these. */
-export function markRefusalText(what: 'read' | 'unread' | 'star' | 'unstar', n: number): string {
-    switch (what) {
-        case 'read':
-            return `Could not mark ${messages(n)} read.`;
-        case 'unread':
-            return `Could not mark ${messages(n)} unread.`;
-        case 'star':
-            return `Could not star ${messages(n)}.`;
-        case 'unstar':
-            return `Could not remove the star from ${messages(n)}.`;
-    }
-}

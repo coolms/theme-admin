@@ -4,6 +4,7 @@ import { Observable, share } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 import { type MailAliasesChangedEvent, readAliasesChanged } from './mail-aliases';
+import { type MailFlagRefusedEvent, readFlagRefused } from './mail-flag-refused';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 
 /**
@@ -30,7 +31,8 @@ export interface EmailSyncFinishedEvent {
 }
 
 /** Every event of the person's mail channel. */
-export type EmailEvent = EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent;
+export type EmailEvent =
+    | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent;
 
 /**
  * FE -- typed wrapper over the realtime transport for the per-user
@@ -122,6 +124,9 @@ export class EmailLiveEventsService {
         }
         if (type === 'mail.aliases.changed') {
             return readAliasesChanged(raw);
+        }
+        if (type === 'mail.flag.refused') {
+            return readFlagRefused(raw);
         }
         if (type === 'mail.sync.finished') {
             return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'

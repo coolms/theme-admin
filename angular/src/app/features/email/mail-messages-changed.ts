@@ -7,6 +7,9 @@ export interface MailMessageFlags {
     readonly folder: string;
     readonly seen: boolean;
     readonly flagged: boolean;
+    /** This entry rolls back a flag change the server refused (`seen` or `flagged`), and why: a reason's code. */
+    readonly refused?: 'seen' | 'flagged';
+    readonly reason?: string;
 }
 
 /** A message moved to another folder of the same mailbox, keeping its id; a delete is a move to Trash. */
@@ -67,7 +70,11 @@ function readChange(raw: unknown): MailMessageChange | null {
         return null;
     }
     const threadId = typeof raw['threadId'] === 'string' ? raw['threadId'] : null;
-    const flags: MailMessageFlags = { id: raw['id'], threadId, folder: raw['folder'], seen: raw['seen'], flagged: raw['flagged'] };
+    const flags: MailMessageFlags = {
+        id: raw['id'], threadId, folder: raw['folder'], seen: raw['seen'], flagged: raw['flagged'],
+        ...(raw['refused'] === 'seen' || raw['refused'] === 'flagged' ? { refused: raw['refused'] } : {}),
+        ...(typeof raw['reason'] === 'string' && raw['reason'] !== '' ? { reason: raw['reason'] } : {}),
+    };
     if ('movedTo' in raw) {
         return typeof raw['movedTo'] === 'string' ? { ...flags, movedTo: raw['movedTo'] } : null;
     }
