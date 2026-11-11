@@ -55,7 +55,8 @@ import {
     paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import {
-    FORWARD_UNSENT_SENTENCE, NO_SEND_SENTENCE, PREFILLED_ACTIONS, addressesOf, preparingSentence, prefillFailure, recipientOptionsOf, unreadableSentence,
+    NO_SEND_SENTENCE, PREFILLED_ACTIONS, QUOTE_REFUSED_SENTENCE, addressesOf, forwardFiles, preparingSentence, prefillFailure, quoteFields,
+    quotedMessageUnavailable, recipientOptionsOf, unreadableSentence,
     type ComposePrefillState,
 } from './compose-prefill';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
@@ -80,6 +81,7 @@ import {
     EmailAttachmentDto,
     EmailComposeDto,
     EmailComposeMode,
+    EmailComposePartDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
@@ -132,6 +134,13 @@ interface ComposeDraft {
     rich: boolean;
     /** The files attached to a new message, by their server ids; absent from older drafts. */
     attachments?: StoredComposeAttachment[];
+    /**
+     * An answer or a forward: whether the person kept the quote. Absent from a reply draft written before the quote
+     * was the server's: that draft's body already holds the quote it was given, so it is restored without another.
+     */
+    quote?: boolean;
+    /** A forward: the parts of the original the person removed from its files; absent from older drafts. */
+    removedParts?: number[];
 }
 
 /** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
@@ -524,7 +533,7 @@ type PhonePane = 'folders' | 'message';
                  NOT block the mailbox behind it, and minimizes to its header bar. -->
             @if (composeOpen() && !composeInline()) {
                 <div class="mbx__dock">
-                    <div class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
+                    <div #composeDock class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
                         <div class="mbx__compose-head">
                             <button type="button" class="mbx__compose-title" (click)="toggleMinimize()"
                                     [title]="composeMinimized() ? 'Expand' : 'Minimize'">{{ composeDockTitle() }}</button>
@@ -622,14 +631,48 @@ type PhonePane = 'folders' | 'message';
                     @if (composeUnreadable(); as reason) {
                         <p class="mbx__compose-note" data-testid="compose-unreadable">{{ reason }}</p>
                     }
-                    @if (composeQuoteHtml(); as quoteHtml) {
-                        <app-message-frame class="mbx__quote" data-testid="compose-quote" [html]="quoteHtml"
-                                           label="The message quoted below yours" />
-                    } @else if (composeQuoteText(); as quoteText) {
-                        <pre class="mbx__body-text" data-testid="compose-quote-text">{{ quoteText }}</pre>
+                    @if (composeQuoteRefused()) {
+                        <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-quote-refused">
+                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                            <span>{{ quoteRefusedSentence }}</span>
+                            <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-send-without-quote"
+                                    [disabled]="sending()" (click)="sendWithoutQuote()">Send without the quote</button>
+                        </div>
                     }
-                    @if (composeMode() === 'forward' && prefillHasQuote()) {
-                        <p class="mbx__compose-note" data-testid="compose-forward-unsent">{{ forwardUnsentSentence }}</p>
+                    <!-- The quote is read-only, below the editor and never in it: the server appends it on send. -->
+                    @if (composeQuoteShown()) {
+                        <div class="mbx__quote" data-testid="compose-quote-box">
+                            <div class="mbx__quote-head">
+                                <span>{{ composeMode() === 'forward' ? 'Forwarded message' : 'Quoted message' }}</span>
+                                <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-remove-quote"
+                                        (click)="removeQuote()">
+                                    <i class="bi bi-x-lg" aria-hidden="true"></i> Remove quote
+                                </button>
+                            </div>
+                            @if (composeRich() && composeQuoteHtml(); as quoteHtml) {
+                                <app-message-frame data-testid="compose-quote" [html]="quoteHtml"
+                                                   label="The message quoted below yours" />
+                            } @else {
+                                <pre class="mbx__body-text mbx__quote-text" data-testid="compose-quote-text">{{ composeQuoteText() }}</pre>
+                            }
+                        </div>
+                    }
+                    @if (forwardFilesKept().length > 0) {
+                        <ul class="mbx__fwd-files" data-testid="compose-forward-files" aria-label="Files of the forwarded message">
+                            @for (file of forwardFilesKept(); track file.part) {
+                                <li class="mbx__fwd-file">
+                                    <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                    <span class="mbx__fwd-file-name">{{ file.name ?? 'Attachment' }}</span>
+                                    @if (file.sizeBytes !== null) {
+                                        <span class="mbx__attachment-size">{{ humanSize(file.sizeBytes) }}</span>
+                                    }
+                                    <button type="button" class="mbx__icon-btn" [attr.aria-label]="'Remove ' + (file.name ?? 'attachment')"
+                                            (click)="removeForwardFile(file.part)">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
                     }
                     @if (selectedMailboxId(); as composeMailboxId) {
                         <app-compose-attachments class="mbx__field"
@@ -1158,7 +1201,18 @@ type PhonePane = 'folders' | 'message';
             font-size: .8125rem;
         }
         /* The quoted original below the person's own text, drawn as the message view draws a body. */
-        .mbx__quote { flex: 0 0 auto; }
+        .mbx__quote { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+        .mbx__quote-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            color: var(--cms-text-muted); font-size: .8125rem;
+        }
+        .mbx__quote-text { margin: 0; }
+        .mbx__fwd-files { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+        .mbx__fwd-file {
+            display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 8px;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md); font-size: .8125rem;
+        }
+        .mbx__fwd-file-name { overflow-wrap: anywhere; }
         .mbx__compose-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--cms-border); }
 
         /* Composer dock: floats bottom-right, does NOT block the mailbox, and
@@ -1442,7 +1496,13 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The served recipients' names, for their chips. */
     private readonly prefillOptions = signal<TagOption[]>([]);
     readonly noSendSentence = NO_SEND_SENTENCE;
-    readonly forwardUnsentSentence = FORWARD_UNSENT_SENTENCE;
+    readonly quoteRefusedSentence = QUOTE_REFUSED_SENTENCE;
+    /** The person keeps the served quote; Remove quote sends without it and hides it. */
+    readonly composeQuoteKept = signal<boolean>(true);
+    /** A send was refused because the original could no longer be read: offer to send without the quote. */
+    readonly composeQuoteRefused = signal<boolean>(false);
+    /** A forward's own files (the parts of the original the quote does not show), each removable. */
+    readonly forwardFilesKept = signal<EmailComposePartDto[]>([]);
     /** Whether the server served a quote to show. */
     readonly prefillHasQuote = computed(() => (this.prefillAnswer()?.quote ?? null) !== null);
     private readonly prefillAnswer = computed<EmailComposeDto | null>(() => {
@@ -1467,16 +1527,16 @@ export class EmailMailboxPageComponent implements OnInit {
         const html = this.prefillAnswer()?.quote?.html;
         return html === null || html === undefined || html === '' ? null : html;
     });
-    /** A quote served as text alone, shown as text. */
-    readonly composeQuoteText = computed(() => {
-        const quote = this.prefillAnswer()?.quote;
-        return quote && (quote.html === null || quote.html === '') ? quote.text : null;
-    });
+    /** The served `quote.text`: what Plain text shows, and what shows when no html was served. */
+    readonly composeQuoteText = computed(() => this.prefillAnswer()?.quote?.text ?? null);
+    /** The quote shows below the editor while one was served and the person kept it. */
+    readonly composeQuoteShown = computed(() => this.prefillHasQuote() && this.composeQuoteKept());
     /** The recipient chips' names: the served ones, then the contacts found while typing. */
     readonly recipientOptions = computed(() => [...this.prefillOptions(), ...this.contactOptions()]);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
     private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
+    private readonly composeDock = viewChild<ElementRef<HTMLElement>>('composeDock');
     private readonly injector = inject(Injector);
 
     /** Another message opened (or none): the quick reply of the one before closes, its draft kept. */
@@ -3101,10 +3161,12 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.composeShowCcBcc.set(this.composeCc.length > 0);
                 this.prefillOptions.set(recipientOptionsOf([...answer.to, ...answer.cc]));
                 this.composeSubject = answer.subject;
+                this.forwardFilesKept.set(mode === 'forward' ? forwardFiles(answer.attachments) : []);
                 this.composePrefill.set({ state: 'ready', answer });
                 // Baseline = what was served (an untouched answer is no draft), then this answer's saved draft.
                 this.snapshotComposeInitial();
                 this.restoreDraftIfAny();
+                this.focusComposeBody();
             },
             error: (e: unknown) => {
                 if (seq !== this.prefillSeq) {
@@ -3210,6 +3272,8 @@ export class EmailMailboxPageComponent implements OnInit {
             || this.composeText !== this.composeTextInitial
             || this.composeHtml() !== this.composeHtmlInitial
             || this.composeRich() !== this.composeRichInitial
+            || !this.composeQuoteKept()
+            || this.removedForwardParts().length > 0
             || storedAttachments(this.composeAttachments()).length > 0;
     }
 
@@ -3251,6 +3315,9 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeRich.set(draft.rich);
         this.composeHtml.set(draft.html);
         this.composeAttachments.set(restoredAttachments(draft.attachments));
+        this.composeQuoteKept.set(draft.quote === true);
+        const removed = new Set(draft.removedParts ?? []);
+        this.forwardFilesKept.update(list => list.filter(p => !removed.has(p.part)));
         this.composeKey.update(k => String(Number(k) + 1)); // re-mount the editor with the draft
         this.draftSaved.set(true);
     }
@@ -3279,6 +3346,8 @@ export class EmailMailboxPageComponent implements OnInit {
                 html: this.composeHtml(),
                 rich: this.composeRich(),
                 attachments: storedAttachments(this.composeAttachments()),
+                quote: this.composeQuoteKept(),
+                removedParts: this.removedForwardParts(),
             } satisfies ComposeDraft);
             this.draftSaved.set(true);
         } else {
@@ -3318,6 +3387,49 @@ export class EmailMailboxPageComponent implements OnInit {
         this.clearComposeBody();
     }
 
+    /** Remove quote: the message goes without the quote, which is no longer shown. */
+    removeQuote(): void {
+        this.composeQuoteKept.set(false);
+        this.onComposeChange();
+    }
+
+    /** A forward's file the person does not want sent. */
+    removeForwardFile(part: number): void {
+        this.forwardFilesKept.update(list => list.filter(p => p.part !== part));
+        this.onComposeChange();
+    }
+
+    /** The forward's served files the person removed, by part. */
+    private removedForwardParts(): number[] {
+        const answer = this.prefillAnswer();
+        if (answer === null || answer.mode !== 'forward') {
+            return [];
+        }
+        const kept = new Set(this.forwardFilesKept().map(p => p.part));
+
+        return forwardFiles(answer.attachments).map(p => p.part).filter(p => !kept.has(p));
+    }
+
+    /** After a refusal because the original could not be read: the same message, without the quote. */
+    sendWithoutQuote(): void {
+        this.composeQuoteKept.set(false);
+        this.composeQuoteRefused.set(false);
+        this.sendCompose();
+    }
+
+    /** The empty editor (or the plain text) takes the focus once the composer has drawn it. */
+    private focusComposeBody(tries = 40): void {
+        afterNextRender(() => {
+            const box = (this.composeInline() ? this.quickReplyComposer() : this.composeDock())?.nativeElement;
+            const body = box?.querySelector<HTMLElement>('[contenteditable="true"], textarea') ?? null;
+            if (body !== null) {
+                body.focus({ preventScroll: true });
+            } else if (tries > 0 && this.composeOpen()) {
+                setTimeout(() => this.focusComposeBody(tries - 1), 25);
+            }
+        }, { injector: this.injector });
+    }
+
     /** Flip the composer between the rich `<coolms-editor>` and the plain textarea.
      *  Both bodies persist independently, so a round-trip toggle loses nothing. */
     toggleComposeRich(): void {
@@ -3329,6 +3441,9 @@ export class EmailMailboxPageComponent implements OnInit {
     private clearComposeBody(): void {
         this.prefillSeq++;
         this.composePrefill.set(null);
+        this.composeQuoteKept.set(true);
+        this.composeQuoteRefused.set(false);
+        this.forwardFilesKept.set([]);
         this.composeText = '';
         this.composeHtml.set('');
         this.composeAttachments.set([]);
@@ -3354,36 +3469,26 @@ export class EmailMailboxPageComponent implements OnInit {
         return text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     }
 
-    /**
-     * What a forward sends: the person's own part alone. The forwarded message is shown in the composer and not sent
-     * with it -- the server has no way yet to add it as it shows it, and an html body sent here is reduced to the mail
-     * editor's profile, which would lose the original's images, tables and layout.
-     */
-    private static forwardBody(ownHtml: string, ownText: string): { html: string; text: string } {
-        return { html: ownHtml, text: ownText };
-    }
-
     sendCompose(): void {
         // A prepared composer sends once it is read, and only for one who may send from this mailbox.
         const prefill = this.prefillAnswer();
         if (this.composePrefill() !== null && (prefill === null || prefill.from.choices.length === 0)) {
             return;
         }
-        const quote = prefill?.quote ?? null;
-        const answering = this.composeMode() === 'reply' || this.composeMode() === 'reply_all';
+        const mode = this.composeMode();
+        const quoted = (prefill?.quote ?? null) !== null && this.composeQuoteKept();
+        const answering = mode === 'reply' || mode === 'reply_all';
         const rich = this.composeRich();
-        const ownHtml = rich ? this.composeHtml() : '';
+        const html = rich ? this.composeHtml() : '';
         // Rich mode sends an HTML body plus a stripped-tags plain-text fallback;
-        // plain mode keeps the textarea text exactly as before.
-        const ownText = rich ? this.htmlToPlainText(ownHtml) : this.composeText.trim();
-        // An answer with a quote may go with no text of its own: the server adds the quote (`quote: true`).
-        if (ownText === '' && !(answering && quote !== null)) {
+        // plain mode keeps the textarea text exactly as before. The quote is never part of either: the server
+        // appends it.
+        const text = rich ? this.htmlToPlainText(html) : this.composeText.trim();
+        // An answer or a forward with its quote kept may go with no text of its own: the server adds the quote.
+        if (text === '' && !quoted) {
             this.toast.error('Enter a message body.');
             return;
         }
-        const { html, text } = this.composeMode() === 'forward'
-            ? EmailMailboxPageComponent.forwardBody(ownHtml, ownText)
-            : { html: ownHtml, text: ownText };
         // Recipients are already parsed address chips; just trim/dedupe empties.
         const to = this.composeTo.map(x => x.trim()).filter(x => x !== '');
         const cc = this.composeCc.map(x => x.trim()).filter(x => x !== '');
@@ -3405,9 +3510,8 @@ export class EmailMailboxPageComponent implements OnInit {
         if (prefill !== null) {
             request.from = prefill.from.address;
         }
-        if (isReply && quote !== null) {
-            request.quote = true;
-        }
+        Object.assign(request, quoteFields(mode, this.replyTargetId(), (prefill?.quote ?? null) !== null,
+            this.composeQuoteKept(), this.forwardFilesKept()));
         if (to.length > 0) {
             request.to = to;
         }
@@ -3460,6 +3564,11 @@ export class EmailMailboxPageComponent implements OnInit {
             },
             error: (e: unknown) => {
                 this.sending.set(false);
+                // The original could no longer be read: nothing went; the composer offers to send without the quote.
+                if (quotedMessageUnavailable(e)) {
+                    this.composeQuoteRefused.set(true);
+                    return;
+                }
                 // A file no longer there to send is marked on its chip; a message over the limit shows both sizes.
                 const expired = expiredAttachmentId(e);
                 if (expired !== null) {

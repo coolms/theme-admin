@@ -348,6 +348,26 @@ export interface EmailMessageDto {
 /** The ways of starting from a message that the server prepares (`GET /email/messages/{id}/compose?mode=`). */
 export type EmailComposeMode = 'reply' | 'reply_all' | 'forward';
 
+/**
+ * A part of the original a forward carries, as the compose prefill lists it. An inline part is one the quote shows: it
+ * goes with the quote, never on its own.
+ */
+export interface EmailComposePartDto {
+    messageId: string;
+    part: number;
+    name: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    inline: boolean;
+    contentId: string | null;
+}
+
+/** A part of a stored message to carry on send, `{messageId, part}` as the prefill lists it. */
+export interface EmailMessagePartRef {
+    messageId: string;
+    part: number;
+}
+
 /** A recipient as the compose prefill names one; `name` null when the message names none. */
 export interface EmailComposeRecipientDto {
     name: string | null;
@@ -369,8 +389,8 @@ export interface EmailComposeDto {
     quote: { text: string; html: string | null; attribution: string | null } | null;
     inReplyTo: string | null;
     references: string[];
-    /** A forward's parts of the original, as references; nothing in this composer sends them yet. */
-    attachments: Record<string, unknown>[];
+    /** A forward's parts of the original, as references: nothing is copied until it is sent. */
+    attachments: EmailComposePartDto[];
     unreadable: string | null;
 }
 
@@ -454,8 +474,16 @@ export interface OutgoingEmailRequest {
     attachments?: string[];
     /** The address to send from, one the mailbox may send as; the mailbox's own when left out. */
     from?: string;
-    /** A reply only: the server quotes the message answered below this one, as its compose prefill showed it. */
+    /**
+     * The quote choice. A reply: true has the server append the message answered below this one, as its compose
+     * prefill showed it; false or left out sends without it. A send with `forwardOf`: false sends without the
+     * forwarded message; left out sends it. The page always states it for an answer or a forward.
+     */
     quote?: boolean;
+    /** A send only: the stored message this one forwards; the server appends it below the person's text. */
+    forwardOf?: string;
+    /** Parts of stored messages to carry, read at send: a forward's files. */
+    messageParts?: EmailMessagePartRef[];
 }
 
 /** The small confirmation a send/reply echoes. */

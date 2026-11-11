@@ -38,7 +38,7 @@ function answerFor(mode: EmailComposeMode, change: Partial<EmailComposeDto> = {}
         quote: { text: QUOTE_TEXT, html: QUOTE_HTML, attribution: 'On 9 Nov 2026, 14:05, Ada Byron <ada@example.test> wrote:' },
         inReplyTo: mode === 'forward' ? null : '<a1@example.test>',
         references: mode === 'forward' ? [] : ['<a1@example.test>'],
-        attachments: [],
+        attachments: mode === 'forward' ? FORWARD_PARTS : [],
         unreadable: null,
         ...change,
     };
@@ -49,17 +49,26 @@ const MESSAGE: EmailMessageDto = {
     toAddresses: ['work@example.test'], subject: 'Lunch', seen: true, replyAllUseful: true,
 };
 
+/** A forward's parts: a file of its own, and an image the quote shows (which goes with the quote, never alone). */
+const FORWARD_PARTS: EmailComposeDto['attachments'] = [
+    { messageId: 'm1', part: 2, name: 'menu.pdf', mimeType: 'application/pdf', sizeBytes: 2048, inline: false, contentId: null },
+    { messageId: 'm1', part: 3, name: 'map.png', mimeType: 'image/png', sizeBytes: 512, inline: true, contentId: 'map' },
+    { messageId: 'm1', part: 4, name: 'notes.txt', mimeType: 'text/plain', sizeBytes: 64, inline: false, contentId: null },
+];
+
 /**
  * Reply, Reply all and Forward start from what the server prepares: each asks the compose prefill with its mode and
- * fills the composer from the answer, says it is being read and why it could not be, shows the served quote as served
- * below the person's text, and sends the served From -- an answer through the reply endpoint (which threads it) with
- * the server's quote; a forward its own part alone, the quote shown and not sent until the server has a way to add it.
+ * fills the composer from the answer, says it is being read and why it could not be, shows the served quote read-only
+ * below the editor (never in it), and sends the served From with the quote choice always stated -- an answer through
+ * the reply endpoint (which threads it), a forward through send with the message it forwards and its own files.
  */
 describe('EmailMailboxPageComponent -- the server prepares an answer or a forward', () => {
     let asked: [string, EmailComposeMode][];
     let answer: (mode: EmailComposeMode) => Observable<EmailComposeDto>;
     let sent: { via: 'send' | 'reply'; id: string; request: OutgoingEmailRequest }[];
     let toasts: string[];
+    /** What a send or a reply answers; nothing by default. */
+    let sendAnswer: () => Observable<unknown>;
 
     function providers(): unknown[] {
         const noop = (): void => undefined;
@@ -78,12 +87,12 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                         return answer(mode);
                     },
                     send: (id: string, request: OutgoingEmailRequest) => {
-                        sent.push({ via: 'send', id, request });
-                        return NEVER;
+                        sent.push({ via: 'send', id, request: structuredClone(request) });
+                        return sendAnswer();
                     },
                     reply: (id: string, request: OutgoingEmailRequest) => {
-                        sent.push({ via: 'reply', id, request });
-                        return NEVER;
+                        sent.push({ via: 'reply', id, request: structuredClone(request) });
+                        return sendAnswer();
                     },
                 },
             },
@@ -118,6 +127,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         asked = [];
         sent = [];
         toasts = [];
+        sendAnswer = () => NEVER;
         answer = mode => of(answerFor(mode));
         TestBed.resetTestingModule();
     }
@@ -223,7 +233,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             } }]);
         });
 
-        it('a reply all sends the served Cc, and an answer with nothing to quote asks for no quote', () => {
+        it('a reply all sends the served Cc, and an answer with nothing to quote says quote: false', () => {
             const page = build();
             page.composeRich.set(false);
             page.onDetailAction('reply-all');
@@ -241,11 +251,45 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             unread.sendCompose();
 
             expect(sent.map(s => [s.via, s.id, s.request.cc, s.request.from, s.request.quote])).toEqual([
-                ['reply', 'm1', undefined, 'sales@example.test', undefined],
+                ['reply', 'm1', undefined, 'sales@example.test', false],
             ]);
         });
 
-        it('a forward sends the person\'s own part alone with the served From, and says its quote is not sent yet', () => {
+        it('a reply with Remove quote: quote: false, and the quote is no longer shown', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.onDetailAction('reply');
+            page.composeText = 'Yes, noon works.';
+            expect(page.composeQuoteShown()).toBeTrue();
+
+            page.removeQuote();
+            page.sendCompose();
+
+            expect(page.composeQuoteShown()).toBeFalse();
+            expect(sent).toEqual([{ via: 'reply', id: 'm1', request: {
+                text: 'Yes, noon works.', to: ['ada@example.test'], subject: 'Re: Lunch', from: 'sales@example.test', quote: false,
+            } }]);
+        });
+
+        it('a reply with the quote kept and no text of its own goes; with the quote removed it asks for a body', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.onDetailAction('reply');
+            page.sendCompose();
+            expect(sent.map(s => s.request)).toEqual([
+                { text: '', to: ['ada@example.test'], subject: 'Re: Lunch', from: 'sales@example.test', quote: true },
+            ]);
+
+            const bare = build();
+            bare.composeRich.set(false);
+            bare.onDetailAction('reply');
+            bare.removeQuote();
+            bare.sendCompose();
+            expect(sent).toEqual([]);
+            expect(toasts).toEqual(['Enter a message body.']);
+        });
+
+        it('a forward sends the person\'s text through send with forwardOf, quote: true and its own files', () => {
             const page = build();
             page.onDetailAction('forward');
             page.composeTo = ['lin@example.test'];
@@ -253,19 +297,89 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
             page.sendCompose();
 
-            expect(page.prefillHasQuote()).toBeTrue();
             expect(sent).toEqual([{ via: 'send', id: 'mb1', request: {
                 text: 'See below.', html: '<p>See below.</p>', to: ['lin@example.test'], subject: 'Fwd: Lunch', from: 'sales@example.test',
+                forwardOf: 'm1', quote: true,
+                messageParts: [{ messageId: 'm1', part: 2 }, { messageId: 'm1', part: 4 }],
             } }]);
+        });
+
+        it('a forward with Remove quote and a file removed: quote: false, and that file not sent', () => {
+            const page = build();
+            page.onDetailAction('forward');
+            page.composeTo = ['lin@example.test'];
+            page.composeHtml.set('<p>See below.</p>');
+
+            page.removeQuote();
+            page.removeForwardFile(2);
+            page.sendCompose();
+
+            expect(sent).toEqual([{ via: 'send', id: 'mb1', request: {
+                text: 'See below.', html: '<p>See below.</p>', to: ['lin@example.test'], subject: 'Fwd: Lunch', from: 'sales@example.test',
+                forwardOf: 'm1', quote: false,
+                messageParts: [{ messageId: 'm1', part: 4 }],
+            } }]);
+        });
+
+        it('a new message states no quote and forwards nothing', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.openCompose();
+            page.composeTo = ['lin@example.test'];
+            page.composeText = 'Hello.';
+
+            page.sendCompose();
+
+            expect(sent).toEqual([{ via: 'send', id: 'mb1', request: { text: 'Hello.', to: ['lin@example.test'] } }]);
+        });
+
+        it('a refusal because the original could not be read: nothing went, it says so, and Send without the quote sends quote: false', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.onDetailAction('reply');
+            page.composeText = 'Yes.';
+            sendAnswer = () => throwError(() => new HttpErrorResponse({ status: 422, error: {
+                type: '/errors/email/quoted-message-unavailable', messageId: 'm1',
+            } }));
+
+            page.sendCompose();
+
+            expect(page.composeQuoteRefused()).toBeTrue();
+            expect(page.composeOpen()).withContext('the composer stays, with the text').toBeTrue();
+            expect(toasts).toEqual([]);
+            sendAnswer = () => NEVER;
+            page.sendWithoutQuote();
+            expect(sent.map(s => [s.via, s.request.text, s.request.quote])).toEqual([['reply', 'Yes.', true], ['reply', 'Yes.', false]]);
+            expect(page.composeQuoteRefused()).toBeFalse();
+            expect(page.composeQuoteShown()).toBeFalse();
+        });
+
+        it('a draft keeps Remove quote: the answer opened again sends without it', () => {
+            const store = new Map<string, unknown>();
+            const page = build();
+            const drafts = TestBed.inject(DraftStoreService) as unknown as Record<string, unknown>;
+            drafts['save'] = (k: string, v: unknown): void => void store.set(k, structuredClone(v));
+            drafts['load'] = (k: string): unknown => store.get(k) ?? null;
+            page.composeRich.set(false);
+            page.onDetailAction('reply');
+            page.composeText = 'Later.';
+            page.removeQuote();
+            page.closeCompose();
+            expect([...store.values()].map(v => (v as { quote?: boolean }).quote)).toEqual([false]);
+
+            page.onDetailAction('reply');
+            expect(page.composeQuoteShown()).toBeFalse();
+            page.sendCompose();
+            expect(sent.map(s => [s.request.text, s.request.quote])).toEqual([['Later.', false]]);
         });
 
         it('says when the original could not be read, and shows no quote', () => {
             const page = build();
-            answer = mode => of(answerFor(mode, { quote: null, unreadable: 'the message is no longer on the server where it was stored' }));
+            answer = mode => of(answerFor(mode, { quote: null, unreadable: 'not-on-server' }));
             page.onDetailAction('reply');
 
             expect(page.composeUnreadable())
-                .toBe('The original is not quoted: the message is no longer on the server where it was stored.');
+                .toBe('The original is not quoted: it is no longer stored here, and the mail server no longer holds it.');
             expect(page.composeQuoteHtml()).toBeNull();
             expect(page.composeQuoteText()).toBeNull();
         });
@@ -306,7 +420,9 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             return { html, frame: el.querySelector<HTMLIFrameElement>('[data-testid="compose-quote"] iframe') };
         }
 
-        function render(change: Partial<EmailComposeDto> = {}, action = 'reply'): HTMLElement {
+        afterEach(() => (fixture?.nativeElement as HTMLElement | undefined)?.remove());
+
+        function render(change: Partial<EmailComposeDto> = {}, action = 'reply', rich = false): HTMLElement {
             reset();
             answer = mode => of(answerFor(mode, change));
             TestBed.configureTestingModule({ imports: [EmailMailboxPageComponent], providers: providers() as never[] });
@@ -314,9 +430,10 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                 set: { providers: [{ provide: MailboxSettingsModal, useValue: { attach: (): void => {} } }] },
             });
             fixture = TestBed.createComponent(EmailMailboxPageComponent);
+            document.body.appendChild(fixture.nativeElement);
             fixture.detectChanges();
             const page = fixture.componentInstance;
-            page.composeRich.set(false);
+            page.composeRich.set(rich);
             page.selectedMailboxId.set('mb1');
             page.messages.set([MESSAGE]);
             page.selectedMessage.set({ ...MESSAGE, bodyText: 'Lunch at noon?' });
@@ -339,16 +456,72 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             expect(el.querySelector('[data-testid="compose-send"]')).not.toBeNull();
         });
 
-        it('a forward: the served header block below the text, read-only, and the sentence that it is not sent yet', () => {
-            const el = render({}, 'forward');
+        it('a forward: the served quote below the editor, read-only, in the mail frame page; its own files listed', () => {
+            const el = render({}, 'forward', true);
             const quote = quoteFrame(el);
 
             expect(quote.html).toBe(QUOTE_HTML);
             expect(quote.frame?.getAttribute('sandbox')).withContext('the mail frame page: never scripts')
                 .toBe('allow-same-origin allow-popups allow-popups-to-escape-sandbox');
             expect(quote.frame?.getAttribute('src')).toBe(MAIL_FRAME_PAGE);
-            expect(el.querySelector('[data-testid="compose-forward-unsent"]')?.textContent?.trim())
-                .toBe('The forwarded message is shown here only. It is not sent with yours yet.');
+            const files = [...el.querySelectorAll('[data-testid="compose-forward-files"] li')].map(li => li.textContent?.replace(/\s+/g, ' ').trim());
+            expect(files.length).toBe(2);
+            expect(files[0]).toContain('menu.pdf');
+            expect(files[1]).toContain('notes.txt');
+        });
+
+        it('Plain text shows quote.text below the textarea, and no frame', () => {
+            const el = render();
+            const pre = el.querySelector('[data-testid="compose-quote-text"]');
+
+            expect(pre?.textContent).toBe(QUOTE_TEXT);
+            expect(el.querySelector('[data-testid="compose-quote"]')).toBeNull();
+            expect(el.querySelector('textarea')!.compareDocumentPosition(pre!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+
+        it('Remove quote hides the quote', () => {
+            const el = render({}, 'reply', true);
+            expect(el.querySelector('[data-testid="compose-quote"]')).not.toBeNull();
+
+            el.querySelector<HTMLButtonElement>('[data-testid="compose-remove-quote"]')!.click();
+            fixture.detectChanges();
+
+            expect(el.querySelector('[data-testid="compose-quote-box"]')).toBeNull();
+            expect(el.querySelector('[data-testid="compose-quote"]')).toBeNull();
+        });
+
+        it('the editor opens empty and focused', async () => {
+            const el = render();
+            for (let i = 0; i < 40 && document.activeElement?.tagName !== 'TEXTAREA'; i++) {
+                await new Promise(resolve => setTimeout(resolve, 25));
+                fixture.detectChanges();
+            }
+
+            expect(document.activeElement).toBe(el.querySelector('textarea'));
+            expect((document.activeElement as HTMLTextAreaElement).value).toBe('');
+        });
+
+        it('the quote is never inside the editor: the frame holds it, the editor\'s DOM does not', async () => {
+            const el = render({}, 'forward', true);
+            let editable: HTMLElement | null = null;
+            let quoteDoc: Document | null = null;
+            for (let i = 0; i < 100; i++) {
+                fixture.detectChanges();
+                editable = el.querySelector<HTMLElement>('coolms-editor [contenteditable="true"]');
+                quoteDoc = quoteFrame(el).frame?.contentDocument ?? null;
+                if (editable !== null && (quoteDoc?.body?.textContent ?? '').includes('Lunch at noon?')) {
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, 25));
+            }
+
+            expect(editable).withContext('the editor mounted').not.toBeNull();
+            expect(quoteDoc?.body.textContent).withContext('the control: the frame holds the quote').toContain('Lunch at noon?');
+            const editor = el.querySelector('coolms-editor')!;
+            expect(editor.textContent).not.toContain('Lunch at noon?');
+            expect(editor.textContent).not.toContain('Ada Byron');
+            expect(editor.querySelector('iframe, app-message-frame, [data-testid="compose-quote-box"]')).toBeNull();
+            expect(fixture.componentInstance.composeHtml()).toBe('');
         });
 
         it('says the original could not be read, and draws no quote', () => {
