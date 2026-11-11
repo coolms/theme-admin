@@ -184,11 +184,11 @@ export interface MailboxTestSending {
     api: MailboxTestSendingApi | null;
 }
 
-/** A connection test's answer: incoming, sending, and SMTP when SMTP was tried. */
+/** A connection test's answer: incoming, sending, and SMTP when SMTP was tried (null otherwise). */
 export interface MailboxTestResult {
-    imap?: MailboxTestOutcome;
-    sending?: MailboxTestSending;
-    smtp?: MailboxTestOutcome;
+    imap?: MailboxTestOutcome | null;
+    sending?: MailboxTestSending | null;
+    smtp?: MailboxTestOutcome | null;
 }
 
 /** What a connection test tries in place of what is stored; a field left out comes from the stored mailbox. */

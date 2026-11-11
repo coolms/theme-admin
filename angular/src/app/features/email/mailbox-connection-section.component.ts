@@ -80,7 +80,7 @@ export function partPatch(patch: MailboxWriteRequest, part: ConnectionPart): Mai
 }
 
 /** A connection test's outcome for one protocol, in words. */
-export function testOutcomeText(outcome: MailboxTestOutcome | undefined): string {
+export function testOutcomeText(outcome: MailboxTestOutcome | null | undefined): string {
     if (!outcome) return 'not tested';
     if (outcome.ok) return 'connected';
     return outcome.message || 'failed';
@@ -298,12 +298,12 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                             <i class="bi" aria-hidden="true" [class.bi-check-circle-fill]="'ok' === s.severity"
                                [class.bi-exclamation-triangle-fill]="'warning' === s.severity"
                                [class.bi-x-circle-fill]="'error' === s.severity"></i>
-                            Sending: {{ s.message }}
+                            {{ s.message }}
                         </li>
-                        <!-- SMTP's detail only when a real send goes by SMTP, never coloured: sending's severity judges it. -->
-                        @if ('smtp' === s.path && r.smtp) {
-                            <li data-test="test-smtp">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
-                        }
+                    }
+                    <!-- SMTP's detail whenever SMTP was tried, never coloured: sending's severity judges it. -->
+                    @if (r.smtp) {
+                        <li data-test="test-smtp">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
                     }
                 </ul>
             }

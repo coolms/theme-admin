@@ -169,8 +169,11 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         it('the test signs in with what is typed, says each line as the server gives it, and saves nothing', () => {
             email.testMailbox.and.returnValue(of({
                 imap: { ok: true },
-                sending: { severity: 'error', message: 'Sending cannot work: the SMTP server did not answer.', mode: 'smtp', path: 'smtp', api: null },
                 smtp: { ok: false, errorKind: 'unreachable', message: 'The server did not answer: check the host, the port and the security.' },
+                sending: {
+                    severity: 'error', message: 'Sending fails: SMTP the server did not answer: check the host, the port and the security.',
+                    mode: 'smtp', path: null, api: null,
+                },
             }));
             const fixture = render({ ...MAILBOX, access: 'manager' });
             const section = fixture.componentInstance;
@@ -186,13 +189,23 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             expect(email.saveMailboxSection).not.toHaveBeenCalled();
             const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
             expect(text).toContain('Incoming (IMAP): connected');
-            expect(text).toContain('Sending: Sending cannot work: the SMTP server did not answer.');
+            expect(text).toContain('Sending fails: SMTP the server did not answer: check the host, the port and the security.');
             expect(text).toContain('Outgoing (SMTP): The server did not answer: check the host, the port and the security.');
         });
 
-        describe('what a test found about sending', () => {
+        /**
+         * The answers below are the server's, shape and sentence: what its connection tester builds for each case,
+         * the classifier's and the API check's fixed sentences filled in. A sentence drawn with anything added to it,
+         * or an SMTP line hidden or coloured, fails here.
+         */
+        describe('what a test found about sending, as the server answers it', () => {
             const GMAIL_API = 'Gmail API';
-            const SMTP_DOWN = { ok: false, errorKind: 'unreachable' as const, message: 'The server did not answer: check the host, the port and the security.' };
+            const NOT_ENABLED = 'it is not switched on for this installation; an administrator enables it.';
+            const NO_CONSENT = 'the mailbox\'s sign-in does not include sending; connect the mailbox again.';
+            const REFUSED = 'it refused the last message at 2026-11-11 09:30 UTC (403), and none has gone through since.';
+            const UNREACHABLE = 'The server did not answer: check the host, the port and the security.';
+            const AUTH_REFUSED = 'The server refused the sign-in: check the username and password.';
+            const SMTP_DOWN = { ok: false, errorKind: 'unreachable' as const, message: UNREACHABLE };
             const severityClasses = ['text-success', 'text-warning', 'text-danger'];
             const icons = ['bi-check-circle-fill', 'bi-exclamation-triangle-fill', 'bi-x-circle-fill'];
 
@@ -211,84 +224,104 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                 name: string; result: MailboxTestResult; text: string; colour: string; icon: string; smtp: string | null;
             }> = [
                 {
-                    name: 'auto, the API works: green',
+                    name: 'auto, the API works: green, no SMTP line',
                     result: {
                         imap: { ok: true },
-                        sending: { severity: 'ok', message: 'Mail is sent through the Gmail API.', mode: 'auto', path: 'api', api: { ok: true, name: GMAIL_API } },
+                        smtp: null,
+                        sending: {
+                            severity: 'ok', message: 'Sending: through Gmail API, works.', mode: 'auto', path: 'api',
+                            api: { ok: true, name: GMAIL_API },
+                        },
                     },
-                    text: 'Sending: Mail is sent through the Gmail API.', colour: 'text-success', icon: 'bi-check-circle-fill', smtp: null,
+                    text: 'Sending: through Gmail API, works.', colour: 'text-success', icon: 'bi-check-circle-fill', smtp: null,
                 },
                 {
-                    name: 'auto, a send would go by SMTP and SMTP works: amber',
+                    name: 'auto, the API unavailable and SMTP works: amber',
                     result: {
                         imap: { ok: true },
-                        sending: {
-                            severity: 'warning', message: 'Mail is sent by SMTP: the Gmail API has no consent for this mailbox.', mode: 'auto', path: 'smtp',
-                            api: { ok: false, name: GMAIL_API, state: 'no_consent', message: 'No consent was given for sending.' },
-                        },
                         smtp: { ok: true },
-                    },
-                    text: 'Sending: Mail is sent by SMTP: the Gmail API has no consent for this mailbox.', colour: 'text-warning', icon: 'bi-exclamation-triangle-fill',
-                    smtp: 'Outgoing (SMTP): connected',
-                },
-                {
-                    name: 'auto, the API refuses and a send would not fall back: red',
-                    result: {
-                        imap: { ok: true },
                         sending: {
-                            severity: 'error', message: 'Sending cannot work: the Gmail API refused the send.', mode: 'auto', path: 'api',
-                            api: { ok: false, name: GMAIL_API, reason: 'forbidden', message: 'The API refused the request.' },
+                            severity: 'warning', message: `Sending works through SMTP; Gmail API unavailable: ${NO_CONSENT}`,
+                            mode: 'auto', path: 'smtp', api: { ok: false, name: GMAIL_API, state: 'no_consent', message: NO_CONSENT },
                         },
                     },
-                    text: 'Sending: Sending cannot work: the Gmail API refused the send.', colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: null,
+                    text: 'Sending works through SMTP; Gmail API unavailable: the mailbox\'s sign-in does not include sending; connect the mailbox again.',
+                    colour: 'text-warning', icon: 'bi-exclamation-triangle-fill', smtp: 'Outgoing (SMTP): connected',
                 },
                 {
-                    name: 'auto, both the API and SMTP fail: red, the SMTP detail uncoloured',
+                    name: 'auto, the API unavailable and SMTP fails too: red, path null, SMTP\'s reason shown uncoloured',
                     result: {
                         imap: { ok: true },
-                        sending: {
-                            severity: 'error', message: 'Sending cannot work: neither the Gmail API nor SMTP answered.', mode: 'auto', path: 'smtp',
-                            api: { ok: false, name: GMAIL_API, state: 'not_enabled' },
-                        },
                         smtp: SMTP_DOWN,
+                        sending: {
+                            severity: 'error',
+                            message: 'Sending fails: Gmail API unavailable (it is not switched on for this installation; an administrator enables it)'
+                                + ' and SMTP the server did not answer: check the host, the port and the security.',
+                            mode: 'auto', path: null, api: { ok: false, name: GMAIL_API, state: 'not_enabled', message: NOT_ENABLED },
+                        },
                     },
-                    text: 'Sending: Sending cannot work: neither the Gmail API nor SMTP answered.', colour: 'text-danger', icon: 'bi-x-circle-fill',
-                    smtp: 'Outgoing (SMTP): The server did not answer: check the host, the port and the security.',
+                    text: 'Sending fails: Gmail API unavailable (it is not switched on for this installation; an administrator enables it)'
+                        + ' and SMTP the server did not answer: check the host, the port and the security.',
+                    colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: `Outgoing (SMTP): ${UNREACHABLE}`,
+                },
+                {
+                    name: 'auto, the API refuses: red, no fall back, no SMTP line',
+                    result: {
+                        imap: { ok: true },
+                        smtp: null,
+                        sending: {
+                            severity: 'error',
+                            message: 'Sending fails through Gmail API: it refused the last message at 2026-11-11 09:30 UTC (403), and none has gone'
+                                + ' through since; it does not fall back to SMTP.',
+                            mode: 'auto', path: null, api: { ok: false, name: GMAIL_API, reason: '403', message: REFUSED },
+                        },
+                    },
+                    text: 'Sending fails through Gmail API: it refused the last message at 2026-11-11 09:30 UTC (403), and none has gone'
+                        + ' through since; it does not fall back to SMTP.',
+                    colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: null,
                 },
                 {
                     name: 'SMTP mode, SMTP works: green',
                     result: {
                         imap: { ok: true },
-                        sending: { severity: 'ok', message: 'Mail is sent by SMTP.', mode: 'smtp', path: 'smtp', api: null },
                         smtp: { ok: true },
+                        sending: { severity: 'ok', message: 'Sending: through SMTP, works.', mode: 'smtp', path: 'smtp', api: null },
                     },
-                    text: 'Sending: Mail is sent by SMTP.', colour: 'text-success', icon: 'bi-check-circle-fill', smtp: 'Outgoing (SMTP): connected',
+                    text: 'Sending: through SMTP, works.', colour: 'text-success', icon: 'bi-check-circle-fill', smtp: 'Outgoing (SMTP): connected',
                 },
                 {
-                    name: 'SMTP mode, SMTP fails: red, the SMTP detail uncoloured',
+                    name: 'SMTP mode, SMTP fails: red, path null, SMTP\'s reason shown uncoloured',
                     result: {
                         imap: { ok: true },
-                        sending: { severity: 'error', message: 'Sending cannot work: the SMTP server did not answer.', mode: 'smtp', path: 'smtp', api: null },
-                        smtp: SMTP_DOWN,
-                    },
-                    text: 'Sending: Sending cannot work: the SMTP server did not answer.', colour: 'text-danger', icon: 'bi-x-circle-fill',
-                    smtp: 'Outgoing (SMTP): The server did not answer: check the host, the port and the security.',
-                },
-                {
-                    name: 'a system mailbox whose API is unavailable: red',
-                    result: {
-                        imap: { ok: true },
+                        smtp: { ok: false, errorKind: 'auth_refused', message: AUTH_REFUSED },
                         sending: {
-                            severity: 'error', message: 'Sending cannot work: the Gmail API is not enabled for this project.', mode: 'api', path: null,
-                            api: { ok: false, name: GMAIL_API, state: 'not_enabled', message: 'The API is not enabled.' },
+                            severity: 'error', message: 'Sending fails: SMTP the server refused the sign-in: check the username and password.',
+                            mode: 'smtp', path: null, api: null,
                         },
                     },
-                    text: 'Sending: Sending cannot work: the Gmail API is not enabled for this project.', colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: null,
+                    text: 'Sending fails: SMTP the server refused the sign-in: check the username and password.', colour: 'text-danger',
+                    icon: 'bi-x-circle-fill', smtp: `Outgoing (SMTP): ${AUTH_REFUSED}`,
+                },
+                {
+                    name: 'the system mailbox, its API unavailable: red, no SMTP line',
+                    result: {
+                        imap: { ok: true },
+                        smtp: null,
+                        sending: {
+                            severity: 'error',
+                            message: 'Sending fails: Gmail API is unavailable (it is not switched on for this installation; an administrator enables'
+                                + ' it), and the platform\'s own mail is sent only through it.',
+                            mode: 'auto', path: null, api: { ok: false, name: GMAIL_API, state: 'not_enabled', message: NOT_ENABLED },
+                        },
+                    },
+                    text: 'Sending fails: Gmail API is unavailable (it is not switched on for this installation; an administrator enables'
+                        + ' it), and the platform\'s own mail is sent only through it.',
+                    colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: null,
                 },
             ];
 
             for (const c of cases) {
-                it(`${c.name}: the server's sentence, its severity's colour and icon`, () => {
+                it(`${c.name}: the server's sentence as given, its severity's colour and icon`, () => {
                     const host = tested(c.result);
                     const sending = host.querySelector('[data-test=test-sending]');
                     const smtp = host.querySelector('[data-test=test-smtp]');
@@ -298,7 +331,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                     expect(iconsOf(sending)).toEqual([c.icon]);
                     expect(textOf(host.querySelector('[data-test=test-imap]'))).toBe('Incoming (IMAP): connected');
                     if (null === c.smtp) {
-                        expect(smtp).withContext('no SMTP detail off the SMTP path').toBeNull();
+                        expect(smtp).withContext('no SMTP line when SMTP was not tried').toBeNull();
                     } else {
                         expect(textOf(smtp)).toBe(c.smtp);
                         expect(coloursOf(smtp)).withContext('the SMTP detail is never coloured').toEqual([]);
@@ -306,17 +339,19 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                 });
             }
 
-            it('a failing SMTP next to a working API colours nothing red and shows no SMTP line', () => {
+            it('a failing SMTP next to a working API colours nothing red', () => {
                 const host = tested({
                     imap: { ok: true },
-                    sending: { severity: 'ok', message: 'Mail is sent through the Gmail API.', mode: 'auto', path: 'api', api: { ok: true, name: GMAIL_API } },
                     smtp: SMTP_DOWN,
+                    sending: {
+                        severity: 'ok', message: 'Sending: through Gmail API, works.', mode: 'auto', path: 'api',
+                        api: { ok: true, name: GMAIL_API },
+                    },
                 });
 
-                expect(host.querySelector('[data-test=test-sending]')?.classList.contains('text-success')).toBeTrue();
+                expect(coloursOf(host.querySelector('[data-test=test-sending]'))).toEqual(['text-success']);
                 expect(host.querySelectorAll('ul .text-danger').length).toBe(0);
-                expect(host.querySelector('[data-test=test-smtp]')).toBeNull();
-                expect(host.textContent).not.toContain(SMTP_DOWN.message);
+                expect(coloursOf(host.querySelector('[data-test=test-smtp]'))).toEqual([]);
             });
         });
 
