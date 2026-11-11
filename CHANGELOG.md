@@ -27,6 +27,10 @@ major number means here.
 - **A mailbox's settings open from its card.** One gear, on the mailbox card, shown when the server offers the settings; the page's action bar no longer draws a second one. Email settings at the top right holds mail-wide settings only.
 
 ### Added
+- **A quick reply at the foot of the open message.** One "Reply…" line, inside the message pane's one scroll region:
+  under the message, and at the pane's foot when the message is shorter than the pane, so it never moves up when the
+  message gets shorter. Choosing it opens the reply's composer there; Reply scrolls the pane to it, opens it and
+  focuses it. It sends as a reply always did and folds back to the line. Reply all and Forward open the dock.
 - **Attachments in a new message, a forward or a reply.** Attach files offers From device, an upload, and From files, a picker over the
   person's own files and everything they may read; a file from there is attached by reference and read at send. Each
   file is a chip with its size, its upload's progress, why it was refused, and Remove. Beside them is the size used

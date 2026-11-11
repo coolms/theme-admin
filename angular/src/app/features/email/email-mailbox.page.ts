@@ -1,7 +1,10 @@
 import { Dialog } from '@angular/cdk/dialog';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
+    signal, untracked, viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { Location } from '@angular/common';
+import { Location, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/router';
 import { Observable, Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
@@ -142,8 +145,9 @@ type PhonePane = 'folders' | 'message';
  *    ("Load more"). Unread rows are bold; opening one marks it read.
  *  - RIGHT: the opened message -- headers + snippet + a collapsible raw RFC-822
  *    source (the backend stores the raw `.eml`; MIME body extraction is a future
- *    refinement). "Reply" + a top-bar "Compose" open an inline composer that
- *    posts through the mailbox's own SMTP (send / reply-in-thread ).
+ *    refinement). "Reply" opens the quick reply at the foot of the message;
+ *    "Compose", "Reply all" and "Forward" open the composer dock. Both post
+ *    through the mailbox's own SMTP (send / reply-in-thread).
  *
  * Read-only-friendly: with no mailboxes configured (the common dev state) the
  * body degrades to an empty state rather than erroring. Monolithic single
@@ -160,6 +164,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
+        NgTemplateOutlet,
     ],
     template: `
         <div class="mbx">
@@ -482,6 +487,20 @@ type PhonePane = 'folders' | 'message';
                                     </div>
                                 }
                             </div>
+                            <!-- The quick reply: at the foot of the message, and at the pane's foot under a short one. -->
+                            <div class="mbx__quick-reply" data-test="quick-reply">
+                                @if (quickReplyOpenFor(msg.id)) {
+                                    <div #quickReplyComposer class="mbx__compose mbx__compose--inline" data-test="quick-reply-composer" tabindex="-1">
+                                        <ng-container [ngTemplateOutlet]="composeForm" />
+                                    </div>
+                                } @else {
+                                    <!-- Opens on click, Enter or Space; focus alone leaves it a line. -->
+                                    <button type="button" class="mbx__quick-line" data-test="quick-reply-line"
+                                            [attr.aria-label]="quickReplyLabel(msg)" (click)="openQuickReply()"
+                                            (keydown.enter)="$event.preventDefault(); openQuickReply()"
+                                            (keydown.space)="$event.preventDefault(); openQuickReply()">Reply…</button>
+                                }
+                            </div>
                         } @else {
                             <div class="mbx__empty-wrap">
                                 <app-empty-state icon="envelope-open"
@@ -496,7 +515,7 @@ type PhonePane = 'folders' | 'message';
 
             <!-- Composer dock (compose + reply) — Gmail-style: floats bottom-right, does
                  NOT block the mailbox behind it, and minimizes to its header bar. -->
-            @if (composeOpen()) {
+            @if (composeOpen() && !composeInline()) {
                 <div class="mbx__dock">
                     <div class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
                         <div class="mbx__compose-head">
@@ -512,90 +531,95 @@ type PhonePane = 'folders' | 'message';
                                 </button>
                             </div>
                         </div>
-                        <div class="mbx__compose-body">
-                            <div class="mbx__field">
-                                <div class="mbx__field-head">
-                                    <span>To</span>
-                                    @if (!composeShowCcBcc()) {
-                                        <button type="button" class="mbx__btn mbx__btn--sm" (click)="composeShowCcBcc.set(true)">Cc/Bcc</button>
-                                    }
-                                </div>
-                                <app-tag-input [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
-                                               [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
-                                               placeholder="Start typing a name or email…" />
-                            </div>
-                            @if (composeShowCcBcc()) {
-                                <label class="mbx__field">
-                                    <span>Cc</span>
-                                    <app-tag-input [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
-                                                   [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
-                                                   placeholder="Cc…" />
-                                </label>
-                                <label class="mbx__field">
-                                    <span>Bcc</span>
-                                    <app-tag-input [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
-                                                   [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
-                                                   placeholder="Bcc…" />
-                                </label>
-                            }
-                            <label class="mbx__field">
-                                <span>Subject</span>
-                                <input type="text" [(ngModel)]="composeSubject" (ngModelChange)="onComposeChange()" placeholder="Subject" />
-                            </label>
-                            <div class="mbx__field">
-                                <div class="mbx__field-head">
-                                    <span>Message</span>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="toggleComposeRich()"
-                                            [title]="composeRich() ? 'Switch to a plain-text body' : 'Switch to a rich-text body'">
-                                        <i class="bi" [class.bi-file-text]="composeRich()" [class.bi-type]="!composeRich()"></i>
-                                        {{ composeRich() ? 'Plain text' : 'Rich text' }}
-                                    </button>
-                                </div>
-                                @if (composeRich()) {
-                                    <coolms-editor class="mbx__editor"
-                                                   profile="standard"
-                                                   [content]="composeHtml()"
-                                                   [mountKey]="composeKey()"
-                                                   (contentChange)="composeHtml.set($event); onComposeChange()" />
-                                } @else {
-                                    <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
-                                }
-                            </div>
-                            @if (selectedMailboxId(); as composeMailboxId) {
-                                <app-compose-attachments class="mbx__field"
-                                                         [mailboxId]="composeMailboxId"
-                                                         [limitBytes]="composeLimit()"
-                                                         [bodyBytes]="composeBodyBytes()"
-                                                         [sendRefused]="composeSendRefused()"
-                                                         [(attachments)]="composeAttachments"
-                                                         (changed)="onComposeChange()" />
-                            }
-                            @if (composeMode() === 'reply') {
-                                <p class="mbx__compose-hint">
-                                    Recipient + subject default from the original message if left blank.
-                                </p>
-                            }
-                        </div>
-                        <div class="mbx__compose-foot mbx__compose-foot--split">
-                            <div class="mbx__compose-foot-side">
-                                @if (draftSaved()) {
-                                    <span class="mbx__draft-badge"><i class="bi bi-check2"></i> Draft saved</span>
-                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="discardDraft()">
-                                        <i class="bi bi-trash"></i> Discard
-                                    </button>
-                                }
-                            </div>
-                            <div class="mbx__compose-foot-side">
-                                <button type="button" class="mbx__btn" (click)="closeCompose()">Cancel</button>
-                                <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="sending()"
-                                        (click)="sendCompose()">
-                                    {{ sending() ? 'Sending…' : 'Send' }}
-                                </button>
-                            </div>
-                        </div>
+                        <ng-container [ngTemplateOutlet]="composeForm" />
                     </div>
                 </div>
             }
+
+            <!-- The composer's fields and its foot: in the dock, and in the quick reply. -->
+            <ng-template #composeForm>
+                <div class="mbx__compose-body">
+                    <div class="mbx__field">
+                        <div class="mbx__field-head">
+                            <span>To</span>
+                            @if (!composeShowCcBcc()) {
+                                <button type="button" class="mbx__btn mbx__btn--sm" (click)="composeShowCcBcc.set(true)">Cc/Bcc</button>
+                            }
+                        </div>
+                        <app-tag-input [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
+                                       [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                       placeholder="Start typing a name or email…" />
+                    </div>
+                    @if (composeShowCcBcc()) {
+                        <label class="mbx__field">
+                            <span>Cc</span>
+                            <app-tag-input [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
+                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           placeholder="Cc…" />
+                        </label>
+                        <label class="mbx__field">
+                            <span>Bcc</span>
+                            <app-tag-input [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
+                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           placeholder="Bcc…" />
+                        </label>
+                    }
+                    <label class="mbx__field">
+                        <span>Subject</span>
+                        <input type="text" [(ngModel)]="composeSubject" (ngModelChange)="onComposeChange()" placeholder="Subject" />
+                    </label>
+                    <div class="mbx__field">
+                        <div class="mbx__field-head">
+                            <span>Message</span>
+                            <button type="button" class="mbx__btn mbx__btn--sm" (click)="toggleComposeRich()"
+                                    [title]="composeRich() ? 'Switch to a plain-text body' : 'Switch to a rich-text body'">
+                                <i class="bi" [class.bi-file-text]="composeRich()" [class.bi-type]="!composeRich()"></i>
+                                {{ composeRich() ? 'Plain text' : 'Rich text' }}
+                            </button>
+                        </div>
+                        @if (composeRich()) {
+                            <coolms-editor class="mbx__editor"
+                                           profile="standard"
+                                           [content]="composeHtml()"
+                                           [mountKey]="composeKey()"
+                                           (contentChange)="composeHtml.set($event); onComposeChange()" />
+                        } @else {
+                            <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
+                        }
+                    </div>
+                    @if (selectedMailboxId(); as composeMailboxId) {
+                        <app-compose-attachments class="mbx__field"
+                                                 [mailboxId]="composeMailboxId"
+                                                 [limitBytes]="composeLimit()"
+                                                 [bodyBytes]="composeBodyBytes()"
+                                                 [sendRefused]="composeSendRefused()"
+                                                 [(attachments)]="composeAttachments"
+                                                 (changed)="onComposeChange()" />
+                    }
+                    @if (composeMode() === 'reply') {
+                        <p class="mbx__compose-hint">
+                            Recipient + subject default from the original message if left blank.
+                        </p>
+                    }
+                </div>
+                <div class="mbx__compose-foot mbx__compose-foot--split">
+                    <div class="mbx__compose-foot-side">
+                        @if (draftSaved()) {
+                            <span class="mbx__draft-badge"><i class="bi bi-check2"></i> Draft saved</span>
+                            <button type="button" class="mbx__btn mbx__btn--sm" (click)="discardDraft()">
+                                <i class="bi bi-trash"></i> Discard
+                            </button>
+                        }
+                    </div>
+                    <div class="mbx__compose-foot-side">
+                        <button type="button" class="mbx__btn" (click)="closeCompose()">Cancel</button>
+                        <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="sending()"
+                                (click)="sendCompose()">
+                            {{ sending() ? 'Sending…' : 'Send' }}
+                        </button>
+                    </div>
+                </div>
+            </ng-template>
 
             <!-- Mailbox connection editor (create + edit) -->
             @if (mailboxEditorOpen()) {
@@ -953,6 +977,19 @@ type PhonePane = 'folders' | 'message';
             scrollbar-gutter: stable;
         }
         .mbx__detail-scroll > * { flex-shrink: 0; }
+        /* The quick reply, the scroll region's last child: at the message's foot, pushed to the pane's foot by the
+           free space under a short message, and never sticky. */
+        .mbx__quick-reply { margin-top: auto; padding-top: 14px; }
+        .mbx__quick-line {
+            display: block; width: 100%; min-height: var(--cms-touch-target-min); padding: 8px 12px;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface);
+            color: var(--cms-text-muted); font: inherit; font-size: .8125rem; text-align: start; cursor: text;
+        }
+        .mbx__quick-line:hover { border-color: var(--cms-accent); }
+        .mbx__quick-line:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
+        /* The composer in the pane: as wide as the message, scrolled with it, no scroll of its own. */
+        .mbx__compose--inline { width: auto; max-width: none; max-height: none; outline: none; }
+        .mbx__compose--inline .mbx__compose-body { overflow: visible; }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__evicted {
@@ -1336,8 +1373,20 @@ export class EmailMailboxPageComponent implements OnInit {
 
     readonly composeOpen = signal<boolean>(false);
     readonly composeMode = signal<'compose' | 'reply'>('compose');
+    /** The open composer is the quick reply in the message pane, not the dock. */
+    readonly composeInline = signal<boolean>(false);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
+    private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
+    private readonly injector = inject(Injector);
+
+    /** Another message opened (or none): the quick reply of the one before closes, its draft kept. */
+    private readonly quickReplyFollowsTheMessage = effect(() => {
+        const open = this.selectedMessage()?.id ?? null;
+        if (this.composeOpen() && this.composeInline() && this.replyTargetId() !== open) {
+            untracked(() => this.closeCompose());
+        }
+    });
     /** The files of the message being written: a new message, a forward or a reply. */
     readonly composeAttachments = signal<ComposeAttachment[]>([]);
     /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
@@ -1553,7 +1602,7 @@ export class EmailMailboxPageComponent implements OnInit {
         switch (action) {
             case 'reply':
             case 'forward':
-                this.withOpen(ids[0], () => (action === 'reply' ? this.openReply() : this.openForward()));
+                this.withOpen(ids[0], () => (action === 'reply' ? this.openQuickReply() : this.openForward()));
                 break;
             case 'reply-all':
                 this.withOpen(ids[0], () => this.openReplyAll());
@@ -2803,6 +2852,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openCompose(): void {
+        this.composeInline.set(false);
         this.composeMode.set('compose');
         this.replyTargetId.set(null);
         this.composeTo = [];
@@ -2891,6 +2941,48 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeOpen.set(true);
     }
 
+    /** The quick reply is open as a composer under this message. */
+    quickReplyOpenFor(id: string): boolean {
+        return this.composeOpen() && this.composeInline() && this.replyTargetId() === id;
+    }
+
+    /** The quick reply line's accessible name: "Reply to" the sender's name, else their address. */
+    quickReplyLabel(msg: EmailMessageDto): string {
+        const name = (msg.fromName ?? '').trim();
+        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
+        return sender !== '' ? `Reply to ${sender}` : 'Reply';
+    }
+
+    /**
+     * Reply, and the quick reply's line: the reply to the open message as a composer at the foot of the message
+     * pane, brought into view and focused. A composer open in the dock is closed first, its draft kept.
+     */
+    openQuickReply(): void {
+        const msg = this.selectedMessage();
+        if (!msg) {
+            return;
+        }
+        if (!this.quickReplyOpenFor(msg.id)) {
+            if (this.composeOpen()) {
+                this.closeCompose();
+            }
+            this.composeInline.set(true);
+            this.openReply();
+        }
+        afterNextRender(() => this.revealQuickReply(), { injector: this.injector });
+    }
+
+    /** Scrolls the message pane to the quick reply and focuses its body, else the composer. */
+    private revealQuickReply(): void {
+        const box = this.quickReplyComposer()?.nativeElement;
+        if (box === undefined) {
+            return;
+        }
+        box.scrollIntoView({ block: 'nearest' });
+        const body = box.querySelector<HTMLElement>('textarea, [contenteditable="true"]') ?? box;
+        body.focus({ preventScroll: true });
+    }
+
     /**
      * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
      * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
@@ -2900,6 +2992,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (!msg) {
             return;
         }
+        this.composeInline.set(false);
         this.openReply();
         if (this.draftSaved()) {
             return;
@@ -2926,6 +3019,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (!msg) {
             return;
         }
+        this.composeInline.set(false);
         this.composeMode.set('compose');
         this.replyTargetId.set(null);
         this.composeTo = [];
