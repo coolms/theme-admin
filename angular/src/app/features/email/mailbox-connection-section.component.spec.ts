@@ -171,7 +171,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                 imap: { ok: true },
                 smtp: { ok: false, errorKind: 'unreachable', message: 'The server did not answer: check the host, the port and the security.' },
                 sending: {
-                    severity: 'error', message: 'Sending fails: SMTP the server did not answer: check the host, the port and the security.',
+                    severity: 'error', message: 'Sending fails through SMTP: the server did not answer: check the host, the port and the security.',
                     mode: 'smtp', path: null, api: null,
                 },
             }));
@@ -189,7 +189,7 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             expect(email.saveMailboxSection).not.toHaveBeenCalled();
             const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
             expect(text).toContain('Incoming (IMAP): connected');
-            expect(text).toContain('Sending fails: SMTP the server did not answer: check the host, the port and the security.');
+            expect(text).toContain('Sending fails through SMTP: the server did not answer: check the host, the port and the security.');
             expect(text).toContain('Outgoing (SMTP): The server did not answer: check the host, the port and the security.');
         });
 
@@ -256,12 +256,12 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                         sending: {
                             severity: 'error',
                             message: 'Sending fails: Gmail API unavailable (it is not switched on for this installation; an administrator enables it)'
-                                + ' and SMTP the server did not answer: check the host, the port and the security.',
+                                + ', and through SMTP: the server did not answer: check the host, the port and the security.',
                             mode: 'auto', path: null, api: { ok: false, name: GMAIL_API, state: 'not_enabled', message: NOT_ENABLED },
                         },
                     },
                     text: 'Sending fails: Gmail API unavailable (it is not switched on for this installation; an administrator enables it)'
-                        + ' and SMTP the server did not answer: check the host, the port and the security.',
+                        + ', and through SMTP: the server did not answer: check the host, the port and the security.',
                     colour: 'text-danger', icon: 'bi-x-circle-fill', smtp: `Outgoing (SMTP): ${UNREACHABLE}`,
                 },
                 {
@@ -295,11 +295,11 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
                         imap: { ok: true },
                         smtp: { ok: false, errorKind: 'auth_refused', message: AUTH_REFUSED },
                         sending: {
-                            severity: 'error', message: 'Sending fails: SMTP the server refused the sign-in: check the username and password.',
+                            severity: 'error', message: 'Sending fails through SMTP: the server refused the sign-in: check the username and password.',
                             mode: 'smtp', path: null, api: null,
                         },
                     },
-                    text: 'Sending fails: SMTP the server refused the sign-in: check the username and password.', colour: 'text-danger',
+                    text: 'Sending fails through SMTP: the server refused the sign-in: check the username and password.', colour: 'text-danger',
                     icon: 'bi-x-circle-fill', smtp: `Outgoing (SMTP): ${AUTH_REFUSED}`,
                 },
                 {
