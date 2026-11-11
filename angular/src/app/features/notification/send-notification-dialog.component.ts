@@ -19,7 +19,6 @@ import {
 } from '@coolms/ui-angular';
 import {
     NotificationApiService,
-    type NotificationBodyFormat,
     type NotificationLink,
     type NotificationType,
     type SendTestRequest,
@@ -38,7 +37,7 @@ const BODY_MAX_LENGTH = 2000;
  * server side.
  *
  * Fields: type (preset enum dropdown via `listTypes()`), title
- * (required, max 200), body (optional, max 2000), link (optional
+ * (required, max 200), body (optional plain text, max 2000), link (optional
  * `NotificationLink`, sourced from `navi.admin` via the generic
  * `cms-tree-picker` + `NaviGraphTreeSource` adapter from B.X.2).
  *
@@ -99,22 +98,6 @@ const BODY_MAX_LENGTH = 2000;
                         (ngModelChange)="body.set($event)"
                     ></textarea>
                 </div>
-
-                @if (hasBody()) {
-                    <div class="cms-send-dialog__field">
-                        <label for="cms-send-body-format">Format</label>
-                        <select
-                            id="cms-send-body-format"
-                            name="bodyFormat"
-                            [ngModel]="bodyFormat()"
-                            (ngModelChange)="bodyFormat.set($event)"
-                        >
-                            @for (f of bodyFormats(); track f.value) {
-                                <option [value]="f.value">{{ f.label }}</option>
-                            }
-                        </select>
-                    </div>
-                }
 
                 <div class="cms-send-dialog__field">
                     <label>Link</label>
@@ -189,20 +172,11 @@ export class SendNotificationDialogComponent {
     protected readonly type = signal<string>('manual');
     protected readonly title = signal<string>('');
     protected readonly body = signal<string>('');
-    protected readonly bodyFormat = signal<string>('plain');
     protected readonly link = signal<NotificationLink | null>(null);
     protected readonly sending = signal<boolean>(false);
     protected readonly types = signal<NotificationType[]>([
         { value: 'manual', label: 'Manual' },
     ]);
-    protected readonly bodyFormats = signal<NotificationBodyFormat[]>([
-        { value: 'plain', label: 'Plain text' },
-        { value: 'markdown', label: 'Markdown' },
-        { value: 'dtmpl', label: 'DTMPL' },
-    ]);
-
-    protected readonly hasBody = computed<boolean>(() => this.body().trim().length > 0);
-
     protected readonly titleError = computed<string | null>(() => {
         const t = this.title().trim();
         if (t.length === 0) {
@@ -245,19 +219,6 @@ export class SendNotificationDialogComponent {
                     // unreachable.
                 },
             });
-
-        this.api.listBodyFormats()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (formats) => {
-                    if (formats.length > 0) {
-                        this.bodyFormats.set(formats);
-                    }
-                },
-                error: () => {
-                    // Fallback already in the signal initializer.
-                },
-            });
     }
 
     protected submit(): void {
@@ -270,16 +231,10 @@ export class SendNotificationDialogComponent {
             type: this.type(),
             title: this.title().trim(),
         };
+        // The body is plain text: no format is sent.
         const bodyValue = this.body().trim();
         if (bodyValue.length > 0) {
             payload.body = bodyValue;
-            const fmt = this.bodyFormat();
-            // Storage optimization: only send `bodyFormat` when
-            // non-default. The backend's absence-implies-plain rule
-            // keeps every default row's extras compact.
-            if (fmt !== 'plain') {
-                payload.bodyFormat = fmt;
-            }
         }
         const linkValue = this.link();
         if (linkValue !== null) {
