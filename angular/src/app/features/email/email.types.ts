@@ -315,8 +315,12 @@ export interface EmailFolderDto {
     serverUnseen?: number | null;
 }
 
-/** A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). */
+/**
+ * A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). In a folder listed from the mail server, a
+ * row nothing here stores carries `fromServer: true` and a `ref`, and no `id` at all (see mail-server-rows).
+ */
 export interface EmailMessageDto {
+    /** Absent on a server row (`fromServer`): read it only once isServerRow says the row is not one. */
     id: string;
     mailboxId?: string;
     folder?: string;
@@ -343,7 +347,18 @@ export interface EmailMessageDto {
      * whose Cc and Reply-To are not read yet), which reads as no.
      */
     replyAllUseful?: boolean | null;
+    /** True on a row the mail server lists and nothing here stores; false on a stored row. */
+    fromServer?: boolean;
+    /** A server row's ref, which opens it through the server-message opener; null on a stored row. */
+    ref?: string | null;
 }
+
+/**
+ * One page of a folder's list, with what the answer's headers say beside its rows: `next` the cursor of the next page
+ * (`X-Next-Cursor`, null on the last page or a folder paged by number), `serverPages` the `X-Server-Pages` header.
+ * A list answered without them reads as a folder paged by number.
+ */
+export type EmailMessageList = EmailMessageDto[] & { next?: string | null; serverPages?: string | null };
 
 /** The ways of starting from a message that the server prepares (`GET /email/messages/{id}/compose?mode=`). */
 export type EmailComposeMode = 'reply' | 'reply_all' | 'forward';
