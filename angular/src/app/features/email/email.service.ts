@@ -19,6 +19,7 @@ import {
     EmailImportResultDto,
     EmailMessageDetailDto,
     EmailMessageDto,
+    EmailMessageList,
     EmailOAuthProviderDto,
     EmailSearchHitDto,
     EmailSearchQuery,
@@ -286,15 +287,25 @@ export class EmailService {
             .pipe(map(raw => this.unwrap<EmailMessageDto>(raw)));
     }
 
-    /** GET /email/mailboxes/{id}/messages?folder=&page= -- newest-sent first, page size 50. */
-    listMessages(mailboxId: string, folder: string, page = 1): Observable<EmailMessageDto[]> {
-        const params = new HttpParams().set('folder', folder).set('page', String(page));
+    /**
+     * GET /email/mailboxes/{id}/messages?folder=&page= -- newest-sent first, page size 50. A folder listed from the mail
+     * server pages by `cursor` instead, and `page` is not sent with one: the rows carry the answer's `X-Next-Cursor` as
+     * `next` (null on its last page) and its `X-Server-Pages` as `serverPages`.
+     */
+    listMessages(mailboxId: string, folder: string, page = 1, cursor: string | null = null): Observable<EmailMessageList> {
+        const params = cursor !== null
+            ? new HttpParams().set('folder', folder).set('cursor', cursor)
+            : new HttpParams().set('folder', folder).set('page', String(page));
         return this.http
             .get<unknown>(`${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/messages`, {
                 headers: this.jsonHeaders,
                 params,
+                observe: 'response',
             })
-            .pipe(map(raw => this.unwrap<EmailMessageDto>(raw)));
+            .pipe(map(response => Object.assign(this.unwrap<EmailMessageDto>(response.body), {
+                next: response.headers.get('X-Next-Cursor'),
+                serverPages: response.headers.get('X-Server-Pages'),
+            })));
     }
 
     /**
