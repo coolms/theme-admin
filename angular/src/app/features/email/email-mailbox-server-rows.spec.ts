@@ -17,12 +17,14 @@ import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import {
-    type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto, type EmailMessageList, type ServerMessageOpenedDto,
+    type EmailFolderTreeNodeDto, type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto, type EmailMessageList,
+    type ServerMessageOpenedDto,
     type ServerSearchHitDto,
 } from './email.types';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
+import { folderListedFromServer } from './mail-server-rows';
 
 const FOLDER = 'NPM';
 
@@ -190,7 +192,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         answer(page(MIXED, 'c-2'));
 
         expect(rowOf('Package published').querySelector('input[type="checkbox"]')).withContext('no checkbox').toBeNull();
-        expect(rowOf('Package published').querySelector('.mbx__row-star')).withContext('no star').toBeNull();
+        expect(rowOf('Package published').querySelector('button.mbx__row-star')).withContext('no star').toBeNull();
         expect(rowOf('Weekly digest').querySelector('input[type="checkbox"]')).withContext('a stored row has one').not.toBeNull();
 
         rowOf('Package published').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
@@ -205,6 +207,31 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         fixture.detectChanges();
         expect([...pageOf().selectedIds()]).withContext('select all checks the stored rows only').toEqual(['m-8', 'm-6']);
         expect(pageOf().selectedCount()).toBe(2);
+    });
+
+    it('a server row keeps the checkbox\'s and the star\'s room empty: its sender, subject and date line up with a stored row\'s', () => {
+        answer(page([
+            server('r-9', 'Package published', { sentAt: '2026-11-11T09:00:00+00:00' }),
+            stored('m-8', 'Weekly digest', { sentAt: '2026-11-11T08:00:00+00:00' }),
+        ]));
+        const serverRow = rowOf('Package published');
+        const storedRow = rowOf('Weekly digest');
+        const box = (row: HTMLElement, selector: string): DOMRect => row.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
+
+        expect(box(storedRow, '.mbx__row-from').width).withContext('the list is laid out').toBeGreaterThan(0);
+        expect(box(serverRow, '.mbx__row-from').left).withContext('the sender').toBe(box(storedRow, '.mbx__row-from').left);
+        expect(box(serverRow, '.mbx__row-subject').left).withContext('the subject').toBe(box(storedRow, '.mbx__row-subject').left);
+        expect(box(serverRow, '.mbx__row-date').right).withContext('the date').toBe(box(storedRow, '.mbx__row-date').right);
+
+        // The room is empty and hidden from assistive technology, and nothing in it can take focus.
+        const room = Array.from(serverRow.querySelectorAll<HTMLElement>('.mbx__row-check, .mbx__row-star'));
+        expect(room.length).toBe(2);
+        for (const el of room) {
+            expect(el.getAttribute('aria-hidden')).toBe('true');
+            expect(el.tagName).toBe('SPAN');
+            expect(el.querySelector('input, button, a, [tabindex]')).toBeNull();
+            expect(el.textContent?.trim()).toBe('');
+        }
     });
 
     it('opening a server row: the opener by its ref, then the stored message by its id, then the usual seen request', () => {
@@ -344,5 +371,63 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         answer(page([stored('m-1', 'Hello')]));
 
         expect(el().querySelector('[data-test="load-older"]')).not.toBeNull();
+    });
+
+    /**
+     * Whether a folder is listed from the mail server is the server's word, as the folder tree and the folder list
+     * carry it (`listedFromServer`); the first answer is read only when neither carries the field.
+     */
+    describe('whether the folder is listed from the mail server', () => {
+        const node = (folder: string, extra: Partial<EmailFolderTreeNodeDto> = {}): EmailFolderTreeNodeDto => ({
+            folder, name: folder, selectable: true, total: 0, unseen: 0, children: [], ...extra,
+        });
+
+        it('the tree node\'s word, found at any level, before the list entry\'s; null when neither says', () => {
+            const tree = [node('Projects', { selectable: false, children: [node(FOLDER, { listedFromServer: true })] })];
+            expect(folderListedFromServer(FOLDER, tree, [{ folder: FOLDER, total: 0, unseen: 0, listedFromServer: false }])).toBeTrue();
+            expect(folderListedFromServer(FOLDER, [node(FOLDER)], [{ folder: FOLDER, total: 0, unseen: 0, listedFromServer: false }])).toBeFalse();
+            expect(folderListedFromServer(FOLDER, null, [{ folder: FOLDER, total: 0, unseen: 0, listedFromServer: true }])).toBeTrue();
+            expect(folderListedFromServer(FOLDER, [node(FOLDER)], [{ folder: FOLDER, total: 0, unseen: 0 }])).toBeNull();
+            expect(folderListedFromServer(FOLDER, null, [])).toBeNull();
+        });
+
+        it('the tree says listed from the server: an answer with no server sign is still paged by cursor, with no Older', () => {
+            pageOf().folderTree.set([node(FOLDER, { listedFromServer: true })]);
+            answer(page([stored('m-2', 'Weekly digest'), stored('m-1', 'Hello')]));
+
+            expect(pageOf().serverListed()).toBeTrue();
+            expect(pageOf().hasMore()).withContext('no cursor: nothing more').toBeFalse();
+            expect(el().querySelector('[data-test="load-older"]')).toBeNull();
+        });
+
+        it('the tree says it is not: an answer that looks like one is a stored folder, paged by number, with Older', () => {
+            pageOf().folderTree.set([node(FOLDER, { listedFromServer: false })]);
+            answer(page(MIXED, 'c-2'));
+
+            expect(pageOf().serverListed()).toBeFalse();
+            expect(el().querySelector('[data-test="load-older"]')).not.toBeNull();
+        });
+
+        it('the folder list says it when the tree does not', () => {
+            pageOf().folderTree.set([node(FOLDER)]);
+            pageOf().folders.set([{ folder: FOLDER, total: 0, unseen: 0, listedFromServer: true }]);
+            answer(page([stored('m-1', 'Hello')]));
+
+            expect(pageOf().serverListed()).toBeTrue();
+        });
+
+        it('neither carries the field: the first answer decides, as before', () => {
+            pageOf().folderTree.set([node(FOLDER)]);
+            pageOf().folders.set([{ folder: FOLDER, total: 0, unseen: 0 }]);
+            answer(page(MIXED, 'c-2'));
+            expect(pageOf().serverListed()).withContext('server rows and a cursor').toBeTrue();
+
+            pageOf().selectFolder('INBOX');
+            fixture.detectChanges();
+            pageOf().selectFolder(FOLDER);
+            fixture.detectChanges();
+            answer(page([stored('m-1', 'Hello')]));
+            expect(pageOf().serverListed()).withContext('stored rows only').toBeFalse();
+        });
     });
 });

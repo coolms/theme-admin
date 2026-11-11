@@ -80,7 +80,7 @@ import {
     MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
 } from './mail-server-search';
 import {
-    type ServerListEnd, isServerRow, listedFromServer, rowKey, serverRowHit, storedIds, withFirstPageAgain, withOpenedRow,
+    type ServerListEnd, folderListedFromServer, isServerRow, listedFromServer, rowKey, serverRowHit, storedIds, withFirstPageAgain, withOpenedRow,
     withoutServerRow,
 } from './mail-server-rows';
 import {
@@ -339,7 +339,8 @@ type PhonePane = 'folders' | 'message';
                                 <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
                             }
                             <!-- A server row (listed by the mail server, stored nowhere here) is keyed by its ref and
-                                 offers Open only: no checkbox, no star, no row menu. -->
+                                 offers Open only: no checkbox, no star, no row menu. Their places stay as empty room,
+                                 so its sender, subject and date line up with a stored row's. -->
                             @for (m of messages(); track rowKeyOf(m)) {
                                 @let server = isServerRowOf(m);
                                 <div class="mbx__row" (contextmenu)="onMessageRowContextMenu($event, m)"
@@ -372,6 +373,9 @@ type PhonePane = 'folders' | 'message';
                                                 (click)="toggleFlag(m, $event)">
                                             <i class="bi" [class.bi-star-fill]="m.flagged" [class.bi-star]="!m.flagged"></i>
                                         </button>
+                                    } @else {
+                                        <!-- The star's room, empty and hidden: the date lines up with a stored row's. -->
+                                        <span class="mbx__row-star mbx__row-star--none" aria-hidden="true"><i class="bi bi-star"></i></span>
                                     }
                                 </div>
                             }
@@ -971,7 +975,8 @@ type PhonePane = 'folders' | 'message';
         .mbx__row--active { background: var(--cms-selected-light); }
         .mbx__row--checked { background: var(--cms-selected-light); }
         .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
-        .mbx__row-check--none { cursor: default; }
+        /* A server row's empty room where a stored row has its checkbox: the same width, nothing in it. */
+        .mbx__row-check--none { display: block; cursor: default; }
         .mbx__list-end {
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
             padding: 12px 12px 0; color: var(--cms-text-muted); font-size: .8125rem;
@@ -987,6 +992,7 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__row-star:hover { color: var(--cms-accent, #F5A623); }
         .mbx__row-star--on { color: var(--cms-accent, #F5A623); }
+        .mbx__row-star--none { visibility: hidden; cursor: default; }
         .mbx__row--unread .mbx__row-from, .mbx__row--unread .mbx__row-subject { font-weight: 700; }
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3904,7 +3910,10 @@ ${this.selectedFolder()}`;
                 const list = this.pendingReads.heldAll(answer, readAt);
                 const unavailable = answer.serverPages === 'unavailable';
                 if (reset) {
-                    this.serverListed.set(listedFromServer(answer));
+                    // The folder's own word, as its tree node or list entry carries it; the answer only when neither does.
+                    this.serverListed.set(
+                        folderListedFromServer(this.selectedFolder(), this.folderTree(), this.folders()) ?? listedFromServer(answer),
+                    );
                 }
                 if (!reset) {
                     this.messages.set([...this.messages(), ...list]);

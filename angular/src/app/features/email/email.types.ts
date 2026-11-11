@@ -313,6 +313,11 @@ export interface EmailFolderDto {
      * part-imported folder.
      */
     serverUnseen?: number | null;
+    /**
+     * True: the folder's message list is filled from the mail server, newest first, paged by X-Next-Cursor, with rows
+     * nothing here stores (`fromServer`). False: its stored rows. Absent from a server that does not say.
+     */
+    listedFromServer?: boolean;
 }
 
 /**
