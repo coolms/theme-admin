@@ -7,7 +7,9 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/router';
-import { Observable, Subject, catchError, debounceTime, filter, forkJoin, map, of, switchMap } from 'rxjs';
+import {
+    Observable, Subject, type Subscription, catchError, debounceTime, filter, forkJoin, interval, map, of, switchMap, take,
+} from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
@@ -73,8 +75,14 @@ import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
 import { MailBulkBarComponent } from './mail-bulk-bar.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './mail-server-search.component';
-import { MailServerSearch, OtherMailboxesSearch, searchCommits, type SearchCommit, type SearchKey } from './mail-server-search';
+import { MailServerSearchComponent, OLDER_WORDS, openFailureText, type ServerHitOpened } from './mail-server-search.component';
+import {
+    MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
+} from './mail-server-search';
+import {
+    type ServerListEnd, isServerRow, listedFromServer, rowKey, serverRowHit, storedIds, withFirstPageAgain, withOpenedRow,
+    withoutServerRow,
+} from './mail-server-rows';
 import {
     EmailAttachmentDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
@@ -257,7 +265,7 @@ type PhonePane = 'folders' | 'message';
                         </div>
 
                         <!-- Under the list's row and its search field, the list's one scroll region. -->
-                        <div class="mbx__list-scroll" data-test="list-scroll">
+                        <div class="mbx__list-scroll" data-test="list-scroll" (scroll)="onListScroll($event)">
                         @if (listRereading()) {
                             <!-- The same list read again: its rows stay, a thin bar says it is being read. -->
                             <div class="mbx__list-progress" data-test="list-progress" role="progressbar"
@@ -323,20 +331,33 @@ type PhonePane = 'folders' | 'message';
                             <cms-state kind="error" title="Could not load messages." [error]="messagesFailure()" actionLabel="Retry" (acted)="retryMessages()" />
                         } @else if (loadingMessages() && messages().length === 0) {
                             <p class="mbx__note">Loading…</p>
-                        } @else if (messages().length === 0) {
+                        } @else if (messages().length === 0 && listEnd() === null) {
                             <app-empty-state icon="inbox" title="No messages"
                                              hint="This folder is empty." />
                         } @else {
-                            @for (m of messages(); track m.id) {
+                            @if (serverRowGone()) {
+                                <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
+                            }
+                            <!-- A server row (listed by the mail server, stored nowhere here) is keyed by its ref and
+                                 offers Open only: no checkbox, no star, no row menu. -->
+                            @for (m of messages(); track rowKeyOf(m)) {
+                                @let server = isServerRowOf(m);
                                 <div class="mbx__row" (contextmenu)="onMessageRowContextMenu($event, m)"
-                                     [class.mbx__row--active]="m.id === selectedMessage()?.id"
+                                     [attr.data-ref]="server ? m.ref : null"
+                                     [class.mbx__row--server]="server"
+                                     [class.mbx__row--active]="!server && m.id === selectedMessage()?.id"
                                      [class.mbx__row--unread]="!m.seen"
-                                     [class.mbx__row--checked]="isSelected(m.id)">
-                                    <input type="checkbox" class="mbx__row-check"
-                                           [checked]="isSelected(m.id)"
-                                           (click)="onCheckboxClick(m, $event)"
-                                           aria-label="Select message" />
-                                    <button type="button" class="mbx__row-main" (click)="onRowClick(m, $event)">
+                                     [class.mbx__row--checked]="!server && isSelected(m.id)">
+                                    @if (server) {
+                                        <span class="mbx__row-check mbx__row-check--none" aria-hidden="true"></span>
+                                    } @else {
+                                        <input type="checkbox" class="mbx__row-check"
+                                               [checked]="isSelected(m.id)"
+                                               (click)="onCheckboxClick(m, $event)"
+                                               aria-label="Select message" />
+                                    }
+                                    <button type="button" class="mbx__row-main" (click)="onRowClick(m, $event)"
+                                            [disabled]="server && openingRef() === m.ref">
                                         <div class="mbx__row-top">
                                             <span class="mbx__row-from">{{ m.fromName || m.fromAddress || '(unknown)' }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime }}</span>
@@ -344,12 +365,30 @@ type PhonePane = 'folders' | 'message';
                                         <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
                                         <div class="mbx__row-snippet">{{ m.snippet }}</div>
                                     </button>
-                                    <button type="button" class="mbx__row-star"
-                                            [class.mbx__row-star--on]="m.flagged"
-                                            [title]="m.flagged ? 'Unstar' : 'Star'"
-                                            (click)="toggleFlag(m, $event)">
-                                        <i class="bi" [class.bi-star-fill]="m.flagged" [class.bi-star]="!m.flagged"></i>
-                                    </button>
+                                    @if (!server) {
+                                        <button type="button" class="mbx__row-star"
+                                                [class.mbx__row-star--on]="m.flagged"
+                                                [title]="m.flagged ? 'Unstar' : 'Star'"
+                                                (click)="toggleFlag(m, $event)">
+                                            <i class="bi" [class.bi-star-fill]="m.flagged" [class.bi-star]="!m.flagged"></i>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            @if (listEnd(); as end) {
+                                <!-- The mail server could not be read, or asked to wait: the rows shown stay. -->
+                                <div class="mbx__list-end" role="status" data-test="list-end">
+                                    @if (end.kind === 'unavailable') {
+                                        <span>Older messages could not be loaded.</span>
+                                    } @else if (end.seconds > 0) {
+                                        <span>Too many requests to the mail server. Try again in {{ end.seconds }} s.</span>
+                                    } @else {
+                                        <span>Too many requests to the mail server.</span>
+                                    }
+                                    @if (end.kind === 'unavailable' || end.seconds === 0) {
+                                        <button type="button" class="mbx__more" data-test="list-end-retry"
+                                                [disabled]="loadingMessages()" (click)="retryListEnd()">Try again</button>
+                                    }
                                 </div>
                             }
                             @if (messagesFailure() !== null) {
@@ -360,16 +399,17 @@ type PhonePane = 'folders' | 'message';
                                     [error]="messagesFailure()"
                                     [showRetry]="true"
                                     (retry)="retryMessages()" />
-                            } @else if (hasMore()) {
+                            } @else if (hasMore() && listEnd() === null) {
                                 <button type="button" class="mbx__more" [disabled]="loadingMessages()"
                                         (click)="loadMore()">
                                     {{ loadingMessages() ? 'Loading…' : 'Load more' }}
                                 </button>
                             }
                         }
-                        <!-- Once the folder's own pages are read: its older mail, from the server, on demand. -->
+                        <!-- Once the folder's own pages are read: its older mail, from the server, on demand. A folder
+                             listed from the mail server already lists it, so the section is the inbox's only. -->
                         @if (!searchActive() && selectedMailboxId() !== null && messagesFailure() === null
-                             && !loadingMessages() && !hasMore()) {
+                             && !loadingMessages() && !hasMore() && !serverListed()) {
                             @if (olderMessages.view().kind === 'idle') {
                                 <button type="button" class="mbx__more" data-test="load-older" (click)="loadOlder()">
                                     Load older from the server
@@ -931,6 +971,12 @@ type PhonePane = 'folders' | 'message';
         .mbx__row--active { background: var(--cms-selected-light); }
         .mbx__row--checked { background: var(--cms-selected-light); }
         .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
+        .mbx__row-check--none { cursor: default; }
+        .mbx__list-end {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+            padding: 12px 12px 0; color: var(--cms-text-muted); font-size: .8125rem;
+        }
+        .mbx__list-end .mbx__more { margin: 0 0 10px; }
         .mbx__row-main {
             display: flex; flex-direction: column; gap: 2px; text-align: left; flex: 1 1 auto;
             min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; color: inherit; font: inherit;
@@ -1177,7 +1223,7 @@ export class EmailMailboxPageComponent implements OnInit {
      * Applies each mail change by seq (a late or repeated event changes nothing), and reads the open folder's list
      * again, once per burst, when messages arrive in it from another tab, device or a restore.
      */
-    private readonly mailFollower = new MailLiveFollower(() => this.loadMessages(true));
+    private readonly mailFollower = new MailLiveFollower(() => this.rereadFirstPage());
     /**
      * The read state the person chose (Mark read, Mark unread, and the read an open makes) while its write is on its
      * way: what was read or sent before the write answered keeps the person's value; after it, the server's word is
@@ -1242,6 +1288,8 @@ export class EmailMailboxPageComponent implements OnInit {
     private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
 
     private static readonly PAGE_SIZE = 50;
+    /** How near the list's end a scroll reads the next page of a folder listed from the server. */
+    private static readonly SCROLL_NEAR_END_PX = 160;
 
     readonly mailboxes = signal<EmailMailboxDto[]>([]);
     readonly selectedMailboxId = signal<string | null>(null);
@@ -1331,6 +1379,26 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
     readonly hasMore = signal<boolean>(false);
+    /**
+     * The open folder is listed from the mail server (not fully synced): it pages by the cursor its answers give, holds
+     * server rows, and has no Older section. Learned from the folder's first page.
+     */
+    readonly serverListed = signal<boolean>(false);
+    /** What the list's end says beyond its rows: the server could not be read, or asked to wait. */
+    readonly listEnd = signal<ServerListEnd | null>(null);
+    /** The server row being opened, by its ref: it is not opened twice. */
+    readonly openingRef = signal<string | null>(null);
+    /** A server row opened was gone from the mail server, and left the list. */
+    readonly serverRowGone = signal<boolean>(false);
+    /** The next page's cursor in a folder listed from the server; null on its last page. */
+    private listNext: string | null = null;
+    /** What the list end's Try again asks for again: the read the server could not answer. */
+    private listEndRetry: () => void = () => this.loadMessages(true);
+    /** The keys of the rows the first page gave: a first page read again stands in their place. */
+    private firstPageKeys = new Set<string>();
+    private listEndCountdown: Subscription | null = null;
+    readonly rowKeyOf = rowKey;
+    readonly isServerRowOf = isServerRow;
 
     /**
      * Multi-select (backlog slices 3+4): the checkbox / Shift / Ctrl selection over the
@@ -1560,6 +1628,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** A message row's menu: the same actions as the bars, on the checked rows when this row is one of them. */
     onMessageRowContextMenu(event: MouseEvent, m: EmailMessageDto): void {
+        // A server row offers Open only: the row menu leaves it out.
+        if (isServerRow(m)) {
+            return;
+        }
         const ids = rowTargetIds(this.selectedIds(), m.id);
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
@@ -1746,7 +1818,7 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     readonly olderWords = OLDER_WORDS;
     /** The ids the folder's list shows: an older row the platform holds and lists already is not shown again. */
-    readonly listedIds = computed(() => new Set(this.messages().map(m => m.id)));
+    readonly listedIds = computed(() => new Set(storedIds(this.messages())));
     /** The message open in the reader was evicted: shown still, as no longer kept here. */
     readonly openEvicted = signal(false);
     readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
@@ -1908,7 +1980,7 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     private onMailReceived(evt: EmailLiveEvent): void {
         if (evt.mailboxId === this.selectedMailboxId()) {
-            this.loadFolders();
+            this.loadFolders(true);
             return;
         }
         this.email.listFolders(evt.mailboxId).subscribe({
@@ -2073,8 +2145,75 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     loadMore(): void {
+        if (this.serverListed()) {
+            // A folder listed from the server pages by the cursor its last answer gave.
+            if (this.listNext !== null) {
+                this.loadMessages(false, this.listNext);
+            }
+            return;
+        }
         this.page += 1;
         this.loadMessages(false);
+    }
+
+    /** The list scrolled near its end: a folder listed from the server reads its next page. */
+    onListScroll(event: Event): void {
+        const region = event.target as HTMLElement;
+        if (!this.serverListed() || this.searchActive() || !this.hasMore() || this.loadingMessages()
+            || this.listEnd() !== null || this.messagesFailure() !== null) {
+            return;
+        }
+        if (region.scrollHeight - region.scrollTop - region.clientHeight <= EmailMailboxPageComponent.SCROLL_NEAR_END_PX) {
+            this.loadMore();
+        }
+    }
+
+    /** The list end's Try again: the page the server could not give, asked for again. */
+    retryListEnd(): void {
+        this.listEndRetry();
+    }
+
+    /**
+     * A server row chosen: it is stored through the server-message opener, takes its place in the list as an ordinary
+     * row, and opens by its id as any message does, so the usual open marks it read. A ref the server no longer has
+     * leaves the list, saying so.
+     */
+    private openServerRow(m: EmailMessageDto): void {
+        const ref = m.ref ?? '';
+        const mailboxId = this.selectedMailboxId();
+        if (ref === '' || mailboxId === null || this.openingRef() === ref) {
+            return;
+        }
+        const call = this.openServerHitFn(serverRowHit(m));
+        if (call === null) {
+            return;
+        }
+        this.serverRowGone.set(false);
+        this.openingRef.set(ref);
+        call.subscribe({
+            next: stored => {
+                this.openingRef.set(null);
+                if (mailboxId !== this.selectedMailboxId()) {
+                    return;
+                }
+                this.messages.set(withOpenedRow(this.messages(), ref, stored));
+                if (this.firstPageKeys.has(rowKey(m))) {
+                    this.firstPageKeys.add(`id:${stored.id}`);
+                }
+                const row = this.messages().find(x => !isServerRow(x) && x.id === stored.id);
+                this.openMessage(row ?? { ...m, id: stored.id, folder: stored.folder, fromServer: false, ref: null });
+            },
+            error: (error: unknown) => {
+                this.openingRef.set(null);
+                const refusal = serverSearchRefusal(error);
+                if (refusal.reason === 'gone') {
+                    this.messages.set(withoutServerRow(this.messages(), ref));
+                    this.serverRowGone.set(true);
+                    return;
+                }
+                this.toast.error(openFailureText(refusal));
+            },
+        });
     }
 
     /** Back to the list: the open message is closed, and a detail still loading is dropped when it answers. */
@@ -2086,6 +2225,10 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openMessage(m: EmailMessageDto): void {
+        if (isServerRow(m)) {
+            this.openServerRow(m);
+            return;
+        }
         this.showPane('message');
         this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
     }
@@ -2307,6 +2450,9 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Row star click: toggle this message's flag without opening it (backlog slice 7). */
     toggleFlag(m: EmailMessageDto, ev: MouseEvent): void {
         ev.stopPropagation();
+        if (isServerRow(m)) {
+            return;
+        }
         this.applyFlag(m.id, !(m.flagged ?? false));
     }
 
@@ -2578,8 +2724,9 @@ export class EmailMailboxPageComponent implements OnInit {
             if (this.phoneWidth?.matches === true) {
                 this.leavePane('message');
             } else {
-                const nextId = nextOpenAfter(listed.map(m => m.id), open.id, gone, new Set(asked));
-                const next = listed.find(m => m.id === nextId);
+                // The next stored row: a server row is opened only when chosen.
+                const nextId = nextOpenAfter(storedIds(listed), open.id, gone, new Set(asked));
+                const next = listed.find(m => !isServerRow(m) && m.id === nextId);
                 if (next) {
                     this.openMessage(next);
                 }
@@ -2691,7 +2838,11 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Row click: plain = open the message; Ctrl/Cmd = toggle in selection; Shift = range-select. */
     onRowClick(m: EmailMessageDto, ev: MouseEvent): void {
-        if (ev.shiftKey) {
+        // A server row is never checked: any click opens it.
+        if (isServerRow(m)) {
+            ev.preventDefault();
+            this.openServerRow(m);
+        } else if (ev.shiftKey) {
             ev.preventDefault();
             this.selectRangeTo(m.id);
         } else if (ev.ctrlKey || ev.metaKey) {
@@ -2712,6 +2863,9 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     onCheckboxClick(m: EmailMessageDto, ev: MouseEvent): void {
         ev.stopPropagation(); // don't bubble to the row's open handler
+        if (isServerRow(m)) {
+            return;
+        }
         this.toggleSelect(m.id);
     }
 
@@ -2729,7 +2883,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Select the contiguous run (by display order) from the anchor to `id`. */
     private selectRangeTo(id: string): void {
-        const ids = this.messages().map(m => m.id);
+        // Server rows between the two are left out: they are never checked.
+        const ids = storedIds(this.messages());
         const to = ids.indexOf(id);
         const from = this.selectAnchorId !== null ? ids.indexOf(this.selectAnchorId) : -1;
         if (to === -1 || from === -1) {
@@ -2747,7 +2902,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Select every currently-loaded message in the folder. */
     selectAllLoaded(): void {
-        this.selectedIds.set(new Set(this.messages().map(m => m.id)));
+        this.selectedIds.set(new Set(storedIds(this.messages())));
     }
 
     /** Drop the whole selection (and the range anchor). */
@@ -3662,9 +3817,9 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * The mailbox's folders: the tree draws the rail, in its order and by its names; the flat list carries the counts,
      * matched by path. A tree that cannot be read is the rail's error, never a list made here. Without the flat list
-     * the tree's own counts stand.
+     * the tree's own counts stand. After a realtime change (`firstPageOnly`) the list reads its first page only.
      */
-    private loadFolders(): void {
+    private loadFolders(firstPageOnly = false): void {
         const id = this.selectedMailboxId();
         if (id === null) {
             return;
@@ -3687,7 +3842,11 @@ export class EmailMailboxPageComponent implements OnInit {
             if (selectable.length > 0 && !selectable.some(row => row.folder.folder === current)) {
                 this.selectedFolder.set(selectable[0].folder.folder);
             }
-            this.loadMessages(true);
+            if (firstPageOnly) {
+                this.rereadFirstPage();
+            } else {
+                this.loadMessages(true);
+            }
         });
     }
 
@@ -3700,9 +3859,16 @@ export class EmailMailboxPageComponent implements OnInit {
         }
     }
 
-    private loadMessages(reset: boolean): void {
+    /**
+     * Reads the open folder's list: its first page (`reset`), or its next one -- by number, or, in a folder listed from
+     * the mail server, by `cursor`. Such a folder's answer is shown in the server's order as it came; a stale cursor
+     * starts the list again from the top keeping nothing of the old pages; a server that could not be read keeps the
+     * rows shown and says so at the list's end; a rate limit says how long to wait there.
+     */
+    private loadMessages(reset: boolean, cursor: string | null = null): void {
         this.messagesFailure.set(null);
         this.messagesFailedOnAppend.set(false);
+        this.stopListEnd();
         const id = this.selectedMailboxId();
         if (id === null) {
             this.messages.set([]);
@@ -3711,40 +3877,155 @@ export class EmailMailboxPageComponent implements OnInit {
         let rereading = false;
         if (reset) {
             this.page = 1;
+            cursor = null;
             const key = `${id}
 ${this.selectedFolder()}`;
             rereading = key === this.olderKey && this.messages().length > 0;
             if (key !== this.olderKey) {
                 this.olderKey = key;
                 this.olderMessages.stop();
+                this.serverListed.set(false);
+                this.serverRowGone.set(false);
+            }
+            if (!rereading) {
+                this.listNext = null;
+                this.firstPageKeys = new Set<string>();
             }
         }
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
         this.listRereading.set(rereading);
         const readAt = this.pendingReads.stamp();
-        this.email.listMessages(id, this.selectedFolder(), this.page).subscribe({
+        const retry = (): void => (cursor === null ? this.loadMessages(true) : this.loadMessages(false, cursor));
+        this.email.listMessages(id, this.selectedFolder(), this.page, cursor).subscribe({
             next: answer => {
                 if (seq !== this.listSeq) { return; }
                 // A read started before a read-state write answered: those rows keep the person's value.
                 const list = this.pendingReads.heldAll(answer, readAt);
-                this.messages.set(reset ? list : [...this.messages(), ...list]);
-                this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
+                const unavailable = answer.serverPages === 'unavailable';
+                if (reset) {
+                    this.serverListed.set(listedFromServer(answer));
+                }
+                if (!reset) {
+                    this.messages.set([...this.messages(), ...list]);
+                } else if (!(unavailable && rereading)) {
+                    // The same list read again while the server cannot be read keeps the rows it shows.
+                    this.messages.set(list);
+                    this.firstPageKeys = new Set(list.map(rowKey));
+                }
+                if (this.serverListed()) {
+                    if (!unavailable) {
+                        this.listNext = answer.next ?? null;
+                    }
+                    this.hasMore.set(this.listNext !== null);
+                } else {
+                    this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
+                }
+                if (unavailable) {
+                    this.listEndRetry = retry;
+                    this.listEnd.set({ kind: 'unavailable' });
+                }
                 this.loadingMessages.set(false);
                 this.listRereading.set(false);
             },
             error: (err: unknown) => {
                 if (seq !== this.listSeq) { return; }
-                if (!reset) {
+                this.loadingMessages.set(false);
+                this.listRereading.set(false);
+                const refusal = serverSearchRefusal(err);
+                if (refusal.reason === 'stale-cursor' && cursor !== null) {
+                    // The pages read so far are dropped, and the list starts again from its top.
+                    this.messages.set([]);
+                    this.clearSelection();
+                    this.firstPageKeys = new Set<string>();
+                    this.listNext = null;
+                    this.hasMore.set(false);
+                    this.loadMessages(true);
+                    return;
+                }
+                if (refusal.reason === 'rate-limited') {
+                    this.serverListed.set(true);
+                    if (reset && !rereading) {
+                        this.messages.set([]);
+                    }
+                    this.listEndRetry = retry;
+                    this.waitListEnd(refusal.retryAfter ?? 60);
+                    return;
+                }
+                if (!reset && cursor === null) {
                     // The page was not read: Retry asks for the same one.
                     this.page -= 1;
                 }
                 this.messagesFailedOnAppend.set(!reset);
                 this.messagesFailure.set(err);
-                this.loadingMessages.set(false);
-                this.listRereading.set(false);
             },
         });
+    }
+
+    /**
+     * A realtime change: the first page is read again in place of the rows it gave, and the rows of later pages stay
+     * as they are. A folder paged by number reads its list again, as before.
+     */
+    private rereadFirstPage(): void {
+        const id = this.selectedMailboxId();
+        // Another mailbox or folder than the list shows reads its list from the top.
+        if (!this.serverListed() || id === null || this.olderKey !== `${id}
+${this.selectedFolder()}`) {
+            this.loadMessages(true);
+            return;
+        }
+        this.stopListEnd();
+        const seq = ++this.listSeq;
+        this.loadingMessages.set(true);
+        this.listRereading.set(this.messages().length > 0);
+        const readAt = this.pendingReads.stamp();
+        this.email.listMessages(id, this.selectedFolder(), 1, null).subscribe({
+            next: answer => {
+                if (seq !== this.listSeq) { return; }
+                this.loadingMessages.set(false);
+                this.listRereading.set(false);
+                if (answer.serverPages === 'unavailable') {
+                    this.listEndRetry = () => this.rereadFirstPage();
+                    this.listEnd.set({ kind: 'unavailable' });
+                    return;
+                }
+                const onlyFirst = this.messages().every(m => this.firstPageKeys.has(rowKey(m)));
+                const first = this.pendingReads.heldAll(answer, readAt);
+                this.messages.set(withFirstPageAgain(this.messages(), this.firstPageKeys, first));
+                this.firstPageKeys = new Set(first.map(rowKey));
+                if (onlyFirst) {
+                    // No later page was read: the first page's cursor is the next one.
+                    this.listNext = answer.next ?? null;
+                    this.hasMore.set(this.listNext !== null);
+                }
+            },
+            error: (err: unknown) => {
+                if (seq !== this.listSeq) { return; }
+                this.loadingMessages.set(false);
+                this.listRereading.set(false);
+                // The rows shown stay; a rate limit says how long to wait.
+                const refusal = serverSearchRefusal(err);
+                if (refusal.reason === 'rate-limited') {
+                    this.listEndRetry = () => this.rereadFirstPage();
+                    this.waitListEnd(refusal.retryAfter ?? 60);
+                }
+            },
+        });
+    }
+
+    /** The list's end counts a rate limit's wait down; Try again shows once it ends. */
+    private waitListEnd(seconds: number): void {
+        this.listEndCountdown?.unsubscribe();
+        this.listEnd.set({ kind: 'rate-limited', seconds });
+        this.listEndCountdown = interval(1000).pipe(take(seconds), takeUntilDestroyed(this.destroyRef)).subscribe(tick => {
+            this.listEnd.set({ kind: 'rate-limited', seconds: seconds - tick - 1 });
+        });
+    }
+
+    private stopListEnd(): void {
+        this.listEndCountdown?.unsubscribe();
+        this.listEndCountdown = null;
+        this.listEnd.set(null);
     }
 
     /** POST the read/unread flag, then reflect it locally (row + detail + folder count). */

@@ -273,7 +273,7 @@ export class MailServerSearchComponent {
 }
 
 /** Why opening a server hit did not work, in the page's words. */
-function openFailureText(refusal: ServerSearchRefusal): string {
+export function openFailureText(refusal: ServerSearchRefusal): string {
     switch (refusal.reason) {
         case 'unavailable':
             return `Can't reach the mail server right now${refusal.said !== null ? `: ${refusal.said}` : ''}.`;
