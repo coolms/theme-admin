@@ -337,8 +337,12 @@ export interface EmailFolderDto {
     serverUnseen?: number | null;
 }
 
-/** A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). */
+/**
+ * A message summary in the list (`GET /email/mailboxes/{id}/messages`, ). In a folder listed from the mail server, a
+ * row nothing here stores carries `fromServer: true` and a `ref`, and no `id` at all (see mail-server-rows).
+ */
 export interface EmailMessageDto {
+    /** Absent on a server row (`fromServer`): read it only once isServerRow says the row is not one. */
     id: string;
     mailboxId?: string;
     folder?: string;
@@ -365,20 +369,66 @@ export interface EmailMessageDto {
      * whose Cc and Reply-To are not read yet), which reads as no.
      */
     replyAllUseful?: boolean | null;
+    /** True on a row the mail server lists and nothing here stores; false on a stored row. */
+    fromServer?: boolean;
+    /** A server row's ref, which opens it through the server-message opener; null on a stored row. */
+    ref?: string | null;
 }
 
-/** One address of a prepared answer. */
-export interface EmailComposeAddressDto {
+/**
+ * One page of a folder's list, with what the answer's headers say beside its rows: `next` the cursor of the next page
+ * (`X-Next-Cursor`, null on the last page or a folder paged by number), `serverPages` the `X-Server-Pages` header.
+ * A list answered without them reads as a folder paged by number.
+ */
+export type EmailMessageList = EmailMessageDto[] & { next?: string | null; serverPages?: string | null };
+
+/** The ways of starting from a message that the server prepares (`GET /email/messages/{id}/compose?mode=`). */
+export type EmailComposeMode = 'reply' | 'reply_all' | 'forward';
+
+/**
+ * A part of the original a forward carries, as the compose prefill lists it. An inline part is one the quote shows: it
+ * goes with the quote, never on its own.
+ */
+export interface EmailComposePartDto {
+    messageId: string;
+    part: number;
+    name: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+    inline: boolean;
+    contentId: string | null;
+}
+
+/** A part of a stored message to carry on send, `{messageId, part}` as the prefill lists it. */
+export interface EmailMessagePartRef {
+    messageId: string;
+    part: number;
+}
+
+/** A recipient as the compose prefill names one; `name` null when the message names none. */
+export interface EmailComposeRecipientDto {
     name: string | null;
     address: string;
 }
 
-/** What an answer or a forward starts with, prepared by the server (`GET /email/messages/{id}/compose`). */
+/**
+ * What an answer or a forward starts with, prepared by the server: the From and the addresses that may be sent as
+ * (none for a reader who may not send), the recipients, the subject, the quote (null when the message could not be
+ * read: `unreadable` says why) and the threading. `quote.html` goes below the person's own text, as served.
+ */
 export interface EmailComposeDto {
     id: string;
-    mode: 'reply' | 'reply_all' | 'forward';
-    to: EmailComposeAddressDto[];
-    cc: EmailComposeAddressDto[];
+    mode: EmailComposeMode;
+    from: { address: string; choices: string[] };
+    to: EmailComposeRecipientDto[];
+    cc: EmailComposeRecipientDto[];
+    subject: string;
+    quote: { text: string; html: string | null; attribution: string | null } | null;
+    inReplyTo: string | null;
+    references: string[];
+    /** A forward's parts of the original, as references: nothing is copied until it is sent. */
+    attachments: EmailComposePartDto[];
+    unreadable: string | null;
 }
 
 /** The answer of an archive (`POST /email/messages/{id}/archive`): the folder the message is in now. */
@@ -459,6 +509,18 @@ export interface OutgoingEmailRequest {
     bcc?: string[];
     /** Ids of uploads and Drive references to send with a new message; their bytes are read at send. */
     attachments?: string[];
+    /** The address to send from, one the mailbox may send as; the mailbox's own when left out. */
+    from?: string;
+    /**
+     * The quote choice. A reply: true has the server append the message answered below this one, as its compose
+     * prefill showed it; false or left out sends without it. A send with `forwardOf`: false sends without the
+     * forwarded message; left out sends it. The page always states it for an answer or a forward.
+     */
+    quote?: boolean;
+    /** A send only: the stored message this one forwards; the server appends it below the person's text. */
+    forwardOf?: string;
+    /** Parts of stored messages to carry, read at send: a forward's files. */
+    messageParts?: EmailMessagePartRef[];
 }
 
 /** The small confirmation a send/reply echoes. */
