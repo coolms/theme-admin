@@ -13,6 +13,7 @@ import {
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
     EmailComposeDto,
+    EmailComposeMode,
     EmailDeleteResultDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
@@ -554,11 +555,14 @@ export class EmailService {
         );
     }
 
-    /** GET /email/messages/{id}/compose -- what an answer or a forward starts with, prepared by the server. */
-    compose(messageId: string, mode: 'reply' | 'reply_all' | 'forward'): Observable<EmailComposeDto> {
+    /**
+     * GET /email/messages/{id}/compose?mode= -- what an answer or a forward of the message starts with, prepared by the
+     * server. 404 for a message that is not there to read; 422 for a mode it does not know.
+     */
+    composePrefill(messageId: string, mode: EmailComposeMode): Observable<EmailComposeDto> {
         return this.http.get<EmailComposeDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/compose`,
-            { params: { mode } },
+            { headers: this.jsonHeaders, params: { mode } },
         );
     }
 
