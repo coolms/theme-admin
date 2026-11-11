@@ -35,6 +35,7 @@ import {
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
 import { MailPreferencesService } from './mail-preferences.service';
+import { MailPanesDirective } from './mail-panes.directive';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
@@ -160,6 +161,7 @@ type PhonePane = 'folders' | 'message';
     // A mailbox's settings: a modal over this page, kept in step with its URL.
     providers: [MailboxSettingsModal],
     imports: [
+        MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
@@ -196,7 +198,7 @@ type PhonePane = 'folders' | 'message';
                     </button>
                 </div>
             } @else {
-                <div class="mbx__body" [class.mbx__body--reading]="loadingDetail() || selectedMessage() !== null"
+                <div class="mbx__body" appMailPanes #panes="appMailPanes" [class.mbx__body--reading]="loadingDetail() || selectedMessage() !== null"
                      [class.mbx__body--folders]="phoneFolders()">
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
@@ -226,8 +228,9 @@ type PhonePane = 'folders' | 'message';
                     </aside>
 
                     <!-- Where folders show beside the list the column is at least 200px wide. -->
-                    <cms-pane-splitter [minWidth]="200" [maxWidth]="380"
-                                       storageKey="coolms.email.railWidth" />
+                    <cms-pane-splitter [minWidth]="panes.limits.folders.min" [maxWidth]="panes.layout().foldersMax"
+                                       [width]="panes.layout().folders" [ariaLabel]="panes.words.folders"
+                                       (widthChange)="panes.resized('folders', $event)" />
 
                     <!-- MIDDLE: message list (or search results) -->
                     <section class="mbx__list">
@@ -380,8 +383,9 @@ type PhonePane = 'folders' | 'message';
                         </div>
                     </section>
 
-                    <cms-pane-splitter [minWidth]="280" [maxWidth]="620"
-                                       storageKey="coolms.email.listWidth" />
+                    <cms-pane-splitter [minWidth]="panes.limits.list.min" [maxWidth]="panes.layout().listMax"
+                                       [width]="panes.layout().list" [ariaLabel]="panes.words.list"
+                                       (widthChange)="panes.resized('list', $event)" />
 
                     <!-- RIGHT: message detail -->
                     <section class="mbx__detail">
@@ -1233,7 +1237,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * localStorage key for the last-selected mailbox, so a reload restores it instead
      * of snapping to the first mailbox. Per-browser UI state -- sits beside the list-pane
-     * width (`coolms.email.listWidth`, persisted by `<cms-pane-splitter>`) in the same store.
+     * width (`coolms.email.listWidth`, cached by `MailPanesDirective`) in the same store.
      */
     private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
 
