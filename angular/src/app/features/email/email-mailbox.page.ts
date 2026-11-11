@@ -1896,7 +1896,8 @@ export class EmailMailboxPageComponent implements OnInit {
             if (meant === 'held' && choice !== null) {
                 held.set(change.id, choice);
             } else if (meant === 'refused' && choice !== null) {
-                // An entry that says it rolls a refused change back carries its reason's code.
+                // An entry that says it rolls a refused change back carries its reason's code. Its value is what the
+                // row went back to; the words are the person's choice, the value asked for.
                 const code = 'refused' in change && change.refused === 'seen' ? change.reason ?? null : null;
                 refusal ??= flagRefusalText(flagChangeOf('seen', choice), code);
                 if (notice !== null) {
@@ -1942,7 +1943,8 @@ export class EmailMailboxPageComponent implements OnInit {
             }
         }
         notices.forEach(id => this.toast.dismiss(id));
-        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.value), evt.code, evt.reason));
+        // Said as the change the person asked for, never as the value the row was put back to.
+        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), evt.code, evt.reason));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */

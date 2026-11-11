@@ -1,14 +1,18 @@
 /**
  * The mail server refused a flag change after the write had answered: its worker rolled the store back. Sent to the
  * mailbox's owner and delegates just before the mail.messages.changed that restores the flag. `value` is the value the
- * change asked for; `reason` is a sentence; `code` names the reason, where the server sends one.
+ * row was put back to, not the one asked for; `wanted` is the value asked for; `reason` is a sentence; `code` names the
+ * reason, where the server sends one.
  */
 export interface MailFlagRefusedEvent {
     readonly type: 'mail.flag.refused';
     readonly mailboxId: string;
     readonly messageId: string;
     readonly flag: 'seen' | 'flagged';
+    /** The value the row was put back to. */
     readonly value: boolean;
+    /** The value the change asked for: the event's `wanted`, else the other of `value` (a refusal is a difference). */
+    readonly wanted: boolean;
     readonly reason: string | null;
     readonly code: string | null;
     /** Every row the refused change had reached (on Gmail, the message's row in each label); [messageId] if unsaid. */
@@ -33,6 +37,7 @@ export function readFlagRefused(raw: unknown): MailFlagRefusedEvent | null {
         messageId: o['messageId'],
         flag: o['flag'],
         value: o['value'],
+        wanted: typeof o['wanted'] === 'boolean' ? o['wanted'] : !o['value'],
         reason: typeof o['reason'] === 'string' && o['reason'] !== '' ? o['reason'] : null,
         code: typeof o['code'] === 'string' && o['code'] !== '' ? o['code'] : null,
         ids: idsOf(o['ids'], o['messageId']),

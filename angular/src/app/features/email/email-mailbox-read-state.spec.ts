@@ -146,8 +146,9 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         }) as MailMessagesChangedEvent;
         (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(evt);
     };
-    const flagRefused = (page: EmailMailboxPageComponent, id: string, flag: 'seen' | 'flagged', value: boolean, extra: Record<string, unknown> = {}): void => {
-        const evt = readFlagRefused({ type: 'mail.flag.refused', mailboxId: 'mb1', messageId: id, flag, value, ...extra })!;
+    /** mail.flag.refused as the server sends it: `value` is what the row was put back to, not what was asked. */
+    const flagRefused = (page: EmailMailboxPageComponent, id: string, flag: 'seen' | 'flagged', restored: boolean, extra: Record<string, unknown> = {}): void => {
+        const evt = readFlagRefused({ type: 'mail.flag.refused', mailboxId: 'mb1', messageId: id, flag, value: restored, ...extra })!;
         (page as unknown as { onFlagRefused(e: unknown): void }).onFlagRefused(evt);
     };
 
@@ -231,7 +232,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         page.bulkMarkSeen(false, new Set(['m3']));
         answerWrite();
 
-        flagRefused(page, 'm3', 'seen', false, { reason: 'The folder was changed elsewhere.', code: 'changed-elsewhere' });
+        flagRefused(page, 'm3', 'seen', true, { reason: 'The folder was changed elsewhere.', code: 'changed-elsewhere' });
 
         expect(dismissed).toEqual([1]);
         expect(errors).toEqual(["Couldn't mark as unread: It was changed elsewhere in the meantime."]);
@@ -240,13 +241,29 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         expect(errors.length).withContext('said once, not inferred again').toBe(1);
     });
 
+    for (const [said, extra] of [
+        ['with wanted', { wanted: false }],
+        ['without wanted (today\'s server)', {}],
+    ] as const) {
+        it(`a refused Mark unread is said as Mark unread, not as the value put back (${said})`, () => {
+            const page = build();
+            page.bulkMarkSeen(false, new Set(['m3']));
+            answerWrite();
+
+            // Asked unread, put back read: value is true.
+            flagRefused(page, 'm3', 'seen', true, { code: 'not-found', reason: 'Gone.', ...extra });
+
+            expect(errors).toEqual(["Couldn't mark as unread: The mail server no longer has this message."]);
+        });
+    }
+
     it('a refused star is said the same way, with the server\'s sentence when its code is not known', () => {
         const page = build();
         page.bulkFlag(true, new Set(['m1']));
         flagWrites[0].next(null);
         flagWrites[0].complete();
 
-        flagRefused(page, 'm1', 'flagged', true, { reason: 'The mailbox is read-only.', code: 'something-new' });
+        flagRefused(page, 'm1', 'flagged', false, { reason: 'The mailbox is read-only.', code: 'something-new' });
 
         expect(dismissed).toEqual([1]);
         expect(errors).toEqual(["Couldn't star: The mailbox is read-only."]);
@@ -261,7 +278,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         const later = build();
         later.bulkMarkSeen(false, new Set(['m1']));
         answerWrite();
-        flagRefused(later, 'm1', 'seen', false, { code: 'changed-elsewhere', reason: 'The message was changed elsewhere.' });
+        flagRefused(later, 'm1', 'seen', true, { code: 'changed-elsewhere', reason: 'The message was changed elsewhere.' });
         const afterwards = [...errors];
 
         expect(answered).toEqual(["Couldn't mark as unread: It was changed elsewhere in the meantime."]);
@@ -275,7 +292,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         plainLater.bulkFlag(true, new Set(['m2']));
         flagWrites[0].next(null);
         flagWrites[0].complete();
-        flagRefused(plainLater, 'm2', 'flagged', true);
+        flagRefused(plainLater, 'm2', 'flagged', false);
         expect(plainSync).toEqual(["Couldn't star."]);
         expect([...errors]).toEqual(plainSync);
     });
@@ -304,7 +321,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
             page.bulkMarkSeen(false, new Set(['m1']));
             answerWrite(0, { id: 'm1', seen: false, seq: 10, ids: ['m1', 'm3'] });
 
-            flagRefused(page, 'm1', 'seen', false, { ids: ['m1', 'm3'], code: 'renumbered' });
+            flagRefused(page, 'm1', 'seen', true, { ids: ['m1', 'm3'], code: 'renumbered' });
 
             expect(dismissed).toEqual([1]);
             expect(errors).toEqual(["Couldn't mark as unread: Its folder changed on the mail server. Try again after it refreshes."]);
