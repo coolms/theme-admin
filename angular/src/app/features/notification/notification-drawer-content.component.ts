@@ -28,6 +28,7 @@ import {
     type NotificationDto,
     type NotificationLink,
 } from './notification-api.service';
+import { type NotificationActionTarget, notificationActionTarget } from './notification-action';
 import { NotificationPollingService } from './notification-polling.service';
 import { NotificationSoundService } from './notification-sound.service';
 import { NotificationStore } from './notification-store.service';
@@ -40,9 +41,13 @@ import { NotificationStore } from './notification-store.service';
  * right-click context menu alike) through the store's
  * `actionDispatched$` bus into a single switch.
  *
+ * A row's action the admin knows is a button under its text that
+ * marks it read and opens the action's screen; the body is plain
+ * text, never a link, and the chevron only expands it.
+ *
  * Mailbox semantics (Ship B.4, `selectionMode='mailbox'`): plain
  * click activates -- marks read if unread, navigates if `link`
- * is set, and closes the drawer once it navigates. Ctrl/Meta+click
+ * is set (and no action is shown), and closes the drawer once it navigates. Ctrl/Meta+click
  * toggles a row in selection. Shift+click requests a range; the
  * store computes it against the cached ordered list. Right-click
  * opens the context menu with the row's full record spread into
@@ -148,9 +153,19 @@ import { NotificationStore } from './notification-store.service';
                             </div>
 
                             @if (hasBody(n) && store.expandedId() === n.id) {
+                                <!-- Plain text, always: never a link, whatever the row carries. -->
                                 <div class="cms-notification-row__body"
-                                     [class.cms-notification-row__body--clickable]="hasLink(n)"
-                                     (click)="onBodyClick(n, $event)">{{ renderedBody(n) }}</div>
+                                     (click)="$event.stopPropagation()">{{ renderedBody(n) }}</div>
+                            }
+
+                            @if (actionTarget(n); as target) {
+                                <div class="cms-notification-row__action">
+                                    <button type="button"
+                                            class="cms-btn cms-btn-sm"
+                                            data-test="notification-action"
+                                            (click)="onActionClick(n, target, $event)"
+                                            (dblclick)="$event.stopPropagation()">{{ target.label }}</button>
+                                </div>
                             }
                         </div>
                     }
@@ -258,11 +273,8 @@ import { NotificationStore } from './notification-store.service';
                primary because the body is below it. */
             user-select: text;
         }
-        .cms-notification-row__body--clickable {
-            cursor: pointer;
-        }
-        .cms-notification-row__body--clickable:hover {
-            background: var(--cms-accent-light);
+        .cms-notification-row__action {
+            margin: .375rem 0 .125rem 0;
         }
         .cms-notification-drawer__loading-more,
         .cms-notification-drawer__end {
@@ -366,6 +378,10 @@ export class NotificationDrawerContentComponent {
      * Requires a non-null object with a non-empty `href` string.
      */
     protected hasLink(n: NotificationDto): boolean {
+        // A row with an action the admin can open goes there by its button; its link, if any, is not followed.
+        if (this.actionTarget(n) !== null) {
+            return false;
+        }
         const l = n.link;
         if (l === null || l === undefined) {
             return false;
@@ -388,8 +404,24 @@ export class NotificationDrawerContentComponent {
         return typeof body === 'string' && body.length > 0;
     }
 
+    /** The chevron only expands and collapses a body: a row without one has no chevron. */
     protected hasExpandable(n: NotificationDto): boolean {
-        return this.hasLink(n) || this.hasBody(n);
+        return this.hasBody(n);
+    }
+
+    /** The row's action as the admin opens it, or null when it shows no button. */
+    protected actionTarget(n: NotificationDto): NotificationActionTarget | null {
+        return notificationActionTarget(n.action);
+    }
+
+    /** The action's button: marks the row read, as opening it does, and goes to the action's screen. */
+    protected onActionClick(n: NotificationDto, target: NotificationActionTarget, event: Event): void {
+        event.stopPropagation();
+        if (!n.isRead) {
+            this.markReadAsync(n);
+        }
+        void this.router.navigate(target.commands, { queryParams: target.queryParams });
+        this.drawer.close();
     }
 
     /**
@@ -464,7 +496,7 @@ export class NotificationDrawerContentComponent {
             _single: single,
             _hasLink: hasLink,
             _hasBody: hasBody,
-            _hasExpandable: hasLink || hasBody,
+            _hasExpandable: hasBody,
             ...focused,
         };
 
@@ -509,62 +541,27 @@ export class NotificationDrawerContentComponent {
     }
 
     /**
-     * Chevron click. For rows with body, the chevron is the expand
-     * toggle; collapse on second click. For link-only rows, the
-     * chevron is the navigate affordance and delegates to
-     * `onActivate`. First expand marks the row read.
-     *
-     * stopPropagation keeps the row's selection-replace click from
-     * firing alongside the chevron action.
+     * Chevron click: expands the body, or collapses it on a second click; it never navigates. First expand marks the
+     * row read. stopPropagation keeps the row's selection-replace click from firing alongside it.
      */
     protected onChevronClick(n: NotificationDto, event: Event): void {
         event.stopPropagation();
-        if (this.hasBody(n)) {
-            const wasExpanded = this.store.expandedId() === n.id;
-            this.store.toggleExpanded(n.id);
-            if (!wasExpanded && !n.isRead) {
-                this.markReadAsync(n);
-            }
+        if (!this.hasBody(n)) {
             return;
         }
-        this.onActivate(n);
-    }
-
-    /**
-     * Body click. Navigates when the row has a link; otherwise the
-     * body remains a copyable plain-text block (user-select: text on
-     * `__body`). First click also marks the row read when the body
-     * navigates.
-     */
-    protected onBodyClick(n: NotificationDto, event: Event): void {
-        event.stopPropagation();
-        if (!this.hasLink(n)) {
-            return;
-        }
-        if (!n.isRead) {
+        const wasExpanded = this.store.expandedId() === n.id;
+        this.store.toggleExpanded(n.id);
+        if (!wasExpanded && !n.isRead) {
             this.markReadAsync(n);
-        }
-        const link = n.link;
-        if (link) {
-            this.navigateLink(link);
-            this.drawer.close();
         }
     }
 
     protected chevronIcon(n: NotificationDto): string {
-        if (this.hasBody(n)) {
-            return this.store.expandedId() === n.id
-                ? 'bi bi-chevron-down'
-                : 'bi bi-chevron-right';
-        }
-        return 'bi bi-chevron-right';
+        return this.store.expandedId() === n.id ? 'bi bi-chevron-down' : 'bi bi-chevron-right';
     }
 
     protected chevronTitle(n: NotificationDto): string {
-        if (this.hasBody(n)) {
-            return this.store.expandedId() === n.id ? 'Collapse' : 'Expand';
-        }
-        return 'Open';
+        return this.store.expandedId() === n.id ? 'Collapse' : 'Expand';
     }
 
     protected getBody(n: NotificationDto): string {
@@ -572,26 +569,8 @@ export class NotificationDrawerContentComponent {
         return typeof body === 'string' ? body : '';
     }
 
-    protected bodyFormat(n: NotificationDto): 'plain' | 'markdown' | 'dtmpl' {
-        const fmt = n.extras?.['bodyFormat'];
-        if (fmt === 'markdown' || fmt === 'dtmpl' || fmt === 'plain') {
-            return fmt;
-        }
-        return 'plain';
-    }
-
-    /**
-     * Returns the body string formatted for the current renderer.
-     * This ship renders only `plain`; `markdown` and `dtmpl` fall
-     * back to plain text with a one-time dev console warning so the
-     * unimplemented renderer is visible during development without
-     * spamming the console on every row paint.
-     */
+    /** The body as plain text, whatever `extras.bodyFormat` says: the server renders no format. */
     protected renderedBody(n: NotificationDto): string {
-        const fmt = this.bodyFormat(n);
-        if (fmt !== 'plain') {
-            this.warnOnceForFormat(fmt);
-        }
         return this.getBody(n);
     }
 
@@ -601,18 +580,6 @@ export class NotificationDrawerContentComponent {
             error: (err: unknown) =>
                 console.warn('[NotificationDrawer] mark-read failed', err),
         });
-    }
-
-    private readonly warnedFormats = new Set<string>();
-
-    private warnOnceForFormat(format: string): void {
-        if (this.warnedFormats.has(format)) {
-            return;
-        }
-        this.warnedFormats.add(format);
-        console.warn(
-            `[NotificationDrawer] '${format}' body format not yet rendered; falling back to plain text.`,
-        );
     }
 
     onDismissClick(n: NotificationDto, event: Event): void {
