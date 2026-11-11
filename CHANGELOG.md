@@ -13,6 +13,14 @@ major number means here.
   list by person. Browser and device show as columns.
 
 ### Changed
+- **The mail screen's pane widths are saved per person, and the splitters work from the keyboard.** The two splitters
+  are named "Resize folders" and "Resize list"; arrows move them by 16px, Home and End take a pane to its limits,
+  Enter resets it. When a drag or a key ends, both widths are saved to the person's interface preferences
+  (`PATCH /auth/me/preferences`, `uiPrefs["admin:mail:panes"].columnWidths`, folders and list in px). On load the
+  browser's cache is read first, then the server's widths win when `GET /auth/me` answers, clamped to today's
+  limits (folders 200 to 380, list 280 to 620). The message pane keeps at least 360px: as the window narrows, the
+  list gives way first, then the folder column; the chosen widths come back when there is room. Needs the kit's
+  focusable `cms-pane-splitter`.
 - **The mail screen's panes start with one row of actions, the same height in each** (the kit's `cms-pane-toolbar`).
   The list pane's row is Refresh, busy while a sync runs, with "Synced at" at its end; Refresh comes from the server's
   `navi.toolbar.email.list` once that tree is served, and is the page's own until then. The message pane's row is
