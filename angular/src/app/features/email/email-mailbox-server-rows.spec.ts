@@ -144,6 +144,10 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         fixture = TestBed.createComponent(EmailMailboxPageComponent);
         document.body.appendChild(fixture.nativeElement);
         fixture.detectChanges();
+        // The list's region a little shorter than four rows: real layout, and a first page that does not read on.
+        const region = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-test="list-scroll"]')!;
+        region.style.height = '100px';
+        region.style.flex = 'none';
         fixture.componentInstance.selectFolder(FOLDER);
         fixture.detectChanges();
     });
@@ -155,23 +159,31 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
     const subjects = (): string[] => rows().map(r => r.querySelector('.mbx__row-subject')?.textContent?.trim() ?? '');
     const rowOf = (subject: string): HTMLElement => rows().find(r => r.querySelector('.mbx__row-subject')?.textContent?.trim() === subject)!;
     const last = (): Subject<EmailMessageList> => answers[answers.length - 1];
+    /** Lets the virtual viewport draw the rows: its own steps run after a microtask and a render. */
+    const draw = (): void => {
+        for (let i = 0; i < 3; i++) {
+            fixture.detectChanges();
+            tick(20);
+        }
+        fixture.detectChanges();
+    };
     const answer = (list: EmailMessageList): void => {
         last().next(list);
-        fixture.detectChanges();
+        draw();
     };
     const click = (target: HTMLElement, init: MouseEventInit = {}): void => {
         target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ...init }));
-        fixture.detectChanges();
+        draw();
     };
     const endLine = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="list-end"]');
     const scrollToEnd = (): void => {
         const region = el().querySelector<HTMLElement>('[data-test="list-scroll"]')!;
         region.scrollTop = region.scrollHeight;
         region.dispatchEvent(new Event('scroll'));
-        fixture.detectChanges();
+        draw();
     };
 
-    it('shows a mixed page as the server ordered it, a server row keyed by its ref with no id key', () => {
+    it('shows a mixed page as the server ordered it, a server row keyed by its ref with no id key', fakeAsync(() => {
         expect(asked.at(-1)).toEqual({ folder: FOLDER, page: 1, cursor: null });
         answer(page(MIXED, 'c-2'));
 
@@ -184,9 +196,9 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
             .toEqual(['ref:r-9', 'id:m-8', 'ref:r-7', 'id:m-6']);
         expect(rowOf('Package published').getAttribute('data-ref')).toBe('r-9');
         expect(rowOf('Weekly digest').getAttribute('data-ref')).toBeNull();
-    });
+    }));
 
-    it('a server row has no checkbox and no star, and no row menu, bar or select-all reaches it', () => {
+    it('a server row has no checkbox and no star, and no row menu, bar or select-all reaches it', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
 
         expect(rowOf('Package published').querySelector('input[type="checkbox"]')).withContext('no checkbox').toBeNull();
@@ -202,12 +214,12 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(pageOf().selectedIds().size).withContext('Ctrl on a server row checks nothing').toBe(0);
 
         pageOf().selectAllLoaded();
-        fixture.detectChanges();
+        draw();
         expect([...pageOf().selectedIds()]).withContext('select all checks the stored rows only').toEqual(['m-8', 'm-6']);
         expect(pageOf().selectedCount()).toBe(2);
-    });
+    }));
 
-    it('opening a server row: the opener by its ref, then the stored message by its id, then the usual seen request', () => {
+    it('opening a server row: the opener by its ref, then the stored message by its id, then the usual seen request', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
 
         click(rowOf('Security advisory').querySelector<HTMLElement>('.mbx__row-main')!);
@@ -215,7 +227,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(detailsAsked).withContext('nothing opened before the opener answers').toEqual([]);
 
         opens[0].reply.next({ id: 'm-7', folder: FOLDER });
-        fixture.detectChanges();
+        draw();
 
         expect(detailsAsked).toEqual(['m-7']);
         expect(seenAsked).withContext('the host marks it read, as on any open').toEqual([{ id: 'm-7', seen: true }]);
@@ -227,22 +239,22 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(opened.querySelector('input[type="checkbox"]')).withContext('now an ordinary row').not.toBeNull();
         expect(opened.classList.contains('mbx__row--active')).toBeTrue();
         expect(rowOf('Package published').classList.contains('mbx__row--active')).withContext('a server row is never the open one').toBeFalse();
-    });
+    }));
 
-    it('a ref the server no longer has takes the row out, saying it is no longer on the mail server', () => {
+    it('a ref the server no longer has takes the row out, saying it is no longer on the mail server', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
 
         click(rowOf('Package published').querySelector<HTMLElement>('.mbx__row-main')!);
         opens[0].reply.error(problem(404, 'gone'));
-        fixture.detectChanges();
+        draw();
 
         expect(subjects()).toEqual(['Weekly digest', 'Security advisory', 'Token created']);
         expect(el().querySelector('[data-test="server-row-gone"]')?.textContent?.trim())
             .toBe('That message is no longer on the mail server.');
         expect(detailsAsked).toEqual([]);
-    });
+    }));
 
-    it('reads the next page by the X-Next-Cursor header as the list is scrolled to its end, without a page number', () => {
+    it('reads the next page by the X-Next-Cursor header as the list is scrolled to its end, without a page number', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
 
         scrollToEnd();
@@ -255,52 +267,52 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         const count = asked.length;
         scrollToEnd();
         expect(asked.length).withContext('nothing past the last page').toBe(count);
-    });
+    }));
 
-    it('a stale cursor (409) starts the list again from the top, keeping nothing of the old pages', () => {
+    it('a stale cursor (409) starts the list again from the top, keeping nothing of the old pages', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
         scrollToEnd();
         last().error(problem(409, 'stale-cursor'));
-        fixture.detectChanges();
+        draw();
 
         expect(asked.at(-1)).toEqual({ folder: FOLDER, page: 1, cursor: null });
         expect(pageOf().messages()).withContext('nothing of the old pages is kept').toEqual([]);
 
         answer(page([server('r-10', 'Brand new'), stored('m-8', 'Weekly digest')], 'c-3'));
         expect(subjects()).toEqual(['Brand new', 'Weekly digest']);
-    });
+    }));
 
-    it('a server that could not be read keeps the rows shown and says older messages could not be loaded, with Try again', () => {
+    it('a server that could not be read keeps the rows shown and says Couldn\'t load at the list\'s end, with Retry', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
         scrollToEnd();
         answer(page([], null, 'unavailable'));
 
         expect(subjects().length).withContext('the rows shown stay').toBe(4);
-        expect(endLine()?.textContent).toContain('Older messages could not be loaded');
+        expect(endLine()?.textContent).toContain('Couldn\'t load');
         const retry = el().querySelector<HTMLElement>('[data-test="list-end-retry"]')!;
-        expect(retry.textContent?.trim()).toBe('Try again');
+        expect(retry.textContent?.trim()).toBe('Retry');
 
         click(retry);
         expect(asked.at(-1)).withContext('the same page asked again').toEqual({ folder: FOLDER, page: 1, cursor: 'c-2' });
         answer(page([stored('m-4', 'Old receipt')]));
         expect(endLine()).toBeNull();
         expect(subjects().at(-1)).toBe('Old receipt');
-    });
+    }));
 
-    it('a rate limit (429) says how long to wait, then offers Try again', fakeAsync(() => {
+    it('a rate limit (429) says how long to wait, then offers Retry', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
         scrollToEnd();
         last().error(problem(429, 'rate-limited', '3'));
-        fixture.detectChanges();
+        draw();
 
         expect(subjects().length).withContext('the rows shown stay').toBe(4);
-        expect(endLine()?.textContent).toContain('Try again in 3 s');
+        expect(endLine()?.textContent).toContain('Retry in 3 s');
         expect(el().querySelector('[data-test="list-end-retry"]')).withContext('not before the wait ends').toBeNull();
 
         tick(3000);
         fixture.detectChanges();
         const retry = el().querySelector<HTMLElement>('[data-test="list-end-retry"]');
-        expect(retry).withContext('Try again once the wait ends').not.toBeNull();
+        expect(retry).withContext('Retry once the wait ends').not.toBeNull();
         click(retry!);
         expect(asked.at(-1)).toEqual({ folder: FOLDER, page: 1, cursor: 'c-2' });
         discardPeriodicTasks();
@@ -320,6 +332,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
             counts: {}, mailboxUnseen: 0,
         }) as MailMessagesChangedEvent);
         tick(400);
+        draw();
 
         expect(asked.length).withContext('one read').toBe(count + 1);
         expect(asked.at(-1)).withContext('the first page only').toEqual({ folder: FOLDER, page: 1, cursor: null });
@@ -332,17 +345,19 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         flush();
     }));
 
-    it('offers no Older on the mail server section for such a folder', () => {
+    it('offers no Older on the mail server section for such a folder', fakeAsync(() => {
         answer(page(MIXED));
 
         expect(pageOf().hasMore()).toBeFalse();
         expect(el().querySelector('[data-test="load-older"]')).toBeNull();
         expect(olderAsked).toBe(0);
-    });
+    }));
 
-    it('a folder paged by number still offers it, as before', () => {
+    it('a folder paged by number reads its older mail by scrolling on past its own pages, with no button', fakeAsync(() => {
         answer(page([stored('m-1', 'Hello')]));
 
-        expect(el().querySelector('[data-test="load-older"]')).not.toBeNull();
-    });
+        expect(el().querySelector('[data-test="load-older"]')).toBeNull();
+        scrollToEnd();
+        expect(olderAsked).toBe(1);
+    }));
 });
