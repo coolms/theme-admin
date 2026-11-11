@@ -12,6 +12,7 @@ import {
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
+import { type ComposeDraft } from './compose-draft';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -20,15 +21,17 @@ import {
     type OutgoingEmailRequest,
 } from './email.types';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
+import { QUICK_REPLY_MAX_LINES, QUICK_REPLY_SAVE_MS } from './mail-quick-reply.component';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
+const KEY = 'email.mb1.reply.m1';
 
-/** The server's prefill for an answer or a forward of m1. */
+/** The server's prefill for an answer or a forward of m1: the reply goes to the Reply-To the server chose. */
 function prefill(mode: EmailComposeMode): EmailComposeDto {
     return {
         id: 'm1', mode, from: { address: 'work@example.com', choices: ['work@example.com'] },
-        to: mode === 'forward' ? [] : [{ name: 'Ann Lee', address: 'ann@example.com' }], cc: [],
+        to: mode === 'forward' ? [] : [{ name: 'Desk team', address: 'desks@example.com' }], cc: [],
         subject: mode === 'forward' ? 'Fwd: Desk move on Friday' : 'Re: Desk move on Friday',
         quote: { text: 'Ann Lee wrote:\n> Line 1', html: '<p>Ann Lee wrote:</p><blockquote>Line 1</blockquote>', attribution: null },
         inReplyTo: null, references: [], attachments: [], unreadable: null,
@@ -42,19 +45,22 @@ function message(lines: number): EmailMessageDetailDto {
 }
 
 /**
- * The quick reply in the message pane: one "Reply…" line at the foot of the message, inside the pane's one scroll
- * region, and at the pane's foot under a short message, so it never moves up when the message gets shorter. Choosing
- * the line (a click, Enter or Space; focus alone does not), or Reply, opens the reply's composer there, in view and
- * focused; it sends as the dock's reply does and folds back to the line. Reply all and Forward keep the dock. The page is rendered and laid out at 1400 x 600,
- * fixed at the window's top left.
+ * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's one scroll region.
+ * One line until used, growing with the text to about six lines, then scrolling inside; no To or Subject (the server's
+ * reply prefill gives them); plain text, files, Send and Expand; Ctrl or Cmd+Enter sends, Enter is a new line; the
+ * server appends the quote. Its text is the message's reply draft, saved after a pause; Expand, or Reply while it holds
+ * text, hands that one draft to the compose window. Rendered and laid out at 1400 x 600, fixed at the window's top left.
  */
-describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
+describe('EmailMailboxPageComponent -- the quick reply, pinned below the message', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
     let replies: Array<{ id: string; request: OutgoingEmailRequest }>;
+    let asked: Array<[string, EmailComposeMode]>;
+    let drafts: Map<string, unknown>;
 
     beforeEach(() => {
         replies = [];
-        const drafts = new Map<string, unknown>();
+        asked = [];
+        drafts = new Map<string, unknown>();
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
             providers: [
@@ -67,9 +73,12 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
-                        composePrefill: (id: string, mode: EmailComposeMode) => of(prefill(mode)),
+                        composePrefill: (id: string, mode: EmailComposeMode) => {
+                            asked.push([id, mode]);
+                            return of(prefill(mode));
+                        },
                         reply: (id: string, request: OutgoingEmailRequest) => {
-                            replies.push({ id, request });
+                            replies.push({ id, request: structuredClone(request) });
                             return of({});
                         },
                     },
@@ -87,8 +96,8 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
                 {
                     provide: DraftStoreService,
                     useValue: {
-                        load: (key: string) => drafts.get(key) ?? null,
-                        save: (key: string, value: unknown) => void drafts.set(key, value),
+                        load: (key: string) => (drafts.has(key) ? structuredClone(drafts.get(key)) : null),
+                        save: (key: string, value: unknown) => void drafts.set(key, structuredClone(value)),
                         clear: (key: string) => void drafts.delete(key),
                     },
                 },
@@ -103,6 +112,12 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         TestBed.overrideComponent(EmailMailboxPageComponent, {
             set: { providers: [{ provide: MailboxSettingsModal, useValue: { attach: (): void => {} } }] },
         });
+        mount();
+    });
+    afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+
+    /** The page, laid out; mounted again it is the page after a reload, with the same draft store. */
+    function mount(): void {
         fixture = TestBed.createComponent(EmailMailboxPageComponent);
         const host = fixture.nativeElement as HTMLElement;
         host.style.display = 'flex';
@@ -114,10 +129,10 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         document.body.appendChild(host);
         fixture.componentInstance.composeRich.set(false);
         fixture.detectChanges();
-    });
-    afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+    }
 
     const frame = (): Promise<void> => new Promise(resolve => requestAnimationFrame(() => resolve()));
+    const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
     async function settle(): Promise<void> {
         for (let i = 0; i < 3; i++) {
             fixture.detectChanges();
@@ -127,122 +142,183 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         fixture.detectChanges();
     }
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const section = (): HTMLElement => el().querySelector<HTMLElement>('.mbx__detail')!;
     const scroll = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="detail-scroll"]')!;
-    const reply = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="quick-reply"]')!;
-    const line = (): HTMLButtonElement | null => el().querySelector<HTMLButtonElement>('[data-test="quick-reply-line"]');
-    const composer = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-composer"]');
+    const quick = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="quick-reply"]')!;
+    const box = (): HTMLTextAreaElement => el().querySelector<HTMLTextAreaElement>('[data-test="quick-reply-box"]')!;
     const dock = (): HTMLElement | null => el().querySelector<HTMLElement>('.mbx__dock');
-    const bodyBottom = (): number => el().querySelector<HTMLElement>('.mbx__detail-body')!.getBoundingClientRect().bottom;
-    /** Where the pane's content ends: the scroll region's bottom, less its padding. */
-    const paneFoot = (): number => scroll().getBoundingClientRect().bottom - parseFloat(getComputedStyle(scroll()).paddingBottom);
+    const handed = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-in-window"]');
 
     async function open(lines: number): Promise<void> {
+        fixture.componentInstance.selectedMailboxId.set('mb1');
         fixture.componentInstance.selectedMessage.set(message(lines));
         await settle();
     }
 
-    it('shows one "Reply…" line, last in the pane\'s one scroll region, until it is used', async () => {
-        await open(3);
+    async function type(text: string): Promise<void> {
+        box().value = text;
+        box().dispatchEvent(new Event('input'));
+        await settle();
+    }
 
-        expect(reply().parentElement).withContext('inside the scroll region').toBe(scroll());
-        expect(scroll().lastElementChild).withContext('after the message and its files').toBe(reply());
-        expect(line()?.textContent?.trim()).toBe('Reply…');
-        expect(composer()).toBeNull();
-        expect(reply().querySelector('textarea, input')).toBeNull();
-        expect(getComputedStyle(reply()).position).withContext('not pinned, not sticky').toBe('static');
-    });
+    /** The box's height for `lines` lines of text, from its own line height, padding and border. */
+    function heightFor(lines: number): number {
+        const s = getComputedStyle(box());
+        return parseFloat(s.lineHeight) * lines + parseFloat(s.paddingTop) + parseFloat(s.paddingBottom)
+            + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    }
 
-    it('sits at the pane\'s foot under a short message, and stays there when the message gets shorter', async () => {
-        await open(8);
-        expect(scroll().scrollHeight).withContext('the message fits the pane').toBeLessThanOrEqual(scroll().clientHeight);
-        expect(reply().getBoundingClientRect().bottom).withContext('at the pane\'s foot').toBeCloseTo(paneFoot(), 0);
-        expect(reply().getBoundingClientRect().top - bodyBottom()).withContext('free space above it').toBeGreaterThan(50);
-        const before = reply().getBoundingClientRect().top;
+    it('is pinned at the bottom of the message pane, outside its one scroll region, and stays put as the message scrolls', async () => {
+        await open(200);
+        const pane = section().getBoundingClientRect();
+        const at = quick().getBoundingClientRect();
+
+        expect(scroll().contains(quick())).withContext('not inside the scroll region').toBeFalse();
+        expect(section().contains(quick())).withContext('in the message pane').toBeTrue();
+        expect(at.bottom).withContext('at the pane\'s bottom').toBeCloseTo(pane.bottom, 0);
+        expect(scroll().getBoundingClientRect().bottom).withContext('the scroll region ends above it').toBeLessThanOrEqual(at.top + 0.5);
+        expect(scroll().scrollHeight).withContext('the long message scrolls').toBeGreaterThan(scroll().clientHeight + 100);
+
+        scroll().scrollTop = scroll().scrollHeight;
+        await settle();
+        expect(quick().getBoundingClientRect().top).withContext('scrolling the message leaves it in place').toBeCloseTo(at.top, 0);
 
         await open(2);
-
-        expect(reply().getBoundingClientRect().top).withContext('never moves up').toBeCloseTo(before, 0);
+        expect(quick().getBoundingClientRect().bottom).withContext('under a short message too').toBeCloseTo(section().getBoundingClientRect().bottom, 0);
     });
 
-    it('follows a long message, right after it', async () => {
-        await open(200);
-        expect(scroll().scrollHeight).withContext('the message is longer than the pane').toBeGreaterThan(scroll().clientHeight);
-
-        expect(reply().getBoundingClientRect().top).withContext('right after the message').toBeCloseTo(bodyBottom(), 0);
-        expect(reply().getBoundingClientRect().top).withContext('below the pane, until scrolled to')
-            .toBeGreaterThan(scroll().getBoundingClientRect().bottom);
-    });
-
-    it('stays a line when it only takes the focus, and opens as the reply\'s composer on Enter, the dock staying closed', async () => {
+    it('is one line reading "Write a reply…", grows with the text to six lines, then scrolls inside', async () => {
         await open(3);
-        expect(line()!.getAttribute('aria-label')).toBe('Reply to Ann Lee');
+        expect(box().placeholder).toBe('Write a reply…');
+        expect(box().getBoundingClientRect().height).withContext('one line').toBeCloseTo(heightFor(1), 0);
 
-        line()!.focus();
-        await settle();
+        await type('one\ntwo\nthree');
+        expect(box().getBoundingClientRect().height).withContext('three lines').toBeCloseTo(heightFor(3), 0);
+        expect(box().scrollHeight).withContext('no scroll at three lines').toBeLessThanOrEqual(box().clientHeight);
 
-        expect(document.activeElement).withContext('tabbing onto it focuses the line').toBe(line());
-        expect(composer()).withContext('focus alone opens nothing').toBeNull();
-
-        line()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-        await settle();
-
-        expect(composer()).withContext('Enter opens the composer in the pane').not.toBeNull();
-        expect(line()).toBeNull();
-        expect(dock()).withContext('no dock').toBeNull();
-        const page = fixture.componentInstance;
-        expect(page.composeMode()).toBe('reply');
-        expect(page.composeTo).toEqual(['ann@example.com']);
-        expect(page.composeSubject).toBe('Re: Desk move on Friday');
-        expect(document.activeElement).withContext('its body has the focus').toBe(composer()!.querySelector('textarea'));
+        await type(Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('\n'));
+        expect(QUICK_REPLY_MAX_LINES).toBe(6);
+        expect(box().getBoundingClientRect().height).withContext('capped at six lines').toBeCloseTo(heightFor(6), 0);
+        expect(box().scrollHeight).withContext('scrolls inside past six').toBeGreaterThan(box().clientHeight + 10);
+        expect(getComputedStyle(box()).overflowY).toBe('auto');
+        expect(scroll().contains(box())).toBeFalse();
     });
 
-    it('Reply scrolls the pane to the quick reply, opens it and focuses it', async () => {
-        await open(200);
-        expect(scroll().scrollTop).toBe(0);
+    it('has no To or Subject, and sends plain text to the prefill\'s recipient with Re: and quote: true', async () => {
+        await open(3);
+        expect(asked).toEqual([['m1', 'reply']]);
+        expect(quick().querySelector('app-tag-input, input[type="text"]')).withContext('no To, no Subject').toBeNull();
+
+        await type('Friday works.');
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-send"]')!.click();
+        await settle();
+
+        expect(replies).toEqual([{ id: 'm1', request: {
+            text: 'Friday works.', to: ['desks@example.com'], subject: 'Re: Desk move on Friday', from: 'work@example.com', quote: true,
+        } }]);
+        expect(box().value).withContext('cleared after the send').toBe('');
+        expect(drafts.has(KEY)).withContext('no draft left').toBeFalse();
+    });
+
+    it('Ctrl+Enter and Cmd+Enter send; Enter alone is a new line', async () => {
+        await open(3);
+        await type('First');
+        const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+        box().dispatchEvent(enter);
+        await settle();
+        expect(enter.defaultPrevented).withContext('Enter is left to the box').toBeFalse();
+        expect(replies.length).toBe(0);
+
+        box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+        await settle();
+        await type('Second');
+        box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true }));
+        await settle();
+
+        expect(replies.map(r => r.request.text)).toEqual(['First', 'Second']);
+    });
+
+    it('its text is that message\'s reply draft, saved after a pause, and back after a reload', async () => {
+        await open(3);
+        await type('Will reply properly later.');
+        expect(drafts.has(KEY)).withContext('not before the pause').toBeFalse();
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect((drafts.get(KEY) as ComposeDraft).text).toBe('Will reply properly later.');
+        expect((drafts.get(KEY) as ComposeDraft).place).toBe('quick');
+
+        fixture.destroy();
+        (fixture.nativeElement as HTMLElement).remove();
+        mount();
+        await open(3);
+
+        expect(box().value).toBe('Will reply properly later.');
+    });
+
+    it('Expand moves the text into the compose window as the same draft; the box says so and brings the window up', async () => {
+        await open(3);
+        await type('Long answer coming.');
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        const keys = [...drafts.keys()];
+
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+
+        expect(dock()).withContext('the compose window').not.toBeNull();
+        expect(dock()!.querySelector('textarea')!.value).toBe('Long answer coming.');
+        expect(fixture.componentInstance.composeTo).withContext('the prefill\'s To').toEqual(['desks@example.com']);
+        expect(fixture.componentInstance.composeSubject).toBe('Re: Desk move on Friday');
+        expect([...drafts.keys()]).withContext('one draft, the same key').toEqual(keys);
+        expect((drafts.get(KEY) as ComposeDraft).place).toBe('window');
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the box clears').toBeNull();
+        expect(handed()?.textContent).toContain('The reply is open in the compose window.');
+
+        fixture.componentInstance.toggleMinimize();
+        await settle();
+        handed()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-show-window"]')!.click();
+        await settle();
+        expect(fixture.componentInstance.composeMinimized()).withContext('Show it brings the window up').toBeFalse();
+    });
+
+    it('Reply while the box holds text does what Expand does, before the pause too', async () => {
+        await open(3);
+        await type('Typed just now.');
 
         fixture.componentInstance.onDetailAction('reply');
         await settle();
 
-        expect(composer()).not.toBeNull();
-        expect(dock()).toBeNull();
-        expect(scroll().scrollTop).withContext('the pane scrolled').toBeGreaterThan(0);
-        const box = composer()!.getBoundingClientRect();
-        const pane = scroll().getBoundingClientRect();
-        expect(box.top).withContext('in view').toBeLessThan(pane.bottom);
-        expect(box.bottom).withContext('in view').toBeGreaterThan(pane.top);
-        expect(document.activeElement).toBe(composer()!.querySelector('textarea'));
+        expect(dock()!.querySelector('textarea')!.value).toBe('Typed just now.');
+        expect([...drafts.keys()]).toEqual([KEY]);
+        expect(handed()).not.toBeNull();
     });
 
-    it('sends through the reply\'s send and folds back to the line', async () => {
+    it('Reply with an empty box, Reply all and Forward open the compose window, the editor empty; the box stays', async () => {
         await open(3);
-        fixture.componentInstance.openQuickReply();
+
+        fixture.componentInstance.onDetailAction('reply');
         await settle();
-        fixture.componentInstance.composeText = 'Friday works.';
-
-        Array.from(composer()!.querySelectorAll<HTMLButtonElement>('button')).find(b => b.textContent?.trim() === 'Send')!.click();
+        expect(dock()).withContext('Reply').not.toBeNull();
+        expect(fixture.componentInstance.composeMode()).toBe('reply');
+        expect(dock()!.querySelector('textarea')!.value).toBe('');
+        fixture.componentInstance.closeCompose();
         await settle();
+        expect(handed()).withContext('nothing written: no draft for the window').toBeNull();
 
-        expect(replies.length).toBe(1);
-        expect(replies[0].id).toBe('m1');
-        expect(replies[0].request.text).toBe('Friday works.');
-        expect(replies[0].request.to).toEqual(['ann@example.com']);
-        expect(replies[0].request.subject).toBe('Re: Desk move on Friday');
-        expect(composer()).toBeNull();
-        expect(line()).withContext('the line again').not.toBeNull();
-    });
-
-    it('keeps the dock for Reply all and Forward, and the line in the pane', async () => {
-        await open(3);
+        fixture.componentInstance.onDetailAction('reply-all');
+        await settle();
+        expect(fixture.componentInstance.composeMode()).toBe('reply_all');
+        expect(box()).withContext('the box stays for Reply all').not.toBeNull();
+        fixture.componentInstance.closeCompose();
 
         fixture.componentInstance.onDetailAction('forward');
         await settle();
-        expect(dock()).withContext('Forward').not.toBeNull();
-        expect(line()).not.toBeNull();
+        expect(fixture.componentInstance.composeMode()).toBe('forward');
+        expect(box()).not.toBeNull();
+    });
 
-        fixture.componentInstance.closeCompose();
-        fixture.componentInstance.onDetailAction('reply-all');
+    it('no quick reply while the message loads, and none for a copy from the server no longer kept', async () => {
+        await open(3);
+        fixture.componentInstance.openEvicted.set(true);
         await settle();
-        expect(dock()).withContext('Reply all').not.toBeNull();
-        expect(composer()).toBeNull();
+        expect(el().querySelector('[data-test="quick-reply"]')).toBeNull();
     });
 });

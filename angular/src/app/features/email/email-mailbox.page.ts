@@ -2,7 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
-    signal, untracked, viewChild,
+    signal, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -47,9 +47,10 @@ import {
     storedAttachments,
     tooLargeSend,
     type ComposeAttachment,
-    type StoredComposeAttachment,
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
+import { MailQuickReplyComponent } from './mail-quick-reply.component';
+import { type ComposeDraft, composeDraftKey } from './compose-draft';
 import { openMessageSource } from './message-source-viewer.component';
 import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
@@ -137,26 +138,6 @@ interface MailboxFormModel {
 }
 
 /** A saved compose/reply draft -- the composer's restorable state. */
-interface ComposeDraft {
-    /** C.4.b: recipient chips. Pre-C.4.b drafts stored `to` as a comma-string -- coerced on load. */
-    to: string[];
-    cc: string[];
-    bcc: string[];
-    subject: string;
-    text: string;
-    html: string;
-    rich: boolean;
-    /** The files attached to a new message, by their server ids; absent from older drafts. */
-    attachments?: StoredComposeAttachment[];
-    /**
-     * An answer or a forward: whether the person kept the quote. Absent from a reply draft written before the quote
-     * was the server's: that draft's body already holds the quote it was given, so it is restored without another.
-     */
-    quote?: boolean;
-    /** A forward: the parts of the original the person removed from its files; absent from older drafts. */
-    removedParts?: number[];
-}
-
 /** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
 const PANE_PARAM = 'pane';
 type PhonePane = 'folders' | 'message';
@@ -192,6 +173,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
+        MailQuickReplyComponent,
         NgTemplateOutlet,
         ScrollingModule,
     ],
@@ -558,20 +540,6 @@ type PhonePane = 'folders' | 'message';
                                     </div>
                                 }
                             </div>
-                            <!-- The quick reply: at the foot of the message, and at the pane's foot under a short one. -->
-                            <div class="mbx__quick-reply" data-test="quick-reply">
-                                @if (quickReplyOpenFor(msg.id)) {
-                                    <div #quickReplyComposer class="mbx__compose mbx__compose--inline" data-test="quick-reply-composer" tabindex="-1">
-                                        <ng-container [ngTemplateOutlet]="composeForm" />
-                                    </div>
-                                } @else {
-                                    <!-- Opens on click, Enter or Space; focus alone leaves it a line. -->
-                                    <button type="button" class="mbx__quick-line" data-test="quick-reply-line"
-                                            [attr.aria-label]="quickReplyLabel(msg)" (click)="openQuickReply()"
-                                            (keydown.enter)="$event.preventDefault(); openQuickReply()"
-                                            (keydown.space)="$event.preventDefault(); openQuickReply()">Reply…</button>
-                                }
-                            </div>
                         } @else {
                             <div class="mbx__empty-wrap">
                                 <app-empty-state icon="envelope-open"
@@ -580,13 +548,21 @@ type PhonePane = 'folders' | 'message';
                             </div>
                         }
                         </div>
+                        <!-- The quick reply: pinned at the pane's bottom, outside the message's one scroll region. -->
+                        @if (quickReplyFor(); as quick) {
+                            <app-mail-quick-reply [mailboxId]="quick.mailboxId" [messageId]="quick.messageId"
+                                                  [label]="quick.label" [limitBytes]="composeLimit()"
+                                                  [windowHolds]="replyWindowHolds()"
+                                                  (expand)="handReplyToWindow()" (showWindow)="showReplyWindow()"
+                                                  (sent)="loadFolders()" />
+                        }
                     </section>
                 </div>
             }
 
             <!-- Composer dock (compose + reply) — Gmail-style: floats bottom-right, does
                  NOT block the mailbox behind it, and minimizes to its header bar. -->
-            @if (composeOpen() && !composeInline()) {
+            @if (composeOpen()) {
                 <div class="mbx__dock">
                     <div #composeDock class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
                         <div class="mbx__compose-head">
@@ -1151,19 +1127,6 @@ type PhonePane = 'folders' | 'message';
             scrollbar-gutter: stable;
         }
         .mbx__detail-scroll > * { flex-shrink: 0; }
-        /* The quick reply, the scroll region's last child: at the message's foot, pushed to the pane's foot by the
-           free space under a short message, and never sticky. */
-        .mbx__quick-reply { margin-top: auto; padding-top: 14px; }
-        .mbx__quick-line {
-            display: block; width: 100%; min-height: var(--cms-touch-target-min); padding: 8px 12px;
-            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface);
-            color: var(--cms-text-muted); font: inherit; font-size: .8125rem; text-align: start; cursor: text;
-        }
-        .mbx__quick-line:hover { border-color: var(--cms-accent); }
-        .mbx__quick-line:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
-        /* The composer in the pane: as wide as the message, scrolled with it, no scroll of its own. */
-        .mbx__compose--inline { width: auto; max-width: none; max-height: none; outline: none; }
-        .mbx__compose--inline .mbx__compose-body { overflow: visible; }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__evicted {
@@ -1629,8 +1592,6 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeOpen = signal<boolean>(false);
     /** What the composer writes: a new message, or an answer or a forward of the message `replyTargetId` names. */
     readonly composeMode = signal<'compose' | EmailComposeMode>('compose');
-    /** The open composer is the quick reply in the message pane, not the dock. */
-    readonly composeInline = signal<boolean>(false);
     /**
      * An answer's or a forward's start, as the server prepares it: being read, read, or not read and why; null for a
      * new message. Recipients, subject, From, quote and threading are the server's; none is made up here.
@@ -1680,17 +1641,28 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly recipientOptions = computed(() => [...this.prefillOptions(), ...this.contactOptions()]);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
-    private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
+    private readonly quickReply = viewChild(MailQuickReplyComponent);
     private readonly composeDock = viewChild<ElementRef<HTMLElement>>('composeDock');
     private readonly injector = inject(Injector);
 
-    /** Another message opened (or none): the quick reply of the one before closes, its draft kept. */
-    private readonly quickReplyFollowsTheMessage = effect(() => {
-        const open = this.selectedMessage()?.id ?? null;
-        if (this.composeOpen() && this.composeInline() && this.replyTargetId() !== open) {
-            untracked(() => this.closeCompose());
+    /**
+     * The open message's quick reply: shown for a stored message that is open and read, never while it loads, and
+     * never for a copy from the server that is no longer kept here.
+     */
+    readonly quickReplyFor = computed(() => {
+        const msg = this.selectedMessage();
+        const mailboxId = this.selectedMailboxId();
+        if (msg === null || mailboxId === null || this.loadingDetail() || this.openEvicted() || msg.id === '') {
+            return null;
         }
+        const name = (msg.fromName ?? '').trim();
+        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
+
+        return { mailboxId, messageId: msg.id, label: sender !== '' ? `Write a reply to ${sender}` : 'Write a reply' };
     });
+    /** The compose window holds the open message's reply. */
+    readonly replyWindowHolds = computed(() => this.composeOpen() && this.composeMode() === 'reply'
+        && this.replyTargetId() !== null && this.replyTargetId() === (this.selectedMessage()?.id ?? null));
     /** The files of the message being written: a new message, a forward or a reply. */
     readonly composeAttachments = signal<ComposeAttachment[]>([]);
     /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
@@ -1911,7 +1883,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'reply-all':
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply'
-                    ? this.openQuickReply()
+                    ? this.handReplyToWindow()
                     : this.openPrefilled(PREFILLED_ACTIONS[action])));
                 break;
             case 'archive':
@@ -3513,7 +3485,6 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openCompose(): void {
-        this.composeInline.set(false);
         this.composeMode.set('compose');
         this.replyTargetId.set(null);
         this.composeTo = [];
@@ -3578,12 +3549,11 @@ export class EmailMailboxPageComponent implements OnInit {
      * takes the server's recipients, subject, From and quote (`GET .../compose?mode=`). The person writes above the
      * quote; a saved draft of this answer takes the place of what was served.
      */
-    openPrefilled(mode: EmailComposeMode, inline = false): void {
+    openPrefilled(mode: EmailComposeMode): void {
         const msg = this.selectedMessage();
         if (!msg) {
             return;
         }
-        this.composeInline.set(inline);
         this.composeMode.set(mode);
         this.replyTargetId.set(msg.id);
         this.composeTo = [];
@@ -3599,46 +3569,35 @@ export class EmailMailboxPageComponent implements OnInit {
         this.readPrefill(msg.id, mode);
     }
 
-    /** The quick reply is open as a composer under this message. */
-    quickReplyOpenFor(id: string): boolean {
-        return this.composeOpen() && this.composeInline() && this.replyTargetId() === id;
-    }
-
-    /** The quick reply line's accessible name: "Reply to" the sender's name, else their address. */
-    quickReplyLabel(msg: EmailMessageDto): string {
-        const name = (msg.fromName ?? '').trim();
-        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
-        return sender !== '' ? `Reply to ${sender}` : 'Reply';
-    }
-
     /**
-     * Reply, and the quick reply's line: the reply to the open message as a composer at the foot of the message
-     * pane, prefilled by the server, brought into view and focused. A composer open in the dock is closed first, its
-     * draft kept.
+     * Reply, and the quick reply's Expand: the compose window opens on the open message's reply. What the quick reply
+     * holds is saved first and goes with it: the same draft, under the same key, now the window's, so there is one
+     * draft and never two. The box then says the reply is open in the window.
      */
-    openQuickReply(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
+    handReplyToWindow(): void {
+        if (!this.selectedMessage() || this.selectedMailboxId() === null) {
             return;
         }
-        if (!this.quickReplyOpenFor(msg.id)) {
-            if (this.composeOpen()) {
-                this.closeCompose();
-            }
-            this.openPrefilled('reply', true);
+        // What the box holds is saved now; the window takes that draft when its prefill is read.
+        this.quickReply()?.flush();
+        if (this.replyWindowHolds()) {
+            this.showReplyWindow();
+            return;
         }
-        afterNextRender(() => this.revealQuickReply(), { injector: this.injector });
+        if (this.composeOpen()) {
+            this.closeCompose();
+        }
+        this.openPrefilled('reply');
     }
 
-    /** Scrolls the message pane to the quick reply and focuses its body, else the composer. */
-    private revealQuickReply(): void {
-        const box = this.quickReplyComposer()?.nativeElement;
-        if (box === undefined) {
+    /** The quick reply's Show it: the window holding the reply comes up, or opens again on its draft. */
+    showReplyWindow(): void {
+        if (this.replyWindowHolds()) {
+            this.composeMinimized.set(false);
+            this.focusComposeBody();
             return;
         }
-        box.scrollIntoView({ block: 'nearest' });
-        const body = box.querySelector<HTMLElement>('textarea, [contenteditable="true"]') ?? box;
-        body.focus({ preventScroll: true });
+        this.handReplyToWindow();
     }
 
     /** Read the prefill again after a failure that may pass. */
@@ -3695,15 +3654,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** localStorage draft key for the current composer, or null when unkeyable. */
     private composeDraftKey(): string | null {
         const mb = this.selectedMailboxId();
-        if (mb === null) {
-            return null;
-        }
-        const mode = this.composeMode();
-        if (mode !== 'compose') {
-            const rt = this.replyTargetId();
-            return rt !== null ? `email.${mb}.${mode}.${rt}` : null;
-        }
-        return `email.${mb}.compose`;
+
+        return mb === null ? null : composeDraftKey(mb, this.composeMode(), this.replyTargetId());
     }
 
     /** A recipient tag-input typed: push the query into the debounced search stream. */
@@ -3805,6 +3757,19 @@ export class EmailMailboxPageComponent implements OnInit {
             this.draftSaved.set(false);
             return;
         }
+        if (draft.place === 'quick') {
+            // The quick reply's text and files, moved into the window: plain text, the quote kept, the To and the
+            // Subject the server's prefill.
+            this.composeText = draft.text;
+            this.composeRich.set(false);
+            this.composeAttachments.set(restoredAttachments(draft.attachments));
+            this.composeKey.update(k => String(Number(k) + 1));
+            this.draftSaved.set(true);
+            if (key !== null) {
+                this.drafts.save(key, { ...draft, place: 'window' } satisfies ComposeDraft);
+            }
+            return;
+        }
         // Coerce: pre-C.4.b drafts stored `to` as a comma-string; cc/bcc may be absent.
         this.composeTo = this.asAddressArray(draft.to);
         this.composeCc = this.asAddressArray(draft.cc);
@@ -3850,6 +3815,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 attachments: storedAttachments(this.composeAttachments()),
                 quote: this.composeQuoteKept(),
                 removedParts: this.removedForwardParts(),
+                place: 'window',
             } satisfies ComposeDraft);
             this.draftSaved.set(true);
         } else {
@@ -3922,7 +3888,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The empty editor (or the plain text) takes the focus once the composer has drawn it. */
     private focusComposeBody(tries = 40): void {
         afterNextRender(() => {
-            const box = (this.composeInline() ? this.quickReplyComposer() : this.composeDock())?.nativeElement;
+            const box = this.composeDock()?.nativeElement;
             const body = box?.querySelector<HTMLElement>('[contenteditable="true"], textarea') ?? null;
             if (body !== null) {
                 body.focus({ preventScroll: true });
