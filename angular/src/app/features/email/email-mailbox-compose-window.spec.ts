@@ -138,6 +138,8 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         return event;
     }
     async function compose(to: string[], subject: string, text: string): Promise<void> {
+        // Plain text before it opens: the page sets the format from the person's preferences on load.
+        page().composeRich.set(false);
         page().openCompose();
         await settle();
         page().composeRich.set(false);
@@ -175,7 +177,9 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(win()!.querySelector('.mbx__compose-title-text')?.textContent?.trim()).toBe('Lunch');
         expect(win()!.querySelector('[data-testid="compose-recipients"]')?.textContent?.trim()).toBe('ada@example.test, lin@example.test');
 
-        page().composeSubject = '';
+        const subject = win()!.querySelector<HTMLInputElement>('input[placeholder="Subject"]')!;
+        subject.value = '';
+        subject.dispatchEvent(new Event('input'));
         await settle();
         expect(win()!.querySelector('.mbx__compose-title-text')?.textContent?.trim()).toBe('New message');
 
@@ -191,12 +195,14 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
 
         const box = win()!.getBoundingClientRect();
         expect(win()!.getAttribute('aria-modal')).toBe('true');
-        expect(box.left + box.width / 2).withContext('centred across').toBeCloseTo(window.innerWidth / 2, 0);
-        expect(box.top + box.height / 2).withContext('centred down').toBeCloseTo(window.innerHeight / 2, 0);
+        // The viewport a fixed box is placed in: the window without its scrollbars.
+        const view = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+        expect(box.left + box.width / 2).withContext('centred across').toBeCloseTo(view.width / 2, 0);
+        expect(box.top + box.height / 2).withContext('centred down').toBeCloseTo(view.height / 2, 0);
         const backdrop = el().querySelector<HTMLElement>('[data-testid="compose-backdrop"]')!;
         expect(backdrop).not.toBeNull();
         const scrim = backdrop.getBoundingClientRect();
-        expect([scrim.left, scrim.top, scrim.width, scrim.height]).toEqual([0, 0, window.innerWidth, window.innerHeight]);
+        expect([scrim.left, scrim.top, scrim.width, scrim.height]).withContext('over the whole viewport').toEqual([0, 0, view.width, view.height]);
         expect(getComputedStyle(backdrop).backgroundColor).withContext('dimmed').not.toBe('rgba(0, 0, 0, 0)');
         // The focus trap: its anchors on either side of the window, and the focus inside it.
         const anchors = [win()!.previousElementSibling, win()!.nextElementSibling];
@@ -281,8 +287,10 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
 
     it('the one closed is the one left unused longest, never the one being opened', () => {
         const w = (id: number, lastUsed: number): ComposeWindowSnapshot => ({ id, lastUsed } as ComposeWindowSnapshot);
-        expect(windowsToClose([w(1, 5), w(2, 1)]).map(x => x.id)).toEqual([2]);
-        expect(windowsToClose([w(1, 5)])).toEqual([]);
+        // Three bars and the one being opened would be four: the bar unused longest closes.
+        expect(windowsToClose([w(1, 5), w(2, 1), w(3, 9)]).map(x => x.id)).toEqual([2]);
+        // Two bars and the new window are three, the most: nothing closes.
+        expect(windowsToClose([w(1, 5), w(2, 1)])).toEqual([]);
     });
 
     it('From shows only when the mailbox has confirmed aliases, listing its own address and them; the choice is sent', async () => {
