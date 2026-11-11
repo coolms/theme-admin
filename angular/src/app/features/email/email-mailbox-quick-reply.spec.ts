@@ -155,10 +155,14 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         await settle();
     }
 
+    /** Types into the box and lets it draw, without waiting out the pause before the draft is saved. */
     async function type(text: string): Promise<void> {
         box().value = text;
         box().dispatchEvent(new Event('input'));
-        await settle();
+        fixture.detectChanges();
+        await frame();
+        await frame();
+        fixture.detectChanges();
     }
 
     /** The box's height for `lines` lines of text, from its own line height, padding and border. */

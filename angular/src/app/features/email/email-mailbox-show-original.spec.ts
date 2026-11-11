@@ -54,6 +54,8 @@ describe('EmailMailboxPageComponent -- show original', () => {
                     provide: EmailService,
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
+                        // The open message's quick reply asks for its reply prefill; not answered here.
+                        composePrefill: () => NEVER,
                         listFolders: () => of([]),
                         folderTree: () => of([]),
                         listMessages: () => of(LISTED),
