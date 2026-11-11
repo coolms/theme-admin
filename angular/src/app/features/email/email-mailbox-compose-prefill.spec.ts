@@ -20,6 +20,7 @@ import type { EmailComposeDto, EmailComposeMode, EmailMailboxDto, EmailMessageDt
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MAIL_FRAME_PAGE, MessageFrameComponent } from './message-frame.component';
+import { EDITOR_MANIFEST_PROVIDER, provideCoolmsEditor } from '@coolms/editor-angular';
 
 /** The served quote: a trailing line end and an inline image as data:, both kept as served. */
 const QUOTE_HTML = '<div><p style="margin:0 0 12px 0;">On 9 Nov 2026, 14:05, Ada Byron &lt;ada@example.test&gt; wrote:</p>'
@@ -425,7 +426,15 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         function render(change: Partial<EmailComposeDto> = {}, action = 'reply', rich = false): HTMLElement {
             reset();
             answer = mode => of(answerFor(mode, change));
-            TestBed.configureTestingModule({ imports: [EmailMailboxPageComponent], providers: providers() as never[] });
+            TestBed.configureTestingModule({
+                imports: [EmailMailboxPageComponent],
+                // The real editor, with an empty profile (no toolbar contributors), as the editor's own specs build it.
+                providers: [
+                    ...providers(),
+                    provideCoolmsEditor(),
+                    { provide: EDITOR_MANIFEST_PROVIDER, useValue: { getProfile: () => ({ contributors: [], allowedWidgets: [] }) } },
+                ] as never[],
+            });
             TestBed.overrideComponent(EmailMailboxPageComponent, {
                 set: { providers: [{ provide: MailboxSettingsModal, useValue: { attach: (): void => {} } }] },
             });
@@ -443,9 +452,9 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             return fixture.nativeElement as HTMLElement;
         }
 
-        it('the person\'s text above, the served quote below it as served, the From, and Send', () => {
-            const el = render();
-            const text = el.querySelector('.mbx__compose textarea');
+        it('the person\'s editor above, the served quote below it as served, the From, and Send', () => {
+            const el = render({}, 'reply', true);
+            const text = el.querySelector('.mbx__compose coolms-editor');
             const quote = quoteFrame(el);
 
             expect(text).not.toBeNull();
@@ -525,10 +534,10 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         });
 
         it('says the original could not be read, and draws no quote', () => {
-            const el = render({ quote: null, unreadable: 'the server could not be read' });
+            const el = render({ quote: null, unreadable: 'server-failed' });
 
             expect(el.querySelector('[data-testid="compose-unreadable"]')?.textContent?.trim())
-                .toBe('The original is not quoted: the server could not be read.');
+                .toBe('The original is not quoted: the mail server could not be read just now.');
             expect(el.querySelector('[data-testid="compose-quote"]')).toBeNull();
         });
 
