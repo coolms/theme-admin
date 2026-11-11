@@ -71,11 +71,13 @@ describe('MailBulkBarComponent', () => {
         expect(clear().getAttribute('aria-label')).toBe('Clear selection (5 selected)');
     });
 
-    it('reads "x 2" once the toolbar has hidden every label, its name unchanged, and takes its word back when all show', async () => {
+    it('reads "x 2" once the toolbar has hidden every label, its name and tooltip unchanged, and takes its word back when all show', async () => {
         await at(150);
         expect(root().querySelector('cms-pane-toolbar .cms-pane-toolbar')!.classList).toContain('cms-pane-toolbar--labels-hidden');
         expect(said()).toBe('2');
         expect(clear().getAttribute('aria-label')).toBe('Clear selection (2 selected)');
+        // Its tooltip still says the whole count, "2 selected", where the face reads only "x 2".
+        expect(clear().title).toBe('Clear selection (2 selected)');
 
         await at(1000);
         expect(root().querySelector('cms-pane-toolbar .cms-pane-toolbar')!.classList).not.toContain('cms-pane-toolbar--labels-hidden');

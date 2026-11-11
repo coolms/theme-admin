@@ -20,11 +20,11 @@ final class MailFramePageTest extends TestCase
 {
     private const string POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data:; frame-ancestors 'self'";
+        . "img-src 'self' data:; font-src 'none'; frame-ancestors 'self'";
 
     private const string POLICY_WITH_IMAGES = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data: https:; frame-ancestors 'self'";
+        . "img-src 'self' data: https:; font-src 'none'; frame-ancestors 'self'";
 
     /** The pages as the build ships them: copied from the source the build copies. */
     private const string SOURCE = __DIR__ . '/../angular/public';
@@ -43,6 +43,18 @@ final class MailFramePageTest extends TestCase
     {
         yield 'mail-frame.html' => ['mail-frame.html'];
         yield 'mail-frame-images.html' => ['mail-frame-images.html'];
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function otherSpellings(): iterable
+    {
+        $pages = ['mail-frame.html' => self::POLICY, 'mail-frame-images.html' => self::POLICY_WITH_IMAGES];
+        foreach ($pages as $page => $policy) {
+            foreach (['%s', '//%s', './%s', 'assets/../%s'] as $spelling) {
+                $path = sprintf($spelling, $page);
+                yield $path => [$path, $policy];
+            }
+        }
     }
 
     #[Test]
@@ -75,6 +87,49 @@ final class MailFramePageTest extends TestCase
         self::assertStringNotContainsStringIgnoringCase('<script', $body);
     }
 
+    /** Another spelling of a frame page's path is the same page, with the same policy: chosen by the file served. */
+    #[Test]
+    #[DataProvider('otherSpellings')]
+    public function anotherSpellingOfThePathCarriesTheSamePolicy(string $path, string $policy): void
+    {
+        $response = (new AdminController($this->dir))($path);
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame($policy, $response->headers->get('Content-Security-Policy'));
+        self::assertSame('no-referrer', $response->headers->get('Referrer-Policy'));
+        self::assertSame('SAMEORIGIN', $response->headers->get('X-Frame-Options'));
+        self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+    }
+
+    /**
+     * There is no 304 to lose the headers: the admin answers a frame page with neither an ETag nor a Last-Modified,
+     * so a browser has nothing to make its request conditional on, and every answer is the full page with its policy.
+     */
+    #[Test]
+    #[DataProvider('pages')]
+    public function answersNoValidatorSoNoNotModified(string $page, string $policy): void
+    {
+        $response = (new AdminController($this->dir))($page);
+
+        self::assertNull($response->headers->get('ETag'));
+        self::assertNull($response->headers->get('Last-Modified'));
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame($policy, $response->headers->get('Content-Security-Policy'));
+    }
+
+    /** A spelling that names no file is not the page at all: never served without its policy. */
+    #[Test]
+    public function aTrailingSlashIsNotServedWithoutThePolicy(): void
+    {
+        $response = (new AdminController($this->dir))('mail-frame.html/');
+
+        if (Response::HTTP_OK === $response->getStatusCode()) {
+            self::assertNotNull($response->headers->get('Content-Security-Policy'));
+        } else {
+            self::assertStringNotContainsString('<base target', (string) $response->getContent());
+        }
+    }
+
     /** Any other file of the build keeps its own headers: the policy is the frame pages' alone. */
     #[Test]
     public function anyOtherFileCarriesNoneOfThem(): void
@@ -94,6 +149,7 @@ final class MailFramePageTest extends TestCase
             copy(self::SOURCE . '/' . $page, $this->dir . '/' . $page);
         }
         file_put_contents($this->dir . '/chunk-Real.js', 'export const a = 1;');
+        mkdir($this->dir . '/assets');
     }
 
     protected function tearDown(): void
@@ -102,6 +158,9 @@ final class MailFramePageTest extends TestCase
             if (is_file($this->dir . $f)) {
                 unlink($this->dir . $f);
             }
+        }
+        if (is_dir($this->dir . '/assets')) {
+            rmdir($this->dir . '/assets');
         }
         if (is_dir($this->dir)) {
             rmdir($this->dir);

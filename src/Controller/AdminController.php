@@ -92,12 +92,12 @@ final class AdminController
      */
     public const string MAIL_FRAME_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data:; frame-ancestors 'self'";
+        . "img-src 'self' data:; font-src 'none'; frame-ancestors 'self'";
 
     /** The same, once the person chose Load images for the message: remote https images too. */
     public const string MAIL_FRAME_IMAGES_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data: https:; frame-ancestors 'self'";
+        . "img-src 'self' data: https:; font-src 'none'; frame-ancestors 'self'";
 
     /**
      * The two mail frame pages, by their path under /admin, and the policy each answers with. They are static files of
@@ -155,7 +155,7 @@ final class AdminController
             return new Response(
                 $body,
                 Response::HTTP_OK,
-                ['Content-Type' => $this->mimeType($filePath)] + $this->mailFrameHeaders($path),
+                ['Content-Type' => $this->mimeType($filePath)] + $this->mailFrameHeaders($filePath),
             );
         }
 
@@ -265,13 +265,20 @@ final class AdminController
     /**
      * The mail frame page's own headers: its policy, no referrer for the remote images it may load, framed by this
      * origin only, no sniffing. The application's policy listener leaves a response that carries its own policy alone.
-     * Empty for any other path.
+     * Empty for any other file.
+     *
+     * Chosen by the file resolved, never by the path as asked: `./mail-frame.html` or `x/../mail-frame.html` is the
+     * same page, and must not be served without its policy.
      *
      * @return array<string, string>
      */
-    private function mailFrameHeaders(string $path): array
+    private function mailFrameHeaders(string $filePath): array
     {
-        $policy = self::MAIL_FRAME_PAGES[$path] ?? null;
+        $root = realpath($this->buildDir);
+        if (false === $root || !str_starts_with($filePath, $root . DIRECTORY_SEPARATOR)) {
+            return [];
+        }
+        $policy = self::MAIL_FRAME_PAGES[substr($filePath, strlen($root) + 1)] ?? null;
         if (null === $policy) {
             return [];
         }
