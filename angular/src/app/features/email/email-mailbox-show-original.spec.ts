@@ -91,7 +91,7 @@ describe('EmailMailboxPageComponent -- show original', () => {
                     useValue: { open: (component: unknown, config: { data: unknown }) => void opened.push({ component, data: config.data }) },
                 },
                 { provide: ConfirmDialogService, useValue: {} },
-                { provide: DraftStoreService, useValue: {} },
+                { provide: DraftStoreService, useValue: { load: () => null, save: (): void => {}, clear: (): void => {} } },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
