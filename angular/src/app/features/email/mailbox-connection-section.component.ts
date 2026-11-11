@@ -290,8 +290,21 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
             <p class="cms-field-hint mt-3">Test connection signs in with what is typed here; nothing is saved.</p>
             @if (testResult(); as r) {
                 <ul class="list-unstyled mb-0">
-                    <li [class.text-success]="r.imap?.ok" [class.text-danger]="r.imap && !r.imap.ok">Incoming (IMAP): {{ outcomeText(r.imap) }}</li>
-                    <li [class.text-success]="r.smtp?.ok" [class.text-danger]="r.smtp && !r.smtp.ok">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
+                    <li data-test="test-imap" [class.text-success]="r.imap?.ok" [class.text-danger]="r.imap && !r.imap.ok">Incoming (IMAP): {{ outcomeText(r.imap) }}</li>
+                    @if (r.sending; as s) {
+                        <!-- Sending's line is the server's sentence, coloured by the server's severity. -->
+                        <li data-test="test-sending" [class.text-success]="'ok' === s.severity"
+                            [class.text-warning]="'warning' === s.severity" [class.text-danger]="'error' === s.severity">
+                            <i class="bi" aria-hidden="true" [class.bi-check-circle-fill]="'ok' === s.severity"
+                               [class.bi-exclamation-triangle-fill]="'warning' === s.severity"
+                               [class.bi-x-circle-fill]="'error' === s.severity"></i>
+                            Sending: {{ s.message }}
+                        </li>
+                        <!-- SMTP's detail only when a real send goes by SMTP, never coloured: sending's severity judges it. -->
+                        @if ('smtp' === s.path && r.smtp) {
+                            <li data-test="test-smtp">Outgoing (SMTP): {{ outcomeText(r.smtp) }}</li>
+                        }
+                    }
                 </ul>
             }
             @if (testRefused(); as why) { <p class="text-danger mb-0" role="alert">{{ why }}</p> }

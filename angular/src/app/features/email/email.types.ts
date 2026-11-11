@@ -163,9 +163,31 @@ export interface MailboxTestOutcome {
     message?: string | null;
 }
 
-/** A connection test's answer, per protocol. */
+/** How a connection test judged sending: as a real send would go. */
+export type MailboxTestSeverity = 'ok' | 'warning' | 'error';
+
+/** The provider's sending API, as a connection test found it. */
+export interface MailboxTestSendingApi {
+    ok: boolean;
+    name: string;
+    state?: 'not_enabled' | 'no_consent' | null;
+    reason?: string | null;
+    message?: string | null;
+}
+
+/** A connection test's answer for sending: its severity and sentence, and the path a real send would take. */
+export interface MailboxTestSending {
+    severity: MailboxTestSeverity;
+    message: string;
+    mode: 'auto' | 'api' | 'smtp';
+    path: 'api' | 'smtp' | null;
+    api: MailboxTestSendingApi | null;
+}
+
+/** A connection test's answer: incoming, sending, and SMTP when SMTP was tried. */
 export interface MailboxTestResult {
     imap?: MailboxTestOutcome;
+    sending?: MailboxTestSending;
     smtp?: MailboxTestOutcome;
 }
 
