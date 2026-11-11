@@ -494,8 +494,11 @@ type PhonePane = 'folders' | 'message';
                                         <ng-container [ngTemplateOutlet]="composeForm" />
                                     </div>
                                 } @else {
+                                    <!-- Opens on click, Enter or Space; focus alone leaves it a line. -->
                                     <button type="button" class="mbx__quick-line" data-test="quick-reply-line"
-                                            (click)="openQuickReply()" (focus)="openQuickReply()">Reply…</button>
+                                            [attr.aria-label]="quickReplyLabel(msg)" (click)="openQuickReply()"
+                                            (keydown.enter)="$event.preventDefault(); openQuickReply()"
+                                            (keydown.space)="$event.preventDefault(); openQuickReply()">Reply…</button>
                                 }
                             </div>
                         } @else {
@@ -2941,6 +2944,13 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The quick reply is open as a composer under this message. */
     quickReplyOpenFor(id: string): boolean {
         return this.composeOpen() && this.composeInline() && this.replyTargetId() === id;
+    }
+
+    /** The quick reply line's accessible name: "Reply to" the sender's name, else their address. */
+    quickReplyLabel(msg: EmailMessageDto): string {
+        const name = (msg.fromName ?? '').trim();
+        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
+        return sender !== '' ? `Reply to ${sender}` : 'Reply';
     }
 
     /**

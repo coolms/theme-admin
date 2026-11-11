@@ -19,7 +19,7 @@ import { type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto,
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
-const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromAddress: 'ann@example.com' }];
+const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
 
 /** The open message, its plain body `lines` lines long. */
 function message(lines: number): EmailMessageDetailDto {
@@ -30,8 +30,8 @@ function message(lines: number): EmailMessageDetailDto {
 /**
  * The quick reply in the message pane: one "Reply…" line at the foot of the message, inside the pane's one scroll
  * region, and at the pane's foot under a short message, so it never moves up when the message gets shorter. Choosing
- * the line, or Reply, opens the reply's composer there, in view and focused; it sends as the dock's reply does and
- * folds back to the line. Reply all and Forward keep the dock. The page is rendered and laid out at 1400 x 600,
+ * the line (a click, Enter or Space; focus alone does not), or Reply, opens the reply's composer there, in view and
+ * focused; it sends as the dock's reply does and folds back to the line. Reply all and Forward keep the dock. The page is rendered and laid out at 1400 x 600,
  * fixed at the window's top left.
  */
 describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
@@ -159,13 +159,20 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
             .toBeGreaterThan(scroll().getBoundingClientRect().bottom);
     });
 
-    it('opens as the reply\'s composer when the line takes the focus, the dock staying closed', async () => {
+    it('stays a line when it only takes the focus, and opens as the reply\'s composer on Enter, the dock staying closed', async () => {
         await open(3);
+        expect(line()!.getAttribute('aria-label')).toBe('Reply to Ann Lee');
 
         line()!.focus();
         await settle();
 
-        expect(composer()).withContext('the composer in the pane').not.toBeNull();
+        expect(document.activeElement).withContext('tabbing onto it focuses the line').toBe(line());
+        expect(composer()).withContext('focus alone opens nothing').toBeNull();
+
+        line()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        await settle();
+
+        expect(composer()).withContext('Enter opens the composer in the pane').not.toBeNull();
         expect(line()).toBeNull();
         expect(dock()).withContext('no dock').toBeNull();
         const page = fixture.componentInstance;
