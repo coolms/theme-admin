@@ -248,6 +248,11 @@ type PhonePane = 'folders' | 'message';
 
                         <!-- Under the list's row and its search field, the list's one scroll region. -->
                         <div class="mbx__list-scroll" data-test="list-scroll">
+                        @if (listRereading()) {
+                            <!-- The same list read again: its rows stay, a thin bar says it is being read. -->
+                            <div class="mbx__list-progress" data-test="list-progress" role="progressbar"
+                                 aria-label="Refreshing the list"></div>
+                        }
                         <!-- Bulk action bar (backlog slice 3): shown once ≥1 message is
                              checked in the folder view; acts on the whole selection. -->
                         @if (!searchActive() && selectedCount() > 0) {
@@ -874,6 +879,19 @@ type PhonePane = 'folders' | 'message';
             overflow: hidden; display: flex; flex-direction: column;
         }
         .mbx__list-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+        /* Over the top of the rows, taking no room: the rows do not move when it comes and goes. */
+        .mbx__list-progress {
+            position: sticky; top: 0; z-index: 2; flex: 0 0 auto; height: 2px; margin-bottom: -2px;
+            overflow: hidden; background: color-mix(in srgb, var(--cms-accent) 20%, transparent);
+        }
+        .mbx__list-progress::after {
+            content: ''; position: absolute; inset: 0 auto 0 0; width: 30%;
+            background: var(--cms-accent); animation: mbx-list-progress 1.1s ease-in-out infinite;
+        }
+        @keyframes mbx-list-progress { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+        @media (prefers-reduced-motion: reduce) {
+            .mbx__list-progress::after { animation: none; width: 100%; }
+        }
         .mbx__row {
             display: flex; align-items: flex-start; gap: 8px; width: 100%;
             padding: 10px 12px; border-bottom: 1px solid var(--cms-border);
@@ -1279,6 +1297,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     readonly loadingMailboxes = signal<boolean>(true);
     readonly loadingMessages = signal<boolean>(false);
+    /** The list shown is being read again: its rows stay and the thin bar shows, never the Loading line. */
+    readonly listRereading = signal<boolean>(false);
     /** Why the mailbox list could not be read; null once it was. The banner shows it in the mailbox pane. */
     readonly mailboxesFailure = signal<unknown>(null);
     /** Why the messages could not be read; null once they were. The banner shows it in the message pane. */
@@ -3438,10 +3458,12 @@ export class EmailMailboxPageComponent implements OnInit {
             this.messages.set([]);
             return;
         }
+        let rereading = false;
         if (reset) {
             this.page = 1;
             const key = `${id}
 ${this.selectedFolder()}`;
+            rereading = key === this.olderKey && this.messages().length > 0;
             if (key !== this.olderKey) {
                 this.olderKey = key;
                 this.olderMessages.stop();
@@ -3449,12 +3471,14 @@ ${this.selectedFolder()}`;
         }
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
+        this.listRereading.set(rereading);
         this.email.listMessages(id, this.selectedFolder(), this.page).subscribe({
             next: list => {
                 if (seq !== this.listSeq) { return; }
                 this.messages.set(reset ? list : [...this.messages(), ...list]);
                 this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
                 this.loadingMessages.set(false);
+                this.listRereading.set(false);
             },
             error: (err: unknown) => {
                 if (seq !== this.listSeq) { return; }
@@ -3465,6 +3489,7 @@ ${this.selectedFolder()}`;
                 this.messagesFailedOnAppend.set(!reset);
                 this.messagesFailure.set(err);
                 this.loadingMessages.set(false);
+                this.listRereading.set(false);
             },
         });
     }

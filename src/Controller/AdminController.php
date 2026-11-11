@@ -92,12 +92,12 @@ final class AdminController
      */
     public const string MAIL_FRAME_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data:; frame-ancestors 'self'";
+        . "img-src 'self' data:; font-src 'none'; frame-ancestors 'self'";
 
     /** The same, once the person chose Load images for the message: remote https images too. */
     public const string MAIL_FRAME_IMAGES_POLICY = "default-src 'none'; script-src 'none'; object-src 'none'; "
         . "frame-src 'none'; form-action 'none'; base-uri 'none'; style-src 'unsafe-inline'; "
-        . "img-src 'self' data: https:; frame-ancestors 'self'";
+        . "img-src 'self' data: https:; font-src 'none'; frame-ancestors 'self'";
 
     /**
      * The two mail frame pages, by their path under /admin, and the policy each answers with. They are static files of
