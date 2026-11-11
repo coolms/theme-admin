@@ -1,4 +1,4 @@
-import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { NEVER, type Observable, Subject, of } from 'rxjs';
@@ -86,6 +86,14 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
     const rows = (): number => scroll().querySelectorAll('.mbx__row').length;
     const loadingLine = (): boolean => Array.from(scroll().querySelectorAll('.mbx__note')).some(n => n.textContent?.trim() === 'Loading…');
     const last = (): Subject<EmailMessageDto[]> => answers[answers.length - 1];
+    /** Lets the virtual viewport draw the rows: its own steps run after a microtask and a render. */
+    const draw = (): void => {
+        for (let i = 0; i < 3; i++) {
+            fixture.detectChanges();
+            tick(20);
+        }
+        fixture.detectChanges();
+    };
 
     /** The mailbox's first folder read, answered with its two rows. */
     function firstRead(): void {
@@ -94,11 +102,11 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
         expect(loadingLine()).withContext('the first read says Loading').toBeTrue();
         expect(bar()).withContext('and shows no bar: there are no rows to keep').toBeNull();
         last().next(LISTED);
-        fixture.detectChanges();
+        draw();
         expect(rows()).toBe(2);
     }
 
-    it('keeps the rows under a thin bar while the same list is read again, and drops the bar on its answer', () => {
+    it('keeps the rows under a thin bar while the same list is read again, and drops the bar on its answer', fakeAsync(() => {
         firstRead();
 
         fixture.componentInstance.retryMessages();
@@ -112,13 +120,13 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
         expect(bar()!.getBoundingClientRect().height).withContext('thin').toBeLessThanOrEqual(3);
 
         last().next([...LISTED, { id: 'm3', folder: 'INBOX', subject: 'Lunch' }]);
-        fixture.detectChanges();
+        draw();
 
         expect(bar()).withContext('the answer takes the bar away').toBeNull();
         expect(rows()).toBe(3);
-    });
+    }));
 
-    it('drops the bar when the read again fails', () => {
+    it('drops the bar when the read again fails', fakeAsync(() => {
         firstRead();
 
         fixture.componentInstance.retryMessages();
@@ -129,9 +137,9 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
         fixture.detectChanges();
 
         expect(bar()).toBeNull();
-    });
+    }));
 
-    it('shows no bar for another folder\'s first read', () => {
+    it('shows no bar for another folder\'s first read', fakeAsync(() => {
         firstRead();
 
         fixture.componentInstance.selectFolder('Archive');
@@ -139,5 +147,5 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
 
         expect(fixture.componentInstance.loadingMessages()).toBeTrue();
         expect(bar()).withContext('another list is not this one read again').toBeNull();
-    });
+    }));
 });
