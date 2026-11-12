@@ -43,9 +43,12 @@ function nodes(folders: EmailFolderDto[]): EmailFolderTreeNodeDto[] {
  */
 describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'s', () => {
     let foldersAsked: string[];
+    /** Every request for the mailbox list (GET /api/v1/email/mailboxes). */
+    let mailboxesAsked: number;
 
     function build(mailboxes: EmailMailboxDto[]): EmailMailboxPageComponent {
         foldersAsked = [];
+        mailboxesAsked = 0;
         const folders: Record<string, EmailFolderDto[]> = { mb1: GMAIL, mb2: NOT_COUNTED };
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
@@ -53,7 +56,10 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
                 {
                     provide: EmailService,
                     useValue: {
-                        listMailboxes: () => of(mailboxes),
+                        listMailboxes: () => {
+                            mailboxesAsked++;
+                            return of(mailboxes);
+                        },
                         listFolders: (id: string) => {
                             foldersAsked.push(id);
                             return of(folders[id]);
@@ -83,9 +89,10 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
         return TestBed.runInInjectionContext(() => new EmailMailboxPageComponent());
     }
 
+    /** An event as an older server sends it: without `mailboxUnseen` unless the test gives one. */
     function changed(page: EmailMailboxPageComponent, event: Partial<MailMessagesChangedEvent>): void {
         const full: MailMessagesChangedEvent = {
-            type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'sync', seq: 1, changes: [], counts: {}, mailboxUnseen: 0,
+            type: 'mail.messages.changed', mailboxId: 'mb1', origin: 'sync', seq: 1, changes: [], counts: {},
             ...event,
         };
         (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(full);
@@ -118,9 +125,40 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
         expect(foldersAsked.filter(id => id === 'mb2')).withContext('no folder read for a served number').toEqual([]);
     });
 
-    it('a change event updates the number from the inbox\'s entry, not the mailbox-wide unseen', () => {
+    it('an event carrying mailboxUnseen 7 sets a served mailbox to 7, with no request for the mailbox list', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        const before = mailboxesAsked;
+        expect(before).withContext('the subject: the list was read once, on load').toBe(1);
+        expect(page.mailboxUnread()['mb2']).toBe(2);
+
+        changed(page, {
+            mailboxId: 'mb2', seq: 2, mailboxUnseen: 7,
+            counts: { Archive: { total: 30, unseen: 0, serverTotal: null, serverUnseen: null } },
+        });
+
+        expect(page.mailboxUnread()['mb2']).toBe(7);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on the event').toBe(0);
+    });
+
+    it('an event carrying mailboxUnseen sets the open mailbox\'s number over its inbox entry, with no request', () => {
+        const page = build([{ ...WORK, unread: 11 }, HOME]);
+        page.loadMailboxes();
+        const before = mailboxesAsked;
+
+        changed(page, {
+            seq: 2, mailboxUnseen: 3,
+            counts: { 'INBOX': { total: 20, unseen: 1, serverTotal: 20, serverUnseen: 1 } },
+        });
+
+        expect(page.mailboxUnread()['mb1']).toBe(3);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on the event').toBe(0);
+    });
+
+    it('without mailboxUnseen, a change event updates the number from the inbox\'s entry, never a sum', () => {
         const page = build([WORK, HOME]);
         page.loadMailboxes();
+        const before = mailboxesAsked;
 
         changed(page, {
             seq: 2,
@@ -128,18 +166,21 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
                 'INBOX': { total: 20, unseen: 1, serverTotal: 20, serverUnseen: 1 },
                 '[Gmail]/All Mail': { total: 60, unseen: 5, serverTotal: 60, serverUnseen: 5 },
             },
-            mailboxUnseen: 9,
         });
 
         expect(page.mailboxUnread()['mb1']).toBe(1);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on the event').toBe(0);
     });
 
-    it('a change event with counts for Archive only leaves the number unchanged', () => {
+    it('without mailboxUnseen, a change event with counts for Archive only leaves the number unchanged', () => {
         const page = build([WORK, HOME]);
         page.loadMailboxes();
 
-        changed(page, { mailboxId: 'mb2', seq: 3, counts: { Archive: { total: 30, unseen: 0, serverTotal: null, serverUnseen: null } }, mailboxUnseen: 0 });
+        const before = mailboxesAsked;
+
+        changed(page, { mailboxId: 'mb2', seq: 3, counts: { Archive: { total: 30, unseen: 0, serverTotal: null, serverUnseen: null } } });
 
         expect(page.mailboxUnread()['mb2']).toBe(2);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on the event').toBe(0);
     });
 });

@@ -2213,7 +2213,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         if (this.unreadServed.has(evt.mailboxId)) {
-            // The list serves the number on each row; a read of one mailbox does not.
+            // This nudge carries no unread number, unlike mail.messages.changed; the list serves it on each row.
             this.email.listMailboxes().subscribe({
                 next: list => this.takeServedUnread(list),
                 error: () => { /* leave the badge as-is on a transient failure */ },
