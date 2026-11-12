@@ -20,6 +20,7 @@ import '../../../core-angular/src/auth/elevation-refusal.spec';
 import '../../../core-angular/src/auth/elevation.interceptor.spec';
 import '../../../core-angular/src/auth/elevation.service.spec';
 import '../../../core-angular/src/errors/error-handler.service.spec';
+import '../../../core-angular/src/services/user-preferences.service.spec';
 import '../../../core-angular/src/contracts/console/console-v1.spec';
 import '../../../core-angular/src/navi-graph/navi-graph.service.spec';
 import '../../../core-angular/src/theme/theme.service.spec';
