@@ -1,4 +1,11 @@
-import { type EmailMessageDto, type EmailMessageList, type ServerMessageOpenedDto, type ServerSearchHitDto } from './email.types';
+import {
+    type EmailFolderDto,
+    type EmailFolderTreeNodeDto,
+    type EmailMessageDto,
+    type EmailMessageList,
+    type ServerMessageOpenedDto,
+    type ServerSearchHitDto,
+} from './email.types';
 
 /**
  * A folder the platform has not fully synced is listed from the mail server: its list holds rows nothing here stores
@@ -21,9 +28,43 @@ export function storedIds(rows: readonly EmailMessageDto[]): string[] {
     return rows.filter(m => !isServerRow(m)).map(m => m.id);
 }
 
-/** Whether an answer is a folder listed from the mail server: a server row, a next cursor or a server-pages word. */
+/**
+ * Whether an answer is a folder listed from the mail server, read off the answer itself: a server row, a next cursor
+ * or a server-pages word. Only for a folder whose tree node and list entry do not say (see folderListedFromServer).
+ */
 export function listedFromServer(page: EmailMessageList): boolean {
     return page.some(isServerRow) || (page.next ?? null) !== null || (page.serverPages ?? null) !== null;
+}
+
+/** A folder's node in the tree, searched through every level. */
+function treeNode(nodes: readonly EmailFolderTreeNodeDto[], folder: string): EmailFolderTreeNodeDto | null {
+    for (const node of nodes) {
+        if (node.folder === folder) {
+            return node;
+        }
+        const below = treeNode(node.children ?? [], folder);
+        if (below !== null) {
+            return below;
+        }
+    }
+    return null;
+}
+
+/**
+ * Whether the server says a folder is listed from the mail server: its tree node's `listedFromServer`, else its folder
+ * list entry's; null when neither carries the field.
+ */
+export function folderListedFromServer(
+    folder: string,
+    tree: readonly EmailFolderTreeNodeDto[] | null,
+    list: readonly EmailFolderDto[],
+): boolean | null {
+    const node = treeNode(tree ?? [], folder);
+    if (typeof node?.listedFromServer === 'boolean') {
+        return node.listedFromServer;
+    }
+    const entry = list.find(f => f.folder === folder);
+    return typeof entry?.listedFromServer === 'boolean' ? entry.listedFromServer : null;
 }
 
 /** A server row in the shape the server-message opener takes. */

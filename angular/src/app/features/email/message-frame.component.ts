@@ -24,11 +24,11 @@ export const MAIL_FRAME_IMAGES_PAGE = '/admin/mail-frame-images.html';
         @if (images()) {
             <iframe #frame class="mbx__body-frame" src="/admin/mail-frame-images.html"
                     sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                    referrerpolicy="no-referrer" title="Message body" (load)="loaded(frame)"></iframe>
+                    referrerpolicy="no-referrer" [title]="label()" (load)="loaded(frame)"></iframe>
         } @else {
             <iframe #frame class="mbx__body-frame" src="/admin/mail-frame.html"
                     sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-                    referrerpolicy="no-referrer" title="Message body" (load)="loaded(frame)"></iframe>
+                    referrerpolicy="no-referrer" [title]="label()" (load)="loaded(frame)"></iframe>
         }
     `,
     styles: [`
@@ -45,6 +45,8 @@ export class MessageFrameComponent {
     readonly html = input.required<string | null | undefined>();
     /** The person chose Load images for this message: the page that allows remote images. */
     readonly images = input(false);
+    /** The frame's accessible name. */
+    readonly label = input('Message body');
     readonly fit = new MessageFrameFit();
 
     /** The frame whose page has loaded, ready to be written into. */

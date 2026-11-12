@@ -13,6 +13,7 @@ import {
     EmailAttachmentSaveResultDto,
     EmailBulkResultDto,
     EmailComposeDto,
+    EmailComposeMode,
     EmailDeleteResultDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
@@ -148,7 +149,8 @@ export class EmailService {
     /**
      * POST /email/mailboxes/{id}/test: signs in to the incoming and the outgoing server with what is given -- a field
      * left out comes from the stored mailbox, the stored credential when no password is given -- and stores nothing.
-     * Each protocol answers connected, or its error kind in a fixed sentence. Ten tests a person in ten minutes: then
+     * IMAP answers connected, or its error kind in a fixed sentence; sending answers a severity and a sentence for the
+     * path a real send takes, with SMTP's answer when SMTP was tried. Ten tests a person in ten minutes: then
      * 429, with Retry-After.
      */
     testMailbox(id: string, request: MailboxTestRequest): Observable<MailboxTestResult> {
@@ -554,11 +556,14 @@ export class EmailService {
         );
     }
 
-    /** GET /email/messages/{id}/compose -- what an answer or a forward starts with, prepared by the server. */
-    compose(messageId: string, mode: 'reply' | 'reply_all' | 'forward'): Observable<EmailComposeDto> {
+    /**
+     * GET /email/messages/{id}/compose?mode= -- what an answer or a forward of the message starts with, prepared by the
+     * server. 404 for a message that is not there to read; 422 for a mode it does not know.
+     */
+    composePrefill(messageId: string, mode: EmailComposeMode): Observable<EmailComposeDto> {
         return this.http.get<EmailComposeDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/compose`,
-            { params: { mode } },
+            { headers: this.jsonHeaders, params: { mode } },
         );
     }
 
