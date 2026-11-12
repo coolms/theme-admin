@@ -18,6 +18,8 @@ export interface EmailLiveEvent {
     readonly mailboxId: string;
     readonly folder: string;
     readonly newCount: number;
+    /** The mailbox's unread number: its inbox's alone, as the mailbox list serves it. Absent from an older server. */
+    readonly mailboxUnseen?: number;
 }
 
 /** How a sync the person asked for ended. `skipped`: another import held the mailbox, or it was switched off; not an error. */
@@ -139,6 +141,11 @@ export class EmailLiveEventsService {
         if (typeof obj['mailboxId'] !== 'string' || typeof obj['folder'] !== 'string') {
             return null;
         }
-        return raw as EmailLiveEvent;
+        // A number that is not a count is dropped, not the nudge: the page then reads the number as before.
+        const unseen = obj['mailboxUnseen'];
+        const { mailboxUnseen: _unseen, ...rest } = raw as EmailLiveEvent;
+        return typeof unseen === 'number' && Number.isInteger(unseen) && unseen >= 0
+            ? { ...rest, mailboxUnseen: unseen }
+            : rest;
     }
 }

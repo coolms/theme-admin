@@ -4,6 +4,7 @@ import { Store } from '@ngxs/store';
 import { NEVER, of } from 'rxjs';
 import { NaviGraphService } from '@coolms/core-angular';
 import {
+    CentrifugoClientService,
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
@@ -12,7 +13,7 @@ import {
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
-import { EmailLiveEventsService } from './email-live-events.service';
+import { type EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import { type EmailFolderDto, type EmailFolderTreeNodeDto, type EmailMailboxDto } from './email.types';
@@ -96,6 +97,12 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
             ...event,
         };
         (page as unknown as { onMessagesChanged(e: MailMessagesChangedEvent): void }).onMessagesChanged(full);
+    }
+
+    /** New mail announced for a mailbox: mail.received. */
+    function received(page: EmailMailboxPageComponent, event: Partial<EmailLiveEvent>): void {
+        const full: EmailLiveEvent = { type: 'mail.received', mailboxId: 'mb2', folder: 'INBOX', newCount: 1, ...event };
+        (page as unknown as { onMailReceived(e: EmailLiveEvent): void }).onMailReceived(full);
     }
 
     const WORK: EmailMailboxDto = { id: 'mb1', label: 'Work' };
@@ -182,5 +189,66 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
 
         expect(page.mailboxUnread()['mb2']).toBe(2);
         expect(mailboxesAsked - before).withContext('requests to /mailboxes on the event').toBe(0);
+    });
+
+    it('new mail carrying mailboxUnseen 4 sets that mailbox to 4, with no request for the mailbox list', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        const before = mailboxesAsked;
+        const foldersBefore = foldersAsked.length;
+        expect(before).withContext('the subject: the list was read once, on load').toBe(1);
+
+        received(page, { mailboxId: 'mb2', mailboxUnseen: 4 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(4);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on new mail').toBe(0);
+        expect(foldersAsked.length - foldersBefore).withContext('folder reads on new mail').toBe(0);
+    });
+
+    it('new mail without mailboxUnseen reads the mailbox list again for a mailbox it serves', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        const before = mailboxesAsked;
+
+        received(page, { mailboxId: 'mb2' });
+
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on new mail').toBe(1);
+        expect(page.mailboxUnread()['mb2']).withContext('the list\'s number').toBe(2);
+    });
+
+    it('new mail for the open mailbox takes the number it carries and still reads its folders', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        const before = mailboxesAsked;
+        const foldersBefore = foldersAsked.length;
+
+        received(page, { mailboxId: 'mb1', mailboxUnseen: 12 });
+
+        expect(page.mailboxUnread()['mb1']).toBe(12);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on new mail').toBe(0);
+        expect(foldersAsked.length - foldersBefore).withContext('the open mailbox\'s folders, for its new mail').toBeGreaterThan(0);
+    });
+});
+
+/** The mail.received reader: mailboxUnseen kept when it is a count, dropped otherwise, the nudge kept either way. */
+describe('EmailLiveEventsService -- mail.received carries its mailbox\'s unread number', () => {
+    function read(raw: unknown): unknown {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({ providers: [{ provide: CentrifugoClientService, useValue: {} }] });
+        const service = TestBed.inject(EmailLiveEventsService);
+        return (service as unknown as { tryParse(r: unknown): unknown }).tryParse(raw);
+    }
+
+    const BASE = { type: 'mail.received', mailboxId: 'mb2', folder: 'INBOX', newCount: 1 };
+
+    it('keeps a count', () => {
+        expect(read({ ...BASE, mailboxUnseen: 4 })).toEqual({ ...BASE, mailboxUnseen: 4 });
+    });
+
+    it('reads a nudge without it, or with one that is not a count, as one without a number', () => {
+        expect(read(BASE)).toEqual(BASE);
+        expect(read({ ...BASE, mailboxUnseen: null })).toEqual(BASE);
+        expect(read({ ...BASE, mailboxUnseen: '4' })).toEqual(BASE);
+        expect(read({ ...BASE, mailboxUnseen: -1 })).toEqual(BASE);
     });
 });
