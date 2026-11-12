@@ -433,6 +433,14 @@ export class EmailService {
         );
     }
 
+    /** The same download as {@link fetchAttachment}, with the answer's headers (its Content-Type). */
+    fetchAttachmentResponse(messageId: string, index: number): Observable<HttpResponse<Blob>> {
+        return this.http.get(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/attachments/${index}/download`,
+            { responseType: 'blob', observe: 'response' },
+        );
+    }
+
     /** POST /email/messages/{id}/attachments/{index}/save -- copy an attachment into the user's VFS home. */
     saveAttachment(messageId: string, index: number): Observable<EmailAttachmentSaveResultDto> {
         return this.http.post<EmailAttachmentSaveResultDto>(

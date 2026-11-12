@@ -11,6 +11,13 @@ major number means here.
 - **The signed-in sessions page.** A row's menu ends that sign-in, ends all of that person's sign-ins, or opens
   the account. Every column sorts and filters, by the grid's declared definition, and the toolbar groups the
   list by person. Browser and device show as columns.
+- **View a message's PDF or image attachment.** An attachment gets View when the server's `viewAs` says pdf or
+  image; `none` means no View, whatever the declared type. A row without `viewAs` (an older server) gets it only
+  for a declared `application/pdf`, PNG, JPEG, GIF or WebP, never SVG; the file name is never read. A PDF opens in
+  the app's PDF viewer, an image in a preview over the page; both from the download's bytes, fetched with the
+  session, never in a new tab. The preview shows the image only when the download is served as PNG, JPEG, GIF or
+  WebP, under that type; Escape closes it and focus goes back to View. Each viewer's label names the file and the
+  kind detected. Download and Save to my files stay on every attachment.
 
 ### Changed
 - **The mail screen's pane widths are saved per person, and the splitters work from the keyboard.** The two splitters

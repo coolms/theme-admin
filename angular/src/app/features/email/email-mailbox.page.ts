@@ -51,6 +51,7 @@ import {
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
 import { openMessageSource } from './message-source-viewer.component';
+import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, handledNodes, messageFacts, moveMenuItems,
@@ -529,6 +530,15 @@ type PhonePane = 'folders' | 'message';
                                                             <span class="mbx__attachment-size">{{ humanSize(att.sizeBytes) }}</span>
                                                         </div>
                                                         <div class="mbx__attachment-actions">
+                                                            @if (viewKindOf(att) !== null) {
+                                                                <button #viewButton type="button" class="mbx__icon-btn" title="View"
+                                                                        data-test="attachment-view"
+                                                                        [attr.aria-label]="'View ' + att.filename"
+                                                                        [disabled]="viewingAttachment() === att.index"
+                                                                        (click)="viewAttachment(att, viewButton)">
+                                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                                </button>
+                                                            }
                                                             <button type="button" class="mbx__icon-btn" title="Download"
                                                                     (click)="downloadAttachment(att)">
                                                                 <i class="bi bi-download"></i>
@@ -1604,6 +1614,10 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly attachments = signal<EmailAttachmentDto[]>([]);
     readonly loadingAttachments = signal<boolean>(false);
     readonly savingAttachment = signal<number | null>(null);
+    /** The index of the attachment whose bytes View is fetching, else null. */
+    readonly viewingAttachment = signal<number | null>(null);
+    /** Which viewer an attachment's View opens, or null for no View. */
+    protected readonly viewKindOf = attachmentViewKind;
 
     /**
      * The open message's conversation thread, oldest-sent first. Fetched on
@@ -3224,6 +3238,39 @@ export class EmailMailboxPageComponent implements OnInit {
                 setTimeout(() => URL.revokeObjectURL(url), 0);
             },
             error: () => this.toast.error(`Couldn't download "${att.filename}".`),
+        });
+    }
+
+    /**
+     * View one attachment in the app: its bytes fetched with the session from the download route, a pdf into the PDF
+     * viewer and an image into the preview, as {@link attachmentViewKind} decides. An image whose download is not
+     * served as a PNG, JPEG, GIF or WebP image is not shown. Focus goes back to `button` when the viewer closes.
+     */
+    viewAttachment(att: EmailAttachmentDto, button: HTMLElement | null): void {
+        const msg = this.selectedMessage();
+        const kind = attachmentViewKind(att);
+        if (!msg || kind === null || this.viewingAttachment() !== null) {
+            return;
+        }
+        const seq = this.openSeq;
+        this.viewingAttachment.set(att.index);
+        this.email.fetchAttachmentResponse(msg.id, att.index).subscribe({
+            next: answer => {
+                this.viewingAttachment.set(null);
+                if (seq !== this.openSeq) {
+                    return;
+                }
+                const shown = kind === 'pdf'
+                    ? (answer.body === null ? null : openPdfAttachment(this.dialog, answer.body, att.filename, button))
+                    : openImageAttachment(this.dialog, answer, att.filename, button);
+                if (shown === null) {
+                    this.toast.error(`Couldn't show "${att.filename}" here. Download it instead.`);
+                }
+            },
+            error: () => {
+                this.viewingAttachment.set(null);
+                this.toast.error(`Couldn't open "${att.filename}".`);
+            },
         });
     }
 
