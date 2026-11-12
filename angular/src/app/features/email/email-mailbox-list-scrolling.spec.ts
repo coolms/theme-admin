@@ -86,6 +86,8 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
                             return reply;
                         },
                         serverSearch: () => NEVER,
+                        composePrefill: () => NEVER,
+                        draftsAnswering: () => NEVER,
                         olderMessages: () => {
                             olderAsked++;
                             return NEVER;
