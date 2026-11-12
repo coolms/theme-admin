@@ -16,6 +16,7 @@ export type MessageSourceState =
     | { readonly kind: 'loading' }
     | { readonly kind: 'shown'; readonly text: string; readonly truncated: boolean }
     | { readonly kind: 'gone' }
+    | { readonly kind: 'missing' }
     | { readonly kind: 'unavailable' }
     | { readonly kind: 'failed' };
 
@@ -23,6 +24,7 @@ export type MessageSourceState =
 export const MESSAGE_SOURCE_WORDS = {
     truncated: 'Showing the first 1 MB; download for the full source',
     gone: 'The original of this message is gone: it is no longer stored here, nor on the mail server.',
+    missing: 'This message was not found.',
     unavailable: 'The mail server could not be read for the original just now.',
     failed: 'Could not open the message.',
     copied: 'Copied.',
@@ -30,8 +32,11 @@ export const MESSAGE_SOURCE_WORDS = {
     downloadFailed: 'Could not download the original.',
 } as const;
 
-/** The kind of a refusal of the source: 404 source-gone and 502 source-unavailable by their type; anything else failed. */
-export function sourceFailureOf(status: number, body: unknown): 'gone' | 'unavailable' | 'failed' {
+/**
+ * The kind of a refusal of the source: 404 source-gone and 502 source-unavailable by their type; any other 404 is a
+ * message not found (a missing message and one the reader may not see answer alike); anything else failed.
+ */
+export function sourceFailureOf(status: number, body: unknown): 'gone' | 'missing' | 'unavailable' | 'failed' {
     let parsed = body;
     if (typeof body === 'string') {
         try {
@@ -43,6 +48,9 @@ export function sourceFailureOf(status: number, body: unknown): 'gone' | 'unavai
     const type = parsed !== null && typeof parsed === 'object' ? (parsed as { type?: unknown }).type : null;
     if (status === 404 && type === '/errors/email/message-source-gone') {
         return 'gone';
+    }
+    if (status === 404) {
+        return 'missing';
     }
     if (status === 502 && type === '/errors/email/message-source-unavailable') {
         return 'unavailable';
@@ -106,6 +114,9 @@ export function downloadNameOf(disposition: string | null, fallback: string): st
                     }
                     @case ('gone') {
                         <p class="mso__note" data-test="source-gone">{{ words.gone }}</p>
+                    }
+                    @case ('missing') {
+                        <p class="mso__note" data-test="source-missing">{{ words.missing }}</p>
                     }
                     @case ('unavailable') {
                         <p class="mso__note" data-test="source-unavailable">

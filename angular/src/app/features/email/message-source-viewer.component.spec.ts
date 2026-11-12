@@ -142,16 +142,17 @@ describe('MessageSourceViewerComponent', () => {
         expect(q('source-unavailable')).toBeNull();
     });
 
-    it('says the page\'s sentence for any other refusal: a 403, a 404 of the message', async () => {
+    it('says the page\'s sentence for any other refusal, and not found for any other 404', async () => {
         open();
         await refused(403, '/errors/403');
         expect(q('source-failed')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.failed);
         TestBed.inject(Dialog).closeAll();
         await settle();
         open();
-        await refused(404, '/errors/404');
-        expect(q('source-failed')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.failed);
+        await refused(404, '/errors/not-found');
+        expect(q('source-missing')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.missing);
         expect(q('source-gone')).toBeNull();
+        expect(q('source-failed')).toBeNull();
     });
 
     it('keeps focus inside while open; Escape closes it and focus goes back to the opener', async () => {
@@ -187,7 +188,10 @@ describe('MessageSourceViewerComponent', () => {
     it('reads a refusal by status and type together, and a download name from either form of the header', () => {
         expect(sourceFailureOf(404, '{"type":"/errors/email/message-source-gone"}')).toBe('gone');
         expect(sourceFailureOf(502, { type: '/errors/email/message-source-unavailable' })).toBe('unavailable');
-        expect(sourceFailureOf(404, '{"type":"/errors/404"}')).toBe('failed');
+        expect(sourceFailureOf(404, '{"type":"/errors/404"}')).toBe('missing');
+        expect(sourceFailureOf(404, { type: '/errors/not-found' })).toBe('missing');
+        expect(sourceFailureOf(404, 'Not Found')).toBe('missing');
+        expect(sourceFailureOf(403, { type: '/errors/403' })).toBe('failed');
         expect(sourceFailureOf(502, 'Bad gateway')).toBe('failed');
         expect(downloadNameOf('attachment; filename="R_sum_.eml"; filename*=UTF-8\'\'R%C3%A9sum%C3%A9.eml', 'x.eml')).toBe('R\u00e9sum\u00e9.eml');
         expect(downloadNameOf('attachment; filename="Plain.eml"', 'x.eml')).toBe('Plain.eml');
