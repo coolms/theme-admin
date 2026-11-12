@@ -29,11 +29,12 @@ export function storedIds(rows: readonly EmailMessageDto[]): string[] {
 }
 
 /**
- * Whether an answer is a folder listed from the mail server, read off the answer itself: a server row, a next cursor
- * or a server-pages word. Only for a folder whose tree node and list entry do not say (see folderListedFromServer).
+ * Whether an answer is a folder listed from the mail server, guessed off the answer itself: a server row or a
+ * server-pages word. A next cursor says nothing: every folder's page with more after it carries one. Only for a folder
+ * whose tree node and list entry do not say (see folderListedFromServer).
  */
 export function listedFromServer(page: EmailMessageList): boolean {
-    return page.some(isServerRow) || (page.next ?? null) !== null || (page.serverPages ?? null) !== null;
+    return page.some(isServerRow) || (page.serverPages ?? null) !== null;
 }
 
 /** A folder's node in the tree, searched through every level. */
