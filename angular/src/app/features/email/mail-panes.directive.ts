@@ -40,10 +40,22 @@ export type MailPaneCount = 1 | 2 | 3;
 
 /** How many panes a grid this wide shows side by side. */
 export function mailPaneCount(grid: number): MailPaneCount {
-    if (!(grid > 0) || grid >= MAIL_THREE_PANES_MIN) {
+    return mailPaneCountFor(grid, MAIL_PANE_LIMITS.folders.min);
+}
+
+/** How many panes a grid this wide shows side by side, with the folder column at least this wide. */
+export function mailPaneCountFor(grid: number, foldersMin: number): MailPaneCount {
+    const threeMin = MAIL_THREE_PANES_MIN - MAIL_PANE_LIMITS.folders.min + foldersMinFor(foldersMin);
+    if (!(grid > 0) || grid >= threeMin) {
         return 3;
     }
     return grid >= MAIL_TWO_PANES_MIN ? 2 : 1;
+}
+
+/** The folder column's minimum for rows needing this width: the need rounded up, or the static minimum if larger. */
+export function foldersMinFor(need: number): number {
+    const min = MAIL_PANE_LIMITS.folders.min;
+    return Number.isFinite(need) && need > min ? Math.ceil(need) : min;
 }
 
 /** The person's interface preference entry the admin keeps its pane widths in. */
@@ -85,14 +97,16 @@ export function clampPaneWidth(pane: MailPane, value: unknown): number | null {
  * The panes in a grid this wide, from the widths the person chose: the message pane keeps its minimum by the list
  * giving way first, then the folder column, each down to its own minimum. Where only the list and the message show,
  * the list alone gives way. A grid not measured (0), or one showing a pane at a time, draws the chosen widths with
- * the static limits.
+ * the static limits. The folder column's minimum is its rows' need (see {@link foldersMinFor}): a chosen width under
+ * it is drawn at it, and the column's maximum is never under it.
  */
-export function mailPaneLayout(grid: number, chosen: MailPaneWidths): MailPaneLayout {
-    const f = MAIL_PANE_LIMITS.folders;
+export function mailPaneLayout(grid: number, chosen: MailPaneWidths, foldersNeed: number = MAIL_PANE_LIMITS.folders.min): MailPaneLayout {
+    const foldersMin = foldersMinFor(foldersNeed);
+    const f = { min: foldersMin, max: Math.max(MAIL_PANE_LIMITS.folders.max, foldersMin) };
     const l = MAIL_PANE_LIMITS.list;
     const wantFolders = clamp(chosen.folders, f.min, f.max);
     const wantList = clamp(chosen.list, l.min, l.max);
-    const count = mailPaneCount(grid);
+    const count = mailPaneCountFor(grid, foldersMin);
     if (!(grid > 0) || count === 1) {
         return { folders: wantFolders, list: wantList, foldersMax: f.max, listMax: l.max };
     }
@@ -186,13 +200,15 @@ export class MailPanesDirective {
         list: readCache('list') ?? MAIL_PANE_LIMITS.list.initial,
     });
     private readonly gridWidth = signal(0);
+    /** The folder column's minimum: its rows' need, or the static minimum when that is larger. */
+    readonly foldersMin = signal(MAIL_PANE_LIMITS.folders.min);
     /** A splitter moved on this page: the server's older answer no longer applies. */
     private moved = false;
     private readonly saves = new Subject<MailPaneWidths>();
 
-    readonly layout = computed(() => mailPaneLayout(this.gridWidth(), this.chosen()));
+    readonly layout = computed(() => mailPaneLayout(this.gridWidth(), this.chosen(), this.foldersMin()));
     /** How many panes the grid shows side by side at its width now. */
-    readonly count = computed(() => mailPaneCount(this.gridWidth()));
+    readonly count = computed(() => mailPaneCountFor(this.gridWidth(), this.foldersMin()));
 
     constructor() {
         this.saves.pipe(
@@ -217,6 +233,21 @@ export class MailPanesDirective {
             observer.observe(this.grid);
             this.destroyRef.onDestroy(() => observer.disconnect());
         });
+    }
+
+    /**
+     * The folder rows need this much width: the folder column is drawn at least that wide and its splitter stops
+     * there. A chosen width under it is drawn raised but kept as it was: only a move of the splitter writes one.
+     */
+    foldersNeed(need: number): void {
+        this.foldersMin.set(foldersMinFor(need));
+    }
+
+    /** The folder rail needs this much width inside this pane: the pane's padding, border and scrollbar added. */
+    foldersNeedIn(need: number, pane: HTMLElement): void {
+        const style = getComputedStyle(pane);
+        const padding = parseFloat(style.paddingLeft || '0') + parseFloat(style.paddingRight || '0');
+        this.foldersNeed(need + padding + Math.max(0, pane.offsetWidth - pane.clientWidth));
     }
 
     /** A splitter's drag or key ended at this width: kept, cached, and saved for the person. */

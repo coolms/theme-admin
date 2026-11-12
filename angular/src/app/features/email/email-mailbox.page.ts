@@ -227,7 +227,7 @@ type PhonePane = 'folders' | 'message';
                      [class.mbx__body--folders]="phoneFolders()" [class.mbx__body--one]="onePane()" [class.mbx__body--two]="twoPanes()"
                      [style.--mbx-list-width.px]="panes.layout().list">
                     <!-- LEFT: mailbox picker + folder rail -->
-                    <aside class="mbx__rail">
+                    <aside class="mbx__rail" #railPane>
                         <!-- On a phone the folders stand in place of the list; Back returns to it unchanged. -->
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders-back" (click)="leavePane('folders')">
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
@@ -250,11 +250,12 @@ type PhonePane = 'folders' | 'message';
                                               [failure]="foldersFailure()"
                                               [answered]="folderTree() !== null"
                                               (chosen)="selectFolder($event)"
-                                              (retry)="retryFolders()" />
+                                              (retry)="retryFolders()"
+                                              (need)="panes.foldersNeedIn($event, railPane)" />
                     </aside>
 
-                    <!-- Where folders show beside the list the column is at least 200px wide. -->
-                    <cms-pane-splitter class="mbx__split-folders" [minWidth]="panes.limits.folders.min" [maxWidth]="panes.layout().foldersMax"
+                    <!-- Where folders show beside the list the column is as wide as its widest row needs, at least 200px. -->
+                    <cms-pane-splitter class="mbx__split-folders" [minWidth]="panes.foldersMin()" [maxWidth]="panes.layout().foldersMax"
                                        [width]="panes.layout().folders" [ariaLabel]="panes.words.folders"
                                        (widthChange)="panes.resized('folders', $event)" />
 
