@@ -66,7 +66,8 @@ import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, tak
 import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
 import { EmailService } from './email.service';
-import { applyUnreadDelta, folderUnread } from './folder-fraction.util';
+import { applyUnreadDelta } from './folder-fraction.util';
+import { INBOX_PATH, inboxFolder, inboxUnread, servedUnread } from './mailbox-unread';
 import { flagChangeOf, flagRefusalText, idsOf, type MailFlagRefusedEvent } from './mail-flag-refused';
 import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
@@ -1428,8 +1429,12 @@ export class EmailMailboxPageComponent implements OnInit {
 
     readonly mailboxes = signal<EmailMailboxDto[]>([]);
     readonly selectedMailboxId = signal<string | null>(null);
-    /** Per-mailbox unread total (mailboxId -> unseen across its folders), for the switcher badges. */
+    /** Per-mailbox unread number (mailboxId -> its inbox's unread, never a sum of folders), for the switcher. */
     readonly mailboxUnread = signal<Record<string, number>>({});
+    /** The mailboxes whose number the mailbox list serves: a folder read does not replace it. */
+    private readonly unreadServed = new Set<string>();
+    /** Each mailbox's inbox path, learned from its folders, for a change event's counts. */
+    private readonly inboxes = signal<Record<string, string>>({});
     readonly folders = signal<EmailFolderDto[]>([]);
     readonly selectedFolder = signal<string>('INBOX');
     readonly messages = signal<EmailMessageDto[]>([]);
@@ -2207,6 +2212,14 @@ export class EmailMailboxPageComponent implements OnInit {
             this.loadFolders(true);
             return;
         }
+        if (this.unreadServed.has(evt.mailboxId)) {
+            // The list serves the number on each row; a read of one mailbox does not.
+            this.email.listMailboxes().subscribe({
+                next: list => this.takeServedUnread(list),
+                error: () => { /* leave the badge as-is on a transient failure */ },
+            });
+            return;
+        }
         this.email.listFolders(evt.mailboxId).subscribe({
             next: folders => this.patchMailboxUnread(evt.mailboxId, folders),
             error: () => { /* leave the badge as-is on a transient failure */ },
@@ -2228,6 +2241,7 @@ export class EmailMailboxPageComponent implements OnInit {
             openMessage: this.selectedMessage(),
             folders: this.folders(),
             mailboxUnread: this.mailboxUnread(),
+            inboxes: this.inboxes(),
         }, evt);
         // A read state the person chose: an event before its write answered is the old state still arriving and
         // keeps the person's value; the first one after the answer is the server's word, and a refusal when it says
@@ -2340,22 +2354,80 @@ export class EmailMailboxPageComponent implements OnInit {
         localStorage.setItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY, id);
     }
 
-    /** Fetch each mailbox's unread total (sum of folder `unseen`) for the switcher badges. */
+    /**
+     * Each mailbox's unread number for the switcher: the `unread` the list serves on its row, else its inbox's count
+     * from its folders. Folders are never summed.
+     */
     private loadMailboxUnread(list: EmailMailboxDto[]): void {
-        if (list.length === 0) {
-            this.mailboxUnread.set({});
+        this.unreadServed.clear();
+        const served = this.takeServedUnread(list, true);
+        const unserved = list.filter(mb => servedUnread(mb) === null);
+        if (unserved.length === 0) {
+            this.mailboxUnread.set(served);
             return;
         }
-        forkJoin(list.map(mb => this.email.listFolders(mb.id).pipe(
-            map(folders => [mb.id, folders.reduce((sum, f) => sum + folderUnread(f), 0)] as const),
+        forkJoin(unserved.map(mb => this.email.listFolders(mb.id).pipe(
+            map(folders => {
+                this.learnInbox(mb.id, folders);
+                return [mb.id, inboxUnread(folders)] as const;
+            }),
             catchError(() => of([mb.id, 0] as const)),
-        ))).subscribe(pairs => this.mailboxUnread.set(Object.fromEntries(pairs)));
+        ))).subscribe(pairs => this.mailboxUnread.set({ ...served, ...Object.fromEntries(pairs) }));
     }
 
-    /** Patch a single mailbox's unread badge from a freshly-loaded folder list. */
+    /**
+     * The numbers the list serves on its rows, marked as served, and set on the switcher unless `onlyReturn`. A row
+     * without one is left as it was.
+     */
+    private takeServedUnread(list: readonly EmailMailboxDto[], onlyReturn = false): Record<string, number> {
+        const served: Record<string, number> = {};
+        for (const mb of list) {
+            const unread = servedUnread(mb);
+            if (unread !== null) {
+                served[mb.id] = unread;
+                this.unreadServed.add(mb.id);
+            }
+        }
+        if (!onlyReturn && Object.keys(served).length > 0) {
+            this.mailboxUnread.update(prev => ({ ...prev, ...served }));
+        }
+        return served;
+    }
+
+    /** Remember where a mailbox's inbox is, from its folders. */
+    private learnInbox(id: string, folders: readonly EmailFolderDto[]): void {
+        const inbox = inboxFolder(folders);
+        if (inbox !== null && this.inboxes()[id] !== inbox.folder) {
+            this.inboxes.update(prev => ({ ...prev, [id]: inbox.folder }));
+        }
+    }
+
+    /**
+     * Patch a single mailbox's number from a freshly-loaded folder list: its inbox's count. A number the list serves
+     * is not replaced by it.
+     */
     private patchMailboxUnread(id: string, folders: EmailFolderDto[]): void {
-        const unread = folders.reduce((sum, f) => sum + folderUnread(f), 0);
+        this.learnInbox(id, folders);
+        if (this.unreadServed.has(id)) {
+            return;
+        }
+        const unread = inboxUnread(folders);
         this.mailboxUnread.update(prev => ({ ...prev, [id]: unread }));
+    }
+
+    /**
+     * A read or unread made here moved `folder`'s count by `delta`: the open mailbox's number follows its inbox. A
+     * number the list serves moves by the same delta when the folder is the inbox.
+     */
+    private followLocalUnread(id: string, folder: string, delta: number): void {
+        if (!this.unreadServed.has(id)) {
+            this.patchMailboxUnread(id, this.folders());
+            return;
+        }
+        const inbox = this.inboxes()[id] ?? inboxFolder(this.folders())?.folder ?? INBOX_PATH;
+        if (folder === inbox) {
+            this.mailboxUnread.update(prev => ({ ...prev, [id]: Math.max(0, (prev[id] ?? 0) + delta) }));
+        }
     }
 
     selectFolder(folder: string): void {
@@ -3376,7 +3448,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.folders.set(this.folders().map(f => (f.folder === folder ? applyUnreadDelta(f, delta) : f)));
         const mbId = this.selectedMailboxId();
         if (mbId !== null) {
-            this.patchMailboxUnread(mbId, this.folders());
+            this.followLocalUnread(mbId, folder, delta);
         }
     }
 
@@ -4218,6 +4290,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.email.listMailboxes().subscribe({
             next: list => {
                 this.mailboxes.set(list);
+                this.takeServedUnread(list);
                 const next = (preferId && list.some(m => m.id === preferId))
                     ? preferId
                     : (list[0]?.id ?? null);
@@ -4494,7 +4567,7 @@ ${this.selectedFolder()}` || !this.listAnswered) {
                     f.folder === folder ? applyUnreadDelta(f, delta) : f));
                 const mbId = this.selectedMailboxId();
                 if (mbId !== null) {
-                    this.patchMailboxUnread(mbId, this.folders());
+                    this.followLocalUnread(mbId, folder, delta);
                 }
             },
             error: () => {

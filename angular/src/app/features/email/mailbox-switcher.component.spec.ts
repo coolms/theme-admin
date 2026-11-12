@@ -37,7 +37,9 @@ describe('MailboxSwitcherComponent', () => {
         const { el, fixture } = make([WORK, HOME], 'a', { a: 3, b: 120 });
         expect(el.querySelector('.mbs__card .mbs__count')?.getAttribute('aria-label')).toBe('3 unread');
         expect(el.querySelector('.mbs__card .mbs__count')?.textContent?.trim()).toBe('3');
-        expect(el.querySelector('.mbs__card .mbs__elsewhere')?.getAttribute('title')).toBe('120 unread in other mailboxes');
+        const dot = el.querySelector('.mbs__card .mbs__elsewhere');
+        expect(dot?.getAttribute('title')).toBe('Unread mail in other mailboxes');
+        expect(dot?.getAttribute('aria-label')).toBe('Unread mail in other mailboxes');
         el.querySelector<HTMLButtonElement>('.mbs__card')?.click();
         fixture.detectChanges();
         const rows = Array.from(el.querySelectorAll('.mbs__choice'));

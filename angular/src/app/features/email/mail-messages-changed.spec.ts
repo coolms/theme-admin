@@ -225,11 +225,37 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
 
     it('an event for another mailbox moves only its number in the switcher', () => {
         const before = b.view.messages;
-        server.publish({ ...(changed(50, [{ id: 'm1', threadId: 't1', folder: 'INBOX', seen: true, flagged: false }]) as object), mailboxId: 'mb-2', mailboxUnseen: 7 });
+        server.publish({
+            ...(changed(50, [{ id: 'm1', threadId: 't1', folder: 'INBOX', seen: true, flagged: false }],
+                { INBOX: { total: 9, unseen: 7, serverTotal: 9, serverUnseen: 7 } }) as object),
+            mailboxId: 'mb-2', mailboxUnseen: 30,
+        });
 
         expect(b.view.messages).toBe(before);
         expect(b.view.mailboxUnread['mb-2']).toBe(7);
         expect(b.view.mailboxUnread[MAILBOX]).toBe(2);
+    });
+
+    it('the mailbox number is the inbox\'s entry in the counts, never the mailbox-wide unseen', () => {
+        server.publish(changed(80, [], {
+            INBOX: { total: 9, unseen: 4, serverTotal: 9, serverUnseen: 5 },
+            Important: { total: 6, unseen: 3, serverTotal: 6, serverUnseen: 3 },
+            '[Gmail]/All Mail': { total: 40, unseen: 9, serverTotal: 40, serverUnseen: 9 },
+        }, 17, 'sync'));
+
+        expect(b.view.mailboxUnread[MAILBOX]).withContext('the inbox\'s serverUnseen, not 17').toBe(5);
+    });
+
+    it('an inbox entry the server has not counted yet gives the platform\'s unseen', () => {
+        server.publish(changed(81, [], { INBOX: { total: 9, unseen: 4, serverTotal: null, serverUnseen: null } }, 17, 'sync'));
+
+        expect(b.view.mailboxUnread[MAILBOX]).toBe(4);
+    });
+
+    it('an event whose counts touch Archive only leaves the mailbox number unchanged', () => {
+        server.publish(changed(82, [], { Archive: { total: 10, unseen: 0, serverTotal: 10, serverUnseen: 0 } }, 0, 'sync'));
+
+        expect(b.view.mailboxUnread[MAILBOX]).withContext('kept, never 0 and never the mailbox-wide unseen').toBe(2);
     });
 });
 
