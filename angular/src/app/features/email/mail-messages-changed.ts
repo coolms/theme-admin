@@ -51,7 +51,8 @@ export interface MailMessagesChangedEvent {
     readonly seq: number;
     readonly changes: readonly MailMessageChange[];
     readonly counts: Readonly<Record<string, MailFolderCounts>>;
-    readonly mailboxUnseen: number;
+    /** The mailbox's unread number: its inbox's alone, as the mailbox list serves it. Absent from an older server. */
+    readonly mailboxUnseen?: number;
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -92,7 +93,7 @@ export function readMessagesChanged(raw: unknown): MailMessagesChangedEvent | nu
         return null;
     }
     const origin = raw['origin'];
-    if ((origin !== 'action' && origin !== 'sync') || !isCount(raw['seq']) || !isCount(raw['mailboxUnseen'])) {
+    if ((origin !== 'action' && origin !== 'sync') || !isCount(raw['seq']) || !isOptionalCount(raw['mailboxUnseen'])) {
         return null;
     }
     if (!Array.isArray(raw['changes']) || !isObject(raw['counts'])) {
@@ -120,7 +121,12 @@ export function readMessagesChanged(raw: unknown): MailMessagesChangedEvent | nu
         };
     }
 
-    return { type: 'mail.messages.changed', mailboxId: raw['mailboxId'], origin, seq: raw['seq'], changes, counts, mailboxUnseen: raw['mailboxUnseen'] };
+    const mailboxUnseen = raw['mailboxUnseen'];
+
+    return {
+        type: 'mail.messages.changed', mailboxId: raw['mailboxId'], origin, seq: raw['seq'], changes, counts,
+        ...(isCount(mailboxUnseen) ? { mailboxUnseen } : {}),
+    };
 }
 
 /**
@@ -186,8 +192,10 @@ function withFlags<T extends EmailMessageDto>(m: T, c: MailMessageFlags): T {
 /**
  * The view after the event, in place: a row shown in the open folder takes its new flags, leaves the list when it
  * moved to another folder or is gone; the open message and its thread take their flags; the counts replace the folders'
- * own; the mailbox's badge takes its inbox's entry in the counts, and keeps its number when the event has none. A row that moved INTO the open folder is not added: the event
- * carries no subject, sender or date, so it appears at the list's next read rather than in a guessed place.
+ * own; the mailbox's badge takes the event's `mailboxUnseen`, and from an event without one (an older server) its
+ * inbox's entry in the counts, keeping its number when there is none. A row that moved INTO the open folder is not
+ * added: the event carries no subject, sender or date, so it appears at the list's next read rather than in a guessed
+ * place.
  * Nothing is applied that is not newer, by seq, than what was applied before.
  */
 export function applyMessagesChanged<D extends EmailMessageDto>(
@@ -234,15 +242,26 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
             folders = folders.map(f => newer.includes(f.folder) ? { ...f, ...event.counts[f.folder] } : f);
         }
     }
-    // The mailbox's number is its inbox's entry in the counts; an event that did not touch the inbox keeps it as it was.
-    const inboxPath = view.inboxes?.[mailbox] ?? (open ? inboxFolder(view.folders)?.folder : undefined) ?? INBOX_PATH;
-    const inboxUnread = eventInboxUnread(event.counts, inboxPath);
     let mailboxUnread = view.mailboxUnread;
-    if (inboxUnread !== null && marks.badge(mailbox, event.seq)) {
-        mailboxUnread = { ...mailboxUnread, [mailbox]: inboxUnread };
+    const unread = mailboxNumber(view, event, open);
+    if (unread !== null && marks.badge(mailbox, event.seq)) {
+        mailboxUnread = { ...mailboxUnread, [mailbox]: unread };
     }
 
     return { ...view, messages, thread, openMessage, folders, mailboxUnread, arrived, evictedOpen };
+}
+
+/**
+ * The mailbox's number an event gives: its `mailboxUnseen` when it carries one; otherwise its inbox's entry in the
+ * counts, or null when the event did not touch the inbox and the number stays as it was.
+ */
+function mailboxNumber(view: MailView, event: MailMessagesChangedEvent, open: boolean): number | null {
+    if (typeof event.mailboxUnseen === 'number') {
+        return event.mailboxUnseen;
+    }
+    const inboxPath = view.inboxes?.[event.mailboxId] ?? (open ? inboxFolder(view.folders)?.folder : undefined) ?? INBOX_PATH;
+
+    return eventInboxUnread(event.counts, inboxPath);
 }
 
 /**

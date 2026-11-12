@@ -6,7 +6,9 @@ import { folderUnread } from './folder-fraction.util';
  * of them (the inbox, Important, All mail), so a sum reads two or three times too high.
  *
  * Where it comes from, in order: the `unread` the mailbox list serves on each row; until the server serves it, the
- * inbox's own count in the mailbox's folders; and, from a change event, the inbox's entry in the event's counts.
+ * inbox's own count in the mailbox's folders; and, from a change event, its `mailboxUnseen` (the same number the list
+ * serves), or from an event without one, the inbox's entry in the event's counts. New mail announced for another
+ * mailbox carries no number, so the list is read again for it.
  */
 
 /** The path a mailbox's inbox has when its folders do not say otherwise. */
@@ -37,8 +39,8 @@ export interface InboxCounts {
 }
 
 /**
- * The mailbox's unread number from a change event: the inbox's entry in its counts, or null when the event names no
- * inbox entry (it touched other folders only), and the number stays as it was.
+ * The mailbox's unread number from a change event without `mailboxUnseen`: the inbox's entry in its counts, or null
+ * when the event names no inbox entry (it touched other folders only), and the number stays as it was.
  */
 export function eventInboxUnread(counts: Readonly<Record<string, InboxCounts>>, inboxPath: string): number | null {
     const entry = counts[inboxPath];

@@ -110,6 +110,13 @@ function changed(seq: number, changes: unknown[], counts: Record<string, unknown
     return { type: 'mail.messages.changed', mailboxId: MAILBOX, origin, seq, at: '2026-11-09T01:40:00.000000+03:00', changes, counts, mailboxUnseen };
 }
 
+/** The same event as an older server sends it: no `mailboxUnseen`. */
+function unnumbered(raw: unknown): unknown {
+    const rest = { ...(raw as Record<string, unknown>) };
+    delete rest['mailboxUnseen'];
+    return rest;
+}
+
 describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
     let server: FakeServer;
     let a: Client;
@@ -228,7 +235,7 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
         server.publish({
             ...(changed(50, [{ id: 'm1', threadId: 't1', folder: 'INBOX', seen: true, flagged: false }],
                 { INBOX: { total: 9, unseen: 7, serverTotal: 9, serverUnseen: 7 } }) as object),
-            mailboxId: 'mb-2', mailboxUnseen: 30,
+            mailboxId: 'mb-2', mailboxUnseen: 7,
         });
 
         expect(b.view.messages).toBe(before);
@@ -236,26 +243,42 @@ describe('mail.messages.changed -- two admin tabs on the same mailbox', () => {
         expect(b.view.mailboxUnread[MAILBOX]).toBe(2);
     });
 
-    it('the mailbox number is the inbox\'s entry in the counts, never the mailbox-wide unseen', () => {
+    it('the mailbox number is the event\'s mailboxUnseen, whatever the counts say', () => {
         server.publish(changed(80, [], {
+            INBOX: { total: 9, unseen: 4, serverTotal: 9, serverUnseen: 4 },
+            Important: { total: 6, unseen: 3, serverTotal: 6, serverUnseen: 3 },
+            '[Gmail]/All Mail': { total: 40, unseen: 9, serverTotal: 40, serverUnseen: 9 },
+        }, 5, 'sync'));
+
+        expect(b.view.mailboxUnread[MAILBOX]).withContext('mailboxUnseen 5, not the inbox entry 4').toBe(5);
+    });
+
+    it('an event touching no folder still sets the number it carries', () => {
+        server.publish(changed(83, [], {}, 7, 'sync'));
+
+        expect(b.view.mailboxUnread[MAILBOX]).toBe(7);
+    });
+
+    it('without mailboxUnseen, the number is the inbox\'s entry in the counts, never a sum', () => {
+        server.publish(unnumbered(changed(80, [], {
             INBOX: { total: 9, unseen: 4, serverTotal: 9, serverUnseen: 5 },
             Important: { total: 6, unseen: 3, serverTotal: 6, serverUnseen: 3 },
             '[Gmail]/All Mail': { total: 40, unseen: 9, serverTotal: 40, serverUnseen: 9 },
-        }, 17, 'sync'));
+        }, 0, 'sync')));
 
         expect(b.view.mailboxUnread[MAILBOX]).withContext('the inbox\'s serverUnseen, not 17').toBe(5);
     });
 
-    it('an inbox entry the server has not counted yet gives the platform\'s unseen', () => {
-        server.publish(changed(81, [], { INBOX: { total: 9, unseen: 4, serverTotal: null, serverUnseen: null } }, 17, 'sync'));
+    it('without mailboxUnseen, an inbox entry the server has not counted yet gives the platform\'s unseen', () => {
+        server.publish(unnumbered(changed(81, [], { INBOX: { total: 9, unseen: 4, serverTotal: null, serverUnseen: null } }, 0, 'sync')));
 
         expect(b.view.mailboxUnread[MAILBOX]).toBe(4);
     });
 
-    it('an event whose counts touch Archive only leaves the mailbox number unchanged', () => {
-        server.publish(changed(82, [], { Archive: { total: 10, unseen: 0, serverTotal: 10, serverUnseen: 0 } }, 0, 'sync'));
+    it('without mailboxUnseen, an event whose counts touch Archive only leaves the mailbox number unchanged', () => {
+        server.publish(unnumbered(changed(82, [], { Archive: { total: 10, unseen: 0, serverTotal: 10, serverUnseen: 0 } }, 0, 'sync')));
 
-        expect(b.view.mailboxUnread[MAILBOX]).withContext('kept, never 0 and never the mailbox-wide unseen').toBe(2);
+        expect(b.view.mailboxUnread[MAILBOX]).withContext('kept, never 0').toBe(2);
     });
 });
 
@@ -269,6 +292,17 @@ describe('mail.messages.changed -- read strictly', () => {
 
         expect(read?.changes.length).toBe(3);
         expect(read?.counts['INBOX']).toEqual({ total: 1, unseen: 0, serverTotal: null, serverUnseen: null });
+        expect(read?.mailboxUnseen).toBe(0);
+    });
+
+    it('reads an event without mailboxUnseen, or with it null, as one that carries no number', () => {
+        const absent = readMessagesChanged(unnumbered(changed(1, [])));
+        const empty = readMessagesChanged({ ...(changed(1, []) as object), mailboxUnseen: null });
+
+        expect(absent).not.toBeNull();
+        expect(absent !== null && 'mailboxUnseen' in absent).withContext('absent').toBeFalse();
+        expect(empty).not.toBeNull();
+        expect(empty !== null && 'mailboxUnseen' in empty).withContext('null').toBeFalse();
     });
 
     it('is no event at all when any part is not the contract\'s', () => {
@@ -279,6 +313,8 @@ describe('mail.messages.changed -- read strictly', () => {
             changed(1, [{ id: 'a', folder: 'INBOX', movedTo: 5, seen: true, flagged: false }]),
             changed(1, [], { INBOX: { total: -1, unseen: 0 } }),
             { ...(changed(1, []) as object), changes: null },
+            { ...(changed(1, []) as object), mailboxUnseen: '3' },
+            { ...(changed(1, []) as object), mailboxUnseen: -1 },
         ];
         for (const raw of bad) {
             expect(readMessagesChanged(raw)).withContext(JSON.stringify(raw)).toBeNull();
