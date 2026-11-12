@@ -24,7 +24,7 @@ import {
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
-import { folderListedFromServer } from './mail-server-rows';
+import { folderListedFromServer, listedFromServer } from './mail-server-rows';
 
 const FOLDER = 'NPM';
 
@@ -451,6 +451,31 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
             draw();
             answer(page([stored('m-1', 'Hello')]));
             expect(pageOf().serverListed()).withContext('stored rows only').toBeFalse();
+            discardPeriodicTasks();
+        }));
+
+        it('guessed from a server row or the server-pages word only, never from a cursor', () => {
+            expect(listedFromServer(page([stored('m-1', 'Hello')], 'c-2'))).withContext('stored rows and a cursor').toBeFalse();
+            expect(listedFromServer(page([stored('m-1', 'Hello')]))).withContext('stored rows only').toBeFalse();
+            expect(listedFromServer(page([stored('m-1', 'Hello'), server('r-1', 'Notice')]))).withContext('a server row').toBeTrue();
+            expect(listedFromServer(page([stored('m-1', 'Hello')], null, 'more'))).withContext('the server-pages word').toBeTrue();
+        });
+
+        it('neither carries the field: a stored folder whose page carries a cursor is not guessed as listed from the server', fakeAsync(() => {
+            pageOf().folderTree.set([node(FOLDER)]);
+            pageOf().folders.set([{ folder: FOLDER, total: 0, unseen: 0 }]);
+            answer(page([stored('m-2', 'Weekly digest'), stored('m-1', 'Hello')], 'c-2'));
+
+            expect(pageOf().serverListed()).toBeFalse();
+            expect(pageOf().hasMore()).withContext('the cursor still reads on').toBeTrue();
+            discardPeriodicTasks();
+        }));
+
+        it('the tree\'s word still wins over a stored page with a cursor', fakeAsync(() => {
+            pageOf().folderTree.set([node(FOLDER, { listedFromServer: true })]);
+            answer(page([stored('m-1', 'Hello')], 'c-2'));
+
+            expect(pageOf().serverListed()).toBeTrue();
             discardPeriodicTasks();
         }));
     });
