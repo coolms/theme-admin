@@ -2220,11 +2220,14 @@ export class EmailMailboxPageComponent implements OnInit {
      * payload carries ids, a count and the mailbox's unread number, never content: the
      * OPEN mailbox reloads its folders + list (new mail + counts); the switcher takes the
      * number the nudge carries, and only a nudge without one (an older server) reads it
-     * again over REST. Owner-only channel auth is enforced server-side.
+     * again over REST. A number with a seq applies only when that seq is newer than the
+     * last applied to the mailbox's number, by either this nudge or a change event.
+     * Owner-only channel auth is enforced server-side.
      */
     private onMailReceived(evt: EmailLiveEvent): void {
         const unseen = evt.mailboxUnseen;
-        if (typeof unseen === 'number') {
+        const newer = evt.seq === undefined || this.mailFollower.marks.badge(evt.mailboxId, evt.seq);
+        if (typeof unseen === 'number' && newer) {
             this.mailboxUnread.update(prev => ({ ...prev, [evt.mailboxId]: unseen }));
         }
         if (evt.mailboxId === this.selectedMailboxId()) {

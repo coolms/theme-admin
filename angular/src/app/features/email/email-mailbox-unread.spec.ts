@@ -228,6 +228,51 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
         expect(mailboxesAsked - before).withContext('requests to /mailboxes on new mail').toBe(0);
         expect(foldersAsked.length - foldersBefore).withContext('the open mailbox\'s folders, for its new mail').toBeGreaterThan(0);
     });
+
+    /** A served mailbox mb2 whose number a change event at seq 10 has set to 5. */
+    function afterChangeAt10(): EmailMailboxPageComponent {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        changed(page, { mailboxId: 'mb2', seq: 10, mailboxUnseen: 5 });
+        expect(page.mailboxUnread()['mb2']).withContext('the subject: the change at seq 10 applied').toBe(5);
+        return page;
+    }
+
+    it('new mail at seq 9 after a change at seq 10 leaves the change\'s number', () => {
+        const page = afterChangeAt10();
+        const before = mailboxesAsked;
+
+        received(page, { mailboxId: 'mb2', seq: 9, mailboxUnseen: 3 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(5);
+        expect(mailboxesAsked - before).withContext('requests to /mailboxes on new mail').toBe(0);
+    });
+
+    it('new mail at seq 11 after a change at seq 10 applies its number', () => {
+        const page = afterChangeAt10();
+
+        received(page, { mailboxId: 'mb2', seq: 11, mailboxUnseen: 6 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(6);
+    });
+
+    it('new mail without a seq (an older server) applies its number as before', () => {
+        const page = afterChangeAt10();
+
+        received(page, { mailboxId: 'mb2', mailboxUnseen: 3 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(3);
+    });
+
+    it('a change at seq 11 after new mail at seq 12 leaves the new mail\'s number: one mark for both kinds', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+
+        received(page, { mailboxId: 'mb2', seq: 12, mailboxUnseen: 8 });
+        changed(page, { mailboxId: 'mb2', seq: 11, mailboxUnseen: 4 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(8);
+    });
 });
 
 /** The mail.received reader: mailboxUnseen kept when it is a count, dropped otherwise, the nudge kept either way. */
@@ -243,6 +288,13 @@ describe('EmailLiveEventsService -- mail.received carries its mailbox\'s unread 
 
     it('keeps a count', () => {
         expect(read({ ...BASE, mailboxUnseen: 4 })).toEqual({ ...BASE, mailboxUnseen: 4 });
+    });
+
+    it('keeps a seq that is a count, and drops one that is not', () => {
+        expect(read({ ...BASE, mailboxUnseen: 4, seq: 9 })).toEqual({ ...BASE, mailboxUnseen: 4, seq: 9 });
+        expect(read({ ...BASE, seq: '9' })).toEqual(BASE);
+        expect(read({ ...BASE, seq: -1 })).toEqual(BASE);
+        expect(read({ ...BASE, seq: null })).toEqual(BASE);
     });
 
     it('reads a nudge without it, or with one that is not a count, as one without a number', () => {
