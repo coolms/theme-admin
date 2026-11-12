@@ -3244,8 +3244,9 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * View one attachment in the app: its bytes fetched with the session from the download route, a pdf into the PDF
-     * viewer and an image into the preview, as {@link attachmentViewKind} decides. An image whose download is not
-     * served as a PNG, JPEG, GIF or WebP image is not shown. Focus goes back to `button` when the viewer closes.
+     * viewer and an image into the preview, as {@link attachmentViewKind} decides. A pdf whose download is not served
+     * as application/pdf, or an image not served as a PNG, JPEG, GIF or WebP image, is not shown. Focus goes back to
+     * `button` when the viewer closes.
      */
     viewAttachment(att: EmailAttachmentDto, button: HTMLElement | null): void {
         const msg = this.selectedMessage();
@@ -3262,7 +3263,7 @@ export class EmailMailboxPageComponent implements OnInit {
                     return;
                 }
                 const shown = kind === 'pdf'
-                    ? (answer.body === null ? null : openPdfAttachment(this.dialog, answer.body, att.filename, button))
+                    ? openPdfAttachment(this.dialog, answer, att.filename, button)
                     : openImageAttachment(this.dialog, answer, att.filename, button);
                 if (shown === null) {
                     this.toast.error(`Couldn't show "${att.filename}" here. Download it instead.`);

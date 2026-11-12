@@ -224,4 +224,16 @@ describe('EmailMailboxPageComponent -- attachment view', () => {
         expect(opened.length).toBe(0);
         expect(errors).toEqual(['Couldn\'t show "logo.png" here. Download it instead.']);
     });
+
+    it('opens no PDF viewer when a viewAs pdf download is not served as application/pdf', () => {
+        const createUrl = spyOn(URL, 'createObjectURL').and.callThrough();
+        answer = new HttpResponse({ body: new Blob(['%PDF-1.7']), headers: new HttpHeaders({ 'Content-Type': 'application/octet-stream' }) });
+        show([att(2, 'statement.pdf', 'application/pdf', 'pdf')]);
+        viewOf('statement.pdf')!.click();
+
+        expect(fetched).toEqual([{ messageId: 'm1', index: 2 }]);
+        expect(opened.length).withContext('no viewer opened').toBe(0);
+        expect(createUrl).withContext('no object URL made').not.toHaveBeenCalled();
+        expect(errors).toEqual(['Couldn\'t show "statement.pdf" here. Download it instead.']);
+    });
 });
