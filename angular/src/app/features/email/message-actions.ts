@@ -16,8 +16,9 @@ export function rowTargetIds(checked: ReadonlySet<string>, rowId: string): strin
 
 /**
  * What the toolbar tree's `showWhen` conditions read about a target (the facts `navi.toolbar.email.message` names):
- * one message or several, whether any of them can still be marked read / unread / starred / unstarred, and whether
- * the server says any of them can be archived (a missing or null `canArchive` is no).
+ * one message or several, whether any of them can still be marked read / unread / starred / unstarred, whether the
+ * server says any of them can be archived (a missing or null `canArchive` is no), and whether the target is one
+ * message for which the server says Reply all reaches someone Reply does not (a missing or null `replyAllUseful` is no).
  */
 export function messageFacts(
     targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful'>[],
@@ -55,6 +56,17 @@ export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
     'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete', 'show-original',
 ]);
 
+/** The action a node names: its `action`, else its path -- as the bars and the menu run it. */
+function actionOf(node: NaviGraphNode): string {
+    const named = node.meta['action'];
+    return typeof named === 'string' && named !== '' ? named : node.path;
+}
+
+/** The nodes a row's menu may draw: the separators, and those whose action this page has a handler for. */
+export function handledNodes(nodes: readonly NaviGraphNode[], handled: ReadonlySet<string>): NaviGraphNode[] {
+    return nodes.filter(n => n.meta['type'] === 'separator' || handled.has(actionOf(n)));
+}
+
 /** How a node's conditions are read: the NaviGraph service's own evaluation. */
 export interface NodeConditions {
     isVisible(node: NaviGraphNode, record: Record<string, unknown>): boolean;
@@ -86,8 +98,7 @@ export function paneActionsOf(
         if (!conditions.isVisible(node, facts)) {
             continue;
         }
-        const named = meta['action'];
-        const id = typeof named === 'string' && named !== '' ? named : node.path;
+        const id = actionOf(node);
         if (!handled.has(id)) {
             continue;
         }

@@ -1,4 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
     signal, untracked, viewChild,
@@ -22,11 +23,9 @@ import {
     ContextMenuItem,
     ConfirmDialogService,
     ContextMenuService,
-    DateTimeFormatService,
     DateTimePipe,
     DraftStoreService,
     EmptyStateComponent,
-    ErrorBannerComponent,
     PageToolbarComponent,
     StateComponent,
     TagInputComponent,
@@ -53,11 +52,15 @@ import {
 import { MessageFrameComponent } from './message-frame.component';
 import { openMessageSource } from './message-source-viewer.component';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
-import { buildForward } from './forward.util';
 import {
-    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, messageFacts, moveMenuItems, paneActionsOf,
-    ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
+    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, handledNodes, messageFacts, moveMenuItems,
+    paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
+import {
+    NO_SEND_SENTENCE, PREFILLED_ACTIONS, QUOTE_REFUSED_SENTENCE, addressesOf, forwardFiles, preparingSentence, prefillFailure, quoteFields,
+    quotedMessageUnavailable, recipientOptionsOf, unreadableSentence,
+    type ComposePrefillState,
+} from './compose-prefill';
 import { ArchiveFlow, type ArchivedMessage } from './archive';
 import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
@@ -69,22 +72,28 @@ import { answerSeq, PendingReads } from './mail-pending-reads';
 import { folderRows } from './folder-tree.util';
 import { MailFolderRailComponent } from './mail-folder-rail.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
-import { buildReplyQuote } from './reply-quote.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
 import { MailBulkBarComponent } from './mail-bulk-bar.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearchComponent, OLDER_WORDS, openFailureText, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearchComponent, openFailureText, type ServerHitOpened } from './mail-server-search.component';
 import {
     MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
 } from './mail-server-search';
 import {
-    type ServerListEnd, isServerRow, listedFromServer, rowKey, serverRowHit, storedIds, withFirstPageAgain, withOpenedRow,
+    folderListedFromServer, isServerRow, listedFromServer, rowKey, serverRowHit, storedIds, withFirstPageAgain, withOpenedRow,
     withoutServerRow,
 } from './mail-server-rows';
 import {
+    AT_TOP_PX, FIRST_PAGE, type ListEnd, type PageRequest, anchorAt, arrivedAbove, listRowHeight, listSetSize,
+    nearListEnd, newRowsOf, nextPageOf, offsetOfAnchor, pageRefusal, rootFontPx,
+} from './mail-list-scroll';
+import {
     EmailAttachmentDto,
+    EmailComposeDto,
+    EmailComposeMode,
+    EmailComposePartDto,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
@@ -137,6 +146,13 @@ interface ComposeDraft {
     rich: boolean;
     /** The files attached to a new message, by their server ids; absent from older drafts. */
     attachments?: StoredComposeAttachment[];
+    /**
+     * An answer or a forward: whether the person kept the quote. Absent from a reply draft written before the quote
+     * was the server's: that draft's body already holds the quote it was given, so it is restored without another.
+     */
+    quote?: boolean;
+    /** A forward: the parts of the original the person removed from its files; absent from older drafts. */
+    removedParts?: number[];
 }
 
 /** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
@@ -150,8 +166,8 @@ type PhonePane = 'folders' | 'message';
  *  - LEFT rail: the mailbox card + the folder tree as the server orders and names
  *    it (`GET /email/mailboxes/{id}/folders/tree`), each folder's counts from
  *    `GET /email/mailboxes/{id}/folders`.
- *  - MIDDLE: the selected folder's messages, newest-sent first, offset-paginated
- *    ("Load more"). Unread rows are bold; opening one marks it read.
+ *  - MIDDLE: the selected folder's messages, newest-sent first, loaded page by page
+ *    as the list is scrolled. Unread rows are bold; opening one marks it read.
  *  - RIGHT: the opened message -- headers + snippet + a collapsible raw RFC-822
  *    source (the backend stores the raw `.eml`; MIME body extraction is a future
  *    refinement). "Reply" opens the quick reply at the foot of the message;
@@ -171,10 +187,11 @@ type PhonePane = 'folders' | 'message';
     imports: [
         MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
-        FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
+        FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
         NgTemplateOutlet,
+        ScrollingModule,
     ],
     template: `
         <div class="mbx">
@@ -265,7 +282,9 @@ type PhonePane = 'folders' | 'message';
                         </div>
 
                         <!-- Under the list's row and its search field, the list's one scroll region. -->
-                        <div class="mbx__list-scroll" data-test="list-scroll" (scroll)="onListScroll($event)">
+                        <!-- The rows are virtualized against this region: only those in view and a few around are drawn. -->
+                        <div #listScroll class="mbx__list-scroll" data-test="list-scroll" cdkVirtualScrollingElement tabindex="-1"
+                             (scroll)="onListScroll()">
                         @if (listRereading()) {
                             <!-- The same list read again: its rows stay, a thin bar says it is being read. -->
                             <div class="mbx__list-progress" data-test="list-progress" role="progressbar"
@@ -297,12 +316,9 @@ type PhonePane = 'folders' | 'message';
                                                       [unread]="h.seen === false" [active]="h.id === selectedMessage()?.id"
                                                       (chosen)="openSearchHit(h)" />
                                 }
-                                @if (searchHasMore()) {
-                                    <button type="button" class="mbx__more" [disabled]="searching()"
-                                            (click)="loadMoreSearch()">
-                                        {{ searching() ? 'Searching…' : 'Load more' }}
-                                    </button>
-                                }
+                                <!-- The next page is read as the results are scrolled; this row says how it went. -->
+                                <ng-container [ngTemplateOutlet]="listEndRow"
+                                              [ngTemplateOutletContext]="{ loading: searchingMore(), end: searchEnd(), retry: retrySearchEnd }" />
                             }
                             <!-- Older mail the open mailbox's server finds, headers only, under the stored results. -->
                             <app-mail-server-search [search]="serverSearch"
@@ -325,7 +341,7 @@ type PhonePane = 'folders' | 'message';
                                     }
                                 }
                             }
-                        } @else if (messagesFailure() !== null && !messagesFailedOnAppend()) {
+                        } @else if (messagesFailure() !== null) {
                             <!-- A failed read of the folder's messages stands in place of the message list, with
                                  Retry reading it again. The mailbox pane is not touched. -->
                             <cms-state kind="error" title="Could not load messages." [error]="messagesFailure()" actionLabel="Retry" (acted)="retryMessages()" />
@@ -338,12 +354,30 @@ type PhonePane = 'folders' | 'message';
                             @if (serverRowGone()) {
                                 <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
                             }
-                            <!-- A server row (listed by the mail server, stored nowhere here) is keyed by its ref and
-                                 offers Open only: no checkbox, no star, no row menu. -->
-                            @for (m of messages(); track rowKeyOf(m)) {
+                            @if (newArrivals() > 0) {
+                                <!-- New mail heard while scrolled down: the view stays, and this says how many came. -->
+                                <div class="mbx__new-wrap">
+                                    <button type="button" class="mbx__new-pill" data-test="new-messages" (click)="toListTop()">
+                                        New messages: {{ newArrivals() }}
+                                    </button>
+                                </div>
+                            }
+                            <!-- Only the rows in view and a small buffer are drawn, each the same height. A server row
+                                 (listed by the mail server, stored nowhere here) is keyed by its ref and offers Open
+                                 only: no checkbox, no star, no row menu. Their places stay as empty room, so its
+                                 sender, subject and date line up with a stored row's. -->
+                            <cdk-virtual-scroll-viewport class="mbx__rows" data-test="list-rows" role="list" aria-label="Messages"
+                                                         [itemSize]="rowHeight" [minBufferPx]="rowHeight * 4"
+                                                         [maxBufferPx]="rowHeight * 8" [style.min-height.px]="messages().length * rowHeight"
+                                                         (focusin)="onRowFocusIn($event)" (focusout)="onRowFocusOut($event)">
+                                <ng-container *cdkVirtualFor="let m of messages(); trackBy: trackRow; let i = index">
                                 @let server = isServerRowOf(m);
-                                <div class="mbx__row" (contextmenu)="onMessageRowContextMenu($event, m)"
+                                <div class="mbx__row" role="listitem" (contextmenu)="onMessageRowContextMenu($event, m)"
+                                     [style.height.px]="rowHeight"
+                                     [attr.aria-posinset]="i + 1" [attr.aria-setsize]="setSize()"
+                                     [attr.data-key]="rowKeyOf(m)"
                                      [attr.data-ref]="server ? m.ref : null"
+                                     [attr.aria-current]="!server && m.id === selectedMessage()?.id ? 'true' : null"
                                      [class.mbx__row--server]="server"
                                      [class.mbx__row--active]="!server && m.id === selectedMessage()?.id"
                                      [class.mbx__row--unread]="!m.seen"
@@ -351,12 +385,12 @@ type PhonePane = 'folders' | 'message';
                                     @if (server) {
                                         <span class="mbx__row-check mbx__row-check--none" aria-hidden="true"></span>
                                     } @else {
-                                        <input type="checkbox" class="mbx__row-check"
+                                        <input type="checkbox" class="mbx__row-check" data-part="check"
                                                [checked]="isSelected(m.id)"
                                                (click)="onCheckboxClick(m, $event)"
                                                aria-label="Select message" />
                                     }
-                                    <button type="button" class="mbx__row-main" (click)="onRowClick(m, $event)"
+                                    <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)"
                                             [disabled]="server && openingRef() === m.ref">
                                         <div class="mbx__row-top">
                                             <span class="mbx__row-from">{{ m.fromName || m.fromAddress || '(unknown)' }}</span>
@@ -366,60 +400,40 @@ type PhonePane = 'folders' | 'message';
                                         <div class="mbx__row-snippet">{{ m.snippet }}</div>
                                     </button>
                                     @if (!server) {
-                                        <button type="button" class="mbx__row-star"
+                                        <button type="button" class="mbx__row-star" data-part="star"
                                                 [class.mbx__row-star--on]="m.flagged"
                                                 [title]="m.flagged ? 'Unstar' : 'Star'"
                                                 (click)="toggleFlag(m, $event)">
                                             <i class="bi" [class.bi-star-fill]="m.flagged" [class.bi-star]="!m.flagged"></i>
                                         </button>
-                                    }
-                                </div>
-                            }
-                            @if (listEnd(); as end) {
-                                <!-- The mail server could not be read, or asked to wait: the rows shown stay. -->
-                                <div class="mbx__list-end" role="status" data-test="list-end">
-                                    @if (end.kind === 'unavailable') {
-                                        <span>Older messages could not be loaded.</span>
-                                    } @else if (end.seconds > 0) {
-                                        <span>Too many requests to the mail server. Try again in {{ end.seconds }} s.</span>
                                     } @else {
-                                        <span>Too many requests to the mail server.</span>
-                                    }
-                                    @if (end.kind === 'unavailable' || end.seconds === 0) {
-                                        <button type="button" class="mbx__more" data-test="list-end-retry"
-                                                [disabled]="loadingMessages()" (click)="retryListEnd()">Try again</button>
+                                        <!-- The star's room, empty and hidden: the date lines up with a stored row's. -->
+                                        <span class="mbx__row-star mbx__row-star--none" aria-hidden="true"><i class="bi bi-star"></i></span>
                                     }
                                 </div>
-                            }
-                            @if (messagesFailure() !== null) {
-                                <!-- A failed next page: the rows read so far stay, and the failure stands in place
-                                     of Load more, with Retry asking for that page again. -->
-                                <app-error-banner
-                                    message="Could not load messages."
-                                    [error]="messagesFailure()"
-                                    [showRetry]="true"
-                                    (retry)="retryMessages()" />
-                            } @else if (hasMore() && listEnd() === null) {
-                                <button type="button" class="mbx__more" [disabled]="loadingMessages()"
-                                        (click)="loadMore()">
-                                    {{ loadingMessages() ? 'Loading…' : 'Load more' }}
-                                </button>
-                            }
+                                </ng-container>
+                            </cdk-virtual-scroll-viewport>
+                            <!-- The list's end: Loading... while the next page is read; a page not read says so here,
+                                 with the only Retry. -->
+                            <ng-container [ngTemplateOutlet]="listEndRow"
+                                          [ngTemplateOutletContext]="{ loading: loadingNextPage(), end: listEnd(), retry: retryListEndFn }" />
                         }
-                        <!-- Once the folder's own pages are read: its older mail, from the server, on demand. A folder
-                             listed from the mail server already lists it, so the section is the inbox's only. -->
-                        @if (!searchActive() && selectedMailboxId() !== null && messagesFailure() === null
-                             && !loadingMessages() && !hasMore() && !serverListed()) {
-                            @if (olderMessages.view().kind === 'idle') {
-                                <button type="button" class="mbx__more" data-test="load-older" (click)="loadOlder()">
-                                    Load older from the server
-                                </button>
-                            } @else {
-                                <app-mail-server-search [search]="olderMessages" heading="On the server" [words]="olderWords"
-                                                        [localIds]="listedIds()" [folderName]="folderNameFn"
-                                                        [opener]="openServerHitFn" (opened)="onServerHitOpened($event)" />
+                        <ng-template #listEndRow let-loading="loading" let-end="end" let-retry="retry">
+                            @if (end !== null) {
+                                <div class="mbx__list-end" role="status" data-test="list-end">
+                                    @if (end.kind === 'rate-limited' && end.seconds > 0) {
+                                        <span>Retry in {{ end.seconds }} s</span>
+                                    } @else {
+                                        @if (end.kind === 'failed') {
+                                            <span>Couldn't load</span>
+                                        }
+                                        <button type="button" class="mbx__more" data-test="list-end-retry" (click)="retry()">Retry</button>
+                                    }
+                                </div>
+                            } @else if (loading) {
+                                <div class="mbx__list-end" role="status" data-test="list-loading">Loading...</div>
                             }
-                        }
+                        </ng-template>
                         </div>
                     </section>
 
@@ -561,7 +575,7 @@ type PhonePane = 'folders' | 'message';
                  NOT block the mailbox behind it, and minimizes to its header bar. -->
             @if (composeOpen() && !composeInline()) {
                 <div class="mbx__dock">
-                    <div class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
+                    <div #composeDock class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
                         <div class="mbx__compose-head">
                             <button type="button" class="mbx__compose-title" (click)="toggleMinimize()"
                                     [title]="composeMinimized() ? 'Expand' : 'Minimize'">{{ composeDockTitle() }}</button>
@@ -583,6 +597,31 @@ type PhonePane = 'folders' | 'message';
             <!-- The composer's fields and its foot: in the dock, and in the quick reply. -->
             <ng-template #composeForm>
                 <div class="mbx__compose-body">
+                    @if (composePrefill(); as prefill) {
+                        @if (prefill.state === 'loading') {
+                            <p class="mbx__compose-state" role="status" data-testid="compose-preparing">
+                                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                                <span>{{ composePreparing() }}</span>
+                            </p>
+                        } @else if (prefill.state === 'failed') {
+                            <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-prefill-failed">
+                                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                <span>{{ prefill.sentence }}</span>
+                                @if (prefill.retry) {
+                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="retryPrefill()">Retry</button>
+                                }
+                            </div>
+                        } @else if (prefill.answer.from.choices.length === 0) {
+                            <p class="mbx__compose-note" role="status" data-testid="compose-no-send">{{ noSendSentence }}</p>
+                        }
+                    }
+                    @if (composeFieldsShown()) {
+                    @if (composeFrom(); as from) {
+                        <div class="mbx__field">
+                            <span>From</span>
+                            <span class="mbx__static" data-testid="compose-from">{{ from }}</span>
+                        </div>
+                    }
                     <div class="mbx__field">
                         <div class="mbx__field-head">
                             <span>To</span>
@@ -591,20 +630,20 @@ type PhonePane = 'folders' | 'message';
                             }
                         </div>
                         <app-tag-input [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
-                                       [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                       [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                        placeholder="Start typing a name or email…" />
                     </div>
                     @if (composeShowCcBcc()) {
                         <label class="mbx__field">
                             <span>Cc</span>
                             <app-tag-input [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
-                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                            placeholder="Cc…" />
                         </label>
                         <label class="mbx__field">
                             <span>Bcc</span>
                             <app-tag-input [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
-                                           [options]="contactOptions()" (queryChange)="onRecipientQuery($event)"
+                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
                                            placeholder="Bcc…" />
                         </label>
                     }
@@ -631,6 +670,52 @@ type PhonePane = 'folders' | 'message';
                             <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
                         }
                     </div>
+                    @if (composeUnreadable(); as reason) {
+                        <p class="mbx__compose-note" data-testid="compose-unreadable">{{ reason }}</p>
+                    }
+                    @if (composeQuoteRefused()) {
+                        <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-quote-refused">
+                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                            <span>{{ quoteRefusedSentence }}</span>
+                            <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-send-without-quote"
+                                    [disabled]="sending()" (click)="sendWithoutQuote()">Send without the quote</button>
+                        </div>
+                    }
+                    <!-- The quote is read-only, below the editor and never in it: the server appends it on send. -->
+                    @if (composeQuoteShown()) {
+                        <div class="mbx__quote" data-testid="compose-quote-box">
+                            <div class="mbx__quote-head">
+                                <span>{{ composeMode() === 'forward' ? 'Forwarded message' : 'Quoted message' }}</span>
+                                <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-remove-quote"
+                                        (click)="removeQuote()">
+                                    <i class="bi bi-x-lg" aria-hidden="true"></i> Remove quote
+                                </button>
+                            </div>
+                            @if (composeRich() && composeQuoteHtml(); as quoteHtml) {
+                                <app-message-frame data-testid="compose-quote" [html]="quoteHtml"
+                                                   label="The message quoted below yours" />
+                            } @else {
+                                <pre class="mbx__body-text mbx__quote-text" data-testid="compose-quote-text">{{ composeQuoteText() }}</pre>
+                            }
+                        </div>
+                    }
+                    @if (forwardFilesKept().length > 0) {
+                        <ul class="mbx__fwd-files" data-testid="compose-forward-files" aria-label="Files of the forwarded message">
+                            @for (file of forwardFilesKept(); track file.part) {
+                                <li class="mbx__fwd-file">
+                                    <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                    <span class="mbx__fwd-file-name">{{ file.name ?? 'Attachment' }}</span>
+                                    @if (file.sizeBytes !== null) {
+                                        <span class="mbx__attachment-size">{{ humanSize(file.sizeBytes) }}</span>
+                                    }
+                                    <button type="button" class="mbx__icon-btn" [attr.aria-label]="'Remove ' + (file.name ?? 'attachment')"
+                                            (click)="removeForwardFile(file.part)">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
                     @if (selectedMailboxId(); as composeMailboxId) {
                         <app-compose-attachments class="mbx__field"
                                                  [mailboxId]="composeMailboxId"
@@ -640,10 +725,6 @@ type PhonePane = 'folders' | 'message';
                                                  [(attachments)]="composeAttachments"
                                                  (changed)="onComposeChange()" />
                     }
-                    @if (composeMode() === 'reply') {
-                        <p class="mbx__compose-hint">
-                            Recipient + subject default from the original message if left blank.
-                        </p>
                     }
                 </div>
                 <div class="mbx__compose-foot mbx__compose-foot--split">
@@ -657,10 +738,12 @@ type PhonePane = 'folders' | 'message';
                     </div>
                     <div class="mbx__compose-foot-side">
                         <button type="button" class="mbx__btn" (click)="closeCompose()">Cancel</button>
-                        <button type="button" class="mbx__btn mbx__btn--primary" [disabled]="sending()"
-                                (click)="sendCompose()">
-                            {{ sending() ? 'Sending…' : 'Send' }}
-                        </button>
+                        @if (composeMaySend()) {
+                            <button type="button" class="mbx__btn mbx__btn--primary" data-testid="compose-send" [disabled]="sending()"
+                                    (click)="sendCompose()">
+                                {{ sending() ? 'Sending…' : 'Send' }}
+                            </button>
+                        }
                     </div>
                 </div>
             </ng-template>
@@ -962,16 +1045,32 @@ type PhonePane = 'folders' | 'message';
         @media (prefers-reduced-motion: reduce) {
             .mbx__list-progress::after { animation: none; width: 100%; }
         }
+        /* The rows' viewport: as tall as every row together; the region around it scrolls. */
+        .mbx__rows { flex: 0 0 auto; }
+        /* Every row the same height (set from the three lines it holds), so the list is drawn by arithmetic. */
         .mbx__row {
-            display: flex; align-items: flex-start; gap: 8px; width: 100%;
+            display: flex; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
             padding: 10px 12px; border-bottom: 1px solid var(--cms-border);
             background: transparent; color: var(--cms-text);
         }
+        .mbx__row-from, .mbx__row-subject, .mbx__row-snippet { line-height: 1.5; min-height: 1.5em; }
+        /* Over the rows' top, taking no room: the rows do not move when it comes and goes. */
+        .mbx__new-wrap {
+            position: sticky; top: 0; z-index: 3; flex: 0 0 auto; height: 0; overflow: visible;
+            display: flex; justify-content: center;
+        }
+        .mbx__new-pill {
+            margin-top: 8px; padding: 4px 12px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+            background: var(--cms-accent); color: var(--cms-accent-contrast); font: inherit; font-size: .8125rem;
+            box-shadow: var(--cms-shadow-sm); height: fit-content;
+        }
+        .mbx__new-pill:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
         .mbx__row:hover { background: var(--cms-surface-hover); }
         .mbx__row--active { background: var(--cms-selected-light); }
         .mbx__row--checked { background: var(--cms-selected-light); }
         .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
-        .mbx__row-check--none { cursor: default; }
+        /* A server row's empty room where a stored row has its checkbox: the same width, nothing in it. */
+        .mbx__row-check--none { display: block; cursor: default; }
         .mbx__list-end {
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
             padding: 12px 12px 0; color: var(--cms-text-muted); font-size: .8125rem;
@@ -987,6 +1086,7 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__row-star:hover { color: var(--cms-accent, #F5A623); }
         .mbx__row-star--on { color: var(--cms-accent, #F5A623); }
+        .mbx__row-star--none { visibility: hidden; cursor: default; }
         .mbx__row--unread .mbx__row-from, .mbx__row--unread .mbx__row-subject { font-weight: 700; }
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1151,7 +1251,33 @@ type PhonePane = 'folders' | 'message';
         /* The embedded <coolms-editor> fills the composer width; its own min-height
          * keeps it usable and the overlay body scrolls if it grows. */
         .mbx__editor { display: block; }
-        .mbx__compose-hint { color: var(--cms-text-muted); font-size: .75rem; margin: 0; }
+        /* A prepared composer: while it is read, why it could not be, and what it says of the original or of Send. */
+        .mbx__compose-state {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;
+            font-size: .8125rem; color: var(--cms-text-secondary);
+        }
+        .mbx__compose-state--failed {
+            padding: 8px 10px; border: 1px solid var(--cms-danger-subtle-border); border-radius: var(--cms-radius-md);
+            background: var(--cms-danger-subtle); color: var(--cms-danger-text);
+        }
+        .mbx__compose-note {
+            margin: 0; padding: 8px 10px; border: 1px solid var(--cms-warning-subtle-border);
+            border-radius: var(--cms-radius-md); background: var(--cms-warning-subtle); color: var(--cms-warning-text);
+            font-size: .8125rem;
+        }
+        /* The quoted original below the person's own text, drawn as the message view draws a body. */
+        .mbx__quote { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+        .mbx__quote-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            color: var(--cms-text-muted); font-size: .8125rem;
+        }
+        .mbx__quote-text { margin: 0; }
+        .mbx__fwd-files { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+        .mbx__fwd-file {
+            display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 8px;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md); font-size: .8125rem;
+        }
+        .mbx__fwd-file-name { overflow-wrap: anywhere; }
         .mbx__compose-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--cms-border); }
 
         /* Composer dock: floats bottom-right, does NOT block the mailbox, and
@@ -1216,7 +1342,6 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly confirmDialog = inject(ConfirmDialogService);
     private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
-    private readonly dtf = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
     /**
@@ -1287,9 +1412,6 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
 
-    private static readonly PAGE_SIZE = 50;
-    /** How near the list's end a scroll reads the next page of a folder listed from the server. */
-    private static readonly SCROLL_NEAR_END_PX = 160;
 
     readonly mailboxes = signal<EmailMailboxDto[]>([]);
     readonly selectedMailboxId = signal<string | null>(null);
@@ -1380,20 +1502,43 @@ export class EmailMailboxPageComponent implements OnInit {
     }
     readonly hasMore = signal<boolean>(false);
     /**
-     * The open folder is listed from the mail server (not fully synced): it pages by the cursor its answers give, holds
-     * server rows, and has no Older section. Learned from the folder's first page.
+     * The open folder is listed from the mail server (not fully synced): its rows are in the server's order and its
+     * total is the server's. Learned from the folder's first page. Any folder's pages may carry server rows: an inbox's
+     * cursor runs on past its stored rows into the server's older mail.
      */
     readonly serverListed = signal<boolean>(false);
-    /** What the list's end says beyond its rows: the server could not be read, or asked to wait. */
-    readonly listEnd = signal<ServerListEnd | null>(null);
+    /** What the list's end says beyond its rows: a page could not be read, or the server asked to wait. */
+    readonly listEnd = signal<ListEnd | null>(null);
+    /** A next page is being read: the Loading... row stands at the list's end. */
+    readonly loadingNextPage = signal<boolean>(false);
+    /** New mail heard in real time while the person was scrolled down: the pill says how many. */
+    readonly newArrivals = signal<number>(0);
+    /** Every row's height in px: fixed, from the three lines a row holds at the root font size. */
+    readonly rowHeight = listRowHeight(rootFontPx());
+    /** Each row's aria-setsize: the open folder's total from the folder tree, or -1 when it is not known. */
+    readonly setSize = computed(() => {
+        const row = this.folderRows().find(r => r.folder.folder === this.selectedFolder());
+        const total = this.serverListed() ? row?.folder.serverTotal : row?.folder.total;
+
+        return listSetSize(total, this.messages().length);
+    });
     /** The server row being opened, by its ref: it is not opened twice. */
     readonly openingRef = signal<string | null>(null);
     /** A server row opened was gone from the mail server, and left the list. */
     readonly serverRowGone = signal<boolean>(false);
-    /** The next page's cursor in a folder listed from the server; null on its last page. */
-    private listNext: string | null = null;
-    /** What the list end's Try again asks for again: the read the server could not answer. */
+    /** The list's next page: by the cursor the last answer gave, or by number; null after the last page. */
+    private listNextPage: PageRequest | null = null;
+    /** What the list end's Retry asks for again: the read that was not answered. */
     private listEndRetry: () => void = () => this.loadMessages(true);
+    readonly retryListEndFn = (): void => this.retryListEnd();
+    /** The list's scroll region and the rows' viewport in it. */
+    private readonly listScroll = viewChild<ElementRef<HTMLElement>>('listScroll');
+    private readonly rowsViewport = viewChild(CdkVirtualScrollViewport);
+    /** The row control that had focus, kept while its row is scrolled out of the page and given back when it returns. */
+    private focusedRow: { key: string; part: string } | null = null;
+    readonly trackRow = (_: number, m: EmailMessageDto): string => rowKey(m);
+    /** The open folder's first page has been answered: only then does reaching the list's end read on. */
+    private listAnswered = false;
     /** The keys of the rows the first page gave: a first page read again stands in their place. */
     private firstPageKeys = new Set<string>();
     private listEndCountdown: Subscription | null = null;
@@ -1422,8 +1567,6 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly mailboxesFailure = signal<unknown>(null);
     /** Why the messages could not be read; null once they were. The banner shows it in the message pane. */
     readonly messagesFailure = signal<unknown>(null);
-    /** The failed read was a next page: the rows read so far stay, and the banner stands in place of Load more. */
-    readonly messagesFailedOnAppend = signal<boolean>(false);
     readonly loadingDetail = signal<boolean>(false);
 
     /**
@@ -1444,12 +1587,61 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly thread = signal<EmailMessageDto[]>([]);
 
     readonly composeOpen = signal<boolean>(false);
-    readonly composeMode = signal<'compose' | 'reply'>('compose');
+    /** What the composer writes: a new message, or an answer or a forward of the message `replyTargetId` names. */
+    readonly composeMode = signal<'compose' | EmailComposeMode>('compose');
     /** The open composer is the quick reply in the message pane, not the dock. */
     readonly composeInline = signal<boolean>(false);
+    /**
+     * An answer's or a forward's start, as the server prepares it: being read, read, or not read and why; null for a
+     * new message. Recipients, subject, From, quote and threading are the server's; none is made up here.
+     */
+    readonly composePrefill = signal<ComposePrefillState | null>(null);
+    /** Drops an answer that arrives after its composer was closed or another was opened. */
+    private prefillSeq = 0;
+    /** The served recipients' names, for their chips. */
+    private readonly prefillOptions = signal<TagOption[]>([]);
+    readonly noSendSentence = NO_SEND_SENTENCE;
+    readonly quoteRefusedSentence = QUOTE_REFUSED_SENTENCE;
+    /** The person keeps the served quote; Remove quote sends without it and hides it. */
+    readonly composeQuoteKept = signal<boolean>(true);
+    /** A send was refused because the original could no longer be read: offer to send without the quote. */
+    readonly composeQuoteRefused = signal<boolean>(false);
+    /** A forward's own files (the parts of the original the quote does not show), each removable. */
+    readonly forwardFilesKept = signal<EmailComposePartDto[]>([]);
+    /** Whether the server served a quote to show. */
+    readonly prefillHasQuote = computed(() => (this.prefillAnswer()?.quote ?? null) !== null);
+    private readonly prefillAnswer = computed<EmailComposeDto | null>(() => {
+        const p = this.composePrefill();
+        return p?.state === 'ready' ? p.answer : null;
+    });
+    /** The fields show for a new message, and for a prepared one once it is read. */
+    readonly composeFieldsShown = computed(() => this.composePrefill() === null || this.prefillAnswer() !== null);
+    /** Send shows for a new message, and for a prepared one read with an address this person may send as. */
+    readonly composeMaySend = computed(() => this.composePrefill() === null
+        || (this.prefillAnswer()?.from.choices.length ?? 0) > 0);
+    /** The served From, sent as served (this composer has no picker). */
+    readonly composeFrom = computed(() => this.prefillAnswer()?.from.address ?? null);
+    readonly composePreparing = computed(() => preparingSentence(this.composeMode() === 'forward' ? 'forward' : 'reply'));
+    /** Why the original is not quoted, when the server could not read it. */
+    readonly composeUnreadable = computed(() => {
+        const reason = this.prefillAnswer()?.unreadable;
+        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(reason) : null;
+    });
+    /** The served `quote.html`, drawn read-only in the message view's frame below the person's text. */
+    readonly composeQuoteHtml = computed<string | null>(() => {
+        const html = this.prefillAnswer()?.quote?.html;
+        return html === null || html === undefined || html === '' ? null : html;
+    });
+    /** The served `quote.text`: what Plain text shows, and what shows when no html was served. */
+    readonly composeQuoteText = computed(() => this.prefillAnswer()?.quote?.text ?? null);
+    /** The quote shows below the editor while one was served and the person kept it. */
+    readonly composeQuoteShown = computed(() => this.prefillHasQuote() && this.composeQuoteKept());
+    /** The recipient chips' names: the served ones, then the contacts found while typing. */
+    readonly recipientOptions = computed(() => [...this.prefillOptions(), ...this.contactOptions()]);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
     private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
+    private readonly composeDock = viewChild<ElementRef<HTMLElement>>('composeDock');
     private readonly injector = inject(Injector);
 
     /** Another message opened (or none): the quick reply of the one before closes, its draft kept. */
@@ -1491,7 +1683,6 @@ export class EmailMailboxPageComponent implements OnInit {
     private composeHtmlInitial = '';
     private composeRichInitial = true;
     private draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
-    private page = 1;
     /**
      * Monotonic request guards. Each async load captures `++seq` and
      * ignores its own response if `seq` is no longer the latest -- so a slower
@@ -1635,7 +1826,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const ids = rowTargetIds(this.selectedIds(), m.id);
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
-        this.contextMenu.openFromNodes(event, this.messageNodes(), messageFacts(targets),
+        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets),
             action => this.onMessageAction(action, ids));
     }
 
@@ -1677,11 +1868,11 @@ export class EmailMailboxPageComponent implements OnInit {
     private runMessageAction(action: string, ids: string[]): void {
         switch (action) {
             case 'reply':
-            case 'forward':
-                this.withOpen(ids[0], () => (action === 'reply' ? this.openQuickReply() : this.openForward()));
-                break;
             case 'reply-all':
-                this.withOpen(ids[0], () => this.openReplyAll());
+            case 'forward':
+                this.withOpen(ids[0], () => (action === 'reply'
+                    ? this.openQuickReply()
+                    : this.openPrefilled(PREFILLED_ACTIONS[action])));
                 break;
             case 'archive':
                 // Archived in All Mail the messages stay shown: nothing leaves at once, the open one stays open.
@@ -1788,6 +1979,12 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly searching = signal<boolean>(false);
     readonly searchResults = signal<EmailSearchHitDto[]>([]);
     readonly searchHasMore = signal<boolean>(false);
+    /** What the results' end says when their next page was not read: it could not be, or the server asked to wait. */
+    readonly searchEnd = signal<ListEnd | null>(null);
+    /** The results' next page is being read: the Loading... row stands at their end. */
+    readonly searchingMore = signal<boolean>(false);
+    private searchEndCountdown: Subscription | null = null;
+    readonly retrySearchEnd = (): void => this.loadMoreSearch();
     searchQuery = '';
     private searchPage = 1;
     private searchSeq = 0;
@@ -1803,22 +2000,8 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
     readonly otherServerSearches = new OtherMailboxesSearch();
-    /** The folder whose older mail is being read from the server; read in pages on demand, under the list. */
-    private olderFolder = '';
-    /** Which mailbox and folder the older mail shown belongs to: another one starts it again. */
-    private olderKey = '';
-    /** The open folder's mail older than the oldest held here, from the server, page by page (the answer's folder is its q). */
-    readonly olderMessages = new MailServerSearch(
-        (_folder, cursor) => this.email.olderMessages(this.selectedMailboxId() ?? '', this.olderFolder, cursor).pipe(
-            map(answer => ({
-                q: answer.folder.trim(), folder: answer.folder, state: 'supported', searched: null,
-                hits: answer.hits, next: answer.next, capped: false,
-            })),
-        ),
-    );
-    readonly olderWords = OLDER_WORDS;
-    /** The ids the folder's list shows: an older row the platform holds and lists already is not shown again. */
-    readonly listedIds = computed(() => new Set(storedIds(this.messages())));
+    /** Which mailbox and folder the list shows: another one starts it again from its top. */
+    private listKey = '';
     /** The message open in the reader was evicted: shown still, as no longer kept here. */
     readonly openEvicted = signal(false);
     readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
@@ -1859,7 +2042,19 @@ export class EmailMailboxPageComponent implements OnInit {
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
         searchCommits(this.searchKeys).pipe(takeUntilDestroyed()).subscribe(commit => this.onSearchCommit(commit));
+        // Each time other rows are drawn: a row control that had focus gets it back when its row is drawn again.
+        effect(onCleanup => {
+            const viewport = this.rowsViewport();
+            if (viewport === undefined) {
+                return;
+            }
+            const drawn = viewport.renderedRangeStream.subscribe(() => {
+                afterNextRender({ write: () => this.keepRowFocus() }, { injector: this.injector });
+            });
+            onCleanup(() => drawn.unsubscribe());
+        });
         this.destroyRef.onDestroy(() => {
+            this.searchEndCountdown?.unsubscribe();
             this.serverSearch.stop();
             this.otherServerSearches.stop();
         });
@@ -2144,31 +2339,164 @@ export class EmailMailboxPageComponent implements OnInit {
         this.loadMessages(true);
     }
 
+    /** The list's next page, when there is one. */
     loadMore(): void {
-        if (this.serverListed()) {
-            // A folder listed from the server pages by the cursor its last answer gave.
-            if (this.listNext !== null) {
-                this.loadMessages(false, this.listNext);
+        if (this.listNextPage !== null) {
+            this.loadMessages(false, this.listNextPage);
+        }
+    }
+
+    /** The list scrolled: back at its top the New messages pill goes; near its end the next page is read. */
+    onListScroll(): void {
+        if (this.newArrivals() > 0 && this.rowsOffset() <= AT_TOP_PX) {
+            this.newArrivals.set(0);
+        }
+        this.readOnIfNearEnd();
+    }
+
+    /** The pill's click: the list scrolls to its top, where the new mail is. */
+    toListTop(): void {
+        this.listScroll()?.nativeElement.scrollTo({ top: 0 });
+        this.newArrivals.set(0);
+    }
+
+    /**
+     * With about one and a half screens of rows or fewer left below the view: the next page of the results, or of the
+     * folder by the cursor its last page gave (in an inbox not yet synced to its bottom, the cursor runs on into the
+     * server's older mail).
+     */
+    private readOnIfNearEnd(): void {
+        const region = this.listScroll()?.nativeElement;
+        if (region === undefined || region.clientHeight <= 0) {
+            return;
+        }
+        if (this.searchActive()) {
+            if (this.searchHasMore() && !this.searching() && this.searchEnd() === null
+                && nearListEnd(region.scrollHeight, region.scrollTop, region.clientHeight)) {
+                this.loadMoreSearch();
             }
             return;
         }
-        this.page += 1;
-        this.loadMessages(false);
-    }
-
-    /** The list scrolled near its end: a folder listed from the server reads its next page. */
-    onListScroll(event: Event): void {
-        const region = event.target as HTMLElement;
-        if (!this.serverListed() || this.searchActive() || !this.hasMore() || this.loadingMessages()
-            || this.listEnd() !== null || this.messagesFailure() !== null) {
+        if (this.loadingMessages() || this.listEnd() !== null || this.messagesFailure() !== null || !this.listAnswered
+            || !nearListEnd(this.rowsTop() + this.messages().length * this.rowHeight, region.scrollTop, region.clientHeight)) {
             return;
         }
-        if (region.scrollHeight - region.scrollTop - region.clientHeight <= EmailMailboxPageComponent.SCROLL_NEAR_END_PX) {
+        if (this.listNextPage !== null) {
             this.loadMore();
         }
     }
 
-    /** The list end's Try again: the page the server could not give, asked for again. */
+    /** Once what was just read is drawn, reads on while the rows do not reach one and a half screens below the view. */
+    private readOnAfterRender(): void {
+        afterNextRender({ read: () => this.readOnIfNearEnd() }, { injector: this.injector });
+    }
+
+    /** Where the rows start in the scroll region's content, in px. */
+    private rowsTop(): number {
+        const region = this.listScroll()?.nativeElement;
+        const rows = this.rowsViewport()?.elementRef.nativeElement;
+        if (region === undefined || rows === undefined) {
+            return region?.scrollHeight ?? 0;
+        }
+
+        return rows.getBoundingClientRect().top - region.getBoundingClientRect().top + region.scrollTop;
+    }
+
+    /** How far the view has scrolled into the rows, in px. */
+    private rowsOffset(): number {
+        const region = this.listScroll()?.nativeElement;
+
+        return region === undefined || this.rowsViewport() === undefined ? 0 : Math.max(0, region.scrollTop - this.rowsTop());
+    }
+
+    /**
+     * Applies `change` to the rows without moving what the person is looking at: scrolled down, the row at the view's
+     * top stays where it shows, and the rows that came above it are counted for the New messages pill; at the top,
+     * new rows simply appear.
+     */
+    private keepingPlace(change: () => void): void {
+        const region = this.listScroll()?.nativeElement;
+        const offset = this.rowsOffset();
+        if (region === undefined || offset <= AT_TOP_PX) {
+            change();
+            return;
+        }
+        const before = this.messages();
+        const anchor = anchorAt(before, offset, this.rowHeight);
+        change();
+        if (anchor === null) {
+            return;
+        }
+        const after = this.messages();
+        const arrived = arrivedAbove(before, after, anchor);
+        if (arrived > 0) {
+            this.newArrivals.update(n => n + arrived);
+        }
+        const to = offsetOfAnchor(after, anchor, this.rowHeight);
+        if (to === null || to === offset) {
+            return;
+        }
+        const top = region.scrollTop + (to - offset);
+        // Written once the rows are drawn at their new length, so the region is tall enough to scroll there.
+        afterNextRender({ write: () => { region.scrollTop = top; } }, { injector: this.injector });
+    }
+
+    /** A row control took focus: it is the one kept while its row is out of the page. */
+    onRowFocusIn(event: FocusEvent): void {
+        const target = event.target as HTMLElement;
+        const part = target.getAttribute('data-part');
+        const key = target.closest('[data-key]')?.getAttribute('data-key') ?? null;
+        this.focusedRow = part !== null && key !== null ? { key, part } : null;
+    }
+
+    /** Focus left a row control: kept when its row was only taken out of the page, dropped when the person moved on. */
+    onRowFocusOut(event: FocusEvent): void {
+        const kept = this.focusedRow;
+        const next = event.relatedTarget as Node | null;
+        const rows = this.rowsViewport()?.elementRef.nativeElement;
+        if (kept === null || (next !== null && rows?.contains(next) === true)) {
+            return;
+        }
+        if (next !== null) {
+            this.focusedRow = null;
+            return;
+        }
+        const left = event.target as HTMLElement;
+        setTimeout(() => {
+            // Still in the page as the same row's control, and not focused: the person put focus elsewhere.
+            if (this.focusedRow === kept && left.isConnected && document.activeElement !== left
+                && left.closest('[data-key]')?.getAttribute('data-key') === kept.key) {
+                this.focusedRow = null;
+            }
+        });
+    }
+
+    /**
+     * After rows are drawn: the kept row control, when its row is drawn again, takes focus back from the scroll region;
+     * when its row has left the page with focus, the scroll region holds focus, so the keys still scroll the list.
+     */
+    private keepRowFocus(): void {
+        const kept = this.focusedRow;
+        const region = this.listScroll()?.nativeElement;
+        const rows = this.rowsViewport()?.elementRef.nativeElement;
+        if (kept === null || region === undefined || rows === undefined) {
+            return;
+        }
+        const active = document.activeElement;
+        const lost = active === null || active === document.body;
+        const control = rows.querySelector<HTMLElement>(`[data-key="${CSS.escape(kept.key)}"] [data-part="${CSS.escape(kept.part)}"]`);
+        if (control !== null) {
+            if (lost || active === region) {
+                control.focus({ preventScroll: true });
+            }
+            return;
+        }
+        if (lost) {
+            region.focus({ preventScroll: true });
+        }
+    }
+
+    /** The list end's Retry: the page that was not read, asked for again. */
     retryListEnd(): void {
         this.listEndRetry();
     }
@@ -2342,6 +2670,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.serverSearch.run(q);
         this.searchPage = 1;
         this.searchActive.set(true);
+        this.stopSearchEnd();
+        this.searchingMore.set(false);
         const seq = ++this.searchSeq;
         this.searching.set(true);
         this.email.searchMessages({ q, mailboxId, page: 1 }).subscribe({
@@ -2350,6 +2680,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.searchResults.set(hits);
                 this.searchHasMore.set(hits.length >= EmailMailboxPageComponent.SEARCH_PAGE_SIZE);
                 this.searching.set(false);
+                this.readOnAfterRender();
             },
             error: () => {
                 if (seq !== this.searchSeq) { return; }
@@ -2359,28 +2690,46 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
+    /** The results' next page, read as they are scrolled; a page not read is said at their end, with Retry. */
     loadMoreSearch(): void {
         const q = this.activeQuery;
         const mailboxId = this.selectedMailboxId();
         if (q === '' || mailboxId === null) {
             return;
         }
-        this.searchPage += 1;
+        this.stopSearchEnd();
+        const page = this.searchPage + 1;
         const seq = ++this.searchSeq;
         this.searching.set(true);
-        this.email.searchMessages({ q, mailboxId, page: this.searchPage }).subscribe({
+        this.searchingMore.set(true);
+        this.email.searchMessages({ q, mailboxId, page }).subscribe({
             next: hits => {
                 if (seq !== this.searchSeq) { return; }
+                this.searchPage = page;
                 this.searchResults.set([...this.searchResults(), ...hits]);
                 this.searchHasMore.set(hits.length >= EmailMailboxPageComponent.SEARCH_PAGE_SIZE);
                 this.searching.set(false);
+                this.searchingMore.set(false);
+                this.readOnAfterRender();
             },
-            error: () => {
+            error: (err: unknown) => {
                 if (seq !== this.searchSeq) { return; }
                 this.searching.set(false);
-                this.toast.error('Search failed.');
+                this.searchingMore.set(false);
+                const refusal = pageRefusal(err);
+                if (refusal.kind === 'rate-limited') {
+                    this.searchEndCountdown = this.countDown(this.searchEnd, refusal.seconds);
+                } else {
+                    this.searchEnd.set({ kind: 'failed' });
+                }
             },
         });
+    }
+
+    private stopSearchEnd(): void {
+        this.searchEndCountdown?.unsubscribe();
+        this.searchEndCountdown = null;
+        this.searchEnd.set(null);
     }
 
     /** Exit search and return to the folder message list. */
@@ -2393,18 +2742,10 @@ export class EmailMailboxPageComponent implements OnInit {
         this.searching.set(false);
         this.searchResults.set([]);
         this.searchHasMore.set(false);
+        this.searchingMore.set(false);
+        this.stopSearchEnd();
         this.serverSearch.stop();
         this.otherServerSearches.stop();
-    }
-
-    /** The next page of the open folder's older mail on the server; the first press starts it. */
-    loadOlder(): void {
-        if (this.olderMessages.view().kind === 'idle') {
-            this.olderFolder = this.selectedFolder();
-            this.olderMessages.run(this.olderFolder);
-            return;
-        }
-        this.olderMessages.more();
     }
 
     /** The same query on the server of each of the person's other mailboxes, one after another. */
@@ -3071,33 +3412,30 @@ export class EmailMailboxPageComponent implements OnInit {
         input.value = '';
     }
 
-    openReply(): void {
+    /**
+     * Reply, Reply all or Forward on the open message: the composer opens at once and says it is being prepared, then
+     * takes the server's recipients, subject, From and quote (`GET .../compose?mode=`). The person writes above the
+     * quote; a saved draft of this answer takes the place of what was served.
+     */
+    openPrefilled(mode: EmailComposeMode, inline = false): void {
         const msg = this.selectedMessage();
         if (!msg) {
             return;
         }
-        this.composeMode.set('reply');
+        this.composeInline.set(inline);
+        this.composeMode.set(mode);
         this.replyTargetId.set(msg.id);
-        this.composeTo = (msg.fromAddress ?? '').trim() !== '' ? [msg.fromAddress!.trim()] : [];
+        this.composeTo = [];
         this.composeCc = [];
         this.composeBcc = [];
         this.composeShowCcBcc.set(false);
         this.contactOptions.set([]);
-        this.composeSubject = this.rePrefix(msg.subject ?? '');
-        // Pre-fill the composer with the quoted original so the reply carries the
-        // context of what it answers ("the message we reply to"). clearComposeBody()
-        // resets + bumps composeKey (forces the editor re-mount); the quote is set
-        // after, so the editor mounts with it.
+        this.prefillOptions.set([]);
+        this.composeSubject = '';
         this.clearComposeBody();
-        const quote = buildReplyQuote(msg, this.dtf);
-        this.composeText = quote.text;
-        this.composeHtml.set(quote.html);
-        // Baseline = the pre-filled quote (so an untouched reply isn't "dirty"),
-        // then restore any saved draft for THIS reply target.
-        this.snapshotComposeInitial();
-        this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+        this.readPrefill(msg.id, mode);
     }
 
     /** The quick reply is open as a composer under this message. */
@@ -3114,7 +3452,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * Reply, and the quick reply's line: the reply to the open message as a composer at the foot of the message
-     * pane, brought into view and focused. A composer open in the dock is closed first, its draft kept.
+     * pane, prefilled by the server, brought into view and focused. A composer open in the dock is closed first, its
+     * draft kept.
      */
     openQuickReply(): void {
         const msg = this.selectedMessage();
@@ -3125,8 +3464,7 @@ export class EmailMailboxPageComponent implements OnInit {
             if (this.composeOpen()) {
                 this.closeCompose();
             }
-            this.composeInline.set(true);
-            this.openReply();
+            this.openPrefilled('reply', true);
         }
         afterNextRender(() => this.revealQuickReply(), { injector: this.injector });
     }
@@ -3142,58 +3480,42 @@ export class EmailMailboxPageComponent implements OnInit {
         body.focus({ preventScroll: true });
     }
 
-    /**
-     * Reply all: the reply, addressed as the server prepares a reply to all (the sender or Reply-To, the original To
-     * and Cc, without the mailbox's own addresses). A draft kept for this reply keeps its own recipients.
-     */
-    openReplyAll(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
+    /** Read the prefill again after a failure that may pass. */
+    retryPrefill(): void {
+        const id = this.replyTargetId();
+        const mode = this.composeMode();
+        if (id !== null && mode !== 'compose') {
+            this.readPrefill(id, mode);
         }
-        this.composeInline.set(false);
-        this.openReply();
-        if (this.draftSaved()) {
-            return;
-        }
-        this.email.compose(msg.id, 'reply_all').subscribe({
-            next: prepared => {
-                if (this.replyTargetId() !== msg.id || this.draftSaved()) {
-                    return;
-                }
-                this.composeTo = prepared.to.map(a => a.address);
-                this.composeCc = prepared.cc.map(a => a.address);
-                if (this.composeCc.length > 0) {
-                    this.composeShowCcBcc.set(true);
-                }
-                this.snapshotComposeInitial();
-            },
-            error: () => this.toast.error('Could not prepare the reply to all; the reply goes to the sender alone.'),
-        });
     }
 
-    /** Forward the open message: a new message, "Fwd:" on the subject, the original's header block and text. */
-    openForward(): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
-            return;
-        }
-        this.composeInline.set(false);
-        this.composeMode.set('compose');
-        this.replyTargetId.set(null);
-        this.composeTo = [];
-        this.composeCc = [];
-        this.composeBcc = [];
-        this.composeShowCcBcc.set(false);
-        this.contactOptions.set([]);
-        const fwd = buildForward(msg, this.dtf);
-        this.composeSubject = fwd.subject;
-        this.clearComposeBody();
-        this.composeText = fwd.text;
-        this.composeHtml.set(fwd.html);
-        this.snapshotComposeInitial();
-        this.composeMinimized.set(false);
-        this.composeOpen.set(true);
+    private readPrefill(id: string, mode: EmailComposeMode): void {
+        const seq = ++this.prefillSeq;
+        this.composePrefill.set({ state: 'loading' });
+        this.email.composePrefill(id, mode).subscribe({
+            next: answer => {
+                if (seq !== this.prefillSeq) {
+                    return;
+                }
+                this.composeTo = addressesOf(answer.to);
+                this.composeCc = addressesOf(answer.cc);
+                this.composeShowCcBcc.set(this.composeCc.length > 0);
+                this.prefillOptions.set(recipientOptionsOf([...answer.to, ...answer.cc]));
+                this.composeSubject = answer.subject;
+                this.forwardFilesKept.set(mode === 'forward' ? forwardFiles(answer.attachments) : []);
+                this.composePrefill.set({ state: 'ready', answer });
+                // Baseline = what was served (an untouched answer is no draft), then this answer's saved draft.
+                this.snapshotComposeInitial();
+                this.restoreDraftIfAny();
+                this.focusComposeBody();
+            },
+            error: (e: unknown) => {
+                if (seq !== this.prefillSeq) {
+                    return;
+                }
+                this.composePrefill.set({ state: 'failed', ...prefillFailure(e, mode) });
+            },
+        });
     }
 
     /** Toggle the composer dock between full-size and its collapsed header bar.
@@ -3205,7 +3527,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The dock header label: the subject the user typed, else the mode label. */
     composeDockTitle(): string {
         const subject = this.composeSubject.trim();
-        return subject !== '' ? subject : (this.composeMode() === 'reply' ? 'Reply' : 'New message');
+        const titles: Record<string, string> = { reply: 'Reply', reply_all: 'Reply all', forward: 'Forward' };
+        return subject !== '' ? subject : (titles[this.composeMode()] ?? 'New message');
     }
 
     /** localStorage draft key for the current composer, or null when unkeyable. */
@@ -3214,9 +3537,10 @@ export class EmailMailboxPageComponent implements OnInit {
         if (mb === null) {
             return null;
         }
-        if (this.composeMode() === 'reply') {
+        const mode = this.composeMode();
+        if (mode !== 'compose') {
             const rt = this.replyTargetId();
-            return rt !== null ? `email.${mb}.reply.${rt}` : null;
+            return rt !== null ? `email.${mb}.${mode}.${rt}` : null;
         }
         return `email.${mb}.compose`;
     }
@@ -3289,6 +3613,8 @@ export class EmailMailboxPageComponent implements OnInit {
             || this.composeText !== this.composeTextInitial
             || this.composeHtml() !== this.composeHtmlInitial
             || this.composeRich() !== this.composeRichInitial
+            || !this.composeQuoteKept()
+            || this.removedForwardParts().length > 0
             || storedAttachments(this.composeAttachments()).length > 0;
     }
 
@@ -3330,6 +3656,9 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeRich.set(draft.rich);
         this.composeHtml.set(draft.html);
         this.composeAttachments.set(restoredAttachments(draft.attachments));
+        this.composeQuoteKept.set(draft.quote === true);
+        const removed = new Set(draft.removedParts ?? []);
+        this.forwardFilesKept.update(list => list.filter(p => !removed.has(p.part)));
         this.composeKey.update(k => String(Number(k) + 1)); // re-mount the editor with the draft
         this.draftSaved.set(true);
     }
@@ -3345,7 +3674,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Persist the draft if dirty, else clear it (so deleting your edits removes it). */
     private saveDraftNow(): void {
         const key = this.composeDraftKey();
-        if (key === null) {
+        if (key === null || !this.composeFieldsShown()) {
             return;
         }
         if (this.isComposeDirty()) {
@@ -3358,6 +3687,8 @@ export class EmailMailboxPageComponent implements OnInit {
                 html: this.composeHtml(),
                 rich: this.composeRich(),
                 attachments: storedAttachments(this.composeAttachments()),
+                quote: this.composeQuoteKept(),
+                removedParts: this.removedForwardParts(),
             } satisfies ComposeDraft);
             this.draftSaved.set(true);
         } else {
@@ -3397,6 +3728,49 @@ export class EmailMailboxPageComponent implements OnInit {
         this.clearComposeBody();
     }
 
+    /** Remove quote: the message goes without the quote, which is no longer shown. */
+    removeQuote(): void {
+        this.composeQuoteKept.set(false);
+        this.onComposeChange();
+    }
+
+    /** A forward's file the person does not want sent. */
+    removeForwardFile(part: number): void {
+        this.forwardFilesKept.update(list => list.filter(p => p.part !== part));
+        this.onComposeChange();
+    }
+
+    /** The forward's served files the person removed, by part. */
+    private removedForwardParts(): number[] {
+        const answer = this.prefillAnswer();
+        if (answer === null || answer.mode !== 'forward') {
+            return [];
+        }
+        const kept = new Set(this.forwardFilesKept().map(p => p.part));
+
+        return forwardFiles(answer.attachments).map(p => p.part).filter(p => !kept.has(p));
+    }
+
+    /** After a refusal because the original could not be read: the same message, without the quote. */
+    sendWithoutQuote(): void {
+        this.composeQuoteKept.set(false);
+        this.composeQuoteRefused.set(false);
+        this.sendCompose();
+    }
+
+    /** The empty editor (or the plain text) takes the focus once the composer has drawn it. */
+    private focusComposeBody(tries = 40): void {
+        afterNextRender(() => {
+            const box = (this.composeInline() ? this.quickReplyComposer() : this.composeDock())?.nativeElement;
+            const body = box?.querySelector<HTMLElement>('[contenteditable="true"], textarea') ?? null;
+            if (body !== null) {
+                body.focus({ preventScroll: true });
+            } else if (tries > 0 && this.composeOpen()) {
+                setTimeout(() => this.focusComposeBody(tries - 1), 25);
+            }
+        }, { injector: this.injector });
+    }
+
     /** Flip the composer between the rich `<coolms-editor>` and the plain textarea.
      *  Both bodies persist independently, so a round-trip toggle loses nothing. */
     toggleComposeRich(): void {
@@ -3406,6 +3780,11 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Reset the compose BODY (both plain + rich) and force a clean editor re-mount.
      *  Recipient + subject are managed by the open* methods, not here. */
     private clearComposeBody(): void {
+        this.prefillSeq++;
+        this.composePrefill.set(null);
+        this.composeQuoteKept.set(true);
+        this.composeQuoteRefused.set(false);
+        this.forwardFilesKept.set([]);
         this.composeText = '';
         this.composeHtml.set('');
         this.composeAttachments.set([]);
@@ -3432,12 +3811,22 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     sendCompose(): void {
+        // A prepared composer sends once it is read, and only for one who may send from this mailbox.
+        const prefill = this.prefillAnswer();
+        if (this.composePrefill() !== null && (prefill === null || prefill.from.choices.length === 0)) {
+            return;
+        }
+        const mode = this.composeMode();
+        const quoted = (prefill?.quote ?? null) !== null && this.composeQuoteKept();
+        const answering = mode === 'reply' || mode === 'reply_all';
         const rich = this.composeRich();
         const html = rich ? this.composeHtml() : '';
         // Rich mode sends an HTML body plus a stripped-tags plain-text fallback;
-        // plain mode keeps the textarea text exactly as before.
+        // plain mode keeps the textarea text exactly as before. The quote is never part of either: the server
+        // appends it.
         const text = rich ? this.htmlToPlainText(html) : this.composeText.trim();
-        if (text === '') {
+        // An answer or a forward with its quote kept may go with no text of its own: the server adds the quote.
+        if (text === '' && !quoted) {
             this.toast.error('Enter a message body.');
             return;
         }
@@ -3445,7 +3834,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const to = this.composeTo.map(x => x.trim()).filter(x => x !== '');
         const cc = this.composeCc.map(x => x.trim()).filter(x => x !== '');
         const bcc = this.composeBcc.map(x => x.trim()).filter(x => x !== '');
-        const isReply = this.composeMode() === 'reply';
+        const isReply = answering;
         if (!isReply && to.length === 0) {
             this.toast.error('Enter at least one recipient.');
             return;
@@ -3456,10 +3845,14 @@ export class EmailMailboxPageComponent implements OnInit {
         }
 
         const request: OutgoingEmailRequest = { text };
-        if (rich) {
-            // text passed the non-empty guard above, so html has visible content.
+        if (html !== '') {
             request.html = html;
         }
+        if (prefill !== null) {
+            request.from = prefill.from.address;
+        }
+        Object.assign(request, quoteFields(mode, this.replyTargetId(), (prefill?.quote ?? null) !== null,
+            this.composeQuoteKept(), this.forwardFilesKept()));
         if (to.length > 0) {
             request.to = to;
         }
@@ -3512,6 +3905,11 @@ export class EmailMailboxPageComponent implements OnInit {
             },
             error: (e: unknown) => {
                 this.sending.set(false);
+                // The original could no longer be read: nothing went; the composer offers to send without the quote.
+                if (quotedMessageUnavailable(e)) {
+                    this.composeQuoteRefused.set(true);
+                    return;
+                }
                 // A file no longer there to send is marked on its chip; a message over the limit shows both sizes.
                 const expired = expiredAttachmentId(e);
                 if (expired !== null) {
@@ -3850,24 +4248,21 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /** The message pane's Retry: a failed next page is asked for again, any other failed read reads the folder. */
+    /** The message pane's Retry: the folder's list, read again from its first page. */
     retryMessages(): void {
-        if (this.messagesFailedOnAppend()) {
-            this.loadMore();
-        } else {
-            this.loadMessages(true);
-        }
+        this.loadMessages(true);
     }
 
     /**
-     * Reads the open folder's list: its first page (`reset`), or its next one -- by number, or, in a folder listed from
-     * the mail server, by `cursor`. Such a folder's answer is shown in the server's order as it came; a stale cursor
-     * starts the list again from the top keeping nothing of the old pages; a server that could not be read keeps the
-     * rows shown and says so at the list's end; a rate limit says how long to wait there.
+     * Reads the open folder's list: its first page (`reset`), or the next one, as `request` names it (by the cursor the
+     * last answer gave, or by number). A folder listed from the mail server is shown in the server's order as it came;
+     * a stale cursor starts the list again from the top keeping nothing of the old pages. A page that comes back empty
+     * with a next cursor (every row on it was already listed) is followed on, one read at a time, each after the list
+     * is drawn. A next page not read keeps the rows shown and says so at the list's end, with Retry by the cursor sent
+     * for it: it could not be read, the server could not be reached, or the server asked to wait, counted down there.
      */
-    private loadMessages(reset: boolean, cursor: string | null = null): void {
+    private loadMessages(reset: boolean, request: PageRequest = FIRST_PAGE): void {
         this.messagesFailure.set(null);
-        this.messagesFailedOnAppend.set(false);
         this.stopListEnd();
         const id = this.selectedMailboxId();
         if (id === null) {
@@ -3876,107 +4271,119 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         let rereading = false;
         if (reset) {
-            this.page = 1;
-            cursor = null;
+            request = FIRST_PAGE;
             const key = `${id}
 ${this.selectedFolder()}`;
-            rereading = key === this.olderKey && this.messages().length > 0;
-            if (key !== this.olderKey) {
-                this.olderKey = key;
-                this.olderMessages.stop();
+            rereading = key === this.listKey && this.messages().length > 0;
+            if (key !== this.listKey) {
+                this.listKey = key;
                 this.serverListed.set(false);
                 this.serverRowGone.set(false);
             }
             if (!rereading) {
-                this.listNext = null;
+                this.listNextPage = null;
+                this.listAnswered = false;
                 this.firstPageKeys = new Set<string>();
+                this.newArrivals.set(0);
+                this.listScroll()?.nativeElement.scrollTo({ top: 0 });
             }
         }
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
+        this.loadingNextPage.set(!reset);
         this.listRereading.set(rereading);
         const readAt = this.pendingReads.stamp();
-        const retry = (): void => (cursor === null ? this.loadMessages(true) : this.loadMessages(false, cursor));
-        this.email.listMessages(id, this.selectedFolder(), this.page, cursor).subscribe({
+        const asked = request;
+        const retry = (): void => (reset ? this.loadMessages(true) : this.loadMessages(false, asked));
+        const cursor = 'cursor' in asked ? asked.cursor : null;
+        this.email.listMessages(id, this.selectedFolder(), 'page' in asked ? asked.page : 1, cursor).subscribe({
             next: answer => {
                 if (seq !== this.listSeq) { return; }
                 // A read started before a read-state write answered: those rows keep the person's value.
                 const list = this.pendingReads.heldAll(answer, readAt);
                 const unavailable = answer.serverPages === 'unavailable';
                 if (reset) {
-                    this.serverListed.set(listedFromServer(answer));
+                    // The folder's own word, as its tree node or list entry carries it; the answer only when neither does.
+                    this.serverListed.set(
+                        folderListedFromServer(this.selectedFolder(), this.folderTree(), this.folders()) ?? listedFromServer(answer),
+                    );
                 }
                 if (!reset) {
-                    this.messages.set([...this.messages(), ...list]);
+                    this.messages.set([...this.messages(), ...newRowsOf(this.messages(), list)]);
                 } else if (!(unavailable && rereading)) {
                     // The same list read again while the server cannot be read keeps the rows it shows.
                     this.messages.set(list);
                     this.firstPageKeys = new Set(list.map(rowKey));
                 }
-                if (this.serverListed()) {
-                    if (!unavailable) {
-                        this.listNext = answer.next ?? null;
-                    }
-                    this.hasMore.set(this.listNext !== null);
-                } else {
-                    this.hasMore.set(list.length >= EmailMailboxPageComponent.PAGE_SIZE);
+                if (!unavailable) {
+                    this.listNextPage = nextPageOf(answer, asked);
                 }
+                this.hasMore.set(this.listNextPage !== null);
                 if (unavailable) {
                     this.listEndRetry = retry;
-                    this.listEnd.set({ kind: 'unavailable' });
+                    this.listEnd.set({ kind: 'failed' });
                 }
                 this.loadingMessages.set(false);
+                this.loadingNextPage.set(false);
                 this.listRereading.set(false);
+                this.listAnswered = true;
+                this.readOnAfterRender();
             },
             error: (err: unknown) => {
                 if (seq !== this.listSeq) { return; }
                 this.loadingMessages.set(false);
+                this.loadingNextPage.set(false);
                 this.listRereading.set(false);
-                const refusal = serverSearchRefusal(err);
-                if (refusal.reason === 'stale-cursor' && cursor !== null) {
+                const refusal = pageRefusal(err);
+                if (refusal.kind === 'stale' && cursor !== null) {
                     // The pages read so far are dropped, and the list starts again from its top.
                     this.messages.set([]);
                     this.clearSelection();
                     this.firstPageKeys = new Set<string>();
-                    this.listNext = null;
+                    this.listNextPage = null;
                     this.hasMore.set(false);
                     this.loadMessages(true);
                     return;
                 }
-                if (refusal.reason === 'rate-limited') {
-                    this.serverListed.set(true);
+                if (refusal.kind === 'rate-limited') {
+                    if (reset) {
+                        this.serverListed.set(true);
+                    }
                     if (reset && !rereading) {
                         this.messages.set([]);
                     }
                     this.listEndRetry = retry;
-                    this.waitListEnd(refusal.retryAfter ?? 60);
+                    this.listEndCountdown = this.countDown(this.listEnd, refusal.seconds);
                     return;
                 }
-                if (!reset && cursor === null) {
-                    // The page was not read: Retry asks for the same one.
-                    this.page -= 1;
+                if (!reset) {
+                    // A next page not read: the rows shown stay, and Retry asks for the same page.
+                    this.listEndRetry = retry;
+                    this.listEnd.set({ kind: 'failed' });
+                    return;
                 }
-                this.messagesFailedOnAppend.set(!reset);
                 this.messagesFailure.set(err);
             },
         });
     }
 
     /**
-     * A realtime change: the first page is read again in place of the rows it gave, and the rows of later pages stay
-     * as they are. A folder paged by number reads its list again, as before.
+     * A realtime change: the first page is read again and put in front, without moving what the person is looking at.
+     * In a folder listed from the mail server it stands in place of the rows it gave before; in a folder paged by
+     * number the rows shown all stay (one that left goes by its own event), and the new ones come before them.
      */
     private rereadFirstPage(): void {
         const id = this.selectedMailboxId();
         // Another mailbox or folder than the list shows reads its list from the top.
-        if (!this.serverListed() || id === null || this.olderKey !== `${id}
-${this.selectedFolder()}`) {
+        if (id === null || this.listKey !== `${id}
+${this.selectedFolder()}` || !this.listAnswered) {
             this.loadMessages(true);
             return;
         }
         this.stopListEnd();
         const seq = ++this.listSeq;
         this.loadingMessages.set(true);
+        this.loadingNextPage.set(false);
         this.listRereading.set(this.messages().length > 0);
         const readAt = this.pendingReads.stamp();
         this.email.listMessages(id, this.selectedFolder(), 1, null).subscribe({
@@ -3986,39 +4393,41 @@ ${this.selectedFolder()}`) {
                 this.listRereading.set(false);
                 if (answer.serverPages === 'unavailable') {
                     this.listEndRetry = () => this.rereadFirstPage();
-                    this.listEnd.set({ kind: 'unavailable' });
+                    this.listEnd.set({ kind: 'failed' });
                     return;
                 }
                 const onlyFirst = this.messages().every(m => this.firstPageKeys.has(rowKey(m)));
                 const first = this.pendingReads.heldAll(answer, readAt);
-                this.messages.set(withFirstPageAgain(this.messages(), this.firstPageKeys, first));
+                const replaced = this.serverListed() ? this.firstPageKeys : new Set<string>();
+                this.keepingPlace(() => this.messages.set(withFirstPageAgain(this.messages(), replaced, first)));
                 this.firstPageKeys = new Set(first.map(rowKey));
                 if (onlyFirst) {
-                    // No later page was read: the first page's cursor is the next one.
-                    this.listNext = answer.next ?? null;
-                    this.hasMore.set(this.listNext !== null);
+                    // No later page was read: the first page's next page is the next one.
+                    this.listNextPage = nextPageOf(answer, FIRST_PAGE);
+                    this.hasMore.set(this.listNextPage !== null);
                 }
+                this.readOnAfterRender();
             },
             error: (err: unknown) => {
                 if (seq !== this.listSeq) { return; }
                 this.loadingMessages.set(false);
                 this.listRereading.set(false);
                 // The rows shown stay; a rate limit says how long to wait.
-                const refusal = serverSearchRefusal(err);
-                if (refusal.reason === 'rate-limited') {
+                const refusal = pageRefusal(err);
+                if (refusal.kind === 'rate-limited') {
                     this.listEndRetry = () => this.rereadFirstPage();
-                    this.waitListEnd(refusal.retryAfter ?? 60);
+                    this.listEndCountdown = this.countDown(this.listEnd, refusal.seconds);
                 }
             },
         });
     }
 
-    /** The list's end counts a rate limit's wait down; Try again shows once it ends. */
-    private waitListEnd(seconds: number): void {
-        this.listEndCountdown?.unsubscribe();
-        this.listEnd.set({ kind: 'rate-limited', seconds });
-        this.listEndCountdown = interval(1000).pipe(take(seconds), takeUntilDestroyed(this.destroyRef)).subscribe(tick => {
-            this.listEnd.set({ kind: 'rate-limited', seconds: seconds - tick - 1 });
+    /** An end row counts a rate limit's wait down from `seconds`; at zero it offers Retry. */
+    private countDown(end: { set(value: ListEnd | null): void }, seconds: number): Subscription {
+        end.set({ kind: 'rate-limited', seconds });
+
+        return interval(1000).pipe(take(seconds), takeUntilDestroyed(this.destroyRef)).subscribe(tick => {
+            end.set({ kind: 'rate-limited', seconds: seconds - tick - 1 });
         });
     }
 
@@ -4067,14 +4476,6 @@ ${this.selectedFolder()}`) {
                 this.toast.error('Could not update the message.');
             },
         });
-    }
-
-    private rePrefix(subject: string): string {
-        const trimmed = subject.trim();
-        if (trimmed === '') {
-            return 'Re:';
-        }
-        return /^re:/i.test(trimmed) ? trimmed : `Re: ${trimmed}`;
     }
 
     private static blankMailboxForm(): MailboxFormModel {

@@ -111,7 +111,6 @@ describe('EmailMailboxPageComponent -- a failed read of the mailboxes or the mes
 
         expect(messagesAsked).withContext('the load asked the API').toEqual([1]);
         expect(page.messagesFailure()).withContext('the failure is held for the banner').toBe(failure);
-        expect(page.messagesFailedOnAppend()).toBeFalse();
         expect(page.mailboxesFailure()).withContext('the mailbox pane is not touched').toBeNull();
         expect(page.mailboxes().map(m => m.id)).toEqual(['mb1']);
         expect(toasts).withContext('no toast for a failed load').toEqual([]);
@@ -125,10 +124,10 @@ describe('EmailMailboxPageComponent -- a failed read of the mailboxes or the mes
         expect(toasts).toEqual([]);
     });
 
-    it('messages: a failed next page keeps the rows, and Retry asks for that page again', () => {
+    it('messages: a failed next page keeps the rows, says so at the list\'s end, and its Retry asks for that page again', () => {
         const failure = new HttpErrorResponse({ status: 500 });
         mailboxAnswers = [() => of([MAILBOX])];
-        messageAnswers = [() => of(rows(50)), () => throwError(() => failure), () => of(rows(1))];
+        messageAnswers = [() => of(rows(50)), () => throwError(() => failure), () => of([{ id: 'm-next' }])];
         const page = build();
         page.loadMailboxes();
         expect(page.hasMore()).withContext('a full first page offers more').toBeTrue();
@@ -136,15 +135,15 @@ describe('EmailMailboxPageComponent -- a failed read of the mailboxes or the mes
         page.loadMore();
 
         expect(messagesAsked).toEqual([1, 2]);
-        expect(page.messagesFailure()).toBe(failure);
-        expect(page.messagesFailedOnAppend()).toBeTrue();
+        expect(page.messagesFailure()).withContext('not the whole list\'s failure').toBeNull();
+        expect(page.listEnd()).withContext('the list\'s end says it').toEqual({ kind: 'failed' });
         expect(page.messages().length).withContext('the rows read so far stay').toBe(50);
         expect(toasts).toEqual([]);
 
-        page.retryMessages();
+        page.retryListEnd();
 
         expect(messagesAsked).withContext('the same page asked again').toEqual([1, 2, 2]);
-        expect(page.messagesFailure()).toBeNull();
+        expect(page.listEnd()).toBeNull();
         expect(page.messages().length).toBe(51);
     });
 });
