@@ -6,9 +6,10 @@ import { type EmailFolderDto } from './email.types';
  * sync copies a recent window and a backfill walks the rest, so for a large
  * mailbox the imported count can be a quarter of what the server holds.
  *
- * The server now reports both, so the rail can say "1,314 / 5,512" and mean it.
- * These are pure functions over the DTO so the wording and the progress bar are
- * decided in one place and cannot drift apart.
+ * The server now reports both. The row shows one total, the server's once a sync
+ * has read it, and how much is stored ("1,314 of 5,512 stored") goes in the
+ * tooltip. These are pure functions over the DTO so the wording and the progress
+ * bar are decided in one place and cannot drift apart.
  */
 
 /**
@@ -25,14 +26,29 @@ export function importedFraction(f: EmailFolderDto): number | null {
     return Math.round((f.total / server) * 100);
 }
 
-/** `1,314 / 5,512` while a folder is part-imported, otherwise just the count. */
+/**
+ * The folder's one total: the server's count once a sync has read it, otherwise the
+ * platform's own count -- chosen as the unread badge chooses its number.
+ */
+export function folderTotal(f: EmailFolderDto): number {
+    return typeof f.serverTotal === 'number' ? f.serverTotal : f.total;
+}
+
+/** The row's total, formatted: one number, never a "stored / total" pair. */
 export function folderCount(f: EmailFolderDto): string {
-    const imported = f.total.toLocaleString();
+    return folderTotal(f).toLocaleString();
+}
+
+/**
+ * `1,314 of 5,512 stored` while the platform has stored part of a folder whose
+ * server count is known; null when both are not known or nothing is missing.
+ */
+export function folderStored(f: EmailFolderDto): string | null {
     if (importedFraction(f) === null) {
-        return imported;
+        return null;
     }
 
-    return `${imported} / ${(f.serverTotal as number).toLocaleString()}`;
+    return `${f.total.toLocaleString()} of ${(f.serverTotal as number).toLocaleString()} stored`;
 }
 
 /**
@@ -53,16 +69,17 @@ export function folderUnread(f: EmailFolderDto): number {
  */
 export function folderCountTitle(f: EmailFolderDto): string {
     const percent = importedFraction(f);
-    const imported = f.total.toLocaleString();
+    const stored = folderStored(f);
+    const total = folderCount(f);
     const unread = unreadClause(f);
 
-    if (percent === null) {
+    if (stored === null) {
         return typeof f.serverTotal === 'number'
-            ? `${imported} messages, all of them imported.${unread} Counts messages, not conversations.`
-            : `${imported} messages imported (the server's own count is not known yet).${unread}`;
+            ? `${total} messages.${unread} Counts messages, not conversations.`
+            : `${total} messages stored (the server's own count is not known yet).${unread}`;
     }
 
-    return `${imported} of ${(f.serverTotal as number).toLocaleString()} messages imported (${percent}%) -- the rest is still being copied.${unread} Counts messages, not conversations: a mail app that groups by conversation will show fewer.`;
+    return `${total} messages; ${stored} (${percent}%) -- the rest is still being copied.${unread} Counts messages, not conversations: a mail app that groups by conversation will show fewer.`;
 }
 
 /**

@@ -3,6 +3,8 @@ import {
     applyUnreadDelta,
     folderCount,
     folderCountTitle,
+    folderStored,
+    folderTotal,
     folderUnread,
     importedFraction,
 } from './folder-fraction.util';
@@ -10,8 +12,8 @@ import {
 /**
  * The rail's number used to be the IMPORTED count alone, which read as the size
  * of the folder. With a backfill still walking the older mail that is wrong by
- * a factor of four on a real mailbox, so the count now carries what the server
- * holds beside it -- and says nothing it has not been told.
+ * a factor of four on a real mailbox, so the row now shows the server's one total
+ * and the tooltip says how much of it is stored -- and nothing it has not been told.
  */
 describe('folder import fraction', () => {
     const folder = (over: Partial<EmailFolderDto> = {}): EmailFolderDto => ({
@@ -23,35 +25,43 @@ describe('folder import fraction', () => {
         ...over,
     });
 
-    it('reports how much of a part-imported folder is here', () => {
+    it('a part-stored folder shows the server\'s one total, and says how much is stored in the tooltip', () => {
         expect(importedFraction(folder())).toBe(31);
-        expect(folderCount(folder())).toBe(`${(1714).toLocaleString()} / ${(5512).toLocaleString()}`);
-        expect(folderCountTitle(folder())).toContain('imported (31%)');
+        expect(folderTotal(folder())).toBe(5512);
+        expect(folderCount(folder())).toBe((5512).toLocaleString());
+        expect(folderStored(folder())).toBe(`${(1714).toLocaleString()} of ${(5512).toLocaleString()} stored`);
+        expect(folderCountTitle(folder())).toContain(`${(1714).toLocaleString()} of ${(5512).toLocaleString()} stored (31%)`);
     });
 
-    it('drops the fraction once the folder is fully imported', () => {
+    it('says nothing of storing once the folder is fully stored', () => {
         const whole = folder({ total: 5512 });
 
         expect(importedFraction(whole)).toBeNull();
         expect(folderCount(whole)).toBe((5512).toLocaleString());
-        expect(folderCountTitle(whole)).toContain('all of them imported');
+        expect(folderStored(whole)).toBeNull();
+        expect(folderCountTitle(whole)).not.toContain('stored');
+        expect(folderCountTitle(whole)).toContain(`${(5512).toLocaleString()} messages.`);
     });
 
-    it('invents nothing when no sync has recorded the server count', () => {
+    it('shows the platform\'s own count until a sync has read the server\'s, and invents no denominator', () => {
         for (const unmeasured of [folder({ serverTotal: null }), folder({ serverTotal: undefined })]) {
             expect(importedFraction(unmeasured)).toBeNull();
-            // The imported count ALONE -- never a made-up denominator.
+            expect(folderTotal(unmeasured)).toBe(1714);
             expect(folderCount(unmeasured)).toBe((1714).toLocaleString());
+            expect(folderStored(unmeasured)).toBeNull();
             expect(folderCountTitle(unmeasured)).toContain('not known yet');
+            expect(folderCountTitle(unmeasured)).not.toContain(' of ');
         }
     });
 
-    it('does not divide by a zero or a nonsense server count', () => {
+    it('does not divide by a zero or a nonsense server count, and the server\'s count is the total once read', () => {
         expect(importedFraction(folder({ serverTotal: 0 }))).toBeNull();
+        expect(folderCount(folder({ total: 0, serverTotal: 0 }))).toBe('0');
         // A server count BELOW what we hold (a folder shrank between syncs) is not a
-        // fraction over 100% -- it falls back to the plain count.
+        // fraction over 100%: nothing is missing, so nothing is said of storing.
         expect(importedFraction(folder({ total: 20, serverTotal: 10 }))).toBeNull();
-        expect(folderCount(folder({ total: 20, serverTotal: 10 }))).toBe('20');
+        expect(folderStored(folder({ total: 20, serverTotal: 10 }))).toBeNull();
+        expect(folderCount(folder({ total: 20, serverTotal: 10 }))).toBe('10');
     });
 
     it('says which unit it counts, so a conversation view is not read as a defect', () => {
