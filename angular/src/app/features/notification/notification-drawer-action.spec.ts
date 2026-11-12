@@ -80,7 +80,9 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
         function render(list: NotificationDto[]): HTMLElement {
             rows = signal(list);
             expandedId = signal<string | null>(null);
-            markRead = jasmine.createSpy('markRead').and.callFake((id: string) => of({ ...row(), id, isRead: true }));
+            // As the server answers: the row itself, read.
+            markRead = jasmine.createSpy('markRead').and.callFake((id: string) =>
+                of({ ...(rows().find(r => r.id === id) ?? row()), id, isRead: true, readAt: '2026-11-12T10:00:00+00:00' }));
             navigate = jasmine.createSpy('navigate').and.resolveTo(true);
             navigateByUrl = jasmine.createSpy('navigateByUrl').and.resolveTo(true);
             close = jasmine.createSpy('close');
@@ -130,6 +132,10 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
 
         const actionButton = (host: HTMLElement): HTMLButtonElement | null =>
             host.querySelector<HTMLButtonElement>('[data-test=notification-action]');
+        const openLinkButton = (host: HTMLElement): HTMLButtonElement | null =>
+            host.querySelector<HTMLButtonElement>('[data-test=notification-open-link]');
+        /** The action button's classes, which the Open button shares. */
+        const actionButtonClass = 'cms-btn cms-btn-sm';
 
         it('a known action is a button under the text, named by its label; pressing it reads the row and opens the settings', () => {
             const host = render([row({ action: reconnect() })]);
@@ -138,6 +144,7 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
             expect(button).withContext('the button is drawn').not.toBeNull();
             expect(button?.tagName).toBe('BUTTON');
             expect(button?.type).toBe('button');
+            expect(button?.className).toBe(actionButtonClass);
             expect(button?.textContent?.trim()).toBe('Reconnect');
             expect(button?.hasAttribute('aria-label')).withContext('named by its visible label').toBeFalse();
             const primary = host.querySelector('.cms-notification-row__primary') as HTMLElement;
@@ -235,6 +242,8 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
             const host = render([both]);
 
             expect(actionButton(host)?.textContent?.trim()).toBe('Reconnect');
+            expect(openLinkButton(host)).withContext('only the action\'s button').toBeNull();
+            expect(host.querySelectorAll('.cms-notification-row__action button').length).toBe(1);
             (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(both);
             expect(navigateByUrl).not.toHaveBeenCalled();
 
@@ -242,13 +251,79 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
             expect(navigate).toHaveBeenCalledOnceWith(['/email', { mailbox: MAILBOX_ID }], { queryParams: { settings: 'connection' } });
         });
 
-        it('a row with a link and no action still opens its link', () => {
+        it('pressing a row with a link and no action reads it and goes nowhere: the link opens from its Open button only', () => {
             const linked = row({ extras: { title: 'A link only' }, link: { kind: 'route', href: '/content', target: null } });
             render([linked]);
 
             (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(linked);
 
-            expect(navigateByUrl).toHaveBeenCalledOnceWith('/content');
+            expect(markRead).toHaveBeenCalledOnceWith('n-1');
+            expect(navigateByUrl).not.toHaveBeenCalled();
+            expect(navigate).not.toHaveBeenCalled();
+            expect(close).not.toHaveBeenCalled();
+        });
+
+        it('pressing a row with no action and no link reads it and goes nowhere', () => {
+            const plain = row({ extras: { title: 'Backup finished' } });
+            render([plain]);
+
+            (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(plain);
+
+            expect(markRead).toHaveBeenCalledOnceWith('n-1');
+            expect(navigateByUrl).not.toHaveBeenCalled();
+            expect(navigate).not.toHaveBeenCalled();
+            expect(close).not.toHaveBeenCalled();
+        });
+
+        it('expanding a row with the chevron reads it, and navigates nowhere', () => {
+            const host = render([row({ link: { kind: 'route', href: '/content', target: null } })]);
+
+            (host.querySelector('button[aria-label="Expand"]') as HTMLButtonElement).click();
+
+            expect(markRead).toHaveBeenCalledOnceWith('n-1');
+            expect(navigateByUrl).not.toHaveBeenCalled();
+            expect(navigate).not.toHaveBeenCalled();
+        });
+
+        it('a row with a link and no action shows an Open button under the text, which reads the row and goes to the link', () => {
+            const host = render([row({ type: 'document.generated', extras: { title: 'Report ready' }, link: { kind: 'route', href: '/content/report', target: null } })]);
+            const open = openLinkButton(host) as HTMLButtonElement;
+
+            expect(open).withContext('the Open button').not.toBeNull();
+            expect(open.tagName).toBe('BUTTON');
+            expect(open.type).toBe('button');
+            expect(open.textContent?.trim()).toBe('Open');
+            expect(open.className).withContext('the action button\'s look').toBe(actionButtonClass);
+            expect(open.closest('.cms-notification-row__action')).not.toBeNull();
+            const primary = host.querySelector('.cms-notification-row__primary') as HTMLElement;
+            expect(primary.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING).withContext('under the text').toBeTruthy();
+
+            open.click();
+
+            expect(markRead).toHaveBeenCalledOnceWith('n-1');
+            expect(navigateByUrl).toHaveBeenCalledOnceWith('/content/report');
+            expect(close).toHaveBeenCalledTimes(1);
+            expect(navigate).not.toHaveBeenCalled();
+        });
+
+        it('a row with a link and a body: the chevron only expands, and the Open button is what goes to the link', () => {
+            const host = render([row({ link: { kind: 'route', href: '/content/report', target: null } })]);
+
+            (host.querySelector('button[aria-label="Expand"]') as HTMLButtonElement).click();
+            fixture.detectChanges();
+            (host.querySelector('button[aria-label="Collapse"]') as HTMLButtonElement).click();
+            fixture.detectChanges();
+            expect(navigateByUrl).withContext('the chevron never navigates').not.toHaveBeenCalled();
+            expect(close).not.toHaveBeenCalled();
+
+            openLinkButton(host)?.click();
+            expect(navigateByUrl).toHaveBeenCalledOnceWith('/content/report');
+        });
+
+        it('a row with neither a link nor an action shows no button under the text', () => {
+            const host = render([row()]);
+
+            expect(host.querySelector('.cms-notification-row__action')).toBeNull();
         });
 
         describe('how the server says to draw the action', () => {
@@ -323,7 +398,9 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(r.hasAttribute('aria-label')).toBeFalse();
 
                 enter(r);
+                expect(markRead).withContext('Enter on an inert row that cannot take focus does nothing').not.toHaveBeenCalled();
                 activate(n);
+                expect(markRead).withContext('pressing it still reads it').toHaveBeenCalledOnceWith('n-1');
                 expect(navigate).not.toHaveBeenCalled();
                 expect(navigateByUrl).not.toHaveBeenCalled();
                 expect(close).not.toHaveBeenCalled();

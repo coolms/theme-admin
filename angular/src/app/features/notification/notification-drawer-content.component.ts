@@ -46,8 +46,9 @@ import { NotificationStore } from './notification-store.service';
  * text, never a link, and the chevron only expands it.
  *
  * Mailbox semantics (Ship B.4, `selectionMode='mailbox'`): plain
- * click activates -- marks read if unread, navigates if `link`
- * is set (and no action is shown), and closes the drawer once it navigates. Ctrl/Meta+click
+ * click activates -- marks read if unread, and opens the row's action
+ * only when the row itself is the action; a link opens from its own
+ * Open button. Ctrl/Meta+click
  * toggles a row in selection. Shift+click requests a range; the
  * store computes it against the cached ordered list. Right-click
  * opens the context menu with the row's full record spread into
@@ -174,6 +175,15 @@ import { NotificationStore } from './notification-store.service';
                                             data-test="notification-action"
                                             (click)="onActionClick(n, target, $event)"
                                             (dblclick)="$event.stopPropagation()">{{ target.label }}</button>
+                                </div>
+                            } @else if (hasLink(n)) {
+                                <!-- A row with a link and no action shown opens its link from this button. -->
+                                <div class="cms-notification-row__action">
+                                    <button type="button"
+                                            class="cms-btn cms-btn-sm"
+                                            data-test="notification-open-link"
+                                            (click)="onOpenLinkClick(n, $event)"
+                                            (dblclick)="$event.stopPropagation()">{{ openLabel }}</button>
                                 </div>
                             }
                         </div>
@@ -445,6 +455,27 @@ export class NotificationDrawerContentComponent {
         this.openAction(n, target);
     }
 
+    /** The label of the button that opens a row's link. */
+    protected readonly openLabel = 'Open';
+
+    /** The link's button: marks the row read, as opening it does, and goes to the link. */
+    protected onOpenLinkClick(n: NotificationDto, event: Event): void {
+        event.stopPropagation();
+        this.openLink(n);
+    }
+
+    private openLink(n: NotificationDto): void {
+        const link = n.link;
+        if (!this.hasLink(n) || !link) {
+            return;
+        }
+        if (!n.isRead) {
+            this.markReadAsync(n);
+        }
+        this.navigateLink(link);
+        this.drawer.close();
+    }
+
     /** Enter on a row whose action is the row opens it; Enter on a control inside the row is that control's. */
     protected onRowEnter(n: NotificationDto, event: Event): void {
         const target = this.rowActionTarget(n);
@@ -490,11 +521,8 @@ export class NotificationDrawerContentComponent {
     }
 
     /**
-     * Activation (dblclick + chevron click on link-only + context
-     * menu Open). Body rows expand instead of navigating, so the
-     * navigation branch fires only when there is no body. First
-     * expand also marks the row read; the mark-read fires before
-     * any branch so navigation paths stay consistent.
+     * Pressing a row (a click, or a double click). It marks the row read, whatever the row carries. A row whose action
+     * is the row opens that action; any other row expands its body, if it has one, and navigates nowhere.
      */
     protected onActivate(n: NotificationDto): void {
         // A row whose action is the row opens it, as Enter does.
@@ -507,21 +535,28 @@ export class NotificationDrawerContentComponent {
             this.markReadAsync(n);
         }
 
-        if (this.hasBody(n)) {
-            // Idempotent: setExpanded on the already-expanded row is
-            // a no-op, so context-menu Open on an open row does not
-            // collapse it.
-            if (this.store.expandedId() !== n.id) {
-                this.store.setExpanded(n.id);
-            }
+        // Pressing any other row reads it and goes nowhere: a link is opened by the row's Open button only.
+        if (this.hasBody(n) && this.store.expandedId() !== n.id) {
+            // Idempotent: an already-expanded row is not collapsed.
+            this.store.setExpanded(n.id);
+        }
+    }
+
+    /**
+     * The context menu's Open: where the row's own control goes -- its action, or its link -- and otherwise as
+     * pressing the row.
+     */
+    private openFocused(n: NotificationDto): void {
+        const target = this.actionTarget(n);
+        if (target !== null) {
+            this.openAction(n, target);
             return;
         }
-
-        const link = n.link;
-        if (this.hasLink(n) && link) {
-            this.navigateLink(link);
-            this.drawer.close();
+        if (this.hasLink(n)) {
+            this.openLink(n);
+            return;
         }
+        this.onActivate(n);
     }
 
     protected onContextMenu(payload: { item: NotificationDto; event: MouseEvent }): void {
@@ -578,7 +613,7 @@ export class NotificationDrawerContentComponent {
             case 'open': {
                 const f = this.store.focusedItem();
                 if (f) {
-                    this.onActivate(f);
+                    this.openFocused(f);
                 }
                 return;
             }
