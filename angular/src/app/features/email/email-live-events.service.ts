@@ -20,6 +20,8 @@ export interface EmailLiveEvent {
     readonly newCount: number;
     /** The mailbox's unread number: its inbox's alone, as the mailbox list serves it. Absent from an older server. */
     readonly mailboxUnseen?: number;
+    /** The mailbox's change sequence, shared with mail.messages.changed. Absent from an older server. */
+    readonly seq?: number;
 }
 
 /** How a sync the person asked for ended. `skipped`: another import held the mailbox, or it was switched off; not an error. */
@@ -35,6 +37,9 @@ export interface EmailSyncFinishedEvent {
 /** Every event of the person's mail channel. */
 export type EmailEvent =
     | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent;
+
+/** A whole number, zero or more. */
+const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
 
 /**
  * FE -- typed wrapper over the realtime transport for the per-user
@@ -141,11 +146,15 @@ export class EmailLiveEventsService {
         if (typeof obj['mailboxId'] !== 'string' || typeof obj['folder'] !== 'string') {
             return null;
         }
-        // A number that is not a count is dropped, not the nudge: the page then reads the number as before.
+        // A number or a seq that is not a count is dropped, not the nudge: the page then treats it as an older
+        // server's.
         const unseen = obj['mailboxUnseen'];
-        const { mailboxUnseen: _unseen, ...rest } = raw as EmailLiveEvent;
-        return typeof unseen === 'number' && Number.isInteger(unseen) && unseen >= 0
-            ? { ...rest, mailboxUnseen: unseen }
-            : rest;
+        const seq = obj['seq'];
+        const { mailboxUnseen: _unseen, seq: _seq, ...rest } = raw as EmailLiveEvent;
+        return {
+            ...rest,
+            ...(isCount(unseen) ? { mailboxUnseen: unseen } : {}),
+            ...(isCount(seq) ? { seq } : {}),
+        };
     }
 }
