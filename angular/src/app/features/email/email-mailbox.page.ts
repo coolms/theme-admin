@@ -1056,6 +1056,9 @@ type PhonePane = 'folders' | 'message';
         }
         /* The rows' viewport: as tall as every row together; the region around it scrolls. */
         .mbx__rows { flex: 0 0 auto; }
+        /* The rows' wrapper (the virtual scroll's own, absolutely placed) held to the viewport's width: left to size
+           itself, it grows to its widest row's one-line text, and each row with it. */
+        .mbx__rows ::ng-deep .cdk-virtual-scroll-content-wrapper { right: 0; }
         /* Every row the same height (set from the three lines it holds), so the list is drawn by arithmetic. */
         .mbx__row {
             display: flex; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
