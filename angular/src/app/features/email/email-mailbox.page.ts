@@ -2203,17 +2203,25 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * A realtime nudge that a mailbox the current user can see gained new mail. The
-     * payload carries ids and a count only, so we refetch over REST: the OPEN mailbox
-     * reloads its folders + list (new mail + counts); any OTHER mailbox just refreshes
-     * its switcher badge. Owner-only channel auth is enforced server-side.
+     * payload carries ids, a count and the mailbox's unread number, never content: the
+     * OPEN mailbox reloads its folders + list (new mail + counts); the switcher takes the
+     * number the nudge carries, and only a nudge without one (an older server) reads it
+     * again over REST. Owner-only channel auth is enforced server-side.
      */
     private onMailReceived(evt: EmailLiveEvent): void {
+        const unseen = evt.mailboxUnseen;
+        if (typeof unseen === 'number') {
+            this.mailboxUnread.update(prev => ({ ...prev, [evt.mailboxId]: unseen }));
+        }
         if (evt.mailboxId === this.selectedMailboxId()) {
             this.loadFolders(true);
             return;
         }
+        if (typeof unseen === 'number') {
+            return;
+        }
         if (this.unreadServed.has(evt.mailboxId)) {
-            // This nudge carries no unread number, unlike mail.messages.changed; the list serves it on each row.
+            // A nudge without the number: the list serves it on each row.
             this.email.listMailboxes().subscribe({
                 next: list => this.takeServedUnread(list),
                 error: () => { /* leave the badge as-is on a transient failure */ },
