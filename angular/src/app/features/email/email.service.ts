@@ -149,7 +149,8 @@ export class EmailService {
     /**
      * POST /email/mailboxes/{id}/test: signs in to the incoming and the outgoing server with what is given -- a field
      * left out comes from the stored mailbox, the stored credential when no password is given -- and stores nothing.
-     * Each protocol answers connected, or its error kind in a fixed sentence. Ten tests a person in ten minutes: then
+     * IMAP answers connected, or its error kind in a fixed sentence; sending answers a severity and a sentence for the
+     * path a real send takes, with SMTP's answer when SMTP was tried. Ten tests a person in ten minutes: then
      * 429, with Retry-After.
      */
     testMailbox(id: string, request: MailboxTestRequest): Observable<MailboxTestResult> {

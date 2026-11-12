@@ -26,7 +26,6 @@ import {
     DateTimePipe,
     DraftStoreService,
     EmptyStateComponent,
-    ErrorBannerComponent,
     PageToolbarComponent,
     StateComponent,
     TagInputComponent,
@@ -188,7 +187,7 @@ type PhonePane = 'folders' | 'message';
     imports: [
         MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
-        FormsModule, CoolmsEditorComponent, EmptyStateComponent, ErrorBannerComponent, DateTimePipe,
+        FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
         NgTemplateOutlet,
