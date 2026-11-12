@@ -1,3 +1,4 @@
+import { Injector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
@@ -272,6 +273,32 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
         changed(page, { mailboxId: 'mb2', seq: 11, mailboxUnseen: 4 });
 
         expect(page.mailboxUnread()['mb2']).toBe(8);
+    });
+
+    /** A frame as the realtime reader passes it on, through the real reader. */
+    function readFrame(raw: unknown): EmailLiveEvent {
+        const injector = Injector.create({
+            providers: [{ provide: CentrifugoClientService, useValue: {} }, { provide: EmailLiveEventsService, useClass: EmailLiveEventsService, deps: [] }],
+        });
+        const reader = injector.get(EmailLiveEventsService) as unknown as { tryParse(r: unknown): EmailLiveEvent | null };
+        const read = reader.tryParse(raw);
+        if (read === null) {
+            throw new Error('the frame was not read');
+        }
+        return read;
+    }
+
+    it('new mail at seq 12 whose number was dropped leaves the mark, so a change at seq 11 still applies', () => {
+        const page = build([{ ...WORK, unread: 11 }, { ...HOME, unread: 2 }]);
+        page.loadMailboxes();
+        const frame = readFrame({ type: 'mail.received', mailboxId: 'mb2', folder: 'INBOX', newCount: 1, mailboxUnseen: '3', seq: 12 });
+        expect(frame.seq).withContext('the subject: seq kept').toBe(12);
+        expect('mailboxUnseen' in frame).withContext('the subject: the number dropped').toBeFalse();
+
+        received(page, frame);
+        changed(page, { mailboxId: 'mb2', seq: 11, mailboxUnseen: 4 });
+
+        expect(page.mailboxUnread()['mb2']).toBe(4);
     });
 });
 
