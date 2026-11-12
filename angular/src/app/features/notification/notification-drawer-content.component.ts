@@ -96,7 +96,16 @@ import { NotificationStore } from './notification-store.service';
                     </div>
                 } @else {
                     @for (n of store.notifications(); track n.id) {
+                        @let rowAction = rowActionTarget(n);
+                        <!-- A row whose action is the row is itself the action: focusable, named by its label, opened
+                             by a click or Enter. Any other row is not interactive as a whole. -->
                         <div class="cms-notification-row"
+                             [class.cms-notification-row--action]="rowAction !== null"
+                             [attr.role]="rowAction !== null ? 'link' : null"
+                             [attr.tabindex]="rowAction !== null ? 0 : null"
+                             [attr.aria-label]="rowAction?.label ?? null"
+                             [attr.data-test]="rowAction !== null ? 'notification-row-action' : null"
+                             (keydown.enter)="onRowEnter(n, $event)"
                              [class.cms-notification-row--unread]="!n.isRead"
                              [class.cms-notification-row--selected]="store.selectedIds().has(n.id)"
                              [class.cms-notification-row--flash]="store.flashingIds().has(n.id)"
@@ -158,7 +167,7 @@ import { NotificationStore } from './notification-store.service';
                                      (click)="$event.stopPropagation()">{{ renderedBody(n) }}</div>
                             }
 
-                            @if (actionTarget(n); as target) {
+                            @if (buttonActionTarget(n); as target) {
                                 <div class="cms-notification-row__action">
                                     <button type="button"
                                             class="cms-btn cms-btn-sm"
@@ -272,6 +281,10 @@ import { NotificationStore } from './notification-store.service';
                content; shift-click selection still works on the row
                primary because the body is below it. */
             user-select: text;
+        }
+        .cms-notification-row--action:focus-visible {
+            outline: 2px solid var(--cms-focus-ring, var(--cms-primary, #2563eb));
+            outline-offset: -2px;
         }
         .cms-notification-row__action {
             margin: .375rem 0 .125rem 0;
@@ -414,9 +427,35 @@ export class NotificationDrawerContentComponent {
         return notificationActionTarget(n.action);
     }
 
+    /** The row's action when it is drawn as a button under the text, or null. */
+    protected buttonActionTarget(n: NotificationDto): NotificationActionTarget | null {
+        const target = this.actionTarget(n);
+        return target?.presentation === 'button' ? target : null;
+    }
+
+    /** The row's action when the whole row is the action, or null: then the row is not interactive as a whole. */
+    protected rowActionTarget(n: NotificationDto): NotificationActionTarget | null {
+        const target = this.actionTarget(n);
+        return target?.presentation === 'row' ? target : null;
+    }
+
     /** The action's button: marks the row read, as opening it does, and goes to the action's screen. */
     protected onActionClick(n: NotificationDto, target: NotificationActionTarget, event: Event): void {
         event.stopPropagation();
+        this.openAction(n, target);
+    }
+
+    /** Enter on a row whose action is the row opens it; Enter on a control inside the row is that control's. */
+    protected onRowEnter(n: NotificationDto, event: Event): void {
+        const target = this.rowActionTarget(n);
+        if (target === null || event.target !== event.currentTarget) {
+            return;
+        }
+        event.preventDefault();
+        this.openAction(n, target);
+    }
+
+    private openAction(n: NotificationDto, target: NotificationActionTarget): void {
         if (!n.isRead) {
             this.markReadAsync(n);
         }
@@ -458,6 +497,12 @@ export class NotificationDrawerContentComponent {
      * any branch so navigation paths stay consistent.
      */
     protected onActivate(n: NotificationDto): void {
+        // A row whose action is the row opens it, as Enter does.
+        const rowAction = this.rowActionTarget(n);
+        if (rowAction !== null) {
+            this.openAction(n, rowAction);
+            return;
+        }
         if (!n.isRead) {
             this.markReadAsync(n);
         }

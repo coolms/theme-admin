@@ -45,12 +45,12 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
     describe('where an action goes', () => {
         it('email.mailbox.settings opens the mailbox at the section\'s pane, the first pane without one', () => {
             expect(notificationActionTarget(reconnect())).toEqual({
-                label: 'Reconnect', commands: ['/email', { mailbox: MAILBOX_ID }], queryParams: { settings: 'connection' },
+                label: 'Reconnect', presentation: 'button', commands: ['/email', { mailbox: MAILBOX_ID }], queryParams: { settings: 'connection' },
             });
             expect(notificationActionTarget({
                 label: 'manage-access', labelText: 'Manage access',
                 destination: { name: 'email.mailbox.settings', params: { mailboxId: MAILBOX_ID, section: 'delegations' } },
-            })).toEqual({ label: 'Manage access', commands: ['/email', { mailbox: MAILBOX_ID }], queryParams: { settings: 'access' } });
+            })).toEqual({ label: 'Manage access', presentation: 'button', commands: ['/email', { mailbox: MAILBOX_ID }], queryParams: { settings: 'access' } });
             expect(notificationActionTarget(reconnect({ mailboxId: MAILBOX_ID }))?.queryParams).toEqual({ settings: 'general' });
         });
 
@@ -249,6 +249,95 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
             (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(linked);
 
             expect(navigateByUrl).toHaveBeenCalledOnceWith('/content');
+        });
+
+        describe('how the server says to draw the action', () => {
+            /** A missed call's or a mention's action: the row is the action, to a conversation the admin cannot open. */
+            const openConversation: NotificationAction = {
+                label: 'open-conversation', labelText: 'Open conversation', presentation: 'row',
+                destination: { name: 'chat.conversation', params: { conversationId: '0193a1f2-0000-7000-8000-000000000001' } },
+            };
+            const activate = (n: NotificationDto): void =>
+                (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(n);
+            const rowEl = (host: HTMLElement): HTMLElement => host.querySelector('.cms-notification-row') as HTMLElement;
+            const enter = (el: HTMLElement): void => {
+                el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+                fixture.detectChanges();
+            };
+
+            it('presentation button draws the button, and the row is not interactive as a whole', () => {
+                const host = render([row({ action: { ...reconnect(), presentation: 'button' } })]);
+
+                expect(actionButton(host)?.textContent?.trim()).toBe('Reconnect');
+                expect(rowEl(host).getAttribute('role')).toBeNull();
+                expect(rowEl(host).hasAttribute('tabindex')).toBeFalse();
+                expect(notificationActionTarget({ ...reconnect(), presentation: 'button' })?.presentation).toBe('button');
+            });
+
+            it('no presentation means a button', () => {
+                const host = render([row({ action: reconnect() })]);
+
+                expect(reconnect().presentation).toBeUndefined();
+                expect(actionButton(host)).not.toBeNull();
+                expect(rowEl(host).getAttribute('role')).toBeNull();
+                expect(notificationActionTarget(reconnect())?.presentation).toBe('button');
+            });
+
+            it('presentation row with a known destination: no button; the row, named by its label, opens it on Enter and on a click', () => {
+                const n = row({ action: { ...reconnect(), presentation: 'row' } });
+                const host = render([n]);
+                const r = rowEl(host);
+
+                expect(actionButton(host)).withContext('no button').toBeNull();
+                expect(r.getAttribute('role')).toBe('link');
+                expect(r.getAttribute('tabindex')).toBe('0');
+                expect(r.getAttribute('aria-label')).toBe('Reconnect');
+
+                enter(r);
+                expect(markRead).toHaveBeenCalledOnceWith('n-1');
+                expect(navigate).toHaveBeenCalledOnceWith(['/email', { mailbox: MAILBOX_ID }], { queryParams: { settings: 'connection' } });
+                expect(close).toHaveBeenCalledTimes(1);
+
+                activate(n);
+                expect(navigate).withContext('a click opens it too').toHaveBeenCalledTimes(2);
+                expect(navigateByUrl).not.toHaveBeenCalled();
+            });
+
+            it('Enter on a control inside such a row is that control\'s, not the row\'s', () => {
+                const host = render([row({ action: { ...reconnect(), presentation: 'row' } })]);
+
+                enter(rowEl(host).querySelector('button[aria-label="Expand"]') as HTMLElement);
+
+                expect(navigate).not.toHaveBeenCalled();
+            });
+
+            it('presentation row to chat.conversation, which the admin does not know: the row stays inert, with no button and no navigation', () => {
+                const n = row({ type: 'rtc.call.missed', extras: { title: 'Missed call' }, action: openConversation });
+                const host = render([n]);
+                const r = rowEl(host);
+
+                expect(notificationActionTarget(openConversation)).toBeNull();
+                expect(actionButton(host)).toBeNull();
+                expect(r.getAttribute('role')).toBeNull();
+                expect(r.hasAttribute('tabindex')).toBeFalse();
+                expect(r.hasAttribute('aria-label')).toBeFalse();
+
+                enter(r);
+                activate(n);
+                expect(navigate).not.toHaveBeenCalled();
+                expect(navigateByUrl).not.toHaveBeenCalled();
+                expect(close).not.toHaveBeenCalled();
+            });
+
+            it('a mention to chat.conversation is inert too: the admin never navigates by a notification\'s type', () => {
+                const n = row({ type: 'chat.mention', extras: { title: 'You were mentioned' }, action: openConversation });
+                render([n]);
+
+                activate(n);
+
+                expect(navigate).not.toHaveBeenCalled();
+                expect(navigateByUrl).not.toHaveBeenCalled();
+            });
         });
     });
 });

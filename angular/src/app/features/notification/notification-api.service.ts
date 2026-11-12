@@ -34,8 +34,9 @@ export interface NotificationDto {
 }
 
 /**
- * A notification's action: `label` is a code the admin words itself, `labelText` the server's fallback wording, and
- * `destination` a registered name with the flat params its route needs -- never a URL.
+ * A notification's action: `label` is a code the admin words itself, `labelText` the server's fallback wording,
+ * `destination` a registered name with the flat params its route needs -- never a URL -- and `presentation` how it is
+ * drawn, as the server decides: a button under the text, or the whole row (absent: a button).
  */
 export interface NotificationAction {
     label: string;
@@ -44,6 +45,7 @@ export interface NotificationAction {
         name: string;
         params: Record<string, string>;
     };
+    presentation?: 'button' | 'row' | null;
 }
 
 export interface UnreadCountDto {
