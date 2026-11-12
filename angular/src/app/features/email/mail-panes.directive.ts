@@ -19,8 +19,32 @@ export const MAIL_PANE_LIMITS: Readonly<Record<MailPane, { readonly min: number;
 /** The message pane is never narrower than this, in px. */
 export const MAIL_MESSAGE_MIN = 360;
 
-/** The two splitters' own width (7px each), taken from the grid before the panes. */
-const SPLITTERS_WIDTH = 14;
+/** One splitter's own width, taken from the grid before the panes. */
+const SPLITTER_WIDTH = 7;
+
+/** The two splitters' own width, taken from the grid before the panes. */
+const SPLITTERS_WIDTH = 2 * SPLITTER_WIDTH;
+
+/** The narrowest grid that holds the folders, the list and the message at their minimums, with both splitters: 854px. */
+export const MAIL_THREE_PANES_MIN = MAIL_PANE_LIMITS.folders.min + MAIL_PANE_LIMITS.list.min + MAIL_MESSAGE_MIN + SPLITTERS_WIDTH;
+
+/** The narrowest grid that holds the list and the message at their minimums, with one splitter: 647px. */
+export const MAIL_TWO_PANES_MIN = MAIL_PANE_LIMITS.list.min + MAIL_MESSAGE_MIN + SPLITTER_WIDTH;
+
+/**
+ * How many panes the grid shows side by side: all three where their minimums fit; the list and the message (the
+ * folders one press away, in the list's place) where those two fit; else one at a time. A grid not measured (0)
+ * shows three.
+ */
+export type MailPaneCount = 1 | 2 | 3;
+
+/** How many panes a grid this wide shows side by side. */
+export function mailPaneCount(grid: number): MailPaneCount {
+    if (!(grid > 0) || grid >= MAIL_THREE_PANES_MIN) {
+        return 3;
+    }
+    return grid >= MAIL_TWO_PANES_MIN ? 2 : 1;
+}
 
 /** The person's interface preference entry the admin keeps its pane widths in. */
 export const MAIL_PANES_PREF = 'admin:mail:panes';
@@ -59,16 +83,27 @@ export function clampPaneWidth(pane: MailPane, value: unknown): number | null {
 
 /**
  * The panes in a grid this wide, from the widths the person chose: the message pane keeps its minimum by the list
- * giving way first, then the folder column, each down to its own minimum. A grid not measured (0) draws the chosen
- * widths with the static limits.
+ * giving way first, then the folder column, each down to its own minimum. Where only the list and the message show,
+ * the list alone gives way. A grid not measured (0), or one showing a pane at a time, draws the chosen widths with
+ * the static limits.
  */
 export function mailPaneLayout(grid: number, chosen: MailPaneWidths): MailPaneLayout {
     const f = MAIL_PANE_LIMITS.folders;
     const l = MAIL_PANE_LIMITS.list;
     const wantFolders = clamp(chosen.folders, f.min, f.max);
     const wantList = clamp(chosen.list, l.min, l.max);
-    if (!(grid > 0)) {
+    const count = mailPaneCount(grid);
+    if (!(grid > 0) || count === 1) {
         return { folders: wantFolders, list: wantList, foldersMax: f.max, listMax: l.max };
+    }
+    if (count === 2) {
+        const twoRoom = grid - SPLITTER_WIDTH - MAIL_MESSAGE_MIN;
+        return {
+            folders: wantFolders,
+            list: Math.max(l.min, Math.min(wantList, twoRoom)),
+            foldersMax: f.max,
+            listMax: clamp(twoRoom, l.min, l.max),
+        };
     }
     const room = grid - SPLITTERS_WIDTH - MAIL_MESSAGE_MIN;
     const list = Math.max(l.min, Math.min(wantList, room - wantFolders));
@@ -128,7 +163,8 @@ function writeCache(pane: MailPane, width: number): void {
 /**
  * The mail grid's pane widths, on the grid element: the browser's cache first, then the person's saved widths from
  * the server when they arrive (unless a splitter moved first); each move saved to both. The splitters draw
- * {@link layout}, which keeps the message pane at its minimum as the grid narrows.
+ * {@link layout}, which keeps the message pane at its minimum as the grid narrows; {@link count} says how many panes
+ * the grid's width holds side by side.
  */
 @Directive({
     selector: '[appMailPanes]',
@@ -155,6 +191,8 @@ export class MailPanesDirective {
     private readonly saves = new Subject<MailPaneWidths>();
 
     readonly layout = computed(() => mailPaneLayout(this.gridWidth(), this.chosen()));
+    /** How many panes the grid shows side by side at its width now. */
+    readonly count = computed(() => mailPaneCount(this.gridWidth()));
 
     constructor() {
         this.saves.pipe(

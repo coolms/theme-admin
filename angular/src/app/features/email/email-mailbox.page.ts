@@ -224,7 +224,8 @@ type PhonePane = 'folders' | 'message';
                 </div>
             } @else {
                 <div class="mbx__body" appMailPanes #panes="appMailPanes" [class.mbx__body--reading]="loadingDetail() || selectedMessage() !== null"
-                     [class.mbx__body--folders]="phoneFolders()">
+                     [class.mbx__body--folders]="phoneFolders()" [class.mbx__body--one]="onePane()" [class.mbx__body--two]="twoPanes()"
+                     [style.--mbx-list-width.px]="panes.layout().list">
                     <!-- LEFT: mailbox picker + folder rail -->
                     <aside class="mbx__rail">
                         <!-- On a phone the folders stand in place of the list; Back returns to it unchanged. -->
@@ -253,7 +254,7 @@ type PhonePane = 'folders' | 'message';
                     </aside>
 
                     <!-- Where folders show beside the list the column is at least 200px wide. -->
-                    <cms-pane-splitter [minWidth]="panes.limits.folders.min" [maxWidth]="panes.layout().foldersMax"
+                    <cms-pane-splitter class="mbx__split-folders" [minWidth]="panes.limits.folders.min" [maxWidth]="panes.layout().foldersMax"
                                        [width]="panes.layout().folders" [ariaLabel]="panes.words.folders"
                                        (widthChange)="panes.resized('folders', $event)" />
 
@@ -988,30 +989,38 @@ type PhonePane = 'folders' | 'message';
         /* The page's own spacing between the section header and the grid: the content inset the shell keeps above
            the header. */
         .mbx__body { flex: 1; display: flex; min-height: 0; margin-top: var(--cms-content-padding); }
-        .mbx__phone-bar { display: none; }
-        @media (max-width: 599.98px) {
-            /* One pane at a time: the list; the folders when asked for; a message once one is opened. */
-            .mbx__body .mbx__rail, .mbx__body .mbx__list, .mbx__body .mbx__detail, .mbx__body > cms-pane-splitter { display: none; }
-            .mbx__body--folders .mbx__rail { display: flex; width: 100%; flex: 1 1 auto; }
-            .mbx__body:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
-                display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
-            }
-            .mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
-            .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
-            .mbx__phone-bar {
-                display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
-                border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
-                font: inherit; text-align: left; cursor: pointer;
-            }
-            .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
-            .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }
-            .mbx__rail .mbx__phone-bar {
-                margin: 0 calc(-1 * var(--cms-panel-padding)) 4px calc(-1 * var(--cms-content-padding));
-                width: calc(100% + var(--cms-panel-padding) + var(--cms-content-padding));
-            }
-            .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .mbx__detail .mbx__thread-item { grid-template-columns: minmax(0, 1fr) auto; }
-            .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
+        .mbx__phone-bar {
+            display: none; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
+            border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
+            font: inherit; text-align: left; cursor: pointer;
+        }
+        .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* One pane at a time (a phone, or a grid too narrow for the list and the message): the list; the folders when
+           asked for; a message once one is opened. */
+        .mbx__body--one .mbx__rail, .mbx__body--one .mbx__list, .mbx__body--one .mbx__detail, .mbx__body--one > cms-pane-splitter { display: none; }
+        .mbx__body--one.mbx__body--folders .mbx__rail { display: flex; width: 100%; flex: 1 1 auto; }
+        .mbx__body--one:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
+            display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
+        }
+        .mbx__body--one.mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
+        .mbx__body--one .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
+        .mbx__body--one .mbx__phone-bar { display: flex; }
+        .mbx__body--one .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
+        .mbx__body--one .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }
+        .mbx__body--one .mbx__rail .mbx__phone-bar, .mbx__body--two .mbx__rail .mbx__phone-bar {
+            margin: 0 calc(-1 * var(--cms-panel-padding)) 4px calc(-1 * var(--cms-content-padding));
+            width: calc(100% + var(--cms-panel-padding) + var(--cms-content-padding));
+        }
+        .mbx__body--one .mbx__detail .mbx__thread-item { grid-template-columns: minmax(0, 1fr) auto; }
+        .mbx__body--one .mbx__detail .mbx__thread-subject { grid-column: 1 / -1; grid-row: 2; }
+        /* Two panes, where the three minimums do not fit: the list and the message. The folders are one press away,
+           standing in the list's place at the list's width until one is chosen, so the message keeps its minimum. */
+        .mbx__body--two .mbx__rail, .mbx__body--two > .mbx__split-folders { display: none; }
+        .mbx__body--two .mbx__list > .mbx__phone-bar, .mbx__body--two .mbx__rail > .mbx__phone-bar { display: flex; }
+        .mbx__body--two.mbx__body--folders .mbx__list, .mbx__body--two.mbx__body--folders > cms-pane-splitter { display: none; }
+        .mbx__body--two.mbx__body--folders .mbx__rail {
+            display: flex; flex: 0 0 var(--mbx-list-width) !important; width: var(--mbx-list-width) !important;
+            border-right: 1px solid var(--cms-border);
         }
 
         /* Feeds the page header only: the bar's nodes are drawn on the mailbox's card and in its menu. */
@@ -1445,9 +1454,17 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly hasMailboxSettings = computed(() => this.toolbarNodes().some(n => 'mailbox-settings' === n.meta['action']));
 
     private readonly location = inject(Location);
-    /** The width at which the page shows one pane at a time; the pane shown is then in the address. */
+    /** A phone's width: the page shows one pane at a time. */
     private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(max-width: 599.98px)') : null;
+    /** The window is at a phone's width now. */
+    private readonly phone = signal(this.phoneWidth?.matches === true);
+    /** The mail grid's panes, measured on the grid itself. */
+    private readonly gridPanes = viewChild(MailPanesDirective);
+    /** One pane at a time, on a phone or in a grid too narrow for the list and the message; the pane shown is then in the address. */
+    readonly onePane = computed(() => this.phone() || this.gridPanes()?.count() === 1);
+    /** The list and the message side by side; the folders stand in the list's place when asked for. */
+    readonly twoPanes = computed(() => !this.onePane() && this.gridPanes()?.count() === 2);
     /** The pane the address names now, and whether this page added that entry to the history (so Back can return). */
     private paneInAddress: PhonePane | null = null;
     private addedPaneEntry = false;
@@ -1473,7 +1490,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Shows a pane on a phone, as an entry of its own in the history; the list to message step from the folders replaces. */
     showPane(pane: PhonePane): void {
         if (pane === 'folders') this.phoneFolders.set(true);
-        if (this.phoneWidth?.matches !== true || this.paneInAddress === pane) return;
+        if (!this.onePane() || this.paneInAddress === pane) return;
         const replace = this.paneInAddress !== null;
         void this.router.navigate([], {
             relativeTo: this.route, queryParams: { [PANE_PARAM]: pane }, queryParamsHandling: 'merge', replaceUrl: replace,
@@ -2053,7 +2070,15 @@ export class EmailMailboxPageComponent implements OnInit {
             });
             onCleanup(() => drawn.unsubscribe());
         });
+        // The window crossing a phone's width redraws the panes.
+        const phoneChanged = (e: MediaQueryListEvent): void => this.phone.set(e.matches);
+        if (typeof this.phoneWidth?.addEventListener === 'function') {
+            this.phoneWidth.addEventListener('change', phoneChanged);
+        }
         this.destroyRef.onDestroy(() => {
+            if (typeof this.phoneWidth?.removeEventListener === 'function') {
+                this.phoneWidth.removeEventListener('change', phoneChanged);
+            }
             this.searchEndCountdown?.unsubscribe();
             this.serverSearch.stop();
             this.otherServerSearches.stop();
@@ -3062,7 +3087,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const open = this.selectedMessage();
         if (open && gone.has(open.id)) {
             this.selectedMessage.set(null);
-            if (this.phoneWidth?.matches === true) {
+            if (this.onePane()) {
                 this.leavePane('message');
             } else {
                 // The next stored row: a server row is opened only when chosen.

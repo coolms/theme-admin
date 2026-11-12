@@ -57,11 +57,22 @@ describe('Mail pane widths', () => {
             // 900: 526 for the panes; the list gives 44, the folders nothing.
             expect(mailPaneLayout(900, { folders: 230, list: 340 }))
                 .toEqual({ folders: 230, list: 296, foldersMax: 230, listMax: 296 });
-            // 860: 486; the list at its minimum 280, the folders give way to 206; at 700 both at their minimums.
+            // 860: 486; the list at its minimum 280, the folders give way to 206; at 854 both at their minimums.
             expect(mailPaneLayout(860, { folders: 230, list: 340 }))
                 .toEqual({ folders: 206, list: 280, foldersMax: 206, listMax: 280 });
-            expect(mailPaneLayout(700, { folders: 230, list: 340 }))
+            expect(mailPaneLayout(854, { folders: 230, list: 340 }))
                 .toEqual({ folders: 200, list: 280, foldersMax: 200, listMax: 280 });
+        });
+
+        it('under the three minimums only the list and the message show: the list alone gives way to the message\'s 360px', () => {
+            // 700 - 7 splitter - 360 message = 333 for the list; the folders keep the chosen width for when they show.
+            expect(mailPaneLayout(700, { folders: 230, list: 340 }))
+                .toEqual({ folders: 230, list: 333, foldersMax: 380, listMax: 333 });
+            expect(mailPaneLayout(647, { folders: 230, list: 340 }))
+                .toEqual({ folders: 230, list: 280, foldersMax: 380, listMax: 280 });
+            // One pane at a time: no splitter is drawn, the chosen widths kept.
+            expect(mailPaneLayout(600, { folders: 230, list: 340 }))
+                .toEqual({ folders: 230, list: 340, foldersMax: 380, listMax: 620 });
         });
 
         it('keeps chosen widths in their limits, and an unmeasured grid uses the static limits', () => {
