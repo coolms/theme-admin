@@ -1,19 +1,18 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, type Observable, of } from 'rxjs';
-import { ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
+import { NEVER, type Observable, Subject, of } from 'rxjs';
+import { AuthState, ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
-import { type ComposeDraft } from './compose-draft';
 import { DISCARD_UNDO_MS, MAIL_EDITOR_PROFILE, MAX_COMPOSE_WINDOWS, windowsToClose, type ComposeWindowSnapshot } from './compose-windows';
+import { FakeDraftsApi } from './email-drafts.fake';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -30,13 +29,15 @@ interface Shown { type: string; message: string; action?: { label: string; run: 
  * inside, and a click on the backdrop minimizes; Esc minimizes once an open suggestion list has closed; Ctrl or
  * Cmd+Enter sends; at most three windows, minimized ones as bars to the left, a fourth closing the one unused longest
  * with its draft kept; From only with confirmed aliases; Close keeps the draft and there is no Cancel; Discard always,
- * with a 10 second Undo once a draft was saved. Rendered and laid out at 1400 x 800, fixed at the window's top left.
+ * with a 10 second Undo once a draft was saved, after a save on its way has landed. Drafts are the server's (its drafts
+ * API, in memory here). Rendered and laid out at 1400 x 800, fixed at the window's top left.
  */
 describe('EmailMailboxPageComponent -- the compose window', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
     let sent: OutgoingEmailRequest[];
     let shown: Shown[];
-    let drafts: Map<string, unknown>;
+    let server: FakeDraftsApi;
+    let live: Subject<unknown>;
     let aliases: MailAliasesDto;
     let removed: string[];
 
@@ -44,10 +45,11 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         sent = [];
         shown = [];
         removed = [];
-        // This test's own store: the mock below closes over it, so a save still pending from an earlier test's
-        // page writes into that page's store, never into this one.
-        const store = new Map<string, unknown>();
-        drafts = store;
+        // This test's own drafts: the mock below closes over them, so a save still pending from an earlier test's
+        // page writes into that page's drafts, never into these.
+        const drafts = new FakeDraftsApi();
+        server = drafts;
+        live = new Subject<unknown>();
         aliases = { canManage: false, aliases: [] };
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
@@ -71,6 +73,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                             sent.push(structuredClone(request));
                             return NEVER;
                         },
+                        ...drafts.api(),
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
@@ -89,21 +92,13 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                     provide: ActivatedRoute,
                     useValue: { queryParamMap: NEVER, snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({}) } },
                 },
-                { provide: Store, useValue: { selectSnapshot: () => null } },
+                { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
-                {
-                    provide: DraftStoreService,
-                    useValue: {
-                        load: (key: string) => (store.has(key) ? structuredClone(store.get(key)) : null),
-                        save: (key: string, value: unknown) => void store.set(key, structuredClone(value)),
-                        clear: (key: string) => void store.delete(key),
-                    },
-                },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
-                { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
+                { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: {} },
                 { provide: CrumbNamesService, useValue: { setTail: (): void => {} } },
             ],
@@ -125,6 +120,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
     const win = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-testid="compose-window"]');
     const bars = (): HTMLElement[] => [...el().querySelectorAll<HTMLElement>('[data-testid="compose-bar"]')];
+    const texts = (): string[] => [...server.drafts.values()].map(d => d.text);
     const frame = (): Promise<void> => new Promise(resolve => requestAnimationFrame(() => resolve()));
     const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
     async function settle(): Promise<void> {
@@ -244,7 +240,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(page().composeMinimized()).toBeTrue();
         expect(page().composeOpen()).toBeTrue();
         await wait(700);
-        expect((drafts.get('email.mb1.compose') as ComposeDraft).text).withContext('the draft kept').toBe('Noon?');
+        expect(texts()).withContext('the draft kept').toEqual(['Noon?']);
     });
 
     it('Ctrl+Enter and Cmd+Enter send', async () => {
@@ -284,8 +280,9 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(bars().length + 1).toBe(3);
         expect(bars().map(b => b.querySelector('.mbx__compose-bar-title')?.textContent?.trim())).toEqual(['Three', 'One']);
         expect(page().composeSubject).withContext('the one being written in').toBe('Four');
-        const kept = [...drafts.values()].map(d => (d as ComposeDraft).subject).sort();
+        const kept = [...server.drafts.values()].map(d => d.subject).sort();
         expect(kept).withContext('the closed window\'s draft kept').toEqual(['One', 'Three', 'Two']);
+        expect(server.of('create').map(c => c.body!.answers)).withContext('new messages answer nothing').toEqual([null, null, null]);
     });
 
     it('the one closed is the one left unused longest, never the one being opened', () => {
@@ -317,7 +314,9 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         await settle();
         page().sending.set(false);
         page().sendCompose();
-        expect(sent[1]).toEqual({ text: 'Hello', to: ['ada@example.test'], subject: 'Hi', from: 'sales@example.test' });
+        // The window opened on the draft the first one left, and sends naming it.
+        const first = [...server.drafts.keys()][0];
+        expect(sent[1]).toEqual({ text: 'Hello', to: ['ada@example.test'], subject: 'Hi', from: 'sales@example.test', draftId: first });
     });
 
     it('Close closes the window and keeps the draft', async () => {
@@ -325,50 +324,97 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         win()!.querySelector<HTMLButtonElement>('[data-testid="compose-close"]')!.click();
         await settle();
         expect(win()).toBeNull();
-        expect((drafts.get('email.mb1.compose') as ComposeDraft).text).toBe('Noon?');
+        expect(texts()).toEqual(['Noon?']);
+        expect(server.of('delete')).toEqual([]);
     });
 
     it('Discard with no saved draft just closes: nothing deleted, no notice', async () => {
         await compose([], '', '');
-        drafts.set('email.mb1.compose.1', { text: 'another' });
+        server.put({ id: 'other', text: 'another' });
 
         win()!.querySelector<HTMLButtonElement>('[data-testid="compose-discard"]')!.click();
         await settle();
 
         expect(win()).toBeNull();
         expect(shown).toEqual([]);
-        expect([...drafts.keys()]).toEqual(['email.mb1.compose.1']);
+        expect(server.of('delete')).toEqual([]);
+        expect([...server.drafts.keys()]).toEqual(['other']);
     });
 
-    it('Discard of a saved draft deletes it with a 10 second Undo, which brings it back in its window', async () => {
+    it('Discard of a saved draft deletes it with a 10 second Undo, which makes it again from its last content', async () => {
         await compose(['ada@example.test'], 'Lunch', 'Noon?');
         await wait(700);
-        expect(drafts.has('email.mb1.compose')).toBeTrue();
+        const id = [...server.drafts.keys()][0];
+        expect(texts()).toEqual(['Noon?']);
 
         win()!.querySelector<HTMLButtonElement>('[data-testid="compose-discard"]')!.click();
         await settle();
-        expect(drafts.has('email.mb1.compose')).toBeFalse();
+        expect(server.of('delete').map(c => c.id)).toEqual([id]);
+        expect(server.drafts.size).toBe(0);
         expect(win()).toBeNull();
         expect(DISCARD_UNDO_MS).toBe(10_000);
         expect(shown.map(t => [t.type, t.message, t.action?.label])).toEqual([['info', 'Draft discarded. (10000 ms)', 'Undo']]);
 
         shown[0].action!.run();
         await settle();
-        expect((drafts.get('email.mb1.compose') as ComposeDraft).text).toBe('Noon?');
+        expect(server.of('create').length).withContext('made again').toBe(2);
+        expect(server.of('create')[1].body).toEqual(jasmine.objectContaining({ to: ['ada@example.test'], subject: 'Lunch', text: 'Noon?', answers: null, quote: false }));
+        expect(texts()).toEqual(['Noon?']);
         expect(win()).not.toBeNull();
         expect(page().composeText).toBe('Noon?');
         expect(page().composeSubject).toBe('Lunch');
     });
 
-    it('a Discard while a save is still owed: the save is made, then deleted; no draft comes back after it', async () => {
+    it('a Discard while a save is on its way waits for it, then deletes the draft it made', async () => {
         await compose(['ada@example.test'], 'Lunch', 'Noon?');
-        expect(drafts.size).withContext('the save is still owed').toBe(0);
+        server.hold();
+        await wait(700);
+        expect(server.waiting).withContext('the create is on its way').toBe(1);
 
         page().discardDraft();
-        expect(shown.length).withContext('it was a saved draft, so Undo is offered').toBe(1);
+        await settle();
+        expect(win()).toBeNull();
+        expect(server.of('delete')).withContext('nothing deleted before the save lands').toEqual([]);
+
+        server.release();
+        await settle();
+        const made = server.of('create');
+        expect(made.length).toBe(1);
+        expect(server.of('delete').length).withContext('then the draft it made is deleted').toBe(1);
+        expect(server.drafts.size).withContext('no draft survives the Discard').toBe(0);
+        expect(shown.length).withContext('Undo is offered').toBe(1);
+    });
+
+    it('a Discard while a save is only owed: nothing is written, nothing deleted, no Undo', async () => {
+        await compose(['ada@example.test'], 'Lunch', 'Noon?');
+        expect(server.drafts.size).withContext('the save is still owed').toBe(0);
+
+        page().discardDraft();
         await wait(800);
 
-        expect(drafts.size).withContext('nothing written after the Discard').toBe(0);
+        expect(server.of('create')).withContext('nothing written after the Discard').toEqual([]);
+        expect(shown).toEqual([]);
         expect(removed).toEqual([]);
+    });
+
+    it('a minimized window follows its draft: a newer version is read again, a draft gone closes its bar', async () => {
+        await compose(['a@example.test'], 'One', 'first');
+        await compose(['b@example.test'], 'Two', 'second');
+        await wait(700);
+        const [one, two] = [...server.drafts.values()].map(d => d.id);
+
+        server.put({ id: one, text: 'first, edited on the phone' });
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: one, version: 2, answers: null });
+        await settle();
+        expect(server.of('read').map(c => c.id)).toEqual([one]);
+        bars()[0].click();
+        await settle();
+        expect(page().composeText).withContext('the bar restores the newer draft').toBe('first, edited on the phone');
+
+        server.drafts.delete(two);
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: two, version: null, answers: null });
+        await settle();
+        expect(bars().length).withContext('the window of a draft gone is closed').toBe(0);
+        expect(page().composeText).toBe('first, edited on the phone');
     });
 });
