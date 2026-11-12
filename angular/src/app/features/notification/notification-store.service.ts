@@ -10,6 +10,26 @@ const FLASH_DURATION_MS = 2_000;
 
 const PAGE_SIZE = 20;
 
+/** One row per id (the first read wins), newest first by createdAt; rows with the same createdAt keep their order. */
+export function newestFirst(list: readonly NotificationDto[]): NotificationDto[] {
+    const seen = new Set<string>();
+    const once = list.filter((n) => {
+        if (seen.has(n.id)) {
+            return false;
+        }
+        seen.add(n.id);
+        return true;
+    });
+    const at = (n: NotificationDto): number => {
+        const t = Date.parse(n.createdAt);
+        return Number.isNaN(t) ? 0 : t;
+    };
+    return once
+        .map((n, i) => ({ n, i }))
+        .sort((a, b) => at(b.n) - at(a.n) || a.i - b.i)
+        .map(({ n }) => n);
+}
+
 /**
  * Notification Sub-phase E -- signal-based store of the bell's
  * authoritative view of the most-recent notifications and the
@@ -138,7 +158,10 @@ export class NotificationStore {
      * id returns `not_found` per the Ship A.1 bulk endpoint
      * contract, which the refetch then reconciles.
      */
-    setNotifications(list: NotificationDto[]): void {
+    setNotifications(read: NotificationDto[]): void {
+        // A notification the server updated in place (the same id with a new title, body and createdAt, as grouped
+        // missed calls) replaces its row: one row per id, newest first by createdAt.
+        const list = newestFirst(read);
         const previousIds = new Set(this._notifications().map((n) => n.id));
         const newArrivalIds = list.filter((n) => !previousIds.has(n.id)).map((n) => n.id);
         this._notifications.set(list);
@@ -156,7 +179,7 @@ export class NotificationStore {
         // `_hasMore` flips on when the page is full and off when
         // fewer rows came back than the page size (no older history
         // beyond the current view).
-        this._hasMore.set(list.length >= PAGE_SIZE);
+        this._hasMore.set(read.length >= PAGE_SIZE);
     }
 
     /**
