@@ -16,7 +16,8 @@ export interface DraftCall {
  * The drafts API for the specs: one person's drafts in memory, answering as the server does. A second reply draft to a
  * message is 409 reply-draft-exists naming the first; a save from an older version is 409 draft-stale with the version
  * stored; a save that changes what a draft answers (but for reply and reply all) is 422; a discard of a draft already
- * gone is done. `hold()` keeps every answer back until `release()`, for a request still on its way.
+ * gone is done. `failNextCreate()` makes the next create a server error. `hold()` keeps every answer back until
+ * `release()`, for a request still on its way.
  */
 export class FakeDraftsApi {
     readonly drafts = new Map<string, EmailDraftDto>();
@@ -27,6 +28,12 @@ export class FakeDraftsApi {
     private clock = 0;
     private holding = false;
     private held: Array<() => void> = [];
+    private failing: number[] = [];
+
+    /** The next create answers this status (a server error), with nothing written. */
+    failNextCreate(status: number): void {
+        this.failing.push(status);
+    }
 
     /** Answers are kept back from now on. */
     hold(): void {
@@ -66,6 +73,10 @@ export class FakeDraftsApi {
     createDraft(mailboxId: string, body: EmailDraftWrite): Observable<EmailDraftDto> {
         this.calls.push({ op: 'create', body: structuredClone(body) });
         return this.answer(() => {
+            const failure = this.failing.shift();
+            if (failure !== undefined) {
+                return problem(failure, { status: failure });
+            }
             const answers = body.answers ?? null;
             if (answers !== null && isReplyMode(answers.mode)) {
                 const there = [...this.drafts.values()].find(d => d.answers?.messageId === answers.messageId && isReplyMode(d.answers.mode));

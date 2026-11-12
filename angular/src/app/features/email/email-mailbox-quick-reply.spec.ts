@@ -22,6 +22,7 @@ import {
 import { readDraftsChanged } from './mail-drafts-changed';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { QUICK_REPLY_MAX_LINES, QUICK_REPLY_SAVE_MS } from './mail-quick-reply.component';
+import { DRAFT_RETRY_FIRST_MS } from './server-draft';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
@@ -342,7 +343,11 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         fixture.componentInstance.composeText = 'Long answer coming. Here it is.';
         fixture.componentInstance.onComposeChange();
         await wait(QUICK_REPLY_SAVE_MS + 100);
-        expect(server.of('save').map(c => [c.id, c.version])).withContext('one draft id for both').toEqual([[id, 1]]);
+        const saves = server.of('save');
+        expect(saves.length).withContext('saved from the window').toBeGreaterThan(0);
+        expect(saves.map(c => c.id)).withContext('one draft id for both').toEqual(saves.map(() => id));
+        expect(saves[0].version).withContext('from the version the box left').toBe(1);
+        expect(server.drafts.get(id)!.text).toBe('Long answer coming. Here it is.');
         expect(server.of('create').length).toBe(1);
         expect(server.drafts.size).toBe(1);
 
@@ -431,6 +436,54 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(server.of('save').map(c => c.id)).toEqual(['d-phone']);
     });
 
+    it('Expand while the box\'s create is on its way waits for it: the window opens on that draft, never a second', async () => {
+        await open(3);
+        await type('Racing the window.');
+        server.hold();
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect(server.waiting).withContext('the box\'s create is on its way').toBe(1);
+
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        expect(server.of('lookup').length + server.of('read').length).withContext('the window waits').toBe(1);
+
+        server.release();
+        await settle();
+        expect(server.of('create').length).withContext('one create').toBe(1);
+        expect(server.of('read').map(c => c.id)).withContext('the window reads the box\'s draft').toEqual([only()]);
+        expect(dock()!.querySelector('textarea')!.value).toBe('Racing the window.');
+    });
+
+    it('a reply draft create the server fails (5xx) looks the draft up once and loads it when it is there', async () => {
+        await open(3);
+        // The create raced another one, which made the draft; this one failed.
+        server.put(written('d-race', 'Made by the other create.'));
+        server.failNextCreate(500);
+
+        await typeAndSave('Typed here.');
+
+        expect(server.of('create').length).withContext('no second create').toBe(1);
+        expect(server.of('lookup').map(c => c.messageId)).withContext('looked up by the message').toEqual(['m1', 'm1']);
+        expect(box().value).toBe('Made by the other create.');
+        expect([...server.drafts.keys()]).toEqual(['d-race']);
+    });
+
+    it('a reply draft create the server fails with none there keeps the text and saves it again after a pause', async () => {
+        await open(3);
+        server.failNextCreate(503);
+
+        await type('Keep me.');
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect(server.of('create').length).withContext('the first create failed').toBe(1);
+        expect(server.drafts.size).withContext('nothing made yet').toBe(0);
+        expect(box().value).withContext('the text kept').toBe('Keep me.');
+
+        await wait(DRAFT_RETRY_FIRST_MS + 200);
+        expect(server.of('create').length).withContext('tried again').toBe(2);
+        expect(server.drafts.size).toBe(1);
+        expect(server.drafts.get(only())!.text).toBe('Keep me.');
+    });
+
     it('Reply with an empty box, Reply all and Forward open the compose window, the editor empty; the box stays', async () => {
         await open(3);
 
@@ -447,8 +500,9 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         fixture.componentInstance.onDetailAction('reply-all');
         await settle();
         expect(fixture.componentInstance.composeMode()).toBe('reply_all');
-        expect(box()).withContext('the box stays for Reply all').not.toBeNull();
+        expect(handed()).withContext('reply all writes the same reply draft: the box says it is in the window').not.toBeNull();
         fixture.componentInstance.closeCompose();
+        await settle();
 
         fixture.componentInstance.onDetailAction('forward');
         await settle();

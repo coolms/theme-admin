@@ -3703,8 +3703,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composePrefill.set({ state: 'loading' });
         const mailboxId = this.selectedMailboxId();
         forkJoin({
-            answer: this.email.composePrefill(id, mode),
-            draft: mailboxId === null ? of(null) : this.answerDraft(mailboxId, id, mode, draftId),
+            answer: this.email.composePrefill(id, mode).pipe(take(1)),
+            draft: mailboxId === null ? of(null) : this.answerDraft(mailboxId, id, mode, draftId).pipe(take(1)),
         }).subscribe({
             next: ({ answer, draft }) => {
                 if (seq !== this.prefillSeq) {

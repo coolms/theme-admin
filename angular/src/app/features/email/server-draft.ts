@@ -1,9 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type Observable } from 'rxjs';
-import { isReplyMode } from './compose-draft';
+import { isReplyMode, replyDraftOf } from './compose-draft';
 import { type EmailComposeMode, type EmailDraftAnswers, type EmailDraftDto, type EmailDraftWrite } from './email.types';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
+
+/** The first pause before a draft save that failed on the server is tried again. */
+export const DRAFT_RETRY_FIRST_MS = 1000;
+/** The longest pause between tries. */
+export const DRAFT_RETRY_MOST_MS = 30_000;
 
 /** The drafts API a draft is written through (the mail service). */
 export interface DraftsApi {
@@ -11,6 +16,7 @@ export interface DraftsApi {
     saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto>;
     readDraft(mailboxId: string, id: string): Observable<EmailDraftDto>;
     deleteDraft(mailboxId: string, id: string): Observable<void>;
+    draftsAnswering(mailboxId: string, messageId: string): Observable<EmailDraftDto[]>;
 }
 
 /** What the place showing a draft is told. */
@@ -64,6 +70,11 @@ export class ServerDraft {
     private waiting: Array<() => void> = [];
     private released = false;
     private answersChanged = false;
+    /** A failed save waits this long before it is tried again; doubled at each failure, up to the most. */
+    private retryMs = 0;
+    private retryTimer: ReturnType<typeof setTimeout> | null = null;
+    /** A reply draft's create refused by the server: the draft is looked up by the message once. */
+    private lookedUp = false;
 
     constructor(
         private readonly api: DraftsApi,
@@ -109,6 +120,7 @@ export class ServerDraft {
 
     /** Saves this content: made on the server at the first save, written over it after. */
     save(body: EmailDraftWrite): void {
+        this.stopRetry();
         if (this.busy) {
             this.owed = body;
             return;
@@ -131,6 +143,7 @@ export class ServerDraft {
      */
     discard(done: (deleted: boolean) => void): void {
         this.owed = null;
+        this.stopRetry();
         this.settled(() => {
             this.released = true;
             const id = this.draftId;
@@ -195,14 +208,15 @@ export class ServerDraft {
                 if (naming) {
                     this.answersChanged = false;
                 }
+                this.retryMs = 0;
                 this.adopt(draft);
                 this.idle();
             },
-            error: (e: unknown) => this.refused(e),
+            error: (e: unknown) => this.refused(e, body),
         });
     }
 
-    private refused(error: unknown): void {
+    private refused(error: unknown, body: EmailDraftWrite): void {
         const exists = replyDraftExists(error);
         if (exists !== null) {
             // One reply draft per person per message: that one is loaded, never a second made.
@@ -218,7 +232,57 @@ export class ServerDraft {
             this.reload();
             return;
         }
+        if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0)) {
+            const a = this.answersOf;
+            if (this.draftId === null && !this.lookedUp && a !== null && isReplyMode(a.mode)) {
+                // Two creates of the reply draft at once can fail one of them: the draft is looked up by the message,
+                // and loaded when it is there.
+                this.lookedUp = true;
+                this.api.draftsAnswering(this.mailboxId, a.messageId).subscribe({
+                    next: list => {
+                        const found = replyDraftOf(list);
+                        if (found === null) {
+                            this.retryLater(body);
+                            return;
+                        }
+                        this.adopt(found);
+                        this.owed = null;
+                        if (!this.released) {
+                            this.host.loaded(found);
+                        }
+                        this.idle();
+                    },
+                    error: () => this.retryLater(body),
+                });
+                return;
+            }
+            this.retryLater(body);
+            return;
+        }
         this.idle();
+    }
+
+    /** The content is kept and saved again after a pause that grows with each failure; a newer save goes at once. */
+    private retryLater(body: EmailDraftWrite): void {
+        this.owed = this.owed ?? body;
+        this.retryMs = Math.min(Math.max(DRAFT_RETRY_FIRST_MS, this.retryMs * 2), DRAFT_RETRY_MOST_MS);
+        this.busy = false;
+        this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
+            const owed = this.owed;
+            if (!this.busy && owed !== null) {
+                this.owed = null;
+                this.write(owed);
+            }
+        }, this.retryMs);
+        this.flushWaiting();
+    }
+
+    private stopRetry(): void {
+        if (this.retryTimer !== null) {
+            clearTimeout(this.retryTimer);
+            this.retryTimer = null;
+        }
     }
 
     private reload(): void {
