@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 
 import { EmailMailboxDto } from './email.types';
+import { unreadElsewhere } from './mailbox-unread';
 
 /**
  * The mailbox the folders are of, as one card. With more than one mailbox the card is the switcher: it opens the list
@@ -27,10 +28,10 @@ import { EmailMailboxDto } from './email.types';
                         (contextmenu)="menu.emit({ event: $event, id: mailbox.id })">
                     <!-- A number on the card is the open mailbox's own, on its avatar; other mailboxes' unread mail is a dot. -->
                     <ng-container *ngTemplateOutlet="face; context: { $implicit: mailbox, count: unread()[mailbox.id] ?? 0 }" />
-                    @if (elsewhere() > 0) {
+                    @if (elsewhere()) {
                         <span class="mbs__elsewhere" role="img"
-                              [attr.title]="elsewhere() + ' unread in other mailboxes'"
-                              [attr.aria-label]="elsewhere() + ' unread in other mailboxes'"></span>
+                              title="Unread mail in other mailboxes"
+                              aria-label="Unread mail in other mailboxes"></span>
                     }
                     <i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </button>
@@ -158,9 +159,8 @@ export class MailboxSwitcherComponent {
 
     protected readonly open = signal(false);
     protected readonly current = computed(() => this.mailboxes().find(m => m.id === this.currentId()) ?? null);
-    protected readonly elsewhere = computed(() => this.mailboxes()
-        .filter(m => m.id !== this.currentId())
-        .reduce((sum, m) => sum + (this.unread()[m.id] ?? 0), 0));
+    /** Another mailbox than the open one has unread mail: the dot on the card. */
+    protected readonly elsewhere = computed(() => unreadElsewhere(this.mailboxes(), this.currentId(), this.unread()));
 
     @HostListener('document:pointerdown', ['$event'])
     protected onPointerDown(event: Event): void {

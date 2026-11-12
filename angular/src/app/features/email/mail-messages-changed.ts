@@ -1,4 +1,5 @@
 import { type EmailFolderDto, type EmailMessageDto } from './email.types';
+import { INBOX_PATH, eventInboxUnread, inboxFolder } from './mailbox-unread';
 
 /** One message's state after a change: its flags, in the folder it is in now. */
 export interface MailMessageFlags {
@@ -141,6 +142,8 @@ export interface MailView<D extends EmailMessageDto = EmailMessageDto> {
     readonly openMessage: D | null;
     readonly folders: readonly EmailFolderDto[];
     readonly mailboxUnread: Readonly<Record<string, number>>;
+    /** Each mailbox's inbox path, where its folders have been read; INBOX for one not read yet. */
+    readonly inboxes?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -183,7 +186,7 @@ function withFlags<T extends EmailMessageDto>(m: T, c: MailMessageFlags): T {
 /**
  * The view after the event, in place: a row shown in the open folder takes its new flags, leaves the list when it
  * moved to another folder or is gone; the open message and its thread take their flags; the counts replace the folders'
- * own; the mailbox's badge takes the event's number. A row that moved INTO the open folder is not added: the event
+ * own; the mailbox's badge takes its inbox's entry in the counts, and keeps its number when the event has none. A row that moved INTO the open folder is not added: the event
  * carries no subject, sender or date, so it appears at the list's next read rather than in a guessed place.
  * Nothing is applied that is not newer, by seq, than what was applied before.
  */
@@ -231,9 +234,12 @@ export function applyMessagesChanged<D extends EmailMessageDto>(
             folders = folders.map(f => newer.includes(f.folder) ? { ...f, ...event.counts[f.folder] } : f);
         }
     }
+    // The mailbox's number is its inbox's entry in the counts; an event that did not touch the inbox keeps it as it was.
+    const inboxPath = view.inboxes?.[mailbox] ?? (open ? inboxFolder(view.folders)?.folder : undefined) ?? INBOX_PATH;
+    const inboxUnread = eventInboxUnread(event.counts, inboxPath);
     let mailboxUnread = view.mailboxUnread;
-    if (marks.badge(mailbox, event.seq)) {
-        mailboxUnread = { ...mailboxUnread, [mailbox]: event.mailboxUnseen };
+    if (inboxUnread !== null && marks.badge(mailbox, event.seq)) {
+        mailboxUnread = { ...mailboxUnread, [mailbox]: inboxUnread };
     }
 
     return { ...view, messages, thread, openMessage, folders, mailboxUnread, arrived, evictedOpen };

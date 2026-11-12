@@ -58,6 +58,11 @@ export interface EmailMailboxDto {
     backfillDepthMonths?: number | null;
     /** How the mailbox sends; part of the settings' version. Absent from a server that predates the choice. */
     sendVia?: SendVia;
+    /**
+     * The mailbox's unread number: its inbox's alone, never a sum of folders. Served on each row of the mailbox list
+     * (0 when none); absent from a server that predates it and from a read of one mailbox.
+     */
+    unread?: number;
     /** Whether it can send through its provider's API, as last learned (read-only). */
     sendApi?: SendApi | null;
     /** The days after which the SERVER empties Trash, where CoolMS knows it for the provider (a cited source); else null. */
