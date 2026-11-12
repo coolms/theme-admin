@@ -51,16 +51,20 @@ export function attachmentViewerLabel(filename: string, kind: string): string {
 }
 
 /**
- * Opens downloaded PDF bytes in the app's PDF viewer, from an object URL that is revoked when the viewer closes.
- * Focus goes back to `restoreTo` on close.
+ * Opens a downloaded PDF in the app's PDF viewer, from an object URL that is revoked when the viewer closes. Returns
+ * null, opening nothing, when the download's Content-Type is not application/pdf or the answer has no body. Focus
+ * goes back to `restoreTo` on close.
  */
 export function openPdfAttachment(
     dialog: Dialog,
-    bytes: Blob,
+    answer: HttpResponse<Blob>,
     filename: string,
     restoreTo: HTMLElement | null,
-): DialogRef<void, ViewerModalComponent> {
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+): DialogRef<void, ViewerModalComponent> | null {
+    if (mediaTypeOf(answer.headers.get('Content-Type')) !== 'application/pdf' || answer.body === null) {
+        return null;
+    }
+    const url = URL.createObjectURL(new Blob([answer.body], { type: 'application/pdf' }));
     const title = attachmentViewerLabel(filename, 'PDF');
     const ref = dialog.open<void, ViewerModalData, ViewerModalComponent>(ViewerModalComponent, {
         data: { fileUrl: url, downloadUrl: url, mimeType: 'application/pdf', filename, title },

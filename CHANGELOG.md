@@ -17,7 +17,8 @@ major number means here.
   the app's PDF viewer, an image in a preview over the page; both from the download's bytes, fetched with the
   session, never in a new tab. The preview shows the image only when the download is served as PNG, JPEG, GIF or
   WebP, under that type; Escape closes it and focus goes back to View. Each viewer's label names the file and the
-  kind detected. Download and Save to my files stay on every attachment.
+  kind detected. Download and Save to my files stay on every attachment. A PDF opens only when the download is
+  served as `application/pdf`; anything else says to download it instead, as for an image.
 
 ### Changed
 - **The mail screen's pane widths are saved per person, and the splitters work from the keyboard.** The two splitters
