@@ -402,14 +402,17 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
         expect(back.getAttribute('aria-current')).toBe('true');
     });
 
-    it('once the folder\'s own pages are read, scrolling on starts its older mail from the server, with no button', async () => {
+    it('once the folder\'s pages are read, scrolling on asks nothing more: no Older section, no button', async () => {
         await answer(page(rows(1, 50)));
         await leaveBelow(VIEW);
         await answer(page(rows(51, 60)));
         expect(el().querySelector('[data-test="load-older"]')).toBeNull();
 
+        const count = asked.length;
         await leaveBelow(0);
-        expect(olderAsked).withContext('the older mail asked for once').toBe(1);
+        expect(asked.length).withContext('the last page was read').toBe(count);
+        expect(olderAsked).withContext('the older mail is the cursor\'s, not a second read').toBe(0);
+        expect(el().querySelector('app-mail-server-search')).toBeNull();
     });
 
     it('the search results load more as they are scrolled, with the same end row', async () => {

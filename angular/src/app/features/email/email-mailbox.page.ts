@@ -77,7 +77,7 @@ import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
 import { MailBulkBarComponent } from './mail-bulk-bar.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearchComponent, OLDER_WORDS, openFailureText, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearchComponent, openFailureText, type ServerHitOpened } from './mail-server-search.component';
 import {
     MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
 } from './mail-server-search';
@@ -86,7 +86,7 @@ import {
     withoutServerRow,
 } from './mail-server-rows';
 import {
-    AT_TOP_PX, FIRST_PAGE, LIST_PAGE_SIZE, type ListEnd, type PageRequest, anchorAt, arrivedAbove, listRowHeight, listSetSize,
+    AT_TOP_PX, FIRST_PAGE, type ListEnd, type PageRequest, anchorAt, arrivedAbove, listRowHeight, listSetSize,
     nearListEnd, newRowsOf, nextPageOf, offsetOfAnchor, pageRefusal, rootFontPx,
 } from './mail-list-scroll';
 import {
@@ -417,14 +417,6 @@ type PhonePane = 'folders' | 'message';
                                  with the only Retry. -->
                             <ng-container [ngTemplateOutlet]="listEndRow"
                                           [ngTemplateOutletContext]="{ loading: loadingNextPage(), end: listEnd(), retry: retryListEndFn }" />
-                        }
-                        <!-- Once the folder's own pages are read, scrolling on reads its older mail from the server:
-                             the inbox's section; a folder listed from the mail server already lists it. -->
-                        @if (!searchActive() && selectedMailboxId() !== null && messagesFailure() === null
-                             && !serverListed() && olderMessages.view().kind !== 'idle') {
-                            <app-mail-server-search [search]="olderMessages" heading="On the server" [words]="olderWords"
-                                                    [localIds]="listedIds()" [folderName]="folderNameFn"
-                                                    [opener]="openServerHitFn" (opened)="onServerHitOpened($event)" />
                         }
                         <ng-template #listEndRow let-loading="loading" let-end="end" let-retry="retry">
                             @if (end !== null) {
@@ -1510,8 +1502,9 @@ export class EmailMailboxPageComponent implements OnInit {
     }
     readonly hasMore = signal<boolean>(false);
     /**
-     * The open folder is listed from the mail server (not fully synced): it pages by the cursor its answers give, holds
-     * server rows, and has no Older section. Learned from the folder's first page.
+     * The open folder is listed from the mail server (not fully synced): its rows are in the server's order and its
+     * total is the server's. Learned from the folder's first page. Any folder's pages may carry server rows: an inbox's
+     * cursor runs on past its stored rows into the server's older mail.
      */
     readonly serverListed = signal<boolean>(false);
     /** What the list's end says beyond its rows: a page could not be read, or the server asked to wait. */
@@ -2007,22 +2000,8 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
     readonly otherServerSearches = new OtherMailboxesSearch();
-    /** The folder whose older mail is being read from the server; read in pages on demand, under the list. */
-    private olderFolder = '';
-    /** Which mailbox and folder the older mail shown belongs to: another one starts it again. */
-    private olderKey = '';
-    /** The open folder's mail older than the oldest held here, from the server, page by page (the answer's folder is its q). */
-    readonly olderMessages = new MailServerSearch(
-        (_folder, cursor) => this.email.olderMessages(this.selectedMailboxId() ?? '', this.olderFolder, cursor).pipe(
-            map(answer => ({
-                q: answer.folder.trim(), folder: answer.folder, state: 'supported', searched: null,
-                hits: answer.hits, next: answer.next, capped: false,
-            })),
-        ),
-    );
-    readonly olderWords = OLDER_WORDS;
-    /** The ids the folder's list shows: an older row the platform holds and lists already is not shown again. */
-    readonly listedIds = computed(() => new Set(storedIds(this.messages())));
+    /** Which mailbox and folder the list shows: another one starts it again from its top. */
+    private listKey = '';
     /** The message open in the reader was evicted: shown still, as no longer kept here. */
     readonly openEvicted = signal(false);
     readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
@@ -2372,7 +2351,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (this.newArrivals() > 0 && this.rowsOffset() <= AT_TOP_PX) {
             this.newArrivals.set(0);
         }
-        this.readOnIfNearEnd(true);
+        this.readOnIfNearEnd();
     }
 
     /** The pill's click: the list scrolls to its top, where the new mail is. */
@@ -2383,10 +2362,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * With about one and a half screens of rows or fewer left below the view: the next page of the results, or of the
-     * folder, or, once the folder's own pages are read, its older mail on the server (the inbox's section): started by
-     * the person scrolling there, or by the list filling the view after a full page, never by a short folder opening.
+     * folder by the cursor its last page gave (in an inbox not yet synced to its bottom, the cursor runs on into the
+     * server's older mail).
      */
-    private readOnIfNearEnd(scrolled = false): void {
+    private readOnIfNearEnd(): void {
         const region = this.listScroll()?.nativeElement;
         if (region === undefined || region.clientHeight <= 0) {
             return;
@@ -2404,9 +2383,6 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         if (this.listNextPage !== null) {
             this.loadMore();
-        } else if (!this.serverListed() && this.olderMessages.view().kind === 'idle' && this.messages().length > 0
-            && (scrolled || this.messages().length >= LIST_PAGE_SIZE)) {
-            this.loadOlder();
         }
     }
 
@@ -2770,16 +2746,6 @@ export class EmailMailboxPageComponent implements OnInit {
         this.stopSearchEnd();
         this.serverSearch.stop();
         this.otherServerSearches.stop();
-    }
-
-    /** The next page of the open folder's older mail on the server; scrolling to the list's end starts it. */
-    loadOlder(): void {
-        if (this.olderMessages.view().kind === 'idle') {
-            this.olderFolder = this.selectedFolder();
-            this.olderMessages.run(this.olderFolder);
-            return;
-        }
-        this.olderMessages.more();
     }
 
     /** The same query on the server of each of the person's other mailboxes, one after another. */
@@ -4290,9 +4256,10 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * Reads the open folder's list: its first page (`reset`), or the next one, as `request` names it (by the cursor the
      * last answer gave, or by number). A folder listed from the mail server is shown in the server's order as it came;
-     * a stale cursor starts the list again from the top keeping nothing of the old pages. A next page not read keeps
-     * the rows shown and says so at the list's end, with Retry: it could not be read, the server could not be reached,
-     * or the server asked to wait, counted down there.
+     * a stale cursor starts the list again from the top keeping nothing of the old pages. A page that comes back empty
+     * with a next cursor (every row on it was already listed) is followed on, one read at a time, each after the list
+     * is drawn. A next page not read keeps the rows shown and says so at the list's end, with Retry by the cursor sent
+     * for it: it could not be read, the server could not be reached, or the server asked to wait, counted down there.
      */
     private loadMessages(reset: boolean, request: PageRequest = FIRST_PAGE): void {
         this.messagesFailure.set(null);
@@ -4307,10 +4274,9 @@ export class EmailMailboxPageComponent implements OnInit {
             request = FIRST_PAGE;
             const key = `${id}
 ${this.selectedFolder()}`;
-            rereading = key === this.olderKey && this.messages().length > 0;
-            if (key !== this.olderKey) {
-                this.olderKey = key;
-                this.olderMessages.stop();
+            rereading = key === this.listKey && this.messages().length > 0;
+            if (key !== this.listKey) {
+                this.listKey = key;
                 this.serverListed.set(false);
                 this.serverRowGone.set(false);
             }
@@ -4409,7 +4375,7 @@ ${this.selectedFolder()}`;
     private rereadFirstPage(): void {
         const id = this.selectedMailboxId();
         // Another mailbox or folder than the list shows reads its list from the top.
-        if (id === null || this.olderKey !== `${id}
+        if (id === null || this.listKey !== `${id}
 ${this.selectedFolder()}` || !this.listAnswered) {
             this.loadMessages(true);
             return;

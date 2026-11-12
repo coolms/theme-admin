@@ -62,7 +62,7 @@ const MIXED = [
  * A folder the platform has not fully synced is listed from the mail server: rows only the server lists (fromServer,
  * a ref, no id) sit beside the stored ones in the server's order, keyed by their ref; they offer Open only; the list
  * pages by the X-Next-Cursor header; a stale cursor starts again, an unreachable server or a rate limit is said at the
- * list's end; a realtime change reads the first page only; and the Older section is not offered.
+ * list's end; a realtime change reads the first page only; and no Older section is offered, in any folder.
  */
 describe('EmailMailboxPageComponent -- server rows in a folder not fully synced', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
@@ -380,18 +380,21 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(olderAsked).toBe(0);
     }));
 
-    it('a folder paged by number reads its older mail by scrolling on past its own pages, with no button', fakeAsync(() => {
+    it('a folder paged by number reads nothing more past its own pages: its cursor carries any older mail', fakeAsync(() => {
         answer(page([stored('m-1', 'Hello')]));
 
         expect(el().querySelector('[data-test="load-older"]')).toBeNull();
+        const count = asked.length;
         scrollToEnd();
-        expect(olderAsked).toBe(1);
+        expect(asked.length).toBe(count);
+        expect(olderAsked).toBe(0);
+        expect(el().querySelector('app-mail-server-search')).toBeNull();
     }));
 
     /**
      * Whether a folder is listed from the mail server is the server's word, as the folder tree and the folder list
-     * carry it (`listedFromServer`); the first answer is read only when neither carries the field. A folder listed from
-     * the server reads no older mail of its own on scrolling past its pages; a stored folder does.
+     * carry it (`listedFromServer`); the first answer is read only when neither carries the field. Neither kind reads
+     * older mail of its own on scrolling past its pages: the cursor carries it.
      */
     describe('whether the folder is listed from the mail server', () => {
         const node = (folder: string, extra: Partial<EmailFolderTreeNodeDto> = {}): EmailFolderTreeNodeDto => ({
@@ -417,13 +420,15 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
             expect(olderAsked).toBe(0);
         }));
 
-        it('the tree says it is not: an answer that looks like one is a stored folder, reading its older mail on scrolling', fakeAsync(() => {
+        it('the tree says it is not: an answer that looks like one is a stored folder, its server rows still server rows', fakeAsync(() => {
             pageOf().folderTree.set([node(FOLDER, { listedFromServer: false })]);
             answer(page(MIXED));
 
             expect(pageOf().serverListed()).toBeFalse();
+            expect(rowOf('Package published').getAttribute('data-ref')).toBe('r-9');
+            expect(rowOf('Package published').querySelector('input[type="checkbox"]')).toBeNull();
             scrollToEnd();
-            expect(olderAsked).toBe(1);
+            expect(olderAsked).toBe(0);
         }));
 
         it('the folder list says it when the tree does not', fakeAsync(() => {
