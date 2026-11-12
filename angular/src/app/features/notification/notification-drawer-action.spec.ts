@@ -13,6 +13,7 @@ import { NotificationSoundService } from './notification-sound.service';
 import { NotificationStore } from './notification-store.service';
 
 const MAILBOX_ID = '0193a1f2-7c4d-7e8f-9a0b-1c2d3e4f5a6b';
+const CONVERSATION_ID = '0193a1f2-0000-7000-8000-000000000001';
 
 function reconnect(params: Record<string, string> = { mailboxId: MAILBOX_ID, section: 'reconnect' }): NotificationAction {
     return { label: 'reconnect', labelText: 'Reconnect', destination: { name: 'email.mailbox.settings', params } };
@@ -327,10 +328,10 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
         });
 
         describe('how the server says to draw the action', () => {
-            /** A missed call's or a mention's action: the row is the action, to a conversation the admin cannot open. */
+            /** A missed call's or a mention's action: the row is the action, to its conversation in the chat. */
             const openConversation: NotificationAction = {
                 label: 'open-conversation', labelText: 'Open conversation', presentation: 'row',
-                destination: { name: 'chat.conversation', params: { conversationId: '0193a1f2-0000-7000-8000-000000000001' } },
+                destination: { name: 'chat.conversation', params: { conversationId: CONVERSATION_ID } },
             };
             const activate = (n: NotificationDto): void =>
                 (fixture.componentInstance as unknown as { onActivate(n: NotificationDto): void }).onActivate(n);
@@ -358,7 +359,7 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(notificationActionTarget(reconnect())?.presentation).toBe('button');
             });
 
-            it('presentation row with a known destination: no button; the row, named by its label, opens it on Enter and on a click', () => {
+            it('presentation row with a known destination: no button; the row, named by its title and described by its label, opens it on Enter and on a click', () => {
                 const n = row({ action: { ...reconnect(), presentation: 'row' } });
                 const host = render([n]);
                 const r = rowEl(host);
@@ -366,7 +367,8 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(actionButton(host)).withContext('no button').toBeNull();
                 expect(r.getAttribute('role')).toBe('link');
                 expect(r.getAttribute('tabindex')).toBe('0');
-                expect(r.getAttribute('aria-label')).toBe('Reconnect');
+                expect(r.getAttribute('aria-label')).withContext('the name is the title').toBe('Support stopped fetching mail');
+                expect(r.getAttribute('aria-description')).withContext('the action is its description').toBe('Reconnect');
 
                 enter(r);
                 expect(markRead).toHaveBeenCalledOnceWith('n-1');
@@ -386,16 +388,51 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(navigate).not.toHaveBeenCalled();
             });
 
-            it('presentation row to chat.conversation, which the admin does not know: the row stays inert, with no button and no navigation', () => {
-                const n = row({ type: 'rtc.call.missed', extras: { title: 'Missed call' }, action: openConversation });
+            it('a missed call\'s row to chat.conversation opens /chat?c=<id> on Enter and on a click, and reads the row; named "3 missed calls"', () => {
+                expect(notificationActionTarget(openConversation)).toEqual({
+                    label: 'Open conversation', presentation: 'row', commands: ['/chat'], queryParams: { c: CONVERSATION_ID },
+                });
+                const n = row({ type: 'rtc.call.missed', extras: { title: '3 missed calls' }, action: openConversation });
                 const host = render([n]);
                 const r = rowEl(host);
 
-                expect(notificationActionTarget(openConversation)).toBeNull();
+                expect(actionButton(host)).withContext('no button').toBeNull();
+                expect(r.getAttribute('role')).toBe('link');
+                expect(r.getAttribute('aria-label')).toBe('3 missed calls');
+                expect(r.getAttribute('aria-description')).toBe('Open conversation');
+
+                enter(r);
+                expect(markRead).toHaveBeenCalledOnceWith('n-1');
+                expect(navigate).toHaveBeenCalledOnceWith(['/chat'], { queryParams: { c: CONVERSATION_ID } });
+                expect(close).toHaveBeenCalledTimes(1);
+
+                activate(n);
+                expect(navigate).withContext('a click opens it too').toHaveBeenCalledTimes(2);
+                expect(navigateByUrl).not.toHaveBeenCalled();
+            });
+
+            it('a mention\'s row to chat.conversation opens its conversation on a click', () => {
+                const n = row({ type: 'chat.mention', extras: { title: 'You were mentioned' }, action: openConversation });
+                render([n]);
+
+                activate(n);
+
+                expect(markRead).toHaveBeenCalledOnceWith('n-1');
+                expect(navigate).toHaveBeenCalledOnceWith(['/chat'], { queryParams: { c: CONVERSATION_ID } });
+            });
+
+            it('a row action to chat.conversation without a conversationId stays inert: no button, no role, pressing reads it and goes nowhere', () => {
+                const noId: NotificationAction = { ...openConversation, destination: { name: 'chat.conversation', params: {} } };
+                const n = row({ type: 'rtc.call.missed', extras: { title: 'Missed call' }, action: noId });
+                const host = render([n]);
+                const r = rowEl(host);
+
+                expect(notificationActionTarget(noId)).toBeNull();
                 expect(actionButton(host)).toBeNull();
                 expect(r.getAttribute('role')).toBeNull();
                 expect(r.hasAttribute('tabindex')).toBeFalse();
                 expect(r.hasAttribute('aria-label')).toBeFalse();
+                expect(r.hasAttribute('aria-description')).toBeFalse();
 
                 enter(r);
                 expect(markRead).withContext('Enter on an inert row that cannot take focus does nothing').not.toHaveBeenCalled();
@@ -406,8 +443,9 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(close).not.toHaveBeenCalled();
             });
 
-            it('a mention to chat.conversation is inert too: the admin never navigates by a notification\'s type', () => {
-                const n = row({ type: 'chat.mention', extras: { title: 'You were mentioned' }, action: openConversation });
+            it('a row action to a destination the admin does not know stays inert: the admin never navigates by a notification\'s type', () => {
+                const unknown: NotificationAction = { ...openConversation, destination: { name: 'calendar.event', params: { eventId: 'e-1' } } };
+                const n = row({ type: 'chat.mention', extras: { title: 'You were mentioned' }, action: unknown });
                 render([n]);
 
                 activate(n);

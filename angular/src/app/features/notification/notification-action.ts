@@ -15,6 +15,7 @@ export interface NotificationActionTarget {
 const LABELS: Readonly<Record<string, string>> = {
     reconnect: 'Reconnect',
     'manage-access': 'Manage access',
+    'open-conversation': 'Open conversation',
 };
 
 /** The mailbox settings pane each section of `email.mailbox.settings` opens; no section opens the first pane. */
@@ -45,7 +46,7 @@ export function notificationActionLabel(action: NotificationAction): string {
 
 /**
  * Where a notification's action goes in the admin, or null when it shows no button and makes no row interactive: no
- * action, a destination the admin does not know (such as chat.conversation), a required param missing, or no label to
+ * action, a destination the admin does not know, a required param missing, or no label to
  * show. The admin never decides navigation by a notification's type.
  */
 export function notificationActionTarget(action: NotificationAction | null | undefined): NotificationActionTarget | null {
@@ -70,6 +71,19 @@ export function notificationActionTarget(action: NotificationAction | null | und
                 presentation: notificationActionPresentation(action),
                 commands: ['/email', { mailbox: mailboxId }],
                 queryParams: { [SETTINGS_PARAM]: pane },
+            };
+        }
+        case 'chat.conversation': {
+            // The chat page opens the conversation its `c` query parameter names.
+            const conversationId = param(params, 'conversationId');
+            if (null === conversationId) {
+                return null;
+            }
+            return {
+                label,
+                presentation: notificationActionPresentation(action),
+                commands: ['/chat'],
+                queryParams: { c: conversationId },
             };
         }
         default:

@@ -98,13 +98,15 @@ import { NotificationStore } from './notification-store.service';
                 } @else {
                     @for (n of store.notifications(); track n.id) {
                         @let rowAction = rowActionTarget(n);
-                        <!-- A row whose action is the row is itself the action: focusable, named by its label, opened
-                             by a click or Enter. Any other row is not interactive as a whole. -->
+                        <!-- A row whose action is the row is itself the action: focusable, opened by a click or Enter,
+                             named by the notification's title and described by the action's label. Any other row is
+                             not interactive as a whole. -->
                         <div class="cms-notification-row"
                              [class.cms-notification-row--action]="rowAction !== null"
                              [attr.role]="rowAction !== null ? 'link' : null"
                              [attr.tabindex]="rowAction !== null ? 0 : null"
-                             [attr.aria-label]="rowAction?.label ?? null"
+                             [attr.aria-label]="rowAction !== null ? displayTitle(n) : null"
+                             [attr.aria-description]="rowAction?.label ?? null"
                              [attr.data-test]="rowAction !== null ? 'notification-row-action' : null"
                              (keydown.enter)="onRowEnter(n, $event)"
                              [class.cms-notification-row--unread]="!n.isRead"
