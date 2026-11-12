@@ -469,6 +469,11 @@ export interface EmailAttachmentDto {
     sizeBytes: number;
     contentId?: string | null;
     inline: boolean;
+    /**
+     * How the app may show the attachment, decided by the server from its first bytes: pdf, image or none. Absent
+     * while the server does not serve it yet.
+     */
+    viewAs?: 'pdf' | 'image' | 'none';
 }
 
 /** The confirmation echoed by "Save to my files" (`POST .../attachments/{index}/save`, ). */
