@@ -20,6 +20,7 @@ import { CONSOLE_ENTRIES } from './console.registry';
 import { AUTH_AUDIENCE, AuthState, AppConfigState, CURRENT_SECTION, type CurrentSectionPort, authInterceptor, elevationInterceptor, sectionInterceptor, AppInitService, ComponentRegistry, provideConsole } from '@coolms/core-angular';
 import { clientHeaderInterceptor } from './client-header.interceptor';
 import { provideElevationPrompt } from './shell/elevation-prompt.provider';
+import { providePreferencesNotice } from './shell/preferences-notice.provider';
 import { provideOverlayStacking } from './shell/overlay-stacking.provider';
 import { CallsEndWithTheSession } from './features/rtc/calls-end-with-the-session.service';
 import { SectionState } from './features/sections/section.state';
@@ -99,6 +100,8 @@ export const appConfig: ApplicationConfig = {
         provideOverlayStacking(),
         // The prompt core asks for through its port: a CDK dialog here.
         provideElevationPrompt(),
+        // A refusal to store the person's preferences, shown through core's port as a toast.
+        providePreferencesNotice(),
         // A signed-out browser closes its own calls (2026-09-25): the server ends a 1:1
         // call by telling the OTHER party, and this one never hears it.
         provideAppInitializer(() => inject(CallsEndWithTheSession).start()),
