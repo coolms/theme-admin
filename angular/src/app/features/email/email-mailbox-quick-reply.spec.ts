@@ -1,18 +1,17 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, of } from 'rxjs';
-import { ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
+import { NEVER, Subject, of } from 'rxjs';
+import { AuthState, ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
-import { type ComposeDraft } from './compose-draft';
+import { FakeDraftsApi } from './email-drafts.fake';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -20,12 +19,13 @@ import {
     type EmailComposeDto, type EmailComposeMode, type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto,
     type OutgoingEmailRequest,
 } from './email.types';
+import { readDraftsChanged } from './mail-drafts-changed';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { QUICK_REPLY_MAX_LINES, QUICK_REPLY_SAVE_MS } from './mail-quick-reply.component';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
-const KEY = 'email.mb1.reply.m1';
+const REPLY = { messageId: 'm1', mode: 'reply' as const };
 
 /** The server's prefill for an answer or a forward of m1: the reply goes to the Reply-To the server chose. */
 function prefill(mode: EmailComposeMode): EmailComposeDto {
@@ -44,26 +44,37 @@ function message(lines: number): EmailMessageDetailDto {
     return { ...LISTED[0], bodyText: body } as EmailMessageDetailDto;
 }
 
+/** A reply draft of m1 as the quick reply writes it on another device: plain, quoted, to the prefill's recipient. */
+function written(id: string, text: string): { id: string } & Record<string, unknown> {
+    return {
+        id, to: ['desks@example.com'], subject: 'Re: Desk move on Friday', text, html: null, from: 'work@example.com',
+        answers: REPLY, quote: true,
+    };
+}
+
 /**
  * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's one scroll region.
  * One line until used, growing with the text to about six lines, then scrolling inside; no To or Subject (the server's
  * reply prefill gives them); plain text, files, Send and Expand; Ctrl or Cmd+Enter sends, Enter is a new line; the
- * server appends the quote. Its text is the message's reply draft, saved after a pause; Expand, or Reply while it holds
- * text, hands that one draft to the compose window. Rendered and laid out at 1400 x 600, fixed at the window's top left.
+ * server appends the quote. Its text is the message's reply draft on the server (the drafts API, in memory here), saved
+ * after a pause; Expand, or Reply while it holds text, hands that one draft to the compose window. Rendered and laid
+ * out at 1400 x 600, fixed at the window's top left.
  */
 describe('EmailMailboxPageComponent -- the quick reply, pinned below the message', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
     let replies: Array<{ id: string; request: OutgoingEmailRequest }>;
     let asked: Array<[string, EmailComposeMode]>;
-    let drafts: Map<string, unknown>;
+    let server: FakeDraftsApi;
+    let live: Subject<unknown>;
 
     beforeEach(() => {
         replies = [];
         asked = [];
-        // This test's own store: the mock below closes over it, so a save still pending from an earlier test's
-        // page writes into that page's store, never into this one.
-        const store = new Map<string, unknown>();
-        drafts = store;
+        // This test's own drafts: the mock below closes over them, so a save still pending from an earlier test's
+        // page writes into that page's drafts, never into these.
+        const drafts = new FakeDraftsApi();
+        server = drafts;
+        live = new Subject<unknown>();
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
             providers: [
@@ -76,14 +87,25 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
+                        listAliases: () => of({ canManage: false, aliases: [] }),
                         composePrefill: (id: string, mode: EmailComposeMode) => {
                             asked.push([id, mode]);
                             return of(prefill(mode));
                         },
                         reply: (id: string, request: OutgoingEmailRequest) => {
                             replies.push({ id, request: structuredClone(request) });
+                            // The server removes the draft a reply was written in once it is sent.
+                            if (request.draftId !== undefined) {
+                                drafts.drafts.delete(request.draftId);
+                            }
                             return of({});
                         },
+                        createDraft: drafts.createDraft.bind(drafts),
+                        saveDraft: drafts.saveDraft.bind(drafts),
+                        readDraft: drafts.readDraft.bind(drafts),
+                        deleteDraft: drafts.deleteDraft.bind(drafts),
+                        draftsAnswering: drafts.draftsAnswering.bind(drafts),
+                        listDrafts: drafts.listDrafts.bind(drafts),
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
@@ -93,21 +115,13 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
                     provide: ActivatedRoute,
                     useValue: { queryParamMap: NEVER, snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({}) } },
                 },
-                { provide: Store, useValue: { selectSnapshot: () => null } },
+                { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
-                {
-                    provide: DraftStoreService,
-                    useValue: {
-                        load: (key: string) => (store.has(key) ? structuredClone(store.get(key)) : null),
-                        save: (key: string, value: unknown) => void store.set(key, structuredClone(value)),
-                        clear: (key: string) => void store.delete(key),
-                    },
-                },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
-                { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
+                { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: {} },
                 { provide: CrumbNamesService, useValue: { setTail: (): void => {} } },
             ],
@@ -119,7 +133,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
     });
     afterEach(() => (fixture.nativeElement as HTMLElement).remove());
 
-    /** The page, laid out; mounted again it is the page after a reload, with the same draft store. */
+    /** The page, laid out; mounted again it is the page after a reload (or on another device), with the same drafts. */
     function mount(): void {
         fixture = TestBed.createComponent(EmailMailboxPageComponent);
         const host = fixture.nativeElement as HTMLElement;
@@ -151,6 +165,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
     const box = (): HTMLTextAreaElement => el().querySelector<HTMLTextAreaElement>('[data-test="quick-reply-box"]')!;
     const dock = (): HTMLElement | null => el().querySelector<HTMLElement>('.mbx__dock');
     const handed = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-in-window"]');
+    const only = (): string => [...server.drafts.keys()][0];
 
     async function open(lines: number): Promise<void> {
         fixture.componentInstance.selectedMailboxId.set('mb1');
@@ -166,6 +181,13 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         await frame();
         await frame();
         fixture.detectChanges();
+    }
+
+    /** Types into the box and waits out the pause: the draft is saved. */
+    async function typeAndSave(text: string): Promise<void> {
+        await type(text);
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        await settle();
     }
 
     /** The box's height for `lines` lines of text, from its own line height, padding and border. */
@@ -224,7 +246,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
             text: 'Friday works.', to: ['desks@example.com'], subject: 'Re: Desk move on Friday', from: 'work@example.com', quote: true,
         } }]);
         expect(box().value).withContext('cleared after the send').toBe('');
-        expect(drafts.has(KEY)).withContext('no draft left').toBeFalse();
+        expect(server.drafts.size).withContext('no draft left').toBe(0);
     });
 
     it('Ctrl+Enter and Cmd+Enter send; Enter alone is a new line', async () => {
@@ -245,39 +267,84 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(replies.map(r => r.request.text)).toEqual(['First', 'Second']);
     });
 
-    it('its text is that message\'s reply draft, saved after a pause, and back after a reload', async () => {
+    it('its text is the message\'s reply draft on the server, saved after a pause with quote: true, and found again after a reload', async () => {
         await open(3);
         await type('Will reply properly later.');
-        expect(drafts.has(KEY)).withContext('not before the pause').toBeFalse();
+        expect(server.of('create').length).withContext('not before the pause').toBe(0);
         await wait(QUICK_REPLY_SAVE_MS + 100);
-        expect((drafts.get(KEY) as ComposeDraft).text).toBe('Will reply properly later.');
-        expect((drafts.get(KEY) as ComposeDraft).place).toBe('quick');
+
+        const made = server.of('create');
+        expect(made.length).toBe(1);
+        expect(made[0].body).toEqual({
+            to: ['desks@example.com'], cc: [], bcc: [], subject: 'Re: Desk move on Friday', text: 'Will reply properly later.',
+            html: null, attachments: [], from: 'work@example.com', quote: true, messageParts: [], answers: REPLY,
+        });
+        expect(Object.keys(made[0].body!)).withContext('never the server\'s threading').not.toContain('inReplyTo');
 
         fixture.destroy();
         (fixture.nativeElement as HTMLElement).remove();
         mount();
         await open(3);
 
+        expect(server.of('lookup').at(-1)?.messageId).withContext('found by the message').toBe('m1');
         expect(box().value).toBe('Will reply properly later.');
     });
 
-    it('Expand moves the text into the compose window as the same draft; the box says so and brings the window up', async () => {
+    it('a second reply draft refused (409 reply-draft-exists) loads that draft and never makes a second', async () => {
         await open(3);
-        await type('Long answer coming.');
-        await wait(QUICK_REPLY_SAVE_MS + 100);
-        const keys = [...drafts.keys()];
+        // Another device made the reply draft after this box looked it up.
+        server.put(written('d-other', 'Written on the phone.'));
+
+        await typeAndSave('Typed here.');
+
+        expect(server.of('create').length).withContext('one create, refused').toBe(1);
+        expect(server.of('read').map(c => c.id)).withContext('the named draft is read').toEqual(['d-other']);
+        expect([...server.drafts.keys()]).withContext('still one draft').toEqual(['d-other']);
+        expect(box().value).withContext('the box shows that draft').toBe('Written on the phone.');
+
+        await typeAndSave('Written on the phone. And here.');
+        expect(server.of('save').map(c => [c.id, c.version])).withContext('saved to that draft, from its version').toEqual([['d-other', 1]]);
+        expect(server.drafts.get('d-other')!.text).toBe('Written on the phone. And here.');
+    });
+
+    it('a stale save (409 draft-stale) reloads the draft and never writes over it', async () => {
+        server.put(written('d1', 'First words.'));
+        await open(3);
+        expect(box().value).toBe('First words.');
+        // Saved elsewhere meanwhile: version 2.
+        server.put({ id: 'd1', text: 'Changed on the laptop.' });
+
+        await typeAndSave('First words, and more.');
+
+        expect(server.of('save').map(c => c.version)).withContext('made from version 1').toEqual([1]);
+        expect(server.drafts.get('d1')!.text).withContext('not written over').toBe('Changed on the laptop.');
+        expect(server.drafts.get('d1')!.version).toBe(2);
+        expect(box().value).withContext('the stored draft, reloaded').toBe('Changed on the laptop.');
+    });
+
+    it('Expand hands the same draft id to the compose window; the box says so and brings the window up', async () => {
+        await open(3);
+        await typeAndSave('Long answer coming.');
+        const id = only();
 
         quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
         await settle();
 
         expect(dock()).withContext('the compose window').not.toBeNull();
+        expect(server.of('read').map(c => c.id)).withContext('the window reads the draft handed to it').toEqual([id]);
         expect(dock()!.querySelector('textarea')!.value).toBe('Long answer coming.');
         expect(fixture.componentInstance.composeTo).withContext('the prefill\'s To').toEqual(['desks@example.com']);
         expect(fixture.componentInstance.composeSubject).toBe('Re: Desk move on Friday');
-        expect([...drafts.keys()]).withContext('one draft, the same key').toEqual(keys);
-        expect((drafts.get(KEY) as ComposeDraft).place).toBe('window');
         expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the box clears').toBeNull();
         expect(handed()?.textContent).toContain('The reply is open in the compose window.');
+
+        // Written on in the window: the same draft, saved from the version the box left.
+        fixture.componentInstance.composeText = 'Long answer coming. Here it is.';
+        fixture.componentInstance.onComposeChange();
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect(server.of('save').map(c => [c.id, c.version])).withContext('one draft id for both').toEqual([[id, 1]]);
+        expect(server.of('create').length).toBe(1);
+        expect(server.drafts.size).toBe(1);
 
         fixture.componentInstance.toggleMinimize();
         await settle();
@@ -294,8 +361,74 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         await settle();
 
         expect(dock()!.querySelector('textarea')!.value).toBe('Typed just now.');
-        expect([...drafts.keys()]).toEqual([KEY]);
+        expect(server.of('create').length).withContext('saved at the hand-off').toBe(1);
+        expect(server.of('read').map(c => c.id)).toEqual([only()]);
         expect(handed()).not.toBeNull();
+    });
+
+    it('a reply sent from the box or the window names its draft (draftId), and the server removes it', async () => {
+        await open(3);
+        await typeAndSave('Sent from the box.');
+        const first = only();
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-send"]')!.click();
+        await settle();
+
+        expect(replies.length).toBe(1);
+        expect(replies[0].request.draftId).toBe(first);
+        expect(replies[0].request.quote).toBeTrue();
+        expect(server.drafts.size).withContext('removed with the send').toBe(0);
+
+        await typeAndSave('Then from the window.');
+        const second = only();
+        expect(second).withContext('a new reply draft').not.toBe(first);
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        fixture.componentInstance.sendCompose();
+        await settle();
+
+        expect(replies.length).toBe(2);
+        expect(replies[1].id).toBe('m1');
+        expect(replies[1].request.draftId).toBe(second);
+        expect(replies[1].request.quote).withContext('the quote choice stated').toBeTrue();
+        expect(server.drafts.size).toBe(0);
+    });
+
+    it('a mail.drafts.changed with a newer version reads the draft again; with null it clears the box', async () => {
+        await open(3);
+        await typeAndSave('Mine.');
+        const id = only();
+        const reads = server.of('read').length;
+
+        // The event of this place's own save: nothing newer, nothing read.
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: 1, answers: REPLY });
+        await settle();
+        expect(server.of('read').length).toBe(reads);
+
+        server.put({ id, text: 'Mine, edited on the phone.' });
+        live.next(readDraftsChanged({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: 2, answers: REPLY }));
+        await settle();
+        expect(server.of('read').at(-1)?.id).toBe(id);
+        expect(box().value).toBe('Mine, edited on the phone.');
+
+        server.drafts.delete(id);
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: null, answers: REPLY });
+        await settle();
+        expect(box().value).withContext('gone elsewhere: cleared').toBe('');
+
+        await typeAndSave('A new one.');
+        expect(server.of('create').length).withContext('the next text makes a new draft').toBe(2);
+    });
+
+    it('a reply draft made on another device is taken up by the box from its event', async () => {
+        await open(3);
+        server.put(written('d-phone', 'From the phone.'));
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: 'd-phone', version: 1, answers: REPLY });
+        await settle();
+
+        expect(box().value).toBe('From the phone.');
+        await typeAndSave('From the phone. Done here.');
+        expect(server.of('create').length).withContext('no second draft').toBe(0);
+        expect(server.of('save').map(c => c.id)).toEqual(['d-phone']);
     });
 
     it('Reply with an empty box, Reply all and Forward open the compose window, the editor empty; the box stays', async () => {
@@ -309,6 +442,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         fixture.componentInstance.closeCompose();
         await settle();
         expect(handed()).withContext('nothing written: no draft for the window').toBeNull();
+        expect(server.drafts.size).toBe(0);
 
         fixture.componentInstance.onDetailAction('reply-all');
         await settle();

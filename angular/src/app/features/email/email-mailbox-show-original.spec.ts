@@ -8,7 +8,6 @@ import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
@@ -56,6 +55,7 @@ describe('EmailMailboxPageComponent -- show original', () => {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         // The open message's quick reply asks for its reply prefill; not answered here.
                         composePrefill: () => NEVER,
+                        draftsAnswering: () => NEVER,
                         listFolders: () => of([]),
                         folderTree: () => of([]),
                         listMessages: () => of(LISTED),
@@ -91,7 +91,6 @@ describe('EmailMailboxPageComponent -- show original', () => {
                     useValue: { open: (component: unknown, config: { data: unknown }) => void opened.push({ component, data: config.data }) },
                 },
                 { provide: ConfirmDialogService, useValue: {} },
-                { provide: DraftStoreService, useValue: { load: () => null, save: (): void => {}, clear: (): void => {} } },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },

@@ -4,6 +4,7 @@ import { Observable, share } from 'rxjs';
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 import { type MailAliasesChangedEvent, readAliasesChanged } from './mail-aliases';
+import { type MailDraftsChangedEvent, readDraftsChanged } from './mail-drafts-changed';
 import { type MailFlagRefusedEvent, readFlagRefused } from './mail-flag-refused';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 
@@ -36,7 +37,8 @@ export interface EmailSyncFinishedEvent {
 
 /** Every event of the person's mail channel. */
 export type EmailEvent =
-    | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent;
+    | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent
+    | MailDraftsChangedEvent;
 
 /** A whole number, zero or more. */
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
@@ -134,6 +136,9 @@ export class EmailLiveEventsService {
         }
         if (type === 'mail.flag.refused') {
             return readFlagRefused(raw);
+        }
+        if (type === 'mail.drafts.changed') {
+            return readDraftsChanged(raw);
         }
         if (type === 'mail.sync.finished') {
             return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'

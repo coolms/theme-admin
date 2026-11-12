@@ -2,30 +2,38 @@ import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, output,
     signal, untracked, viewChild, Injector,
 } from '@angular/core';
-import { DraftStoreService, ToastService } from '@coolms/ui-angular';
+import { ToastService } from '@coolms/ui-angular';
 import { ComposeAttachmentsComponent } from './compose-attachments.component';
 import {
     expiredAttachmentId, restoredAttachments, storedAttachments, tooLargeSend, type ComposeAttachment,
 } from './compose-attachments';
-import { type ComposeDraft, replyDraftKey } from './compose-draft';
+import { draftFiles, replyDraftOf, writtenInWindow } from './compose-draft';
 import { addressesOf, quotedMessageUnavailable } from './compose-prefill';
 import { EmailService } from './email.service';
-import { type EmailComposeDto, type OutgoingEmailRequest } from './email.types';
+import { type EmailComposeDto, type EmailDraftDto, type EmailDraftWrite, type OutgoingEmailRequest } from './email.types';
+import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { sendFailureText } from './send-via';
+import { ServerDraft } from './server-draft';
 
 /** The most lines the box grows to; past them it scrolls inside itself. */
 export const QUICK_REPLY_MAX_LINES = 6;
 /** The pause after typing before the draft is saved, as the compose window waits. */
 export const QUICK_REPLY_SAVE_MS = 600;
 
+/** The reply the box hands to the compose window: its draft on the server (none yet: null), and its mode. */
+export interface QuickReplyHandOff {
+    readonly draftId: string | null;
+    readonly mode: 'reply' | 'reply_all';
+}
+
 /**
  * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's scroll. One line,
  * "Write a reply...", that grows with the text to about six lines and then scrolls inside. It goes to the sender (the
  * Reply-To when there is one) with Re:, as the server's reply prefill gives them; the server appends the quote, which
  * is not shown. Plain text, attachments with the size meter, Send and Expand. Ctrl or Cmd+Enter sends; Enter is a new
- * line. The text is that message's reply draft, saved after a pause in the same store and under the same key as the
- * compose window's reply, so Expand (or Reply while the box holds text) hands that one draft to the window: the box
- * then says the reply is open there, with a way to bring the window up.
+ * line. The text is that message's reply draft on the server, the one the compose window also writes, found again by
+ * the message (the drafts lookup) and saved after a pause; Expand (or Reply while the box holds text) hands that one
+ * draft to the window: the box then says the reply is open there, with a way to bring the window up.
  */
 @Component({
     selector: 'app-mail-quick-reply',
@@ -39,7 +47,7 @@ export const QUICK_REPLY_SAVE_MS = 600;
                     <i class="bi bi-window-stack" aria-hidden="true"></i>
                     <span>The reply is open in the compose window.</span>
                     <button type="button" class="mbx__btn mbx__btn--sm" data-test="quick-reply-show-window"
-                            (click)="showWindow.emit()">Show it</button>
+                            (click)="showWindowNow()">Show it</button>
                 </p>
             } @else if (prefill()?.from?.choices?.length === 0) {
                 <!-- A reader who may not send from this mailbox has no quick reply. -->
@@ -106,9 +114,9 @@ export class MailQuickReplyComponent {
     readonly windowHolds = input(false);
 
     /** Expand, or Reply while the box holds text: the page opens the window on this draft. */
-    readonly expand = output<void>();
-    /** Bring the compose window holding this reply up. */
-    readonly showWindow = output<void>();
+    readonly expand = output<QuickReplyHandOff>();
+    /** Bring the compose window holding this reply up, or open it on the draft. */
+    readonly showWindow = output<QuickReplyHandOff>();
     /** A reply went. */
     readonly sent = output<void>();
 
@@ -119,7 +127,7 @@ export class MailQuickReplyComponent {
     readonly sending = signal(false);
     readonly quoteRefused = signal(false);
     readonly sendRefused = signal<{ limitBytes: number; sizeBytes: number } | null>(null);
-    /** The draft store says the window holds this reply (it was expanded, or written there). */
+    /** The reply draft is one the compose window writes (formatted, to all, or without the quote). */
     private readonly storedInWindow = signal(false);
     readonly inWindow = computed(() => this.windowHolds() || this.storedInWindow());
     readonly bodyBytes = computed(() => new TextEncoder().encode(this.text()).length);
@@ -128,17 +136,24 @@ export class MailQuickReplyComponent {
         && !this.attachments().some(a => a.status === 'uploading' || a.status === 'attaching' || a.status === 'refused'));
 
     private readonly email = inject(EmailService);
-    private readonly drafts = inject(DraftStoreService);
     private readonly toast = inject(ToastService);
     private readonly injector = inject(Injector);
     private readonly box = viewChild<ElementRef<HTMLTextAreaElement>>('box');
     private saveTimer: ReturnType<typeof setTimeout> | null = null;
     private prefillSeq = 0;
+    private lookupSeq = 0;
     /** The message the box shows, for the save that is still owed when it changes. */
     private shown: { mailboxId: string; messageId: string } | null = null;
+    /** The message's reply draft on the server; one with no id is made at its first save. */
+    private draft: ServerDraft | null = null;
+    /** The reply draft as last read, whose recipients and subject a save keeps until the prefill is read. */
+    private stored: EmailDraftDto | null = null;
 
     constructor() {
-        inject(DestroyRef).onDestroy(() => this.flush());
+        inject(DestroyRef).onDestroy(() => {
+            this.flush();
+            this.draft?.release();
+        });
         // Another message, or the window took or gave back the reply: the box shows that message's draft.
         effect(() => {
             const mailboxId = this.mailboxId();
@@ -159,6 +174,31 @@ export class MailQuickReplyComponent {
             clearTimeout(this.saveTimer);
             this.saveTimer = null;
             this.save();
+        }
+    }
+
+    /**
+     * The reply as the window takes it: what the box holds is saved now, and once that save has landed `then` gets the
+     * draft's id, so the window opens on the same draft and never makes a second.
+     */
+    handOff(then: (handOff: QuickReplyHandOff) => void): void {
+        if (this.saveTimer !== null) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
+        this.save();
+        const draft = this.draft;
+        if (draft === null) {
+            then({ draftId: null, mode: 'reply' });
+            return;
+        }
+        draft.settled(() => then({ draftId: draft.id, mode: draft.answers?.mode === 'reply_all' ? 'reply_all' : 'reply' }));
+    }
+
+    /** A realtime change to one of the person's drafts: this message's reply draft is read again, or cleared. */
+    onDraftsChanged(event: MailDraftsChangedEvent): void {
+        if (!this.windowHolds()) {
+            this.draft?.told(event);
         }
     }
 
@@ -188,9 +228,16 @@ export class MailQuickReplyComponent {
 
     /** Expand: the draft is saved as it is, and handed to the window. */
     expandNow(): void {
-        this.flush();
-        this.save();
-        this.expand.emit();
+        this.handOff(handOff => this.expand.emit(handOff));
+    }
+
+    /** Show it: the window holding the reply comes up, or opens on the draft written there. */
+    protected showWindowNow(): void {
+        const draft = this.draft;
+        this.showWindow.emit({
+            draftId: draft?.id ?? null,
+            mode: draft?.answers?.mode === 'reply_all' ? 'reply_all' : 'reply',
+        });
     }
 
     readPrefill(): void {
@@ -228,45 +275,72 @@ export class MailQuickReplyComponent {
         if (ids.length > 0) {
             request.attachments = ids;
         }
-        const key = replyDraftKey(this.mailboxId(), this.messageId());
+        if (this.saveTimer !== null) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
+        const draft = this.draft;
         this.sendRefused.set(null);
         this.quoteRefused.set(false);
         this.sending.set(true);
-        this.email.reply(this.messageId(), request).subscribe({
-            next: () => {
-                this.sending.set(false);
-                if (this.saveTimer !== null) {
-                    clearTimeout(this.saveTimer);
-                    this.saveTimer = null;
-                }
-                this.drafts.clear(key);
-                this.text.set('');
-                this.attachments.set([]);
-                this.fit();
-                this.toast.success('Reply sent.');
-                this.sent.emit();
-            },
-            error: (e: unknown) => {
-                this.sending.set(false);
-                if (quotedMessageUnavailable(e)) {
-                    this.quoteRefused.set(true);
-                    return;
-                }
-                const expired = expiredAttachmentId(e);
-                if (expired !== null) {
-                    const words = 'This file is no longer there to send. Remove it and attach it again.';
-                    this.attachments.update(list => list.map(a => (a.id === expired
-                        ? { ...a, status: 'refused' as const, refusal: words } : a)));
-                    return;
-                }
-                const tooLarge = tooLargeSend(e);
-                if (tooLarge !== null) {
-                    this.sendRefused.set(tooLarge);
-                    return;
-                }
-                this.toast.error(sendFailureText(e));
-            },
-        });
+        // A save on its way lands first, so the reply names the draft it was written in and the server removes it.
+        const go = (): void => {
+            const draftId = draft?.id ?? null;
+            if (draftId !== null) {
+                request.draftId = draftId;
+            }
+            this.email.reply(this.messageId(), request).subscribe({
+                next: () => this.afterSend(draft),
+                error: (e: unknown) => this.sendFailed(e),
+            });
+        };
+        if (draft === null) {
+            go();
+        } else {
+            draft.settled(go);
+        }
+    }
+
+    private afterSend(draft: ServerDraft | null): void {
+        this.sending.set(false);
+        if (this.saveTimer !== null) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+        }
+        // The server removed the draft with the send: the next reply is a new one.
+        draft?.release();
+        if (this.draft === draft && this.shown !== null) {
+            this.draft = this.newDraft(this.shown.mailboxId, this.shown.messageId);
+        }
+        this.stored = null;
+        this.text.set('');
+        this.attachments.set([]);
+        this.fit();
+        this.toast.success('Reply sent.');
+        this.sent.emit();
+    }
+
+    private sendFailed(e: unknown): void {
+        this.sending.set(false);
+        // A failed send keeps the draft: what the box holds is saved as it is.
+        this.scheduleSave();
+        if (quotedMessageUnavailable(e)) {
+            this.quoteRefused.set(true);
+            return;
+        }
+        const expired = expiredAttachmentId(e);
+        if (expired !== null) {
+            const words = 'This file is no longer there to send. Remove it and attach it again.';
+            this.attachments.update(list => list.map(a => (a.id === expired
+                ? { ...a, status: 'refused' as const, refusal: words } : a)));
+            return;
+        }
+        const tooLarge = tooLargeSend(e);
+        if (tooLarge !== null) {
+            this.sendRefused.set(tooLarge);
+            return;
+        }
+        this.toast.error(sendFailureText(e));
     }
 
     /** The box as tall as its text, from one line up to the most lines, then it scrolls inside. */
@@ -290,50 +364,105 @@ export class MailQuickReplyComponent {
         const moved = this.shown?.mailboxId !== mailboxId || this.shown.messageId !== messageId;
         if (moved) {
             this.flush();
+            this.draft?.release();
             this.shown = { mailboxId, messageId };
+            this.draft = this.newDraft(mailboxId, messageId);
+            this.stored = null;
             this.prefill.set(null);
             this.quoteRefused.set(false);
             this.sendRefused.set(null);
             this.readPrefill();
         }
-        const draft = this.drafts.load<ComposeDraft>(replyDraftKey(mailboxId, messageId));
-        const window = windowHolds || (draft !== null && draft.place !== 'quick');
-        this.storedInWindow.set(!windowHolds && window);
-        if (window) {
-            this.text.set('');
-            this.attachments.set([]);
-        } else if (moved || draft !== null) {
-            this.text.set(draft?.text ?? '');
-            this.attachments.set(restoredAttachments(draft?.attachments));
+        this.text.set('');
+        this.attachments.set([]);
+        this.storedInWindow.set(false);
+        if (!windowHolds) {
+            // The message's reply draft, found by the message: opened here, or given back by the window.
+            this.lookUp(mailboxId, messageId);
         }
         afterNextRender(() => this.fit(), { injector: this.injector });
     }
 
-    /** The box's text and files as this message's reply draft; an empty box keeps no draft. */
-    private save(): void {
-        if (this.storedInWindow() || this.windowHolds()) {
-            return;
-        }
-        const key = replyDraftKey(this.mailboxId(), this.messageId());
-        const files = storedAttachments(this.attachments());
-        if (this.text().trim() === '' && files.length === 0) {
-            if (this.drafts.load<ComposeDraft>(key)?.place === 'quick') {
-                this.drafts.clear(key);
-            }
-            return;
-        }
+    private lookUp(mailboxId: string, messageId: string): void {
+        const seq = ++this.lookupSeq;
+        this.email.draftsAnswering(mailboxId, messageId).subscribe({
+            next: list => {
+                const found = replyDraftOf(list);
+                const draft = this.draft;
+                if (seq !== this.lookupSeq || found === null || draft === null || draft.pending || this.windowHolds()) {
+                    return;
+                }
+                draft.adopt(found);
+                this.show(found);
+            },
+            error: () => undefined,
+        });
+    }
+
+    private newDraft(mailboxId: string, messageId: string): ServerDraft {
+        const draft: ServerDraft = new ServerDraft(this.email, mailboxId, { messageId, mode: 'reply' }, {
+            loaded: d => {
+                if (this.draft === draft) {
+                    if (this.saveTimer !== null) {
+                        clearTimeout(this.saveTimer);
+                        this.saveTimer = null;
+                    }
+                    this.show(d);
+                }
+            },
+            gone: () => {
+                if (this.draft === draft) {
+                    this.draft = this.newDraft(mailboxId, messageId);
+                    this.stored = null;
+                    this.storedInWindow.set(false);
+                    this.text.set('');
+                    this.attachments.set([]);
+                    this.fit();
+                }
+            },
+        });
+
+        return draft;
+    }
+
+    /** The reply draft as the server has it: in the box, or, when it is the window's, said to be there. */
+    private show(draft: EmailDraftDto): void {
+        this.stored = draft;
+        const window = writtenInWindow(draft);
+        this.storedInWindow.set(window);
+        this.text.set(window ? '' : draft.text);
+        this.attachments.set(window ? [] : restoredAttachments(draftFiles(draft)));
+        afterNextRender(() => this.fit(), { injector: this.injector });
+    }
+
+    /** What the box holds, as the whole reply draft: plain text, the quote kept, to the prefill's recipient. */
+    private body(): EmailDraftWrite {
         const answer = this.prefill();
-        this.drafts.save(key, {
-            to: answer !== null ? addressesOf(answer.to) : [],
+        const stored = this.stored;
+
+        return {
+            to: answer !== null ? addressesOf(answer.to) : (stored?.to ?? []),
             cc: [],
             bcc: [],
-            subject: answer?.subject ?? '',
+            subject: answer?.subject ?? stored?.subject ?? '',
             text: this.text(),
-            html: '',
-            rich: false,
-            attachments: files,
+            html: null,
+            attachments: storedAttachments(this.attachments()).map(a => a.id),
+            from: answer?.from.address ?? stored?.from ?? null,
             quote: true,
-            place: 'quick',
-        } satisfies ComposeDraft);
+            messageParts: [],
+        };
+    }
+
+    /** The box's text and files as this message's reply draft; an empty box makes none. */
+    private save(): void {
+        const draft = this.draft;
+        if (draft === null || this.inWindow()) {
+            return;
+        }
+        if (draft.id === null && !draft.pending && !this.hasContent()) {
+            return;
+        }
+        draft.save(this.body());
     }
 }

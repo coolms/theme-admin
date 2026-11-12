@@ -15,6 +15,8 @@ import {
     EmailComposeDto,
     EmailComposeMode,
     EmailDeleteResultDto,
+    EmailDraftDto,
+    EmailDraftWrite,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailImportResultDto,
@@ -581,6 +583,54 @@ export class EmailService {
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/reply`,
             request,
         );
+    }
+
+    /**
+     * POST /email/mailboxes/{mailboxId}/drafts -- a new draft, with what it answers. A second reply draft to a message
+     * is refused (409 /errors/email/reply-draft-exists) naming the one there is.
+     */
+    createDraft(mailboxId: string, body: EmailDraftWrite): Observable<EmailDraftDto> {
+        return this.http.post<EmailDraftDto>(this.draftsBase(mailboxId), body, { headers: this.jsonHeaders });
+    }
+
+    /**
+     * PATCH /email/mailboxes/{mailboxId}/drafts/{id} -- the whole draft, made from `version` (If-Match). One made from
+     * an older version is refused (409 /errors/email/draft-stale) with the version stored.
+     */
+    saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto> {
+        return this.http.patch<EmailDraftDto>(`${this.draftsBase(mailboxId)}/${encodeURIComponent(id)}`, body, {
+            headers: new HttpHeaders({
+                Accept: 'application/json', 'Content-Type': 'application/merge-patch+json', 'If-Match': `"${version}"`,
+            }),
+        });
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/drafts/{id} -- one draft of the person's. */
+    readDraft(mailboxId: string, id: string): Observable<EmailDraftDto> {
+        return this.http.get<EmailDraftDto>(`${this.draftsBase(mailboxId)}/${encodeURIComponent(id)}`, { headers: this.jsonHeaders });
+    }
+
+    /** DELETE /email/mailboxes/{mailboxId}/drafts/{id} -- a draft already gone answers the same (204). */
+    deleteDraft(mailboxId: string, id: string): Observable<void> {
+        return this.http.delete<void>(`${this.draftsBase(mailboxId)}/${encodeURIComponent(id)}`);
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/drafts?answers= -- the person's own drafts answering a message, the reply one first. */
+    draftsAnswering(mailboxId: string, messageId: string): Observable<EmailDraftDto[]> {
+        return this.http
+            .get<EmailDraftDto[] | null>(this.draftsBase(mailboxId), { headers: this.jsonHeaders, params: { answers: messageId } })
+            .pipe(map(list => (Array.isArray(list) ? list : [])));
+    }
+
+    /** GET /email/mailboxes/{mailboxId}/drafts -- the person's own drafts in the mailbox, the newest save first. */
+    listDrafts(mailboxId: string): Observable<EmailDraftDto[]> {
+        return this.http
+            .get<EmailDraftDto[] | null>(this.draftsBase(mailboxId), { headers: this.jsonHeaders })
+            .pipe(map(list => (Array.isArray(list) ? list : [])));
+    }
+
+    private draftsBase(mailboxId: string): string {
+        return `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/drafts`;
     }
 
     /**

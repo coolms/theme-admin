@@ -1,41 +1,35 @@
 import { type StoredComposeAttachment } from './compose-attachments';
+import { type EmailComposeMode, type EmailDraftDto } from './email.types';
+
+/** Reply and reply all: the two modes that share a message's one reply draft. */
+export function isReplyMode(mode: EmailComposeMode | 'compose' | null | undefined): mode is 'reply' | 'reply_all' {
+    return mode === 'reply' || mode === 'reply_all';
+}
+
+/** The reply draft among a message's drafts (the lookup lists it first), or null. */
+export function replyDraftOf(list: readonly EmailDraftDto[]): EmailDraftDto | null {
+    return list.find(d => isReplyMode(d.answers?.mode)) ?? null;
+}
+
+/** A draft's files as the compose attachments restore them. */
+export function draftFiles(draft: EmailDraftDto): StoredComposeAttachment[] {
+    const files = Array.isArray(draft.attachmentFiles) ? draft.attachmentFiles : [];
+
+    return files.map(f => ({
+        id: f.id,
+        filename: f.filename,
+        sizeBytes: f.sizeBytes,
+        encodedBytes: f.encodedBytes ?? null,
+        mimeType: f.mimeType ?? null,
+        source: 'upload' as const,
+    }));
+}
 
 /**
- * A composer's draft as the draft store keeps it. A reply has one draft, under one key, whether it is written in the
- * quick reply or in the compose window: `place` says which of the two holds it now.
+ * A reply draft the quick reply cannot show as it is (formatted, without the quote, with Cc or Bcc, or to all): it is
+ * written in the compose window, and the box says so.
  */
-export interface ComposeDraft {
-    /** Recipient chips. Older drafts stored `to` as a comma-string: coerced on load. */
-    to: string[];
-    cc: string[];
-    bcc: string[];
-    subject: string;
-    text: string;
-    html: string;
-    rich: boolean;
-    /** The files attached, by their server ids; absent from older drafts. */
-    attachments?: StoredComposeAttachment[];
-    /**
-     * An answer or a forward: whether the person kept the quote. Absent from a reply draft written before the quote
-     * was the server's: that draft's body already holds the quote it was given, so it is restored without another.
-     */
-    quote?: boolean;
-    /** A forward: the parts of the original the person removed from its files; absent from older drafts. */
-    removedParts?: number[];
-    /** Where the draft is written: the quick reply's box, or the compose window (also when absent). */
-    place?: 'quick' | 'window';
-}
-
-/** The draft store's key for a mailbox's new message, or for an answer or a forward of one of its messages. */
-export function composeDraftKey(mailboxId: string, mode: string, messageId: string | null): string | null {
-    if (mode === 'compose') {
-        return `email.${mailboxId}.compose`;
-    }
-
-    return messageId !== null ? `email.${mailboxId}.${mode}.${messageId}` : null;
-}
-
-/** The key of the one reply draft of a message: the quick reply's and the compose window's. */
-export function replyDraftKey(mailboxId: string, messageId: string): string {
-    return `email.${mailboxId}.reply.${messageId}`;
+export function writtenInWindow(draft: EmailDraftDto): boolean {
+    return draft.html !== null || draft.quote === false || draft.cc.length > 0 || draft.bcc.length > 0
+        || draft.answers?.mode === 'reply_all';
 }
