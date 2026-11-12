@@ -28,6 +28,7 @@ import {
     type NotificationDto,
     type NotificationLink,
 } from './notification-api.service';
+import { type NotificationActionTarget, notificationActionTarget } from './notification-action';
 import { NotificationPollingService } from './notification-polling.service';
 import { NotificationSoundService } from './notification-sound.service';
 import { NotificationStore } from './notification-store.service';
@@ -40,9 +41,14 @@ import { NotificationStore } from './notification-store.service';
  * right-click context menu alike) through the store's
  * `actionDispatched$` bus into a single switch.
  *
+ * A row's action the admin knows is a button under its text that
+ * marks it read and opens the action's screen; the body is plain
+ * text, never a link, and the chevron only expands it.
+ *
  * Mailbox semantics (Ship B.4, `selectionMode='mailbox'`): plain
- * click activates -- marks read if unread, navigates if `link`
- * is set, and closes the drawer once it navigates. Ctrl/Meta+click
+ * click activates -- marks read if unread, and opens the row's action
+ * only when the row itself is the action; a link opens from its own
+ * Open button. Ctrl/Meta+click
  * toggles a row in selection. Shift+click requests a range; the
  * store computes it against the cached ordered list. Right-click
  * opens the context menu with the row's full record spread into
@@ -91,7 +97,18 @@ import { NotificationStore } from './notification-store.service';
                     </div>
                 } @else {
                     @for (n of store.notifications(); track n.id) {
+                        @let rowAction = rowActionTarget(n);
+                        <!-- A row whose action is the row is itself the action: focusable, opened by a click or Enter,
+                             named by the notification's title and described by the action's label. Any other row is
+                             not interactive as a whole. -->
                         <div class="cms-notification-row"
+                             [class.cms-notification-row--action]="rowAction !== null"
+                             [attr.role]="rowAction !== null ? 'link' : null"
+                             [attr.tabindex]="rowAction !== null ? 0 : null"
+                             [attr.aria-label]="rowAction !== null ? displayTitle(n) : null"
+                             [attr.aria-description]="rowAction?.label ?? null"
+                             [attr.data-test]="rowAction !== null ? 'notification-row-action' : null"
+                             (keydown.enter)="onRowEnter(n, $event)"
                              [class.cms-notification-row--unread]="!n.isRead"
                              [class.cms-notification-row--selected]="store.selectedIds().has(n.id)"
                              [class.cms-notification-row--flash]="store.flashingIds().has(n.id)"
@@ -148,9 +165,28 @@ import { NotificationStore } from './notification-store.service';
                             </div>
 
                             @if (hasBody(n) && store.expandedId() === n.id) {
+                                <!-- Plain text, always: never a link, whatever the row carries. -->
                                 <div class="cms-notification-row__body"
-                                     [class.cms-notification-row__body--clickable]="hasLink(n)"
-                                     (click)="onBodyClick(n, $event)">{{ renderedBody(n) }}</div>
+                                     (click)="$event.stopPropagation()">{{ renderedBody(n) }}</div>
+                            }
+
+                            @if (buttonActionTarget(n); as target) {
+                                <div class="cms-notification-row__action">
+                                    <button type="button"
+                                            class="cms-btn cms-btn-sm"
+                                            data-test="notification-action"
+                                            (click)="onActionClick(n, target, $event)"
+                                            (dblclick)="$event.stopPropagation()">{{ target.label }}</button>
+                                </div>
+                            } @else if (hasLink(n)) {
+                                <!-- A row with a link and no action shown opens its link from this button. -->
+                                <div class="cms-notification-row__action">
+                                    <button type="button"
+                                            class="cms-btn cms-btn-sm"
+                                            data-test="notification-open-link"
+                                            (click)="onOpenLinkClick(n, $event)"
+                                            (dblclick)="$event.stopPropagation()">{{ openLabel }}</button>
+                                </div>
                             }
                         </div>
                     }
@@ -258,11 +294,12 @@ import { NotificationStore } from './notification-store.service';
                primary because the body is below it. */
             user-select: text;
         }
-        .cms-notification-row__body--clickable {
-            cursor: pointer;
+        .cms-notification-row--action:focus-visible {
+            outline: 2px solid var(--cms-focus-ring, var(--cms-primary, #2563eb));
+            outline-offset: -2px;
         }
-        .cms-notification-row__body--clickable:hover {
-            background: var(--cms-accent-light);
+        .cms-notification-row__action {
+            margin: .375rem 0 .125rem 0;
         }
         .cms-notification-drawer__loading-more,
         .cms-notification-drawer__end {
@@ -366,6 +403,10 @@ export class NotificationDrawerContentComponent {
      * Requires a non-null object with a non-empty `href` string.
      */
     protected hasLink(n: NotificationDto): boolean {
+        // A row with an action the admin can open goes there by its button; its link, if any, is not followed.
+        if (this.actionTarget(n) !== null) {
+            return false;
+        }
         const l = n.link;
         if (l === null || l === undefined) {
             return false;
@@ -388,8 +429,71 @@ export class NotificationDrawerContentComponent {
         return typeof body === 'string' && body.length > 0;
     }
 
+    /** The chevron only expands and collapses a body: a row without one has no chevron. */
     protected hasExpandable(n: NotificationDto): boolean {
-        return this.hasLink(n) || this.hasBody(n);
+        return this.hasBody(n);
+    }
+
+    /** The row's action as the admin opens it, or null when it shows no button. */
+    protected actionTarget(n: NotificationDto): NotificationActionTarget | null {
+        return notificationActionTarget(n.action);
+    }
+
+    /** The row's action when it is drawn as a button under the text, or null. */
+    protected buttonActionTarget(n: NotificationDto): NotificationActionTarget | null {
+        const target = this.actionTarget(n);
+        return target?.presentation === 'button' ? target : null;
+    }
+
+    /** The row's action when the whole row is the action, or null: then the row is not interactive as a whole. */
+    protected rowActionTarget(n: NotificationDto): NotificationActionTarget | null {
+        const target = this.actionTarget(n);
+        return target?.presentation === 'row' ? target : null;
+    }
+
+    /** The action's button: marks the row read, as opening it does, and goes to the action's screen. */
+    protected onActionClick(n: NotificationDto, target: NotificationActionTarget, event: Event): void {
+        event.stopPropagation();
+        this.openAction(n, target);
+    }
+
+    /** The label of the button that opens a row's link. */
+    protected readonly openLabel = 'Open';
+
+    /** The link's button: marks the row read, as opening it does, and goes to the link. */
+    protected onOpenLinkClick(n: NotificationDto, event: Event): void {
+        event.stopPropagation();
+        this.openLink(n);
+    }
+
+    private openLink(n: NotificationDto): void {
+        const link = n.link;
+        if (!this.hasLink(n) || !link) {
+            return;
+        }
+        if (!n.isRead) {
+            this.markReadAsync(n);
+        }
+        this.navigateLink(link);
+        this.drawer.close();
+    }
+
+    /** Enter on a row whose action is the row opens it; Enter on a control inside the row is that control's. */
+    protected onRowEnter(n: NotificationDto, event: Event): void {
+        const target = this.rowActionTarget(n);
+        if (target === null || event.target !== event.currentTarget) {
+            return;
+        }
+        event.preventDefault();
+        this.openAction(n, target);
+    }
+
+    private openAction(n: NotificationDto, target: NotificationActionTarget): void {
+        if (!n.isRead) {
+            this.markReadAsync(n);
+        }
+        void this.router.navigate(target.commands, { queryParams: target.queryParams });
+        this.drawer.close();
     }
 
     /**
@@ -419,32 +523,42 @@ export class NotificationDrawerContentComponent {
     }
 
     /**
-     * Activation (dblclick + chevron click on link-only + context
-     * menu Open). Body rows expand instead of navigating, so the
-     * navigation branch fires only when there is no body. First
-     * expand also marks the row read; the mark-read fires before
-     * any branch so navigation paths stay consistent.
+     * Pressing a row (a click, or a double click). It marks the row read, whatever the row carries. A row whose action
+     * is the row opens that action; any other row expands its body, if it has one, and navigates nowhere.
      */
     protected onActivate(n: NotificationDto): void {
+        // A row whose action is the row opens it, as Enter does.
+        const rowAction = this.rowActionTarget(n);
+        if (rowAction !== null) {
+            this.openAction(n, rowAction);
+            return;
+        }
         if (!n.isRead) {
             this.markReadAsync(n);
         }
 
-        if (this.hasBody(n)) {
-            // Idempotent: setExpanded on the already-expanded row is
-            // a no-op, so context-menu Open on an open row does not
-            // collapse it.
-            if (this.store.expandedId() !== n.id) {
-                this.store.setExpanded(n.id);
-            }
+        // Pressing any other row reads it and goes nowhere: a link is opened by the row's Open button only.
+        if (this.hasBody(n) && this.store.expandedId() !== n.id) {
+            // Idempotent: an already-expanded row is not collapsed.
+            this.store.setExpanded(n.id);
+        }
+    }
+
+    /**
+     * The context menu's Open: where the row's own control goes -- its action, or its link -- and otherwise as
+     * pressing the row.
+     */
+    private openFocused(n: NotificationDto): void {
+        const target = this.actionTarget(n);
+        if (target !== null) {
+            this.openAction(n, target);
             return;
         }
-
-        const link = n.link;
-        if (this.hasLink(n) && link) {
-            this.navigateLink(link);
-            this.drawer.close();
+        if (this.hasLink(n)) {
+            this.openLink(n);
+            return;
         }
+        this.onActivate(n);
     }
 
     protected onContextMenu(payload: { item: NotificationDto; event: MouseEvent }): void {
@@ -464,7 +578,7 @@ export class NotificationDrawerContentComponent {
             _single: single,
             _hasLink: hasLink,
             _hasBody: hasBody,
-            _hasExpandable: hasLink || hasBody,
+            _hasExpandable: hasBody,
             ...focused,
         };
 
@@ -501,7 +615,7 @@ export class NotificationDrawerContentComponent {
             case 'open': {
                 const f = this.store.focusedItem();
                 if (f) {
-                    this.onActivate(f);
+                    this.openFocused(f);
                 }
                 return;
             }
@@ -509,62 +623,27 @@ export class NotificationDrawerContentComponent {
     }
 
     /**
-     * Chevron click. For rows with body, the chevron is the expand
-     * toggle; collapse on second click. For link-only rows, the
-     * chevron is the navigate affordance and delegates to
-     * `onActivate`. First expand marks the row read.
-     *
-     * stopPropagation keeps the row's selection-replace click from
-     * firing alongside the chevron action.
+     * Chevron click: expands the body, or collapses it on a second click; it never navigates. First expand marks the
+     * row read. stopPropagation keeps the row's selection-replace click from firing alongside it.
      */
     protected onChevronClick(n: NotificationDto, event: Event): void {
         event.stopPropagation();
-        if (this.hasBody(n)) {
-            const wasExpanded = this.store.expandedId() === n.id;
-            this.store.toggleExpanded(n.id);
-            if (!wasExpanded && !n.isRead) {
-                this.markReadAsync(n);
-            }
+        if (!this.hasBody(n)) {
             return;
         }
-        this.onActivate(n);
-    }
-
-    /**
-     * Body click. Navigates when the row has a link; otherwise the
-     * body remains a copyable plain-text block (user-select: text on
-     * `__body`). First click also marks the row read when the body
-     * navigates.
-     */
-    protected onBodyClick(n: NotificationDto, event: Event): void {
-        event.stopPropagation();
-        if (!this.hasLink(n)) {
-            return;
-        }
-        if (!n.isRead) {
+        const wasExpanded = this.store.expandedId() === n.id;
+        this.store.toggleExpanded(n.id);
+        if (!wasExpanded && !n.isRead) {
             this.markReadAsync(n);
-        }
-        const link = n.link;
-        if (link) {
-            this.navigateLink(link);
-            this.drawer.close();
         }
     }
 
     protected chevronIcon(n: NotificationDto): string {
-        if (this.hasBody(n)) {
-            return this.store.expandedId() === n.id
-                ? 'bi bi-chevron-down'
-                : 'bi bi-chevron-right';
-        }
-        return 'bi bi-chevron-right';
+        return this.store.expandedId() === n.id ? 'bi bi-chevron-down' : 'bi bi-chevron-right';
     }
 
     protected chevronTitle(n: NotificationDto): string {
-        if (this.hasBody(n)) {
-            return this.store.expandedId() === n.id ? 'Collapse' : 'Expand';
-        }
-        return 'Open';
+        return this.store.expandedId() === n.id ? 'Collapse' : 'Expand';
     }
 
     protected getBody(n: NotificationDto): string {
@@ -572,26 +651,8 @@ export class NotificationDrawerContentComponent {
         return typeof body === 'string' ? body : '';
     }
 
-    protected bodyFormat(n: NotificationDto): 'plain' | 'markdown' | 'dtmpl' {
-        const fmt = n.extras?.['bodyFormat'];
-        if (fmt === 'markdown' || fmt === 'dtmpl' || fmt === 'plain') {
-            return fmt;
-        }
-        return 'plain';
-    }
-
-    /**
-     * Returns the body string formatted for the current renderer.
-     * This ship renders only `plain`; `markdown` and `dtmpl` fall
-     * back to plain text with a one-time dev console warning so the
-     * unimplemented renderer is visible during development without
-     * spamming the console on every row paint.
-     */
+    /** The body as plain text, whatever `extras.bodyFormat` says: the server renders no format. */
     protected renderedBody(n: NotificationDto): string {
-        const fmt = this.bodyFormat(n);
-        if (fmt !== 'plain') {
-            this.warnOnceForFormat(fmt);
-        }
         return this.getBody(n);
     }
 
@@ -601,18 +662,6 @@ export class NotificationDrawerContentComponent {
             error: (err: unknown) =>
                 console.warn('[NotificationDrawer] mark-read failed', err),
         });
-    }
-
-    private readonly warnedFormats = new Set<string>();
-
-    private warnOnceForFormat(format: string): void {
-        if (this.warnedFormats.has(format)) {
-            return;
-        }
-        this.warnedFormats.add(format);
-        console.warn(
-            `[NotificationDrawer] '${format}' body format not yet rendered; falling back to plain text.`,
-        );
     }
 
     onDismissClick(n: NotificationDto, event: Event): void {

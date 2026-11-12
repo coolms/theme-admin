@@ -29,6 +29,23 @@ export interface NotificationDto {
     dismissedAt: string | null;
     isRead: boolean;
     link: NotificationLink | null;
+    /** Where the notification takes the person, or null; rows from before actions carry none. */
+    action?: NotificationAction | null;
+}
+
+/**
+ * A notification's action: `label` is a code the admin words itself, `labelText` the server's fallback wording,
+ * `destination` a registered name with the flat params its route needs -- never a URL -- and `presentation` how it is
+ * drawn, as the server decides: a button under the text, or the whole row (absent: a button).
+ */
+export interface NotificationAction {
+    label: string;
+    labelText: string;
+    destination: {
+        name: string;
+        params: Record<string, string>;
+    };
+    presentation?: 'button' | 'row' | null;
 }
 
 export interface UnreadCountDto {
