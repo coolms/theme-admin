@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+- **Show original says when a message is not found.** Any 404 other than the source-gone one (a missing
+  message, or one the reader may not see) now reads "This message was not found." instead of the generic failure.
+
 - **The signed-in sessions page.** A row's menu ends that sign-in, ends all of that person's sign-ins, or opens
   the account. Every column sorts and filters, by the grid's declared definition, and the toolbar groups the
   list by person. Browser and device show as columns.
