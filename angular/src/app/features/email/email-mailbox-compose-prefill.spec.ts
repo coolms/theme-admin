@@ -13,6 +13,7 @@ import {
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { FakeDraftsApi } from './email-drafts.fake';
+import { DRAFT_RETRY_FIRST_MS } from './server-draft';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -390,6 +391,30 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                 [{ messageId: 'm1', mode: 'forward' }, true],
                 [null, false],
             ]);
+            const keys = drafts.of('create').map(c => c.key);
+            expect(keys.every(k => typeof k === 'string' && k !== '')).withContext('each create sends an Idempotency-Key').toBeTrue();
+            expect(new Set(keys).size).withContext('a key of its own for each create').toBe(2);
+        });
+
+        it('a forward draft create that answers 5xx is tried again with the same Idempotency-Key: one draft', async () => {
+            const page = build();
+            page.composeRich.set(false);
+            // The create commits on the server but its answer is a 503, as one whose answer was lost.
+            drafts.failNextCreate(503, true);
+            page.onDetailAction('forward');
+            page.composeText = 'FYI.';
+            page.closeCompose();
+            expect(drafts.of('create').length).toBe(1);
+            expect(drafts.of('lookup').length).withContext('a forward is not looked up by the message').toBe(1);
+
+            await new Promise(resolve => setTimeout(resolve, DRAFT_RETRY_FIRST_MS + 200));
+
+            const creates = drafts.of('create');
+            expect(creates.length).withContext('tried again').toBe(2);
+            expect(creates[1].key).withContext('with the same key').toBe(creates[0].key);
+            expect(creates[1].body).toEqual(creates[0].body);
+            expect(drafts.drafts.size).withContext('one draft').toBe(1);
+            expect([...drafts.drafts.values()][0].answers).toEqual({ messageId: 'm1', mode: 'forward' });
         });
 
         it('Reply all opens the reply draft and switches it to reply all; never a second draft', () => {

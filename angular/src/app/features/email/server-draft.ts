@@ -5,6 +5,16 @@ import { isReplyMode, replyDraftOf } from './compose-draft';
 import { type EmailComposeMode, type EmailDraftAnswers, type EmailDraftDto, type EmailDraftWrite } from './email.types';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 
+/** A key for one create and its retries. */
+function newIdempotencyKey(): string {
+    const c = globalThis.crypto as Crypto | undefined;
+    if (c !== undefined && typeof c.randomUUID === 'function') {
+        return c.randomUUID();
+    }
+
+    return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 /** The first pause before a draft save that failed on the server is tried again. */
 export const DRAFT_RETRY_FIRST_MS = 1000;
 /** The longest pause between tries. */
@@ -12,7 +22,7 @@ export const DRAFT_RETRY_MOST_MS = 30_000;
 
 /** The drafts API a draft is written through (the mail service). */
 export interface DraftsApi {
-    createDraft(mailboxId: string, body: EmailDraftWrite): Observable<EmailDraftDto>;
+    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto>;
     saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto>;
     readDraft(mailboxId: string, id: string): Observable<EmailDraftDto>;
     deleteDraft(mailboxId: string, id: string): Observable<void>;
@@ -75,6 +85,11 @@ export class ServerDraft {
     private retryTimer: ReturnType<typeof setTimeout> | null = null;
     /** A reply draft's create refused by the server: the draft is looked up by the message once. */
     private lookedUp = false;
+    /**
+     * The create on its way or failed, with its Idempotency-Key: every retry sends the same body with the same key,
+     * so a create that did commit gives its draft back and never a second. Newer content goes after it as a save.
+     */
+    private creating: { key: string; body: EmailDraftWrite; from: EmailDraftWrite } | null = null;
 
     constructor(
         private readonly api: DraftsApi,
@@ -199,15 +214,25 @@ export class ServerDraft {
         this.busy = true;
         const id = this.draftId;
         const naming = id === null || this.answersChanged;
-        const sent: EmailDraftWrite = naming ? { ...body, answers: this.answersOf } : body;
-        const call = id === null || this.draftVersion === null
-            ? this.api.createDraft(this.mailboxId, sent)
-            : this.api.saveDraft(this.mailboxId, id, this.draftVersion, sent);
+        let call: Observable<EmailDraftDto>;
+        if (id === null || this.draftVersion === null) {
+            if (this.creating === null) {
+                this.creating = { key: newIdempotencyKey(), body: { ...body, answers: this.answersOf }, from: body };
+            } else if (this.creating.from !== body) {
+                // The same create is tried again as it was; what was written since is saved after it.
+                this.owed = body;
+            }
+            call = this.api.createDraft(this.mailboxId, this.creating.body, this.creating.key);
+        } else {
+            const sent: EmailDraftWrite = naming ? { ...body, answers: this.answersOf } : body;
+            call = this.api.saveDraft(this.mailboxId, id, this.draftVersion, sent);
+        }
         call.subscribe({
             next: draft => {
                 if (naming) {
                     this.answersChanged = false;
                 }
+                this.creating = null;
                 this.retryMs = 0;
                 this.adopt(draft);
                 this.idle();
@@ -221,6 +246,7 @@ export class ServerDraft {
         if (exists !== null) {
             // One reply draft per person per message: that one is loaded, never a second made.
             this.owed = null;
+            this.creating = null;
             this.draftId = exists.draftId;
             this.draftVersion = exists.version;
             this.reload();
@@ -247,6 +273,7 @@ export class ServerDraft {
                         }
                         this.adopt(found);
                         this.owed = null;
+                        this.creating = null;
                         if (!this.released) {
                             this.host.loaded(found);
                         }

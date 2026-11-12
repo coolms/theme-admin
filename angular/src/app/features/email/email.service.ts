@@ -587,10 +587,13 @@ export class EmailService {
 
     /**
      * POST /email/mailboxes/{mailboxId}/drafts -- a new draft, with what it answers. A second reply draft to a message
-     * is refused (409 /errors/email/reply-draft-exists) naming the one there is.
+     * is refused (409 /errors/email/reply-draft-exists) naming the one there is. `idempotencyKey` is sent as the
+     * Idempotency-Key header: the same create sent again with it gives the first draft back, never a second.
      */
-    createDraft(mailboxId: string, body: EmailDraftWrite): Observable<EmailDraftDto> {
-        return this.http.post<EmailDraftDto>(this.draftsBase(mailboxId), body, { headers: this.jsonHeaders });
+    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto> {
+        return this.http.post<EmailDraftDto>(this.draftsBase(mailboxId), body, {
+            headers: this.jsonHeaders.set('Idempotency-Key', idempotencyKey),
+        });
     }
 
     /**

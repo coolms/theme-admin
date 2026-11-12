@@ -7,6 +7,8 @@ import { type EmailDraftDto, type EmailDraftFileDto, type EmailDraftWrite } from
 export interface DraftCall {
     readonly op: 'create' | 'save' | 'read' | 'delete' | 'lookup' | 'list';
     readonly id?: string;
+    /** A create's Idempotency-Key. */
+    readonly key?: string;
     readonly version?: number;
     readonly body?: EmailDraftWrite;
     readonly messageId?: string;
@@ -28,11 +30,16 @@ export class FakeDraftsApi {
     private clock = 0;
     private holding = false;
     private held: Array<() => void> = [];
-    private failing: number[] = [];
+    private failing: Array<{ status: number; committed: boolean }> = [];
+    /** The draft each Idempotency-Key made, as the server keeps them. */
+    private readonly byKey = new Map<string, string>();
 
-    /** The next create answers this status (a server error), with nothing written. */
-    failNextCreate(status: number): void {
-        this.failing.push(status);
+    /**
+     * The next create answers this status (a server error): with nothing written, or (`committed`) after the draft was
+     * made, as a create whose answer was lost.
+     */
+    failNextCreate(status: number, committed = false): void {
+        this.failing.push({ status, committed });
     }
 
     /** Answers are kept back from now on. */
@@ -70,12 +77,17 @@ export class FakeDraftsApi {
         return structuredClone(stored);
     }
 
-    createDraft(mailboxId: string, body: EmailDraftWrite): Observable<EmailDraftDto> {
-        this.calls.push({ op: 'create', body: structuredClone(body) });
+    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto> {
+        this.calls.push({ op: 'create', body: structuredClone(body), key: idempotencyKey });
         return this.answer(() => {
+            const made = this.byKey.get(idempotencyKey);
+            const first = made === undefined ? undefined : this.drafts.get(made);
+            if (first !== undefined) {
+                return structuredClone(first);
+            }
             const failure = this.failing.shift();
-            if (failure !== undefined) {
-                return problem(failure, { status: failure });
+            if (failure !== undefined && !failure.committed) {
+                return problem(failure.status, { status: failure.status });
             }
             const answers = body.answers ?? null;
             if (answers !== null && isReplyMode(answers.mode)) {
@@ -91,8 +103,10 @@ export class FakeDraftsApi {
             const stored = this.write(this.blank(id, mailboxId), body);
             stored.answers = answers;
             stored.version = 1;
+            this.byKey.set(idempotencyKey, id);
+            const kept = this.keep(stored);
 
-            return this.keep(stored);
+            return failure !== undefined ? problem(failure.status, { status: failure.status }) : kept;
         });
     }
 
@@ -106,13 +120,13 @@ export class FakeDraftsApi {
             if (stored.version !== version) {
                 return problem(409, { type: '/errors/email/draft-stale', title: 'The draft was saved elsewhere meanwhile', status: 409, version: stored.version });
             }
-            const asked = body.answers;
-            if (asked !== undefined && asked !== null && stored.answers !== null && (asked.messageId !== stored.answers.messageId
-                || isReplyMode(asked.mode) !== isReplyMode(stored.answers.mode))) {
+            const asked = body.answers ?? null;
+            const had = stored.answers ?? null;
+            if (asked !== null && had !== null && (asked.messageId !== had.messageId || isReplyMode(asked.mode) !== isReplyMode(had.mode))) {
                 return problem(422, { type: '/errors/email/draft-answers-fixed', status: 422 });
             }
             const saved = this.write(structuredClone(stored), body);
-            saved.answers = asked ?? stored.answers;
+            saved.answers = asked ?? had;
             saved.version = stored.version + 1;
 
             return this.keep(saved);

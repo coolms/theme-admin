@@ -480,6 +480,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
 
         await wait(DRAFT_RETRY_FIRST_MS + 200);
         expect(server.of('create').length).withContext('tried again').toBe(2);
+        expect(server.of('create')[1].key).withContext('with the same Idempotency-Key').toBe(server.of('create')[0].key);
         expect(server.drafts.size).toBe(1);
         expect(server.drafts.get(only())!.text).toBe('Keep me.');
     });

@@ -3514,7 +3514,7 @@ export class EmailMailboxPageComponent implements OnInit {
     private findNewMessageDraft(draft: ServerDraft): void {
         this.email.listDrafts(draft.mailboxId).subscribe({
             next: list => {
-                const found = list.find(d => d.answers === null);
+                const found = list.find(d => (d.answers ?? null) === null);
                 if (found !== undefined && this.activeDraft() === draft && draft.id === null && !draft.pending
                     && !this.isComposeDirty()) {
                     draft.adopt(found);

@@ -575,7 +575,8 @@ export interface EmailDraftDto {
     from: string | null;
     version: number;
     updatedAt: string;
-    answers: EmailDraftAnswers | null;
+    /** What it answers; null or absent for a new message. */
+    answers?: EmailDraftAnswers | null;
     quote: boolean | null;
     messageParts: EmailMessagePartRef[];
     inReplyTo?: string | null;
