@@ -586,11 +586,20 @@ export interface EmailDraftDto {
     messageParts: EmailMessagePartRef[];
     inReplyTo?: string | null;
     references?: string[];
+    /** Where it is written. Absent (an older answer) counts as `window`, as the server reads a draft that never said. */
+    composedIn?: EmailDraftComposedIn;
 }
 
 /**
+ * Where a draft is written: the quick reply's box, or a compose window. Once a draft says `window` the server keeps
+ * `window`, and a later `quick-reply` is ignored.
+ */
+export type EmailDraftComposedIn = 'window' | 'quick-reply';
+
+/**
  * A draft's create or save. A save writes the whole draft, so every field is sent; `answers` is sent at create, and on
- * a save only to switch between reply and reply all (left out, it is kept). `quote` is always stated.
+ * a save only to switch between reply and reply all (left out, it is kept). `quote` is always stated. Where it is
+ * written (`composedIn`) is added by the draft that sends it, on every create and save (`EmailDraftSent`).
  */
 export interface EmailDraftWrite {
     to: string[];
@@ -604,7 +613,11 @@ export interface EmailDraftWrite {
     quote: boolean;
     messageParts: EmailMessagePartRef[];
     answers?: EmailDraftAnswers | null;
+    composedIn?: EmailDraftComposedIn;
 }
+
+/** A draft's create or save as it goes to the server: it always says where the draft is written. */
+export type EmailDraftSent = EmailDraftWrite & { composedIn: EmailDraftComposedIn };
 
 /** The small confirmation a send/reply echoes. */
 export interface EmailSendResultDto {

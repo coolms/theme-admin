@@ -45,11 +45,14 @@ function message(lines: number): EmailMessageDetailDto {
     return { ...LISTED[0], bodyText: body } as EmailMessageDetailDto;
 }
 
-/** A reply draft of m1 as the quick reply writes it on another device: plain, quoted, to the prefill's recipient. */
+/**
+ * A reply draft of m1 as the quick reply writes it on another device: plain, quoted, to the prefill's recipient, and
+ * saying it is the quick reply's.
+ */
 function written(id: string, text: string): { id: string } & Record<string, unknown> {
     return {
         id, to: ['desks@example.com'], subject: 'Re: Desk move on Friday', text, html: null, from: 'work@example.com',
-        answers: REPLY, quote: true,
+        answers: REPLY, quote: true, composedIn: 'quick-reply',
     };
 }
 
@@ -296,6 +299,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(made[0].body).toEqual({
             to: ['desks@example.com'], cc: [], bcc: [], subject: 'Re: Desk move on Friday', text: 'Will reply properly later.',
             html: null, attachments: [], from: 'work@example.com', quote: true, messageParts: [], answers: REPLY,
+            composedIn: 'quick-reply',
         });
         expect(Object.keys(made[0].body!)).withContext('never the server\'s threading').not.toContain('inReplyTo');
 
@@ -656,11 +660,14 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect([...draftLine()!.querySelectorAll('button')].map(b => b.textContent!.trim())).toEqual(['Open', 'Discard']);
         expect(server.drafts.get(id)!.text).withContext('the draft kept').toContain('Hi Ann');
 
-        // A page that had already drawn the draft in its box gives way once it learns a window held it.
+        // A page whose lookup answered before the window's save of the draft landed (the server still said quick-reply)
+        // gives way once it learns a window held it: this page's own list covers that moment.
         fixture.destroy();
         (fixture.nativeElement as HTMLElement).remove();
         mount();
+        server.put({ id, composedIn: 'quick-reply' });
         await open(3);
+        expect(box().value).withContext('the control: drawn in the box').toContain('Hi Ann');
         fixture.componentInstance.windowReplyDrafts.set(new Set([id]));
         await settle();
         expect(el().querySelector('[data-test="quick-reply-box"]')).toBeNull();
@@ -722,6 +729,145 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(draftLine()).toBeNull();
         expect(handed()).toBeNull();
         expect(box().value).toBe('');
+    });
+
+    it('every create and save says where it is written: quick-reply from the box, window from the compose window', async () => {
+        const page = fixture.componentInstance;
+        await open(3);
+        await typeAndSave('From the box.');
+        await typeAndSave('From the box, saved again.');
+        expect(server.of('create').map(c => c.body!.composedIn)).withContext('the box\'s create').toEqual(['quick-reply']);
+        expect(server.of('save').map(c => c.body!.composedIn)).withContext('the box\'s save').toEqual(['quick-reply']);
+        sendButton().click();
+        await settle();
+        expect(server.drafts.size).withContext('sent: no draft left').toBe(0);
+
+        /** What the window wrote since `from`: each create and save, with where it said it was written. */
+        const wrote = (from: number): Array<[string, string | undefined]> => server.calls.slice(from)
+            .filter(c => c.op === 'create' || c.op === 'save').map(c => [c.op, c.body!.composedIn]);
+        async function inWindow(text: string): Promise<void> {
+            page.composeText = text;
+            page.onComposeChange();
+            await wait(QUICK_REPLY_SAVE_MS + 100);
+            await settle();
+        }
+        const both: Array<[string, string]> = [['create', 'window'], ['save', 'window']];
+
+        for (const [action, mode] of [['reply', 'reply'], ['reply-all', 'reply_all']] as const) {
+            const from = server.calls.length;
+            page.onDetailAction(action);
+            await settle();
+            expect(page.composeMode()).toBe(mode);
+            await inWindow('Written in the window.');
+            await inWindow('Written in the window, and more.');
+            expect(wrote(from)).withContext(mode).toEqual(both);
+            // Sent, so the next answer makes its own draft.
+            page.sendCompose();
+            await settle();
+            expect(server.drafts.size).withContext(`${mode} sent`).toBe(0);
+        }
+
+        let from = server.calls.length;
+        page.onDetailAction('forward');
+        await settle();
+        expect(page.composeMode()).toBe('forward');
+        page.composeTo = ['lee@example.com'];
+        await inWindow('Forwarded.');
+        await inWindow('Forwarded, with a note.');
+        expect(wrote(from)).withContext('forward').toEqual(both);
+        page.closeCompose();
+        await settle();
+
+        from = server.calls.length;
+        page.composeRich.set(false);
+        page.openCompose();
+        await settle();
+        page.composeRich.set(false);
+        page.composeTo = ['lee@example.com'];
+        page.composeSubject = 'Lunch';
+        await inWindow('Noon?');
+        await inWindow('Noon? Or one.');
+        expect(wrote(from)).withContext('a new message').toEqual(both);
+    }, 30_000);
+
+    it('a reply draft found marked window shows the Draft line with Open and Discard: its text is not put in the box', async () => {
+        server.put({ ...written('d-win', 'Written in the window on the laptop.'), composedIn: 'window' });
+        await open(3);
+
+        expect(server.of('lookup').at(-1)?.messageId).withContext('found by the message').toBe('m1');
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the text is not put in the box').toBeNull();
+        expect(draftLine()).withContext('the Draft line').not.toBeNull();
+        expect(draftLine()!.querySelector('[data-test="quick-reply-draft-text"]')!.textContent!.trim())
+            .toBe('Draft: \u201CWritten in the window on the laptop.\u201D');
+        expect([...draftLine()!.querySelectorAll('button')].map(b => b.textContent!.trim())).toEqual(['Open', 'Discard']);
+        expect(server.of('save').length).withContext('nothing written over').toBe(0);
+    });
+
+    it('a reply draft marked window made on another device shows as the Draft line from its event, never in the box', async () => {
+        await open(3);
+        expect(box().value).toBe('');
+        server.put({ ...written('d-phone', 'Opened in the window on the phone.'), composedIn: 'window' });
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: 'd-phone', version: 1, answers: REPLY });
+        await settle();
+
+        expect(server.of('read').map(c => c.id)).withContext('read from its event').toEqual(['d-phone']);
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the text is not put in the box').toBeNull();
+        expect(draftLine()!.querySelector('[data-test="quick-reply-draft-text"]')!.textContent!.trim())
+            .toBe('Draft: \u201COpened in the window on the phone.\u201D');
+    });
+
+    it('a reply draft found marked quick-reply is put in the box', async () => {
+        server.put(written('d-box', 'Typed in the box on the phone.'));
+        await open(3);
+
+        expect(server.drafts.get('d-box')!.composedIn).toBe('quick-reply');
+        expect(draftLine()).toBeNull();
+        expect(box().value).toBe('Typed in the box on the phone.');
+    });
+
+    it('a reply draft that does not say where it was written (one from before) shows the Draft line', async () => {
+        const older = written('d-old', 'Written before the server said.');
+        delete older['composedIn'];
+        server.put(older);
+        await open(3);
+
+        expect('composedIn' in server.drafts.get('d-old')!).withContext('it says nothing').toBeFalse();
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the text is not put in the box').toBeNull();
+        expect(draftLine()!.querySelector('[data-test="quick-reply-draft-text"]')!.textContent!.trim())
+            .toBe('Draft: \u201CWritten before the server said.\u201D');
+    });
+
+    it('Expand: the window\'s first save says window, and the draft is the window\'s from then on, after a reload too', async () => {
+        await open(3);
+        await typeAndSave('Started in the box.');
+        const id = only();
+        expect(server.drafts.get(id)!.composedIn).withContext('the box\'s, before Expand').toBe('quick-reply');
+        const mark = server.calls.length;
+
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+
+        // The box saves what it holds as its own at the hand-off; the window reads the draft, then saves it as its own.
+        const took = server.calls.findIndex((c, i) => i >= mark && c.op === 'read');
+        expect(took).withContext('the window read the draft').toBeGreaterThan(-1);
+        expect(server.calls.slice(mark, took).filter(c => c.op === 'save').map(c => c.body!.composedIn))
+            .withContext('the box\'s hand-off').toEqual(['quick-reply']);
+        const saves = server.calls.slice(took).filter(c => c.op === 'save');
+        expect(saves.length).withContext('the window saves it on taking it').toBeGreaterThan(0);
+        expect(saves[0].id).withContext('the same draft').toBe(id);
+        expect(saves[0].body!.composedIn).withContext('its first save').toBe('window');
+        expect(server.drafts.get(id)!.composedIn).toBe('window');
+        expect(dock()!.querySelector('textarea')!.value).toBe('Started in the box.');
+
+        fixture.componentInstance.closeCompose();
+        await settle();
+        fixture.destroy();
+        (fixture.nativeElement as HTMLElement).remove();
+        mount();
+        await open(3);
+        expect(fixture.componentInstance.windowReplyDrafts().size).withContext('a new page remembers nothing').toBe(0);
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('after a reload, not in the box').toBeNull();
+        expect(draftLine()).withContext('the Draft line').not.toBeNull();
     });
 
     it('no quick reply on a server row: a row with no id, not yet stored', async () => {

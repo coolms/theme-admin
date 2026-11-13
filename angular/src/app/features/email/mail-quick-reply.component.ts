@@ -157,7 +157,11 @@ export class MailQuickReplyComponent {
     readonly sender = input('');
     /** The compose window holds this message's reply now. */
     readonly windowHolds = input(false);
-    /** The ids of the reply drafts a compose window has held: such a draft never comes back into the box. */
+    /**
+     * The ids of the reply drafts a compose window has held on this page: such a draft never comes back into the box.
+     * The server's `composedIn` says so across a reload and on another device; this covers the moment before the
+     * window's own save of it has landed, when a lookup can still answer `quick-reply`.
+     */
     readonly windowDrafts = input<ReadonlySet<string>>(new Set());
 
     /** Expand, or Reply while the box holds text: the page opens the window on this draft. */
@@ -177,8 +181,9 @@ export class MailQuickReplyComponent {
     readonly quoteRefused = signal(false);
     readonly sendRefused = signal<{ limitBytes: number; sizeBytes: number } | null>(null);
     /**
-     * The reply draft is one written in the compose window (a window held it, or it is formatted, to all, with Cc or
-     * Bcc, or without the quote): the line shows its start, with Open and Discard, never its text in the box.
+     * The reply draft is one written in the compose window (it does not say `quick-reply`, a window held it, or it is
+     * formatted, to all, with Cc or Bcc, or without the quote): the line shows its start, with Open and Discard, never
+     * its text in the box.
      */
     readonly storedInWindow = signal(false);
     /** The text of the draft the line shows. */
@@ -522,15 +527,18 @@ export class MailQuickReplyComponent {
                     this.fit();
                 }
             },
-        });
+        }, 'quick-reply');
 
         return draft;
     }
 
-    /** The reply draft as the server has it: in the box, or, when it is the window's, said to be there. */
+    /**
+     * The reply draft as the server has it: in the box only when it says it is the quick reply's. One that says
+     * `window`, or nothing (written before the server said), is the window's, and the line says it is there.
+     */
     private show(draft: EmailDraftDto): void {
         this.stored = draft;
-        const window = writtenInWindow(draft) || this.windowDrafts().has(draft.id);
+        const window = draft.composedIn !== 'quick-reply' || writtenInWindow(draft) || this.windowDrafts().has(draft.id);
         this.storedInWindow.set(window);
         this.storedText.set(window ? draft.text : '');
         this.text.set(window ? '' : draft.text);

@@ -1952,7 +1952,8 @@ export class EmailMailboxPageComponent implements OnInit {
     });
     /**
      * The reply drafts a compose window has held, by id: closed with the draft kept, the quick reply shows its first
-     * words with Open and Discard, never its text in the box.
+     * words with Open and Discard, never its text in the box. The draft's `composedIn` says so across a reload and on
+     * another device; this page's list covers the moment before the window's save of it has landed.
      */
     readonly windowReplyDrafts = signal<ReadonlySet<string>>(new Set());
     /** The compose window holds the open message's reply. */
@@ -3898,7 +3899,7 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.parkedWindows.update(list => list.filter(w => w.draft !== draft));
                 }
             },
-        });
+        }, 'window');
 
         return draft;
     }
@@ -4096,6 +4097,12 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (draft !== null && held !== null && !held.pending && (held.id === null || held.id === draft.id)) {
                     held.adopt(draft);
                     this.applyDraft(draft);
+                    if (draft.composedIn === 'quick-reply') {
+                        // The quick reply's draft, handed over: saved at once as the window's, so after a reload or
+                        // on another device it shows as the Draft line and never comes back into the box.
+                        this.cancelDraftSave();
+                        this.saveDraftNow();
+                    }
                 }
                 this.focusComposeBody();
             },
@@ -4559,7 +4566,7 @@ export class EmailMailboxPageComponent implements OnInit {
         last: EmailDraftWrite,
     ): void {
         // A reply draft made elsewhere meanwhile is refused as a second, and that one is opened instead.
-        const again = new ServerDraft(this.email, mailboxId, answers, { loaded: () => undefined, gone: () => undefined });
+        const again = new ServerDraft(this.email, mailboxId, answers, { loaded: () => undefined, gone: () => undefined }, 'window');
         again.save(last);
         again.settled(() => {
             again.release();

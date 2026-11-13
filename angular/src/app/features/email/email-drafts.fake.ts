@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { isReplyMode } from './compose-draft';
-import { type EmailDraftDto, type EmailDraftFileDto, type EmailDraftWrite } from './email.types';
+import { type EmailDraftDto, type EmailDraftFileDto, type EmailDraftSent } from './email.types';
 
 /** A call the fake drafts API was asked, as the specs read them back. */
 export interface DraftCall {
@@ -10,7 +10,7 @@ export interface DraftCall {
     /** A create's Idempotency-Key. */
     readonly key?: string;
     readonly version?: number;
-    readonly body?: EmailDraftWrite;
+    readonly body?: EmailDraftSent;
     readonly messageId?: string;
 }
 
@@ -18,7 +18,8 @@ export interface DraftCall {
  * The drafts API for the specs: one person's drafts in memory, answering as the server does. A second reply draft to a
  * message is 409 reply-draft-exists naming the first; a save from an older version is 409 draft-stale with the version
  * stored; a save that changes what a draft answers (but for reply and reply all) is 422; a discard of a draft already
- * gone is done. `failNextCreate()` makes the next create a server error. `hold()` keeps every answer back until
+ * gone is done. Where a draft is written (`composedIn`) stays `window` once said, a draft that never said reads
+ * `window`, and a value the server does not know is 422. `failNextCreate()` makes the next create a server error. `hold()` keeps every answer back until
  * `release()`, for a request still on its way.
  */
 export class FakeDraftsApi {
@@ -77,9 +78,12 @@ export class FakeDraftsApi {
         return structuredClone(stored);
     }
 
-    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto> {
+    createDraft(mailboxId: string, body: EmailDraftSent, idempotencyKey: string): Observable<EmailDraftDto> {
         this.calls.push({ op: 'create', body: structuredClone(body), key: idempotencyKey });
         return this.answer(() => {
+            if (!knownPlace(body)) {
+                return problem(422, { status: 422 });
+            }
             const made = this.byKey.get(idempotencyKey);
             const first = made === undefined ? undefined : this.drafts.get(made);
             if (first !== undefined) {
@@ -110,9 +114,12 @@ export class FakeDraftsApi {
         });
     }
 
-    saveDraft(_mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto> {
+    saveDraft(_mailboxId: string, id: string, version: number, body: EmailDraftSent): Observable<EmailDraftDto> {
         this.calls.push({ op: 'save', id, version, body: structuredClone(body) });
         return this.answer(() => {
+            if (!knownPlace(body)) {
+                return problem(422, { status: 422 });
+            }
             const stored = this.drafts.get(id);
             if (stored === undefined) {
                 return problem(404, { status: 404 });
@@ -198,7 +205,10 @@ export class FakeDraftsApi {
         });
     }
 
-    private write(draft: EmailDraftDto, body: EmailDraftWrite): EmailDraftDto {
+    private write(draft: EmailDraftDto, body: EmailDraftSent): EmailDraftDto {
+        // A stored draft that never said is the window's; once the window's, always.
+        const was = draft.version === 0 ? null : (draft.composedIn ?? 'window');
+
         return {
             ...draft,
             to: [...body.to],
@@ -212,6 +222,7 @@ export class FakeDraftsApi {
             from: body.from,
             quote: body.quote,
             messageParts: structuredClone(body.messageParts),
+            composedIn: was === 'window' ? 'window' : (body.composedIn ?? 'window'),
             updatedAt: this.tick(),
         };
     }
@@ -232,6 +243,13 @@ export class FakeDraftsApi {
         const s = ++this.clock;
         return `2026-11-12T10:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}+00:00`;
     }
+}
+
+/** A create or save says a place the server knows, or nothing. */
+function knownPlace(body: EmailDraftSent): boolean {
+    const said: unknown = (body as { composedIn?: unknown }).composedIn;
+
+    return said === undefined || said === null || said === 'window' || said === 'quick-reply';
 }
 
 function problem(status: number, body: Record<string, unknown>): HttpErrorResponse {

@@ -151,6 +151,7 @@ describe('MessageSourceViewerComponent', () => {
         open();
         await refused(404, '/errors/not-found');
         expect(q('source-missing')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.missing);
+        expect(MESSAGE_SOURCE_WORDS.missing).withContext('the phrasing the app uses for what is gone').toBe('This message is not there any more.');
         expect(q('source-gone')).toBeNull();
         expect(q('source-failed')).toBeNull();
     });
