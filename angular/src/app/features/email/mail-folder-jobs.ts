@@ -16,6 +16,8 @@ const HEARD_KEEP_MAX = 20;
 export interface FolderJobsDeps {
     /** Starts Mark all as read on a folder: the job, or the one already running for it. */
     readonly start: (mailboxId: string, folder: string) => Observable<FolderJobDto>;
+    /** Starts Empty on a folder with the preview's numbers: the job, or the one already running for it. */
+    readonly empty: (mailboxId: string, folder: string, uidCeiling: number, uidValidity: number) => Observable<FolderJobDto>;
     /** Reads a job. */
     readonly read: (mailboxId: string, jobId: string) => Observable<FolderJobDto>;
     /** Whether realtime is connected now: its event tells a job's end, and the job is read only now and then. */
@@ -27,7 +29,7 @@ export interface FolderJobsDeps {
     /** A job this page started can no longer be read (the server keeps jobs a day): the folders are read again. */
     readonly lost: (job: FolderJobDto) => void;
     /** The server refused to start the job. */
-    readonly refused: (err: unknown, mailboxId: string, folder: string) => void;
+    readonly refused: (err: unknown, mailboxId: string, folder: string, action: FolderJobAction) => void;
 }
 
 const keyOf = (mailboxId: string, folder: string): string => `${mailboxId}\n${folder}`;
@@ -36,7 +38,7 @@ const keyOf = (mailboxId: string, folder: string): string => `${mailboxId}\n${fo
 type ReadAnswer = FolderJobDto | 'wait' | 'gone';
 
 /**
- * The folder jobs this page started (Mark all as read), from the click to their end. A job's folder is busy with it
+ * The folder jobs this page started (Mark all as read, Empty), from the click to their end. A job's folder is busy with it
  * from the server's 202 until its end is known:
  *  - mail.folders.job tells it. One heard before its 202 answered (a small folder's job ends that fast) is kept a few
  *    minutes, and the 202 of that job then ends it at once with the outcome heard.
@@ -63,9 +65,18 @@ export class MailFolderJobs {
     }
 
     markRead(mailboxId: string, folder: string): void {
-        this.deps.start(mailboxId, folder).subscribe({
+        this.begin(this.deps.start(mailboxId, folder), mailboxId, folder, 'mark-read');
+    }
+
+    /** Empty, with the numbers of the preview the person confirmed. */
+    empty(mailboxId: string, folder: string, uidCeiling: number, uidValidity: number): void {
+        this.begin(this.deps.empty(mailboxId, folder, uidCeiling, uidValidity), mailboxId, folder, 'empty');
+    }
+
+    private begin(call: Observable<FolderJobDto>, mailboxId: string, folder: string, action: FolderJobAction): void {
+        call.subscribe({
             next: job => this.follow(job),
-            error: (err: unknown) => this.deps.refused(err, mailboxId, folder),
+            error: (err: unknown) => this.deps.refused(err, mailboxId, folder, action),
         });
     }
 

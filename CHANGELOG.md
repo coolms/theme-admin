@@ -8,6 +8,15 @@ major number means here.
 
 ## Unreleased
 
+- **Empty Trash or Spam.** A folder row's menu offers Empty only where the folder tree's `canEmpty` is true. The
+  server's preview (`GET .../folders/action-preview?action=empty`) is shown first, its title, words and confirm label
+  as given, in a destructive confirm; confirmed, the folder is emptied with the preview's `uidCeiling` and
+  `uidValidity`, so mail that arrived after the preview stays. It runs as a job like Mark all as read (busy row,
+  `mail.folders.job`, or reading the job without realtime); the removed rows leave the list as they are reported
+  gone. Each refusal has its own sentence (not emptiable and its reason, a legal hold, a running action, a folder no
+  longer there); a folder renumbered since the preview is previewed again and its new count shown, never emptied with
+  the old numbers.
+
 - **Folder actions in the mail folder list.** A folder row's menu (right-click, a long press on touch, or Shift+F10
   and the Menu key) offers Mark all as read, New folder inside, and Rename or move, each only when the folder tree's
   flags allow it (`canMarkRead`, `canCreateChild`, `canRename`); a busy folder offers none. New folder sits at the

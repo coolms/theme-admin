@@ -727,6 +727,23 @@ export interface FolderJobDto {
     reason: string | null;
 }
 
+/**
+ * What a folder action will do, counted and worded by the server (GET .../folders/action-preview): the confirm dialog
+ * shows `title`, `body` and `confirm` as given. For Empty, `uidCeiling` and `uidValidity` go back with the confirmed
+ * request, so exactly the messages counted here are removed and mail that arrives after stays.
+ */
+export interface FolderActionPreviewDto {
+    mailboxId: string;
+    folder: string;
+    action: 'empty';
+    title: string;
+    body: string;
+    confirm: string;
+    count: number;
+    uidCeiling: number;
+    uidValidity: number;
+}
+
 /** The answer of a folder create, rename or move: the folder's path now, and the path it had (null for a new one). */
 export interface FolderChangeDto {
     folder: string;

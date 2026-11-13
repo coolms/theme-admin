@@ -81,8 +81,8 @@ import { answerSeq, PendingReads } from './mail-pending-reads';
 import { type FolderRow, folderRows } from './folder-tree.util';
 import { type FolderMenuAsk, MailFolderRailComponent } from './mail-folder-rail.component';
 import {
-    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, folderChangeRefusalText, folderMenuItems, folderNodes,
-    jobFailureText, markReadRefusalText, newFolderNode, offers, withJob, type MailFolderJobEvent,
+    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, emptyRefusalText, folderChangeRefusalText, folderMenuItems, folderNodes,
+    isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, offers, withJob, type MailFolderJobEvent,
 } from './mail-folder-actions';
 import { MailFolderJobs } from './mail-folder-jobs';
 import { type FolderPlace, openFolderNameDialog } from './folder-name-dialog.component';
@@ -115,6 +115,7 @@ import {
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
+    FolderJobAction,
     FolderJobDto,
     EmailMessageDto,
     EmailOAuthProviderDto,
@@ -1518,12 +1519,13 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly folderJobs = new MailFolderJobs({
         start: (mailboxId, folder) => this.email.markFolderRead(mailboxId, folder),
+        empty: (mailboxId, folder, uidCeiling, uidValidity) => this.email.emptyFolder(mailboxId, folder, uidCeiling, uidValidity),
         read: (mailboxId, jobId) => this.email.folderJob(mailboxId, jobId),
         realtime: () => this.emailLive.connected(),
         reconnects: () => this.emailLive.reconnects(),
         ended: (job, mine) => this.folderJobEnded(job, mine),
         lost: job => this.foldersChangedIn(job.mailboxId),
-        refused: (err, mailboxId, folder) => this.markReadRefused(err, mailboxId, folder),
+        refused: (err, mailboxId, folder, action) => this.folderJobRefused(err, mailboxId, folder, action),
     });
     /** The rail's rows: the tree's, each busy with a job this page started on it, offering nothing while it is. */
     readonly railRows = computed<FolderRow[]>(() => {
@@ -4925,6 +4927,9 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'rename':
                 this.openRenameFolder(mailboxId, row);
                 break;
+            case 'empty':
+                this.askToEmpty(mailboxId, folder);
+                break;
         }
     }
 
@@ -4948,20 +4953,54 @@ export class EmailMailboxPageComponent implements OnInit {
     private folderJobEnded(job: FolderJobDto, mine: boolean): void {
         if (mine && job.outcome === 'failed') {
             const name = this.folderNameOf(job.folder);
-            const retry = job.action === 'mark-read'
-                ? { action: { label: 'Retry', run: (): void => this.folderJobs.markRead(job.mailboxId, job.folder) } }
-                : {};
+            // Empty is asked again from a fresh preview, never with the numbers of the one that failed.
+            const again = job.action === 'mark-read'
+                ? (): void => this.folderJobs.markRead(job.mailboxId, job.folder)
+                : job.action === 'empty' ? (): void => this.askToEmpty(job.mailboxId, job.folder) : null;
+            const retry = again === null ? {} : { action: { label: 'Retry', run: again } };
             this.toast.show({ type: 'error', message: jobFailureText(job, name), ...retry }, 10000);
         }
         this.foldersChangedIn(job.mailboxId);
     }
 
-    /** Mark all as read did not start: said in a sentence; a busy or gone folder's row is read again. */
-    private markReadRefused(err: unknown, mailboxId: string, folder: string): void {
-        this.toast.error(markReadRefusalText(err, this.folderNameOf(folder)));
+    /**
+     * A folder job did not start: said in a sentence; a busy or gone folder's row is read again. An Empty refused because
+     * the folder was renumbered since its preview is previewed again and its new numbers shown, never sent again with
+     * the old ones.
+     */
+    private folderJobRefused(err: unknown, mailboxId: string, folder: string, action: FolderJobAction): void {
+        const name = this.folderNameOf(folder);
+        this.toast.error(action === 'empty' ? emptyRefusalText(err, name) : markReadRefusalText(err, name));
+        if (action === 'empty' && isRenumbered(err)) {
+            this.askToEmpty(mailboxId, folder);
+            return;
+        }
         if (busyRefusal(err) !== undefined || problemOf(err) === 'folder-not-found') {
             this.foldersChangedIn(mailboxId);
         }
+    }
+
+    /**
+     * Empty: the server's preview first, its title, words and confirm label shown as given in a destructive confirm;
+     * confirmed, the folder is emptied with the preview's numbers, so mail that arrived after it stays.
+     */
+    private askToEmpty(mailboxId: string, folder: string): void {
+        const name = this.folderNameOf(folder);
+        this.email.folderActionPreview(mailboxId, folder).subscribe({
+            next: preview => this.confirmDialog.open({
+                title: preview.title, message: preview.body, confirmLabel: preview.confirm, danger: true,
+            }).subscribe(yes => {
+                if (yes) {
+                    this.folderJobs.empty(mailboxId, folder, preview.uidCeiling, preview.uidValidity);
+                }
+            }),
+            error: (err: unknown) => {
+                this.toast.error(emptyRefusalText(err, name));
+                if (busyRefusal(err) !== undefined || problemOf(err) === 'folder-not-found') {
+                    this.foldersChangedIn(mailboxId);
+                }
+            },
+        });
     }
 
     /** The open mailbox's folders, counts and first page, read again; another mailbox's wait until it opens. */

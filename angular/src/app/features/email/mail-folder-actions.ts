@@ -9,8 +9,8 @@ import { actionOf, type NodeConditions } from './message-actions';
 /** The tree whose nodes are the actions on a folder: a folder row's menu, and New folder at the foot of the list. */
 export const FOLDER_TOOLBAR_TREE = 'navi.toolbar.email.folder';
 
-/** The actions on a folder this page can run. Delete and Empty are not served yet: a node naming them is not drawn. */
-export type FolderAction = 'mark-read' | 'create-child' | 'rename';
+/** The actions on a folder this page can run. Delete is not served yet: a node naming it is not drawn. */
+export type FolderAction = 'mark-read' | 'create-child' | 'rename' | 'empty';
 
 /** The list-level action: a folder at the top level. */
 export const NEW_TOP_FOLDER = 'create-top';
@@ -20,9 +20,10 @@ const FLAG_OF: Readonly<Record<FolderAction, keyof FolderFlags>> = {
     'mark-read': 'canMarkRead',
     'create-child': 'canCreateChild',
     rename: 'canRename',
+    empty: 'canEmpty',
 };
 
-export const FOLDER_ACTIONS_HANDLED: ReadonlySet<string> = new Set<FolderAction>(['mark-read', 'create-child', 'rename']);
+export const FOLDER_ACTIONS_HANDLED: ReadonlySet<string> = new Set<FolderAction>(['mark-read', 'create-child', 'rename', 'empty']);
 
 /** A folder's flags as the tree gives them. */
 export type FolderFlags = Required<Pick<EmailFolderTreeNodeDto,
@@ -82,9 +83,12 @@ export function offers(flags: FolderFlags, action: string): boolean {
     return flags[FLAG_OF[action as FolderAction]] === true;
 }
 
-const node = (path: string, title: string, action: string, icon: string, fact: string, order: number): NaviGraphNode => ({
+const node = (path: string, title: string, action: string, icon: string, fact: string, order: number, danger = false): NaviGraphNode => ({
     id: `folder${path}`, path, title, parentId: null, sortOrder: order, isActive: true, isVisible: true, children: [],
-    meta: { action, icon, label: title, surface: 'both', showWhen: { field: fact, op: 'eq', value: true } },
+    meta: {
+        action, icon, label: title, surface: 'both', showWhen: { field: fact, op: 'eq', value: true },
+        ...(danger ? { danger: true } : {}),
+    },
 });
 
 /**
@@ -95,6 +99,7 @@ export const FOLDER_NODES_UNTIL_SERVED: readonly NaviGraphNode[] = [
     node('/mark-read', 'Mark all as read', 'mark-read', 'envelope-open', '_canMarkRead', 10),
     node('/create-child', 'New folder inside', 'create-child', 'folder-plus', '_canCreateChild', 20),
     node('/rename', 'Rename or move', 'rename', 'pencil', '_canRename', 30),
+    node('/empty', 'Empty', 'empty', 'trash3', '_canEmpty', 35, true),
 ];
 
 /** The list-level node until the tree is served: New folder, at the foot of the folder list. */
@@ -142,7 +147,11 @@ export function folderMenuItems(
             continue;
         }
         const icon = n.meta['icon'];
-        items.push({ id: action, label: n.title, ...(typeof icon === 'string' && icon !== '' ? { icon } : {}) });
+        items.push({
+            id: action, label: n.title,
+            ...(typeof icon === 'string' && icon !== '' ? { icon } : {}),
+            ...(n.meta['danger'] === true ? { danger: true } : {}),
+        });
     }
     while (items.length > 0 && items[items.length - 1].divider === true) {
         items.pop();
@@ -179,10 +188,21 @@ const MARK_READ_FAILURES: Readonly<Record<FolderJobReason, (name: string) => str
         + 'some may still be unread.',
 };
 
+/** Why an Empty failed, in a sentence, by the server's reason code. */
+const EMPTY_FAILURES: Readonly<Record<FolderJobReason, (name: string) => string>> = {
+    'server-failed': name => `The mail server did not finish emptying ${name}; some messages may still be there.`,
+    'folder-not-found': name => `${name} is no longer on the mail server, so it was not emptied.`,
+    renumbered: name => `The mail server renumbered the messages in ${name} while it was being emptied; `
+        + 'nothing more was removed.',
+};
+
 /** A failed job in a sentence: its reason's, or a plain failure for a reason not known here. */
 export function jobFailureText(job: Pick<FolderJobDto, 'action' | 'reason'>, name: string): string {
     if (job.action === 'mark-read') {
         return isReason(job.reason) ? MARK_READ_FAILURES[job.reason](name) : `Marking the messages in ${name} as read did not finish.`;
+    }
+    if (job.action === 'empty') {
+        return isReason(job.reason) ? EMPTY_FAILURES[job.reason](name) : `Emptying ${name} did not finish.`;
     }
 
     return `${jobName(job.action)} did not finish in ${name}.`;
@@ -277,6 +297,45 @@ export function markReadRefusalText(err: unknown, name: string): string {
     }
 
     return `The messages in ${name} could not be marked read.`;
+}
+
+/** Why the server will not empty a folder (422 folder-not-emptiable), by its reason. */
+const NOT_EMPTIABLE: Readonly<Record<string, (name: string) => string>> = {
+    'not-allowed': name => `You may not empty ${name}: only the mailbox's owner and its managers may.`,
+    'not-trash-or-spam': name => `${name} is not Trash or Spam: only those can be emptied.`,
+    'ceiling-required': name => `The mail server needs a fresh count of ${name} before it can be emptied. Try Empty again.`,
+    'no-uidplus': name => `This mail server cannot remove exactly the messages counted in ${name}, so it is not emptied `
+        + 'from here.',
+};
+
+/** A refusal is the folder renumbered since its preview (409 folder-renumbered): the preview is asked again. */
+export function isRenumbered(err: unknown): boolean {
+    return problemFields(err).kind === 'folder-renumbered';
+}
+
+/** Why Empty, or its preview, was refused, in a sentence: each problem its own. */
+export function emptyRefusalText(err: unknown, name: string): string {
+    const { kind, fields } = problemFields(err);
+    switch (kind) {
+        case 'folder-not-emptiable': {
+            const reason = fields['reason'];
+            const said = typeof reason === 'string' ? NOT_EMPTIABLE[reason] : undefined;
+            return said !== undefined ? said(name) : `${name} cannot be emptied.`;
+        }
+        case 'mailbox-held':
+            return `This mailbox is under a legal hold: nothing in ${name} can be removed for good.`;
+        case 'folder-renumbered':
+            return `${name} changed on the mail server since it was counted. Nothing was removed; here is what it holds now.`;
+        case 'folder-busy':
+            return busyText(typeof fields['action'] === 'string' ? fields['action'] : null);
+        case 'folder-not-found':
+            return `${name} is no longer on the mail server.`;
+    }
+    if (err instanceof HttpErrorResponse && err.status === 502) {
+        return `The mail server could not be reached: nothing in ${name} was removed.`;
+    }
+
+    return `${name} could not be emptied.`;
 }
 
 /** The realtime end of a folder job, on the person's mail channel. */

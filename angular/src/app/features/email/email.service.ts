@@ -17,7 +17,7 @@ import {
     EmailDeleteResultDto,
     EmailDraftDto,
     EmailDraftWrite,
-    EmailFolderDto, EmailFolderTreeDto, EmailFolderTreeNodeDto, FolderChangeDto, FolderJobDto,
+    EmailFolderDto, EmailFolderTreeDto, EmailFolderTreeNodeDto, FolderActionPreviewDto, FolderChangeDto, FolderJobDto,
     EmailMailboxDto,
     EmailImportResultDto,
     EmailMessageDetailDto,
@@ -306,6 +306,29 @@ export class EmailService {
         return this.http.post<FolderJobDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/mark-read`,
             { folder },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /**
+     * GET /email/mailboxes/{id}/folders/action-preview -- what Empty will do to the folder, counted and worded by the
+     * server for the confirm dialog, with the numbers the confirmed request sends back.
+     */
+    folderActionPreview(mailboxId: string, folder: string): Observable<FolderActionPreviewDto> {
+        return this.http.get<FolderActionPreviewDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/action-preview`,
+            { headers: this.jsonHeaders, params: new HttpParams().set('folder', folder).set('action', 'empty') },
+        );
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/folders/empty -- removes for good exactly the messages the preview counted, as a job:
+     * 202 with it. `uidCeiling` and `uidValidity` are the preview's, never numbers of the page's own.
+     */
+    emptyFolder(mailboxId: string, folder: string, uidCeiling: number, uidValidity: number): Observable<FolderJobDto> {
+        return this.http.post<FolderJobDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/empty`,
+            { folder, uidCeiling, uidValidity },
             { headers: this.jsonHeaders },
         );
     }
