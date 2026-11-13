@@ -87,7 +87,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),

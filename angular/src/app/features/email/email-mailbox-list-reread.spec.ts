@@ -42,7 +42,7 @@ describe('EmailMailboxPageComponent -- a list read again keeps its rows', () => 
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: (): Observable<EmailMessageDto[]> => {
                             const answer = new Subject<EmailMessageDto[]>();
                             answers.push(answer);

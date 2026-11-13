@@ -17,7 +17,7 @@ import {
     EmailDeleteResultDto,
     EmailDraftDto,
     EmailDraftWrite,
-    EmailFolderDto, EmailFolderTreeNodeDto,
+    EmailFolderDto, EmailFolderTreeDto, EmailFolderTreeNodeDto, FolderChangeDto, FolderJobDto,
     EmailMailboxDto,
     EmailImportResultDto,
     EmailMessageDetailDto,
@@ -264,13 +264,58 @@ export class EmailService {
      * name is in the reader's language, which the server takes from the person's language setting, and without one from
      * the browser's Accept-Language, which every request carries.
      */
-    folderTree(mailboxId: string): Observable<EmailFolderTreeNodeDto[]> {
+    folderTree(mailboxId: string): Observable<EmailFolderTreeDto> {
         return this.http
-            .get<{ folders?: EmailFolderTreeNodeDto[] }>(
+            .get<{ folders?: EmailFolderTreeNodeDto[]; canCreateTop?: unknown; held?: unknown }>(
                 `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/tree`,
                 { headers: this.jsonHeaders },
             )
-            .pipe(map(answer => answer.folders ?? []));
+            .pipe(map(answer => ({
+                folders: answer.folders ?? [],
+                canCreateTop: answer.canCreateTop === true,
+                held: answer.held === true,
+            })));
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/folders -- a new folder inside `parent`, or at the top level when it is null. A refusal
+     * is a problem whose type names it (folder-exists, folder-parent-invalid, folder-name-invalid, folder-busy...).
+     */
+    createFolder(mailboxId: string, name: string, parent: string | null): Observable<FolderChangeDto> {
+        return this.http.post<FolderChangeDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`,
+            { name, parent },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** PATCH /email/mailboxes/{id}/folders -- renames `folder` to `name`, and moves it inside `parent` (null: the top). */
+    renameFolder(mailboxId: string, folder: string, name: string, parent: string | null): Observable<FolderChangeDto> {
+        return this.http.patch<FolderChangeDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`,
+            { folder, name, parent },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /**
+     * POST /email/mailboxes/{id}/folders/mark-read -- marks read every message up to the folder's highest UID at this
+     * moment, as a job: 202 with it, or the job already running for this action on the folder.
+     */
+    markFolderRead(mailboxId: string, folder: string): Observable<FolderJobDto> {
+        return this.http.post<FolderJobDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/mark-read`,
+            { folder },
+            { headers: this.jsonHeaders },
+        );
+    }
+
+    /** GET /email/mailboxes/{id}/folders/jobs/{jobId} -- a folder job, `running` until it ends. Kept a day. */
+    folderJob(mailboxId: string, jobId: string): Observable<FolderJobDto> {
+        return this.http.get<FolderJobDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/jobs/${encodeURIComponent(jobId)}`,
+            { headers: this.jsonHeaders },
+        );
     }
 
     /** GET /email/mailboxes/{id}/folders -- per-folder total + unread counts. */

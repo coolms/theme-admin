@@ -75,7 +75,7 @@ describe('EmailMailboxPageComponent -- the next message after Archive or Delete'
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(listed.filter(m => !serverGone.has(m.id)).map(m => (serverRead.has(m.id) ? { ...m, seen: true } : m))),
                         getMessage: (id: string) => {
                             opened.push(id);

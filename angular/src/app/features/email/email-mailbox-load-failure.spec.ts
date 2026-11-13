@@ -48,7 +48,7 @@ describe('EmailMailboxPageComponent -- a failed read of the mailboxes or the mes
                     useValue: {
                         listMailboxes: () => mailboxAnswers[Math.min(mailboxesAsked++, mailboxAnswers.length - 1)](),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: (_id: string, _folder: string, page: number) => {
                             const n = messagesAsked.push(page) - 1;
                             return messageAnswers[Math.min(n, messageAnswers.length - 1)]();

@@ -38,7 +38,7 @@ describe('EmailMailboxPageComponent -- an evicted message in the reader', () => 
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(LISTED),
                         openServerMessage: () => null,
                     },

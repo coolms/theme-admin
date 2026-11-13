@@ -52,7 +52,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of([{ folder: FOLDER, name: 'Inbox', selectable: true, children: [], total: 3, unseen: 1 }]),
+                        folderTree: () => of({ folders: [{ folder: FOLDER, name: 'Inbox', selectable: true, children: [], total: 3, unseen: 1 }], canCreateTop: false, held: false }),
                         listMessages: () => of(page([
                             stored('m-1', LONG, { fromName: LONG, snippet: LONG, flagged: true }),
                             server('r-2', LONG, { fromName: LONG, snippet: LONG }),

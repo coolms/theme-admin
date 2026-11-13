@@ -679,6 +679,58 @@ export interface EmailFolderTreeNodeDto extends EmailFolderDto {
     /** False for a folder that only holds folders, with nothing to open. */
     selectable: boolean;
     children: EmailFolderTreeNodeDto[];
+    /**
+     * What the person may do with the folder, as the server says: the admin offers exactly these and nothing else.
+     * Each is false while a job runs on the folder. Absent (an older server) reads as false: nothing is offered.
+     */
+    canCreateChild?: boolean;
+    canRename?: boolean;
+    canDelete?: boolean;
+    canEmpty?: boolean;
+    canMarkRead?: boolean;
+    /** The job running on the folder, or null when none does. */
+    busy?: FolderJobAction | null;
+    /** The server keeps it for a purpose (it has a role): never renamed or deleted. */
+    system?: boolean;
+    /** It holds folders. */
+    hasChildren?: boolean;
+}
+
+/** The answer of GET /email/mailboxes/{id}/folders/tree: the folders, and what the person may do at the top level. */
+export interface EmailFolderTreeDto {
+    folders: EmailFolderTreeNodeDto[];
+    /** Whether the person may make a top-level folder. Absent (an older server) reads as false. */
+    canCreateTop: boolean;
+    /** The mailbox's owner is under a legal hold: nothing is removed permanently. */
+    held: boolean;
+}
+
+/** A slow action on a whole folder, run by the server as a job. */
+export type FolderJobAction = 'mark-read' | 'empty' | 'delete';
+
+/** Why a folder job failed, as the server codes it. */
+export type FolderJobReason = 'server-failed' | 'folder-not-found' | 'renumbered';
+
+/**
+ * A folder job (POST /email/mailboxes/{id}/folders/mark-read answers 202 with it; GET .../folders/jobs/{jobId} reads
+ * it; mail.folders.job tells its end). `outcome` stays `running` until the job ends.
+ */
+export interface FolderJobDto {
+    jobId: string;
+    mailboxId: string;
+    folder: string;
+    action: FolderJobAction;
+    outcome: 'running' | 'done' | 'failed';
+    /** How many messages it acted on. */
+    count: number;
+    /** With `failed`: why, as a code; any other value is worded as a failure without a reason. */
+    reason: string | null;
+}
+
+/** The answer of a folder create, rename or move: the folder's path now, and the path it had (null for a new one). */
+export interface FolderChangeDto {
+    folder: string;
+    from: string | null;
 }
 
 /**

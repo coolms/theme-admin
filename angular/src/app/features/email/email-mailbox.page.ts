@@ -78,8 +78,14 @@ import { applyUnreadDelta } from './folder-fraction.util';
 import { INBOX_PATH, inboxFolder, inboxUnread, servedUnread } from './mailbox-unread';
 import { flagChangeOf, flagRefusalText, idsOf, type MailFlagRefusedEvent } from './mail-flag-refused';
 import { answerSeq, PendingReads } from './mail-pending-reads';
-import { folderRows } from './folder-tree.util';
-import { MailFolderRailComponent } from './mail-folder-rail.component';
+import { type FolderRow, folderRows } from './folder-tree.util';
+import { type FolderMenuAsk, MailFolderRailComponent } from './mail-folder-rail.component';
+import {
+    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, folderChangeRefusalText, folderMenuItems, folderNodes,
+    jobFailureText, markReadRefusalText, newFolderNode, offers, withJob, type MailFolderJobEvent,
+} from './mail-folder-actions';
+import { MailFolderJobs } from './mail-folder-jobs';
+import { type FolderPlace, openFolderNameDialog } from './folder-name-dialog.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
@@ -109,6 +115,7 @@ import {
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
+    FolderJobDto,
     EmailMessageDto,
     EmailOAuthProviderDto,
     EmailSearchHitDto,
@@ -238,12 +245,15 @@ type PhonePane = 'folders' | 'message';
                                               (chosen)="pickMailbox($event)"
                                               (settings)="openMailboxSettings()"
                                               (menu)="onMailboxContextMenu($event.event, $event.id)" />
-                        <app-mail-folder-rail [rows]="folderRows()"
+                        <app-mail-folder-rail [rows]="railRows()"
                                               [selected]="selectedFolder()"
                                               [failure]="foldersFailure()"
                                               [answered]="folderTree() !== null"
+                                              [newFolderLabel]="newFolderLabel()"
                                               (chosen)="selectFolder($event)"
                                               (retry)="retryFolders()"
+                                              (menu)="onFolderMenu($event)"
+                                              (create)="createTopFolder()"
                                               (need)="panes.foldersNeedIn($event, railPane)" />
                     </aside>
 
@@ -1498,6 +1508,39 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly foldersFailure = signal<unknown>(null);
     /** The rail's rows: the server's tree, its counts as they stand now. */
     readonly folderRows = computed(() => folderRows(this.folderTree() ?? [], this.folders()));
+    /** Whether the person may make a top-level folder, as the tree says; false until it answers. */
+    readonly canCreateTop = signal(false);
+    /** The folder action tree's nodes (navi.toolbar.email.folder); empty while the server serves none. */
+    readonly folderActionNodes = signal<NaviGraphNode[]>([]);
+    /**
+     * The folder jobs started here (Mark all as read): a folder is busy with its job from the server's 202 to its end,
+     * told by mail.folders.job, or read over REST while realtime is down.
+     */
+    readonly folderJobs = new MailFolderJobs({
+        start: (mailboxId, folder) => this.email.markFolderRead(mailboxId, folder),
+        read: (mailboxId, jobId) => this.email.folderJob(mailboxId, jobId),
+        realtime: () => this.emailLive.connected(),
+        ended: (job, mine) => this.folderJobEnded(job, mine),
+        lost: job => this.foldersChangedIn(job.mailboxId),
+        refused: (err, mailboxId, folder) => this.markReadRefused(err, mailboxId, folder),
+    });
+    /** The rail's rows: the tree's, each busy with a job this page started on it, offering nothing while it is. */
+    readonly railRows = computed<FolderRow[]>(() => {
+        const mailboxId = this.selectedMailboxId();
+        this.folderJobs.running();
+        return this.folderRows().map(row => ({
+            ...row,
+            flags: withJob(row.flags ?? NO_FLAGS, this.folderJobs.busyIn(mailboxId, row.folder.folder)),
+        }));
+    });
+    /** New folder at the foot of the list: its label when the tree offers a top-level folder, else null. */
+    readonly newFolderLabel = computed<string | null>(() => {
+        if (!this.canCreateTop()) {
+            return null;
+        }
+        const node = newFolderNode(folderNodes(this.folderActionNodes()));
+        return node !== null && this.naviGraph.isVisible(node, { _canCreateTop: true }) ? node.title : null;
+    });
     /** The selected folder's name, as the server gives it; empty until the tree names it. */
     readonly selectedFolderName = computed(() => {
         const path = this.selectedFolder();
@@ -2203,6 +2246,10 @@ export class EmailMailboxPageComponent implements OnInit {
             this.naviGraph.loadTree(pattern.replace('{slug}', this.messageTree))
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.messageNodes.set(nodes));
+            // An unanswered folder tree reads as empty: the folder actions then come from the page's own nodes.
+            this.naviGraph.loadTree(pattern.replace('{slug}', FOLDER_TOOLBAR_TREE))
+                .pipe(catchError(() => of<NaviGraphNode[]>([])), takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.folderActionNodes.set(nodes));
             // An unanswered tree reads as empty, and the list pane then keeps its own Refresh.
             this.naviGraph.loadTree(pattern.replace('{slug}', LIST_TOOLBAR_TREE))
                 .pipe(takeUntilDestroyed(this.destroyRef))
@@ -2233,6 +2280,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // over REST. Non-fatal: on any realtime error the page still works via
         // manual reload, so we swallow rather than toast on a stale token.
         this.destroyRef.onDestroy(() => this.mailFollower.stop());
+        this.destroyRef.onDestroy(() => this.folderJobs.stop());
         this.destroyRef.onDestroy(() => this.pendingReads.clear());
         const uid = this.currentUserId();
         if (uid !== null) {
@@ -2250,6 +2298,8 @@ export class EmailMailboxPageComponent implements OnInit {
                             this.onDraftsChanged(evt);
                         } else if ('mail.received' === evt.type) {
                             this.onMailReceived(evt);
+                        } else if ('mail.folders.job' === evt.type) {
+                            this.onFolderJob(evt);
                         }
                     },
                     error: () => { /* swallow -- manual reload still works */ },
@@ -4830,6 +4880,7 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.selectedMailboxId.set(null);
                     this.folders.set([]);
                     this.folderTree.set(null);
+                    this.canCreateTop.set(false);
                     this.foldersFailure.set(null);
                     this.messages.set([]);
                     this.selectedMessage.set(null);
@@ -4838,6 +4889,151 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
             },
             error: () => this.toast.error('Could not reload mailboxes.'),
+        });
+    }
+
+    /**
+     * A folder row's menu: the folder action tree's nodes this page has a handler for, that the folder's flags offer,
+     * in the tree's order; a busy folder offers none. Asked by key, it opens under the row with its first item focused.
+     */
+    onFolderMenu(ask: FolderMenuAsk): void {
+        const row = this.railRows().find(r => r.folder.folder === ask.folder);
+        const items = row === undefined ? [] : folderMenuItems(folderNodes(this.folderActionNodes()), row.flags ?? NO_FLAGS, this.naviGraph);
+        const run = (action: string): void => this.onFolderAction(action, ask.folder);
+        if (ask.opener !== null) {
+            this.contextMenu.openFrom(ask.opener, items, run, { focus: 'first' });
+        } else {
+            this.contextMenu.open(ask.event, items, run);
+        }
+    }
+
+    /** One place for every action on a folder; one the folder's flags do not offer now does nothing. */
+    onFolderAction(action: string, folder: string): void {
+        const mailboxId = this.selectedMailboxId();
+        const row = this.railRows().find(r => r.folder.folder === folder);
+        if (mailboxId === null || row === undefined || !offers(row.flags ?? NO_FLAGS, action)) {
+            return;
+        }
+        switch (action) {
+            case 'mark-read':
+                this.folderJobs.markRead(mailboxId, folder);
+                break;
+            case 'create-child':
+                this.openNewFolder(mailboxId, row);
+                break;
+            case 'rename':
+                this.openRenameFolder(mailboxId, row);
+                break;
+        }
+    }
+
+    /** New folder at the foot of the list: a folder at the top level, when the tree offers one. */
+    createTopFolder(): void {
+        const mailboxId = this.selectedMailboxId();
+        if (mailboxId !== null && this.newFolderLabel() !== null) {
+            this.openNewFolder(mailboxId, null);
+        }
+    }
+
+    /** A folder job's end heard in realtime: the job this page follows ends; any other in the open mailbox rereads. */
+    private onFolderJob(evt: MailFolderJobEvent): void {
+        this.folderJobs.heard(evt);
+    }
+
+    /**
+     * A folder job ended: the open mailbox's folders, their counts and the list are read again (no longer busy, and
+     * marked read up to the click). One this page started that failed says why, with Retry; one done adds nothing.
+     */
+    private folderJobEnded(job: FolderJobDto, mine: boolean): void {
+        if (mine && job.outcome === 'failed') {
+            const name = this.folderNameOf(job.folder);
+            const retry = job.action === 'mark-read'
+                ? { action: { label: 'Retry', run: (): void => this.folderJobs.markRead(job.mailboxId, job.folder) } }
+                : {};
+            this.toast.show({ type: 'error', message: jobFailureText(job, name), ...retry }, 10000);
+        }
+        this.foldersChangedIn(job.mailboxId);
+    }
+
+    /** Mark all as read did not start: said in a sentence; a busy or gone folder's row is read again. */
+    private markReadRefused(err: unknown, mailboxId: string, folder: string): void {
+        this.toast.error(markReadRefusalText(err, this.folderNameOf(folder)));
+        if (busyRefusal(err) !== undefined || problemOf(err) === 'folder-not-found') {
+            this.foldersChangedIn(mailboxId);
+        }
+    }
+
+    /** The open mailbox's folders, counts and first page, read again; another mailbox's wait until it opens. */
+    private foldersChangedIn(mailboxId: string): void {
+        if (mailboxId === this.selectedMailboxId()) {
+            this.loadFolders(true);
+        }
+    }
+
+    /** A new folder inside `parent` (null: the top level), named in a dialog; a refusal is said in it. */
+    private openNewFolder(mailboxId: string, parent: FolderRow | null): void {
+        const where = parent?.folder.folder ?? null;
+        openFolderNameDialog(this.dialog, {
+            title: parent === null ? 'New folder' : `New folder in ${parent.name}`,
+            confirmLabel: 'Create',
+            name: '',
+            places: [],
+            parent: where,
+            save: (name, inside) => this.email.createFolder(mailboxId, name, inside),
+            refusal: folderChangeRefusalText,
+        }).closed.subscribe(answer => {
+            if (answer !== undefined) {
+                this.toast.success('Folder created.');
+                this.foldersChangedIn(mailboxId);
+            }
+        });
+    }
+
+    /**
+     * Rename or move: the name, and where it goes -- where it is now, the top level when the tree offers a top-level
+     * folder, or any folder the tree offers a folder inside, never the folder itself or one inside it.
+     */
+    private openRenameFolder(mailboxId: string, row: FolderRow): void {
+        const rows = this.railRows();
+        const at = rows.indexOf(row);
+        let end = at + 1;
+        while (end < rows.length && rows[end].depth > row.depth) {
+            end++;
+        }
+        let parent: FolderRow | null = null;
+        for (let i = at - 1; i >= 0 && row.depth > 0; i--) {
+            if (rows[i].depth === row.depth - 1) {
+                parent = rows[i];
+                break;
+            }
+        }
+        const indent = (depth: number): string => '\u00a0\u00a0'.repeat(depth);
+        const places: FolderPlace[] = [];
+        const here = parent?.folder.folder ?? null;
+        if (here === null || this.canCreateTop()) {
+            places.push({ parent: null, label: 'Top level' });
+        }
+        rows.forEach((r, i) => {
+            if ((i < at || i >= end) && (r.folder.folder === here || r.flags?.canCreateChild === true)) {
+                places.push({ parent: r.folder.folder, label: indent(r.depth + 1) + r.name });
+            }
+        });
+        openFolderNameDialog(this.dialog, {
+            title: `Rename or move ${row.name}`,
+            confirmLabel: 'Save',
+            name: row.name,
+            places,
+            parent: here,
+            save: (name, inside) => this.email.renameFolder(mailboxId, row.folder.folder, name, inside),
+            refusal: folderChangeRefusalText,
+        }).closed.subscribe(answer => {
+            if (answer !== undefined) {
+                if (answer.from !== null && this.selectedFolder() === answer.from) {
+                    this.selectedFolder.set(answer.folder);
+                }
+                this.toast.success('Folder saved.');
+                this.foldersChangedIn(mailboxId);
+            }
         });
     }
 
@@ -4858,13 +5054,14 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         forkJoin({
             tree: this.email.folderTree(id).pipe(
-                map(nodes => ({ nodes, failure: null })),
-                catchError((failure: unknown) => of({ nodes: null, failure })),
+                map(answer => ({ nodes: answer.folders, canCreateTop: answer.canCreateTop, failure: null })),
+                catchError((failure: unknown) => of({ nodes: null, canCreateTop: false, failure })),
             ),
             list: this.email.listFolders(id).pipe(catchError(() => of(null))),
         }).subscribe(({ tree, list }) => {
             this.folders.set(list ?? []);
             this.folderTree.set(tree.nodes);
+            this.canCreateTop.set(tree.canCreateTop);
             this.foldersFailure.set(tree.failure);
             if (list !== null) {
                 this.patchMailboxUnread(id, list);

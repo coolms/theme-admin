@@ -94,7 +94,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
                         composePrefill: () => NEVER,
                         draftsAnswering: () => NEVER,
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: (_id: string, folder: string, n: number, cursor: string | null = null): Observable<EmailMessageList> => {
                             asked.push({ folder, page: n, cursor });
                             const answer = new Subject<EmailMessageList>();

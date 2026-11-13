@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, Observable, of, throwError } from 'rxjs';
+import { NEVER, Observable, map, of, throwError } from 'rxjs';
 import { NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -62,7 +62,8 @@ describe('EmailMailboxPageComponent -- the folders as the server gives them', ()
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of(FLAT),
-                        folderTree: () => treeAnswers[Math.min(treeAsked++, treeAnswers.length - 1)](),
+                        folderTree: () => treeAnswers[Math.min(treeAsked++, treeAnswers.length - 1)]()
+                            .pipe(map(folders => ({ folders, canCreateTop: false, held: false }))),
                         listMessages: () => of([]),
                     },
                 },

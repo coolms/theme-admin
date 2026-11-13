@@ -57,7 +57,7 @@ export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
 ]);
 
 /** The action a node names: its `action`, else its path -- as the bars and the menu run it. */
-function actionOf(node: NaviGraphNode): string {
+export function actionOf(node: NaviGraphNode): string {
     const named = node.meta['action'];
     return typeof named === 'string' && named !== '' ? named : node.path;
 }

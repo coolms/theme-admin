@@ -65,7 +65,7 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(listed),
                         getMessage: (id: string) => of({ ...listed.find(m => m.id === id)!, ...detailOf(id), bodyText: 'Hello' }),
                         listThread: () => of([]),

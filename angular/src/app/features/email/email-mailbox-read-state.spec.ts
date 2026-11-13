@@ -61,7 +61,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         // The first read answers at once; every later one waits for the test, so it can answer it
                         // after a write has answered, as a read started before the answer would.
                         listMessages: () => {

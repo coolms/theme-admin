@@ -40,7 +40,7 @@ describe('EmailMailboxPageComponent -- fewer panes where three would not fit', (
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(Object.assign([], { next: null, serverPages: null })),
                         olderMessages: () => NEVER,
                         listThread: () => of([]),
