@@ -17,6 +17,11 @@ major number means here.
   folder-busy refusal names the running action. A create, rename or move the server refuses says why inside the
   dialog, with no retry of the same ask.
 
+- **TipTap 3.33.1.** Every `@tiptap/*` package moves from 3.31.4 to 3.33.1 (`^3.33.1` in
+  `angular/package.json`). Besides TipTap itself, the lockfile moves only what it brings in: `linkifyjs`
+  4.4.0, and `prosemirror-commands` 1.7.2, `prosemirror-dropcursor` 1.8.4 and `prosemirror-history` 1.5.1.
+  The HTML every admin editor configuration produces for a set of 38 typical documents is the same as before.
+
 - **A mail draft deleted elsewhere keeps what was written here.** A save refused with 404 (the draft was deleted
   on another device while its change event was missed) no longer drops the text: the quick reply or the compose
   window keeps it, saves it as a new draft, and says so.
