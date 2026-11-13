@@ -8,6 +8,15 @@ major number means here.
 
 ## Unreleased
 
+- **Folder actions in the mail folder list.** A folder row's menu (right-click, a long press on touch, or Shift+F10
+  and the Menu key) offers Mark all as read, New folder inside, and Rename or move, each only when the folder tree's
+  flags allow it (`canMarkRead`, `canCreateChild`, `canRename`); a busy folder offers none. New folder sits at the
+  foot of the list when `canCreateTop` allows a top-level folder. Mark all as read runs as the server's job: the row
+  shows a spinner and says which action runs until `mail.folders.job` tells its end, or, without realtime, until a
+  read of the job (at a growing interval) says it ended; a failure says its reason in a sentence with Retry, and a
+  folder-busy refusal names the running action. A create, rename or move the server refuses says why inside the
+  dialog, with no retry of the same ask.
+
 - **TipTap 3.33.1.** Every `@tiptap/*` package moves from 3.31.4 to 3.33.1 (`^3.33.1` in
   `angular/package.json`). Besides TipTap itself, the lockfile moves only what it brings in: `linkifyjs`
   4.4.0, and `prosemirror-commands` 1.7.2, `prosemirror-dropcursor` 1.8.4 and `prosemirror-history` 1.5.1.

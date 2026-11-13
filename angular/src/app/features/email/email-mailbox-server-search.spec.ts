@@ -48,7 +48,7 @@ describe('EmailMailboxPageComponent -- hybrid search', () => {
                     useValue: {
                         listMailboxes: () => of(MAILBOXES),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of([]),
                         searchMessages: (query: { q: string }) => {
                             localAsked.push(query.q);

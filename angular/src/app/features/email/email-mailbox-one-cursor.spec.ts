@@ -86,7 +86,7 @@ describe('EmailMailboxPageComponent -- one cursor, the inbox\'s older mail inclu
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of(TREE),
+                        folderTree: () => of({ folders: TREE, canCreateTop: false, held: false }),
                         listMessages: (_id: string, folder: string, n: number, cursor: string | null = null): Observable<EmailMessageList> => {
                             asked.push({ folder, page: n, cursor });
                             const answer = new Subject<EmailMessageList>();

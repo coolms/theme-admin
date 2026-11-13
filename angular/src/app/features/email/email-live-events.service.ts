@@ -1,11 +1,13 @@
-import { Injectable, inject } from '@angular/core';
-import { Observable, share } from 'rxjs';
+import { Injectable, Injector, inject } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { Observable, filter, map, pairwise, share } from 'rxjs';
 
 import { CentrifugoClientService } from '@coolms/ui-angular';
 
 import { type MailAliasesChangedEvent, readAliasesChanged } from './mail-aliases';
 import { type MailDraftsChangedEvent, readDraftsChanged } from './mail-drafts-changed';
 import { type MailFlagRefusedEvent, readFlagRefused } from './mail-flag-refused';
+import { type MailFolderJobEvent, readFolderJobEvent } from './mail-folder-actions';
 import { type MailMessagesChangedEvent, readMessagesChanged } from './mail-messages-changed';
 
 /**
@@ -38,7 +40,7 @@ export interface EmailSyncFinishedEvent {
 /** Every event of the person's mail channel. */
 export type EmailEvent =
     | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent
-    | MailDraftsChangedEvent;
+    | MailDraftsChangedEvent | MailFolderJobEvent;
 
 /** A whole number, zero or more. */
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
@@ -59,6 +61,8 @@ const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isI
 @Injectable({ providedIn: 'root' })
 export class EmailLiveEventsService {
     private readonly client = inject(CentrifugoClientService);
+    private readonly injector = inject(Injector);
+    private reconnected: Observable<void> | null = null;
     private readonly watching = new Map<string, Observable<EmailEvent>>();
 
     /**
@@ -74,6 +78,22 @@ export class EmailLiveEventsService {
         }
 
         return shared;
+    }
+
+    /** Whether realtime is connected now: while it is not, what it would tell is read over REST instead. */
+    connected(): boolean {
+        return this.client.isConnected();
+    }
+
+    /** Each time realtime connects after it was not: what it told while down is lost, and is read over REST. */
+    reconnects(): Observable<void> {
+        this.reconnected ??= toObservable(this.client.isConnected, { injector: this.injector }).pipe(
+            pairwise(),
+            filter(([was, is]) => !was && is),
+            map((): void => undefined),
+            share(),
+        );
+        return this.reconnected;
     }
 
     private open(channel: string): Observable<EmailEvent> {
@@ -139,6 +159,9 @@ export class EmailLiveEventsService {
         }
         if (type === 'mail.drafts.changed') {
             return readDraftsChanged(raw);
+        }
+        if (type === 'mail.folders.job') {
+            return readFolderJobEvent(raw);
         }
         if (type === 'mail.sync.finished') {
             return typeof obj['mailboxId'] === 'string' && typeof obj['syncId'] === 'string'

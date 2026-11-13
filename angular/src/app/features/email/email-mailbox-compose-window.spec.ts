@@ -63,7 +63,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work', emailAddress: 'work@example.test' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of([]),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),

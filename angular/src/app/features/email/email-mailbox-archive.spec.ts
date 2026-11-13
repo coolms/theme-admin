@@ -63,7 +63,7 @@ describe('EmailMailboxPageComponent -- archive', () => {
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         // The server's folder: a message moved to another folder is no longer listed in it.
                         listMessages: () => {
                             listReads++;

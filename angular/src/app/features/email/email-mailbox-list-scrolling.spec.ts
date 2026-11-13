@@ -73,7 +73,7 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
                         listFolders: () => of([]),
-                        folderTree: () => of(tree),
+                        folderTree: () => of({ folders: tree, canCreateTop: false, held: false }),
                         listMessages: (_id: string, folder: string, n: number, cursor: string | null = null): Observable<EmailMessageList> => {
                             asked.push({ folder, page: n, cursor });
                             const answer = new Subject<EmailMessageList>();

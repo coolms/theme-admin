@@ -64,7 +64,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
                     useValue: {
                         listMailboxes: () => of([MAILBOX]),
                         listFolders: () => of([]),
-                        folderTree: () => of([]),
+                        folderTree: () => of({ folders: [], canCreateTop: false, held: false }),
                         listMessages: () => of(FIVE.filter(m => allMailKeeps || !serverGone.has(m.id))),
                         getMessage: (id: string) => {
                             opened.push(id);

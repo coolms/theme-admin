@@ -66,7 +66,7 @@ describe('EmailMailboxPageComponent -- a mailbox\'s unread number is its inbox\'
                             foldersAsked.push(id);
                             return of(folders[id]);
                         },
-                        folderTree: (id: string) => of(nodes(folders[id])),
+                        folderTree: (id: string) => of({ folders: nodes(folders[id]), canCreateTop: false, held: false }),
                         listMessages: () => of([]),
                     },
                 },
