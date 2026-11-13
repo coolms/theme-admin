@@ -23,6 +23,8 @@ describe('MailFolderJobs', () => {
     let ended: Array<[FolderJobDto, boolean]>;
     let lost: FolderJobDto[];
     let refused: unknown[];
+    let refusedActions: string[];
+    let emptied: Array<[string, string, number, number]>;
     let startAnswer: () => Observable<FolderJobDto>;
     let reconnects: Subject<void>;
 
@@ -33,6 +35,8 @@ describe('MailFolderJobs', () => {
         lost = [];
         refused = [];
         reconnects = new Subject<void>();
+        refusedActions = [];
+        emptied = [];
         return new MailFolderJobs({
             start: (mailboxId, folder) => {
                 started.push([mailboxId, folder]);
@@ -42,11 +46,18 @@ describe('MailFolderJobs', () => {
                 reads.push(jobId);
                 return (readAnswers.shift() ?? ((): Observable<FolderJobDto> => of(job())))();
             },
+            empty: (mailboxId, folder, uidCeiling, uidValidity) => {
+                emptied.push([mailboxId, folder, uidCeiling, uidValidity]);
+                return startAnswer();
+            },
             realtime: () => realtime,
             reconnects: () => reconnects,
             ended: (j, mine) => ended.push([j, mine]),
             lost: j => lost.push(j),
-            refused: err => refused.push(err),
+            refused: (err, _m, _f, action) => {
+                refused.push(err);
+                refusedActions.push(action);
+            },
         });
     }
 
@@ -229,6 +240,27 @@ describe('MailFolderJobs', () => {
 
         expect(j.busyIn('mb1', 'Projects')).toBeNull();
         expect(ended.length).toBe(1);
+    }));
+
+    it('Empty posts the preview\'s numbers and follows its job as Mark all as read\'s', fakeAsync(() => {
+        startAnswer = () => of(job({ folder: 'Trash', action: 'empty' }));
+        const j = jobs();
+        j.empty('mb1', 'Trash', 4711, 99);
+
+        expect(emptied).toEqual([['mb1', 'Trash', 4711, 99]]);
+        expect(j.busyIn('mb1', 'Trash')).toBe('empty');
+        j.heard(heard({ folder: 'Trash', action: 'empty', outcome: 'done', count: 30 }));
+        expect(j.busyIn('mb1', 'Trash')).toBeNull();
+        expect(ended[0][0].action).toBe('empty');
+    }));
+
+    it('a refused Empty is handed to the page as Empty\'s', fakeAsync(() => {
+        startAnswer = () => throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/email/folder-renumbered' } }));
+        const j = jobs();
+        j.empty('mb1', 'Trash', 1, 2);
+
+        expect(refusedActions).toEqual(['empty']);
+        expect(j.busyIn('mb1', 'Trash')).toBeNull();
     }));
 
     it('a refusal to start is handed to the page, and nothing is busy', fakeAsync(() => {
