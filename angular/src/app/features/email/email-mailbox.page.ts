@@ -2226,8 +2226,9 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     private onMailReceived(evt: EmailLiveEvent): void {
         const unseen = evt.mailboxUnseen;
-        const newer = evt.seq === undefined || this.mailFollower.marks.badge(evt.mailboxId, evt.seq);
-        if (typeof unseen === 'number' && newer) {
+        // The mark moves only with a number applied: a frame without one leaves the order to the next that has one.
+        if (typeof unseen === 'number'
+            && (evt.seq === undefined || this.mailFollower.marks.badge(evt.mailboxId, evt.seq))) {
             this.mailboxUnread.update(prev => ({ ...prev, [evt.mailboxId]: unseen }));
         }
         if (evt.mailboxId === this.selectedMailboxId()) {
