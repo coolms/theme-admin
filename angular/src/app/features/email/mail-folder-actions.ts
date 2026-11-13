@@ -306,6 +306,8 @@ const NOT_EMPTIABLE: Readonly<Record<string, (name: string) => string>> = {
     'ceiling-required': name => `The mail server needs a fresh count of ${name} before it can be emptied. Try Empty again.`,
     'no-uidplus': name => `This mail server cannot remove exactly the messages counted in ${name}, so it is not emptied `
         + 'from here.',
+    'empty-off': () => 'Empty is off for now. It comes back once emptying also removes the mail from CoolMS.',
+    'not-on-gmail': () => 'Empty is not available on Gmail yet: it is still being tested there.',
 };
 
 /** A refusal is the folder renumbered since its preview (409 folder-renumbered): the preview is asked again. */

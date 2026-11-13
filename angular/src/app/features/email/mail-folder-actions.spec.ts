@@ -134,12 +134,16 @@ describe('folder actions: what is said', () => {
             said(409, { type: '/errors/email/folder-renumbered' }),
             said(409, { type: '/errors/email/folder-busy', action: 'mark-read' }),
             said(404, { type: '/errors/email/folder-not-found' }),
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'empty-off' }),
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-on-gmail' }),
         ];
 
         expect(new Set(sentences).size).withContext(sentences.join(' | ')).toBe(sentences.length);
         expect(sentences[4]).toContain('legal hold');
         expect(sentences[6]).toBe('Mark all as read is running in this folder.');
         expect(sentences.some(s => s === 'Trash could not be emptied.')).withContext('none is the generic one').toBeFalse();
+        expect(sentences[8]).toBe('Empty is off for now. It comes back once emptying also removes the mail from CoolMS.');
+        expect(sentences[9]).toBe('Empty is not available on Gmail yet: it is still being tested there.');
         expect(isRenumbered(problem(409, { type: '/errors/email/folder-renumbered' }))).toBeTrue();
         expect(isRenumbered(problem(409, { type: '/errors/email/mailbox-held' }))).toBeFalse();
     });
