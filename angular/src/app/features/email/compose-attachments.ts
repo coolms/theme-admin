@@ -76,7 +76,7 @@ export function storedAttachments(list: readonly ComposeAttachment[]): StoredCom
 }
 
 export function restoredAttachments(stored: readonly StoredComposeAttachment[] | undefined | null): ComposeAttachment[] {
-    // A draft is read back from the browser's storage, so each row is checked before it is trusted.
+    // A draft's files are read back from the server, so each row is checked before it is trusted.
     const rows: readonly unknown[] = Array.isArray(stored) ? stored : [];
 
     return rows

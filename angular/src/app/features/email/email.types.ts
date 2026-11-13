@@ -536,6 +536,69 @@ export interface OutgoingEmailRequest {
     forwardOf?: string;
     /** Parts of stored messages to carry, read at send: a forward's files. */
     messageParts?: EmailMessagePartRef[];
+    /** The person's draft this was written in; the server removes it once the message is sent, and keeps it otherwise. */
+    draftId?: string;
+}
+
+/** What a draft answers: the message, and how. Reply and reply all share one draft; a forward has its own. */
+export interface EmailDraftAnswers {
+    messageId: string;
+    mode: EmailComposeMode;
+}
+
+/** A file of a draft, as the server names it. */
+export interface EmailDraftFileDto {
+    id: string;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    encodedBytes: number;
+}
+
+/**
+ * The person's draft as the server keeps it (GET, and the answer to a create or a save). `inReplyTo` and `references`
+ * are the server's own and are never sent back.
+ */
+export interface EmailDraftDto {
+    id: string;
+    mailboxId: string;
+    to: string[];
+    cc: string[];
+    bcc: string[];
+    subject: string;
+    text: string;
+    html: string | null;
+    /** The files' ids. */
+    attachments: string[];
+    /** The files among `attachments` that are there to draw. */
+    attachmentFiles: EmailDraftFileDto[];
+    from: string | null;
+    version: number;
+    updatedAt: string;
+    /** What it answers; null or absent for a new message. */
+    answers?: EmailDraftAnswers | null;
+    quote: boolean | null;
+    messageParts: EmailMessagePartRef[];
+    inReplyTo?: string | null;
+    references?: string[];
+}
+
+/**
+ * A draft's create or save. A save writes the whole draft, so every field is sent; `answers` is sent at create, and on
+ * a save only to switch between reply and reply all (left out, it is kept). `quote` is always stated.
+ */
+export interface EmailDraftWrite {
+    to: string[];
+    cc: string[];
+    bcc: string[];
+    subject: string;
+    text: string;
+    html: string | null;
+    attachments: string[];
+    from: string | null;
+    quote: boolean;
+    messageParts: EmailMessagePartRef[];
+    answers?: EmailDraftAnswers | null;
 }
 
 /** The small confirmation a send/reply echoes. */

@@ -21,6 +21,7 @@ import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import {
     type EmailAttachmentDto,
+    type EmailComposeDto,
     type EmailMailboxDto,
     type EmailMessageDetailDto,
     type EmailMessageDto,
@@ -29,6 +30,12 @@ import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-prefere
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Quarterly figures' }];
+/** The server's reply prefill for m1, which the open message's quick reply reads. */
+const REPLY_PREFILL: EmailComposeDto = {
+    id: 'm1', mode: 'reply', from: { address: 'work@example.com', choices: ['work@example.com'] },
+    to: [{ name: null, address: 'finance@example.com' }], cc: [], subject: 'Re: Quarterly figures',
+    quote: null, inReplyTo: null, references: [], attachments: [], unreadable: null,
+};
 
 function att(index: number, filename: string, contentType: string, viewAs?: EmailAttachmentDto['viewAs']): EmailAttachmentDto {
     const row: EmailAttachmentDto = { index, filename, contentType, sizeBytes: 2048, inline: false };
@@ -64,6 +71,9 @@ describe('EmailMailboxPageComponent -- attachment view', () => {
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
+                        // The open message's quick reply reads its prefill and looks up its reply draft (none here).
+                        composePrefill: () => of(REPLY_PREFILL),
+                        draftsAnswering: () => of([]),
                         fetchAttachmentResponse: (messageId: string, index: number) => {
                             fetched.push({ messageId, index });
                             return of(answer);

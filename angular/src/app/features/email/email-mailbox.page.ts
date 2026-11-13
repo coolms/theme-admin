@@ -2,7 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
-    signal, untracked, viewChild,
+    signal, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -24,7 +24,6 @@ import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimePipe,
-    DraftStoreService,
     EmptyStateComponent,
     PageToolbarComponent,
     StateComponent,
@@ -47,9 +46,12 @@ import {
     storedAttachments,
     tooLargeSend,
     type ComposeAttachment,
-    type StoredComposeAttachment,
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
+import { MailQuickReplyComponent, type QuickReplyHandOff } from './mail-quick-reply.component';
+import { draftFiles, isReplyMode, replyDraftOf } from './compose-draft';
+import { type MailDraftsChangedEvent } from './mail-drafts-changed';
+import { ServerDraft } from './server-draft';
 import { openMessageSource } from './message-source-viewer.component';
 import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
@@ -96,6 +98,9 @@ import {
     EmailComposeDto,
     EmailComposeMode,
     EmailComposePartDto,
+    EmailDraftAnswers,
+    EmailDraftDto,
+    EmailDraftWrite,
     EmailFolderDto, EmailFolderTreeNodeDto,
     EmailMailboxDto,
     EmailMessageDetailDto,
@@ -137,26 +142,6 @@ interface MailboxFormModel {
 }
 
 /** A saved compose/reply draft -- the composer's restorable state. */
-interface ComposeDraft {
-    /** C.4.b: recipient chips. Pre-C.4.b drafts stored `to` as a comma-string -- coerced on load. */
-    to: string[];
-    cc: string[];
-    bcc: string[];
-    subject: string;
-    text: string;
-    html: string;
-    rich: boolean;
-    /** The files attached to a new message, by their server ids; absent from older drafts. */
-    attachments?: StoredComposeAttachment[];
-    /**
-     * An answer or a forward: whether the person kept the quote. Absent from a reply draft written before the quote
-     * was the server's: that draft's body already holds the quote it was given, so it is restored without another.
-     */
-    quote?: boolean;
-    /** A forward: the parts of the original the person removed from its files; absent from older drafts. */
-    removedParts?: number[];
-}
-
 /** The query parameter naming the pane a phone shows: `folders` or `message` (the list when absent). */
 const PANE_PARAM = 'pane';
 type PhonePane = 'folders' | 'message';
@@ -192,6 +177,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
+        MailQuickReplyComponent,
         NgTemplateOutlet,
         ScrollingModule,
     ],
@@ -558,20 +544,6 @@ type PhonePane = 'folders' | 'message';
                                     </div>
                                 }
                             </div>
-                            <!-- The quick reply: at the foot of the message, and at the pane's foot under a short one. -->
-                            <div class="mbx__quick-reply" data-test="quick-reply">
-                                @if (quickReplyOpenFor(msg.id)) {
-                                    <div #quickReplyComposer class="mbx__compose mbx__compose--inline" data-test="quick-reply-composer" tabindex="-1">
-                                        <ng-container [ngTemplateOutlet]="composeForm" />
-                                    </div>
-                                } @else {
-                                    <!-- Opens on click, Enter or Space; focus alone leaves it a line. -->
-                                    <button type="button" class="mbx__quick-line" data-test="quick-reply-line"
-                                            [attr.aria-label]="quickReplyLabel(msg)" (click)="openQuickReply()"
-                                            (keydown.enter)="$event.preventDefault(); openQuickReply()"
-                                            (keydown.space)="$event.preventDefault(); openQuickReply()">Reply…</button>
-                                }
-                            </div>
                         } @else {
                             <div class="mbx__empty-wrap">
                                 <app-empty-state icon="envelope-open"
@@ -580,13 +552,21 @@ type PhonePane = 'folders' | 'message';
                             </div>
                         }
                         </div>
+                        <!-- The quick reply: pinned at the pane's bottom, outside the message's one scroll region. -->
+                        @if (quickReplyFor(); as quick) {
+                            <app-mail-quick-reply [mailboxId]="quick.mailboxId" [messageId]="quick.messageId"
+                                                  [label]="quick.label" [limitBytes]="composeLimit()"
+                                                  [windowHolds]="replyWindowHolds()"
+                                                  (expand)="handReplyToWindow($event)" (showWindow)="showReplyWindow($event)"
+                                                  (sent)="loadFolders()" />
+                        }
                     </section>
                 </div>
             }
 
             <!-- Composer dock (compose + reply) — Gmail-style: floats bottom-right, does
                  NOT block the mailbox behind it, and minimizes to its header bar. -->
-            @if (composeOpen() && !composeInline()) {
+            @if (composeOpen()) {
                 <div class="mbx__dock">
                     <div #composeDock class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
                         <div class="mbx__compose-head">
@@ -742,8 +722,8 @@ type PhonePane = 'folders' | 'message';
                 </div>
                 <div class="mbx__compose-foot mbx__compose-foot--split">
                     <div class="mbx__compose-foot-side">
-                        @if (draftSaved()) {
-                            <span class="mbx__draft-badge"><i class="bi bi-check2"></i> Draft saved</span>
+                        @if (draftSavedAt(); as savedAt) {
+                            <span class="mbx__draft-badge" data-testid="compose-draft-saved"><i class="bi bi-check2"></i> Draft saved {{ savedAt | appDateTime }}</span>
                             <button type="button" class="mbx__btn mbx__btn--sm" (click)="discardDraft()">
                                 <i class="bi bi-trash"></i> Discard
                             </button>
@@ -1151,19 +1131,6 @@ type PhonePane = 'folders' | 'message';
             scrollbar-gutter: stable;
         }
         .mbx__detail-scroll > * { flex-shrink: 0; }
-        /* The quick reply, the scroll region's last child: at the message's foot, pushed to the pane's foot by the
-           free space under a short message, and never sticky. */
-        .mbx__quick-reply { margin-top: auto; padding-top: 14px; }
-        .mbx__quick-line {
-            display: block; width: 100%; min-height: var(--cms-touch-target-min); padding: 8px 12px;
-            border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface);
-            color: var(--cms-text-muted); font: inherit; font-size: .8125rem; text-align: start; cursor: text;
-        }
-        .mbx__quick-line:hover { border-color: var(--cms-accent); }
-        .mbx__quick-line:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
-        /* The composer in the pane: as wide as the message, scrolled with it, no scroll of its own. */
-        .mbx__compose--inline { width: auto; max-width: none; max-height: none; outline: none; }
-        .mbx__compose--inline .mbx__compose-body { overflow: visible; }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__evicted {
@@ -1364,7 +1331,6 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
     private readonly confirmDialog = inject(ConfirmDialogService);
-    private readonly drafts = inject(DraftStoreService);
     private readonly contacts = inject(ContactsService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
@@ -1629,8 +1595,6 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeOpen = signal<boolean>(false);
     /** What the composer writes: a new message, or an answer or a forward of the message `replyTargetId` names. */
     readonly composeMode = signal<'compose' | EmailComposeMode>('compose');
-    /** The open composer is the quick reply in the message pane, not the dock. */
-    readonly composeInline = signal<boolean>(false);
     /**
      * An answer's or a forward's start, as the server prepares it: being read, read, or not read and why; null for a
      * new message. Recipients, subject, From, quote and threading are the server's; none is made up here.
@@ -1680,17 +1644,28 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly recipientOptions = computed(() => [...this.prefillOptions(), ...this.contactOptions()]);
     readonly sending = signal<boolean>(false);
     private readonly replyTargetId = signal<string | null>(null);
-    private readonly quickReplyComposer = viewChild<ElementRef<HTMLElement>>('quickReplyComposer');
+    private readonly quickReply = viewChild(MailQuickReplyComponent);
     private readonly composeDock = viewChild<ElementRef<HTMLElement>>('composeDock');
     private readonly injector = inject(Injector);
 
-    /** Another message opened (or none): the quick reply of the one before closes, its draft kept. */
-    private readonly quickReplyFollowsTheMessage = effect(() => {
-        const open = this.selectedMessage()?.id ?? null;
-        if (this.composeOpen() && this.composeInline() && this.replyTargetId() !== open) {
-            untracked(() => this.closeCompose());
+    /**
+     * The open message's quick reply: shown for a stored message that is open and read, never while it loads, never on
+     * a server row (one with no id, not yet stored), and never for a copy from the server that is no longer kept here.
+     */
+    readonly quickReplyFor = computed(() => {
+        const msg = this.selectedMessage();
+        const mailboxId = this.selectedMailboxId();
+        if (msg === null || mailboxId === null || this.loadingDetail() || this.openEvicted() || isServerRow(msg) || msg.id === '') {
+            return null;
         }
+        const name = (msg.fromName ?? '').trim();
+        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
+
+        return { mailboxId, messageId: msg.id, label: sender !== '' ? `Write a reply to ${sender}` : 'Write a reply' };
     });
+    /** The compose window holds the open message's reply. */
+    readonly replyWindowHolds = computed(() => this.composeOpen() && isReplyMode(this.composeMode())
+        && this.replyTargetId() !== null && this.replyTargetId() === (this.selectedMessage()?.id ?? null));
     /** The files of the message being written: a new message, a forward or a reply. */
     readonly composeAttachments = signal<ComposeAttachment[]>([]);
     /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
@@ -1707,14 +1682,13 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composeMinimized = signal<boolean>(false);
 
     /**
-     * Draft autosave. While the composer is open, edits are debounced-saved
-     * to a per-(mailbox, compose|reply-target) localStorage draft (via
-     * {@link DraftStoreService}); reopening the composer restores it, sending or
-     * discarding clears it. `draftSaved` drives the "Draft saved" footer indicator.
-     * `compose*Initial` snapshot the fresh-open baseline so a reply's pre-filled
-     * quote isn't itself treated as unsaved content.
+     * The window's draft on the server: made at the first save of what was written, saved after a pause as it changes,
+     * and found again by the message it answers (an answer's) or as the newest of a new message's. "Draft saved" says
+     * when the server last saved it. `compose*Initial` snapshot the fresh-open baseline so what was served is not
+     * itself taken for something written.
      */
-    readonly draftSaved = signal<boolean>(false);
+    private readonly activeDraft = signal<ServerDraft | null>(null);
+    readonly draftSavedAt = computed(() => this.activeDraft()?.savedAt() ?? null);
     private composeToInitial: string[] = [];
     private composeCcInitial: string[] = [];
     private composeBccInitial: string[] = [];
@@ -1911,7 +1885,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'reply-all':
             case 'forward':
                 this.withOpen(ids[0], () => (action === 'reply'
-                    ? this.openQuickReply()
+                    ? this.handReplyToWindow()
                     : this.openPrefilled(PREFILLED_ACTIONS[action])));
                 break;
             case 'archive':
@@ -2175,6 +2149,8 @@ export class EmailMailboxPageComponent implements OnInit {
                             this.onMessagesChanged(evt);
                         } else if ('mail.flag.refused' === evt.type) {
                             this.onFlagRefused(evt);
+                        } else if ('mail.drafts.changed' === evt.type) {
+                            this.onDraftsChanged(evt);
                         } else if ('mail.received' === evt.type) {
                             this.onMailReceived(evt);
                         }
@@ -3513,7 +3489,7 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     openCompose(): void {
-        this.composeInline.set(false);
+        this.settleWindow();
         this.composeMode.set('compose');
         this.replyTargetId.set(null);
         this.composeTo = [];
@@ -3523,12 +3499,84 @@ export class EmailMailboxPageComponent implements OnInit {
         this.contactOptions.set([]);
         this.composeSubject = '';
         this.clearComposeBody();
-        // Baseline for dirty-tracking (a fresh compose is empty), then restore any
-        // saved draft so the user continues where they left off.
+        // Baseline for dirty-tracking (a fresh compose is empty), then the newest kept draft of a new message, so the
+        // person continues where they left off.
         this.snapshotComposeInitial();
-        this.restoreDraftIfAny();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
+        const draft = this.startDraft(null);
+        if (draft !== null) {
+            this.findNewMessageDraft(draft);
+        }
+    }
+
+    /** The newest of the person's drafts of a new message in the mailbox, taken by a window that holds nothing yet. */
+    private findNewMessageDraft(draft: ServerDraft): void {
+        this.email.listDrafts(draft.mailboxId).subscribe({
+            next: list => {
+                const found = list.find(d => (d.answers ?? null) === null);
+                if (found !== undefined && this.activeDraft() === draft && draft.id === null && !draft.pending
+                    && !this.isComposeDirty()) {
+                    draft.adopt(found);
+                    this.applyDraft(found);
+                }
+            },
+            error: () => undefined,
+        });
+    }
+
+    /**
+     * The window's draft: what it answers, saved through the drafts API. A newer copy read from the server is drawn;
+     * a draft gone elsewhere closes the window, keeping nothing.
+     */
+    private startDraft(answers: EmailDraftAnswers | null): ServerDraft | null {
+        const mailboxId = this.selectedMailboxId();
+        if (mailboxId === null) {
+            this.activeDraft.set(null);
+            return null;
+        }
+        const draft: ServerDraft = new ServerDraft(this.email, mailboxId, answers, {
+            loaded: d => {
+                if (this.activeDraft() === draft) {
+                    this.applyDraft(d);
+                }
+            },
+            gone: () => {
+                if (this.activeDraft() === draft) {
+                    this.cancelDraftSave();
+                    this.activeDraft.set(null);
+                    this.composeOpen.set(false);
+                    this.clearComposeBody();
+                }
+            },
+        });
+        this.activeDraft.set(draft);
+
+        return draft;
+    }
+
+    /** A realtime change to one of the person's drafts: the window's and the quick reply's read again, or gone. */
+    private onDraftsChanged(event: MailDraftsChangedEvent): void {
+        this.activeDraft()?.told(event);
+        this.quickReply()?.onDraftsChanged(event);
+    }
+
+    private cancelDraftSave(): void {
+        if (this.draftSaveTimer !== null) {
+            clearTimeout(this.draftSaveTimer);
+            this.draftSaveTimer = null;
+        }
+    }
+
+    /** The open window lets go of its draft: what is owed is saved first, and the draft is kept. */
+    private settleWindow(): void {
+        if (!this.composeOpen()) {
+            return;
+        }
+        this.cancelDraftSave();
+        this.saveDraftNow();
+        this.activeDraft()?.release();
+        this.activeDraft.set(null);
     }
 
     /**
@@ -3576,14 +3624,15 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * Reply, Reply all or Forward on the open message: the composer opens at once and says it is being prepared, then
      * takes the server's recipients, subject, From and quote (`GET .../compose?mode=`). The person writes above the
-     * quote; a saved draft of this answer takes the place of what was served.
+     * quote; the person's draft of this answer on the server (the one handed over, else the one the lookup finds) takes
+     * the place of what was served.
      */
-    openPrefilled(mode: EmailComposeMode, inline = false): void {
+    openPrefilled(mode: EmailComposeMode, draftId: string | null = null): void {
         const msg = this.selectedMessage();
         if (!msg) {
             return;
         }
-        this.composeInline.set(inline);
+        this.settleWindow();
         this.composeMode.set(mode);
         this.replyTargetId.set(msg.id);
         this.composeTo = [];
@@ -3596,49 +3645,47 @@ export class EmailMailboxPageComponent implements OnInit {
         this.clearComposeBody();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
-        this.readPrefill(msg.id, mode);
-    }
-
-    /** The quick reply is open as a composer under this message. */
-    quickReplyOpenFor(id: string): boolean {
-        return this.composeOpen() && this.composeInline() && this.replyTargetId() === id;
-    }
-
-    /** The quick reply line's accessible name: "Reply to" the sender's name, else their address. */
-    quickReplyLabel(msg: EmailMessageDto): string {
-        const name = (msg.fromName ?? '').trim();
-        const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
-        return sender !== '' ? `Reply to ${sender}` : 'Reply';
+        this.startDraft({ messageId: msg.id, mode });
+        this.readPrefill(msg.id, mode, draftId);
     }
 
     /**
-     * Reply, and the quick reply's line: the reply to the open message as a composer at the foot of the message
-     * pane, prefilled by the server, brought into view and focused. A composer open in the dock is closed first, its
-     * draft kept.
+     * Reply, and the quick reply's Expand: the compose window opens on the open message's reply. What the quick reply
+     * holds is saved first and its draft is handed over by id, so the window writes the same draft and never a second.
+     * The box then says the reply is open in the window.
      */
-    openQuickReply(): void {
+    handReplyToWindow(handOff: QuickReplyHandOff | null = null): void {
         const msg = this.selectedMessage();
-        if (!msg) {
+        if (!msg || isServerRow(msg) || this.selectedMailboxId() === null) {
             return;
         }
-        if (!this.quickReplyOpenFor(msg.id)) {
-            if (this.composeOpen()) {
-                this.closeCompose();
-            }
-            this.openPrefilled('reply', true);
+        if (this.replyWindowHolds()) {
+            this.showReplyWindow();
+            return;
         }
-        afterNextRender(() => this.revealQuickReply(), { injector: this.injector });
+        const quick = this.quickReply();
+        if (handOff === null && quick !== undefined) {
+            quick.handOff(given => this.openReplyWindow(given));
+            return;
+        }
+        this.openReplyWindow(handOff ?? { draftId: null, mode: 'reply' });
     }
 
-    /** Scrolls the message pane to the quick reply and focuses its body, else the composer. */
-    private revealQuickReply(): void {
-        const box = this.quickReplyComposer()?.nativeElement;
-        if (box === undefined) {
+    private openReplyWindow(handOff: QuickReplyHandOff): void {
+        if (this.composeOpen()) {
+            this.closeCompose();
+        }
+        this.openPrefilled(handOff.mode, handOff.draftId);
+    }
+
+    /** The quick reply's Show it: the window holding the reply comes up, or opens again on its draft. */
+    showReplyWindow(handOff: QuickReplyHandOff | null = null): void {
+        if (this.replyWindowHolds()) {
+            this.composeMinimized.set(false);
+            this.focusComposeBody();
             return;
         }
-        box.scrollIntoView({ block: 'nearest' });
-        const body = box.querySelector<HTMLElement>('textarea, [contenteditable="true"]') ?? box;
-        body.focus({ preventScroll: true });
+        this.handReplyToWindow(handOff);
     }
 
     /** Read the prefill again after a failure that may pass. */
@@ -3646,15 +3693,20 @@ export class EmailMailboxPageComponent implements OnInit {
         const id = this.replyTargetId();
         const mode = this.composeMode();
         if (id !== null && mode !== 'compose') {
-            this.readPrefill(id, mode);
+            this.readPrefill(id, mode, this.activeDraft()?.id ?? null);
         }
     }
 
-    private readPrefill(id: string, mode: EmailComposeMode): void {
+    /** The server's prefill of an answer, and the person's draft of it, read together; the draft is drawn over it. */
+    private readPrefill(id: string, mode: EmailComposeMode, draftId: string | null = null): void {
         const seq = ++this.prefillSeq;
         this.composePrefill.set({ state: 'loading' });
-        this.email.composePrefill(id, mode).subscribe({
-            next: answer => {
+        const mailboxId = this.selectedMailboxId();
+        forkJoin({
+            answer: this.email.composePrefill(id, mode).pipe(take(1)),
+            draft: mailboxId === null ? of(null) : this.answerDraft(mailboxId, id, mode, draftId).pipe(take(1)),
+        }).subscribe({
+            next: ({ answer, draft }) => {
                 if (seq !== this.prefillSeq) {
                     return;
                 }
@@ -3665,9 +3717,13 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.composeSubject = answer.subject;
                 this.forwardFilesKept.set(mode === 'forward' ? forwardFiles(answer.attachments) : []);
                 this.composePrefill.set({ state: 'ready', answer });
-                // Baseline = what was served (an untouched answer is no draft), then this answer's saved draft.
+                // Baseline = what was served (an untouched answer is no draft), then this answer's draft.
                 this.snapshotComposeInitial();
-                this.restoreDraftIfAny();
+                const held = this.activeDraft();
+                if (draft !== null && held !== null && !held.pending) {
+                    held.adopt(draft);
+                    this.applyDraft(draft);
+                }
                 this.focusComposeBody();
             },
             error: (e: unknown) => {
@@ -3677,6 +3733,20 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.composePrefill.set({ state: 'failed', ...prefillFailure(e, mode) });
             },
         });
+    }
+
+    /**
+     * The draft an answer opens on: the one handed over (the quick reply's), else the message's reply draft for a reply
+     * or a reply to all, or a forward of it for a forward. None found, or not read: none.
+     */
+    private answerDraft(mailboxId: string, messageId: string, mode: EmailComposeMode, draftId: string | null): Observable<EmailDraftDto | null> {
+        const found = draftId !== null
+            ? this.email.readDraft(mailboxId, draftId)
+            : this.email.draftsAnswering(mailboxId, messageId).pipe(map(list => (isReplyMode(mode)
+                ? replyDraftOf(list)
+                : list.find(d => d.answers?.mode === 'forward') ?? null)));
+
+        return found.pipe(catchError(() => of(null)));
     }
 
     /** Toggle the composer dock between full-size and its collapsed header bar.
@@ -3690,20 +3760,6 @@ export class EmailMailboxPageComponent implements OnInit {
         const subject = this.composeSubject.trim();
         const titles: Record<string, string> = { reply: 'Reply', reply_all: 'Reply all', forward: 'Forward' };
         return subject !== '' ? subject : (titles[this.composeMode()] ?? 'New message');
-    }
-
-    /** localStorage draft key for the current composer, or null when unkeyable. */
-    private composeDraftKey(): string | null {
-        const mb = this.selectedMailboxId();
-        if (mb === null) {
-            return null;
-        }
-        const mode = this.composeMode();
-        if (mode !== 'compose') {
-            const rt = this.replyTargetId();
-            return rt !== null ? `email.${mb}.${mode}.${rt}` : null;
-        }
-        return `email.${mb}.compose`;
     }
 
     /** A recipient tag-input typed: push the query into the debounced search stream. */
@@ -3733,21 +3789,6 @@ export class EmailMailboxPageComponent implements OnInit {
             }
         }
         return opts;
-    }
-
-    /**
-     * Coerce a persisted recipient field to an address array. C.4.b stores arrays,
-     * but a draft saved before this ship holds a comma-joined string -- split it so
-     * old drafts still restore into the tag-inputs.
-     */
-    private asAddressArray(value: unknown): string[] {
-        if (Array.isArray(value)) {
-            return value.map(x => String(x).trim()).filter(x => x !== '');
-        }
-        if (typeof value === 'string') {
-            return value.split(',').map(x => x.trim()).filter(x => x !== '');
-        }
-        return [];
     }
 
     /** Snapshot the current composer values as the fresh-open baseline. */
@@ -3797,31 +3838,42 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The last body measured, so a check of the view does not parse the HTML again. */
     private bodyBytesMemo: { rich: boolean; source: string; bytes: number } | null = null;
 
-    /** Load + apply a saved draft for the current key into the composer, if present. */
-    private restoreDraftIfAny(): void {
-        const key = this.composeDraftKey();
-        const draft = key !== null ? this.drafts.load<ComposeDraft>(key) : null;
-        if (draft === null) {
-            this.draftSaved.set(false);
-            return;
+    /**
+     * A draft from the server, drawn in the window: what was written, its files and its choices. Reply and reply all
+     * share one draft: opened as the other, the recipients are this mode's prefill's, and the next save switches it.
+     */
+    private applyDraft(draft: EmailDraftDto): void {
+        this.cancelDraftSave();
+        const mode = this.composeMode();
+        const answered = draft.answers?.mode ?? null;
+        const switched = mode !== 'compose' && answered !== null && answered !== mode;
+        if (!switched && (mode === 'compose' || draft.to.length > 0)) {
+            this.composeTo = [...draft.to];
+            this.composeCc = [...draft.cc];
+            this.composeBcc = [...draft.bcc];
         }
-        // Coerce: pre-C.4.b drafts stored `to` as a comma-string; cc/bcc may be absent.
-        this.composeTo = this.asAddressArray(draft.to);
-        this.composeCc = this.asAddressArray(draft.cc);
-        this.composeBcc = this.asAddressArray(draft.bcc);
         if (this.composeCc.length > 0 || this.composeBcc.length > 0) {
             this.composeShowCcBcc.set(true);
         }
-        this.composeSubject = draft.subject;
+        if (mode === 'compose' || draft.subject !== '') {
+            this.composeSubject = draft.subject;
+        }
         this.composeText = draft.text;
-        this.composeRich.set(draft.rich);
-        this.composeHtml.set(draft.html);
-        this.composeAttachments.set(restoredAttachments(draft.attachments));
-        this.composeQuoteKept.set(draft.quote === true);
-        const removed = new Set(draft.removedParts ?? []);
-        this.forwardFilesKept.update(list => list.filter(p => !removed.has(p.part)));
+        this.composeRich.set(draft.html !== null);
+        this.composeHtml.set(draft.html ?? '');
+        this.composeAttachments.set(restoredAttachments(draftFiles(draft)));
+        if (mode !== 'compose') {
+            this.composeQuoteKept.set(draft.quote !== false);
+        }
+        if (mode === 'forward') {
+            const kept = new Set(draft.messageParts.map(p => p.part));
+            this.forwardFilesKept.update(list => list.filter(p => kept.has(p.part)));
+        }
         this.composeKey.update(k => String(Number(k) + 1)); // re-mount the editor with the draft
-        this.draftSaved.set(true);
+        if (switched) {
+            this.activeDraft()?.switchMode(mode);
+            this.onComposeChange();
+        }
     }
 
     /** Debounced autosave hook -- called from the composer field change bindings. */
@@ -3832,59 +3884,68 @@ export class EmailMailboxPageComponent implements OnInit {
         this.draftSaveTimer = setTimeout(() => this.saveDraftNow(), 600);
     }
 
-    /** Persist the draft if dirty, else clear it (so deleting your edits removes it). */
+    /** Saves the window's draft: nothing written makes no draft; once there is one, every change is saved to it. */
     private saveDraftNow(): void {
-        const key = this.composeDraftKey();
-        if (key === null || !this.composeFieldsShown()) {
+        const draft = this.activeDraft();
+        if (draft === null || !this.composeFieldsShown()) {
             return;
         }
-        if (this.isComposeDirty()) {
-            this.drafts.save(key, {
-                to: this.composeTo,
-                cc: this.composeCc,
-                bcc: this.composeBcc,
-                subject: this.composeSubject,
-                text: this.composeText,
-                html: this.composeHtml(),
-                rich: this.composeRich(),
-                attachments: storedAttachments(this.composeAttachments()),
-                quote: this.composeQuoteKept(),
-                removedParts: this.removedForwardParts(),
-            } satisfies ComposeDraft);
-            this.draftSaved.set(true);
-        } else {
-            this.drafts.clear(key);
-            this.draftSaved.set(false);
+        if (draft.id === null && !draft.pending && !this.isComposeDirty()) {
+            return;
         }
+        draft.save(this.windowDraft());
     }
 
-    /** Discard the current draft and close the composer without sending. */
+    /** The window as the whole draft: every field, the quote choice always stated. */
+    private windowDraft(): EmailDraftWrite {
+        const mode = this.composeMode();
+        const rich = this.composeRich();
+        const html = this.composeHtml();
+
+        return {
+            to: [...this.composeTo],
+            cc: [...this.composeCc],
+            bcc: [...this.composeBcc],
+            subject: this.composeSubject,
+            text: rich ? this.htmlToPlainText(html) : this.composeText,
+            html: rich ? html : null,
+            attachments: storedAttachments(this.composeAttachments()).map(a => a.id),
+            from: this.prefillAnswer()?.from.address ?? null,
+            quote: mode !== 'compose' && this.composeQuoteKept(),
+            messageParts: mode === 'forward' ? this.forwardFilesKept().map(f => ({ messageId: f.messageId, part: f.part })) : [],
+        };
+    }
+
+    /**
+     * Discard: the window closes and its draft is deleted on the server, once a save on its way has landed, so a draft
+     * never survives a Discard because the two crossed. The draft's files go with it (a Drive file stays in Drive).
+     */
     discardDraft(): void {
-        const key = this.composeDraftKey();
-        if (key !== null) {
-            this.drafts.clear(key);
-        }
-        // The draft's files go with it: each is removed on the server (a Drive file stays in Drive).
+        this.cancelDraftSave();
+        const draft = this.activeDraft();
         const mailboxId = this.selectedMailboxId();
-        for (const a of storedAttachments(this.composeAttachments())) {
-            if (mailboxId !== null) {
-                this.email.removeAttachment(mailboxId, a.id).subscribe({ error: () => undefined });
-            }
-        }
-        this.draftSaved.set(false);
+        const files = storedAttachments(this.composeAttachments());
+        this.activeDraft.set(null);
         this.composeOpen.set(false);
         this.clearComposeBody();
+        const removeFiles = (): void => {
+            for (const a of files) {
+                if (mailboxId !== null) {
+                    this.email.removeAttachment(mailboxId, a.id).subscribe({ error: () => undefined });
+                }
+            }
+        };
+        if (draft === null) {
+            removeFiles();
+        } else {
+            draft.discard(() => removeFiles());
+        }
     }
 
     closeCompose(): void {
-        // Persist the latest edit as a draft (the debounce may not have fired), then
-        // close. The draft is KEPT -- reopening the composer restores it; "Discard"
-        // is the explicit delete.
-        if (this.draftSaveTimer !== null) {
-            clearTimeout(this.draftSaveTimer);
-            this.draftSaveTimer = null;
-        }
-        this.saveDraftNow();
+        // The latest edit is saved (the pause may not have passed), then the window closes. The draft is KEPT:
+        // reopening finds it; Discard is the explicit delete.
+        this.settleWindow();
         this.composeOpen.set(false);
         this.clearComposeBody();
     }
@@ -3922,7 +3983,7 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The empty editor (or the plain text) takes the focus once the composer has drawn it. */
     private focusComposeBody(tries = 40): void {
         afterNextRender(() => {
-            const box = (this.composeInline() ? this.quickReplyComposer() : this.composeDock())?.nativeElement;
+            const box = this.composeDock()?.nativeElement;
             const body = box?.querySelector<HTMLElement>('[contenteditable="true"], textarea') ?? null;
             if (body !== null) {
                 body.focus({ preventScroll: true });
@@ -4044,53 +4105,68 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeSendRefused.set(null);
 
         const replyId = this.replyTargetId();
-        const draftKey = this.composeDraftKey();
-        const call = isReply && replyId !== null
-            ? this.email.reply(replyId, request)
-            : this.email.send(mailboxId, request);
-
+        const draft = this.activeDraft();
+        this.cancelDraftSave();
         this.sending.set(true);
-        call.subscribe({
-            next: () => {
-                this.sending.set(false);
-                // A sent message is no longer a draft -- drop it.
-                if (draftKey !== null) {
-                    this.drafts.clear(draftKey);
-                }
-                this.draftSaved.set(false);
-                this.composeOpen.set(false);
-                this.clearComposeBody();
-                this.toast.success(isReply ? 'Reply sent.' : 'Message sent.');
-                // Refresh folders (Sent count) + the current message list.
-                this.loadFolders();
-            },
-            error: (e: unknown) => {
-                this.sending.set(false);
-                // The original could no longer be read: nothing went; the composer offers to send without the quote.
-                if (quotedMessageUnavailable(e)) {
-                    this.composeQuoteRefused.set(true);
-                    return;
-                }
-                // A file no longer there to send is marked on its chip; a message over the limit shows both sizes.
-                const expired = expiredAttachmentId(e);
-                if (expired !== null) {
-                    const words = 'This file is no longer there to send. Remove it and attach it again.';
-                    this.composeAttachments.update(list => list.map(a => (a.id === expired
-                        ? { ...a, status: 'refused' as const, refusal: words }
-                        : a)));
-                    this.toast.error('A file is no longer there to send. Attach it again.');
-                    return;
-                }
-                const tooLarge = tooLargeSend(e);
-                if (tooLarge !== null) {
-                    this.composeSendRefused.set(tooLarge);
-                    this.toast.error('The message is over the mailbox’s size limit. Remove a file and send again.');
-                    return;
-                }
-                // The cause by the problem's type (SMTP or the provider's API), never the server's detail.
-                this.toast.error(sendFailureText(e));
-            },
-        });
+        // A save on its way lands first, so the send names the draft it was written in: the server removes it once the
+        // message is sent, and keeps it when the send fails.
+        const go = (): void => {
+            const draftId = draft?.id ?? null;
+            if (draftId !== null) {
+                request.draftId = draftId;
+            }
+            const call = isReply && replyId !== null
+                ? this.email.reply(replyId, request)
+                : this.email.send(mailboxId, request);
+            call.subscribe({
+                next: () => {
+                    this.sending.set(false);
+                    // The server removed the draft with the send.
+                    draft?.release();
+                    if (this.activeDraft() === draft) {
+                        this.activeDraft.set(null);
+                    }
+                    this.composeOpen.set(false);
+                    this.clearComposeBody();
+                    this.toast.success(isReply ? 'Reply sent.' : 'Message sent.');
+                    // Refresh folders (Sent count) + the current message list.
+                    this.loadFolders();
+                },
+                error: (e: unknown) => {
+                    this.sending.set(false);
+                    // A failed send keeps the draft: the window as it is is saved to it.
+                    this.onComposeChange();
+                    // The original could no longer be read: nothing went; the composer offers to send without the quote.
+                    if (quotedMessageUnavailable(e)) {
+                        this.composeQuoteRefused.set(true);
+                        return;
+                    }
+                    // A file no longer there to send is marked on its chip; a message over the limit shows both sizes.
+                    const expired = expiredAttachmentId(e);
+                    if (expired !== null) {
+                        const words = 'This file is no longer there to send. Remove it and attach it again.';
+                        this.composeAttachments.update(list => list.map(a => (a.id === expired
+                            ? { ...a, status: 'refused' as const, refusal: words }
+                            : a)));
+                        this.toast.error('A file is no longer there to send. Attach it again.');
+                        return;
+                    }
+                    const tooLarge = tooLargeSend(e);
+                    if (tooLarge !== null) {
+                        this.composeSendRefused.set(tooLarge);
+                        this.toast.error('The message is over the mailbox’s size limit. Remove a file and send again.');
+                        return;
+                    }
+                    // The cause by the problem's type (SMTP or the provider's API), never the server's detail.
+                    this.toast.error(sendFailureText(e));
+                },
+            });
+        };
+        if (draft === null) {
+            go();
+        } else {
+            draft.settled(go);
+        }
     }
 
     openCreateMailbox(): void {
