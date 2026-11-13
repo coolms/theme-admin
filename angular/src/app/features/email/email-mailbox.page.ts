@@ -51,7 +51,7 @@ import { MessageFrameComponent } from './message-frame.component';
 import { MailQuickReplyComponent, type QuickReplyHandOff } from './mail-quick-reply.component';
 import { draftFiles, isReplyMode, replyDraftOf } from './compose-draft';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
-import { ServerDraft } from './server-draft';
+import { DRAFT_GONE_KEPT, ServerDraft } from './server-draft';
 import {
     DISCARD_UNDO_MS, MAIL_EDITOR_PROFILE, type ComposeWindowSnapshot, fromChoices, parkedWithDraft, windowRecipients,
     windowTitle, windowsToClose,
@@ -3630,7 +3630,8 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /**
      * The window's draft: what it answers, saved through the drafts API. A newer copy read from the server is drawn;
-     * a draft gone elsewhere closes the window, keeping nothing.
+     * a draft gone elsewhere closes the window, keeping nothing, unless a save of what was written there found it
+     * gone: then the window keeps it as a new draft and says so.
      */
     private startDraft(answers: EmailDraftAnswers | null): ServerDraft | null {
         const mailboxId = this.selectedMailboxId();
@@ -3638,6 +3639,14 @@ export class EmailMailboxPageComponent implements OnInit {
             this.activeDraft.set(null);
             return null;
         }
+        const draft = this.windowDraftOf(mailboxId, answers);
+        this.activeDraft.set(draft);
+
+        return draft;
+    }
+
+    /** A window's draft object, told to whichever window holds it: the open one or a bar. */
+    private windowDraftOf(mailboxId: string, answers: EmailDraftAnswers | null): ServerDraft {
         const draft: ServerDraft = new ServerDraft(this.email, mailboxId, answers, {
             loaded: d => {
                 if (this.activeDraft() === draft) {
@@ -3646,7 +3655,19 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.parkedWindows.update(list => list.map(w => (w.draft === draft ? parkedWithDraft(w, d) : w)));
                 }
             },
-            gone: () => {
+            gone: kept => {
+                if (kept !== null) {
+                    // Deleted elsewhere while what was written here was being saved: it stays, as a new draft.
+                    const again = this.windowDraftOf(draft.mailboxId, draft.answers);
+                    if (this.activeDraft() === draft) {
+                        this.activeDraft.set(again);
+                    } else {
+                        this.parkedWindows.update(list => list.map(w => (w.draft === draft ? { ...w, draft: again } : w)));
+                    }
+                    again.save(kept);
+                    this.toast.info(DRAFT_GONE_KEPT);
+                    return;
+                }
                 if (this.activeDraft() === draft) {
                     this.cancelDraftSave();
                     this.activeDraft.set(null);
@@ -3657,7 +3678,6 @@ export class EmailMailboxPageComponent implements OnInit {
                 }
             },
         });
-        this.activeDraft.set(draft);
 
         return draft;
     }

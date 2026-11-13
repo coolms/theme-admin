@@ -20,6 +20,9 @@ export const DRAFT_RETRY_FIRST_MS = 1000;
 /** The longest pause between tries. */
 export const DRAFT_RETRY_MOST_MS = 30_000;
 
+/** What the person is told when a draft deleted elsewhere keeps what was written here as a new draft. */
+export const DRAFT_GONE_KEPT = 'This draft was deleted elsewhere. What you wrote is kept as a new draft.';
+
 /** The drafts API a draft is written through (the mail service). */
 export interface DraftsApi {
     createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto>;
@@ -33,8 +36,12 @@ export interface DraftsApi {
 export interface DraftHost {
     /** The server's copy took the place of what was shown (a refused save, or a change made elsewhere): draw it. */
     loaded(draft: EmailDraftDto): void;
-    /** The draft is gone (discarded or sent elsewhere): close or clear it. */
-    gone(): void;
+    /**
+     * The draft is gone (discarded or sent elsewhere). With nothing of this place's unsaved (`kept` null): close or
+     * clear it. With `kept`: a save was refused because the draft was gone; what was written is that content, which
+     * the host keeps, saves as a new draft and tells the person about.
+     */
+    gone(kept: EmailDraftWrite | null): void;
 }
 
 /** A 409 naming the person's reply draft to the message: the one to load instead of making a second. */
@@ -258,6 +265,11 @@ export class ServerDraft {
             this.reload();
             return;
         }
+        if (error instanceof HttpErrorResponse && error.status === 404 && this.draftId !== null) {
+            // Deleted elsewhere, its event missed: gone, as a reload that finds none, but what was written is kept.
+            this.gone(this.owed ?? body);
+            return;
+        }
         if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0)) {
             const a = this.answersOf;
             if (this.draftId === null && !this.lookedUp && a !== null && isReplyMode(a.mode)) {
@@ -338,7 +350,7 @@ export class ServerDraft {
         });
     }
 
-    private gone(): void {
+    private gone(kept: EmailDraftWrite | null = null): void {
         const told = !this.released;
         this.released = true;
         this.busy = false;
@@ -348,7 +360,7 @@ export class ServerDraft {
         this.savedAt.set(null);
         this.flushWaiting();
         if (told) {
-            this.host.gone();
+            this.host.gone(kept);
         }
     }
 
