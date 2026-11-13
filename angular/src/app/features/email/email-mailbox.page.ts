@@ -1094,7 +1094,7 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__body--one.mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
         .mbx__body--one .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
-        .mbx__body--one .mbx__detail > app-mail-quick-reply { margin: 0 -12px; --mqr-inset: 12px; }
+        .mbx__body--one .mbx__detail > app-mail-quick-reply { margin: 0 -12px; --mqr-inset: 8px; }
         .mbx__body--one .mbx__phone-bar { display: flex; }
         .mbx__body--one .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
         .mbx__body--one .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }

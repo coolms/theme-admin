@@ -545,6 +545,27 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(box()).not.toBeNull();
     });
 
+    /**
+     * The field takes all of the row the three buttons leave: attach at its start, then the field from edge to edge of
+     * what is left, then Expand and Send, with only the row's gaps between them.
+     */
+    function expectFieldFillsTheRow(state: string): void {
+        const row = quick().querySelector<HTMLElement>('.mqr__row')!;
+        const r = (e: Element): DOMRect => e.getBoundingClientRect();
+        const attach = r(row.querySelector('app-compose-attach-button')!);
+        const field = r(box());
+        const expand = r(row.querySelector('[data-test="quick-reply-expand"]')!);
+        const send = r(sendButton());
+        const gap = parseFloat(getComputedStyle(row).columnGap);
+        const rowBox = r(row);
+        expect(attach.left).withContext(`${state}: attach at the start`).toBeCloseTo(rowBox.left, 0);
+        expect(field.left - attach.right).withContext(`${state}: the field right after attach`).toBeCloseTo(gap, 0);
+        expect(expand.left - field.right).withContext(`${state}: Expand right after the field`).toBeCloseTo(gap, 0);
+        expect(send.right).withContext(`${state}: Send at the end`).toBeCloseTo(rowBox.right, 0);
+        expect(field.width).withContext(`${state}: the field is the rest of the row`)
+            .toBeCloseTo(rowBox.width - attach.width - expand.width - send.width - 3 * gap, 0);
+    }
+
     it('one line: attach, the field, Expand and Send; Send is disabled until there is text', async () => {
         await open(3);
         const row = quick().querySelector<HTMLElement>('.mqr__row')!;
@@ -555,11 +576,15 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         const tops = [...row.children].map(c => Math.round(c.getBoundingClientRect().bottom));
         expect(new Set(tops).size).withContext('on one line').toBe(1);
 
+        expectFieldFillsTheRow('idle');
+
         expect(sendButton().disabled).withContext('empty').toBeTrue();
         await type('   ');
         expect(sendButton().disabled).withContext('blank').toBeTrue();
         await type('Yes.');
         expect(sendButton().disabled).withContext('text').toBeFalse();
+        await type('Yes, Friday at ten works for me, and I will bring the plan of the new desks with me as well.');
+        expectFieldFillsTheRow('typing');
         await type('');
         expect(sendButton().disabled).withContext('emptied again').toBeTrue();
     });
@@ -585,6 +610,12 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(meter).withContext('the meter with files').not.toBeNull();
         expect(chip!.getBoundingClientRect().bottom).withContext('above the line').toBeLessThanOrEqual(box().getBoundingClientRect().top);
         expect(meter!.getBoundingClientRect().bottom).toBeLessThanOrEqual(box().getBoundingClientRect().top);
+        expectFieldFillsTheRow('with files');
+
+        // At a phone's width too: the pane narrows, and the field still takes all of it but the three buttons.
+        el().style.width = '390px';
+        await settle();
+        expectFieldFillsTheRow('with files, 390 px');
     });
 
     it('while the reply is in the compose window: "Your reply is open in the compose window." with Show it', async () => {
