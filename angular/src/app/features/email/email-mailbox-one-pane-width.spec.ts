@@ -17,7 +17,7 @@ import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import { type EmailMailboxDto } from './email.types';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
-import { MAIL_PANE_CACHE_KEYS } from './mail-panes.directive';
+import { MAIL_PANE_CACHE_KEYS, MAIL_TWO_PANES_MIN } from './mail-panes.directive';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 /**
@@ -118,6 +118,16 @@ describe('EmailMailboxPageComponent -- one pane fills the grid over the saved wi
 
         expect(shown(list())).toBeTrue();
         expect(list().offsetWidth).toBe(300);
+    });
+
+    it('one pane at 560px, wider than the saved 340px, the list shown: it carries 340px inline and still fills the grid', async () => {
+        expect(560).withContext('under the two-pane minimum: one pane').toBeLessThan(MAIL_TWO_PANES_MIN);
+        await render(560);
+
+        expect(fixture.componentInstance.onePane()).toBeTrue();
+        expect(shown(list())).toBeTrue();
+        expect(list().style.width).withContext('the splitter wrote the saved width on the list').toBe('340px');
+        expect(list().offsetWidth).toBe(560);
     });
 
     it('three panes at 1440px: the saved widths stand', async () => {
