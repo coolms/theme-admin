@@ -43,8 +43,14 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
     let infos: string[];
     let aliases: MailAliasesDto;
     let removed: string[];
+    /** What the page asked, and what the person answers. */
+    let questions: Array<{ title: string; message?: string; confirmLabel?: string; cancelLabel?: string }>;
+    let answer: boolean;
 
     beforeEach(() => {
+        questions = [];
+        answer = false;
+        const asked = questions;
         sent = [];
         shown = [];
         removed = [];
@@ -99,7 +105,10 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                 },
                 { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
-                { provide: ConfirmDialogService, useValue: {} },
+                {
+                    provide: ConfirmDialogService,
+                    useValue: { open: (q: { title: string }) => { asked.push(q); return of(answer); } },
+                },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
@@ -293,6 +302,62 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         await settle();
         expect(win()!.querySelector('[role="menu"]')).toBeNull();
         expect(page().composeMinimized()).toBeFalse();
+    });
+
+    /** More options > Plain text, as the person chooses it. */
+    async function plainTextItem(): Promise<void> {
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-more"]')!.click();
+        await settle();
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-plain-text"]')!.click();
+        await settle();
+    }
+
+    it('Plain text shows the formatted body as text; back without an edit, the formatting comes back exactly, unasked', async () => {
+        page().composeRich.set(true);
+        page().openCompose();
+        await settle();
+        const html = '<p><strong>Lunch</strong> at <em>noon</em>?</p><ul><li><p>Soup</p></li></ul>';
+        page().composeHtml.set(html);
+        await settle();
+
+        await plainTextItem();
+        expect(page().composeRich()).toBeFalse();
+        const box = win()!.querySelector<HTMLTextAreaElement>('textarea.mbx__compose-text')!;
+        expect(box.value).withContext('the formatted body as text').toBe('Lunch at noon?\nSoup');
+
+        await plainTextItem();
+        expect(questions).withContext('nothing edited: no question').toEqual([]);
+        expect(page().composeRich()).toBeTrue();
+        expect(page().composeHtml()).withContext('the formatting exactly').toBe(html);
+    });
+
+    it('Plain text edited: switching back asks first; Keep plain text keeps it, Switch makes the text paragraphs', async () => {
+        page().composeRich.set(true);
+        page().openCompose();
+        await settle();
+        page().composeHtml.set('<p><strong>Lunch</strong> at noon?</p>');
+        await settle();
+        await plainTextItem();
+        const box = win()!.querySelector<HTMLTextAreaElement>('textarea.mbx__compose-text')!;
+        box.value = 'Lunch at one?\nOr two.\n\nSee you <then>';
+        box.dispatchEvent(new Event('input'));
+        await settle();
+
+        answer = false;
+        await plainTextItem();
+        expect(questions.length).withContext('asked').toBe(1);
+        expect(questions[0].title).toBe('Switch back to formatting?');
+        expect(questions[0].message).toContain('earlier formatting is lost');
+        expect(questions[0].message).toContain('paragraphs');
+        expect(page().composeRich()).withContext('Keep plain text').toBeFalse();
+        expect(page().composeText).toBe('Lunch at one?\nOr two.\n\nSee you <then>');
+
+        answer = true;
+        await plainTextItem();
+        expect(questions.length).toBe(2);
+        expect(page().composeRich()).toBeTrue();
+        expect(page().composeHtml()).withContext('the edited text as paragraphs, none of it markup')
+            .toBe('<p>Lunch at one?<br>Or two.</p><p>See you &lt;then&gt;</p>');
     });
 
     it('where one pane shows at a time: full screen, Minimize and Close only, each at least 44 px', async () => {

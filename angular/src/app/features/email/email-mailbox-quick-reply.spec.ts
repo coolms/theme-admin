@@ -221,6 +221,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
 
         expect(scroll().contains(quick())).withContext('not inside the scroll region').toBeFalse();
         expect(section().contains(quick())).withContext('in the message pane').toBeTrue();
+        expect([at.left, at.right]).withContext('the full width of the pane, edge to edge').toEqual([pane.left, pane.right]);
         expect(at.bottom).withContext('at the pane\'s bottom').toBeCloseTo(pane.bottom, 0);
         expect(scroll().getBoundingClientRect().bottom).withContext('the scroll region ends above it').toBeLessThanOrEqual(at.top + 0.5);
         expect(scroll().scrollHeight).withContext('the long message scrolls').toBeGreaterThan(scroll().clientHeight + 100);

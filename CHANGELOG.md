@@ -15,8 +15,10 @@ major number means here.
   each opening its own line, and the editor takes the remaining height. The quote is collapsed behind a ••• button
   (aria-expanded) with Remove quote beside it, and opens in a framed box at most about 320 px tall, in the same sandboxed
   frame. The foot is Send, Attach files, the saved state, More options (Plain text, a checkable item) and Discard draft.
+  Plain text shows the formatted body as text; switching back without an edit restores the formatting exactly, and
+  after the plain text was edited it asks first, since the text then becomes paragraphs and the formatting is lost.
   The quick reply is one line: attach, "Reply to <name>…", Expand and Send, which waits for text; its files and size
-  meter show above it once there are files. While its draft is in a compose window the line says so with Show it;
+  meter show above it once there are files, and it spans the message pane from edge to edge. While its draft is in a compose window the line says so with Show it;
   after that window is closed with the draft kept, it shows the draft's first words with Open and Discard (the same
   10 s Undo), and never puts the text back in the box.
 

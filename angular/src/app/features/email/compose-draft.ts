@@ -1,6 +1,23 @@
 import { type StoredComposeAttachment } from './compose-attachments';
 import { type EmailComposeMode, type EmailDraftDto, type EmailDraftWrite } from './email.types';
 
+/** Plain text as formatted paragraphs: a blank line starts a paragraph, a line break stays one; nothing is markup. */
+export function paragraphsOf(text: string): string {
+    const escape = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const blocks = text.replace(/\r\n?/g, '\n').split(/\n{2,}/).map(b => b.trim()).filter(b => b !== '');
+
+    return blocks.map(b => `<p>${b.split('\n').map(escape).join('<br>')}</p>`).join('');
+}
+
+/** What switching back from Plain text asks once the plain text was edited. */
+export const PLAIN_TEXT_BACK = {
+    title: 'Switch back to formatting?',
+    message: 'The text you edited becomes the formatted message as paragraphs, and its earlier formatting is lost.',
+    confirmLabel: 'Switch to formatting',
+    cancelLabel: 'Keep plain text',
+} as const;
+
 /** How many words of a draft its line shows. */
 export const DRAFT_LINE_WORDS = 12;
 

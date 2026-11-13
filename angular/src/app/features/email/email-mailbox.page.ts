@@ -51,7 +51,7 @@ import {
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
 import { MailQuickReplyComponent, type QuickReplyDiscarded, type QuickReplyHandOff } from './mail-quick-reply.component';
-import { draftFiles, isReplyMode, replyDraftOf } from './compose-draft';
+import { PLAIN_TEXT_BACK, draftFiles, isReplyMode, paragraphsOf, replyDraftOf } from './compose-draft';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { DRAFT_GONE_KEPT, ServerDraft } from './server-draft';
 import {
@@ -1094,6 +1094,7 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__body--one.mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
         .mbx__body--one .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
+        .mbx__body--one .mbx__detail > app-mail-quick-reply { margin: 0 -12px; --mqr-inset: 12px; }
         .mbx__body--one .mbx__phone-bar { display: flex; }
         .mbx__body--one .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
         .mbx__body--one .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }
@@ -1222,6 +1223,8 @@ type PhonePane = 'folders' | 'message';
         /* The row stays at the top; under it, the message pane's one scroll region. */
         .mbx__detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0 20px; min-width: 0; }
         .mbx__detail > .mbx__phone-bar, .mbx__detail > .mbx__pane-row { flex: 0 0 auto; }
+        /* The quick reply spans the message pane from edge to edge, its content kept to the pane's padding. */
+        .mbx__detail > app-mail-quick-reply { margin: 0 -20px; --mqr-inset: 20px; }
         .mbx__detail-scroll {
             flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 0 20px 16px;
             display: flex; flex-direction: column;
@@ -4421,6 +4424,7 @@ export class EmailMailboxPageComponent implements OnInit {
             this.composeSubject = draft.subject;
         }
         this.composeText = draft.text;
+        this.plainSwitch = null;
         this.composeRich.set(draft.html !== null);
         this.composeHtml.set(draft.html ?? '');
         this.composeAttachments.set(restoredAttachments(draftFiles(draft)));
@@ -4646,11 +4650,48 @@ export class EmailMailboxPageComponent implements OnInit {
         }, { injector: this.injector });
     }
 
-    /** Flip the composer between the rich `<coolms-editor>` and the plain textarea.
-     *  Both bodies persist independently, so a round-trip toggle loses nothing. */
+    /**
+     * Flip the composer between the formatted editor and Plain text. To Plain text the formatted body shows as text;
+     * back without an edit, the formatting comes back exactly; back after the plain text was edited, the person is
+     * asked first, since the text then becomes the formatted body as paragraphs and the earlier formatting is lost.
+     */
     toggleComposeRich(): void {
-        this.composeRich.update(v => !v);
+        if (this.composeRich()) {
+            const html = this.composeHtml();
+            const text = this.htmlToPlainText(html);
+            this.plainSwitch = { html, text };
+            this.composeText = text;
+            this.composeRich.set(false);
+            this.onComposeChange();
+            return;
+        }
+        const back = this.plainSwitch;
+        if (back !== null && this.composeText === back.text) {
+            this.toFormatted(back.html);
+            return;
+        }
+        if (this.composeText.trim() === '') {
+            this.toFormatted('');
+            return;
+        }
+        this.confirmDialog.open({ ...PLAIN_TEXT_BACK, danger: false }).subscribe(yes => {
+            if (yes) {
+                this.toFormatted(paragraphsOf(this.composeText));
+            }
+        });
     }
+
+    /** The formatted editor again, drawn from `html`. */
+    private toFormatted(html: string): void {
+        this.plainSwitch = null;
+        this.composeHtml.set(html);
+        this.composeRich.set(true);
+        this.composeKey.update(k => String(Number(k) + 1));
+        this.onComposeChange();
+    }
+
+    /** The formatted body as it was when Plain text was chosen, and the text it showed then; null when none. */
+    private plainSwitch: { html: string; text: string } | null = null;
 
     /** More options > Plain text: the format flips and the menu closes, the focus back on its button. */
     choosePlainText(): void {
@@ -4692,6 +4733,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeQuoteKept.set(true);
         this.composeQuoteOpen.set(false);
         this.composeMoreOpen.set(false);
+        this.plainSwitch = null;
         this.composeQuoteRefused.set(false);
         this.forwardFilesKept.set([]);
         this.composeText = '';

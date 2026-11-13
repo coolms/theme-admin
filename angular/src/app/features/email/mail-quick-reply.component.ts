@@ -108,8 +108,9 @@ export interface QuickReplyDiscarded {
     `,
     styles: [`
         :host { display: block; flex: 0 0 auto; }
+        /* The pane's own side padding, so the box and its rule span the pane from edge to edge. */
         .mqr {
-            display: flex; flex-direction: column; gap: 8px; padding: 10px 0 12px;
+            display: flex; flex-direction: column; gap: 8px; padding: 10px var(--mqr-inset, 0px) 12px;
             border-top: 1px solid var(--cms-border); background: var(--cms-surface);
         }
         /* The files row lines up with the field, past the attach button. */
