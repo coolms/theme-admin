@@ -1038,11 +1038,12 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* One pane at a time (a phone, or a grid too narrow for the list and the message): the list; the folders when
-           asked for; a message once one is opened. */
+           asked for; a message once one is opened. The pane shown fills the grid over the width a splitter wrote on it
+           inline (the person's saved width), as the two-pane rule does. */
         .mbx__body--one .mbx__rail, .mbx__body--one .mbx__list, .mbx__body--one .mbx__detail, .mbx__body--one > cms-pane-splitter { display: none; }
-        .mbx__body--one.mbx__body--folders .mbx__rail { display: flex; width: 100%; flex: 1 1 auto; }
+        .mbx__body--one.mbx__body--folders .mbx__rail { display: flex; width: 100% !important; flex: 1 1 auto !important; }
         .mbx__body--one:not(.mbx__body--folders):not(.mbx__body--reading) .mbx__list {
-            display: flex; width: 100%; flex: 1 1 auto; border-right: 0;
+            display: flex; width: 100% !important; flex: 1 1 auto !important; border-right: 0;
         }
         .mbx__body--one.mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
         .mbx__body--one .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
