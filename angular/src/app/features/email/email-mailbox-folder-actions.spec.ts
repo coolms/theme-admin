@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, type Observable, of, throwError } from 'rxjs';
+import { NEVER, type Observable, Subject, of, throwError } from 'rxjs';
 import { NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
@@ -23,7 +23,7 @@ import {
     type EmailFolderTreeDto, type EmailFolderTreeNodeDto, type EmailMailboxDto, type FolderChangeDto, type FolderJobDto,
 } from './email.types';
 import { type FolderNameDialogData } from './folder-name-dialog.component';
-import { type MailFolderJobEvent } from './mail-folder-actions';
+import { type MailFolderJobEvent, jobFailureText } from './mail-folder-actions';
 import { POLL_FIRST_MS } from './mail-folder-jobs';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
@@ -129,7 +129,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
                 { provide: DraftStoreService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: {} },
-                { provide: EmailLiveEventsService, useValue: { watch: () => NEVER, connected: () => realtime } },
+                { provide: EmailLiveEventsService, useValue: { watch: () => NEVER, connected: () => realtime, reconnects: () => NEVER } },
                 { provide: NaviGraphService, useValue: { isVisible } },
                 {
                     provide: ContextMenuService,
@@ -247,6 +247,33 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         tick(POLL_FIRST_MS * 100);
         expect(jobReads.length).withContext('nothing read after the end').toBe(2);
     }));
+
+    it('done heard before the POST answers: the row is not busy, and nothing is said', () => {
+        const answer = new Subject<FolderJobDto>();
+        markAnswer = () => answer;
+        const page = build();
+        page.onFolderAction('mark-read', 'INBOX');
+        hear(page, { outcome: 'done', count: 2 });
+        answer.next(running());
+
+        expect(busyOf(page, 'INBOX')).toBeNull();
+        expect(page.folderJobs.running().size).toBe(0);
+        expect(shown).toEqual([]);
+        expect(errors).toEqual([]);
+    });
+
+    it('failed heard before the POST answers: the row is not busy, and its reason is said', () => {
+        const answer = new Subject<FolderJobDto>();
+        markAnswer = () => answer;
+        const page = build();
+        page.onFolderAction('mark-read', 'INBOX');
+        hear(page, { outcome: 'failed', reason: 'server-failed' });
+        expect(shown).withContext('not said while it is not known as this page\'s').toEqual([]);
+        answer.next(running());
+
+        expect(busyOf(page, 'INBOX')).toBeNull();
+        expect(shown.map(t => t.message)).toEqual([jobFailureText({ action: 'mark-read', reason: 'server-failed' }, 'Inbox')]);
+    });
 
     it('a repeated click while it runs asks nothing more: the one job stays followed', () => {
         const page = build();

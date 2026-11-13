@@ -1520,6 +1520,7 @@ export class EmailMailboxPageComponent implements OnInit {
         start: (mailboxId, folder) => this.email.markFolderRead(mailboxId, folder),
         read: (mailboxId, jobId) => this.email.folderJob(mailboxId, jobId),
         realtime: () => this.emailLive.connected(),
+        reconnects: () => this.emailLive.reconnects(),
         ended: (job, mine) => this.folderJobEnded(job, mine),
         lost: job => this.foldersChangedIn(job.mailboxId),
         refused: (err, mailboxId, folder) => this.markReadRefused(err, mailboxId, folder),

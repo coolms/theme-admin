@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { discardPeriodicTasks, fakeAsync, flush, tick } from '@angular/core/testing';
-import { type Observable, of, throwError } from 'rxjs';
+import { type Observable, Subject, of, throwError } from 'rxjs';
 
 import { type FolderJobDto } from './email.types';
 import { type MailFolderJobEvent } from './mail-folder-actions';
@@ -24,6 +24,7 @@ describe('MailFolderJobs', () => {
     let lost: FolderJobDto[];
     let refused: unknown[];
     let startAnswer: () => Observable<FolderJobDto>;
+    let reconnects: Subject<void>;
 
     function jobs(): MailFolderJobs {
         started = [];
@@ -31,6 +32,7 @@ describe('MailFolderJobs', () => {
         ended = [];
         lost = [];
         refused = [];
+        reconnects = new Subject<void>();
         return new MailFolderJobs({
             start: (mailboxId, folder) => {
                 started.push([mailboxId, folder]);
@@ -41,6 +43,7 @@ describe('MailFolderJobs', () => {
                 return (readAnswers.shift() ?? ((): Observable<FolderJobDto> => of(job())))();
             },
             realtime: () => realtime,
+            reconnects: () => reconnects,
             ended: (j, mine) => ended.push([j, mine]),
             lost: j => lost.push(j),
             refused: err => refused.push(err),
@@ -115,17 +118,81 @@ describe('MailFolderJobs', () => {
         expect(reads.length).withContext('nothing read after the end').toBe(3);
     }));
 
-    it('with realtime up, nothing is read; the wait never passes its longest', fakeAsync(() => {
+    it('with realtime up, the job is read only every POLL_MAX_MS; once realtime is down, at each wait', fakeAsync(() => {
         const j = jobs();
         j.markRead('mb1', 'Projects');
-        tick(POLL_MAX_MS * 3);
-        expect(reads).toEqual([]);
+        tick(POLL_MAX_MS - 1);
+        expect(reads).withContext('realtime up: no read before the longest wait').toEqual([]);
+        tick(1);
+        expect(reads.length).toBe(1);
 
         realtime = false;
         tick(POLL_MAX_MS);
-        expect(reads.length).withContext('read within the longest wait once realtime is down').toBe(1);
+        expect(reads.length).withContext('read within the longest wait once realtime is down').toBe(2);
         j.stop();
         discardPeriodicTasks();
+    }));
+
+    it('realtime connected but the end event lost: the slow read ends the job', fakeAsync(() => {
+        readAnswers = [() => of(job({ outcome: 'done', count: 4 }))];
+        const j = jobs();
+        j.markRead('mb1', 'Projects');
+        tick(POLL_MAX_MS);
+
+        expect(reads).toEqual(['j1']);
+        expect(j.busyIn('mb1', 'Projects')).toBeNull();
+        expect(ended.map(([e, mine]) => [e.outcome, mine])).toEqual([['done', true]]);
+        tick(POLL_MAX_MS * 4);
+        expect(reads.length).toBe(1);
+    }));
+
+    it('a reconnect reads each followed job once', fakeAsync(() => {
+        const j = jobs();
+        j.markRead('mb1', 'Projects');
+        tick(POLL_FIRST_MS);
+        expect(reads).toEqual([]);
+
+        reconnects.next();
+        expect(reads).withContext('one read on the reconnect').toEqual(['j1']);
+        expect(j.busyIn('mb1', 'Projects')).withContext('still running').toBe('mark-read');
+
+        readAnswers = [() => of(job({ outcome: 'failed', reason: 'server-failed' }))];
+        reconnects.next();
+        expect(reads.length).toBe(2);
+        expect(j.busyIn('mb1', 'Projects')).toBeNull();
+        expect(ended[0][0].reason).toBe('server-failed');
+        reconnects.next();
+        expect(reads.length).withContext('nothing followed: nothing read').toBe(2);
+        flush();
+    }));
+
+    it('an end heard before the 202 answers ends the job at once: done, not busy', fakeAsync(() => {
+        const answer = new Subject<FolderJobDto>();
+        startAnswer = () => answer;
+        const j = jobs();
+        j.markRead('mb1', 'Projects');
+        j.heard(heard({ outcome: 'done', count: 2 }));
+        answer.next(job());
+
+        expect(j.busyIn('mb1', 'Projects')).toBeNull();
+        expect(ended.map(([e, mine]) => [e.outcome, mine])).toEqual([['done', false], ['done', true]]);
+        tick(POLL_MAX_MS * 4);
+        expect(reads).withContext('nothing followed').toEqual([]);
+    }));
+
+    it('a failure heard before the 202 answers ends the job as this page\'s, with its reason', fakeAsync(() => {
+        const answer = new Subject<FolderJobDto>();
+        startAnswer = () => answer;
+        const j = jobs();
+        j.markRead('mb1', 'Projects');
+        j.heard(heard({ outcome: 'failed', reason: 'renumbered' }));
+        answer.next(job());
+
+        expect(j.busyIn('mb1', 'Projects')).toBeNull();
+        expect(ended[1][1]).withContext('mine: its failure is said').toBeTrue();
+        expect(ended[1][0].outcome).toBe('failed');
+        expect(ended[1][0].reason).toBe('renumbered');
+        flush();
     }));
 
     it('a job the server no longer keeps is let go, and the folders are read again', fakeAsync(() => {
