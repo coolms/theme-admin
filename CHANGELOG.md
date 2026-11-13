@@ -8,6 +8,20 @@ major number means here.
 
 ## Unreleased
 
+- **A compact compose window and quick reply.** Docked, the compose window is 600 px wide (560 to 640) and at most
+  about 70% of the viewport tall, its header buttons at least 36 px; where one pane shows at a time it is full screen
+  with Minimize and Close only, at least 44 px. From, To, Cc, Bcc and Subject are compact lines with their labels in
+  one column, still real labelled fields (From read only on an answer); Cc and Bcc are links at the end of the To line,
+  each opening its own line, and the editor takes the remaining height. The quote is collapsed behind a ••• button
+  (aria-expanded) with Remove quote beside it, and opens in a framed box at most about 320 px tall, in the same sandboxed
+  frame. The foot is Send, Attach files, the saved state, More options (Plain text, a checkable item) and Discard draft.
+  Plain text shows the formatted body as text; switching back without an edit restores the formatting exactly, and
+  after the plain text was edited it asks first, since the text then becomes paragraphs and the formatting is lost.
+  The quick reply is one line: attach, "Reply to <name>…", Expand and Send, which waits for text; its files and size
+  meter show above it once there are files, and it spans the message pane from edge to edge. While its draft is in a compose window the line says so with Show it;
+  after that window is closed with the draft kept, it shows the draft's first words with Open and Discard (the same
+  10 s Undo), and never puts the text back in the box.
+
 - **The mail toolbar states whether Archive is blocked.** The facts the message toolbar, a row's menu and the
   checked-rows bar read carry `_archive` beside `_anyCanArchive` (kept as it was): `can` when the server says the
   message can be archived; `blocked` when it cannot, the mailbox list says why (`archiveBlockedBy`, such as

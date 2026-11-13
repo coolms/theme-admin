@@ -3,14 +3,17 @@ import {
     signal, untracked, viewChild, Injector,
 } from '@angular/core';
 import { ToastService } from '@coolms/ui-angular';
+import { ComposeAttachButtonComponent } from './compose-attach-button.component';
 import { ComposeAttachmentsComponent } from './compose-attachments.component';
 import {
     expiredAttachmentId, restoredAttachments, storedAttachments, tooLargeSend, type ComposeAttachment,
 } from './compose-attachments';
-import { draftFiles, replyDraftOf, writtenInWindow } from './compose-draft';
+import { draftFiles, draftLine, draftWriteOf, replyDraftOf, writtenInWindow } from './compose-draft';
 import { addressesOf, quotedMessageUnavailable } from './compose-prefill';
 import { EmailService } from './email.service';
-import { type EmailComposeDto, type EmailDraftDto, type EmailDraftWrite, type OutgoingEmailRequest } from './email.types';
+import {
+    type EmailComposeDto, type EmailDraftAnswers, type EmailDraftDto, type EmailDraftWrite, type OutgoingEmailRequest,
+} from './email.types';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { sendFailureText } from './send-via';
 import { DRAFT_GONE_KEPT, ServerDraft } from './server-draft';
@@ -26,28 +29,46 @@ export interface QuickReplyHandOff {
     readonly mode: 'reply' | 'reply_all';
 }
 
+/** A reply draft the line's Discard deleted: what the notice's Undo makes it again from. */
+export interface QuickReplyDiscarded {
+    readonly mailboxId: string;
+    readonly answers: EmailDraftAnswers | null;
+    readonly last: EmailDraftWrite;
+}
+
 /**
- * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's scroll. One line,
- * "Write a reply...", that grows with the text to about six lines and then scrolls inside. It goes to the sender (the
+ * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's scroll. One line:
+ * attach, the field "Reply to <name>...", Expand and Send (Send waits for text); the field grows with the text to about
+ * six lines and then scrolls inside, and the files and the size meter show above it once there are files. It goes to the sender (the
  * Reply-To when there is one) with Re:, as the server's reply prefill gives them; the server appends the quote, which
  * is not shown. Plain text, attachments with the size meter, Send and Expand. Ctrl or Cmd+Enter sends; Enter is a new
  * line. The text is that message's reply draft on the server, the one the compose window also writes, found again by
  * the message (the drafts lookup) and saved after a pause; Expand (or Reply while the box holds text) hands that one
- * draft to the window: the box then says the reply is open there, with a way to bring the window up.
+ * draft to the window: the box then says the reply is open there, with a way to bring the window up. Once a window has
+ * held it the draft never comes back into the box: closed with the draft kept, the line shows the draft's first words
+ * with Open and Discard.
  */
 @Component({
     selector: 'app-mail-quick-reply',
     standalone: true,
-    imports: [ComposeAttachmentsComponent],
+    imports: [ComposeAttachmentsComponent, ComposeAttachButtonComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="mqr" data-test="quick-reply" role="group" aria-label="Quick reply">
-            @if (inWindow()) {
-                <p class="mqr__handed" role="status" data-test="quick-reply-in-window">
-                    <i class="bi bi-window-stack" aria-hidden="true"></i>
-                    <span>The reply is open in the compose window.</span>
-                    <button type="button" class="mbx__btn mbx__btn--sm" data-test="quick-reply-show-window"
+            @if (windowHolds()) {
+                <p class="mqr__line" role="status" data-test="quick-reply-in-window">
+                    <span class="mqr__line-text">Your reply is open in the compose window.</span>
+                    <button type="button" class="cms-btn mqr__line-btn" data-test="quick-reply-show-window"
                             (click)="showWindowNow()">Show it</button>
+                </p>
+            } @else if (storedInWindow()) {
+                <!-- The reply went to the compose window, which was closed with the draft kept: never back in the box. -->
+                <p class="mqr__line" role="status" data-test="quick-reply-draft">
+                    <span class="mqr__line-text" data-test="quick-reply-draft-text" [title]="storedText()">{{ draftLine() }}</span>
+                    <button type="button" class="cms-btn mqr__line-btn" data-test="quick-reply-open-draft"
+                            (click)="showWindowNow()">Open</button>
+                    <button type="button" class="cms-btn cms-btn-ghost mqr__line-btn" data-test="quick-reply-discard-draft"
+                            (click)="discardStored()">Discard</button>
                 </p>
             } @else if (prefill()?.from?.choices?.length === 0) {
                 <!-- A reader who may not send from this mailbox has no quick reply. -->
@@ -59,48 +80,70 @@ export interface QuickReplyHandOff {
                 } @else if (prefillFailed()) {
                     <p class="mqr__note" role="alert" data-test="quick-reply-prefill-failed">
                         The reply could not be prepared.
-                        <button type="button" class="mbx__btn mbx__btn--sm" (click)="readPrefill()">Try again</button>
+                        <button type="button" class="cms-btn cms-btn-sm" (click)="readPrefill()">Try again</button>
                     </p>
                 }
-                <div class="mqr__row">
-                    <textarea #box class="mqr__box" rows="1" data-test="quick-reply-box"
-                              placeholder="Write a reply…" [attr.aria-label]="label()"
-                              [value]="text()" (input)="onInput(box.value)"
-                              (keydown)="onKeydown($event)"></textarea>
-                    <button type="button" class="mbx__icon-btn mqr__expand" data-test="quick-reply-expand"
-                            title="Expand" aria-label="Expand to the compose window" (click)="expandNow()">
-                        <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
-                    </button>
-                    <button type="button" class="mbx__btn mbx__btn--primary mbx__btn--sm" data-test="quick-reply-send"
-                            [disabled]="!canSend()" (click)="send()">
-                        {{ sending() ? 'Sending…' : 'Send' }}
-                    </button>
-                </div>
-                <app-compose-attachments class="mqr__files" [mailboxId]="mailboxId()" [limitBytes]="limitBytes()"
+                <app-compose-attachments #files class="mqr__files" [button]="false" [mailboxId]="mailboxId()"
+                                         [limitBytes]="limitBytes()"
                                          [bodyBytes]="bodyBytes()" [sendRefused]="sendRefused()"
                                          [(attachments)]="attachments" (changed)="scheduleSave()" />
+                <div class="mqr__row">
+                    <app-compose-attach-button [target]="files" />
+                    <textarea #box class="mqr__box" rows="1" data-test="quick-reply-box"
+                              [placeholder]="placeholder()" [attr.aria-label]="label()"
+                              [value]="text()" (input)="onInput(box.value)"
+                              (keydown)="onKeydown($event)"></textarea>
+                    <button type="button" class="cms-btn cms-btn-ghost mqr__icon" data-test="quick-reply-expand"
+                            title="Expand to the full form" aria-label="Expand to the full form" (click)="expandNow()">
+                        <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="cms-btn cms-btn-primary mqr__send" data-test="quick-reply-send"
+                            title="Send (Ctrl+Enter)" aria-label="Send" [disabled]="!canSend()" (click)="send()">
+                        <i class="bi bi-send mqr__send-icon" aria-hidden="true"></i>
+                        <span class="mqr__send-text">{{ sending() ? 'Sending…' : 'Send' }}</span>
+                    </button>
+                </div>
             }
         </div>
     `,
     styles: [`
         :host { display: block; flex: 0 0 auto; }
+        /* The pane's own side padding, so the box and its rule span the pane from edge to edge. */
         .mqr {
-            display: flex; flex-direction: column; gap: 6px; padding: 10px 0 12px;
+            display: flex; flex-direction: column; gap: 8px; padding: 10px var(--mqr-inset, 0px) 12px;
             border-top: 1px solid var(--cms-border); background: var(--cms-surface);
         }
-        .mqr__row { display: flex; align-items: flex-end; gap: 6px; }
+        /* The files row lines up with the field, past the attach button. */
+        .mqr__files { padding-left: 44px; }
+        .mqr__row { display: flex; align-items: flex-end; gap: 8px; }
         .mqr__box {
-            flex: 1 1 auto; min-width: 0; resize: none; box-sizing: border-box;
-            font: inherit; line-height: 1.4; padding: 7px 10px; overflow-y: hidden;
-            border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md);
-            background: var(--cms-surface); color: var(--cms-text);
+            flex: 1 1 auto; min-width: 0; resize: none; box-sizing: border-box; min-height: 36px;
+            font: inherit; line-height: 1.4; padding: 7px 14px; overflow-y: hidden;
+            border: 1px solid var(--cms-border-control); border-radius: 18px;
+            background: var(--cms-input-bg); color: var(--cms-text);
         }
         .mqr__box:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 1px; }
-        .mqr__handed, .mqr__note {
-            display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: .8125rem;
+        .mqr__icon { justify-content: center; width: 36px; height: 36px; padding: 0; flex: 0 0 auto; }
+        .mqr__icon .bi { font-size: 1.05rem; }
+        .mqr__send { height: 36px; padding: 0 16px; border-radius: var(--cms-radius-pill); font-weight: 600; flex: 0 0 auto; }
+        .mqr__send-icon { display: none; }
+        .mqr__line, .mqr__note {
+            display: flex; align-items: center; gap: 10px; margin: 0; font-size: .8125rem;
             color: var(--cms-text-secondary);
         }
-        .mqr__note { color: var(--cms-warning-text); }
+        .mqr__line { min-height: 36px; color: var(--cms-text); }
+        .mqr__line-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mqr__line-btn { flex: 0 0 auto; }
+        .mqr__note { flex-wrap: wrap; color: var(--cms-warning-text); }
+        @media (max-width: 599.98px) {
+            .mqr__files { padding-left: 0; }
+            /* A phone keeps the field wide: Send is its icon, named for assistive tech by its label. */
+            .mqr__row { gap: 4px; }
+            .mqr__send { justify-content: center; padding: 0; }
+            .mqr__send-icon { display: inline-block; font-size: 1.05rem; }
+            .mqr__send-text { display: none; }
+            .mqr__icon, .mqr__send, .mqr__line-btn { min-width: var(--cms-touch-target-min); min-height: var(--cms-touch-target-min); }
+        }
     `],
 })
 export class MailQuickReplyComponent {
@@ -110,8 +153,12 @@ export class MailQuickReplyComponent {
     readonly label = input('Write a reply');
     /** The mailbox's size limit, for the meter. */
     readonly limitBytes = input<number | null>(null);
+    /** Whom the reply goes to, as the field's placeholder names them: the sender's name, else the address. */
+    readonly sender = input('');
     /** The compose window holds this message's reply now. */
     readonly windowHolds = input(false);
+    /** The ids of the reply drafts a compose window has held: such a draft never comes back into the box. */
+    readonly windowDrafts = input<ReadonlySet<string>>(new Set());
 
     /** Expand, or Reply while the box holds text: the page opens the window on this draft. */
     readonly expand = output<QuickReplyHandOff>();
@@ -119,6 +166,8 @@ export class MailQuickReplyComponent {
     readonly showWindow = output<QuickReplyHandOff>();
     /** A reply went. */
     readonly sent = output<void>();
+    /** The draft line's Discard deleted the reply draft: the page offers the Undo. */
+    readonly discarded = output<QuickReplyDiscarded>();
 
     readonly text = signal('');
     readonly attachments = signal<ComposeAttachment[]>([]);
@@ -127,12 +176,22 @@ export class MailQuickReplyComponent {
     readonly sending = signal(false);
     readonly quoteRefused = signal(false);
     readonly sendRefused = signal<{ limitBytes: number; sizeBytes: number } | null>(null);
-    /** The reply draft is one the compose window writes (formatted, to all, or without the quote). */
-    private readonly storedInWindow = signal(false);
+    /**
+     * The reply draft is one written in the compose window (a window held it, or it is formatted, to all, with Cc or
+     * Bcc, or without the quote): the line shows its start, with Open and Discard, never its text in the box.
+     */
+    readonly storedInWindow = signal(false);
+    /** The text of the draft the line shows. */
+    readonly storedText = signal('');
+    readonly draftLine = computed(() => draftLine(this.storedText()));
     readonly inWindow = computed(() => this.windowHolds() || this.storedInWindow());
+    readonly placeholder = computed(() => {
+        const who = this.sender().trim();
+        return who !== '' ? `Reply to ${who}…` : 'Reply…';
+    });
     readonly bodyBytes = computed(() => new TextEncoder().encode(this.text()).length);
-    readonly canSend = computed(() => !this.sending() && this.prefill() !== null
-        && (this.text().trim() !== '' || storedAttachments(this.attachments()).length > 0)
+    /** Send waits for text, and for every file to be attached. */
+    readonly canSend = computed(() => !this.sending() && this.prefill() !== null && this.text().trim() !== ''
         && !this.attachments().some(a => a.status === 'uploading' || a.status === 'attaching' || a.status === 'refused'));
 
     private readonly email = inject(EmailService);
@@ -160,6 +219,16 @@ export class MailQuickReplyComponent {
             const messageId = this.messageId();
             const windowHolds = this.windowHolds();
             untracked(() => this.load(mailboxId, messageId, windowHolds));
+        });
+        // A window let go of the draft the box shows (its id known only once its save landed): the box gives way.
+        effect(() => {
+            const held = this.windowDrafts();
+            untracked(() => {
+                const stored = this.stored;
+                if (stored !== null && held.has(stored.id) && !this.storedInWindow() && !this.windowHolds()) {
+                    this.show(stored);
+                }
+            });
         });
     }
 
@@ -237,6 +306,31 @@ export class MailQuickReplyComponent {
         this.showWindow.emit({
             draftId: draft?.id ?? null,
             mode: draft?.answers?.mode === 'reply_all' ? 'reply_all' : 'reply',
+        });
+    }
+
+    /**
+     * The draft line's Discard: the reply draft is deleted at once (a save on its way lands first) and the box is the
+     * empty line again; the page's notice offers Undo for 10 seconds.
+     */
+    discardStored(): void {
+        const draft = this.draft;
+        const stored = this.stored;
+        const shown = this.shown;
+        if (draft === null || stored === null || shown === null) {
+            return;
+        }
+        const last = draftWriteOf(stored);
+        this.draft = this.newDraft(shown.mailboxId, shown.messageId);
+        this.stored = null;
+        this.storedInWindow.set(false);
+        this.storedText.set('');
+        this.text.set('');
+        this.attachments.set([]);
+        draft.discard(deleted => {
+            if (deleted) {
+                this.discarded.emit({ mailboxId: draft.mailboxId, answers: draft.answers, last });
+            }
         });
     }
 
@@ -376,6 +470,7 @@ export class MailQuickReplyComponent {
         this.text.set('');
         this.attachments.set([]);
         this.storedInWindow.set(false);
+        this.storedText.set('');
         if (!windowHolds) {
             // The message's reply draft, found by the message: opened here, or given back by the window.
             this.lookUp(mailboxId, messageId);
@@ -421,6 +516,7 @@ export class MailQuickReplyComponent {
                     }
                     this.stored = null;
                     this.storedInWindow.set(false);
+                    this.storedText.set('');
                     this.text.set('');
                     this.attachments.set([]);
                     this.fit();
@@ -434,8 +530,9 @@ export class MailQuickReplyComponent {
     /** The reply draft as the server has it: in the box, or, when it is the window's, said to be there. */
     private show(draft: EmailDraftDto): void {
         this.stored = draft;
-        const window = writtenInWindow(draft);
+        const window = writtenInWindow(draft) || this.windowDrafts().has(draft.id);
         this.storedInWindow.set(window);
+        this.storedText.set(window ? draft.text : '');
         this.text.set(window ? '' : draft.text);
         this.attachments.set(window ? [] : restoredAttachments(draftFiles(draft)));
         afterNextRender(() => this.fit(), { injector: this.injector });

@@ -39,7 +39,9 @@ import { MailPanesDirective } from './mail-panes.directive';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
+import { ComposeAttachButtonComponent } from './compose-attach-button.component';
 import { ComposeAttachmentsComponent } from './compose-attachments.component';
+import { InnerLabelDirective } from './inner-label.directive';
 import {
     expiredAttachmentId,
     restoredAttachments,
@@ -48,8 +50,8 @@ import {
     type ComposeAttachment,
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
-import { MailQuickReplyComponent, type QuickReplyHandOff } from './mail-quick-reply.component';
-import { draftFiles, isReplyMode, replyDraftOf } from './compose-draft';
+import { MailQuickReplyComponent, type QuickReplyDiscarded, type QuickReplyHandOff } from './mail-quick-reply.component';
+import { PLAIN_TEXT_BACK, draftFiles, isReplyMode, paragraphsOf, replyDraftOf } from './compose-draft';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { DRAFT_GONE_KEPT, ServerDraft } from './server-draft';
 import {
@@ -190,7 +192,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
-        MailQuickReplyComponent, CdkTrapFocus,
+        MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
         NgTemplateOutlet,
         ScrollingModule,
     ],
@@ -571,9 +573,10 @@ type PhonePane = 'folders' | 'message';
                         <!-- The quick reply: pinned at the pane's bottom, outside the message's one scroll region. -->
                         @if (quickReplyFor(); as quick) {
                             <app-mail-quick-reply [mailboxId]="quick.mailboxId" [messageId]="quick.messageId"
-                                                  [label]="quick.label" [limitBytes]="composeLimit()"
-                                                  [windowHolds]="replyWindowHolds()"
+                                                  [label]="quick.label" [sender]="quick.sender" [limitBytes]="composeLimit()"
+                                                  [windowHolds]="replyWindowHolds()" [windowDrafts]="windowReplyDrafts()"
                                                   (expand)="handReplyToWindow($event)" (showWindow)="showReplyWindow($event)"
+                                                  (discarded)="quickReplyDiscarded($event)"
                                                   (sent)="loadFolders()" />
                         }
                     </section>
@@ -581,9 +584,11 @@ type PhonePane = 'folders' | 'message';
             }
 
             <!-- The compose windows: the one open at the right, minimized ones as bars to its left. Docked a window is
-                 not modal; maximized it is centred over a dimmed backdrop, modal, and keeps the focus. -->
+                 not modal; maximized it is centred over a dimmed backdrop, modal, and keeps the focus. Where one pane
+                 shows at a time it is full screen, with Minimize and Close only. -->
             @if (composeOpen() || parkedWindows().length > 0) {
-                <div class="mbx__dock" data-testid="compose-dock">
+                <div class="mbx__dock" data-testid="compose-dock"
+                     [class.mbx__dock--full]="onePane() && composeOpen() && !composeMinimized()">
                     @if (composeOpen() && composeMaximized() && !composeMinimized()) {
                         <div class="mbx__compose-backdrop" data-testid="compose-backdrop" tabindex="-1"
                              (click)="minimizeCompose()" (keydown.escape)="minimizeCompose()"></div>
@@ -599,6 +604,7 @@ type PhonePane = 'folders' | 'message';
                              aria-labelledby="mbx-compose-title"
                              [attr.aria-modal]="composeModal() ? 'true' : 'false'"
                              [class.mbx__compose--min]="composeMinimized()" [class.mbx__compose--max]="composeModal()"
+                             [class.mbx__compose--full]="onePane()"
                              [cdkTrapFocus]="composeModal()"
                              (keydown)="onComposeKeydown($event)" (focusin)="touchWindow()">
                             <div class="mbx__compose-head">
@@ -611,19 +617,21 @@ type PhonePane = 'folders' | 'message';
                                 </button>
                                 <div class="mbx__compose-head-actions">
                                     <button type="button" class="mbx__compose-close" data-testid="compose-minimize" (click)="toggleMinimize()"
-                                            [attr.aria-label]="composeMinimized() ? 'Restore' : 'Minimize'">
-                                        <i class="bi" [class.bi-dash-lg]="!composeMinimized()" [class.bi-chevron-up]="composeMinimized()"></i>
+                                            [attr.aria-label]="composeMinimized() ? 'Restore' : 'Minimize'"
+                                            [title]="composeMinimized() ? 'Restore' : 'Minimize'">
+                                        <i class="bi" aria-hidden="true" [class.bi-dash-lg]="!composeMinimized()" [class.bi-chevron-up]="composeMinimized()"></i>
                                     </button>
-                                    @if (!composeMinimized()) {
+                                    @if (!composeMinimized() && !onePane()) {
                                         <button type="button" class="mbx__compose-close mbx__compose-maximize" data-testid="compose-maximize"
-                                                (click)="toggleMaximize()" [attr.aria-label]="composeMaximized() ? 'Restore' : 'Maximize'">
-                                            <i class="bi" [class.bi-arrows-angle-expand]="!composeMaximized()"
+                                                (click)="toggleMaximize()" [attr.aria-label]="composeMaximized() ? 'Restore' : 'Maximize'"
+                                                [title]="composeMaximized() ? 'Restore' : 'Maximize'">
+                                            <i class="bi" aria-hidden="true" [class.bi-arrows-angle-expand]="!composeMaximized()"
                                                [class.bi-arrows-angle-contract]="composeMaximized()"></i>
                                         </button>
                                     }
                                     <button type="button" class="mbx__compose-close" data-testid="compose-close" (click)="closeCompose()"
-                                            aria-label="Close">
-                                        <i class="bi bi-x-lg"></i>
+                                            aria-label="Close" title="Close, keeping the draft">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             </div>
@@ -633,7 +641,7 @@ type PhonePane = 'folders' | 'message';
                 </div>
             }
 
-            <!-- The composer's fields and its foot: in the dock, and in the quick reply. -->
+            <!-- The composer's fields and its foot. The header fields are compact lines, their labels in one column. -->
             <ng-template #composeForm>
                 <div class="mbx__compose-body">
                     @if (composePrefill(); as prefill) {
@@ -647,7 +655,7 @@ type PhonePane = 'folders' | 'message';
                                 <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                                 <span>{{ prefill.sentence }}</span>
                                 @if (prefill.retry) {
-                                    <button type="button" class="mbx__btn mbx__btn--sm" (click)="retryPrefill()">Retry</button>
+                                    <button type="button" class="cms-btn cms-btn-sm" (click)="retryPrefill()">Retry</button>
                                 }
                             </div>
                         } @else if (prefill.answer.from.choices.length === 0) {
@@ -655,139 +663,178 @@ type PhonePane = 'folders' | 'message';
                         }
                     }
                     @if (composeFieldsShown()) {
-                    @if (composeFromChoices().length > 0) {
-                        <label class="mbx__field">
-                            <span>From</span>
-                            <select data-testid="compose-from" [ngModel]="composeFromValue()"
-                                    (ngModelChange)="composeFromChosen.set($event); onComposeChange()">
-                                @for (address of composeFromChoices(); track address) {
-                                    <option [value]="address">{{ address }}</option>
+                        <div class="mbx__lines" data-testid="compose-lines">
+                            @if (composeFromChoices().length > 0) {
+                                <label class="mbx__line">
+                                    <span class="mbx__line-label">From</span>
+                                    @if (composeMode() === 'compose') {
+                                        <select class="mbx__line-field mbx__line-select" data-testid="compose-from" [ngModel]="composeFromValue()"
+                                                (ngModelChange)="composeFromChosen.set($event); onComposeChange()">
+                                            @for (address of composeFromChoices(); track address) {
+                                                <option [value]="address">{{ address }}</option>
+                                            }
+                                        </select>
+                                    } @else {
+                                        <!-- An answer goes from the mailbox of the message it answers: shown, not chosen. -->
+                                        <input type="text" readonly class="mbx__line-field mbx__line-input" data-testid="compose-from"
+                                               [value]="composeFromValue() ?? ''" />
+                                    }
+                                </label>
+                            }
+                            <div class="mbx__line">
+                                <span class="mbx__line-label" id="mbx-compose-to-label">To</span>
+                                <app-tag-input class="mbx__line-field mbx__line-tags" data-testid="compose-to" appInnerLabel="mbx-compose-to-label"
+                                                   [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
+                                                   [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
+                                                   placeholder="Add people" />
+                                @if (!composeCcShown() || !composeBccShown()) {
+                                    <span class="mbx__line-links">
+                                        @if (!composeCcShown()) {
+                                            <button type="button" class="cms-btn cms-btn-link mbx__line-link" data-testid="compose-add-cc"
+                                                    aria-label="Add Cc" (click)="askLine('cc')">Cc</button>
+                                        }
+                                        @if (!composeBccShown()) {
+                                            <button type="button" class="cms-btn cms-btn-link mbx__line-link" data-testid="compose-add-bcc"
+                                                    aria-label="Add Bcc" (click)="askLine('bcc')">Bcc</button>
+                                        }
+                                    </span>
                                 }
-                            </select>
-                        </label>
-                    }
-                    <div class="mbx__field">
-                        <div class="mbx__field-head">
-                            <span>To</span>
-                            @if (!composeShowCcBcc()) {
-                                <button type="button" class="mbx__btn mbx__btn--sm" (click)="composeShowCcBcc.set(true)">Cc/Bcc</button>
+                            </div>
+                            @if (composeCcShown()) {
+                                <div class="mbx__line">
+                                    <span class="mbx__line-label" id="mbx-compose-cc-label">Cc</span>
+                                    <app-tag-input class="mbx__line-field mbx__line-tags" data-testid="compose-cc" appInnerLabel="mbx-compose-cc-label"
+                                                   [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
+                                                   [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
+                                                   placeholder="Add people" />
+                                </div>
+                            }
+                            @if (composeBccShown()) {
+                                <div class="mbx__line">
+                                    <span class="mbx__line-label" id="mbx-compose-bcc-label">Bcc</span>
+                                    <app-tag-input class="mbx__line-field mbx__line-tags" data-testid="compose-bcc" appInnerLabel="mbx-compose-bcc-label"
+                                                   [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
+                                                   [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
+                                                   placeholder="Add people" />
+                                </div>
+                            }
+                            <label class="mbx__line">
+                                <span class="mbx__line-label">Subject</span>
+                                <input type="text" class="mbx__line-field mbx__line-input" data-testid="compose-subject"
+                                       [(ngModel)]="composeSubject" (ngModelChange)="onComposeChange()" />
+                            </label>
+                        </div>
+                        <div class="mbx__compose-editor">
+                            @if (composeRich()) {
+                                <coolms-editor class="mbx__editor"
+                                               [profile]="editorProfile"
+                                               [content]="composeHtml()"
+                                               [mountKey]="composeKey()"
+                                               (contentChange)="composeHtml.set($event); onComposeChange()" />
+                            } @else {
+                                <textarea class="mbx__compose-text" aria-label="Message" [(ngModel)]="composeText"
+                                          (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
                             }
                         </div>
-                        <app-tag-input [(ngModel)]="composeTo" (ngModelChange)="onComposeChange()"
-                                       [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
-                                       placeholder="Start typing a name or email…" />
-                    </div>
-                    @if (composeShowCcBcc()) {
-                        <label class="mbx__field">
-                            <span>Cc</span>
-                            <app-tag-input [(ngModel)]="composeCc" (ngModelChange)="onComposeChange()"
-                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
-                                           placeholder="Cc…" />
-                        </label>
-                        <label class="mbx__field">
-                            <span>Bcc</span>
-                            <app-tag-input [(ngModel)]="composeBcc" (ngModelChange)="onComposeChange()"
-                                           [options]="recipientOptions()" (queryChange)="onRecipientQuery($event)"
-                                           placeholder="Bcc…" />
-                        </label>
-                    }
-                    <label class="mbx__field">
-                        <span>Subject</span>
-                        <input type="text" [(ngModel)]="composeSubject" (ngModelChange)="onComposeChange()" placeholder="Subject" />
-                    </label>
-                    <div class="mbx__field">
-                        <div class="mbx__field-head">
-                            <span>Message</span>
-                            <button type="button" class="mbx__btn mbx__btn--sm" (click)="toggleComposeRich()"
-                                    [title]="composeRich() ? 'Switch to a plain-text body' : 'Switch to a rich-text body'">
-                                <i class="bi" [class.bi-file-text]="composeRich()" [class.bi-type]="!composeRich()"></i>
-                                {{ composeRich() ? 'Plain text' : 'Rich text' }}
-                            </button>
-                        </div>
-                        @if (composeRich()) {
-                            <coolms-editor class="mbx__editor"
-                                           [profile]="editorProfile"
-                                           [content]="composeHtml()"
-                                           [mountKey]="composeKey()"
-                                           (contentChange)="composeHtml.set($event); onComposeChange()" />
-                        } @else {
-                            <textarea rows="8" [(ngModel)]="composeText" (ngModelChange)="onComposeChange()" placeholder="Write your message…"></textarea>
+                        @if (composeUnreadable(); as reason) {
+                            <p class="mbx__compose-note" data-testid="compose-unreadable">{{ reason }}</p>
                         }
-                    </div>
-                    @if (composeUnreadable(); as reason) {
-                        <p class="mbx__compose-note" data-testid="compose-unreadable">{{ reason }}</p>
+                        @if (composeQuoteRefused()) {
+                            <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-quote-refused">
+                                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                <span>{{ quoteRefusedSentence }}</span>
+                                <button type="button" class="cms-btn cms-btn-sm" data-testid="compose-send-without-quote"
+                                        [disabled]="sending()" (click)="sendWithoutQuote()">Send without the quote</button>
+                            </div>
+                        }
+                        <!-- The quote is read-only, below the editor and never in it: the server appends it on send.
+                             Collapsed behind its button until asked for. -->
+                        @if (composeQuoteShown()) {
+                            <div class="mbx__quote-row">
+                                <button type="button" class="mbx__quote-toggle" data-testid="compose-quote-toggle"
+                                        aria-label="Show the quoted message" title="Show the quoted message"
+                                        aria-controls="mbx-compose-quote"
+                                        [attr.aria-expanded]="composeQuoteOpen() ? 'true' : 'false'"
+                                        (click)="composeQuoteOpen.set(!composeQuoteOpen())">•••</button>
+                                <button type="button" class="cms-btn cms-btn-link mbx__quote-remove" data-testid="compose-remove-quote"
+                                        (click)="removeQuote()">Remove quote</button>
+                            </div>
+                            @if (composeQuoteOpen()) {
+                                <figure class="mbx__quote" id="mbx-compose-quote" data-testid="compose-quote-box"
+                                        aria-label="The message you are answering, read only">
+                                    <figcaption class="mbx__quote-head" data-testid="compose-quote-attribution">{{ composeQuoteAttribution() }}</figcaption>
+                                    @if (composeRich() && composeQuoteHtml(); as quoteHtml) {
+                                        <app-message-frame class="mbx__quote-frame" data-testid="compose-quote" [html]="quoteHtml"
+                                                           label="The message quoted below yours" />
+                                    } @else {
+                                        <pre class="mbx__body-text mbx__quote-text" data-testid="compose-quote-text">{{ composeQuoteText() }}</pre>
+                                    }
+                                </figure>
+                            }
+                        }
+                        @if (forwardFilesKept().length > 0) {
+                            <ul class="mbx__fwd-files" data-testid="compose-forward-files" aria-label="Files of the forwarded message">
+                                @for (file of forwardFilesKept(); track file.part) {
+                                    <li class="mbx__fwd-file">
+                                        <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                        <span class="mbx__fwd-file-name">{{ file.name ?? 'Attachment' }}</span>
+                                        @if (file.sizeBytes !== null) {
+                                            <span class="mbx__attachment-size">{{ humanSize(file.sizeBytes) }}</span>
+                                        }
+                                        <button type="button" class="mbx__icon-btn" [attr.aria-label]="'Remove ' + (file.name ?? 'attachment')"
+                                                (click)="removeForwardFile(file.part)">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                        </button>
+                                    </li>
+                                }
+                            </ul>
+                        }
                     }
-                    @if (composeQuoteRefused()) {
-                        <div class="mbx__compose-state mbx__compose-state--failed" role="alert" data-testid="compose-quote-refused">
-                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-                            <span>{{ quoteRefusedSentence }}</span>
-                            <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-send-without-quote"
-                                    [disabled]="sending()" (click)="sendWithoutQuote()">Send without the quote</button>
-                        </div>
+                    <!-- The files and the size meter, once there are files; the foot's attach button adds them. -->
+                    <app-compose-attachments #composeFiles class="mbx__compose-files" [button]="false"
+                                             [mailboxId]="selectedMailboxId() ?? ''"
+                                             [limitBytes]="composeLimit()"
+                                             [bodyBytes]="composeBodyBytes()"
+                                             [sendRefused]="composeSendRefused()"
+                                             [(attachments)]="composeAttachments"
+                                             (changed)="onComposeChange()" />
+                </div>
+                <div class="mbx__compose-foot mbx__compose-foot--bar">
+                    @if (composeMaySend()) {
+                        <button type="button" class="cms-btn cms-btn-primary mbx__compose-send" data-testid="compose-send"
+                                title="Send (Ctrl+Enter)" [disabled]="sending()" (click)="sendCompose()">
+                            {{ sending() ? 'Sending…' : 'Send' }}
+                        </button>
                     }
-                    <!-- The quote is read-only, below the editor and never in it: the server appends it on send. -->
-                    @if (composeQuoteShown()) {
-                        <div class="mbx__quote" data-testid="compose-quote-box">
-                            <div class="mbx__quote-head">
-                                <span>{{ composeMode() === 'forward' ? 'Forwarded message' : 'Quoted message' }}</span>
-                                <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-remove-quote"
-                                        (click)="removeQuote()">
-                                    <i class="bi bi-x-lg" aria-hidden="true"></i> Remove quote
+                    @if (composeFieldsShown() && selectedMailboxId() !== null) {
+                        <app-compose-attach-button class="mbx__compose-attach" [target]="composeFiles" />
+                    }
+                    <span class="mbx__compose-saved">
+                        @if (draftSavedAt(); as savedAt) {
+                            <span class="mbx__draft-badge" data-testid="compose-draft-saved">Saved {{ savedAt | appDateTime }}</span>
+                        }
+                    </span>
+                    <div class="mbx__opts" (focusout)="onMoreFocusOut($event)" (keydown.escape)="closeMore($event)">
+                        <button type="button" class="cms-btn cms-btn-ghost mbx__foot-icon" data-testid="compose-more"
+                                aria-label="More options" title="More options" aria-haspopup="menu"
+                                [attr.aria-expanded]="composeMoreOpen() ? 'true' : 'false'"
+                                (click)="composeMoreOpen.set(!composeMoreOpen())">
+                            <i class="bi bi-three-dots" aria-hidden="true"></i>
+                        </button>
+                        @if (composeMoreOpen()) {
+                            <div class="mbx__opts-menu" role="menu" aria-label="More options" data-testid="compose-more-menu">
+                                <button type="button" role="menuitemcheckbox" class="mbx__opts-item" data-testid="compose-plain-text"
+                                        [attr.aria-checked]="composeRich() ? 'false' : 'true'" (click)="choosePlainText()">
+                                    <i class="bi" aria-hidden="true" [class.bi-check-square]="!composeRich()" [class.bi-square]="composeRich()"></i>
+                                    Plain text
                                 </button>
                             </div>
-                            @if (composeRich() && composeQuoteHtml(); as quoteHtml) {
-                                <app-message-frame data-testid="compose-quote" [html]="quoteHtml"
-                                                   label="The message quoted below yours" />
-                            } @else {
-                                <pre class="mbx__body-text mbx__quote-text" data-testid="compose-quote-text">{{ composeQuoteText() }}</pre>
-                            }
-                        </div>
-                    }
-                    @if (forwardFilesKept().length > 0) {
-                        <ul class="mbx__fwd-files" data-testid="compose-forward-files" aria-label="Files of the forwarded message">
-                            @for (file of forwardFilesKept(); track file.part) {
-                                <li class="mbx__fwd-file">
-                                    <i class="bi bi-paperclip" aria-hidden="true"></i>
-                                    <span class="mbx__fwd-file-name">{{ file.name ?? 'Attachment' }}</span>
-                                    @if (file.sizeBytes !== null) {
-                                        <span class="mbx__attachment-size">{{ humanSize(file.sizeBytes) }}</span>
-                                    }
-                                    <button type="button" class="mbx__icon-btn" [attr.aria-label]="'Remove ' + (file.name ?? 'attachment')"
-                                            (click)="removeForwardFile(file.part)">
-                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
-                                    </button>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    @if (selectedMailboxId(); as composeMailboxId) {
-                        <app-compose-attachments class="mbx__field"
-                                                 [mailboxId]="composeMailboxId"
-                                                 [limitBytes]="composeLimit()"
-                                                 [bodyBytes]="composeBodyBytes()"
-                                                 [sendRefused]="composeSendRefused()"
-                                                 [(attachments)]="composeAttachments"
-                                                 (changed)="onComposeChange()" />
-                    }
-                    }
-                </div>
-                <div class="mbx__compose-foot mbx__compose-foot--split">
-                    <div class="mbx__compose-foot-side">
-                        <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-discard" (click)="discardDraft()">
-                            <i class="bi bi-trash"></i> Discard
-                        </button>
-                        @if (draftSavedAt(); as savedAt) {
-                            <span class="mbx__draft-badge" data-testid="compose-draft-saved"><i class="bi bi-check2"></i> Draft saved {{ savedAt | appDateTime }}</span>
                         }
                     </div>
-                    <div class="mbx__compose-foot-side">
-                        @if (composeMaySend()) {
-                            <button type="button" class="mbx__btn mbx__btn--primary" data-testid="compose-send" [disabled]="sending()"
-                                    (click)="sendCompose()">
-                                {{ sending() ? 'Sending…' : 'Send' }}
-                            </button>
-                        }
-                    </div>
+                    <button type="button" class="cms-btn cms-btn-ghost mbx__foot-icon" data-testid="compose-discard"
+                            aria-label="Discard draft" title="Discard draft" (click)="discardDraft()">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
                 </div>
             </ng-template>
 
@@ -1047,6 +1094,7 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__body--one.mbx__body--reading:not(.mbx__body--folders) .mbx__detail { display: flex; padding: 0 12px; }
         .mbx__body--one .mbx__detail .mbx__detail-scroll { margin: 0 -12px; padding: 0 12px 8px; }
+        .mbx__body--one .mbx__detail > app-mail-quick-reply { margin: 0 -12px; --mqr-inset: 8px; }
         .mbx__body--one .mbx__phone-bar { display: flex; }
         .mbx__body--one .mbx__detail .mbx__phone-bar { margin: 0 -12px; width: calc(100% + 24px); }
         .mbx__body--one .mbx__detail .mbx__pane-row { margin: 0 -12px 8px; padding: 0 12px; }
@@ -1175,6 +1223,8 @@ type PhonePane = 'folders' | 'message';
         /* The row stays at the top; under it, the message pane's one scroll region. */
         .mbx__detail { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0 20px; min-width: 0; }
         .mbx__detail > .mbx__phone-bar, .mbx__detail > .mbx__pane-row { flex: 0 0 auto; }
+        /* The quick reply spans the message pane from edge to edge, its content kept to the pane's padding. */
+        .mbx__detail > app-mail-quick-reply { margin: 0 -20px; --mqr-inset: 20px; }
         .mbx__detail-scroll {
             flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -20px; padding: 0 20px 16px;
             display: flex; flex-direction: column;
@@ -1307,13 +1357,29 @@ type PhonePane = 'folders' | 'message';
             border-radius: var(--cms-radius-md); background: var(--cms-warning-subtle); color: var(--cms-warning-text);
             font-size: .8125rem;
         }
-        /* The quoted original below the person's own text, drawn as the message view draws a body. */
-        .mbx__quote { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
-        .mbx__quote-head {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            color: var(--cms-text-muted); font-size: .8125rem;
+        /* The quoted original below the person's own text: collapsed behind its button, opened in a framed box at
+           most about 320 px tall that scrolls inside, under its attribution line. */
+        .mbx__quote-row { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; }
+        .mbx__quote-toggle {
+            height: 24px; padding: 0 10px; border: 1px solid var(--cms-border-control); border-radius: var(--cms-radius-pill);
+            background: var(--cms-surface-muted); color: var(--cms-text-secondary); font: inherit; line-height: 1; cursor: pointer;
         }
-        .mbx__quote-text { margin: 0; }
+        .mbx__quote-toggle:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
+        .mbx__quote-toggle[aria-expanded="true"] {
+            border-color: var(--cms-selected-text); background: var(--cms-selected-light); color: var(--cms-selected-text);
+        }
+        .mbx__quote-toggle:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 2px; }
+        .mbx__quote-remove { font-size: .8125rem; }
+        .mbx__quote {
+            flex: 0 1 auto; min-height: 0; max-height: 320px; overflow: auto; margin: 0;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius-md); background: var(--cms-surface);
+        }
+        .mbx__quote-head {
+            padding: 8px 12px; border-bottom: 1px solid var(--cms-border-light);
+            color: var(--cms-text-muted); font-size: .75rem; text-align: start;
+        }
+        .mbx__quote-frame { padding: 4px 12px 8px; }
+        .mbx__quote .mbx__quote-text { margin: 0; padding: 8px 12px; border: 0; border-radius: 0; background: transparent; }
         .mbx__fwd-files { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
         .mbx__fwd-file {
             display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 8px;
@@ -1355,9 +1421,87 @@ type PhonePane = 'folders' | 'message';
             }
             .mbx__compose-bar { width: auto; flex: 1 1 140px; }
         }
+        /* Docked: 600 px wide (560 to 640 as the screen allows) and at most about 70% of the viewport tall. */
         .mbx__compose--dock {
-            width: 680px; max-width: calc(100vw - 48px); max-height: min(80vh, 720px);
-            border-radius: 10px 10px 0 0; box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
+            width: 600px; min-width: min(560px, calc(100vw - 48px)); max-width: min(640px, calc(100vw - 48px));
+            height: 70vh; max-height: 70vh;
+            border-radius: 10px 10px 0 0; box-shadow: var(--cms-shadow-lg);
+        }
+        .mbx__compose--dock.mbx__compose--min { height: auto; }
+        .mbx__compose--dock .mbx__compose-head { padding: 4px 4px 4px 16px; min-height: 44px; }
+        .mbx__compose--dock .mbx__compose-close {
+            display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0;
+            border-radius: var(--cms-radius);
+        }
+        .mbx__compose--dock .mbx__compose-close:hover { background: var(--cms-surface-hover); color: var(--cms-text); }
+        .mbx__compose--dock .mbx__compose-close:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: -2px; }
+        /* The body: the lines, then the editor taking what height is left, then the quote and the files. */
+        .mbx__compose--dock .mbx__compose-body { flex: 1 1 auto; min-height: 0; padding: 0 16px 12px; gap: 10px; }
+        /* The header fields: compact lines, each about 40 px with its label inside at the start and a thin divider
+           below; the labels in one column as wide as the longest (at least 52 px). */
+        .mbx__lines {
+            flex: 0 0 auto; display: grid; grid-template-columns: minmax(52px, max-content) minmax(0, 1fr) max-content;
+            column-gap: 12px; font-size: .875rem;
+        }
+        .mbx__line {
+            grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center;
+            min-height: 40px; margin: 0; border-bottom: 1px solid var(--cms-border);
+        }
+        .mbx__line-label { grid-column: 1; color: var(--cms-text-secondary); white-space: nowrap; }
+        .mbx__line-field { grid-column: 2 / -1; min-width: 0; }
+        /* A long address chip wraps inside its line and never runs under the Cc and Bcc links. */
+        .mbx__line-tags { overflow: hidden; }
+        .mbx__line-tags ::ng-deep .tagin-chip { max-width: 100%; overflow-wrap: anywhere; }
+        .mbx__line:has(.mbx__line-links) .mbx__line-field { grid-column: 2; }
+        .mbx__line-links { grid-column: 3; display: flex; align-items: center; gap: 10px; }
+        .mbx__line-link { padding-top: 0; padding-bottom: 0; }
+        .mbx__line-input, .mbx__line-select {
+            height: 38px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--cms-text); font: inherit;
+        }
+        .mbx__line-input:focus, .mbx__line-select:focus { /* ring: on the line, .mbx__line:focus-within */ outline: none; box-shadow: none; }
+        .mbx__line:focus-within { border-bottom-color: var(--cms-focus-ring); box-shadow: 0 1px 0 0 var(--cms-focus-ring); }
+        .mbx__line-input[readonly] { color: var(--cms-text-secondary); }
+        /* The address chip field drawn as a line: its own box gives way to the line's divider. */
+        .mbx__line-tags ::ng-deep .tagin-wrap { border: 0; border-radius: 0; background: transparent; padding: 4px 0; min-height: 38px; }
+        .mbx__line-tags ::ng-deep .tagin-wrap:focus-within { /* ring: on the line, .mbx__line:focus-within */ box-shadow: none; }
+        .mbx__compose-editor { flex: 1 1 auto; min-height: 120px; display: flex; flex-direction: column; }
+        .mbx__compose-editor .mbx__editor { flex: 1 1 auto; min-height: 0; }
+        .mbx__compose-text {
+            flex: 1 1 auto; min-height: 0; width: 100%; resize: none; padding: 10px 12px;
+            border: 1px solid var(--cms-border); border-radius: var(--cms-radius);
+            background: var(--cms-input-bg); color: var(--cms-text); font: inherit; line-height: 1.55;
+        }
+        .mbx__compose-files { flex: 0 0 auto; }
+        /* The foot: Send, attach, the saved state, then More options and Discard. */
+        .mbx__compose-foot--bar { justify-content: flex-start; align-items: center; gap: 6px; padding: 10px 10px 10px 16px; min-height: 56px; }
+        .mbx__compose-send { height: 36px; padding: 0 20px; font-weight: 600; }
+        .mbx__compose-saved { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mbx__compose-saved .mbx__draft-badge { font-size: .75rem; }
+        .mbx__foot-icon { justify-content: center; width: 36px; height: 36px; padding: 0; }
+        .mbx__foot-icon .bi { font-size: 1.05rem; }
+        .mbx__opts { position: relative; display: inline-flex; }
+        .mbx__opts-menu {
+            position: absolute; right: 0; bottom: calc(100% + 4px); z-index: 5; min-width: 220px; padding: 4px;
+            display: flex; flex-direction: column; background: var(--cms-surface); border: 1px solid var(--cms-border);
+            border-radius: var(--cms-radius); box-shadow: var(--cms-shadow-md);
+        }
+        .mbx__opts-item {
+            display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 12px; border: 0;
+            border-radius: var(--cms-radius-sm); background: none; color: var(--cms-text); font: inherit; text-align: start; cursor: pointer;
+        }
+        .mbx__opts-item:hover, .mbx__opts-item:focus-visible { background: var(--cms-bg-hover); }
+        /* Full screen it is above the admin's own bars too. */
+        .mbx__dock--full { z-index: 200; }
+        /* Where one pane shows at a time: full screen, Minimize and Close only, each at least 44 px; so is the foot. */
+        .mbx__compose--full:not(.mbx__compose--min) {
+            position: fixed; inset: 0; z-index: 1; transform: none; width: 100%; height: 100%; min-width: 0;
+            max-width: none; max-height: none; border-radius: 0;
+        }
+        .mbx__compose--full .mbx__compose-close,
+        .mbx__compose--full .mbx__foot-icon,
+        .mbx__compose--full .mbx__compose-send,
+        .mbx__compose--full .mbx__line-link {
+            min-width: var(--cms-touch-target-min); min-height: var(--cms-touch-target-min);
         }
         .mbx__compose--dock.mbx__compose--min { max-height: none; }
         .mbx__compose--min .mbx__compose-body,
@@ -1774,6 +1918,11 @@ export class EmailMailboxPageComponent implements OnInit {
         const html = this.prefillAnswer()?.quote?.html;
         return html === null || html === undefined || html === '' ? null : html;
     });
+    /** The line over the opened quote: the server's attribution, else what the quote is. */
+    readonly composeQuoteAttribution = computed(() => {
+        const said = (this.prefillAnswer()?.quote?.attribution ?? '').trim();
+        return said !== '' ? said : (this.composeMode() === 'forward' ? 'Forwarded message' : 'Quoted message');
+    });
     /** The served `quote.text`: what Plain text shows, and what shows when no html was served. */
     readonly composeQuoteText = computed(() => this.prefillAnswer()?.quote?.text ?? null);
     /** The quote shows below the editor while one was served and the person kept it. */
@@ -1799,8 +1948,13 @@ export class EmailMailboxPageComponent implements OnInit {
         const name = (msg.fromName ?? '').trim();
         const sender = name !== '' ? name : (msg.fromAddress ?? '').trim();
 
-        return { mailboxId, messageId: msg.id, label: sender !== '' ? `Write a reply to ${sender}` : 'Write a reply' };
+        return { mailboxId, messageId: msg.id, sender, label: sender !== '' ? `Write a reply to ${sender}` : 'Write a reply' };
     });
+    /**
+     * The reply drafts a compose window has held, by id: closed with the draft kept, the quick reply shows its first
+     * words with Open and Discard, never its text in the box.
+     */
+    readonly windowReplyDrafts = signal<ReadonlySet<string>>(new Set());
     /** The compose window holds the open message's reply. */
     readonly replyWindowHolds = computed(() => {
         const open = this.selectedMessage()?.id ?? null;
@@ -2110,6 +2264,15 @@ export class EmailMailboxPageComponent implements OnInit {
     composeText = '';
     /** Cc/Bcc rows are hidden until the user asks for them (Gmail-style). */
     readonly composeShowCcBcc = signal<boolean>(false);
+    /** The Cc and the Bcc line each opened by its link at the end of the To line. */
+    readonly composeAskedCc = signal<boolean>(false);
+    readonly composeAskedBcc = signal<boolean>(false);
+    readonly composeCcShown = computed(() => this.composeShowCcBcc() || this.composeAskedCc());
+    readonly composeBccShown = computed(() => this.composeShowCcBcc() || this.composeAskedBcc());
+    /** The quote below the editor is collapsed behind its button until asked for. */
+    readonly composeQuoteOpen = signal<boolean>(false);
+    /** The foot's More options menu. */
+    readonly composeMoreOpen = signal<boolean>(false);
     /**
      * Shared contact-typeahead suggestions for the To/Cc/Bcc inputs (C.4.b). Fed by
      * {@link onRecipientQuery} (debounced `GET /contacts?q=`); each tag-input filters
@@ -3651,6 +3814,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeCc = [];
         this.composeBcc = [];
         this.composeShowCcBcc.set(false);
+        this.composeAskedCc.set(false);
+        this.composeAskedBcc.set(false);
         this.contactOptions.set([]);
         this.composeSubject = '';
         this.clearComposeBody();
@@ -3767,8 +3932,22 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         this.cancelDraftSave();
         this.saveDraftNow();
-        this.activeDraft()?.release();
+        const draft = this.activeDraft();
+        if (draft !== null && isReplyMode(this.composeMode())) {
+            this.rememberWindowDraft(draft);
+        }
+        draft?.release();
         this.activeDraft.set(null);
+    }
+
+    /** A reply draft a window held: once its save has landed its id is known, and the quick reply keeps it out of the box. */
+    private rememberWindowDraft(draft: ServerDraft): void {
+        draft.settled(() => {
+            const id = draft.id;
+            if (id !== null && !this.windowReplyDrafts().has(id)) {
+                this.windowReplyDrafts.update(ids => new Set([...ids, id]));
+            }
+        });
     }
 
     /**
@@ -3847,6 +4026,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeCc = [];
         this.composeBcc = [];
         this.composeShowCcBcc.set(false);
+        this.composeAskedCc.set(false);
+        this.composeAskedBcc.set(false);
         this.contactOptions.set([]);
         this.prefillOptions.set([]);
         this.composeSubject = '';
@@ -4022,6 +4203,9 @@ export class EmailMailboxPageComponent implements OnInit {
 
         // Their drafts are kept on the server; nothing more is drawn from them here.
         for (const w of closing) {
+            if (w.draft !== null && isReplyMode(w.mode)) {
+                this.rememberWindowDraft(w.draft);
+            }
             w.draft?.release();
         }
 
@@ -4073,7 +4257,7 @@ export class EmailMailboxPageComponent implements OnInit {
             to: [...this.composeTo],
             cc: [...this.composeCc],
             bcc: [...this.composeBcc],
-            showCcBcc: this.composeShowCcBcc(),
+            showCcBcc: this.composeShowCcBcc() || this.composeAskedCc() || this.composeAskedBcc(),
             subject: this.composeSubject,
             text: this.composeText,
             html: this.composeHtml(),
@@ -4116,6 +4300,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeCc = [...w.cc];
         this.composeBcc = [...w.bcc];
         this.composeShowCcBcc.set(w.showCcBcc);
+        this.composeAskedCc.set(false);
+        this.composeAskedBcc.set(false);
         this.composeSubject = w.subject;
         this.composeText = w.text;
         this.composeHtml.set(w.html);
@@ -4240,6 +4426,7 @@ export class EmailMailboxPageComponent implements OnInit {
             this.composeSubject = draft.subject;
         }
         this.composeText = draft.text;
+        this.plainSwitch = null;
         this.composeRich.set(draft.html !== null);
         this.composeHtml.set(draft.html ?? '');
         this.composeAttachments.set(restoredAttachments(draftFiles(draft)));
@@ -4319,28 +4506,48 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         draft.discard(deleted => {
-            if (!deleted) {
-                return;
+            if (deleted) {
+                this.offerUndoDiscard(draft.mailboxId, mode, target, draft.answers, mailboxId !== null ? last : null);
             }
-            const removeFiles = setTimeout(() => {
-                for (const id of last?.attachments ?? []) {
-                    this.email.removeAttachment(draft.mailboxId, id).subscribe({ error: () => undefined });
-                }
-            }, DISCARD_UNDO_MS);
-            this.toast.show({
-                type: 'info',
-                message: 'Draft discarded.',
-                action: {
-                    label: 'Undo',
-                    run: () => {
-                        clearTimeout(removeFiles);
-                        if (last !== null && mailboxId !== null) {
-                            this.undoDiscard(draft.mailboxId, mode, target, draft.answers, last);
-                        }
-                    },
-                },
-            }, DISCARD_UNDO_MS);
         });
+    }
+
+    /**
+     * The notice after a Discard: Undo for 10 seconds makes the draft again from its last content and opens its window;
+     * the draft's files are removed on the server once Undo is no longer offered.
+     */
+    private offerUndoDiscard(
+        mailboxId: string,
+        mode: 'compose' | EmailComposeMode,
+        target: string | null,
+        answers: EmailDraftAnswers | null,
+        last: EmailDraftWrite | null,
+    ): void {
+        const removeFiles = setTimeout(() => {
+            for (const id of last?.attachments ?? []) {
+                this.email.removeAttachment(mailboxId, id).subscribe({ error: () => undefined });
+            }
+        }, DISCARD_UNDO_MS);
+        this.toast.show({
+            type: 'info',
+            message: 'Draft discarded.',
+            action: {
+                label: 'Undo',
+                run: () => {
+                    clearTimeout(removeFiles);
+                    if (last !== null) {
+                        this.undoDiscard(mailboxId, mode, target, answers, last);
+                    }
+                },
+            },
+        }, DISCARD_UNDO_MS);
+    }
+
+    /** The quick reply's draft line deleted the reply draft: the same notice, whose Undo opens it in the window. */
+    quickReplyDiscarded(discarded: QuickReplyDiscarded): void {
+        const answers = discarded.answers;
+        const mode = answers?.mode ?? 'reply';
+        this.offerUndoDiscard(discarded.mailboxId, mode, answers?.messageId ?? null, answers, discarded.last);
     }
 
     /** Undo of a Discard: the draft is made again from its last content, and its window opens on it. */
@@ -4372,6 +4579,8 @@ export class EmailMailboxPageComponent implements OnInit {
             this.composeCc = [];
             this.composeBcc = [];
             this.composeShowCcBcc.set(false);
+        this.composeAskedCc.set(false);
+        this.composeAskedBcc.set(false);
             this.composeSubject = '';
             this.clearComposeBody();
             this.snapshotComposeInitial();
@@ -4443,10 +4652,79 @@ export class EmailMailboxPageComponent implements OnInit {
         }, { injector: this.injector });
     }
 
-    /** Flip the composer between the rich `<coolms-editor>` and the plain textarea.
-     *  Both bodies persist independently, so a round-trip toggle loses nothing. */
+    /**
+     * Flip the composer between the formatted editor and Plain text. To Plain text the formatted body shows as text;
+     * back without an edit, the formatting comes back exactly; back after the plain text was edited, the person is
+     * asked first, since the text then becomes the formatted body as paragraphs and the earlier formatting is lost.
+     */
     toggleComposeRich(): void {
-        this.composeRich.update(v => !v);
+        if (this.composeRich()) {
+            const html = this.composeHtml();
+            const text = this.htmlToPlainText(html);
+            this.plainSwitch = { html, text };
+            this.composeText = text;
+            this.composeRich.set(false);
+            this.onComposeChange();
+            return;
+        }
+        const back = this.plainSwitch;
+        if (back !== null && this.composeText === back.text) {
+            this.toFormatted(back.html);
+            return;
+        }
+        if (this.composeText.trim() === '') {
+            this.toFormatted('');
+            return;
+        }
+        this.confirmDialog.open({ ...PLAIN_TEXT_BACK, danger: false }).subscribe(yes => {
+            if (yes) {
+                this.toFormatted(paragraphsOf(this.composeText));
+            }
+        });
+    }
+
+    /** The formatted editor again, drawn from `html`. */
+    private toFormatted(html: string): void {
+        this.plainSwitch = null;
+        this.composeHtml.set(html);
+        this.composeRich.set(true);
+        this.composeKey.update(k => String(Number(k) + 1));
+        this.onComposeChange();
+    }
+
+    /** The formatted body as it was when Plain text was chosen, and the text it showed then; null when none. */
+    private plainSwitch: { html: string; text: string } | null = null;
+
+    /** More options > Plain text: the format flips and the menu closes, the focus back on its button. */
+    choosePlainText(): void {
+        this.toggleComposeRich();
+        this.composeMoreOpen.set(false);
+        this.composeDock()?.nativeElement.querySelector<HTMLElement>('[data-testid="compose-more"]')?.focus();
+    }
+
+    /** The More options menu closes when the focus leaves it. */
+    onMoreFocusOut(event: FocusEvent): void {
+        const next = event.relatedTarget as Node | null;
+        if (next === null || !(event.currentTarget as HTMLElement).contains(next)) {
+            this.composeMoreOpen.set(false);
+        }
+    }
+
+    /** Esc closes the open menu, and only the next Esc minimizes the window. */
+    closeMore(event: Event): void {
+        if (!this.composeMoreOpen()) {
+            return;
+        }
+        event.stopPropagation();
+        event.preventDefault();
+        this.composeMoreOpen.set(false);
+    }
+
+    /** The Cc or the Bcc link: that line opens, its field focused. */
+    askLine(line: 'cc' | 'bcc'): void {
+        (line === 'cc' ? this.composeAskedCc : this.composeAskedBcc).set(true);
+        afterNextRender(() => this.composeDock()?.nativeElement
+            .querySelector<HTMLInputElement>(`[data-testid="compose-${line}"] input`)?.focus(), { injector: this.injector });
     }
 
     /** Reset the compose BODY (both plain + rich) and force a clean editor re-mount.
@@ -4455,6 +4733,9 @@ export class EmailMailboxPageComponent implements OnInit {
         this.prefillSeq++;
         this.composePrefill.set(null);
         this.composeQuoteKept.set(true);
+        this.composeQuoteOpen.set(false);
+        this.composeMoreOpen.set(false);
+        this.plainSwitch = null;
         this.composeQuoteRefused.set(false);
         this.forwardFilesKept.set([]);
         this.composeText = '';

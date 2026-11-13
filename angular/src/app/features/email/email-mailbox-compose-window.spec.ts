@@ -9,6 +9,7 @@ import {
     DateTimeFormatService,
     ToastService,
 } from '@coolms/ui-angular';
+import { EDITOR_MANIFEST_PROVIDER, provideCoolmsEditor } from '@coolms/editor-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { DISCARD_UNDO_MS, MAIL_EDITOR_PROFILE, MAX_COMPOSE_WINDOWS, windowsToClose, type ComposeWindowSnapshot } from './compose-windows';
@@ -42,8 +43,14 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
     let infos: string[];
     let aliases: MailAliasesDto;
     let removed: string[];
+    /** What the page asked, and what the person answers. */
+    let questions: Array<{ title: string; message?: string; confirmLabel?: string; cancelLabel?: string }>;
+    let answer: boolean;
 
     beforeEach(() => {
+        questions = [];
+        answer = false;
+        const asked = questions;
         sent = [];
         shown = [];
         removed = [];
@@ -98,14 +105,20 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                 },
                 { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
-                { provide: ConfirmDialogService, useValue: {} },
+                {
+                    provide: ConfirmDialogService,
+                    useValue: { open: (q: { title: string }) => { asked.push(q); return of(answer); } },
+                },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: {} },
                 { provide: CrumbNamesService, useValue: { setTail: (): void => {} } },
-            ],
+                // The real editor, with an empty profile, for the window's formatted body.
+                provideCoolmsEditor(),
+                { provide: EDITOR_MANIFEST_PROVIDER, useValue: { getProfile: () => ({ contributors: [], allowedWidgets: [] }) } },
+            ] as never[],
         });
         TestBed.overrideComponent(EmailMailboxPageComponent, {
             set: { providers: [{ provide: MailboxSettingsModal, useValue: { attach: (): void => {} } }] },
@@ -170,6 +183,200 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(MAIL_EDITOR_PROFILE).withContext('until the mail profile is served').toBe('standard');
     });
 
+    it('docked: 600 px wide and at most about 70% of the viewport tall; header buttons at least 36 px', async () => {
+        await compose([], '', '');
+        const box = win()!.getBoundingClientRect();
+        expect(box.width).toBeCloseTo(600, 0);
+        expect(box.height).toBeLessThanOrEqual(window.innerHeight * 0.7 + 1);
+        for (const b of win()!.querySelectorAll<HTMLElement>('.mbx__compose-head-actions button')) {
+            const r = b.getBoundingClientRect();
+            expect(Math.min(r.width, r.height)).withContext(b.getAttribute('aria-label')!).toBeGreaterThanOrEqual(36);
+        }
+        // The editor takes the height the lines and the foot leave: it grows with the window.
+        const editor = (): number => win()!.querySelector<HTMLElement>('.mbx__compose-editor')!.getBoundingClientRect().height;
+        const docked = editor();
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-maximize"]')!.click();
+        await settle();
+        const taller = win()!.getBoundingClientRect().height - box.height;
+        expect(taller).withContext('Maximize gives more').toBeGreaterThan(0);
+        expect(editor()).withContext('the editor takes it').toBeGreaterThan(docked);
+    });
+
+    it('From, To, Cc, Bcc and Subject are compact lines, their labels in one column at least 52 px wide', async () => {
+        aliases = { canManage: true, aliases: [{ id: 'a1', address: 'sales@example.test', status: 'confirmed', requestedAt: '' }] };
+        await compose(['ada@example.test'], 'Hi', 'Hello');
+        const lines = win()!.querySelector<HTMLElement>('[data-testid="compose-lines"]')!;
+        expect(getComputedStyle(lines).display).toBe('grid');
+        expect([...win()!.querySelectorAll('.mbx__line-label')].map(l => l.textContent!.trim())).toEqual(['From', 'To', 'Subject']);
+
+        // Cc and Bcc: two links at the end of the To line, each opening its own line.
+        const to = win()!.querySelector<HTMLElement>('[data-testid="compose-to"]')!.closest<HTMLElement>('.mbx__line')!;
+        const links = [...to.querySelectorAll<HTMLButtonElement>('.mbx__line-links button')];
+        expect(links.map(b => b.textContent!.trim())).toEqual(['Cc', 'Bcc']);
+        const toBox = to.getBoundingClientRect();
+        expect(links[1].getBoundingClientRect().right).withContext('at the end of the To line').toBeGreaterThan(toBox.right - 40);
+        links[0].click();
+        await settle();
+        expect([...win()!.querySelectorAll('.mbx__line-label')].map(l => l.textContent!.trim())).toEqual(['From', 'To', 'Cc', 'Subject']);
+        expect(document.activeElement).withContext('the Cc field focused')
+            .toBe(win()!.querySelector('[data-testid="compose-cc"] input'));
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-add-bcc"]')!.click();
+        await settle();
+        expect(win()!.querySelector('[data-testid="compose-add-cc"], [data-testid="compose-add-bcc"]')).toBeNull();
+
+        const labels = [...win()!.querySelectorAll<HTMLElement>('.mbx__line-label')];
+        expect(labels.map(l => l.textContent!.trim())).toEqual(['From', 'To', 'Cc', 'Bcc', 'Subject']);
+        const lefts = labels.map(l => Math.round(l.getBoundingClientRect().left));
+        expect(new Set(lefts).size).withContext('one column').toBe(1);
+        const fields = [...win()!.querySelectorAll<HTMLElement>('.mbx__line-field')].map(f => Math.round(f.getBoundingClientRect().left));
+        expect(new Set(fields).size).withContext('the fields start together').toBe(1);
+        expect(fields[0] - lefts[0]).withContext('the column at least 52 px, and the gap').toBeGreaterThanOrEqual(52 + 12);
+        const widest = Math.max(...labels.map(l => l.getBoundingClientRect().width));
+        expect(fields[0] - lefts[0]).withContext('as wide as the longest label').toBeGreaterThanOrEqual(widest);
+        expect(parseFloat(getComputedStyle(lines).gridTemplateColumns.split(' ')[0])).withContext('the label column')
+            .toBeCloseTo(Math.max(52, widest), 1);
+        for (const line of win()!.querySelectorAll<HTMLElement>('.mbx__line')) {
+            const s = getComputedStyle(line);
+            expect(line.getBoundingClientRect().height).withContext('about 40 px').toBeGreaterThanOrEqual(39);
+            expect(line.getBoundingClientRect().height).toBeLessThan(48);
+            expect(s.borderBottomWidth).withContext('a thin divider below').toBe('1px');
+            expect(s.borderTopWidth).toBe('0px');
+        }
+        const subject = win()!.querySelector<HTMLInputElement>('[data-testid="compose-subject"]')!;
+        expect(getComputedStyle(subject).borderTopWidth).withContext('not a boxed input').toBe('0px');
+
+        // Still real labelled fields.
+        expect(win()!.querySelector('[data-testid="compose-from"]')!.tagName).toBe('SELECT');
+        expect((win()!.querySelector('[data-testid="compose-from"]') as HTMLSelectElement).labels![0].textContent).toContain('From');
+        expect(subject.labels![0].textContent).toContain('Subject');
+        for (const which of ['to', 'cc', 'bcc']) {
+            const input = win()!.querySelector<HTMLInputElement>(`[data-testid="compose-${which}"] input`)!;
+            expect(document.getElementById(input.getAttribute('aria-labelledby')!)?.textContent?.trim())
+                .toBe(which === 'to' ? 'To' : which === 'cc' ? 'Cc' : 'Bcc');
+        }
+    });
+
+    it('the foot: Send, attach, the saved state, More options and Discard, as icons labelled', async () => {
+        await compose(['ada@example.test'], 'Lunch', 'Noon?');
+        await wait(700);
+        await settle();
+        const foot = win()!.querySelector<HTMLElement>('.mbx__compose-foot')!;
+        const named = [...foot.querySelectorAll<HTMLElement>('button[data-testid], button[data-test], [data-testid="compose-draft-saved"]')]
+            .filter(b => b.closest('[role="menu"]') === null)
+            .map(b => b.getAttribute('aria-label') ?? b.textContent!.trim().split(' ')[0]);
+        expect(named).toEqual(['Send', 'Attach files', 'Saved', 'More options', 'Discard draft']);
+        expect(foot.querySelector('[data-testid="compose-send"]')!.getAttribute('title')).toBe('Send (Ctrl+Enter)');
+        expect(foot.querySelector('[data-testid="compose-plain-text"]')).withContext('no switch in the foot').toBeNull();
+        expect(foot.textContent).not.toContain('Rich text');
+    });
+
+    it('Plain text is a checkable item of the More options menu', async () => {
+        page().composeRich.set(true);
+        page().openCompose();
+        await settle();
+        const more = win()!.querySelector<HTMLButtonElement>('[data-testid="compose-more"]')!;
+        expect(more.getAttribute('aria-haspopup')).toBe('menu');
+        expect(more.getAttribute('aria-expanded')).toBe('false');
+        expect(win()!.querySelector('[role="menu"]')).toBeNull();
+
+        more.click();
+        await settle();
+        expect(more.getAttribute('aria-expanded')).toBe('true');
+        const menu = win()!.querySelector<HTMLElement>('[data-testid="compose-more-menu"]')!;
+        expect(menu.getAttribute('role')).toBe('menu');
+        const item = menu.querySelector<HTMLButtonElement>('[role="menuitemcheckbox"]')!;
+        expect(item.textContent!.trim()).toBe('Plain text');
+        expect(item.getAttribute('aria-checked')).toBe('false');
+
+        item.click();
+        await settle();
+        expect(page().composeRich()).withContext('plain text now').toBeFalse();
+        expect(win()!.querySelector('textarea.mbx__compose-text')).not.toBeNull();
+        expect(win()!.querySelector('[role="menu"]')).withContext('the menu closes').toBeNull();
+        more.click();
+        await settle();
+        expect(win()!.querySelector('[role="menuitemcheckbox"]')!.getAttribute('aria-checked')).toBe('true');
+
+        // Esc closes the menu first; the window stays.
+        key(win()!.querySelector('[role="menuitemcheckbox"]')!, { key: 'Escape' });
+        await settle();
+        expect(win()!.querySelector('[role="menu"]')).toBeNull();
+        expect(page().composeMinimized()).toBeFalse();
+    });
+
+    /** More options > Plain text, as the person chooses it. */
+    async function plainTextItem(): Promise<void> {
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-more"]')!.click();
+        await settle();
+        win()!.querySelector<HTMLButtonElement>('[data-testid="compose-plain-text"]')!.click();
+        await settle();
+    }
+
+    it('Plain text shows the formatted body as text; back without an edit, the formatting comes back exactly, unasked', async () => {
+        page().composeRich.set(true);
+        page().openCompose();
+        await settle();
+        const html = '<p><strong>Lunch</strong> at <em>noon</em>?</p><ul><li><p>Soup</p></li></ul>';
+        page().composeHtml.set(html);
+        await settle();
+
+        await plainTextItem();
+        expect(page().composeRich()).toBeFalse();
+        const box = win()!.querySelector<HTMLTextAreaElement>('textarea.mbx__compose-text')!;
+        expect(box.value).withContext('the formatted body as text').toBe('Lunch at noon?\nSoup');
+
+        await plainTextItem();
+        expect(questions).withContext('nothing edited: no question').toEqual([]);
+        expect(page().composeRich()).toBeTrue();
+        expect(page().composeHtml()).withContext('the formatting exactly').toBe(html);
+    });
+
+    it('Plain text edited: switching back asks first; Keep plain text keeps it, Switch makes the text paragraphs', async () => {
+        page().composeRich.set(true);
+        page().openCompose();
+        await settle();
+        page().composeHtml.set('<p><strong>Lunch</strong> at noon?</p>');
+        await settle();
+        await plainTextItem();
+        const box = win()!.querySelector<HTMLTextAreaElement>('textarea.mbx__compose-text')!;
+        box.value = 'Lunch at one?\nOr two.\n\nSee you <then>';
+        box.dispatchEvent(new Event('input'));
+        await settle();
+
+        answer = false;
+        await plainTextItem();
+        expect(questions.length).withContext('asked').toBe(1);
+        expect(questions[0].title).toBe('Switch back to formatting?');
+        expect(questions[0].message).toContain('earlier formatting is lost');
+        expect(questions[0].message).toContain('paragraphs');
+        expect(page().composeRich()).withContext('Keep plain text').toBeFalse();
+        expect(page().composeText).toBe('Lunch at one?\nOr two.\n\nSee you <then>');
+
+        answer = true;
+        await plainTextItem();
+        expect(questions.length).toBe(2);
+        expect(page().composeRich()).toBeTrue();
+        expect(page().composeHtml()).withContext('the edited text as paragraphs, none of it markup')
+            .toBe('<p>Lunch at one?<br>Or two.</p><p>See you &lt;then&gt;</p>');
+    });
+
+    it('where one pane shows at a time: full screen, Minimize and Close only, each at least 44 px', async () => {
+        (page() as unknown as { phone: { set(v: boolean): void } }).phone.set(true);
+        await compose([], '', '');
+
+        expect(win()!.classList).toContain('mbx__compose--full');
+        const box = win()!.getBoundingClientRect();
+        expect([box.left, box.top, box.width, box.height])
+            .toEqual([0, 0, document.documentElement.clientWidth, document.documentElement.clientHeight]);
+        const head = [...win()!.querySelectorAll<HTMLElement>('.mbx__compose-head-actions button')];
+        expect(head.map(b => b.getAttribute('aria-label'))).withContext('no Maximize').toEqual(['Minimize', 'Close']);
+        expect(win()!.querySelector('[data-testid="compose-maximize"]')).toBeNull();
+        for (const b of head) {
+            const r = b.getBoundingClientRect();
+            expect(Math.min(r.width, r.height)).withContext(b.getAttribute('aria-label')!).toBeGreaterThanOrEqual(44);
+        }
+    });
+
     it('Minimize leaves a bar with the subject and the recipients; a click on it restores the window', async () => {
         await compose(['ada@example.test', 'lin@example.test'], 'Lunch', 'Noon?');
 
@@ -180,7 +387,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(win()!.querySelector('.mbx__compose-title-text')?.textContent?.trim()).toBe('Lunch');
         expect(win()!.querySelector('[data-testid="compose-recipients"]')?.textContent?.trim()).toBe('ada@example.test, lin@example.test');
 
-        const subject = win()!.querySelector<HTMLInputElement>('input[placeholder="Subject"]')!;
+        const subject = win()!.querySelector<HTMLInputElement>('[data-testid="compose-subject"]')!;
         subject.value = '';
         subject.dispatchEvent(new Event('input'));
         await settle();
