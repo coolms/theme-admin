@@ -14,6 +14,7 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { DISCARD_UNDO_MS, MAIL_EDITOR_PROFILE, MAX_COMPOSE_WINDOWS, windowsToClose, type ComposeWindowSnapshot } from './compose-windows';
 import { FakeDraftsApi } from './email-drafts.fake';
 import { EmailLiveEventsService } from './email-live-events.service';
+import { DRAFT_GONE_KEPT } from './server-draft';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import { type EmailMailboxDto, type OutgoingEmailRequest } from './email.types';
@@ -38,6 +39,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
     let shown: Shown[];
     let server: FakeDraftsApi;
     let live: Subject<unknown>;
+    let infos: string[];
     let aliases: MailAliasesDto;
     let removed: string[];
 
@@ -50,6 +52,8 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         const drafts = new FakeDraftsApi();
         server = drafts;
         live = new Subject<unknown>();
+        const told: string[] = [];
+        infos = told;
         aliases = { canManage: false, aliases: [] };
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
@@ -80,7 +84,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                 {
                     provide: ToastService,
                     useValue: {
-                        error: (): void => {}, success: (): void => {}, info: (): void => {},
+                        error: (): void => {}, success: (): void => {}, info: (m: string): void => void told.push(m),
                         show: (t: Shown, ms: number): number => {
                             shown.push({ ...t, message: `${t.message} (${ms} ms)` });
                             return shown.length;
@@ -395,6 +399,30 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
         expect(server.of('create')).withContext('nothing written after the Discard').toEqual([]);
         expect(shown).toEqual([]);
         expect(removed).toEqual([]);
+    });
+
+    it('a save refused with 404 (deleted elsewhere) keeps the window and its text as a new draft, and says so', async () => {
+        await compose(['ada@example.test'], 'Lunch', 'Noon?');
+        await wait(700);
+        const first = [...server.drafts.keys()][0];
+        server.drafts.delete(first);
+
+        page().composeText = 'Noon? Or one.';
+        page().onComposeChange();
+        await wait(700);
+        await settle();
+
+        expect(server.of('save').map(c => c.id)).toEqual([first]);
+        expect(infos).toEqual([DRAFT_GONE_KEPT]);
+        expect(win()).withContext('the window stays').not.toBeNull();
+        expect(page().composeText).toBe('Noon? Or one.');
+        expect([...server.drafts.values()].map(d => [d.subject, d.text])).toEqual([['Lunch', 'Noon? Or one.']]);
+
+        // The window writes the new draft from now on.
+        page().composeText = 'Noon? Or one. Fine.';
+        page().onComposeChange();
+        await wait(700);
+        expect(server.of('save').at(-1)?.id).toBe([...server.drafts.keys()][0]);
     });
 
     it('a minimized window follows its draft: a newer version is read again, a draft gone closes its bar', async () => {

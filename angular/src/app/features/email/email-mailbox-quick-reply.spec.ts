@@ -22,7 +22,7 @@ import {
 import { readDraftsChanged } from './mail-drafts-changed';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
 import { QUICK_REPLY_MAX_LINES, QUICK_REPLY_SAVE_MS } from './mail-quick-reply.component';
-import { DRAFT_RETRY_FIRST_MS } from './server-draft';
+import { DRAFT_GONE_KEPT, DRAFT_RETRY_FIRST_MS } from './server-draft';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
@@ -67,6 +67,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
     let asked: Array<[string, EmailComposeMode]>;
     let server: FakeDraftsApi;
     let live: Subject<unknown>;
+    let infos: string[];
 
     beforeEach(() => {
         replies = [];
@@ -76,6 +77,8 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         const drafts = new FakeDraftsApi();
         server = drafts;
         live = new Subject<unknown>();
+        const told: string[] = [];
+        infos = told;
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
             providers: [
@@ -110,7 +113,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
-                { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (): void => {} } },
+                { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (m: string): void => void told.push(m) } },
                 { provide: Router, useValue: { events: NEVER, navigate: () => Promise.resolve(true) } },
                 {
                     provide: ActivatedRoute,
@@ -483,6 +486,23 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(server.of('create')[1].key).withContext('with the same Idempotency-Key').toBe(server.of('create')[0].key);
         expect(server.drafts.size).toBe(1);
         expect(server.drafts.get(only())!.text).toBe('Keep me.');
+    });
+
+    it('a save refused with 404 (deleted elsewhere, its event missed) tells the person and keeps the text as a new draft', async () => {
+        await open(3);
+        await typeAndSave('First part.');
+        const first = only();
+        // Deleted on another device; the event never came.
+        server.drafts.delete(first);
+
+        await typeAndSave('First part. Second part.');
+
+        expect(server.of('save').map(c => c.id)).withContext('the save found it gone').toEqual([first]);
+        expect(infos).withContext('the person is told').toEqual([DRAFT_GONE_KEPT]);
+        expect(box().value).withContext('the text stays').toBe('First part. Second part.');
+        expect(server.of('create').length).withContext('kept as a new draft').toBe(2);
+        expect([...server.drafts.values()].map(d => d.text)).toEqual(['First part. Second part.']);
+        expect(only()).not.toBe(first);
     });
 
     it('Reply with an empty box, Reply all and Forward open the compose window, the editor empty; the box stays', async () => {

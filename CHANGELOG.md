@@ -8,6 +8,10 @@ major number means here.
 
 ## Unreleased
 
+- **A mail draft deleted elsewhere keeps what was written here.** A save refused with 404 (the draft was deleted
+  on another device while its change event was missed) no longer drops the text: the quick reply or the compose
+  window keeps it, saves it as a new draft, and says so.
+
 - **Show original says when a message is not found.** Any 404 other than the source-gone one (a missing
   message, or one the reader may not see) now reads "This message was not found." instead of the generic failure.
 

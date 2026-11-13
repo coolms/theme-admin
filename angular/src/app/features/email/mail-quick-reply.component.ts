@@ -13,7 +13,7 @@ import { EmailService } from './email.service';
 import { type EmailComposeDto, type EmailDraftDto, type EmailDraftWrite, type OutgoingEmailRequest } from './email.types';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { sendFailureText } from './send-via';
-import { ServerDraft } from './server-draft';
+import { DRAFT_GONE_KEPT, ServerDraft } from './server-draft';
 
 /** The most lines the box grows to; past them it scrolls inside itself. */
 export const QUICK_REPLY_MAX_LINES = 6;
@@ -410,9 +410,15 @@ export class MailQuickReplyComponent {
                     this.show(d);
                 }
             },
-            gone: () => {
+            gone: kept => {
                 if (this.draft === draft) {
                     this.draft = this.newDraft(mailboxId, messageId);
+                    if (kept !== null) {
+                        // Deleted elsewhere while the box's text was being saved: the text stays, as a new draft.
+                        this.draft.save(kept);
+                        this.toast.info(DRAFT_GONE_KEPT);
+                        return;
+                    }
                     this.stored = null;
                     this.storedInWindow.set(false);
                     this.text.set('');
