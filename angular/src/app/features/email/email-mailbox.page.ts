@@ -63,8 +63,8 @@ import { openMessageSource } from './message-source-viewer.component';
 import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import {
-    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, handledNodes, messageFacts, moveMenuItems,
-    paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
+    LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, archiveContextOf, handledNodes, messageFacts,
+    moveMenuItems, paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
 } from './message-actions';
 import {
     NO_SEND_SENTENCE, PREFILLED_ACTIONS, QUOTE_REFUSED_SENTENCE, addressesOf, forwardFiles, preparingSentence, prefillFailure, quoteFields,
@@ -2038,16 +2038,18 @@ export class EmailMailboxPageComponent implements OnInit {
      * The open message's facts, from its list row when it is listed -- the record the row's menu and the checked-rows
      * bar read too, so one message never shows an action on one surface and not on another -- else from the detail.
      */
+    /** What decides a blocked Archive: the open mailbox's archiveBlockedBy and its folder tree's inbox. */
+    readonly archiveContext = computed(() => archiveContextOf(this.selectedMailbox(), this.folderTree()));
     readonly detailFacts = computed(() => {
         const m = this.selectedMessage();
         if (!m) {
-            return messageFacts([]);
+            return messageFacts([], this.archiveContext());
         }
-        return messageFacts([this.messages().find(x => x.id === m.id) ?? m]);
+        return messageFacts([this.messages().find(x => x.id === m.id) ?? m], this.archiveContext());
     });
     readonly bulkFacts = computed(() => {
         const ids = this.selectedIds();
-        return messageFacts(this.messages().filter(m => ids.has(m.id)));
+        return messageFacts(this.messages().filter(m => ids.has(m.id)), this.archiveContext());
     });
     /** The open message's row: the tree's nodes for it that this page can run; none while no message is open. */
     readonly detailActions = computed(() => {
@@ -2138,7 +2140,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const ids = rowTargetIds(this.selectedIds(), m.id);
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
-        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets),
+        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets, this.archiveContext()),
             action => this.onMessageAction(action, ids));
     }
 

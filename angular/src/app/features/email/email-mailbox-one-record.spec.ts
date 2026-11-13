@@ -152,6 +152,28 @@ describe('EmailMailboxPageComponent -- one record per message, busy at once', ()
         expect(shown(page.bulkActions())).withContext('the checked-rows bar').toContain('archive');
     });
 
+    it('a mailbox that says why it cannot archive: the toolbar, the row menu and the checked-rows bar read the same _archive', () => {
+        const page = build();
+        page.mailboxes.set([{ ...MAILBOX, archiveBlockedBy: 'all-mail-hidden' }]);
+        page.folderTree.set([
+            { folder: 'INBOX', role: 'inbox', name: 'Inbox', selectable: true, total: 2, unseen: 0, children: [] },
+        ]);
+
+        open(page, 'm1');
+
+        expect(page.detailFacts()['_archive']).withContext('the toolbar').toBe('blocked');
+        expect(menuFor(page, 'm1')['_archive']).withContext('the row menu').toBe('blocked');
+        expect(menuFor(page, 'm1')['_anyCanArchive']).withContext('kept as it was').toBeFalse();
+        page.selectedIds.set(new Set(['m1']));
+        expect(page.bulkFacts()['_archive']).withContext('the checked-rows bar').toBe('blocked');
+        page.selectedIds.set(new Set(['m1', 'm2']));
+        expect(page.bulkFacts()['_archive']).withContext('one of them can').toBe('can');
+
+        page.mailboxes.set([MAILBOX]);
+        page.selectedIds.set(new Set(['m1']));
+        expect(page.bulkFacts()['_archive']).withContext('a mailbox list without archiveBlockedBy').toBe('no');
+    });
+
     it('the list says Reply all is of no use (null) and the detail says it is: the toolbar and the row menu both show it', () => {
         listed = listed.map(m => ({ ...m, replyAllUseful: null }));
         detailOf = id => (id === 'm2' ? { replyAllUseful: true } : {});

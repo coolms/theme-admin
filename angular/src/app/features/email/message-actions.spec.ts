@@ -1,5 +1,9 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
-import { MESSAGE_ACTIONS_HANDLED, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds, type NodeConditions } from './message-actions';
+import { type EmailFolderTreeNodeDto } from './email.types';
+import {
+    MESSAGE_ACTIONS_HANDLED, archiveContextOf, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds,
+    type NodeConditions,
+} from './message-actions';
 
 /** A node as the server's tree serves it: the meta it carries, and nothing more. */
 function node(path: string, meta: Record<string, unknown>, title = path.slice(1)): NaviGraphNode {
@@ -32,13 +36,13 @@ describe('message actions', () => {
     describe('messageFacts', () => {
         it('says one message, and what it can still become', () => {
             expect(messageFacts([{ seen: false, flagged: true, canArchive: true }])).toEqual({
-                _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true,
+                _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true, _archive: 'can',
             });
         });
 
         it('says several, and offers each change any of them can take', () => {
             expect(messageFacts([{ seen: true, flagged: false, canArchive: false }, { seen: false, flagged: false, canArchive: true }])).toEqual({
-                _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true,
+                _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true, _archive: 'can',
             });
         });
 
@@ -71,6 +75,72 @@ describe('message actions', () => {
             expect(messageFacts([{ replyAllUseful: true }, { replyAllUseful: true }])['_replyAll'])
                 .withContext('several targets').toBeFalse();
             expect(messageFacts([])['_replyAll']).toBeFalse();
+        });
+    });
+
+    describe('the _archive fact', () => {
+        /** A folder tree node: only what the inbox lookup reads. */
+        const folder = (path: string, role: string | null, children: EmailFolderTreeNodeDto[] = []): EmailFolderTreeNodeDto =>
+            ({ folder: path, role, name: path, selectable: true, total: 0, unseen: 0, children } as EmailFolderTreeNodeDto);
+        /** Gmail's folders: the inbox role on INBOX, Sent nested under [Gmail] as the server nests it. */
+        const TREE = [folder('INBOX', 'inbox'), folder('[Gmail]', null, [folder('[Gmail]/Sent Mail', 'sent')])];
+        const BLOCKED = archiveContextOf({ archiveBlockedBy: 'all-mail-hidden' }, TREE);
+        const archive = (targets: Parameters<typeof messageFacts>[0], context = BLOCKED): unknown =>
+            messageFacts(targets, context)['_archive'];
+
+        it('is can for a message the server says can be archived, blocked mailbox or not', () => {
+            expect(archive([{ canArchive: true, folder: 'INBOX' }])).toBe('can');
+            expect(archive([{ canArchive: true, folder: '[Gmail]/Sent Mail' }])).toBe('can');
+            expect(archive([{ canArchive: true, folder: 'INBOX' }], archiveContextOf({}, TREE))).toBe('can');
+        });
+
+        it('is blocked for a message that cannot be archived, in the inbox-role folder of a mailbox that says why', () => {
+            expect(archive([{ canArchive: false, folder: 'INBOX' }])).toBe('blocked');
+            expect(archive([{ canArchive: null, folder: 'INBOX' }])).withContext('null canArchive').toBe('blocked');
+            expect(archive([{ folder: 'INBOX' }])).withContext('missing canArchive').toBe('blocked');
+        });
+
+        it('is no for the same message in Sent', () => {
+            expect(archive([{ canArchive: false, folder: '[Gmail]/Sent Mail' }])).toBe('no');
+        });
+
+        it('is no when the mailbox does not say why: archiveBlockedBy absent or null', () => {
+            expect(archive([{ canArchive: false, folder: 'INBOX' }], archiveContextOf({}, TREE))).withContext('absent').toBe('no');
+            expect(archive([{ canArchive: false, folder: 'INBOX' }], archiveContextOf({ archiveBlockedBy: null }, TREE)))
+                .withContext('null').toBe('no');
+            expect(archive([{ canArchive: false, folder: 'INBOX' }], archiveContextOf(null, TREE))).withContext('no mailbox').toBe('no');
+            expect(archive([{ canArchive: false, folder: 'INBOX' }], archiveContextOf({ archiveBlockedBy: 'all-mail-hidden' }, null)))
+                .withContext('no folder tree yet').toBe('no');
+        });
+
+        it('is the inbox ROLE that counts, not the INBOX name: a nested inbox-role folder is the Inbox', () => {
+            const tree = [folder('INBOX', null), folder('Mail', null, [folder('Mail/Eingang', 'inbox')])];
+            const context = archiveContextOf({ archiveBlockedBy: 'all-mail-hidden' }, tree);
+            expect(archive([{ canArchive: false, folder: 'Mail/Eingang' }], context)).toBe('blocked');
+            expect(archive([{ canArchive: false, folder: 'INBOX' }], context)).toBe('no');
+        });
+
+        it('defaults to no block: without a context Archive is can or no', () => {
+            expect(messageFacts([{ canArchive: true }])['_archive']).toBe('can');
+            expect(messageFacts([{ canArchive: false, folder: 'INBOX' }])['_archive']).toBe('no');
+        });
+
+        it('over checked rows: can if any is can, else blocked if any is blocked, else no', () => {
+            const can = { canArchive: true, folder: '[Gmail]/Sent Mail' };
+            const blocked = { canArchive: false, folder: 'INBOX' };
+            const no = { canArchive: false, folder: '[Gmail]/Sent Mail' };
+            expect(archive([no, blocked, can])).toBe('can');
+            expect(archive([can, no])).toBe('can');
+            expect(archive([no, blocked])).toBe('blocked');
+            expect(archive([blocked, blocked])).toBe('blocked');
+            expect(archive([no, no])).toBe('no');
+            expect(archive([])).toBe('no');
+        });
+
+        it('leaves _anyCanArchive as it was: a blocked message is not one that can be archived', () => {
+            const facts = messageFacts([{ canArchive: false, folder: 'INBOX' }], BLOCKED);
+            expect(facts['_archive']).toBe('blocked');
+            expect(facts['_anyCanArchive']).toBeFalse();
         });
     });
 

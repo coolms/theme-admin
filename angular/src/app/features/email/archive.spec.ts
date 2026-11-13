@@ -86,7 +86,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
             'no-archive-folder':        "This mailbox's server has no folder marked as its archive.",
             'not-archivable-from-here': 'Messages in this folder cannot be archived.',
             'not-in-inbox':             'On this server only messages in the Inbox can be archived.',
-            'all-mail-hidden':          'This Gmail account does not show All Mail to mail apps, so archived mail would be in no folder here.',
+            'all-mail-hidden':          'Archive needs All Mail shown over IMAP: in Gmail settings, Labels, All Mail, Show in IMAP.',
             'folders-not-listed':       "This mailbox's folders have not been read from the server yet. Try again after it syncs.",
             'retired-copy':             'This copy is out of date. Reload the folder.',
             'not-on-server':            'The mail server no longer has this message.',

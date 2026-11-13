@@ -22,6 +22,18 @@ major number means here.
   after that window is closed with the draft kept, it shows the draft's first words with Open and Discard (the same
   10 s Undo), and never puts the text back in the box.
 
+- **The mail toolbar states whether Archive is blocked.** The facts the message toolbar, a row's menu and the
+  checked-rows bar read carry `_archive` beside `_anyCanArchive` (kept as it was): `can` when the server says the
+  message can be archived; `blocked` when it cannot, the mailbox list says why (`archiveBlockedBy`, such as
+  `all-mail-hidden`) and the message is in the folder in the inbox role; `no` otherwise. Over several checked
+  messages it is `can` if any is, else `blocked` if any is, else `no`. A mailbox list without `archiveBlockedBy` is
+  never blocked. Nothing is drawn differently yet: the fact lets a served Archive node show disabled with its reason
+  instead of not at all.
+
+- **Empty is off, and archive on Gmail says how to fix All Mail.** The folder menu offers no Empty while the server
+  has turned it off; a refusal says Empty is off for now, or not yet available on Gmail. An archive refused because a
+  Gmail account hides All Mail now says how to show it: in Gmail settings, Labels, All Mail, Show in IMAP.
+
 - **One mail pane fills the screen again over the saved pane widths.** On a phone, or wherever one pane shows at a
   time, the folders and the list filled only the person's saved splitter width (230 and 340 px by default), since
   the splitter writes that width on its pane inline. The one-pane rules now win over it, as the two-pane rule
