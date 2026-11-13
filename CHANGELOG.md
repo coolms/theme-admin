@@ -8,6 +8,8 @@ major number means here.
 
 ## Unreleased
 
+- **Empty is off, and archive on Gmail says how to fix All Mail.** The folder menu offers no Empty while the server has turned it off; a refusal says Empty is off for now, or not yet available on Gmail. An archive refused because a Gmail account hides All Mail now says how to show it: in Gmail settings, Labels, All Mail, Show in IMAP.
+
 - **One mail pane fills the screen again over the saved pane widths.** On a phone, or wherever one pane shows at a
   time, the folders and the list filled only the person's saved splitter width (230 and 340 px by default), since
   the splitter writes that width on its pane inline. The one-pane rules now win over it, as the two-pane rule

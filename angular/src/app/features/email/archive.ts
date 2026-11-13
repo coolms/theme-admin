@@ -36,7 +36,7 @@ export function archiveReasonText(reason: string | null): string {
         case 'not-in-inbox':
             return 'On this server only messages in the Inbox can be archived.';
         case 'all-mail-hidden':
-            return "This Gmail account does not show All Mail to mail apps, so archived mail would be in no folder here.";
+            return "Archive needs All Mail shown over IMAP: in Gmail settings, Labels, All Mail, Show in IMAP.";
         case 'folders-not-listed':
             return "This mailbox's folders have not been read from the server yet. Try again after it syncs.";
         case 'retired-copy':
