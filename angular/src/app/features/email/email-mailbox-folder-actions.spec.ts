@@ -152,10 +152,18 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
             ],
         });
         const page = TestBed.runInInjectionContext(() => new EmailMailboxPageComponent());
+        built.push(page);
         page.loadMailboxes();
 
         return page;
     }
+
+    /** Every page built in a case: its jobs are stopped after it, so no timer reads on into the next spec. */
+    let built: EmailMailboxPageComponent[] = [];
+    afterEach(() => {
+        built.forEach(page => page.folderJobs.stop());
+        built = [];
+    });
 
     beforeEach(() => {
         realtime = true;
