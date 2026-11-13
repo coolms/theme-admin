@@ -13,6 +13,10 @@ major number means here.
   4.4.0, and `prosemirror-commands` 1.7.2, `prosemirror-dropcursor` 1.8.4 and `prosemirror-history` 1.5.1.
   The HTML every admin editor configuration produces for a set of 38 typical documents is the same as before.
 
+- **A mail draft deleted elsewhere keeps what was written here.** A save refused with 404 (the draft was deleted
+  on another device while its change event was missed) no longer drops the text: the quick reply or the compose
+  window keeps it, saves it as a new draft, and says so.
+
 - **Show original says when a message is not found.** Any 404 other than the source-gone one (a missing
   message, or one the reader may not see) now reads "This message was not found." instead of the generic failure.
 

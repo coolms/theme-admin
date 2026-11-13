@@ -8,11 +8,12 @@ import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
+import { FakeDraftsApi } from './email-drafts.fake';
+import { DRAFT_RETRY_FIRST_MS } from './server-draft';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -70,6 +71,8 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
     let toasts: string[];
     /** What a send or a reply answers; nothing by default. */
     let sendAnswer: () => Observable<unknown>;
+    /** The person's drafts on the server, this test's own. */
+    let drafts: FakeDraftsApi;
 
     function providers(): unknown[] {
         const noop = (): void => undefined;
@@ -83,6 +86,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                     listMessages: () => of([]),
                     listInboundWorkflowOptions: () => of([]),
                     listOAuthProviders: () => of([]),
+                    listAliases: () => of({ canManage: false, aliases: [] }),
                     composePrefill: (id: string, mode: EmailComposeMode) => {
                         asked.push([id, mode]);
                         return answer(mode);
@@ -95,6 +99,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                         sent.push({ via: 'reply', id, request: structuredClone(request) });
                         return sendAnswer();
                     },
+                    ...drafts.api(),
                 },
             },
             { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
@@ -114,7 +119,6 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             },
             { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true } },
             { provide: ConfirmDialogService, useValue: {} },
-            { provide: DraftStoreService, useValue: { load: () => null, save: noop, clear: noop } },
             { provide: ContactsService, useValue: {} },
             { provide: DateTimeFormatService, useValue: { auto: () => '', dateTime: () => '' } },
             { provide: ErrorHandlerService, useValue: {} },
@@ -130,6 +134,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         toasts = [];
         sendAnswer = () => NEVER;
         answer = mode => of(answerFor(mode));
+        drafts = new FakeDraftsApi();
         TestBed.resetTestingModule();
     }
 
@@ -164,7 +169,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                 expect(page.composeCc).toEqual(served.cc.map(r => r.address));
                 expect(page.composeShowCcBcc()).toBe(served.cc.length > 0);
                 expect(page.composeSubject).toBe(served.subject);
-                expect(page.composeFrom()).toBe('sales@example.test');
+                expect(page.composeFromValue()).toBe('sales@example.test');
                 expect(page.composeText).withContext('nothing written for the person').toBe('');
                 expect(page.composeHtml()).withContext('the quote is not put in the editor').toBe('');
                 expect(page.recipientOptions()).toEqual(served.to.map(r => ({ value: r.address, label: `${r.name} <${r.address}>` })));
@@ -355,23 +360,79 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             expect(page.composeQuoteShown()).toBeFalse();
         });
 
-        it('a draft keeps Remove quote: the answer opened again sends without it', () => {
-            const store = new Map<string, unknown>();
+        it('a draft keeps Remove quote on the server: the answer opened again sends without it, naming the draft', () => {
             const page = build();
-            const drafts = TestBed.inject(DraftStoreService) as unknown as Record<string, unknown>;
-            drafts['save'] = (k: string, v: unknown): void => void store.set(k, structuredClone(v));
-            drafts['load'] = (k: string): unknown => store.get(k) ?? null;
             page.composeRich.set(false);
             page.onDetailAction('reply');
             page.composeText = 'Later.';
             page.removeQuote();
             page.closeCompose();
-            expect([...store.values()].map(v => (v as { quote?: boolean }).quote)).toEqual([false]);
+            expect(drafts.of('create').map(c => [c.body!.answers, c.body!.quote])).toEqual([[{ messageId: 'm1', mode: 'reply' }, false]]);
+            const id = [...drafts.drafts.keys()][0];
 
             page.onDetailAction('reply');
+            expect(drafts.of('lookup').map(c => c.messageId)).withContext('found again by the message').toEqual(['m1', 'm1']);
             expect(page.composeQuoteShown()).toBeFalse();
             page.sendCompose();
-            expect(sent.map(s => [s.request.text, s.request.quote])).toEqual([['Later.', false]]);
+            expect(sent.map(s => [s.request.text, s.request.quote, s.request.draftId])).toEqual([['Later.', false, id]]);
+        });
+
+        it('every draft states the quote: kept for an answer or a forward, false for a new message', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.onDetailAction('forward');
+            page.composeText = 'FYI.';
+            page.closeCompose();
+            page.openCompose();
+            page.composeTo = ['ada@example.com'];
+            page.composeText = 'New.';
+            page.closeCompose();
+
+            expect(drafts.of('create').map(c => [c.body!.answers, c.body!.quote])).toEqual([
+                [{ messageId: 'm1', mode: 'forward' }, true],
+                [null, false],
+            ]);
+            const keys = drafts.of('create').map(c => c.key);
+            expect(keys.every(k => typeof k === 'string' && k !== '')).withContext('each create sends an Idempotency-Key').toBeTrue();
+            expect(new Set(keys).size).withContext('a key of its own for each create').toBe(2);
+        });
+
+        it('a forward draft create that answers 5xx is tried again with the same Idempotency-Key: one draft', async () => {
+            const page = build();
+            page.composeRich.set(false);
+            // The create commits on the server but its answer is a 503, as one whose answer was lost.
+            drafts.failNextCreate(503, true);
+            page.onDetailAction('forward');
+            page.composeText = 'FYI.';
+            page.closeCompose();
+            expect(drafts.of('create').length).toBe(1);
+            expect(drafts.of('lookup').length).withContext('a forward is not looked up by the message').toBe(1);
+
+            await new Promise(resolve => setTimeout(resolve, DRAFT_RETRY_FIRST_MS + 200));
+
+            const creates = drafts.of('create');
+            expect(creates.length).withContext('tried again').toBe(2);
+            expect(creates[1].key).withContext('with the same key').toBe(creates[0].key);
+            expect(creates[1].body).toEqual(creates[0].body);
+            expect(drafts.drafts.size).withContext('one draft').toBe(1);
+            expect([...drafts.drafts.values()][0].answers).toEqual({ messageId: 'm1', mode: 'forward' });
+        });
+
+        it('Reply all opens the reply draft and switches it to reply all; never a second draft', () => {
+            const page = build();
+            page.composeRich.set(false);
+            page.onDetailAction('reply');
+            page.composeText = 'To everyone, in the end.';
+            page.closeCompose();
+            const id = [...drafts.drafts.keys()][0];
+
+            page.onDetailAction('reply-all');
+            expect(page.composeText).toBe('To everyone, in the end.');
+            page.closeCompose();
+
+            expect(drafts.of('create').length).toBe(1);
+            expect(drafts.of('save').map(c => [c.id, c.body!.answers])).toEqual([[id, { messageId: 'm1', mode: 'reply_all' }]]);
+            expect(drafts.drafts.get(id)!.answers).toEqual({ messageId: 'm1', mode: 'reply_all' });
         });
 
         it('says when the original could not be read, and shows no quote', () => {
@@ -452,7 +513,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             return fixture.nativeElement as HTMLElement;
         }
 
-        it('the person\'s editor above, the served quote below it as served, the From, and Send', () => {
+        it('the person\'s editor above, the served quote below it as served, and Send', () => {
             const el = render({}, 'reply', true);
             const text = el.querySelector('.mbx__compose coolms-editor');
             const quote = quoteFrame(el);
@@ -461,7 +522,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             expect(quote.frame).not.toBeNull();
             expect(text!.compareDocumentPosition(quote.frame!) & Node.DOCUMENT_POSITION_FOLLOWING).withContext('the quote below').toBeTruthy();
             expect(quote.html).toBe(QUOTE_HTML);
-            expect(el.querySelector('[data-testid="compose-from"]')?.textContent?.trim()).toBe('sales@example.test');
+            expect(el.querySelector('[data-testid="compose-from"]')).withContext('no From without a confirmed alias').toBeNull();
             expect(el.querySelector('[data-testid="compose-send"]')).not.toBeNull();
         });
 

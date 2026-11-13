@@ -8,7 +8,6 @@ import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
@@ -91,6 +90,9 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
                     provide: EmailService,
                     useValue: {
                         listMailboxes: () => of([{ id: 'mb1', label: 'Work' } as EmailMailboxDto]),
+                        // The opened message's quick reply asks for its reply prefill; not answered here.
+                        composePrefill: () => NEVER,
+                        draftsAnswering: () => NEVER,
                         listFolders: () => of([]),
                         folderTree: () => of([]),
                         listMessages: (_id: string, folder: string, n: number, cursor: string | null = null): Observable<EmailMessageList> => {
@@ -131,7 +133,6 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
                 { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
-                { provide: DraftStoreService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },

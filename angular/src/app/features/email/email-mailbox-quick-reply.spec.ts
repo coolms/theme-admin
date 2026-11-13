@@ -1,17 +1,17 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { NEVER, of } from 'rxjs';
-import { ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
+import { NEVER, Subject, of } from 'rxjs';
+import { AuthState, ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ContextMenuService,
     DateTimeFormatService,
-    DraftStoreService,
     ToastService,
 } from '@coolms/ui-angular';
 import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
+import { FakeDraftsApi } from './email-drafts.fake';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
@@ -19,16 +19,20 @@ import {
     type EmailComposeDto, type EmailComposeMode, type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto,
     type OutgoingEmailRequest,
 } from './email.types';
+import { readDraftsChanged } from './mail-drafts-changed';
 import { MAIL_PREFERENCE_DEFAULTS, MailPreferencesService } from './mail-preferences.service';
+import { QUICK_REPLY_MAX_LINES, QUICK_REPLY_SAVE_MS } from './mail-quick-reply.component';
+import { DRAFT_GONE_KEPT, DRAFT_RETRY_FIRST_MS } from './server-draft';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 
 const LISTED: EmailMessageDto[] = [{ id: 'm1', folder: 'INBOX', subject: 'Desk move on Friday', fromName: 'Ann Lee', fromAddress: 'ann@example.com' }];
+const REPLY = { messageId: 'm1', mode: 'reply' as const };
 
-/** The server's prefill for an answer or a forward of m1. */
+/** The server's prefill for an answer or a forward of m1: the reply goes to the Reply-To the server chose. */
 function prefill(mode: EmailComposeMode): EmailComposeDto {
     return {
         id: 'm1', mode, from: { address: 'work@example.com', choices: ['work@example.com'] },
-        to: mode === 'forward' ? [] : [{ name: 'Ann Lee', address: 'ann@example.com' }], cc: [],
+        to: mode === 'forward' ? [] : [{ name: 'Desk team', address: 'desks@example.com' }], cc: [],
         subject: mode === 'forward' ? 'Fwd: Desk move on Friday' : 'Re: Desk move on Friday',
         quote: { text: 'Ann Lee wrote:\n> Line 1', html: '<p>Ann Lee wrote:</p><blockquote>Line 1</blockquote>', attribution: null },
         inReplyTo: null, references: [], attachments: [], unreadable: null,
@@ -41,20 +45,40 @@ function message(lines: number): EmailMessageDetailDto {
     return { ...LISTED[0], bodyText: body } as EmailMessageDetailDto;
 }
 
+/** A reply draft of m1 as the quick reply writes it on another device: plain, quoted, to the prefill's recipient. */
+function written(id: string, text: string): { id: string } & Record<string, unknown> {
+    return {
+        id, to: ['desks@example.com'], subject: 'Re: Desk move on Friday', text, html: null, from: 'work@example.com',
+        answers: REPLY, quote: true,
+    };
+}
+
 /**
- * The quick reply in the message pane: one "Reply…" line at the foot of the message, inside the pane's one scroll
- * region, and at the pane's foot under a short message, so it never moves up when the message gets shorter. Choosing
- * the line (a click, Enter or Space; focus alone does not), or Reply, opens the reply's composer there, in view and
- * focused; it sends as the dock's reply does and folds back to the line. Reply all and Forward keep the dock. The page is rendered and laid out at 1400 x 600,
- * fixed at the window's top left.
+ * The quick reply: a chat-like box pinned at the bottom of the message pane, outside the message's one scroll region.
+ * One line until used, growing with the text to about six lines, then scrolling inside; no To or Subject (the server's
+ * reply prefill gives them); plain text, files, Send and Expand; Ctrl or Cmd+Enter sends, Enter is a new line; the
+ * server appends the quote. Its text is the message's reply draft on the server (the drafts API, in memory here), saved
+ * after a pause; Expand, or Reply while it holds text, hands that one draft to the compose window. Rendered and laid
+ * out at 1400 x 600, fixed at the window's top left.
  */
-describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
+describe('EmailMailboxPageComponent -- the quick reply, pinned below the message', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
     let replies: Array<{ id: string; request: OutgoingEmailRequest }>;
+    let asked: Array<[string, EmailComposeMode]>;
+    let server: FakeDraftsApi;
+    let live: Subject<unknown>;
+    let infos: string[];
 
     beforeEach(() => {
         replies = [];
-        const drafts = new Map<string, unknown>();
+        asked = [];
+        // This test's own drafts: the mock below closes over them, so a save still pending from an earlier test's
+        // page writes into that page's drafts, never into these.
+        const drafts = new FakeDraftsApi();
+        server = drafts;
+        live = new Subject<unknown>();
+        const told: string[] = [];
+        infos = told;
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
             providers: [
@@ -67,35 +91,41 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
                         listMessages: () => of(LISTED),
                         listInboundWorkflowOptions: () => of([]),
                         listOAuthProviders: () => of([]),
-                        composePrefill: (id: string, mode: EmailComposeMode) => of(prefill(mode)),
+                        listAliases: () => of({ canManage: false, aliases: [] }),
+                        composePrefill: (id: string, mode: EmailComposeMode) => {
+                            asked.push([id, mode]);
+                            return of(prefill(mode));
+                        },
                         reply: (id: string, request: OutgoingEmailRequest) => {
-                            replies.push({ id, request });
+                            replies.push({ id, request: structuredClone(request) });
+                            // The server removes the draft a reply was written in once it is sent.
+                            if (request.draftId !== undefined) {
+                                drafts.drafts.delete(request.draftId);
+                            }
                             return of({});
                         },
+                        createDraft: drafts.createDraft.bind(drafts),
+                        saveDraft: drafts.saveDraft.bind(drafts),
+                        readDraft: drafts.readDraft.bind(drafts),
+                        deleteDraft: drafts.deleteDraft.bind(drafts),
+                        draftsAnswering: drafts.draftsAnswering.bind(drafts),
+                        listDrafts: drafts.listDrafts.bind(drafts),
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
-                { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (): void => {} } },
+                { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (m: string): void => void told.push(m) } },
                 { provide: Router, useValue: { events: NEVER, navigate: () => Promise.resolve(true) } },
                 {
                     provide: ActivatedRoute,
                     useValue: { queryParamMap: NEVER, snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({}) } },
                 },
-                { provide: Store, useValue: { selectSnapshot: () => null } },
+                { provide: Store, useValue: { selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' } : null) } },
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
-                {
-                    provide: DraftStoreService,
-                    useValue: {
-                        load: (key: string) => drafts.get(key) ?? null,
-                        save: (key: string, value: unknown) => void drafts.set(key, value),
-                        clear: (key: string) => void drafts.delete(key),
-                    },
-                },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
-                { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
+                { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: {} },
                 { provide: CrumbNamesService, useValue: { setTail: (): void => {} } },
             ],
@@ -103,6 +133,12 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         TestBed.overrideComponent(EmailMailboxPageComponent, {
             set: { providers: [{ provide: MailboxSettingsModal, useValue: { attach: (): void => {} } }] },
         });
+        mount();
+    });
+    afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+
+    /** The page, laid out; mounted again it is the page after a reload (or on another device), with the same drafts. */
+    function mount(): void {
         fixture = TestBed.createComponent(EmailMailboxPageComponent);
         const host = fixture.nativeElement as HTMLElement;
         host.style.display = 'flex';
@@ -114,10 +150,10 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         document.body.appendChild(host);
         fixture.componentInstance.composeRich.set(false);
         fixture.detectChanges();
-    });
-    afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+    }
 
     const frame = (): Promise<void> => new Promise(resolve => requestAnimationFrame(() => resolve()));
+    const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
     async function settle(): Promise<void> {
         for (let i = 0; i < 3; i++) {
             fixture.detectChanges();
@@ -127,122 +163,387 @@ describe('EmailMailboxPageComponent -- quick reply at the pane\'s foot', () => {
         fixture.detectChanges();
     }
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const section = (): HTMLElement => el().querySelector<HTMLElement>('.mbx__detail')!;
     const scroll = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="detail-scroll"]')!;
-    const reply = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="quick-reply"]')!;
-    const line = (): HTMLButtonElement | null => el().querySelector<HTMLButtonElement>('[data-test="quick-reply-line"]');
-    const composer = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-composer"]');
+    const quick = (): HTMLElement => el().querySelector<HTMLElement>('[data-test="quick-reply"]')!;
+    const box = (): HTMLTextAreaElement => el().querySelector<HTMLTextAreaElement>('[data-test="quick-reply-box"]')!;
     const dock = (): HTMLElement | null => el().querySelector<HTMLElement>('.mbx__dock');
-    const bodyBottom = (): number => el().querySelector<HTMLElement>('.mbx__detail-body')!.getBoundingClientRect().bottom;
-    /** Where the pane's content ends: the scroll region's bottom, less its padding. */
-    const paneFoot = (): number => scroll().getBoundingClientRect().bottom - parseFloat(getComputedStyle(scroll()).paddingBottom);
+    const handed = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-in-window"]');
+    const only = (): string => [...server.drafts.keys()][0];
 
     async function open(lines: number): Promise<void> {
+        fixture.componentInstance.selectedMailboxId.set('mb1');
         fixture.componentInstance.selectedMessage.set(message(lines));
         await settle();
     }
 
-    it('shows one "Reply…" line, last in the pane\'s one scroll region, until it is used', async () => {
-        await open(3);
+    /** Types into the box and lets it draw, without waiting out the pause before the draft is saved. */
+    async function type(text: string): Promise<void> {
+        box().value = text;
+        box().dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+        await frame();
+        await frame();
+        fixture.detectChanges();
+    }
 
-        expect(reply().parentElement).withContext('inside the scroll region').toBe(scroll());
-        expect(scroll().lastElementChild).withContext('after the message and its files').toBe(reply());
-        expect(line()?.textContent?.trim()).toBe('Reply…');
-        expect(composer()).toBeNull();
-        expect(reply().querySelector('textarea, input')).toBeNull();
-        expect(getComputedStyle(reply()).position).withContext('not pinned, not sticky').toBe('static');
-    });
+    /** Types into the box and waits out the pause: the draft is saved. */
+    async function typeAndSave(text: string): Promise<void> {
+        await type(text);
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        await settle();
+    }
 
-    it('sits at the pane\'s foot under a short message, and stays there when the message gets shorter', async () => {
-        await open(8);
-        expect(scroll().scrollHeight).withContext('the message fits the pane').toBeLessThanOrEqual(scroll().clientHeight);
-        expect(reply().getBoundingClientRect().bottom).withContext('at the pane\'s foot').toBeCloseTo(paneFoot(), 0);
-        expect(reply().getBoundingClientRect().top - bodyBottom()).withContext('free space above it').toBeGreaterThan(50);
-        const before = reply().getBoundingClientRect().top;
+    /** The box's height for `lines` lines of text, from its own line height, padding and border. */
+    function heightFor(lines: number): number {
+        const s = getComputedStyle(box());
+        return parseFloat(s.lineHeight) * lines + parseFloat(s.paddingTop) + parseFloat(s.paddingBottom)
+            + parseFloat(s.borderTopWidth) + parseFloat(s.borderBottomWidth);
+    }
+
+    it('is pinned at the bottom of the message pane, outside its one scroll region, and stays put as the message scrolls', async () => {
+        await open(200);
+        const pane = section().getBoundingClientRect();
+        const at = quick().getBoundingClientRect();
+
+        expect(scroll().contains(quick())).withContext('not inside the scroll region').toBeFalse();
+        expect(section().contains(quick())).withContext('in the message pane').toBeTrue();
+        expect(at.bottom).withContext('at the pane\'s bottom').toBeCloseTo(pane.bottom, 0);
+        expect(scroll().getBoundingClientRect().bottom).withContext('the scroll region ends above it').toBeLessThanOrEqual(at.top + 0.5);
+        expect(scroll().scrollHeight).withContext('the long message scrolls').toBeGreaterThan(scroll().clientHeight + 100);
+
+        scroll().scrollTop = scroll().scrollHeight;
+        await settle();
+        expect(quick().getBoundingClientRect().top).withContext('scrolling the message leaves it in place').toBeCloseTo(at.top, 0);
 
         await open(2);
-
-        expect(reply().getBoundingClientRect().top).withContext('never moves up').toBeCloseTo(before, 0);
+        expect(quick().getBoundingClientRect().bottom).withContext('under a short message too').toBeCloseTo(section().getBoundingClientRect().bottom, 0);
     });
 
-    it('follows a long message, right after it', async () => {
-        await open(200);
-        expect(scroll().scrollHeight).withContext('the message is longer than the pane').toBeGreaterThan(scroll().clientHeight);
-
-        expect(reply().getBoundingClientRect().top).withContext('right after the message').toBeCloseTo(bodyBottom(), 0);
-        expect(reply().getBoundingClientRect().top).withContext('below the pane, until scrolled to')
-            .toBeGreaterThan(scroll().getBoundingClientRect().bottom);
-    });
-
-    it('stays a line when it only takes the focus, and opens as the reply\'s composer on Enter, the dock staying closed', async () => {
+    it('is one line reading "Write a reply…", grows with the text to six lines, then scrolls inside', async () => {
         await open(3);
-        expect(line()!.getAttribute('aria-label')).toBe('Reply to Ann Lee');
+        expect(box().placeholder).toBe('Write a reply…');
+        expect(box().getBoundingClientRect().height).withContext('one line').toBeCloseTo(heightFor(1), 0);
 
-        line()!.focus();
-        await settle();
+        await type('one\ntwo\nthree');
+        expect(box().getBoundingClientRect().height).withContext('three lines').toBeCloseTo(heightFor(3), 0);
+        expect(box().scrollHeight).withContext('no scroll at three lines').toBeLessThanOrEqual(box().clientHeight);
 
-        expect(document.activeElement).withContext('tabbing onto it focuses the line').toBe(line());
-        expect(composer()).withContext('focus alone opens nothing').toBeNull();
-
-        line()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-        await settle();
-
-        expect(composer()).withContext('Enter opens the composer in the pane').not.toBeNull();
-        expect(line()).toBeNull();
-        expect(dock()).withContext('no dock').toBeNull();
-        const page = fixture.componentInstance;
-        expect(page.composeMode()).toBe('reply');
-        expect(page.composeTo).toEqual(['ann@example.com']);
-        expect(page.composeSubject).toBe('Re: Desk move on Friday');
-        expect(document.activeElement).withContext('its body has the focus').toBe(composer()!.querySelector('textarea'));
+        await type(Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('\n'));
+        expect(QUICK_REPLY_MAX_LINES).toBe(6);
+        expect(box().getBoundingClientRect().height).withContext('capped at six lines').toBeCloseTo(heightFor(6), 0);
+        expect(box().scrollHeight).withContext('scrolls inside past six').toBeGreaterThan(box().clientHeight + 10);
+        expect(getComputedStyle(box()).overflowY).toBe('auto');
+        expect(scroll().contains(box())).toBeFalse();
     });
 
-    it('Reply scrolls the pane to the quick reply, opens it and focuses it', async () => {
-        await open(200);
-        expect(scroll().scrollTop).toBe(0);
+    it('has no To or Subject, and sends plain text to the prefill\'s recipient with Re: and quote: true', async () => {
+        await open(3);
+        expect(asked).toEqual([['m1', 'reply']]);
+        expect(quick().querySelector('app-tag-input, input[type="text"]')).withContext('no To, no Subject').toBeNull();
+
+        await type('Friday works.');
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-send"]')!.click();
+        await settle();
+
+        expect(replies).toEqual([{ id: 'm1', request: {
+            text: 'Friday works.', to: ['desks@example.com'], subject: 'Re: Desk move on Friday', from: 'work@example.com', quote: true,
+        } }]);
+        expect(box().value).withContext('cleared after the send').toBe('');
+        expect(server.drafts.size).withContext('no draft left').toBe(0);
+    });
+
+    it('Ctrl+Enter and Cmd+Enter send; Enter alone is a new line', async () => {
+        await open(3);
+        await type('First');
+        const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+        box().dispatchEvent(enter);
+        await settle();
+        expect(enter.defaultPrevented).withContext('Enter is left to the box').toBeFalse();
+        expect(replies.length).toBe(0);
+
+        box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+        await settle();
+        await type('Second');
+        box().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true }));
+        await settle();
+
+        expect(replies.map(r => r.request.text)).toEqual(['First', 'Second']);
+    });
+
+    it('its text is the message\'s reply draft on the server, saved after a pause with quote: true, and found again after a reload', async () => {
+        await open(3);
+        await type('Will reply properly later.');
+        expect(server.of('create').length).withContext('not before the pause').toBe(0);
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+
+        const made = server.of('create');
+        expect(made.length).toBe(1);
+        expect(made[0].body).toEqual({
+            to: ['desks@example.com'], cc: [], bcc: [], subject: 'Re: Desk move on Friday', text: 'Will reply properly later.',
+            html: null, attachments: [], from: 'work@example.com', quote: true, messageParts: [], answers: REPLY,
+        });
+        expect(Object.keys(made[0].body!)).withContext('never the server\'s threading').not.toContain('inReplyTo');
+
+        fixture.destroy();
+        (fixture.nativeElement as HTMLElement).remove();
+        mount();
+        await open(3);
+
+        expect(server.of('lookup').at(-1)?.messageId).withContext('found by the message').toBe('m1');
+        expect(box().value).toBe('Will reply properly later.');
+    });
+
+    it('a second reply draft refused (409 reply-draft-exists) loads that draft and never makes a second', async () => {
+        await open(3);
+        // Another device made the reply draft after this box looked it up.
+        server.put(written('d-other', 'Written on the phone.'));
+
+        await typeAndSave('Typed here.');
+
+        expect(server.of('create').length).withContext('one create, refused').toBe(1);
+        expect(server.of('read').map(c => c.id)).withContext('the named draft is read').toEqual(['d-other']);
+        expect([...server.drafts.keys()]).withContext('still one draft').toEqual(['d-other']);
+        expect(box().value).withContext('the box shows that draft').toBe('Written on the phone.');
+
+        await typeAndSave('Written on the phone. And here.');
+        expect(server.of('save').map(c => [c.id, c.version])).withContext('saved to that draft, from its version').toEqual([['d-other', 1]]);
+        expect(server.drafts.get('d-other')!.text).toBe('Written on the phone. And here.');
+    });
+
+    it('a stale save (409 draft-stale) reloads the draft and never writes over it', async () => {
+        server.put(written('d1', 'First words.'));
+        await open(3);
+        expect(box().value).toBe('First words.');
+        // Saved elsewhere meanwhile: version 2.
+        server.put({ id: 'd1', text: 'Changed on the laptop.' });
+
+        await typeAndSave('First words, and more.');
+
+        expect(server.of('save').map(c => c.version)).withContext('made from version 1').toEqual([1]);
+        expect(server.drafts.get('d1')!.text).withContext('not written over').toBe('Changed on the laptop.');
+        expect(server.drafts.get('d1')!.version).toBe(2);
+        expect(box().value).withContext('the stored draft, reloaded').toBe('Changed on the laptop.');
+    });
+
+    it('Expand hands the same draft id to the compose window; the box says so and brings the window up', async () => {
+        await open(3);
+        await typeAndSave('Long answer coming.');
+        const id = only();
+
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+
+        expect(dock()).withContext('the compose window').not.toBeNull();
+        expect(server.of('read').map(c => c.id)).withContext('the window reads the draft handed to it').toEqual([id]);
+        expect(dock()!.querySelector('textarea')!.value).toBe('Long answer coming.');
+        expect(fixture.componentInstance.composeTo).withContext('the prefill\'s To').toEqual(['desks@example.com']);
+        expect(fixture.componentInstance.composeSubject).toBe('Re: Desk move on Friday');
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the box clears').toBeNull();
+        expect(handed()?.textContent).toContain('The reply is open in the compose window.');
+
+        // Written on in the window: the same draft, saved from the version the box left.
+        fixture.componentInstance.composeText = 'Long answer coming. Here it is.';
+        fixture.componentInstance.onComposeChange();
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        const saves = server.of('save');
+        expect(saves.length).withContext('saved from the window').toBeGreaterThan(0);
+        expect(saves.map(c => c.id)).withContext('one draft id for both').toEqual(saves.map(() => id));
+        expect(saves[0].version).withContext('from the version the box left').toBe(1);
+        expect(server.drafts.get(id)!.text).toBe('Long answer coming. Here it is.');
+        expect(server.of('create').length).toBe(1);
+        expect(server.drafts.size).toBe(1);
+
+        fixture.componentInstance.toggleMinimize();
+        await settle();
+        handed()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-show-window"]')!.click();
+        await settle();
+        expect(fixture.componentInstance.composeMinimized()).withContext('Show it brings the window up').toBeFalse();
+    });
+
+    it('Reply while the box holds text does what Expand does, before the pause too', async () => {
+        await open(3);
+        await type('Typed just now.');
 
         fixture.componentInstance.onDetailAction('reply');
         await settle();
 
-        expect(composer()).not.toBeNull();
-        expect(dock()).toBeNull();
-        expect(scroll().scrollTop).withContext('the pane scrolled').toBeGreaterThan(0);
-        const box = composer()!.getBoundingClientRect();
-        const pane = scroll().getBoundingClientRect();
-        expect(box.top).withContext('in view').toBeLessThan(pane.bottom);
-        expect(box.bottom).withContext('in view').toBeGreaterThan(pane.top);
-        expect(document.activeElement).toBe(composer()!.querySelector('textarea'));
+        expect(dock()!.querySelector('textarea')!.value).toBe('Typed just now.');
+        expect(server.of('create').length).withContext('saved at the hand-off').toBe(1);
+        expect(server.of('read').map(c => c.id)).toEqual([only()]);
+        expect(handed()).not.toBeNull();
     });
 
-    it('sends through the reply\'s send and folds back to the line', async () => {
+    it('a reply sent from the box or the window names its draft (draftId), and the server removes it', async () => {
         await open(3);
-        fixture.componentInstance.openQuickReply();
-        await settle();
-        fixture.componentInstance.composeText = 'Friday works.';
-
-        Array.from(composer()!.querySelectorAll<HTMLButtonElement>('button')).find(b => b.textContent?.trim() === 'Send')!.click();
+        await typeAndSave('Sent from the box.');
+        const first = only();
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-send"]')!.click();
         await settle();
 
         expect(replies.length).toBe(1);
-        expect(replies[0].id).toBe('m1');
-        expect(replies[0].request.text).toBe('Friday works.');
-        expect(replies[0].request.to).toEqual(['ann@example.com']);
-        expect(replies[0].request.subject).toBe('Re: Desk move on Friday');
-        expect(composer()).toBeNull();
-        expect(line()).withContext('the line again').not.toBeNull();
+        expect(replies[0].request.draftId).toBe(first);
+        expect(replies[0].request.quote).toBeTrue();
+        expect(server.drafts.size).withContext('removed with the send').toBe(0);
+
+        await typeAndSave('Then from the window.');
+        const second = only();
+        expect(second).withContext('a new reply draft').not.toBe(first);
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        fixture.componentInstance.sendCompose();
+        await settle();
+
+        expect(replies.length).toBe(2);
+        expect(replies[1].id).toBe('m1');
+        expect(replies[1].request.draftId).toBe(second);
+        expect(replies[1].request.quote).withContext('the quote choice stated').toBeTrue();
+        expect(server.drafts.size).toBe(0);
     });
 
-    it('keeps the dock for Reply all and Forward, and the line in the pane', async () => {
+    it('a mail.drafts.changed with a newer version reads the draft again; with null it clears the box', async () => {
         await open(3);
+        await typeAndSave('Mine.');
+        const id = only();
+        const reads = server.of('read').length;
+
+        // The event of this place's own save: nothing newer, nothing read.
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: 1, answers: REPLY });
+        await settle();
+        expect(server.of('read').length).toBe(reads);
+
+        server.put({ id, text: 'Mine, edited on the phone.' });
+        live.next(readDraftsChanged({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: 2, answers: REPLY }));
+        await settle();
+        expect(server.of('read').at(-1)?.id).toBe(id);
+        expect(box().value).toBe('Mine, edited on the phone.');
+
+        server.drafts.delete(id);
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: id, version: null, answers: REPLY });
+        await settle();
+        expect(box().value).withContext('gone elsewhere: cleared').toBe('');
+
+        await typeAndSave('A new one.');
+        expect(server.of('create').length).withContext('the next text makes a new draft').toBe(2);
+    });
+
+    it('a reply draft made on another device is taken up by the box from its event', async () => {
+        await open(3);
+        server.put(written('d-phone', 'From the phone.'));
+        live.next({ type: 'mail.drafts.changed', mailboxId: 'mb1', draftId: 'd-phone', version: 1, answers: REPLY });
+        await settle();
+
+        expect(box().value).toBe('From the phone.');
+        await typeAndSave('From the phone. Done here.');
+        expect(server.of('create').length).withContext('no second draft').toBe(0);
+        expect(server.of('save').map(c => c.id)).toEqual(['d-phone']);
+    });
+
+    it('Expand while the box\'s create is on its way waits for it: the window opens on that draft, never a second', async () => {
+        await open(3);
+        await type('Racing the window.');
+        server.hold();
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect(server.waiting).withContext('the box\'s create is on its way').toBe(1);
+
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        expect(server.of('lookup').length + server.of('read').length).withContext('the window waits').toBe(1);
+
+        server.release();
+        await settle();
+        expect(server.of('create').length).withContext('one create').toBe(1);
+        expect(server.of('read').map(c => c.id)).withContext('the window reads the box\'s draft').toEqual([only()]);
+        expect(dock()!.querySelector('textarea')!.value).toBe('Racing the window.');
+    });
+
+    it('a reply draft create the server fails (5xx) looks the draft up once and loads it when it is there', async () => {
+        await open(3);
+        // The create raced another one, which made the draft; this one failed.
+        server.put(written('d-race', 'Made by the other create.'));
+        server.failNextCreate(500);
+
+        await typeAndSave('Typed here.');
+
+        expect(server.of('create').length).withContext('no second create').toBe(1);
+        expect(server.of('lookup').map(c => c.messageId)).withContext('looked up by the message').toEqual(['m1', 'm1']);
+        expect(box().value).toBe('Made by the other create.');
+        expect([...server.drafts.keys()]).toEqual(['d-race']);
+    });
+
+    it('a reply draft create the server fails with none there keeps the text and saves it again after a pause', async () => {
+        await open(3);
+        server.failNextCreate(503);
+
+        await type('Keep me.');
+        await wait(QUICK_REPLY_SAVE_MS + 100);
+        expect(server.of('create').length).withContext('the first create failed').toBe(1);
+        expect(server.drafts.size).withContext('nothing made yet').toBe(0);
+        expect(box().value).withContext('the text kept').toBe('Keep me.');
+
+        await wait(DRAFT_RETRY_FIRST_MS + 200);
+        expect(server.of('create').length).withContext('tried again').toBe(2);
+        expect(server.of('create')[1].key).withContext('with the same Idempotency-Key').toBe(server.of('create')[0].key);
+        expect(server.drafts.size).toBe(1);
+        expect(server.drafts.get(only())!.text).toBe('Keep me.');
+    });
+
+    it('a save refused with 404 (deleted elsewhere, its event missed) tells the person and keeps the text as a new draft', async () => {
+        await open(3);
+        await typeAndSave('First part.');
+        const first = only();
+        // Deleted on another device; the event never came.
+        server.drafts.delete(first);
+
+        await typeAndSave('First part. Second part.');
+
+        expect(server.of('save').map(c => c.id)).withContext('the save found it gone').toEqual([first]);
+        expect(infos).withContext('the person is told').toEqual([DRAFT_GONE_KEPT]);
+        expect(box().value).withContext('the text stays').toBe('First part. Second part.');
+        expect(server.of('create').length).withContext('kept as a new draft').toBe(2);
+        expect([...server.drafts.values()].map(d => d.text)).toEqual(['First part. Second part.']);
+        expect(only()).not.toBe(first);
+    });
+
+    it('Reply with an empty box, Reply all and Forward open the compose window, the editor empty; the box stays', async () => {
+        await open(3);
+
+        fixture.componentInstance.onDetailAction('reply');
+        await settle();
+        expect(dock()).withContext('Reply').not.toBeNull();
+        expect(fixture.componentInstance.composeMode()).toBe('reply');
+        expect(dock()!.querySelector('textarea')!.value).toBe('');
+        fixture.componentInstance.closeCompose();
+        await settle();
+        expect(handed()).withContext('nothing written: no draft for the window').toBeNull();
+        expect(server.drafts.size).toBe(0);
+
+        fixture.componentInstance.onDetailAction('reply-all');
+        await settle();
+        expect(fixture.componentInstance.composeMode()).toBe('reply_all');
+        expect(handed()).withContext('reply all writes the same reply draft: the box says it is in the window').not.toBeNull();
+        fixture.componentInstance.closeCompose();
+        await settle();
 
         fixture.componentInstance.onDetailAction('forward');
         await settle();
-        expect(dock()).withContext('Forward').not.toBeNull();
-        expect(line()).not.toBeNull();
+        expect(fixture.componentInstance.composeMode()).toBe('forward');
+        expect(box()).not.toBeNull();
+    });
 
-        fixture.componentInstance.closeCompose();
-        fixture.componentInstance.onDetailAction('reply-all');
+    it('no quick reply on a server row: a row with no id, not yet stored', async () => {
+        fixture.componentInstance.selectedMailboxId.set('mb1');
+        fixture.componentInstance.selectedMessage.set({ ...message(3), id: undefined, fromServer: true, ref: 'INBOX:42' } as unknown as EmailMessageDetailDto);
         await settle();
-        expect(dock()).withContext('Reply all').not.toBeNull();
-        expect(composer()).toBeNull();
+
+        expect(el().querySelector('[data-test="quick-reply"]')).toBeNull();
+        expect(asked).withContext('no reply prefill asked for').toEqual([]);
+    });
+
+    it('no quick reply while the message loads, and none for a copy from the server no longer kept', async () => {
+        await open(3);
+        fixture.componentInstance.openEvicted.set(true);
+        await settle();
+        expect(el().querySelector('[data-test="quick-reply"]')).toBeNull();
     });
 });
