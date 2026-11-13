@@ -2,8 +2,9 @@ import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { type NaviGraphNode } from '@coolms/core-angular';
 
 import {
-    FOLDER_NODES_UNTIL_SERVED, NO_FLAGS, busyRefusal, busyText, flagsOf, folderChangeRefusalText, folderMenuItems,
-    folderNodes, jobFailureText, markReadRefusalText, newFolderNode, offers, readFolderJobEvent, withJob,
+    FOLDER_NODES_UNTIL_SERVED, NO_FLAGS, busyRefusal, busyText, emptyRefusalText, flagsOf, folderChangeRefusalText,
+    folderMenuItems, folderNodes, isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, offers,
+    readFolderJobEvent, withJob,
     type FolderFlags,
 } from './mail-folder-actions';
 
@@ -60,10 +61,14 @@ describe('folder actions: what the server\'s flags offer', () => {
         expect(ids(NO_FLAGS, nodes)).toEqual([]);
     });
 
-    it('Delete and Empty are not drawn, even when the flags allow them: the server serves no route for them yet', () => {
+    it('Empty is offered only where canEmpty is true, in the danger style; Delete is not drawn (no route served yet)', () => {
         const nodes = [served('delete', 'Delete'), served('empty', 'Empty'), served('mark-read', 'Mark all as read')];
 
-        expect(ids(only({ canDelete: true, canEmpty: true, canMarkRead: true }), nodes)).toEqual(['mark-read']);
+        expect(ids(only({ canDelete: true, canEmpty: true, canMarkRead: true }), nodes)).toEqual(['empty', 'mark-read']);
+        expect(ids(only({ canDelete: true, canMarkRead: true }), nodes)).withContext('canEmpty false').toEqual(['mark-read']);
+        expect(ids(only({ canEmpty: true }))).withContext('the page\'s own nodes').toEqual(['empty']);
+        expect(ids(only({ canEmpty: true, busy: 'mark-read' }))).withContext('busy').toEqual([]);
+        expect(folderMenuItems(folderNodes([]), only({ canEmpty: true }), conditions)[0].danger).toBeTrue();
     });
 
     it('the tree\'s flags are read strictly: only true offers, and an unknown busy is none', () => {
@@ -116,6 +121,35 @@ describe('folder actions: what is said', () => {
         expect(folderChangeRefusalText(problem(429, {}, new HttpHeaders({ 'Retry-After': '30' }))))
             .toBe('Too many folder changes. Try again in 30 seconds.');
         expect(folderChangeRefusalText(problem(500, {}))).toBe('The folder could not be changed.');
+    });
+
+    it('each refusal of Empty has its own sentence', () => {
+        const said = (status: number, body: Record<string, unknown>): string => emptyRefusalText(problem(status, body), 'Trash');
+        const sentences = [
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-allowed' }),
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-trash-or-spam' }),
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'ceiling-required' }),
+            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'no-uidplus' }),
+            said(409, { type: '/errors/email/mailbox-held' }),
+            said(409, { type: '/errors/email/folder-renumbered' }),
+            said(409, { type: '/errors/email/folder-busy', action: 'mark-read' }),
+            said(404, { type: '/errors/email/folder-not-found' }),
+        ];
+
+        expect(new Set(sentences).size).withContext(sentences.join(' | ')).toBe(sentences.length);
+        expect(sentences[4]).toContain('legal hold');
+        expect(sentences[6]).toBe('Mark all as read is running in this folder.');
+        expect(sentences.some(s => s === 'Trash could not be emptied.')).withContext('none is the generic one').toBeFalse();
+        expect(isRenumbered(problem(409, { type: '/errors/email/folder-renumbered' }))).toBeTrue();
+        expect(isRenumbered(problem(409, { type: '/errors/email/mailbox-held' }))).toBeFalse();
+    });
+
+    it('a failed Empty says its reason, each in its own sentence', () => {
+        const said = ['server-failed', 'folder-not-found', 'renumbered', null]
+            .map(reason => jobFailureText({ action: 'empty', reason }, 'Spam'));
+
+        expect(new Set(said).size).toBe(4);
+        said.forEach(s => expect(s).toContain('Spam'));
     });
 
     it('the realtime end of a job is read strictly', () => {
