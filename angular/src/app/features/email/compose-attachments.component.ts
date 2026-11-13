@@ -45,30 +45,42 @@ const TOO_LARGE = 'Larger than 25 MB, the most a file can be.';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="cma">
-            <div class="cma__bar">
-                <div class="cma__menu-wrap" (focusout)="onMenuFocusOut($event)" (keydown.escape)="closeMenu($event)">
-                    <button type="button" class="mbx__btn mbx__btn--sm" data-test="attach-menu" aria-haspopup="menu"
-                            [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())">
-                        <i class="bi bi-paperclip" aria-hidden="true"></i> Attach files
-                        <i class="bi bi-chevron-down" aria-hidden="true"></i>
-                    </button>
-                    @if (menuOpen()) {
-                        <div class="cma__menu" role="menu" data-test="attach-menu-list">
-                            <button type="button" role="menuitem" class="cma__menu-item" data-test="attach-device"
-                                    (click)="chooseFromDevice()">
-                                <i class="bi bi-upload" aria-hidden="true"></i> From device
-                            </button>
-                            <button type="button" role="menuitem" class="cma__menu-item" data-test="attach-files"
-                                    (click)="chooseFromFiles()">
-                                <i class="bi bi-folder2-open" aria-hidden="true"></i> From files
-                            </button>
-                        </div>
-                    }
-                    <input #fileInput type="file" multiple hidden data-test="attach-input" (change)="onFilesChosen($event)" />
+        <div class="cma" [class.cma--compact]="!button()">
+            <input #fileInput type="file" multiple hidden data-test="attach-input" (change)="onFilesChosen($event)" />
+            @if (button()) {
+                <div class="cma__bar">
+                    <div class="cma__menu-wrap" (focusout)="onMenuFocusOut($event)" (keydown.escape)="closeMenu($event)">
+                        <button type="button" class="mbx__btn mbx__btn--sm" data-test="attach-menu" aria-haspopup="menu"
+                                [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())">
+                            <i class="bi bi-paperclip" aria-hidden="true"></i> Attach files
+                            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                        </button>
+                        @if (menuOpen()) {
+                            <div class="cma__menu" role="menu" data-test="attach-menu-list">
+                                <button type="button" role="menuitem" class="cma__menu-item" data-test="attach-device"
+                                        (click)="chooseFromDevice()">
+                                    <i class="bi bi-upload" aria-hidden="true"></i> From device
+                                </button>
+                                <button type="button" role="menuitem" class="cma__menu-item" data-test="attach-files"
+                                        (click)="chooseFromFiles()">
+                                    <i class="bi bi-folder2-open" aria-hidden="true"></i> From files
+                                </button>
+                            </div>
+                        }
+                    </div>
+                    <span class="cma__size" data-test="attachment-size" [class.cma__size--over]="over()">{{ sizeLine() }}</span>
                 </div>
-                <span class="cma__size" data-test="attachment-size" [class.cma__size--over]="over()">{{ sizeLine() }}</span>
-            </div>
+            } @else if (attachments().length > 0 || over()) {
+                <!-- Compact: the files and the size meter show only once there are files; the attach button is elsewhere. -->
+                <div class="cma__meter-row" data-test="attachment-meter">
+                    <span class="cma__size" data-test="attachment-size" [class.cma__size--over]="over()">{{ sizeLine() }}</span>
+                    @if (usedPercent(); as percent) {
+                        <span class="cma__meter" aria-hidden="true">
+                            <span class="cma__meter-bar" [class.cma__meter-bar--over]="over()" [style.width.%]="percent"></span>
+                        </span>
+                    }
+                </div>
+            }
             @if (sendRefused(); as r) {
                 <p class="cma__refused-send" data-test="attachment-send-refused">
                     The server measured the message at {{ fmt(r.sizeBytes) }}, over this mailbox’s limit of
@@ -144,6 +156,14 @@ const TOO_LARGE = 'Larger than 25 MB, the most a file can be.';
         .cma__menu-item:hover, .cma__menu-item:focus-visible { background: var(--cms-bg-hover); }
         .cma__size { font-size: var(--cms-font-size-meta, 13px); color: var(--cms-text-muted); }
         .cma__size--over { color: var(--cms-danger-text); font-weight: 600; }
+        /* Compact: the chips first, then the size and its meter at the end of the row. */
+        .cma--compact { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+        .cma--compact .cma__chips { order: 1; flex: 1 1 auto; min-width: 0; }
+        .cma--compact .cma__meter-row { order: 2; margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .cma--compact .cma__refused-send { order: 3; flex-basis: 100%; }
+        .cma__meter { display: flex; width: 80px; height: 4px; border-radius: 2px; background: var(--cms-border-light); overflow: hidden; }
+        .cma__meter-bar { display: block; height: 100%; background: var(--cms-accent); }
+        .cma__meter-bar--over { background: var(--cms-danger); }
         .cma__refused-send { margin: 0; font-size: var(--cms-font-size-meta, 13px); color: var(--cms-danger-text); }
         .cma__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
         .cma__chip {
@@ -192,6 +212,11 @@ export class ComposeAttachmentsComponent {
     /** A send refused as too large: the server's measure and the limit. */
     readonly sendRefused = input<{ readonly limitBytes: number; readonly sizeBytes: number } | null>(null);
     readonly attachments = model<ComposeAttachment[]>([]);
+    /**
+     * Draws its own "Attach files" button and the size line always. Without it (compact), an attach button elsewhere
+     * opens the choice, and the files and the size meter show only once there are files.
+     */
+    readonly button = input(true);
     /** A file was attached or taken out: the draft is saved again. */
     readonly changed = output<void>();
 
@@ -221,6 +246,13 @@ export class ComposeAttachmentsComponent {
         if (used > limit) return this.fmt(used) + ' of ' + this.fmt(limit) + ': over the limit by ' + this.fmt(used - limit);
 
         return this.fmt(used) + ' of ' + this.fmt(limit) + ' used, ' + this.fmt(limit - used) + ' left';
+    });
+
+    /** How much of the limit is used, for the meter; null with no limit known. */
+    readonly usedPercent = computed(() => {
+        const limit = this.limitBytes();
+
+        return limit === null ? null : Math.max(1, Math.min(100, Math.round((this.used() / limit) * 100)));
     });
 
     readonly fmt = formatBytes;

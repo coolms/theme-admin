@@ -68,8 +68,11 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
     let server: FakeDraftsApi;
     let live: Subject<unknown>;
     let infos: string[];
+    let shown: Array<{ message: string; ms: number; action?: { label: string; run: () => void } }>;
 
     beforeEach(() => {
+        shown = [];
+        const notices = shown;
         replies = [];
         asked = [];
         // This test's own drafts: the mock below closes over them, so a save still pending from an earlier test's
@@ -110,10 +113,18 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
                         deleteDraft: drafts.deleteDraft.bind(drafts),
                         draftsAnswering: drafts.draftsAnswering.bind(drafts),
                         listDrafts: drafts.listDrafts.bind(drafts),
+                        removeAttachment: () => of(null),
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
-                { provide: ToastService, useValue: { error: (): void => {}, success: (): void => {}, info: (m: string): void => void told.push(m) } },
+                {
+                    provide: ToastService,
+                    useValue: {
+                        error: (): void => {}, success: (): void => {}, info: (m: string): void => void told.push(m),
+                        show: (n: { message: string; action?: { label: string; run: () => void } }, ms: number): number =>
+                            notices.push({ ...n, ms }),
+                    },
+                },
                 { provide: Router, useValue: { events: NEVER, navigate: () => Promise.resolve(true) } },
                 {
                     provide: ActivatedRoute,
@@ -169,6 +180,8 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
     const box = (): HTMLTextAreaElement => el().querySelector<HTMLTextAreaElement>('[data-test="quick-reply-box"]')!;
     const dock = (): HTMLElement | null => el().querySelector<HTMLElement>('.mbx__dock');
     const handed = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-in-window"]');
+    const draftLine = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="quick-reply-draft"]');
+    const sendButton = (): HTMLButtonElement => quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-send"]')!;
     const only = (): string => [...server.drafts.keys()][0];
 
     async function open(lines: number): Promise<void> {
@@ -220,9 +233,9 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(quick().getBoundingClientRect().bottom).withContext('under a short message too').toBeCloseTo(section().getBoundingClientRect().bottom, 0);
     });
 
-    it('is one line reading "Write a reply…", grows with the text to six lines, then scrolls inside', async () => {
+    it('is one line reading "Reply to <name>…", grows with the text to six lines, then scrolls inside', async () => {
         await open(3);
-        expect(box().placeholder).toBe('Write a reply…');
+        expect(box().placeholder).withContext('the sender\'s name').toBe('Reply to Ann Lee…');
         expect(box().getBoundingClientRect().height).withContext('one line').toBeCloseTo(heightFor(1), 0);
 
         await type('one\ntwo\nthree');
@@ -340,7 +353,7 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(fixture.componentInstance.composeTo).withContext('the prefill\'s To').toEqual(['desks@example.com']);
         expect(fixture.componentInstance.composeSubject).toBe('Re: Desk move on Friday');
         expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the box clears').toBeNull();
-        expect(handed()?.textContent).toContain('The reply is open in the compose window.');
+        expect(handed()?.textContent).toContain('Your reply is open in the compose window.');
 
         // Written on in the window: the same draft, saved from the version the box left.
         fixture.componentInstance.composeText = 'Long answer coming. Here it is.';
@@ -529,6 +542,154 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         await settle();
         expect(fixture.componentInstance.composeMode()).toBe('forward');
         expect(box()).not.toBeNull();
+    });
+
+    it('one line: attach, the field, Expand and Send; Send is disabled until there is text', async () => {
+        await open(3);
+        const row = quick().querySelector<HTMLElement>('.mqr__row')!;
+        const parts = [...row.children].map(c => c.getAttribute('data-test')
+            ?? c.querySelector('[data-test]')?.getAttribute('data-test') ?? c.tagName.toLowerCase());
+        expect(parts).toEqual(['attach-button', 'quick-reply-box', 'quick-reply-expand', 'quick-reply-send']);
+        expect(row.querySelector('[data-test="attach-button"]')!.getAttribute('aria-label')).toBe('Attach files');
+        const tops = [...row.children].map(c => Math.round(c.getBoundingClientRect().bottom));
+        expect(new Set(tops).size).withContext('on one line').toBe(1);
+
+        expect(sendButton().disabled).withContext('empty').toBeTrue();
+        await type('   ');
+        expect(sendButton().disabled).withContext('blank').toBeTrue();
+        await type('Yes.');
+        expect(sendButton().disabled).withContext('text').toBeFalse();
+        await type('');
+        expect(sendButton().disabled).withContext('emptied again').toBeTrue();
+    });
+
+    it('the file chips and the size meter show above the line only once files are attached', async () => {
+        await open(3);
+        expect(quick().querySelector('[data-test="attachment-chip"]')).toBeNull();
+        expect(quick().querySelector('[data-test="attachment-meter"]')).withContext('no meter without files').toBeNull();
+        expect(quick().querySelector('[data-test="attachment-size"]')).toBeNull();
+
+        const qr = fixture.debugElement.query(d => d.name === 'app-mail-quick-reply').componentInstance as {
+            attachments: { set(v: unknown): void };
+        };
+        qr.attachments.set([{
+            key: 'k1', id: 'f1', filename: 'agenda.pdf', sizeBytes: 220_000, encodedBytes: null, mimeType: 'application/pdf',
+            source: 'upload', status: 'ready', progress: 100, refusal: null,
+        }]);
+        await settle();
+
+        const chip = quick().querySelector<HTMLElement>('[data-test="attachment-chip"]');
+        const meter = quick().querySelector<HTMLElement>('[data-test="attachment-meter"]');
+        expect(chip?.textContent).toContain('agenda.pdf');
+        expect(meter).withContext('the meter with files').not.toBeNull();
+        expect(chip!.getBoundingClientRect().bottom).withContext('above the line').toBeLessThanOrEqual(box().getBoundingClientRect().top);
+        expect(meter!.getBoundingClientRect().bottom).toBeLessThanOrEqual(box().getBoundingClientRect().top);
+    });
+
+    it('while the reply is in the compose window: "Your reply is open in the compose window." with Show it', async () => {
+        await open(3);
+        await typeAndSave('In the window now.');
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+
+        expect(handed()!.querySelector('.mqr__line-text')!.textContent!.trim()).toBe('Your reply is open in the compose window.');
+        expect([...handed()!.querySelectorAll('button')].map(b => b.textContent!.trim())).toEqual(['Show it']);
+        expect(el().querySelector('[data-test="quick-reply-box"]')).toBeNull();
+        expect(draftLine()).toBeNull();
+        fixture.componentInstance.toggleMinimize();
+        await settle();
+        handed()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-show-window"]')!.click();
+        await settle();
+        await wait(50);
+        expect(fixture.componentInstance.composeMinimized()).withContext('restored').toBeFalse();
+        const win = el().querySelector<HTMLElement>('[data-testid="compose-window"]')!;
+        expect(win.contains(document.activeElement)).withContext('and focused').toBeTrue();
+    });
+
+    it('closed with the draft kept: the line shows the draft\'s first words with Open and Discard, never the text in the box', async () => {
+        await open(3);
+        await typeAndSave('Hi Ann, Friday works for me and I will bring the plan of the new desks with me.');
+        const id = only();
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        // Plain text, quoted, to the sender: a draft the box could show, so only the window having held it keeps it out.
+        fixture.componentInstance.closeCompose();
+        await settle();
+
+        expect(handed()).toBeNull();
+        expect(el().querySelector('[data-test="quick-reply-box"]')).withContext('the text is not put back in the box').toBeNull();
+        expect(draftLine()).not.toBeNull();
+        expect(draftLine()!.querySelector('[data-test="quick-reply-draft-text"]')!.textContent!.trim())
+            .withContext('its first words').toBe('Draft: \u201CHi Ann, Friday works for me and I will bring the plan\u2026\u201D');
+        expect([...draftLine()!.querySelectorAll('button')].map(b => b.textContent!.trim())).toEqual(['Open', 'Discard']);
+        expect(server.drafts.get(id)!.text).withContext('the draft kept').toContain('Hi Ann');
+
+        // A page that had already drawn the draft in its box gives way once it learns a window held it.
+        fixture.destroy();
+        (fixture.nativeElement as HTMLElement).remove();
+        mount();
+        await open(3);
+        fixture.componentInstance.windowReplyDrafts.set(new Set([id]));
+        await settle();
+        expect(el().querySelector('[data-test="quick-reply-box"]')).toBeNull();
+        expect(draftLine()).not.toBeNull();
+
+        draftLine()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-open-draft"]')!.click();
+        await settle();
+        expect(el().querySelector('[data-testid="compose-window"]')).withContext('Open opens the window').not.toBeNull();
+        expect(server.of('read').at(-1)?.id).withContext('on that draft').toBe(id);
+        expect(fixture.componentInstance.composeText).toContain('Hi Ann');
+        expect(handed()).not.toBeNull();
+    });
+
+    it('the draft line\'s Discard deletes it with the 10 s Undo, and the box is the normal line again', async () => {
+        await open(3);
+        await typeAndSave('Draft to throw away.');
+        const id = only();
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        fixture.componentInstance.closeCompose();
+        await settle();
+        expect(draftLine()).not.toBeNull();
+
+        draftLine()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-discard-draft"]')!.click();
+        // Drawn without waiting for the page to be stable: the Undo's 10 s timer is pending until it is used.
+        for (let i = 0; i < 3; i++) {
+            fixture.detectChanges();
+            await frame();
+        }
+        expect(server.of('delete').map(c => c.id)).toEqual([id]);
+        expect(server.drafts.size).toBe(0);
+        expect(draftLine()).toBeNull();
+        expect(box()).withContext('the normal line').not.toBeNull();
+        expect(box().value).toBe('');
+        expect(shown.map(n => [n.message, n.ms, n.action?.label])).toEqual([['Draft discarded.', 10_000, 'Undo']]);
+
+        shown[0].action!.run();
+        await settle();
+        expect(server.drafts.size).withContext('Undo makes it again').toBe(1);
+        expect([...server.drafts.values()][0].text).toBe('Draft to throw away.');
+        expect(el().querySelector('[data-testid="compose-window"]')).withContext('in its window').not.toBeNull();
+        expect(handed()).not.toBeNull();
+    });
+
+    it('after a send from the window the box is the normal line again', async () => {
+        await open(3);
+        await typeAndSave('Sent from the window.');
+        quick().querySelector<HTMLButtonElement>('[data-test="quick-reply-expand"]')!.click();
+        await settle();
+        fixture.componentInstance.closeCompose();
+        await settle();
+        expect(draftLine()).not.toBeNull();
+
+        draftLine()!.querySelector<HTMLButtonElement>('[data-test="quick-reply-open-draft"]')!.click();
+        await settle();
+        fixture.componentInstance.sendCompose();
+        await settle();
+        expect(server.drafts.size).toBe(0);
+        expect(draftLine()).toBeNull();
+        expect(handed()).toBeNull();
+        expect(box().value).toBe('');
     });
 
     it('no quick reply on a server row: a row with no id, not yet stored', async () => {

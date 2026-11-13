@@ -513,8 +513,59 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             return fixture.nativeElement as HTMLElement;
         }
 
+        /** The quote's button (three dots), which opens it. */
+        function openQuote(el: HTMLElement): void {
+            el.querySelector<HTMLButtonElement>('[data-testid="compose-quote-toggle"]')!.click();
+            fixture.detectChanges();
+        }
+
+        it('the quote is collapsed by default behind •••, which opens and closes it (aria-expanded), Remove quote beside it', () => {
+            const el = render({ quote: { text: QUOTE_TEXT, html: QUOTE_HTML, attribution: 'On 13 Nov 2026, Ada Byron wrote:' } }, 'reply', true);
+            const toggle = el.querySelector<HTMLButtonElement>('[data-testid="compose-quote-toggle"]')!;
+
+            expect(toggle.textContent!.trim()).toBe('•••');
+            expect(toggle.getAttribute('aria-label')).toBe('Show the quoted message');
+            expect(toggle.getAttribute('aria-expanded')).toBe('false');
+            expect(el.querySelector('[data-testid="compose-quote-box"]')).withContext('collapsed').toBeNull();
+            expect(el.querySelector('[data-testid="compose-quote"]')).toBeNull();
+            expect(toggle.nextElementSibling?.getAttribute('data-testid')).withContext('beside it').toBe('compose-remove-quote');
+            expect(toggle.nextElementSibling?.textContent?.trim()).toBe('Remove quote');
+
+            toggle.click();
+            fixture.detectChanges();
+            expect(toggle.getAttribute('aria-expanded')).toBe('true');
+            const box = el.querySelector<HTMLElement>('[data-testid="compose-quote-box"]')!;
+            expect(box).not.toBeNull();
+            expect(toggle.getAttribute('aria-controls')).toBe(box.id);
+            expect(box.querySelector('[data-testid="compose-quote-attribution"]')?.textContent?.trim()).toBe('On 13 Nov 2026, Ada Byron wrote:');
+            expect(getComputedStyle(box).maxHeight).withContext('about 320 px at most').toBe('320px');
+            expect(getComputedStyle(box).overflowY).withContext('scrolling inside').toBe('auto');
+            expect(quoteFrame(el).frame?.getAttribute('sandbox')).withContext('never scripts')
+                .toBe('allow-same-origin allow-popups allow-popups-to-escape-sandbox');
+
+            toggle.click();
+            fixture.detectChanges();
+            expect(toggle.getAttribute('aria-expanded')).toBe('false');
+            expect(el.querySelector('[data-testid="compose-quote-box"]')).toBeNull();
+        });
+
+        it('on an answer From is read only, fixed to the mailbox answered from', () => {
+            const el = render({}, 'reply');
+            // The mailbox has a confirmed alias, so From shows.
+            (fixture.componentInstance as unknown as { confirmedAliases: { set(v: unknown): void } })
+                .confirmedAliases.set({ mb1: ['sales@example.test'] });
+            fixture.detectChanges();
+            const from = el.querySelector<HTMLInputElement>('[data-testid="compose-from"]')!;
+            expect(from.tagName).toBe('INPUT');
+            expect(from.readOnly).toBeTrue();
+            expect(from.value).withContext('the served From').toBe('sales@example.test');
+            expect(el.querySelector('select[data-testid="compose-from"]')).withContext('nothing to choose').toBeNull();
+            expect(from.labels![0].textContent).toContain('From');
+        });
+
         it('the person\'s editor above, the served quote below it as served, and Send', () => {
             const el = render({}, 'reply', true);
+            openQuote(el);
             const text = el.querySelector('.mbx__compose coolms-editor');
             const quote = quoteFrame(el);
 
@@ -528,6 +579,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
         it('a forward: the served quote below the editor, read-only, in the mail frame page; its own files listed', () => {
             const el = render({}, 'forward', true);
+            openQuote(el);
             const quote = quoteFrame(el);
 
             expect(quote.html).toBe(QUOTE_HTML);
@@ -542,6 +594,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
         it('Plain text shows quote.text below the textarea, and no frame', () => {
             const el = render();
+            openQuote(el);
             const pre = el.querySelector('[data-testid="compose-quote-text"]');
 
             expect(pre?.textContent).toBe(QUOTE_TEXT);
@@ -551,6 +604,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
         it('Remove quote hides the quote', () => {
             const el = render({}, 'reply', true);
+            openQuote(el);
             expect(el.querySelector('[data-testid="compose-quote"]')).not.toBeNull();
 
             el.querySelector<HTMLButtonElement>('[data-testid="compose-remove-quote"]')!.click();
@@ -573,6 +627,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
         it('the quote is never inside the editor: the frame holds it, the editor\'s DOM does not', async () => {
             const el = render({}, 'forward', true);
+            openQuote(el);
             let editable: HTMLElement | null = null;
             let quoteDoc: Document | null = null;
             for (let i = 0; i < 100; i++) {

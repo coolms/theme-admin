@@ -8,6 +8,18 @@ major number means here.
 
 ## Unreleased
 
+- **A compact compose window and quick reply.** Docked, the compose window is 600 px wide (560 to 640) and at most
+  about 70% of the viewport tall, its header buttons at least 36 px; where one pane shows at a time it is full screen
+  with Minimize and Close only, at least 44 px. From, To, Cc, Bcc and Subject are compact lines with their labels in
+  one column, still real labelled fields (From read only on an answer); Cc and Bcc are links at the end of the To line,
+  each opening its own line, and the editor takes the remaining height. The quote is collapsed behind a ••• button
+  (aria-expanded) with Remove quote beside it, and opens in a framed box at most about 320 px tall, in the same sandboxed
+  frame. The foot is Send, Attach files, the saved state, More options (Plain text, a checkable item) and Discard draft.
+  The quick reply is one line: attach, "Reply to <name>…", Expand and Send, which waits for text; its files and size
+  meter show above it once there are files. While its draft is in a compose window the line says so with Show it;
+  after that window is closed with the draft kept, it shows the draft's first words with Open and Discard (the same
+  10 s Undo), and never puts the text back in the box.
+
 - **Empty Trash or Spam.** A folder row's menu offers Empty only where the folder tree's `canEmpty` is true. The
   server's preview (`GET .../folders/action-preview?action=empty`) is shown first, its title, words and confirm label
   as given, in a destructive confirm; confirmed, the folder is emptied with the preview's `uidCeiling` and
