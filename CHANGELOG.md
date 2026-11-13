@@ -8,6 +8,11 @@ major number means here.
 
 ## Unreleased
 
+- **TipTap 3.33.1.** Every `@tiptap/*` package moves from 3.31.4 to 3.33.1 (`^3.33.1` in
+  `angular/package.json`). Besides TipTap itself, the lockfile moves only what it brings in: `linkifyjs`
+  4.4.0, and `prosemirror-commands` 1.7.2, `prosemirror-dropcursor` 1.8.4 and `prosemirror-history` 1.5.1.
+  The HTML every admin editor configuration produces for a set of 38 typical documents is the same as before.
+
 - **Show original says when a message is not found.** Any 404 other than the source-gone one (a missing
   message, or one the reader may not see) now reads "This message was not found." instead of the generic failure.
 
