@@ -86,6 +86,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                     listMessages: () => of([]),
                     listInboundWorkflowOptions: () => of([]),
                     listOAuthProviders: () => of([]),
+                    listAliases: () => of({ canManage: false, aliases: [] }),
                     composePrefill: (id: string, mode: EmailComposeMode) => {
                         asked.push([id, mode]);
                         return answer(mode);
@@ -168,7 +169,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
                 expect(page.composeCc).toEqual(served.cc.map(r => r.address));
                 expect(page.composeShowCcBcc()).toBe(served.cc.length > 0);
                 expect(page.composeSubject).toBe(served.subject);
-                expect(page.composeFrom()).toBe('sales@example.test');
+                expect(page.composeFromValue()).toBe('sales@example.test');
                 expect(page.composeText).withContext('nothing written for the person').toBe('');
                 expect(page.composeHtml()).withContext('the quote is not put in the editor').toBe('');
                 expect(page.recipientOptions()).toEqual(served.to.map(r => ({ value: r.address, label: `${r.name} <${r.address}>` })));
@@ -512,7 +513,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             return fixture.nativeElement as HTMLElement;
         }
 
-        it('the person\'s editor above, the served quote below it as served, the From, and Send', () => {
+        it('the person\'s editor above, the served quote below it as served, and Send', () => {
             const el = render({}, 'reply', true);
             const text = el.querySelector('.mbx__compose coolms-editor');
             const quote = quoteFrame(el);
@@ -521,7 +522,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             expect(quote.frame).not.toBeNull();
             expect(text!.compareDocumentPosition(quote.frame!) & Node.DOCUMENT_POSITION_FOLLOWING).withContext('the quote below').toBeTruthy();
             expect(quote.html).toBe(QUOTE_HTML);
-            expect(el.querySelector('[data-testid="compose-from"]')?.textContent?.trim()).toBe('sales@example.test');
+            expect(el.querySelector('[data-testid="compose-from"]')).withContext('no From without a confirmed alias').toBeNull();
             expect(el.querySelector('[data-testid="compose-send"]')).not.toBeNull();
         });
 

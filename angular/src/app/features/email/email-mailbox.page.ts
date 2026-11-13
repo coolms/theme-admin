@@ -52,6 +52,11 @@ import { MailQuickReplyComponent, type QuickReplyHandOff } from './mail-quick-re
 import { draftFiles, isReplyMode, replyDraftOf } from './compose-draft';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 import { ServerDraft } from './server-draft';
+import {
+    DISCARD_UNDO_MS, MAIL_EDITOR_PROFILE, type ComposeWindowSnapshot, fromChoices, parkedWithDraft, windowRecipients,
+    windowTitle, windowsToClose,
+} from './compose-windows';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { openMessageSource } from './message-source-viewer.component';
 import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
@@ -177,7 +182,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
-        MailQuickReplyComponent,
+        MailQuickReplyComponent, CdkTrapFocus,
         NgTemplateOutlet,
         ScrollingModule,
     ],
@@ -564,26 +569,56 @@ type PhonePane = 'folders' | 'message';
                 </div>
             }
 
-            <!-- Composer dock (compose + reply) — Gmail-style: floats bottom-right, does
-                 NOT block the mailbox behind it, and minimizes to its header bar. -->
-            @if (composeOpen()) {
-                <div class="mbx__dock">
-                    <div #composeDock class="mbx__compose mbx__compose--dock" [class.mbx__compose--min]="composeMinimized()">
-                        <div class="mbx__compose-head">
-                            <button type="button" class="mbx__compose-title" (click)="toggleMinimize()"
-                                    [title]="composeMinimized() ? 'Expand' : 'Minimize'">{{ composeDockTitle() }}</button>
-                            <div class="mbx__compose-head-actions">
-                                <button type="button" class="mbx__compose-close" (click)="toggleMinimize()"
-                                        [attr.aria-label]="composeMinimized() ? 'Expand' : 'Minimize'">
-                                    <i class="bi" [class.bi-dash-lg]="!composeMinimized()" [class.bi-chevron-up]="composeMinimized()"></i>
+            <!-- The compose windows: the one open at the right, minimized ones as bars to its left. Docked a window is
+                 not modal; maximized it is centred over a dimmed backdrop, modal, and keeps the focus. -->
+            @if (composeOpen() || parkedWindows().length > 0) {
+                <div class="mbx__dock" data-testid="compose-dock">
+                    @if (composeOpen() && composeMaximized() && !composeMinimized()) {
+                        <div class="mbx__compose-backdrop" data-testid="compose-backdrop" tabindex="-1"
+                             (click)="minimizeCompose()" (keydown.escape)="minimizeCompose()"></div>
+                    }
+                    @for (w of parkedWindows(); track w.id) {
+                        <button type="button" class="mbx__compose-bar" data-testid="compose-bar" (click)="activateWindow(w.id)">
+                            <span class="mbx__compose-bar-title">{{ titleOf(w.mode, w.subject) }}</span>
+                            <span class="mbx__compose-bar-to">{{ recipientsOf(w.to, w.cc) }}</span>
+                        </button>
+                    }
+                    @if (composeOpen()) {
+                        <div #composeDock class="mbx__compose mbx__compose--dock" role="dialog" data-testid="compose-window"
+                             aria-labelledby="mbx-compose-title"
+                             [attr.aria-modal]="composeModal() ? 'true' : 'false'"
+                             [class.mbx__compose--min]="composeMinimized()" [class.mbx__compose--max]="composeModal()"
+                             [cdkTrapFocus]="composeModal()"
+                             (keydown)="onComposeKeydown($event)" (focusin)="touchWindow()">
+                            <div class="mbx__compose-head">
+                                <button type="button" id="mbx-compose-title" class="mbx__compose-title" data-testid="compose-title"
+                                        (click)="toggleMinimize()" [title]="composeMinimized() ? 'Restore' : 'Minimize'">
+                                    <span class="mbx__compose-title-text">{{ titleOf(composeMode(), composeSubject) }}</span>
+                                    @if (composeMinimized()) {
+                                        <span class="mbx__compose-bar-to" data-testid="compose-recipients">{{ recipientsOf(composeTo, composeCc) }}</span>
+                                    }
                                 </button>
-                                <button type="button" class="mbx__compose-close" (click)="closeCompose()" aria-label="Close">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
+                                <div class="mbx__compose-head-actions">
+                                    <button type="button" class="mbx__compose-close" data-testid="compose-minimize" (click)="toggleMinimize()"
+                                            [attr.aria-label]="composeMinimized() ? 'Restore' : 'Minimize'">
+                                        <i class="bi" [class.bi-dash-lg]="!composeMinimized()" [class.bi-chevron-up]="composeMinimized()"></i>
+                                    </button>
+                                    @if (!composeMinimized()) {
+                                        <button type="button" class="mbx__compose-close mbx__compose-maximize" data-testid="compose-maximize"
+                                                (click)="toggleMaximize()" [attr.aria-label]="composeMaximized() ? 'Restore' : 'Maximize'">
+                                            <i class="bi" [class.bi-arrows-angle-expand]="!composeMaximized()"
+                                               [class.bi-arrows-angle-contract]="composeMaximized()"></i>
+                                        </button>
+                                    }
+                                    <button type="button" class="mbx__compose-close" data-testid="compose-close" (click)="closeCompose()"
+                                            aria-label="Close">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
                             </div>
+                            <ng-container [ngTemplateOutlet]="composeForm" />
                         </div>
-                        <ng-container [ngTemplateOutlet]="composeForm" />
-                    </div>
+                    }
                 </div>
             }
 
@@ -609,11 +644,16 @@ type PhonePane = 'folders' | 'message';
                         }
                     }
                     @if (composeFieldsShown()) {
-                    @if (composeFrom(); as from) {
-                        <div class="mbx__field">
+                    @if (composeFromChoices().length > 0) {
+                        <label class="mbx__field">
                             <span>From</span>
-                            <span class="mbx__static" data-testid="compose-from">{{ from }}</span>
-                        </div>
+                            <select data-testid="compose-from" [ngModel]="composeFromValue()"
+                                    (ngModelChange)="composeFromChosen.set($event); onComposeChange()">
+                                @for (address of composeFromChoices(); track address) {
+                                    <option [value]="address">{{ address }}</option>
+                                }
+                            </select>
+                        </label>
                     }
                     <div class="mbx__field">
                         <div class="mbx__field-head">
@@ -655,7 +695,7 @@ type PhonePane = 'folders' | 'message';
                         </div>
                         @if (composeRich()) {
                             <coolms-editor class="mbx__editor"
-                                           profile="standard"
+                                           [profile]="editorProfile"
                                            [content]="composeHtml()"
                                            [mountKey]="composeKey()"
                                            (contentChange)="composeHtml.set($event); onComposeChange()" />
@@ -722,15 +762,14 @@ type PhonePane = 'folders' | 'message';
                 </div>
                 <div class="mbx__compose-foot mbx__compose-foot--split">
                     <div class="mbx__compose-foot-side">
+                        <button type="button" class="mbx__btn mbx__btn--sm" data-testid="compose-discard" (click)="discardDraft()">
+                            <i class="bi bi-trash"></i> Discard
+                        </button>
                         @if (draftSavedAt(); as savedAt) {
                             <span class="mbx__draft-badge" data-testid="compose-draft-saved"><i class="bi bi-check2"></i> Draft saved {{ savedAt | appDateTime }}</span>
-                            <button type="button" class="mbx__btn mbx__btn--sm" (click)="discardDraft()">
-                                <i class="bi bi-trash"></i> Discard
-                            </button>
                         }
                     </div>
                     <div class="mbx__compose-foot-side">
-                        <button type="button" class="mbx__btn" (click)="closeCompose()">Cancel</button>
                         @if (composeMaySend()) {
                             <button type="button" class="mbx__btn mbx__btn--primary" data-testid="compose-send" [disabled]="sending()"
                                     (click)="sendCompose()">
@@ -1273,7 +1312,37 @@ type PhonePane = 'folders' | 'message';
 
         /* Composer dock: floats bottom-right, does NOT block the mailbox, and
          * collapses to just its header bar when minimized (body + foot hidden, form kept). */
-        .mbx__dock { position: fixed; right: 24px; bottom: 0; z-index: 50; }
+        .mbx__dock { position: fixed; right: 24px; bottom: 0; z-index: 50; display: flex; align-items: flex-end; gap: 8px; }
+        .mbx__compose-bar {
+            display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 220px; min-width: 0;
+            padding: 8px 12px; border: 1px solid var(--cms-border); border-bottom: 0; border-radius: 10px 10px 0 0;
+            background: var(--cms-surface); color: inherit; font: inherit; text-align: left; cursor: pointer;
+            box-shadow: var(--cms-shadow-md);
+        }
+        .mbx__compose-bar-title { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mbx__compose-bar-to {
+            display: block; max-width: 100%; color: var(--cms-text-muted); font-size: .75rem; font-weight: 400;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .mbx__compose-title-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Maximized: centred over a dimmed backdrop that minimizes it on a click. */
+        .mbx__compose-backdrop { position: fixed; inset: 0; z-index: 0; background: var(--cms-overlay-scrim); }
+        .mbx__compose--dock.mbx__compose--max {
+            position: fixed; z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: min(960px, calc(100vw - 48px)); height: min(86vh, 900px); max-height: none; max-width: none;
+            border-radius: var(--cms-radius-lg, 10px);
+        }
+        .mbx__compose--max .mbx__compose-body { flex: 1 1 auto; }
+        /* Where one pane shows at a time, compose is full screen, never docked. */
+        @media (max-width: 599.98px) {
+            .mbx__dock { left: 0; right: 0; justify-content: flex-end; flex-wrap: wrap; }
+            .mbx__compose--dock:not(.mbx__compose--min),
+            .mbx__compose--dock.mbx__compose--max {
+                position: fixed; inset: 0; z-index: 1; transform: none; width: 100%; height: 100%;
+                max-width: none; max-height: none; border-radius: 0;
+            }
+            .mbx__compose-bar { width: auto; flex: 1 1 140px; }
+        }
         .mbx__compose--dock {
             width: 680px; max-width: calc(100vw - 48px); max-height: min(80vh, 720px);
             border-radius: 10px 10px 0 0; box-shadow: var(--cms-shadow-lg, 0 8px 24px rgba(0,0,0,.12));
@@ -1623,8 +1692,30 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Send shows for a new message, and for a prepared one read with an address this person may send as. */
     readonly composeMaySend = computed(() => this.composePrefill() === null
         || (this.prefillAnswer()?.from.choices.length ?? 0) > 0);
-    /** The served From, sent as served (this composer has no picker). */
-    readonly composeFrom = computed(() => this.prefillAnswer()?.from.address ?? null);
+    /** The editor profile of the compose window's body: one place, so the mail profile is a one-line change. */
+    readonly editorProfile = MAIL_EDITOR_PROFILE;
+    /** The confirmed aliases of each mailbox read so far, by mailbox id. */
+    private readonly confirmedAliases = signal<Readonly<Record<string, readonly string[]>>>({});
+    /** The From the person chose; null keeps the default (the prefill's, else the mailbox's own). */
+    readonly composeFromChosen = signal<string | null>(null);
+    /** The addresses From offers: none (no From shown) unless the mailbox has confirmed aliases. */
+    readonly composeFromChoices = computed(() => {
+        const mailboxId = this.selectedMailboxId();
+        const aliases = mailboxId === null ? [] : this.confirmedAliases()[mailboxId] ?? [];
+        return fromChoices(this.selectedMailbox()?.emailAddress ?? null, aliases, this.prefillAnswer()?.from.address ?? null);
+    });
+    /** The From shown and sent: the person's choice, else the prefill's, else the mailbox's own. */
+    readonly composeFromValue = computed(() => this.composeFromChosen()
+        ?? this.prefillAnswer()?.from.address ?? this.selectedMailbox()?.emailAddress ?? null);
+    /** The window is maximized and showing: modal, over the backdrop. */
+    readonly composeMaximized = signal(false);
+    readonly composeModal = computed(() => this.composeOpen() && this.composeMaximized() && !this.composeMinimized());
+    /** The open windows that are not the one being written in, drawn as bars. */
+    readonly parkedWindows = signal<ComposeWindowSnapshot[]>([]);
+    private windowSeq = 0;
+    private activeWindowId = 0;
+    private activeLastUsed = 0;
+    private windowClock = 0;
     readonly composePreparing = computed(() => preparingSentence(this.composeMode() === 'forward' ? 'forward' : 'reply'));
     /** Why the original is not quoted, when the server could not read it. */
     readonly composeUnreadable = computed(() => {
@@ -1664,8 +1755,14 @@ export class EmailMailboxPageComponent implements OnInit {
         return { mailboxId, messageId: msg.id, label: sender !== '' ? `Write a reply to ${sender}` : 'Write a reply' };
     });
     /** The compose window holds the open message's reply. */
-    readonly replyWindowHolds = computed(() => this.composeOpen() && isReplyMode(this.composeMode())
-        && this.replyTargetId() !== null && this.replyTargetId() === (this.selectedMessage()?.id ?? null));
+    readonly replyWindowHolds = computed(() => {
+        const open = this.selectedMessage()?.id ?? null;
+        if (open === null) {
+            return false;
+        }
+        return (this.composeOpen() && isReplyMode(this.composeMode()) && this.replyTargetId() === open)
+            || this.parkedWindows().some(w => isReplyMode(w.mode) && w.replyTargetId === open);
+    });
     /** The files of the message being written: a new message, a forward or a reply. */
     readonly composeAttachments = signal<ComposeAttachment[]>([]);
     /** The last send refused as too large: the server's measure and the limit, shown beside the files. */
@@ -3488,8 +3585,10 @@ export class EmailMailboxPageComponent implements OnInit {
         }
     }
 
+    /** Compose: always a new window, on a kept draft of a new message not open in another, else an empty one. */
     openCompose(): void {
-        this.settleWindow();
+        const closed = this.makeRoom();
+        this.startWindow();
         this.composeMode.set('compose');
         this.replyTargetId.set(null);
         this.composeTo = [];
@@ -3506,15 +3605,19 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeOpen.set(true);
         const draft = this.startDraft(null);
         if (draft !== null) {
-            this.findNewMessageDraft(draft);
+            this.findNewMessageDraft(draft, closed);
         }
     }
 
-    /** The newest of the person's drafts of a new message in the mailbox, taken by a window that holds nothing yet. */
-    private findNewMessageDraft(draft: ServerDraft): void {
+    /**
+     * The newest of the person's drafts of a new message in the mailbox that no window holds (never one whose window was
+     * just closed to make room), taken by a window that holds nothing yet.
+     */
+    private findNewMessageDraft(draft: ServerDraft, closed: ReadonlySet<string>): void {
         this.email.listDrafts(draft.mailboxId).subscribe({
             next: list => {
-                const found = list.find(d => (d.answers ?? null) === null);
+                const held = new Set([...closed, ...this.openDraftIds()]);
+                const found = list.find(d => (d.answers ?? null) === null && !held.has(d.id));
                 if (found !== undefined && this.activeDraft() === draft && draft.id === null && !draft.pending
                     && !this.isComposeDirty()) {
                     draft.adopt(found);
@@ -3539,6 +3642,8 @@ export class EmailMailboxPageComponent implements OnInit {
             loaded: d => {
                 if (this.activeDraft() === draft) {
                     this.applyDraft(d);
+                } else {
+                    this.parkedWindows.update(list => list.map(w => (w.draft === draft ? parkedWithDraft(w, d) : w)));
                 }
             },
             gone: () => {
@@ -3547,6 +3652,8 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.activeDraft.set(null);
                     this.composeOpen.set(false);
                     this.clearComposeBody();
+                } else {
+                    this.parkedWindows.update(list => list.filter(w => w.draft !== draft));
                 }
             },
         });
@@ -3555,10 +3662,19 @@ export class EmailMailboxPageComponent implements OnInit {
         return draft;
     }
 
-    /** A realtime change to one of the person's drafts: the window's and the quick reply's read again, or gone. */
+    /** A realtime change to one of the person's drafts: each window's and the quick reply's read again, or gone. */
     private onDraftsChanged(event: MailDraftsChangedEvent): void {
-        this.activeDraft()?.told(event);
+        for (const draft of [this.activeDraft(), ...this.parkedWindows().map(w => w.draft)]) {
+            draft?.told(event);
+        }
         this.quickReply()?.onDraftsChanged(event);
+    }
+
+    /** The ids of the drafts the open windows hold. */
+    private openDraftIds(): string[] {
+        return [this.activeDraft(), ...this.parkedWindows().map(w => w.draft)]
+            .map(d => d?.id ?? null)
+            .filter((id): id is string => id !== null);
     }
 
     private cancelDraftSave(): void {
@@ -3627,14 +3743,30 @@ export class EmailMailboxPageComponent implements OnInit {
      * quote; the person's draft of this answer on the server (the one handed over, else the one the lookup finds) takes
      * the place of what was served.
      */
-    openPrefilled(mode: EmailComposeMode, draftId: string | null = null): void {
-        const msg = this.selectedMessage();
-        if (!msg) {
+    openPrefilled(mode: EmailComposeMode, messageId: string | null = null, draftId: string | null = null): void {
+        const id = messageId ?? this.selectedMessage()?.id ?? null;
+        const mailboxId = this.selectedMailboxId();
+        if (id === null || mailboxId === null) {
             return;
         }
-        this.settleWindow();
+        // One window per answer: the one already holding it comes up. Reply and reply all share one draft, so either
+        // brings up the window holding the other.
+        const holds = (m: 'compose' | EmailComposeMode, target: string | null): boolean => target === id
+            && (m === mode || (isReplyMode(m) && isReplyMode(mode)));
+        if (this.composeOpen() && holds(this.composeMode(), this.replyTargetId())) {
+            this.composeMinimized.set(false);
+            this.focusComposeBody();
+            return;
+        }
+        const parked = this.parkedWindows().find(w => holds(w.mode, w.replyTargetId));
+        if (parked !== undefined) {
+            this.activateWindow(parked.id);
+            return;
+        }
+        this.makeRoom();
+        this.startWindow();
         this.composeMode.set(mode);
-        this.replyTargetId.set(msg.id);
+        this.replyTargetId.set(id);
         this.composeTo = [];
         this.composeCc = [];
         this.composeBcc = [];
@@ -3645,8 +3777,8 @@ export class EmailMailboxPageComponent implements OnInit {
         this.clearComposeBody();
         this.composeMinimized.set(false);
         this.composeOpen.set(true);
-        this.startDraft({ messageId: msg.id, mode });
-        this.readPrefill(msg.id, mode, draftId);
+        this.startDraft({ messageId: id, mode });
+        this.readPrefill(id, mode, draftId);
     }
 
     /**
@@ -3659,32 +3791,16 @@ export class EmailMailboxPageComponent implements OnInit {
         if (!msg || isServerRow(msg) || this.selectedMailboxId() === null) {
             return;
         }
-        if (this.replyWindowHolds()) {
-            this.showReplyWindow();
-            return;
-        }
         const quick = this.quickReply();
-        if (handOff === null && quick !== undefined) {
-            quick.handOff(given => this.openReplyWindow(given));
+        if (handOff === null && quick !== undefined && !this.replyWindowHolds()) {
+            quick.handOff(given => this.openPrefilled(given.mode, null, given.draftId));
             return;
         }
-        this.openReplyWindow(handOff ?? { draftId: null, mode: 'reply' });
-    }
-
-    private openReplyWindow(handOff: QuickReplyHandOff): void {
-        if (this.composeOpen()) {
-            this.closeCompose();
-        }
-        this.openPrefilled(handOff.mode, handOff.draftId);
+        this.openPrefilled(handOff?.mode ?? 'reply', null, handOff?.draftId ?? null);
     }
 
     /** The quick reply's Show it: the window holding the reply comes up, or opens again on its draft. */
     showReplyWindow(handOff: QuickReplyHandOff | null = null): void {
-        if (this.replyWindowHolds()) {
-            this.composeMinimized.set(false);
-            this.focusComposeBody();
-            return;
-        }
         this.handReplyToWindow(handOff);
     }
 
@@ -3720,7 +3836,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 // Baseline = what was served (an untouched answer is no draft), then this answer's draft.
                 this.snapshotComposeInitial();
                 const held = this.activeDraft();
-                if (draft !== null && held !== null && !held.pending) {
+                if (draft !== null && held !== null && !held.pending && (held.id === null || held.id === draft.id)) {
                     held.adopt(draft);
                     this.applyDraft(draft);
                 }
@@ -3744,7 +3860,7 @@ export class EmailMailboxPageComponent implements OnInit {
             ? this.email.readDraft(mailboxId, draftId)
             : this.email.draftsAnswering(mailboxId, messageId).pipe(map(list => (isReplyMode(mode)
                 ? replyDraftOf(list)
-                : list.find(d => d.answers?.mode === 'forward') ?? null)));
+                : list.find(d => d.answers?.mode === 'forward' && !this.openDraftIds().includes(d.id)) ?? null)));
 
         return found.pipe(catchError(() => of(null)));
     }
@@ -3752,14 +3868,203 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Toggle the composer dock between full-size and its collapsed header bar.
      *  The form stays mounted (its draft + editor state survive), so it restores as left. */
     toggleMinimize(): void {
-        this.composeMinimized.update(v => !v);
+        if (this.composeMinimized()) {
+            this.composeMinimized.set(false);
+            this.touchWindow();
+            this.focusComposeBody();
+        } else {
+            this.minimizeCompose();
+        }
     }
 
-    /** The dock header label: the subject the user typed, else the mode label. */
-    composeDockTitle(): string {
-        const subject = this.composeSubject.trim();
-        const titles: Record<string, string> = { reply: 'Reply', reply_all: 'Reply all', forward: 'Forward' };
-        return subject !== '' ? subject : (titles[this.composeMode()] ?? 'New message');
+    /** Minimize (and Esc, and a click on the backdrop): the window becomes its bar; the draft is kept. */
+    minimizeCompose(): void {
+        this.composeMinimized.set(true);
+        afterNextRender(() => this.composeDock()?.nativeElement.querySelector<HTMLElement>('#mbx-compose-title')?.focus(),
+            { injector: this.injector });
+    }
+
+    /** Maximize, and Restore back to the dock. */
+    toggleMaximize(): void {
+        this.composeMaximized.update(v => !v);
+        this.focusComposeBody();
+    }
+
+    /**
+     * The window's keys. Ctrl+Enter (Cmd+Enter on a Mac) sends. Esc minimizes, but an open suggestion list or menu
+     * inside the window takes that Esc to close itself, and only the next one minimizes.
+     */
+    onComposeKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            if (this.composeMaySend() && !this.sending()) {
+                this.sendCompose();
+            }
+            return;
+        }
+        if (event.key !== 'Escape' || event.defaultPrevented || this.composeMinimized()) {
+            return;
+        }
+        const target = event.target instanceof Element ? event.target : null;
+        // A recipient field's suggestions close on this Esc (they are still drawn while it passes).
+        if (target?.closest('app-tag-input')?.querySelector('.tagin-menu') != null) {
+            return;
+        }
+        if (target?.closest('[role="menu"], [role="listbox"]') != null) {
+            return;
+        }
+        event.preventDefault();
+        this.minimizeCompose();
+    }
+
+    /** The window was used now: the one left unused longest closes first when a fourth opens. */
+    touchWindow(): void {
+        this.activeLastUsed = ++this.windowClock;
+    }
+
+    titleOf(mode: 'compose' | EmailComposeMode, subject: string): string {
+        return windowTitle(mode, subject);
+    }
+
+    recipientsOf(to: readonly string[], cc: readonly string[]): string {
+        return windowRecipients(to, cc);
+    }
+
+    /**
+     * Room for one more window: the one being written in becomes a bar (its draft saved), and past the most windows
+     * the bars left unused longest close, their drafts kept.
+     */
+    private makeRoom(): Set<string> {
+        if (this.composeOpen()) {
+            this.parkActive();
+        }
+        const closing = windowsToClose(this.parkedWindows());
+        const ids = new Set(closing.map(w => w.id));
+        if (ids.size > 0) {
+            this.parkedWindows.update(list => list.filter(w => !ids.has(w.id)));
+        }
+
+        // Their drafts are kept on the server; nothing more is drawn from them here.
+        for (const w of closing) {
+            w.draft?.release();
+        }
+
+        return new Set(closing.map(w => w.draft?.id ?? null).filter((id): id is string => id !== null));
+    }
+
+    /** A new window is the one being written in. */
+    private startWindow(): void {
+        this.activeWindowId = ++this.windowSeq;
+        this.composeMaximized.set(false);
+        this.composeFromChosen.set(null);
+        this.touchWindow();
+        const mailboxId = this.selectedMailboxId();
+        if (mailboxId !== null) {
+            this.readAliases(mailboxId);
+        }
+    }
+
+    /** The mailbox's confirmed aliases, read once: From shows only when there is one. */
+    private readAliases(mailboxId: string): void {
+        if (mailboxId in this.confirmedAliases()) {
+            return;
+        }
+        this.confirmedAliases.update(all => ({ ...all, [mailboxId]: [] }));
+        this.email.listAliases(mailboxId).subscribe({
+            next: list => this.confirmedAliases.update(all => ({
+                ...all,
+                [mailboxId]: list.aliases.filter(a => a.status === 'confirmed').map(a => a.address),
+            })),
+            error: () => undefined,
+        });
+    }
+
+    /** The window being written in becomes a bar: its draft saved, its fields kept as they are. */
+    private parkActive(): void {
+        if (this.draftSaveTimer !== null) {
+            clearTimeout(this.draftSaveTimer);
+            this.draftSaveTimer = null;
+        }
+        this.saveDraftNow();
+        const snapshot: ComposeWindowSnapshot = {
+            id: this.activeWindowId,
+            lastUsed: this.activeLastUsed,
+            draft: this.activeDraft(),
+            mode: this.composeMode(),
+            replyTargetId: this.replyTargetId(),
+            prefill: this.composePrefill(),
+            prefillOptions: this.prefillOptions(),
+            to: [...this.composeTo],
+            cc: [...this.composeCc],
+            bcc: [...this.composeBcc],
+            showCcBcc: this.composeShowCcBcc(),
+            subject: this.composeSubject,
+            text: this.composeText,
+            html: this.composeHtml(),
+            rich: this.composeRich(),
+            attachments: this.composeAttachments(),
+            quoteKept: this.composeQuoteKept(),
+            forwardFiles: this.forwardFilesKept(),
+            from: this.composeFromChosen(),
+            maximized: this.composeMaximized(),
+            initial: {
+                to: this.composeToInitial, cc: this.composeCcInitial, bcc: this.composeBccInitial,
+                subject: this.composeSubjectInitial, text: this.composeTextInitial, html: this.composeHtmlInitial,
+                rich: this.composeRichInitial,
+            },
+        };
+        this.parkedWindows.update(list => [...list, snapshot]);
+        this.activeDraft.set(null);
+        this.composeOpen.set(false);
+        this.clearComposeBody();
+    }
+
+    /** A bar's click: that window is the one being written in again, as it was left. */
+    activateWindow(id: number): void {
+        const w = this.parkedWindows().find(x => x.id === id);
+        if (w === undefined) {
+            return;
+        }
+        if (this.composeOpen()) {
+            this.parkActive();
+        }
+        this.parkedWindows.update(list => list.filter(x => x.id !== id));
+        this.clearComposeBody();
+        this.activeWindowId = w.id;
+        this.activeDraft.set(w.draft);
+        this.composeMode.set(w.mode);
+        this.replyTargetId.set(w.replyTargetId);
+        this.composePrefill.set(w.prefill);
+        this.prefillOptions.set(w.prefillOptions);
+        this.composeTo = [...w.to];
+        this.composeCc = [...w.cc];
+        this.composeBcc = [...w.bcc];
+        this.composeShowCcBcc.set(w.showCcBcc);
+        this.composeSubject = w.subject;
+        this.composeText = w.text;
+        this.composeHtml.set(w.html);
+        this.composeRich.set(w.rich);
+        this.composeAttachments.set(w.attachments);
+        this.composeQuoteKept.set(w.quoteKept);
+        this.forwardFilesKept.set(w.forwardFiles);
+        this.composeFromChosen.set(w.from);
+        this.composeMaximized.set(w.maximized);
+        this.composeToInitial = w.initial.to;
+        this.composeCcInitial = w.initial.cc;
+        this.composeBccInitial = w.initial.bcc;
+        this.composeSubjectInitial = w.initial.subject;
+        this.composeTextInitial = w.initial.text;
+        this.composeHtmlInitial = w.initial.html;
+        this.composeRichInitial = w.initial.rich;
+        this.contactOptions.set([]);
+        this.touchWindow();
+        this.composeMinimized.set(false);
+        this.composeOpen.set(true);
+        // A prefill still being read when it became a bar is read again.
+        if (w.prefill?.state === 'loading' && w.replyTargetId !== null && w.mode !== 'compose') {
+            this.readPrefill(w.replyTargetId, w.mode, w.draft?.id ?? null);
+        }
+        this.focusComposeBody();
     }
 
     /** A recipient tag-input typed: push the query into the debounced search stream. */
@@ -3862,6 +4167,7 @@ export class EmailMailboxPageComponent implements OnInit {
         this.composeRich.set(draft.html !== null);
         this.composeHtml.set(draft.html ?? '');
         this.composeAttachments.set(restoredAttachments(draftFiles(draft)));
+        this.composeFromChosen.set(draft.from);
         if (mode !== 'compose') {
             this.composeQuoteKept.set(draft.quote !== false);
         }
@@ -3878,6 +4184,7 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Debounced autosave hook -- called from the composer field change bindings. */
     onComposeChange(): void {
+        this.touchWindow();
         if (this.draftSaveTimer !== null) {
             clearTimeout(this.draftSaveTimer);
         }
@@ -3910,36 +4217,103 @@ export class EmailMailboxPageComponent implements OnInit {
             text: rich ? this.htmlToPlainText(html) : this.composeText,
             html: rich ? html : null,
             attachments: storedAttachments(this.composeAttachments()).map(a => a.id),
-            from: this.prefillAnswer()?.from.address ?? null,
+            from: this.composeFromChosen() ?? this.prefillAnswer()?.from.address ?? null,
             quote: mode !== 'compose' && this.composeQuoteKept(),
             messageParts: mode === 'forward' ? this.forwardFilesKept().map(f => ({ messageId: f.messageId, part: f.part })) : [],
         };
     }
 
     /**
-     * Discard: the window closes and its draft is deleted on the server, once a save on its way has landed, so a draft
-     * never survives a Discard because the two crossed. The draft's files go with it (a Drive file stays in Drive).
+     * Discard: the window closes. With no draft on the server nothing is saved; with one, it is deleted (a save on its
+     * way lands first, and its draft is the one deleted, so a draft never survives a Discard because the two crossed)
+     * and the notice offers Undo for 10 seconds, which makes the draft again from its last content. The draft's files
+     * are removed on the server once Undo is no longer offered.
      */
     discardDraft(): void {
         this.cancelDraftSave();
         const draft = this.activeDraft();
+        const mode = this.composeMode();
+        const target = this.replyTargetId();
+        const last = this.composeFieldsShown() ? this.windowDraft() : null;
         const mailboxId = this.selectedMailboxId();
-        const files = storedAttachments(this.composeAttachments());
         this.activeDraft.set(null);
         this.composeOpen.set(false);
         this.clearComposeBody();
-        const removeFiles = (): void => {
-            for (const a of files) {
-                if (mailboxId !== null) {
-                    this.email.removeAttachment(mailboxId, a.id).subscribe({ error: () => undefined });
-                }
-            }
-        };
         if (draft === null) {
-            removeFiles();
-        } else {
-            draft.discard(() => removeFiles());
+            return;
         }
+        draft.discard(deleted => {
+            if (!deleted) {
+                return;
+            }
+            const removeFiles = setTimeout(() => {
+                for (const id of last?.attachments ?? []) {
+                    this.email.removeAttachment(draft.mailboxId, id).subscribe({ error: () => undefined });
+                }
+            }, DISCARD_UNDO_MS);
+            this.toast.show({
+                type: 'info',
+                message: 'Draft discarded.',
+                action: {
+                    label: 'Undo',
+                    run: () => {
+                        clearTimeout(removeFiles);
+                        if (last !== null && mailboxId !== null) {
+                            this.undoDiscard(draft.mailboxId, mode, target, draft.answers, last);
+                        }
+                    },
+                },
+            }, DISCARD_UNDO_MS);
+        });
+    }
+
+    /** Undo of a Discard: the draft is made again from its last content, and its window opens on it. */
+    private undoDiscard(
+        mailboxId: string,
+        mode: 'compose' | EmailComposeMode,
+        target: string | null,
+        answers: EmailDraftAnswers | null,
+        last: EmailDraftWrite,
+    ): void {
+        // A reply draft made elsewhere meanwhile is refused as a second, and that one is opened instead.
+        const again = new ServerDraft(this.email, mailboxId, answers, { loaded: () => undefined, gone: () => undefined });
+        again.save(last);
+        again.settled(() => {
+            again.release();
+            const id = again.id;
+            if (id === null) {
+                return;
+            }
+            if (mode !== 'compose' && target !== null) {
+                this.openPrefilled(mode, target, id);
+                return;
+            }
+            this.makeRoom();
+            this.startWindow();
+            this.composeMode.set('compose');
+            this.replyTargetId.set(null);
+            this.composeTo = [];
+            this.composeCc = [];
+            this.composeBcc = [];
+            this.composeShowCcBcc.set(false);
+            this.composeSubject = '';
+            this.clearComposeBody();
+            this.snapshotComposeInitial();
+            this.composeMinimized.set(false);
+            this.composeOpen.set(true);
+            const draft = this.startDraft(null);
+            if (draft !== null) {
+                this.email.readDraft(mailboxId, id).subscribe({
+                    next: d => {
+                        if (this.activeDraft() === draft) {
+                            draft.adopt(d);
+                            this.applyDraft(d);
+                        }
+                    },
+                    error: () => undefined,
+                });
+            }
+        });
     }
 
     closeCompose(): void {
@@ -4070,8 +4444,10 @@ export class EmailMailboxPageComponent implements OnInit {
         if (html !== '') {
             request.html = html;
         }
-        if (prefill !== null) {
-            request.from = prefill.from.address;
+        // An answer sends the From it was served (or the one chosen); a new message only a From chosen from a list.
+        const from = prefill !== null || this.composeFromChoices().length > 0 ? this.composeFromValue() : null;
+        if (from !== null) {
+            request.from = from;
         }
         Object.assign(request, quoteFields(mode, this.replyTargetId(), (prefill?.quote ?? null) !== null,
             this.composeQuoteKept(), this.forwardFilesKept()));
