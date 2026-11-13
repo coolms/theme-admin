@@ -8,6 +8,11 @@ major number means here.
 
 ## Unreleased
 
+- **One mail pane fills the screen again over the saved pane widths.** On a phone, or wherever one pane shows at a
+  time, the folders and the list filled only the person's saved splitter width (230 and 340 px by default), since
+  the splitter writes that width on its pane inline. The one-pane rules now win over it, as the two-pane rule
+  already did; where three panes show, the saved widths stand.
+
 - **Folder actions in the mail folder list.** A folder row's menu (right-click, a long press on touch, or Shift+F10
   and the Menu key) offers Mark all as read, New folder inside, and Rename or move, each only when the folder tree's
   flags allow it (`canMarkRead`, `canCreateChild`, `canRename`); a busy folder offers none. New folder sits at the
