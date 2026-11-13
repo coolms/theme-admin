@@ -20,6 +20,11 @@ major number means here.
   after that window is closed with the draft kept, it shows the draft's first words with Open and Discard (the same
   10 s Undo), and never puts the text back in the box.
 
+- **One mail pane fills the screen again over the saved pane widths.** On a phone, or wherever one pane shows at a
+  time, the folders and the list filled only the person's saved splitter width (230 and 340 px by default), since
+  the splitter writes that width on its pane inline. The one-pane rules now win over it, as the two-pane rule
+  already did; where three panes show, the saved widths stand.
+
 - **Empty Trash or Spam.** A folder row's menu offers Empty only where the folder tree's `canEmpty` is true. The
   server's preview (`GET .../folders/action-preview?action=empty`) is shown first, its title, words and confirm label
   as given, in a destructive confirm; confirmed, the folder is emptied with the preview's `uidCeiling` and
