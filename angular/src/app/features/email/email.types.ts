@@ -71,6 +71,11 @@ export interface EmailMailboxDto {
     maxMessageBytes?: number | null;
     /** Whether the mail server can search mail the platform does not hold; absent from a server that predates it. */
     serverSearch?: ServerSearchCapability | null;
+    /**
+     * Why the mailbox cannot archive a message from its Inbox, something the person can fix (`all-mail-hidden`: Gmail
+     * shows no All Mail over IMAP); null or absent when nothing blocks it. Absent from a server that does not serve it.
+     */
+    archiveBlockedBy?: string | null;
 }
 
 /**

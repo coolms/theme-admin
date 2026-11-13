@@ -1,6 +1,6 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
 import { capabilityStateOf, type ContextMenuItem, type PaneToolbarAction, refusalPhraseOf } from '@coolms/ui-angular';
-import { type EmailMessageDto } from './email.types';
+import { type EmailFolderTreeNodeDto, type EmailMailboxDto, type EmailMessageDto } from './email.types';
 
 /** The tree whose nodes are the actions on messages: the icon bars and a message row's menu. */
 export const MESSAGE_TOOLBAR_TREE = 'navi.toolbar.email.message';
@@ -15,14 +15,85 @@ export function rowTargetIds(checked: ReadonlySet<string>, rowId: string): strin
 }
 
 /**
+ * Whether Archive applies to a target: `can` (the server says it can be archived), `blocked` (it cannot, but only
+ * because of something the person can fix in the mailbox, so Archive stays drawn and can say why), or `no`.
+ */
+export type ArchiveFact = 'can' | 'blocked' | 'no';
+
+/** What decides a `blocked` Archive, from the mailbox and its folders. */
+export interface ArchiveContext {
+    /** Why the mailbox cannot archive from its Inbox, as the mailbox list says (`all-mail-hidden`); null when nothing does. */
+    readonly blockedBy: string | null;
+    /** The folder in the inbox role in the mailbox's folder tree; null while the tree names none. */
+    readonly inbox: string | null;
+}
+
+/** No mailbox block and no inbox known: Archive is `can` or `no`, never `blocked`. */
+export const NO_ARCHIVE_CONTEXT: ArchiveContext = { blockedBy: null, inbox: null };
+
+function inboxRoleFolder(nodes: readonly EmailFolderTreeNodeDto[]): string | null {
+    for (const n of nodes) {
+        if (n.role === 'inbox') {
+            return n.folder;
+        }
+        const inner = inboxRoleFolder(n.children);
+        if (inner !== null) {
+            return inner;
+        }
+    }
+    return null;
+}
+
+/**
+ * The archive context of a mailbox: its `archiveBlockedBy` (absent, null or empty is not blocked, so a server that
+ * does not serve it is never blocked) and the folder in the inbox role in its folder tree.
+ */
+export function archiveContextOf(
+    mailbox: Pick<EmailMailboxDto, 'archiveBlockedBy'> | null | undefined,
+    tree: readonly EmailFolderTreeNodeDto[] | null | undefined,
+): ArchiveContext {
+    const blockedBy = mailbox?.archiveBlockedBy;
+
+    return {
+        blockedBy: typeof blockedBy === 'string' && blockedBy !== '' ? blockedBy : null,
+        inbox: tree ? inboxRoleFolder(tree) : null,
+    };
+}
+
+/**
+ * One message's Archive: `can` when the server says it can be archived; `blocked` when it says it cannot, the mailbox
+ * says why, and the message is in the mailbox's Inbox (the folder in the inbox role); `no` otherwise.
+ */
+export function archiveFactOf(m: Pick<EmailMessageDto, 'canArchive' | 'folder'>, archive: ArchiveContext): ArchiveFact {
+    if (m.canArchive === true) {
+        return 'can';
+    }
+    const inInbox = archive.inbox !== null && m.folder === archive.inbox;
+
+    return archive.blockedBy !== null && inInbox ? 'blocked' : 'no';
+}
+
+/** Several messages' Archive: `can` when any of them can, else `blocked` when any is blocked, else `no`. */
+export function archiveFactOfAll(
+    targets: readonly Pick<EmailMessageDto, 'canArchive' | 'folder'>[],
+    archive: ArchiveContext,
+): ArchiveFact {
+    const each = targets.map(m => archiveFactOf(m, archive));
+
+    return each.includes('can') ? 'can' : each.includes('blocked') ? 'blocked' : 'no';
+}
+
+/**
  * What the toolbar tree's `showWhen` conditions read about a target (the facts `navi.toolbar.email.message` names):
  * one message or several, whether any of them can still be marked read / unread / starred / unstarred, whether the
  * server says any of them can be archived (a missing or null `canArchive` is no), and whether the target is one
  * message for which the server says Reply all reaches someone Reply does not (a missing or null `replyAllUseful` is no).
+ * `_archive` is the target's Archive (archiveFactOfAll), read with the mailbox's archive context.
  */
 export function messageFacts(
-    targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful'>[],
-): Record<string, boolean> {
+    targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful' | 'folder'>[],
+    archive: ArchiveContext = NO_ARCHIVE_CONTEXT,
+): Record<string, boolean | ArchiveFact> {
     return {
         _single:        targets.length === 1,
         _replyAll:      targets.length === 1 && targets[0].replyAllUseful === true,
@@ -31,6 +102,7 @@ export function messageFacts(
         _anyUnflagged:  targets.some(m => !(m.flagged ?? false)),
         _anyFlagged:    targets.some(m => m.flagged ?? false),
         _anyCanArchive: targets.some(m => m.canArchive === true),
+        _archive:       archiveFactOfAll(targets, archive),
     };
 }
 
