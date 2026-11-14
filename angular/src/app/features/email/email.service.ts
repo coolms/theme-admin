@@ -439,19 +439,22 @@ export class EmailService {
      * Opens a server hit the platform does not hold: stores it and answers its id. Null where the server does not offer
      * it ({@link SERVER_MESSAGE_OPEN_SERVED}).
      */
-    openServerMessage(mailboxId: string, hit: ServerSearchHitDto): Observable<ServerMessageOpenedDto> | null {
-        return SERVER_MESSAGE_OPEN_SERVED ? this.postServerMessageOpen(mailboxId, hit.ref) : null;
+    openServerMessage(mailboxId: string, hit: ServerSearchHitDto, prefetch: readonly string[] = []): Observable<ServerMessageOpenedDto> | null {
+        return SERVER_MESSAGE_OPEN_SERVED ? this.postServerMessageOpen(mailboxId, hit.ref, prefetch) : null;
     }
 
     /**
      * POST /email/mailboxes/{id}/server-messages/{ref}/open, no body: the message is stored and its id answered; opening
-     * it again answers the same id. Refused 404 `gone`, 503 `unavailable`, 502 `failed`.
+     * it again answers the same id. Refused 404 `gone`, 503 `unavailable`, 502 `failed`. `prefetch` names at most two
+     * neighbouring server rows the server stores in the background, read only and never marked read, so opening one next
+     * answers at once; anything else in it is ignored, never refused.
      */
-    postServerMessageOpen(mailboxId: string, ref: string): Observable<ServerMessageOpenedDto> {
+    postServerMessageOpen(mailboxId: string, ref: string, prefetch: readonly string[] = []): Observable<ServerMessageOpenedDto> {
+        const refs = prefetch.filter(r => r !== '' && r !== ref).slice(0, 2);
         return this.http.post<ServerMessageOpenedDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/server-messages/${encodeURIComponent(ref)}/open`,
             null,
-            { headers: this.jsonHeaders },
+            { headers: this.jsonHeaders, ...(refs.length > 0 ? { params: { prefetch: refs.join(',') } } : {}) },
         );
     }
 
@@ -475,11 +478,16 @@ export class EmailService {
         });
     }
 
-    /** GET /email/messages/{id} -- one message (detail). */
-    getMessage(messageId: string): Observable<EmailMessageDetailDto> {
+    /**
+     * GET /email/messages/{id} -- one message (detail). `prefetch` names at most two stored rows beside it in the list,
+     * whose bodies the server fetches in the background once it reads bodies on opening (read only, never marked read);
+     * until then the server ignores it, and it never refuses it.
+     */
+    getMessage(messageId: string, prefetch: readonly string[] = []): Observable<EmailMessageDetailDto> {
+        const ids = prefetch.filter(id => id !== '' && id !== messageId).slice(0, 2);
         return this.http.get<EmailMessageDetailDto>(
             `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}`,
-            { headers: this.jsonHeaders },
+            { headers: this.jsonHeaders, ...(ids.length > 0 ? { params: { prefetch: ids.join(',') } } : {}) },
         );
     }
 

@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import type { Observable } from 'rxjs';
+import type { Observable, Subscription } from 'rxjs';
 
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
 import { MailHitRowComponent } from './mail-hit-row.component';
+import type { OpeningRow } from './message-opening';
 import { MailServerSearch, matchesText, serverSearchRefusal, sizeText, type ServerSearchRefusal } from './mail-server-search';
 
 /** The section's sentences, so one section lists a search's hits or a folder's older mail. */
@@ -54,6 +55,20 @@ export interface ServerHitOpened {
     id: string;
     folder: string;
     seen: boolean;
+    /** What the hit's row shows, for the message pane's header while the message loads. */
+    header?: OpeningRow;
+}
+
+/** A hit being stored from the mail server: the pane opens at once with its header; cancel aborts the store. */
+export interface ServerHitOpening {
+    header: OpeningRow;
+    cancel: () => void;
+}
+
+/** A hit that could not be stored: the sentence for the pane, and Try again where trying again can help. */
+export interface ServerHitFailed {
+    text: string;
+    retry: (() => void) | null;
 }
 
 /**
@@ -203,6 +218,10 @@ export class MailServerSearchComponent {
     /** Opens a hit the platform does not hold; null while that is not offered. */
     readonly opener = input<(hit: ServerSearchHitDto) => Observable<ServerMessageOpenedDto> | null>(() => null);
     readonly opened = output<ServerHitOpened>();
+    /** A hit's store has begun: the host opens the message pane at once and may cancel the store. */
+    readonly opening = output<ServerHitOpening>();
+    /** A hit's store failed: the host says why in the message pane. */
+    readonly openFailed = output<ServerHitFailed>();
 
     readonly shown = computed(() => this.search().shown());
     /** The mailbox's server search as last learned; `unknown` says the first search decides. */
@@ -221,27 +240,53 @@ export class MailServerSearchComponent {
     open(hit: ServerSearchHitDto): void {
         this.notice.set(null);
         this.gone.set(false);
+        const header: OpeningRow = {
+            subject: hit.subject ?? null,
+            fromName: hit.from?.name ?? null,
+            fromAddress: hit.from?.address ?? null,
+            sentAt: hit.date ?? null,
+        };
         if (hit.local && typeof hit.localId === 'string' && hit.localId !== '') {
-            this.opened.emit({ id: hit.localId, folder: hit.folder, seen: hit.seen ?? true });
+            this.opened.emit({ id: hit.localId, folder: hit.folder, seen: hit.seen ?? true, header });
             return;
         }
         const call = this.opener()(hit);
         if (call === null) {
             return;
         }
-        call.subscribe({
+        // Said before the store is asked for, so even an answer at once comes after it; a cancel drops the answer.
+        let cancelled = false;
+        let store: Subscription | null = null;
+        this.opening.emit({
+            header,
+            cancel: () => {
+                cancelled = true;
+                store?.unsubscribe();
+            },
+        });
+        // A host may cancel inside the emit, before the store is asked for.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (cancelled) {
+            return;
+        }
+        store = call.subscribe({
             next: stored => {
+                if (cancelled) { return; }
                 this.search().markLocal(hit.ref, stored.id);
-                this.opened.emit({ id: stored.id, folder: stored.folder, seen: hit.seen ?? true });
+                this.opened.emit({ id: stored.id, folder: stored.folder, seen: hit.seen ?? true, header });
             },
             error: (error: unknown) => {
+                if (cancelled) { return; }
                 const refusal = serverSearchRefusal(error);
                 if (refusal.reason === 'gone' || (error instanceof HttpErrorResponse && error.status === 404)) {
                     this.search().drop(hit.ref);
                     this.gone.set(true);
+                    this.openFailed.emit({ text: 'This message is no longer on the mail server.', retry: null });
                     return;
                 }
-                this.notice.set({ ref: hit.ref, text: openFailureText(refusal) });
+                const text = openFailureText(refusal);
+                this.notice.set({ ref: hit.ref, text });
+                this.openFailed.emit({ text, retry: () => this.open(hit) });
             },
         });
     }

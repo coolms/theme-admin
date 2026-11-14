@@ -94,7 +94,10 @@ import { MailboxSwitcherComponent } from './mailbox-switcher.component';
 import { MailboxSyncComponent } from './mailbox-sync.component';
 import { MailBulkBarComponent } from './mail-bulk-bar.component';
 import { MailHitRowComponent } from './mail-hit-row.component';
-import { MailServerSearchComponent, openFailureText, type ServerHitOpened } from './mail-server-search.component';
+import {
+    MailServerSearchComponent, openFailureText, type ServerHitFailed, type ServerHitOpened, type ServerHitOpening,
+} from './mail-server-search.component';
+import { openFailureOf, openingHeader, serverNeighbours, storedNeighbours, type OpeningHeader, type OpeningRow } from './message-opening';
 import {
     MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
 } from './mail-server-search';
@@ -333,7 +336,8 @@ type PhonePane = 'folders' | 'message';
                                                     [localIds]="localResultIds()"
                                                     [folderName]="folderNameFn"
                                                     [opener]="openServerHitFn"
-                                                    (opened)="onServerHitOpened($event)" />
+                                                    (opened)="onServerHitOpened($event)"
+                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
                             @if (otherMailboxes().length > 0) {
                                 @if (otherServerSearches.sections().length === 0) {
                                     <button type="button" class="mbx__others" data-test="server-search-others"
@@ -345,7 +349,8 @@ type PhonePane = 'folders' | 'message';
                                     @for (s of otherServerSearches.sections(); track s.mailboxId) {
                                         <app-mail-server-search [search]="s.search" [heading]="'On the server of ' + s.title"
                                                                 [opener]="s.open"
-                                                                (opened)="onServerHitOpened($event)" />
+                                                                (opened)="onServerHitOpened($event)"
+                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
                                     }
                                 }
                             }
@@ -398,8 +403,7 @@ type PhonePane = 'folders' | 'message';
                                                (click)="onCheckboxClick(m, $event)"
                                                aria-label="Select message" />
                                     }
-                                    <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)"
-                                            [disabled]="server && openingRef() === m.ref">
+                                    <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)">
                                         <div class="mbx__row-top">
                                             <span class="mbx__row-from">{{ m.fromName || m.fromAddress || '(unknown)' }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime }}</span>
@@ -464,8 +468,32 @@ type PhonePane = 'folders' | 'message';
                         </div>
                         <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
                         <div class="mbx__detail-scroll" data-test="detail-scroll">
-                        @if (loadingDetail()) {
-                            <p class="mbx__note">Loading…</p>
+                        @if (loadingDetail() || openFailure() !== null) {
+                            <!-- What the row already has, at once; the body follows, or why it could not. -->
+                            @let head = opening() ?? openFailure()?.header ?? null;
+                            <div class="mbx__detail-head" data-test="opening-head">
+                                <h2 class="mbx__detail-subject">{{ head?.subject || '(no subject)' }}</h2>
+                                <div class="mbx__detail-meta">
+                                    @if (head?.from) {
+                                        <div><strong>From:</strong> {{ head?.from }}</div>
+                                    }
+                                    @if (head?.sentAt) {
+                                        <div><strong>Date:</strong> {{ head?.sentAt | appDateTime }}</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="mbx__detail-body">
+                                @if (openFailure(); as failed) {
+                                    <p class="mbx__open-failed" role="alert" data-test="open-failed">
+                                        <span>{{ failed.text }}</span>
+                                        @if (failed.retry) {
+                                            <button type="button" class="mbx__remote-load" data-test="open-retry" (click)="failed.retry()">Try again</button>
+                                        }
+                                    </p>
+                                } @else {
+                                    <p class="mbx__note" role="status" data-test="message-loading">Loading message…</p>
+                                }
+                            </div>
                         } @else if (selectedMessage()) {
                             @let msg = selectedMessage()!;
                             @if (openEvicted()) {
@@ -1125,6 +1153,7 @@ type PhonePane = 'folders' | 'message';
             overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
         }
         .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
+        .mbx__open-failed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; padding: 12px; color: var(--cms-text); }
 
         /* The row and the search field stay; under them, one scroll region. */
         .mbx__list {
@@ -1830,6 +1859,12 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Why the messages could not be read; null once they were. The banner shows it in the message pane. */
     readonly messagesFailure = signal<unknown>(null);
     readonly loadingDetail = signal<boolean>(false);
+    /** The row being opened, shown in the pane's header until its message has loaded; null when none is. */
+    readonly opening = signal<OpeningHeader | null>(null);
+    /** Why the last open failed, said in the pane with Try again where trying again can help; null otherwise. */
+    readonly openFailure = signal<{ header: OpeningHeader; text: string; retry: (() => void) | null } | null>(null);
+    /** The open in flight (a server row's store, then the message): unsubscribing aborts its request. */
+    private pendingOpen: { unsubscribe(): void } | null = null;
 
     /**
      * Attachments (backlog slice 6b) parsed on demand from the OPEN message's `.eml`
@@ -2243,7 +2278,7 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         const m = this.messages().find(x => x.id === id);
         if (m) {
-            this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder(), then);
+            this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder(), then, m);
         }
     }
 
@@ -2647,6 +2682,7 @@ export class EmailMailboxPageComponent implements OnInit {
     selectMailbox(id: string): void {
         const previous = this.selectedMailboxId();
         this.selectedMailboxId.set(id);
+        this.cancelOpen();
         this.selectedMessage.set(null);
         this.messages.set([]);
         this.clearSelection();
@@ -2753,6 +2789,7 @@ export class EmailMailboxPageComponent implements OnInit {
         // Choosing a folder ends the folders pane as its Back would, so the history holds no step back into it.
         this.leavePane('folders');
         this.selectedFolder.set(folder);
+        this.cancelOpen();
         this.selectedMessage.set(null);
         this.clearSelection();
         this.clearSearch();
@@ -2932,14 +2969,20 @@ export class EmailMailboxPageComponent implements OnInit {
         if (ref === '' || mailboxId === null || this.openingRef() === ref) {
             return;
         }
-        const call = this.openServerHitFn(serverRowHit(m));
+        // The server rows just before and after it are stored in the background, so opening one next answers at once.
+        const call = this.email.openServerMessage(mailboxId, serverRowHit(m), serverNeighbours(this.messages(), ref));
         if (call === null) {
             return;
         }
         this.serverRowGone.set(false);
+        this.showPane('message');
+        const header = openingHeader(m);
+        const seq = this.beginOpen(header);
         this.openingRef.set(ref);
-        call.subscribe({
+        this.pendingOpen = call.subscribe({
             next: stored => {
+                if (seq !== this.openSeq) { return; }
+                this.pendingOpen = null;
                 this.openingRef.set(null);
                 if (mailboxId !== this.selectedMailboxId()) {
                     return;
@@ -2952,23 +2995,64 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.openMessage(row ?? { ...m, id: stored.id, folder: stored.folder, fromServer: false, ref: null });
             },
             error: (error: unknown) => {
+                if (seq !== this.openSeq) { return; }
                 this.openingRef.set(null);
                 const refusal = serverSearchRefusal(error);
                 if (refusal.reason === 'gone') {
                     this.messages.set(withoutServerRow(this.messages(), ref));
                     this.serverRowGone.set(true);
+                    this.failOpen(header, 'This message is no longer on the mail server.', null);
                     return;
                 }
-                this.toast.error(openFailureText(refusal));
+                this.failOpen(header, openFailureText(refusal), () => this.openServerRow(m));
             },
         });
     }
 
-    /** Back to the list: the open message is closed, and a detail still loading is dropped when it answers. */
-    closeMessage(): void {
+    /**
+     * The start of every open: the open before it is aborted (its request cancelled, its answer never shown), and the
+     * pane shows at once what the row already has, with the loading line where the body goes. Nothing is disabled.
+     */
+    private beginOpen(header: OpeningHeader): number {
+        this.pendingOpen?.unsubscribe();
+        this.pendingOpen = null;
+        this.openingRef.set(null);
         this.moves++;
+        this.openEvicted.set(false);
+        this.attachments.set([]);
+        this.loadingAttachments.set(false);
+        this.thread.set([]);
+        this.selectedMessage.set(null);
+        this.openFailure.set(null);
+        this.opening.set(header);
+        this.loadingDetail.set(true);
+
+        return ++this.openSeq;
+    }
+
+    /** An open that failed: the reason in the pane where the body goes, with Try again when trying again can help. */
+    private failOpen(header: OpeningHeader, text: string, retry: (() => void) | null): void {
+        this.pendingOpen = null;
+        this.loadingDetail.set(false);
+        this.opening.set(null);
+        this.openFailure.set({ header, text, retry });
+    }
+
+    /** No open in flight or shown: the pending one is aborted and its answer is never shown. */
+    private cancelOpen(): void {
+        this.pendingOpen?.unsubscribe();
+        this.pendingOpen = null;
+        this.openingRef.set(null);
         this.openSeq += 1;
         this.loadingDetail.set(false);
+        this.opening.set(null);
+        this.openFailure.set(null);
+    }
+
+    /** Back to the list: the open message is closed, and a detail still loading is aborted. */
+    closeMessage(): void {
+        this.moves++;
+        this.cancelOpen();
         this.selectedMessage.set(null);
     }
 
@@ -2978,30 +3062,28 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         this.showPane('message');
-        this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
+        this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder(), undefined, m);
     }
 
     /** Open a search hit -- same detail path as a folder message. */
     openSearchHit(hit: EmailSearchHitDto): void {
         this.showPane('message');
-        this.openById(hit.id, hit.seen ?? true, hit.folder ?? this.selectedFolder());
+        this.openById(hit.id, hit.seen ?? true, hit.folder ?? this.selectedFolder(), undefined, { ...hit, sentAt: this.hitDate(hit) });
     }
 
     /** Load a message's detail; mark it read if it was unread. Shared by list + search. */
-    private openById(id: string, seen: boolean, folder: string, then?: () => void): void {
-        this.moves++;
-        this.openEvicted.set(false);
-        const seq = ++this.openSeq;
-        this.attachments.set([]);
-        this.loadingAttachments.set(false);
-        this.thread.set([]);
+    private openById(id: string, seen: boolean, folder: string, then?: () => void, row: OpeningRow = {}): void {
+        const header = openingHeader(row);
+        const seq = this.beginOpen(header);
         // Remote images load at once only when the person's profile says "always loaded"; otherwise blocked until asked.
         this.loadRemoteImages.set(loadsRemoteImagesAtOnce(this.mailPrefs.current()));
-        this.loadingDetail.set(true);
         const readAt = this.pendingReads.stamp();
-        this.email.getMessage(id).subscribe({
+        // The stored rows just above and below it have their bodies fetched in the background, so the next opens at once.
+        this.pendingOpen = this.email.getMessage(id, storedNeighbours(this.messages(), id)).subscribe({
             next: answer => {
                 if (seq !== this.openSeq) { return; }
+                this.pendingOpen = null;
+                this.opening.set(null);
                 // Read before a read-state write answered: the person's value, not the one it carries.
                 const detail = this.pendingReads.held(answer, readAt);
                 this.selectedMessage.set(detail);
@@ -3016,10 +3098,14 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.applySeen(id, folder, true);
                 }
             },
-            error: () => {
+            error: (error: unknown) => {
                 if (seq !== this.openSeq) { return; }
-                this.loadingDetail.set(false);
-                this.toast.error('Could not open the message.');
+                const failure = openFailureOf(error);
+                if (failure.gone) {
+                    // The one 404: gone, or never this person's to see. Its row leaves the list.
+                    this.messages.set(this.messages().filter(x => isServerRow(x) || x.id !== id));
+                }
+                this.failOpen(header, failure.text, failure.gone ? null : () => this.openById(id, seen, folder, then, row));
             },
         });
     }
@@ -3046,7 +3132,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (m.id === this.selectedMessage()?.id) {
             return;
         }
-        this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder());
+        this.openById(m.id, m.seen ?? true, m.folder ?? this.selectedFolder(), undefined, m);
     }
 
     /** The search box's text changed: a search follows once typing pauses. */
@@ -3189,7 +3275,19 @@ export class EmailMailboxPageComponent implements OnInit {
     /** A server hit to read: opened by its stored id, as a search hit is. */
     onServerHitOpened(hit: ServerHitOpened): void {
         this.showPane('message');
-        this.openById(hit.id, hit.seen, hit.folder);
+        this.openById(hit.id, hit.seen, hit.folder, undefined, hit.header ?? {});
+    }
+
+    /** A server hit being stored: the pane opens at once with its header; another open aborts the store. */
+    onServerHitOpening(opening: ServerHitOpening): void {
+        this.showPane('message');
+        this.beginOpen(openingHeader(opening.header));
+        this.pendingOpen = { unsubscribe: opening.cancel };
+    }
+
+    /** A server hit that could not be stored: the reason in the pane, as any open that failed. */
+    onServerHitFailed(failed: ServerHitFailed): void {
+        this.failOpen(this.opening() ?? openingHeader({}), failed.text, failed.retry);
     }
 
     /** What a server search learned of a mailbox's server (it cannot search): kept on the mailbox, so it is not asked again. */
