@@ -16,7 +16,7 @@ import {
     EmailComposeMode,
     EmailDeleteResultDto,
     EmailDraftDto,
-    EmailDraftWrite,
+    EmailDraftSent,
     EmailFolderDto, EmailFolderTreeDto, EmailFolderTreeNodeDto, FolderActionPreviewDto, FolderChangeDto, FolderJobDto,
     EmailMailboxDto,
     EmailImportResultDto,
@@ -656,9 +656,10 @@ export class EmailService {
     /**
      * POST /email/mailboxes/{mailboxId}/drafts -- a new draft, with what it answers. A second reply draft to a message
      * is refused (409 /errors/email/reply-draft-exists) naming the one there is. `idempotencyKey` is sent as the
-     * Idempotency-Key header: the same create sent again with it gives the first draft back, never a second.
+     * Idempotency-Key header: the same create sent again with it gives the first draft back, never a second. The body
+     * says where the draft is written (`composedIn`); a value the server does not know is refused (422).
      */
-    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto> {
+    createDraft(mailboxId: string, body: EmailDraftSent, idempotencyKey: string): Observable<EmailDraftDto> {
         return this.http.post<EmailDraftDto>(this.draftsBase(mailboxId), body, {
             headers: this.jsonHeaders.set('Idempotency-Key', idempotencyKey),
         });
@@ -666,9 +667,11 @@ export class EmailService {
 
     /**
      * PATCH /email/mailboxes/{mailboxId}/drafts/{id} -- the whole draft, made from `version` (If-Match). One made from
-     * an older version is refused (409 /errors/email/draft-stale) with the version stored.
+     * an older version is refused (409 /errors/email/draft-stale) with the version stored. It says where the draft is
+     * written (`composedIn`) as a create does; once a draft says `window` the server keeps it, and a later
+     * `quick-reply` is ignored without an error.
      */
-    saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto> {
+    saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftSent): Observable<EmailDraftDto> {
         return this.http.patch<EmailDraftDto>(`${this.draftsBase(mailboxId)}/${encodeURIComponent(id)}`, body, {
             headers: new HttpHeaders({
                 Accept: 'application/json', 'Content-Type': 'application/merge-patch+json', 'If-Match': `"${version}"`,

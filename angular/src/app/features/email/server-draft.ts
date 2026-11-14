@@ -2,7 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type Observable } from 'rxjs';
 import { isReplyMode, replyDraftOf } from './compose-draft';
-import { type EmailComposeMode, type EmailDraftAnswers, type EmailDraftDto, type EmailDraftWrite } from './email.types';
+import {
+    type EmailComposeMode, type EmailDraftAnswers, type EmailDraftComposedIn, type EmailDraftDto, type EmailDraftSent,
+    type EmailDraftWrite,
+} from './email.types';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
 
 /** A key for one create and its retries. */
@@ -25,8 +28,8 @@ export const DRAFT_GONE_KEPT = 'This draft was deleted elsewhere. What you wrote
 
 /** The drafts API a draft is written through (the mail service). */
 export interface DraftsApi {
-    createDraft(mailboxId: string, body: EmailDraftWrite, idempotencyKey: string): Observable<EmailDraftDto>;
-    saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftWrite): Observable<EmailDraftDto>;
+    createDraft(mailboxId: string, body: EmailDraftSent, idempotencyKey: string): Observable<EmailDraftDto>;
+    saveDraft(mailboxId: string, id: string, version: number, body: EmailDraftSent): Observable<EmailDraftDto>;
     readDraft(mailboxId: string, id: string): Observable<EmailDraftDto>;
     deleteDraft(mailboxId: string, id: string): Observable<void>;
     draftsAnswering(mailboxId: string, messageId: string): Observable<EmailDraftDto[]>;
@@ -74,7 +77,8 @@ function problemOf(error: unknown, status: number): Record<string, unknown> | nu
  * version the last one answered; a save asked for while one is on its way waits and goes with the latest content. A
  * second reply draft refused (409 reply-draft-exists) and a stale save (409 draft-stale) are never written over: the
  * server's draft is read and handed to the host to draw. A realtime change with a newer version is read the same way,
- * once nothing of this place's is on its way; a draft gone elsewhere is told to the host.
+ * once nothing of this place's is on its way; a draft gone elsewhere is told to the host. Every create and save says
+ * where the draft is written (`composedIn`): the place that made this object, the quick reply or a compose window.
  */
 export class ServerDraft {
     /** When the server last saved it (`updatedAt`); null until it is a draft there. */
@@ -96,13 +100,15 @@ export class ServerDraft {
      * The create on its way or failed, with its Idempotency-Key: every retry sends the same body with the same key,
      * so a create that did commit gives its draft back and never a second. Newer content goes after it as a save.
      */
-    private creating: { key: string; body: EmailDraftWrite; from: EmailDraftWrite } | null = null;
+    private creating: { key: string; body: EmailDraftSent; from: EmailDraftWrite } | null = null;
 
     constructor(
         private readonly api: DraftsApi,
         readonly mailboxId: string,
         private answersOf: EmailDraftAnswers | null,
         private readonly host: DraftHost,
+        /** Where this draft is written, said on every create and save. */
+        readonly composedIn: EmailDraftComposedIn,
     ) {
     }
 
@@ -224,14 +230,18 @@ export class ServerDraft {
         let call: Observable<EmailDraftDto>;
         if (id === null || this.draftVersion === null) {
             if (this.creating === null) {
-                this.creating = { key: newIdempotencyKey(), body: { ...body, answers: this.answersOf }, from: body };
+                this.creating = {
+                    key: newIdempotencyKey(), body: { ...body, answers: this.answersOf, composedIn: this.composedIn }, from: body,
+                };
             } else if (this.creating.from !== body) {
                 // The same create is tried again as it was; what was written since is saved after it.
                 this.owed = body;
             }
             call = this.api.createDraft(this.mailboxId, this.creating.body, this.creating.key);
         } else {
-            const sent: EmailDraftWrite = naming ? { ...body, answers: this.answersOf } : body;
+            const sent: EmailDraftSent = naming
+                ? { ...body, answers: this.answersOf, composedIn: this.composedIn }
+                : { ...body, composedIn: this.composedIn };
             call = this.api.saveDraft(this.mailboxId, id, this.draftVersion, sent);
         }
         call.subscribe({

@@ -8,6 +8,15 @@ major number means here.
 
 ## Unreleased
 
+- **A reply draft once in the compose window stays out of the quick reply, after a reload too.** Every draft create
+  and save says where it is written (`composedIn`): `quick-reply` from the quick reply, `window` from the compose
+  window (new message, reply, reply all and forward). The quick reply puts a found reply draft back in its box only
+  when it says `quick-reply`; one that says `window`, or nothing, shows as the Draft line with Open and Discard, so
+  after a reload or on another device a draft the window held no longer comes back into the box. Expand saves the
+  draft at once as the window's. The page still remembers the drafts a window held, for the moment before that
+  window's save has landed. Show original's sentence for a message the server answers 404 now reads "This message
+  is not there any more.", as the app says of gone conversations and files.
+
 - **A compact compose window and quick reply.** Docked, the compose window is 600 px wide (560 to 640) and at most
   about 70% of the viewport tall, its header buttons at least 36 px; where one pane shows at a time it is full screen
   with Minimize and Close only, at least 44 px. From, To, Cc, Bcc and Subject are compact lines with their labels in
@@ -67,7 +76,8 @@ major number means here.
   window keeps it, saves it as a new draft, and says so.
 
 - **Show original says when a message is not found.** Any 404 other than the source-gone one (a missing
-  message, or one the reader may not see) now reads "This message was not found." instead of the generic failure.
+  message, or one the reader may not see) now reads "This message is not there any more." instead of the generic
+  failure.
 
 - **The signed-in sessions page.** A row's menu ends that sign-in, ends all of that person's sign-ins, or opens
   the account. Every column sorts and filters, by the grid's declared definition, and the toolbar groups the
