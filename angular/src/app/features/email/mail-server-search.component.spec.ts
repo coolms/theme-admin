@@ -8,7 +8,7 @@ import { DateTimeFormatService } from '@coolms/ui-angular';
 
 import { EmailService, SERVER_MESSAGE_OPEN_SERVED } from './email.service';
 import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
-import { MailServerSearchComponent, OLDER_WORDS, type ServerHitOpened } from './mail-server-search.component';
+import { MailServerSearchComponent, OLDER_WORDS, type ServerHitFailed, type ServerHitOpened, type ServerHitOpening } from './mail-server-search.component';
 import { MailServerSearch } from './mail-server-search';
 
 const hit = (n: number, extra: Partial<ServerSearchHitDto> = {}): ServerSearchHitDto => ({
@@ -97,7 +97,7 @@ describe('MailServerSearchComponent', () => {
         expect(rows.map(r => r.textContent ?? '').map(t => /Sender (\d)/.exec(t)?.[1])).withContext('m1 is in the results above').toEqual(['2', '3']);
 
         rows[0].click();
-        expect(opened).toEqual([{ id: 'm9', folder: 'INBOX', seen: false }]);
+        expect(opened).toEqual([jasmine.objectContaining({ id: 'm9', folder: 'INBOX', seen: false })]);
     });
 
     it('every hit already in the results above: says so instead of an empty list', () => {
@@ -152,8 +152,50 @@ describe('MailServerSearchComponent', () => {
         it('200: the stored id opens, and the hit is now held', () => {
             openWith({ id: 'm42', folder: 'Archive' });
 
-            expect(opened).toEqual([{ id: 'm42', folder: 'Archive', seen: true }]);
+            expect(opened).toEqual([jasmine.objectContaining({ id: 'm42', folder: 'Archive', seen: true })]);
             expect(search.hits()[0]).toEqual(jasmine.objectContaining({ ref: 'ref-3', local: true, localId: 'm42' }));
+        });
+
+        it('says it is opening before the store answers, with the hit\'s header; a cancel aborts the store and drops its answer', () => {
+            const el = render();
+            const email = TestBed.inject(EmailService);
+            const http = TestBed.inject(HttpTestingController);
+            const openings: ServerHitOpening[] = [];
+            const failures: ServerHitFailed[] = [];
+            fixture.componentInstance.opening.subscribe(o => openings.push(o));
+            fixture.componentInstance.openFailed.subscribe(f => failures.push(f));
+            search.run('q');
+            replies.next(answer('q', [hit(3), hit(4)]));
+            fixture.componentRef.setInput('opener', (h: ServerSearchHitDto) => email.openServerMessage('mb1', h));
+            fixture.detectChanges();
+            el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
+            const req = http.expectOne(OPEN);
+
+            expect(openings.length).toBe(1);
+            expect(openings[0].header).toEqual(jasmine.objectContaining({ subject: hit(3).subject ?? null }));
+            openings[0].cancel();
+            expect(req.cancelled).withContext('the store is aborted').toBeTrue();
+            expect(opened).toEqual([]);
+            expect(failures).toEqual([]);
+            http.verify();
+        });
+
+        it('a store that failed says so to the host, with Try again', () => {
+            const failures: ServerHitFailed[] = [];
+            const el = render();
+            fixture.componentInstance.openFailed.subscribe(f => failures.push(f));
+            const email = TestBed.inject(EmailService);
+            const http = TestBed.inject(HttpTestingController);
+            search.run('q');
+            replies.next(answer('q', [hit(3), hit(4)]));
+            fixture.componentRef.setInput('opener', (h: ServerSearchHitDto) => email.openServerMessage('mb1', h));
+            fixture.detectChanges();
+            el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
+            http.expectOne(OPEN).flush({ type: '/errors/email/server-search/unavailable' }, { status: 503, statusText: '503' });
+
+            expect(failures.map(f => f.text)).toEqual(['Can\'t reach the mail server right now.']);
+            failures[0].retry?.();
+            expect(http.match(OPEN).length).withContext('Try again stores it again').toBe(1);
         });
 
         it('404 gone: the row leaves, and the section says so', () => {
@@ -258,7 +300,7 @@ describe('MailServerSearchComponent', () => {
             expect(text(el, 'server-search-more')).toBe('Load older from the server');
 
             rows[0].click();
-            expect(opened).toEqual([{ id: 'm7', folder: 'INBOX', seen: false }]);
+            expect(opened).toEqual([jasmine.objectContaining({ id: 'm7', folder: 'INBOX', seen: false })]);
         });
 
         it('says it in its own words: nothing older, the rate limit', () => {

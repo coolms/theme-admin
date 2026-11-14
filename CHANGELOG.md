@@ -8,6 +8,14 @@ major number means here.
 
 ## Unreleased
 
+- **Opening a message never waits on its body.** The message pane opens the moment a row is chosen, a stored row, a
+  server row or a search hit, with the row's subject, sender and date and "Loading message…" (a status) where the body
+  goes; nothing is disabled meanwhile. Choosing another message, Back, or leaving the folder or the mailbox aborts the
+  pending request, and an answer that arrives anyway never opens over what was chosen since (before, a server row still
+  being stored opened over a row chosen after it, and a folder changed mid-load showed the old message). A load that
+  fails says why in the pane, by the server's reason, with Try again; the one 404 says the message is no longer here and
+  takes its row out. A server row's open names the server rows just before and after it, and a stored row's open the
+  stored rows beside it (`prefetch`), so the next one opens at once.
 - **A reply draft once in the compose window stays out of the quick reply, after a reload too.** Every draft create
   and save says where it is written (`composedIn`): `quick-reply` from the quick reply, `window` from the compose
   window (new message, reply, reply all and forward). The quick reply puts a found reply draft back in its box only
