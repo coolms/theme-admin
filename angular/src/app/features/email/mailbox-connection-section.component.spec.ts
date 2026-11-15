@@ -6,6 +6,7 @@ import { DateTimeFormatService, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxTestResult } from './email.types';
+import { oauthProviderName } from './oauth-provider-name';
 import {
     MailboxConnectionSectionComponent,
     connectionDraftOf,
@@ -422,6 +423,21 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
             sync.discard();
             expect(sync.draft().enabled).withContext('its own field, discarded').toBeTrue();
             expect(sync.draft().imapPort).withContext('the other pane\'s field, kept').toBe(143);
+        });
+
+        it('names the sign-in provider as its owner writes it: Microsoft, Google, any other capitalised, none as its provider', () => {
+            const line = (provider: string | null): string => {
+                const fixture = render({ ...MAILBOX, authMethod: 'oauth', oauthProvider: provider, oauthConnected: true } as EmailMailboxDto);
+                const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+                return (/Signs in through ([^:]+):/.exec(text.replace(/\s+/g, ' '))?.[1] ?? '').trim();
+            };
+
+            expect(line('microsoft')).toBe('Microsoft');
+            expect(line('google')).toBe('Google');
+            expect(line('fastmail')).toBe('Fastmail');
+            expect(line(null)).toBe('its provider');
+            expect(oauthProviderName('  ')).toBeNull();
+            expect(oauthProviderName('MICROSOFT')).toBe('Microsoft');
         });
 
         it('the sync depth appears only when the read carries it', () => {
