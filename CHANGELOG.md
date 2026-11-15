@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+- **A mailbox signing in through a provider names it as its owner writes it.** The Connection screen reads "Signs in
+  through Microsoft" or "Google", not the provider's key ("microsoft"); another provider has its first letter
+  capitalised, and none still says "its provider". The mailbox editor's provider labels fall back to the same names.
 - **Opening a message never waits on its body.** The message pane opens the moment a row is chosen, a stored row, a
   server row or a search hit, with the row's subject, sender and date and "Loading message…" (a status) where the body
   goes; nothing is disabled meanwhile. Choosing another message, Back, or leaving the folder or the mailbox aborts the

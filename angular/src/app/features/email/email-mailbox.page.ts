@@ -97,6 +97,7 @@ import { MailHitRowComponent } from './mail-hit-row.component';
 import {
     MailServerSearchComponent, openFailureText, type ServerHitFailed, type ServerHitOpened, type ServerHitOpening,
 } from './mail-server-search.component';
+import { oauthProviderName } from './oauth-provider-name';
 import { openFailureOf, openingHeader, serverNeighbours, storedNeighbours, type OpeningHeader, type OpeningRow } from './message-opening';
 import {
     MailServerSearch, OtherMailboxesSearch, searchCommits, serverSearchRefusal, type SearchCommit, type SearchKey,
@@ -5126,16 +5127,13 @@ export class EmailMailboxPageComponent implements OnInit {
         this.mbForm.smtpSecurity = preset.smtpSecurity;
     }
 
-    /** Human label for a provider key (from the fetched list, else ucfirst; '' -> 'OAuth'). */
+    /** Human label for a provider key (from the fetched list, else the provider's own name; '' -> 'OAuth'). */
     providerLabel(key: string): string {
         const found = this.oauthProviders().find(p => p.key === key);
         if (found?.label !== undefined && found.label !== '') {
             return found.label;
         }
-        if (key === '') {
-            return 'OAuth';
-        }
-        return key.charAt(0).toUpperCase() + key.slice(1);
+        return oauthProviderName(key) ?? 'OAuth';
     }
 
     /**

@@ -9,6 +9,7 @@ import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestReques
 import { HttpErrorResponse } from '@angular/common/http';
 import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 import { sendViaChoices, sendViaHint } from './send-via';
+import { oauthProviderName } from './oauth-provider-name';
 
 /** The connection fields this section edits, as they are read and as they are saved. */
 interface ConnectionDraft {
@@ -236,7 +237,7 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
                 @if (mailbox().authMethod === 'oauth') {
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <span>
-                            Signs in through {{ mailbox().oauthProvider || 'its provider' }}:
+                            Signs in through {{ providerName() ?? 'its provider' }}:
                             {{ mailbox().oauthConnected ? 'connected' : 'not connected' }}.
                         </span>
                         @if (authorizeAccess() !== 'denied') {
@@ -314,6 +315,8 @@ export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'wa
 export class MailboxConnectionSectionComponent {
     /** The mailbox as read, with the version this section saves against. */
     readonly mailbox = input<EmailMailboxDto>(NO_MAILBOX);
+    /** The sign-in provider's name as its owner writes it ("Microsoft", "Google"); null when the mailbox names none. */
+    readonly providerName = computed(() => oauthProviderName(this.mailbox().oauthProvider));
     /** The server's answer for `email.mailbox.update`. */
     readonly access = input<CapabilityState>('denied');
     /** The server's answer for `email.mailbox.authorize`. */
