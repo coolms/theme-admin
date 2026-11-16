@@ -45,19 +45,15 @@ export function isRefusal(error: unknown): boolean {
 
 /**
  * What a failed call says, in whose words the components contract sets: a declared problem (a type other than
- * about:blank) its `detail` as the server gives it, whatever the status; a validation refusal without a detail its
- * first field's message; a declared problem without either NOT_AVAILABLE; an undeclared fault, a network failure or
- * anything else SOMETHING_WENT_WRONG, never its own text. The type is for behaviour only and never turned into words
- * here. The result is plain text.
+ * about:blank) its `detail` as the server gives it, whatever the status; a validation refusal its first field's
+ * message, never the top-level detail (a form shows each message next to its field instead); a declared problem with
+ * neither NOT_AVAILABLE; an undeclared fault, a network failure or anything else SOMETHING_WENT_WRONG, never its own
+ * text. The type is for behaviour only and never turned into words here. The result is plain text.
  */
 export function refusalWords(error: unknown): string {
     const problem = declaredProblemOf(error);
     if (problem === null) {
         return SOMETHING_WENT_WRONG;
-    }
-    const detail = sentenceOf(problem['detail']);
-    if (detail !== null) {
-        return detail;
     }
     const violations = problem['violations'];
     if (Array.isArray(violations)) {
@@ -68,5 +64,5 @@ export function refusalWords(error: unknown): string {
             }
         }
     }
-    return NOT_AVAILABLE;
+    return sentenceOf(problem['detail']) ?? NOT_AVAILABLE;
 }

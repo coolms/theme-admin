@@ -21,11 +21,14 @@ describe('refusalWords: a declared problem says its detail, whatever the status'
         expect(refusalWords(failure(422, { type: '/errors/x', detail: '<b>not bold</b>' }))).toBe('<b>not bold</b>');
     });
 
-    it('says the first field message of a declared validation refusal without a detail', () => {
+    it('says the first field message of a validation refusal, never its top-level detail', () => {
         expect(refusalWords(failure(422, {
             type: '/validation_errors/0',
+            detail: 'name: Name is too long.',
             violations: [{ propertyPath: 'name', message: '' }, { propertyPath: 'name', message: 'Name is too long.' }],
         }))).toBe('Name is too long.');
+        expect(refusalWords(failure(422, { type: '/validation_errors/0', detail: 'Said by the server.', violations: [] })))
+            .withContext('no field message: the detail').toBe('Said by the server.');
     });
 
     it('says the one generic sentence for a declared problem with nothing to say', () => {
