@@ -179,7 +179,7 @@ describe('EmailMailboxPageComponent -- archive', () => {
 
     it('several checked: one bulk call; the archived leave, the refused stay, one summary says how many and why', () => {
         const page = build({ many: asked => of({ results: asked.map(id => (id === 'm3'
-            ? { id, outcome: 'refused' as const, folder: 'INBOX', reason: 'not-archivable-from-here' }
+            ? { id, outcome: 'refused' as const, folder: 'INBOX', reason: 'not-archivable-from-here', reasonText: 'Messages in this folder cannot be archived.' }
             : { id, outcome: 'archived' as const, folder: 'Archive' })) }) });
         page.selectedIds.set(new Set(['m1', 'm2', 'm3']));
 

@@ -74,7 +74,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
         failed.flow.archive(['a']);
         expect(failed.seen.putBack).toEqual([['a']]);
         const some = page({ many: () => of({ results: [
-            { id: 'a', outcome: 'archived', folder: 'Archive' }, { id: 'b', outcome: 'refused', folder: 'INBOX', reason: 'no-archive-folder' },
+            { id: 'a', outcome: 'archived', folder: 'Archive' }, { id: 'b', outcome: 'refused', folder: 'INBOX', reason: 'no-archive-folder', reasonText: "This mailbox's server has no folder marked as its archive." },
         ] }) });
         some.flow.archive(['a', 'b']);
         expect(some.seen.taken).toEqual([['a', 'b']]);
@@ -124,9 +124,9 @@ describe('Archive: the server archives, the page says what it answered', () => {
     it('several: one bulk call; the archived leave, the refused stay with one summary of how many and why', () => {
         const { flow, seen } = page({ many: () => of({ results: [
             { id: 'a', outcome: 'archived', folder: 'Archive' },
-            { id: 'b', outcome: 'refused', folder: 'Drafts', reason: 'not-archivable-from-here' },
+            { id: 'b', outcome: 'refused', folder: 'Drafts', reason: 'not-archivable-from-here', reasonText: 'Messages in this folder cannot be archived.' },
             { id: 'c', outcome: 'archived', folder: 'Archive' },
-            { id: 'd', outcome: 'refused', folder: 'Drafts', reason: 'not-archivable-from-here' },
+            { id: 'd', outcome: 'refused', folder: 'Drafts', reason: 'not-archivable-from-here', reasonText: 'Messages in this folder cannot be archived.' },
         ] }) });
         flow.archive(['a', 'b', 'c', 'd']);
         expect(seen.singles).toEqual([]);
@@ -137,7 +137,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
     });
 
     it('several, none archivable: nothing leaves and the summary says none were', () => {
-        const { flow, seen } = page({ many: ids => of({ results: ids.map(id => ({ id, outcome: 'refused' as const, folder: 'INBOX', reason: 'no-archive-folder' })) }) });
+        const { flow, seen } = page({ many: ids => of({ results: ids.map(id => ({ id, outcome: 'refused' as const, folder: 'INBOX', reason: 'no-archive-folder', reasonText: "This mailbox's server has no folder marked as its archive." })) }) });
         flow.archive(['a', 'b']);
         expect(seen.archived).toEqual([]);
         expect(seen.successes).toEqual([]);
@@ -170,5 +170,8 @@ describe('archiveRefusedText: the refused of a bulk archive in the server\'s sen
     it('says how many and the server\'s sentence as given', () => {
         expect(archiveRefusedText([{ id: 'a', outcome: 'refused', reason: 'all-mail-hidden', reasonText: 'Said by the server.' }], 3))
             .toBe('1 message of 3 not archived. Said by the server.');
+        // From a server that gives no sentence: the one generic sentence, never words for the code.
+        expect(archiveRefusedText([{ id: 'a', outcome: 'refused', reason: 'all-mail-hidden' }], 3))
+            .toBe('1 message of 3 not archived. Not available right now');
     });
 });
