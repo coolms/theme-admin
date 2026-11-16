@@ -74,7 +74,7 @@ describe('FolderNameDialogComponent', () => {
 
     it('a parent that cannot hold folders (\\Noinferiors) is said in place, and the same ask is not offered again', () => {
         answer = () => throwError(() => new HttpErrorResponse({
-            status: 422, error: { type: '/errors/email/folder-parent-invalid', title: 'Unprocessable' },
+            status: 422, error: { type: '/errors/email/folder-parent-invalid', title: 'Unprocessable', detail: 'Said by the server.' },
         }));
         const el = render();
         type(el, 'Mango');
@@ -82,7 +82,7 @@ describe('FolderNameDialogComponent', () => {
         fixture.detectChanges();
 
         const said = el.querySelector('[data-test="folder-refusal"]');
-        expect(said?.textContent?.trim()).toBe('The mail server does not allow folders inside this folder.');
+        expect(said?.textContent?.trim()).toBe('Said by the server.');
         expect(said?.getAttribute('role')).toBe('alert');
         expect(closed).withContext('the dialog stays open').toEqual([]);
         expect(el.querySelector('[data-test="folder-name-input"]')?.getAttribute('aria-invalid')).toBe('true');

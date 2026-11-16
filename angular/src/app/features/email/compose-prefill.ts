@@ -4,6 +4,7 @@ import {
     type EmailComposeDto, type EmailComposeMode, type EmailComposePartDto, type EmailComposeRecipientDto, type EmailMessagePartRef,
     type OutgoingEmailRequest,
 } from './email.types';
+import { isRefusal, refusalWords, sentenceOf } from './server-words';
 
 /** The message actions that open a composer the server prepares, and the mode each asks it for. */
 export const PREFILLED_ACTIONS: Readonly<Record<string, EmailComposeMode>> = {
@@ -24,22 +25,11 @@ export function preparingSentence(mode: EmailComposeMode): string {
 }
 
 /**
- * Why the composer could not be prepared, in the page's words: a 404 is a message not there to read, a 422 a way of
- * answering the server does not take; anything else may pass, and offers Retry.
+ * Why the composer could not be prepared, in the words `refusalWords` gives; a refusal (4xx) offers no Retry, anything
+ * else may pass and offers Retry.
  */
-export function prefillFailure(err: unknown, mode: EmailComposeMode): { sentence: string; retry: boolean } {
-    const status = err instanceof HttpErrorResponse ? err.status : 0;
-    if (status === 404) {
-        return { sentence: 'This message is not there to answer: it was removed, or you may no longer read it.', retry: false };
-    }
-    if (status === 422) {
-        return { sentence: 'The server does not prepare a message this way, so nothing was filled in.', retry: false };
-    }
-
-    return {
-        sentence: mode === 'forward' ? 'The forward could not be prepared.' : 'The reply could not be prepared.',
-        retry: true,
-    };
+export function prefillFailure(err: unknown, _mode: EmailComposeMode): { sentence: string; retry: boolean } {
+    return { sentence: refusalWords(err), retry: !isRefusal(err) };
 }
 
 /** The served recipients as the address chips hold them, in the order served. */
@@ -54,15 +44,10 @@ export function recipientOptionsOf(list: readonly EmailComposeRecipientDto[]): T
         .map(r => ({ value: r.address, label: `${(r.name ?? '').trim()} <${r.address}>` }));
 }
 
-/** The words for each reason the server gives that the original could not be read (`unreadable`). */
-const UNREADABLE_WORDS: Readonly<Record<string, string>> = {
-    'not-on-server': 'it is no longer stored here, and the mail server no longer holds it',
-    'server-failed': 'the mail server could not be read just now',
-};
-
-/** The sentence said when the prefill had no quote because the message could not be read. */
-export function unreadableSentence(reason: string): string {
-    return `The original is not quoted: ${UNREADABLE_WORDS[reason] ?? 'it could not be read'}.`;
+/** Said when the prefill had no quote because the original could not be read: with the server's sentence, as given. */
+export function unreadableSentence(sentence: string | null | undefined): string {
+    const said = sentenceOf(sentence);
+    return said === null ? 'The original is not quoted.' : `The original is not quoted: ${said}`;
 }
 
 /** Said when a send was refused because the message to quote could no longer be read: nothing went. */

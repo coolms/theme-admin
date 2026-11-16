@@ -53,8 +53,8 @@ describe('MessageSourceViewerComponent', () => {
         viewRequest().flush(text, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Raw-Truncated': String(truncated) } });
         await settle();
     }
-    async function refused(status: number, type: string): Promise<void> {
-        viewRequest().flush(JSON.stringify({ type, status }), {
+    async function refused(status: number, type: string, detail?: string): Promise<void> {
+        viewRequest().flush(JSON.stringify({ type, status, ...(detail === undefined ? {} : { detail }) }), {
             status, statusText: 'refused', headers: { 'Content-Type': 'application/problem+json' },
         });
         await settle();
@@ -122,18 +122,24 @@ describe('MessageSourceViewerComponent', () => {
         expect(q<HTMLButtonElement>('source-download')!.disabled).toBeFalse();
     });
 
-    it('says a source that is gone (404 source-gone) in its own sentence, with no Retry', async () => {
+    it('says a source that is gone (404 source-gone) in the server\'s words, with no Retry', async () => {
         open();
-        await refused(404, '/errors/email/message-source-gone');
-        expect(q('source-gone')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.gone);
+        await refused(404, '/errors/email/message-source-gone', 'Said by the server.');
+        expect(q('source-gone')?.textContent?.trim()).toBe('Said by the server.');
         expect(q('source-retry')).toBeNull();
         expect(q('source-text')).toBeNull();
     });
 
-    it('says a server that could not be read (502 source-unavailable) in its own sentence, and Retry reads again', async () => {
+    it('says an undeclared 502 in the generic sentence, never its text', async () => {
         open();
-        await refused(502, '/errors/email/message-source-unavailable');
-        expect(q('source-unavailable')?.textContent).toContain(MESSAGE_SOURCE_WORDS.unavailable);
+        await refused(502, 'about:blank', 'internals');
+        expect(q('source-failed')?.textContent?.trim()).toBe('Something went wrong. Try again.');
+    });
+
+    it('says a server that could not be read (502 source-unavailable) in its detail, and Retry reads again', async () => {
+        open();
+        await refused(502, '/errors/email/message-source-unavailable', 'Said for 502.');
+        expect(q('source-unavailable')?.textContent).toContain('Said for 502.');
         expect(q('source-gone')).toBeNull();
         q<HTMLButtonElement>('source-retry')!.click();
         await settle();
@@ -142,16 +148,15 @@ describe('MessageSourceViewerComponent', () => {
         expect(q('source-unavailable')).toBeNull();
     });
 
-    it('says the page\'s sentence for any other refusal, and not found for any other 404', async () => {
+    it('says the server\'s detail for any other refusal, and Not available right now without one', async () => {
         open();
-        await refused(403, '/errors/403');
-        expect(q('source-failed')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.failed);
+        await refused(403, '/errors/403', 'Said for 403.');
+        expect(q('source-failed')?.textContent?.trim()).toBe('Said for 403.');
         TestBed.inject(Dialog).closeAll();
         await settle();
         open();
         await refused(404, '/errors/not-found');
-        expect(q('source-missing')?.textContent?.trim()).toBe(MESSAGE_SOURCE_WORDS.missing);
-        expect(MESSAGE_SOURCE_WORDS.missing).withContext('the phrasing the app uses for what is gone').toBe('This message is not there any more.');
+        expect(q('source-missing')?.textContent?.trim()).toBe('Not available right now');
         expect(q('source-gone')).toBeNull();
         expect(q('source-failed')).toBeNull();
     });

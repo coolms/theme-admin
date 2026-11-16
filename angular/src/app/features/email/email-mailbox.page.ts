@@ -137,6 +137,7 @@ import {
     ServerSearchHitDto,
     type ListOrder,
 } from './email.types';
+import { refusalWords } from './server-words';
 
 /** The two-way-bound model behind the mailbox connection editor form. */
 interface MailboxFormModel {
@@ -1953,8 +1954,9 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composePreparing = computed(() => preparingSentence(this.composeMode() === 'forward' ? 'forward' : 'reply'));
     /** Why the original is not quoted, when the server could not read it. */
     readonly composeUnreadable = computed(() => {
-        const reason = this.prefillAnswer()?.unreadable;
-        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(reason) : null;
+        const answer = this.prefillAnswer();
+        const reason = answer?.unreadable;
+        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(answer?.unreadableText) : null;
     });
     /** The served `quote.html`, drawn read-only in the message view's frame below the person's text. */
     readonly composeQuoteHtml = computed<string | null>(() => {
@@ -2621,10 +2623,9 @@ export class EmailMailboxPageComponent implements OnInit {
             if (meant === 'held' && choice !== null) {
                 held.set(change.id, choice);
             } else if (meant === 'refused' && choice !== null) {
-                // An entry that says it rolls a refused change back carries its reason's code. Its value is what the
-                // row went back to; the words are the person's choice, the value asked for.
-                const code = 'refused' in change && change.refused === 'seen' ? change.reason ?? null : null;
-                refusal ??= flagRefusalText(flagChangeOf('seen', choice), code);
+                // An entry that rolls a refused change back carries only its reason's code, never worded here: the
+                // notice names the person's choice, the value asked for.
+                refusal ??= flagRefusalText(flagChangeOf('seen', choice));
                 if (notice !== null) {
                     notices.add(notice);
                 }
@@ -2670,7 +2671,7 @@ export class EmailMailboxPageComponent implements OnInit {
         notices.forEach(id => this.toast.dismiss(id));
         // Said as the change the person asked for, never as the value the row was put back to.
         // The server's sentence as given; its code is never worded here, and its old `reason` never shown.
-        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), null, evt.reasonText));
+        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), evt.reasonText));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */
@@ -3013,7 +3014,7 @@ export class EmailMailboxPageComponent implements OnInit {
                     this.failOpen(header, 'This message is no longer on the mail server.', null);
                     return;
                 }
-                this.failOpen(header, openFailureText(refusal), () => this.openServerRow(m));
+                this.failOpen(header, refusalWords(error), () => this.openServerRow(m));
             },
         });
     }
@@ -3356,7 +3357,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 return null;
             }),
             catchError((e: unknown) => {
-                problems.set(m.id, problemOf(e));
+                problems.set(m.id, refusalWords(e));
                 return of(m.id);
             }),
         ))).subscribe(answers => {
@@ -3434,14 +3435,14 @@ export class EmailMailboxPageComponent implements OnInit {
         this.bulkBusy.set(true);
         forkJoin(targets.map(m => this.email.moveMessage(m.id, folder).pipe(
             map(() => null),
-            catchError((e: unknown) => of({ id: m.id, problem: problemOf(e) })),
+            catchError((e: unknown) => of({ id: m.id, text: refusalWords(e) })),
         ))).subscribe(answers => {
-            const refused = answers.filter((a): a is { id: string; problem: string | null } => a !== null);
+            const refused = answers.filter((a): a is { id: string; text: string } => a !== null);
             // One notice: the refusal's when any was refused, in place of what was done.
             const moved = asked.length - refused.length;
             if (refused.length > 0) {
                 this.putBack(refused.map(r => r.id));
-                this.toast.error(moveRefusalText(refused[0].problem, refused.length));
+                this.toast.error(moveRefusalText(refused[0].text, refused.length));
             } else if (moved > 0) {
                 this.toast.success(movedText(moved, name));
             }
@@ -3851,7 +3852,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 return null;
             }),
             catchError((e: unknown) => {
-                problems.set(m.id, problemOf(e));
+                problems.set(m.id, refusalWords(e));
                 return of(m.id);
             }),
         ))).subscribe(answers => {

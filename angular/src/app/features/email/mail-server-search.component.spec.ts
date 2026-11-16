@@ -191,9 +191,12 @@ describe('MailServerSearchComponent', () => {
             fixture.componentRef.setInput('opener', (h: ServerSearchHitDto) => email.openServerMessage('mb1', h));
             fixture.detectChanges();
             el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
-            http.expectOne(OPEN).flush({ type: '/errors/email/server-search/unavailable' }, { status: 503, statusText: '503' });
+            http.expectOne(OPEN).flush(
+                { type: '/errors/email/server-search/unavailable', detail: 'Said by the server.' },
+                { status: 503, statusText: '503' },
+            );
 
-            expect(failures.map(f => f.text)).toEqual(['Can\'t reach the mail server right now.']);
+            expect(failures.map(f => f.text)).withContext('a declared fault: its detail').toEqual(['Said by the server.']);
             failures[0].retry?.();
             expect(http.match(OPEN).length).withContext('Try again stores it again').toBe(1);
         });
@@ -206,17 +209,23 @@ describe('MailServerSearchComponent', () => {
             expect(opened).toEqual([]);
         });
 
-        it('503 unavailable: said under the row, with the reason', () => {
-            const el = openWith({ type: '/errors/email/server-search/unavailable', reason: 'unreachable' }, 503);
+        it('503 unavailable: said under the row in the server\'s detail', () => {
+            const el = openWith({ type: '/errors/email/server-search/unavailable', reason: 'unreachable', detail: 'Said for 503.' }, 503);
 
-            expect(text(el, 'server-hit-notice')).toBe('Can\'t reach the mail server right now: unreachable.');
+            expect(text(el, 'server-hit-notice')).toBe('Said for 503.');
             expect(search.hits().length).toBe(2);
         });
 
-        it('502 failed: said under the row, naming the server', () => {
-            const el = openWith({ type: '/errors/email/server-search/failed', server: 'imap.example.test' }, 502);
+        it('a declared 502 says its detail under the row', () => {
+            const el = openWith({ type: '/errors/email/server-search/failed', detail: 'Said for 502.' }, 502);
 
-            expect(text(el, 'server-hit-notice')).toBe('imap.example.test couldn\'t open this message.');
+            expect(text(el, 'server-hit-notice')).toBe('Said for 502.');
+        });
+
+        it('an undeclared 502 says the generic sentence under the row, never its text', () => {
+            const el = openWith({ type: 'about:blank', detail: 'imap.example.test internals' }, 502);
+
+            expect(text(el, 'server-hit-notice')).toBe('Something went wrong. Try again.');
         });
     });
 

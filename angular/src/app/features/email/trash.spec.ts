@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 import { type EmailBulkResultDto } from './email.types';
-import { inChunks, isTrashFolder, permanentQuestion, problemOf, trashOutcome, trashRefusalText, trashRefusedText, trashRetentionText } from './trash';
+import { inChunks, isTrashFolder, permanentQuestion, PERMANENT_NOT_SERVED, problemOf, trashOutcome, trashRefusedText, trashRetentionText } from './trash';
+import { refusalWords } from './server-words';
 
 describe('Trash: the move, its undo and the permanent delete', () => {
     it('drops the moved and the gone rows; only the moved can be undone; the refused stay', () => {
@@ -46,18 +47,12 @@ describe('Trash: the move, its undo and the permanent delete', () => {
         expect(problemOf(null)).toBeNull();
     });
 
-    it('says why nothing changed in its own words per problem, and never the server detail', () => {
-        const texts = ['no-trash', 'no-move', 'no-uidplus', 'origin-gone', null].map(p => trashRefusalText('delete', p, 1));
-        expect(new Set(texts).size).toBe(texts.length);
-        expect(trashRefusalText('restore', 'not-in-trash', 2)).toBe('2 messages no longer in Trash, so not restored.');
-        expect(trashRefusalText('permanent', 'not-in-trash', 1)).toBe('Only messages in Trash can be deleted permanently.');
-        expect(trashRefusalText('restore', 'odd', 1)).toBe('Could not restore 1 message.');
-        // The served kinds, in the words agreed with the server's side.
-        expect(trashRefusalText('permanent', 'permanent-deletion', 1)).toBe('Permanent delete isn\'t available yet.');
-        expect(trashRefusalText('delete', 'retired-copy', 1)).toBe('This copy is out of date. Reload the folder.');
-        expect(trashRefusalText('delete', 'renumbered', 1)).toBe('This folder changed on the server. Try again after it refreshes.');
-        expect(trashRefusalText('restore', 'not-found', 1)).toBe('This message no longer exists.');
-        expect(trashRefusalText('delete', 'not-found', 3)).toBe('3 messages no longer exist.');
+    it('says why nothing changed in the server\'s words: a declared problem its detail, an undeclared fault the generic sentence', () => {
+        const refused = new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash', detail: 'Said by the server.' } });
+        expect(refusalWords(refused)).toBe('Said by the server.');
+        expect(refusalWords(new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash' } }))).toBe('Not available right now');
+        expect(refusalWords(new HttpErrorResponse({ status: 502, error: { type: 'about:blank', detail: 'IMAP said NO [internals]' } }))).toBe('Something went wrong. Try again.');
+        expect(PERMANENT_NOT_SERVED).toBe('Permanent delete isn\'t available yet.');
     });
 
     it("the Trash view says when the server empties it only where that is known", () => {
@@ -80,6 +75,6 @@ describe('trashRefusedText: the refused of a bulk step in the server\'s sentence
         expect(trashRefusedText('restore', [
             { id: 'a', outcome: 'refused', reasonText: 'Said.' }, { id: 'b', outcome: 'refused', reasonText: 'Said.' },
         ])).toBe('2 messages were not restored. Said.');
-        expect(trashRefusedText('delete', [{ id: 'a', outcome: 'refused', reason: 'failed' }])).toBe('Could not delete 1 message.');
+        expect(trashRefusedText('delete', [{ id: 'a', outcome: 'refused', reason: 'failed' }])).toBe('The message was not moved to Trash. Not available right now');
     });
 });

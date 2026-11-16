@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ToastInput } from '@coolms/ui-angular';
 import { of, throwError, type Observable } from 'rxjs';
-import { ArchiveFlow, archiveReasonText, archiveRefusedText, type ArchivedMessage, type ArchivePorts } from './archive';
+import { ArchiveFlow, archiveRefusedText, type ArchivedMessage, type ArchivePorts } from './archive';
 import { type EmailArchiveResultDto, type EmailBulkResultDto } from './email.types';
 
-const cannot = (reason: string): HttpErrorResponse => new HttpErrorResponse({
+const cannot = (reason: string, detail: string | null = "This mailbox's server has no folder marked as its archive."): HttpErrorResponse => new HttpErrorResponse({
     status: 422,
-    error: { type: '/errors/email/cannot-archive', title: 'This message cannot be archived here', status: 422, reason },
+    error: { type: '/errors/email/cannot-archive', title: 'This message cannot be archived here', status: 422, reason, ...(detail === null ? {} : { detail }) },
 });
 const notCompleted = (): HttpErrorResponse => new HttpErrorResponse({ status: 502, error: { detail: 'not completed' } });
 
@@ -57,7 +57,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
         expect(seen.successes).toEqual(['Archived 1 message.']);
     });
 
-    it('a 422 says why in the page\'s words for its reason, changes nothing, and offers no Retry', () => {
+    it('a 422 says the server\'s detail as given, changes nothing, and offers no Retry', () => {
         const { flow, seen } = page({ one: () => throwError(() => cannot('no-archive-folder')) });
         flow.archive(['a']);
         expect(seen.archived).toEqual([]);
@@ -81,30 +81,16 @@ describe('Archive: the server archives, the page says what it answered', () => {
         expect(some.seen.putBack).toEqual([['b']]);
     });
 
-    it('a sentence for each reason the server names, and one for a reason it may add', () => {
-        const sentences: Record<string, string> = {
-            'no-archive-folder':        "This mailbox's server has no folder marked as its archive.",
-            'not-archivable-from-here': 'Messages in this folder cannot be archived.',
-            'not-in-inbox':             'On this server only messages in the Inbox can be archived.',
-            'all-mail-hidden':          'Archive needs All Mail shown over IMAP: in Gmail settings, Labels, All Mail, Show in IMAP.',
-            'folders-not-listed':       "This mailbox's folders have not been read from the server yet. Try again after it syncs.",
-            'retired-copy':             'This copy is out of date. Reload the folder.',
-            'not-on-server':            'The mail server no longer has this message.',
-            'not-found':                'This message no longer exists.',
-            'failed':                   'The mail server did not complete the archive.',
-        };
-        for (const [reason, sentence] of Object.entries(sentences)) {
-            const { flow, seen } = page({ one: () => throwError(() => cannot(reason)) });
-            flow.archive(['a']);
-            expect(seen.errors).withContext(reason).toEqual([sentence]);
-        }
-        const { flow, seen } = page({ one: () => throwError(() => cannot('some-new-reason')) });
-        flow.archive(['a']);
-        expect(seen.errors).withContext('a reason not listed').toEqual(['The mail server did not archive it.']);
-        expect(archiveReasonText(null)).toBe('The mail server did not archive it.');
+    it('a refusal says the server\'s detail as given, never words for its reason; without one, Not available right now', () => {
+        const said = page({ one: () => throwError(() => cannot('some-new-reason', 'Said by the server.')) });
+        said.flow.archive(['a']);
+        expect(said.seen.errors).toEqual(['Said by the server.']);
+        const none = page({ one: () => throwError(() => cannot('not-in-inbox', null)) });
+        none.flow.archive(['a']);
+        expect(none.seen.errors).toEqual(['Not available right now']);
     });
 
-    it('a 502 says the mail server did not complete it and offers Retry, which is never pressed by itself', () => {
+    it('a 502 says the generic sentence, never its text, and offers Retry, which is never pressed by itself', () => {
         let calls = 0;
         const { flow, seen } = page({ one: () => (++calls === 1 ? throwError(() => notCompleted()) : of({ id: 'a', folder: 'Archive' })) });
         flow.archive(['a']);
@@ -112,7 +98,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
         expect(seen.errors).toEqual([]);
         expect(seen.shown.length).toBe(1);
         expect(seen.shown[0].input.type).toBe('error');
-        expect(seen.shown[0].input.message).toBe('The mail server did not complete the archive. Nothing was changed.');
+        expect(seen.shown[0].input.message).toBe('Something went wrong. Try again.');
         expect(seen.shown[0].input.action?.label).toBe('Retry');
         expect(seen.singles).withContext('not retried by itself').toEqual(['a']);
 
@@ -152,7 +138,7 @@ describe('Archive: the server archives, the page says what it answered', () => {
         flow.archive(['a', 'b', 'c']);
         expect(seen.archived).toEqual([[{ id: 'a', folder: 'Archive' }]]);
         expect(seen.shown.length).toBe(1);
-        expect(seen.shown[0].input.message).toBe('The mail server did not complete the archive of 2 messages. Nothing was changed for them.');
+        expect(seen.shown[0].input.message).toBe('Something went wrong. Try again.');
         expect(seen.bulks.length).toBe(1);
         seen.shown[0].input.action?.run();
         expect(seen.bulks[1]).toEqual(['b', 'c']);

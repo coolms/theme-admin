@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { formatFilesPickerSize } from '@coolms/ui-angular';
 import type { DriveAttachRefusal, OutgoingAttachmentDto } from './email.types';
+import { NOT_AVAILABLE, refusalWords, sentenceOf } from './server-words';
 
 /** The largest file the server takes, upload or Drive file: 25 MiB. */
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -101,26 +102,14 @@ export function messageBytes(list: readonly ComposeAttachment[], bodyBytes: numb
         .reduce((sum, a) => sum + attachmentCost(a.sizeBytes, a.encodedBytes), MESSAGE_HEADER_BYTES + bodyBytes);
 }
 
-/** A Drive refusal, in a sentence. */
-export function driveRefusalText(refused: DriveAttachRefusal): string {
-    switch (refused) {
-        case 'folder': return 'A folder cannot be attached.';
-        case 'too-large': return 'Larger than 25 MB, the most a file can be.';
-        case 'over-message-limit': return 'It would take the message over the mailbox’s size limit.';
-        default: return 'Not found, or you may not read it.';
-    }
+/** A Drive refusal: the server's sentence for it, as given, or the one generic sentence when it gives none. */
+export function driveRefusalText(sentence: string | null | undefined): string {
+    return sentenceOf(sentence) ?? NOT_AVAILABLE;
 }
 
-/** Why an upload was refused, by the answer's status: a fixed sentence, never the server's text. */
+/** Why an upload was refused: the server's detail as given, or the generic sentence for a fault or a lost connection. */
 export function uploadRefusalText(error: unknown): string {
-    const status = error instanceof HttpErrorResponse ? error.status : 0;
-    switch (status) {
-        case 413: return 'Too large to upload.';
-        case 422: return 'Not attached: the file is larger than 25 MB, or could not be read.';
-        case 403: return 'You may not attach files to this mailbox.';
-        case 0: return 'Not uploaded: the connection was lost.';
-        default: return 'Not uploaded: the server could not take it.';
-    }
+    return refusalWords(error);
 }
 
 /** The attachment a send's 422 names as no longer there to send, or null when the answer names none. */

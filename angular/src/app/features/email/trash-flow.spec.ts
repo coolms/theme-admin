@@ -84,7 +84,7 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         expect(seen.deletes.map(d => d.ids.length)).toEqual([200, 50]);
         expect(seen.dropped).toEqual([ids.slice(0, 200)]);
         expect(seen.shown.length).toBe(1);
-        expect(seen.shown[0].input.message).withContext('one notice: the refusal, in place of what was done').toBe('Could not delete 50 messages.');
+        expect(seen.shown[0].input.message).withContext('one notice: the refusal, in place of what was done').toBe('50 messages were not moved to Trash. Something went wrong. Try again.');
         expect(seen.shown[0].input.type).toBe('error');
         expect(seen.shown[0].input.action?.label).withContext('still offering Undo for the moved').toBe('Undo');
         expect(seen.errors).toEqual([]);
@@ -102,19 +102,19 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
     });
 
     it('an Undo the server refuses says why, and reads nothing again', () => {
-        const { flow, seen } = page({ restore: of({ results: [{ id: 'a', outcome: 'refused', reason: 'origin-gone' }] }) });
+        const { flow, seen } = page({ restore: of({ results: [{ id: 'a', outcome: 'refused', reason: 'origin-gone', reasonText: 'Said by the server.' }] }) });
         flow.moveToTrash(['a']);
         seen.shown[0].input.action?.run();
         expect(seen.restored).toBe(0);
-        expect(seen.errors).toEqual(['The folder it came from no longer exists: move it out of Trash instead.']);
+        expect(seen.errors).toEqual(['The message was not restored. Said by the server.']);
     });
 
     it('a refused message stays and is said why; with nothing moved, no Undo is offered', () => {
-        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: 'no-move' }] }) });
+        const { flow, seen } = page({ delete: of({ results: [{ id: 'a', outcome: 'refused', reason: 'no-move', reasonText: 'Said by the server.' }] }) });
         flow.moveToTrash(['a']);
         expect(seen.dropped).toEqual([[]]);
         expect(seen.shown).toEqual([]);
-        expect(seen.errors).toEqual(["This mailbox's server cannot move messages, so nothing was deleted."]);
+        expect(seen.errors).toEqual(['The message was not moved to Trash. Said by the server.']);
     });
 
     it('takes the rows out at once, before the call, and puts back exactly the refused ones', () => {
@@ -130,16 +130,16 @@ describe('Delete, as ruled: to Trash at once with Undo; for good only from Trash
         flow.moveToTrash(['a', 'b']);
         expect(seen.taken).toEqual([['a', 'b']]);
         expect(seen.putBack).toEqual([['a', 'b']]);
-        expect(seen.errors).toEqual(['Could not delete 2 messages.']);
+        expect(seen.errors).toEqual(['2 messages were not moved to Trash. Something went wrong. Try again.']);
     });
 
     it('a mailbox with no Trash: Delete says so and deletes nothing', () => {
-        const noTrash = throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash' } }));
+        const noTrash = throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash', detail: 'This mailbox has no Trash folder.' } }));
         const { flow, seen } = page({ delete: noTrash });
         flow.moveToTrash(['a']);
         expect(seen.dropped.flat()).toEqual([]);
         expect(seen.deletes.filter(d => d.permanent)).toEqual([]);
-        expect(seen.errors).toEqual(["This mailbox's server has no Trash folder, so nothing was deleted."]);
+        expect(seen.errors).toEqual(['The message was not moved to Trash. This mailbox has no Trash folder.']);
     });
 
     it('while the server deletes nothing permanently, the permanent delete asks nothing and says it is not available yet', () => {

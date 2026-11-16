@@ -74,27 +74,11 @@ const CHANGE_WORDS: Readonly<Record<FlagChange, string>> = {
     unstar: "Couldn't remove the star",
 };
 
-/** A reason's code in the page's words; null for a code the page does not know (the server's sentence then says it). */
-function codeText(code: string | null): string | null {
-    switch (code) {
-        case 'folder-not-synced':
-            return "Its folder has not been read from the mail server yet.";
-        case 'changed-elsewhere':
-            return 'It was changed elsewhere in the meantime.';
-        case 'renumbered':
-            return 'Its folder changed on the mail server. Try again after it refreshes.';
-        case 'not-found':
-            return 'The mail server no longer has this message.';
-    }
-    return null;
-}
-
 /**
  * The one notice for a refused read or star change, whether the write's answer refused it or the server refused it
- * after answering (mail.flag.refused, or the event that rolled it back): "Couldn't mark as unread", then the reason --
- * the page's words for its code when the page knows the code, else the server's sentence -- when there is one.
+ * after answering: "Couldn't mark as unread", then the server's sentence for why, as given, when there is one. The
+ * reason's code is never turned into words here.
  */
-export function flagRefusalText(change: FlagChange, code: string | null = null, reason: string | null = null): string {
-    const why = codeText(code) ?? reason;
-    return why === null ? `${CHANGE_WORDS[change]}.` : `${CHANGE_WORDS[change]}: ${why}`;
+export function flagRefusalText(change: FlagChange, sentence: string | null = null): string {
+    return sentence === null ? `${CHANGE_WORDS[change]}.` : `${CHANGE_WORDS[change]}: ${sentence}`;
 }

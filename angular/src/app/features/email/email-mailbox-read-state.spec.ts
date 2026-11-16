@@ -282,7 +282,7 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
     it('says a refusal in the same words whether the write\'s answer refused it or the server did after answering', () => {
         const sync = build();
         sync.bulkMarkSeen(false, new Set(['m1']));
-        writes[0].answer.error(new HttpErrorResponse({ status: 409, error: { type: '/errors/email/changed-elsewhere' } }));
+        writes[0].answer.error(new HttpErrorResponse({ status: 409, error: { type: '/errors/email/changed-elsewhere', detail: 'It was changed elsewhere in the meantime.' } }));
         const answered = [...errors];
 
         const later = build();
@@ -303,8 +303,9 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
         flagWrites[0].next(null);
         flagWrites[0].complete();
         flagRefused(plainLater, 'm2', 'flagged', false);
-        expect(plainSync).toEqual(["Couldn't star."]);
-        expect([...errors]).toEqual(plainSync);
+        // A fault says the generic sentence; an event without the server's sentence says only what was refused.
+        expect(plainSync).toEqual(["Couldn't star: Something went wrong. Try again."]);
+        expect([...errors]).toEqual(["Couldn't star."]);
     });
 
     describe('one message on several rows (Gmail: its row in each label)', () => {
@@ -361,7 +362,8 @@ describe('EmailMailboxPageComponent -- the read state the person chose', () => {
             expect(row(page, 'm1')?.seen).toBeTrue();
             expect(row(page, 'm3')?.seen).toBeTrue();
             expect(dismissed).toEqual([1]);
-            expect(errors).toEqual(["Couldn't mark as unread: The mail server no longer has this message."]);
+            // A rollback entry carries only the reason's code, which is never worded: the notice names the choice.
+            expect(errors).toEqual(["Couldn't mark as unread."]);
         });
     });
 

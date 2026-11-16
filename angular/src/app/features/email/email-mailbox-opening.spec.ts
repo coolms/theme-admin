@@ -267,12 +267,12 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
     it('a failed load says why in the pane, never only in a notice, and Try again loads it again', fakeAsync(() => {
         list(ROWS);
         choose('First');
-        details[0].reply.error(new HttpErrorResponse({ status: 502, error: { type: '/errors/email/body-unavailable' } }));
+        details[0].reply.error(new HttpErrorResponse({ status: 502, error: { type: '/errors/email/body-unavailable', detail: 'Said for 502.' } }));
         draw();
 
         const failed = pane().querySelector('[data-test="open-failed"]')!;
         expect(failed.getAttribute('role')).toBe('alert');
-        expect(failed.textContent).toContain('The mail server could not be reached to read this message.');
+        expect(failed.textContent).withContext('a declared fault: its detail').toContain('Said for 502.');
         expect(pane().querySelector('.mbx__detail-subject')?.textContent?.trim()).withContext('the header stays').toBe('First');
         expect(toasts).toEqual([]);
         expect(seenAsked).toEqual([]);
@@ -289,10 +289,10 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
     it('the one 404 says the message is no longer here and takes its row out, with no Try again', fakeAsync(() => {
         list(ROWS);
         choose('Second');
-        details[0].reply.error(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found' } }));
+        details[0].reply.error(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found', detail: 'This message is not there any more.' } }));
         draw();
 
-        expect(pane().querySelector('[data-test="open-failed"]')?.textContent).toContain('This message is no longer here.');
+        expect(pane().querySelector('[data-test="open-failed"]')?.textContent).toContain('This message is not there any more.');
         expect(pane().querySelector('[data-test="open-retry"]')).toBeNull();
         expect(rowOf('Second')).toBeUndefined();
         expect(rowOf('First')).toBeDefined();
@@ -339,13 +339,17 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
             expect(storedNeighbours(rows, 'x')).toEqual([]);
         });
 
-        it('a sentence by the server\'s reason', () => {
-            expect(openFailureOf(new HttpErrorResponse({ status: 404 }))).toEqual({ text: 'This message is no longer here.', gone: true });
-            expect(openFailureOf(new HttpErrorResponse({ status: 0 })).text).toContain('Couldn\'t reach the server');
-            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: JSON.stringify({ type: '/errors/email/body-unavailable' }) })).text)
-                .toBe('The mail server could not be reached to read this message.');
-            expect(openFailureOf(new HttpErrorResponse({ status: 500 }))).toEqual({ text: 'Couldn\'t open this message.', gone: false });
-            expect(openFailureOf(new Error('x')).gone).toBeFalse();
+        it('the server\'s detail for a declared problem, the generic sentence for an undeclared one; the one 404 is gone', () => {
+            expect(openFailureOf(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found', detail: 'Said by the server.' } })))
+                .toEqual({ text: 'Said by the server.', gone: true });
+            expect(openFailureOf(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found' } }))).toEqual({ text: 'Not available right now', gone: true });
+            expect(openFailureOf(new HttpErrorResponse({ status: 404 }))).toEqual({ text: 'Something went wrong. Try again.', gone: true });
+            expect(openFailureOf(new HttpErrorResponse({ status: 0 })).text).toBe('Something went wrong. Try again.');
+            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: JSON.stringify({ type: '/errors/email/body-unavailable', detail: 'Said for 502.' }) })).text)
+                .toBe('Said for 502.');
+            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: { type: 'about:blank', detail: 'internals' } })).text)
+                .toBe('Something went wrong. Try again.');
+            expect(openFailureOf(new Error('x'))).toEqual({ text: 'Something went wrong. Try again.', gone: false });
         });
     });
 });

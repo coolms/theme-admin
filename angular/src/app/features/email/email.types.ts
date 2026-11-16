@@ -157,7 +157,7 @@ export type DriveAttachRefusal = 'not-found' | 'folder' | 'too-large' | 'over-me
 /** One row of an attach from Drive, in the order the nodes were named: attached, or refused with why. */
 export type DriveAttachRowDto =
     | (OutgoingAttachmentDto & { node: string; refused?: undefined })
-    | { node: string; refused: DriveAttachRefusal };
+    | { node: string; refused: DriveAttachRefusal; /** The server's sentence for the refusal, to show as given. */ refusedText?: string | null };
 
 export interface DriveAttachResultDto {
     attachments: DriveAttachRowDto[];
@@ -449,7 +449,10 @@ export interface EmailComposeDto {
     references: string[];
     /** A forward's parts of the original, as references: nothing is copied until it is sent. */
     attachments: EmailComposePartDto[];
+    /** Why the original could not be read, as a code: for behaviour only. */
     unreadable: string | null;
+    /** Why the original could not be read, as the server's sentence to show as given; null when it gives none. */
+    unreadableText?: string | null;
 }
 
 /** The answer of an archive (`POST /email/messages/{id}/archive`): the folder the message is in now. */

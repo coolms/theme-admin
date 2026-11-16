@@ -198,21 +198,19 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         it('says a 404 and a 422 plainly, with no Retry; another failure offers Retry, which reads again', () => {
             const said = (status: number): unknown => {
                 const page = build();
-                answer = () => throwError(() => new HttpErrorResponse({ status }));
+                answer = () => throwError(() => new HttpErrorResponse({ status, error: { type: '/errors/email/prefill', detail: `Said for ${status}.` } }));
                 page.onDetailAction('forward');
                 expect(page.composeMaySend()).withContext(`no Send after ${status}`).toBeFalse();
                 return page.composePrefill();
             };
 
-            expect(said(404)).toEqual({ state: 'failed', retry: false,
-                sentence: 'This message is not there to answer: it was removed, or you may no longer read it.' });
-            expect(said(422)).toEqual({ state: 'failed', retry: false,
-                sentence: 'The server does not prepare a message this way, so nothing was filled in.' });
+            expect(said(404)).toEqual({ state: 'failed', retry: false, sentence: 'Said for 404.' });
+            expect(said(422)).toEqual({ state: 'failed', retry: false, sentence: 'Said for 422.' });
 
             const page = build();
             answer = () => throwError(() => new HttpErrorResponse({ status: 503 }));
             page.onDetailAction('forward');
-            expect(page.composePrefill()).toEqual({ state: 'failed', retry: true, sentence: 'The forward could not be prepared.' });
+            expect(page.composePrefill()).toEqual({ state: 'failed', retry: true, sentence: 'Something went wrong. Try again.' });
             answer = mode => of(answerFor(mode));
             page.retryPrefill();
             expect(asked).toEqual([['m1', 'forward'], ['m1', 'forward']]);
@@ -437,11 +435,14 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
 
         it('says when the original could not be read, and shows no quote', () => {
             const page = build();
-            answer = mode => of(answerFor(mode, { quote: null, unreadable: 'not-on-server' }));
+            answer = mode => of(answerFor(mode, { quote: null, unreadable: 'not-on-server', unreadableText: 'Said by the server.' }));
             page.onDetailAction('reply');
 
-            expect(page.composeUnreadable())
-                .toBe('The original is not quoted: it is no longer stored here, and the mail server no longer holds it.');
+            expect(page.composeUnreadable()).toBe('The original is not quoted: Said by the server.');
+            const bare = build();
+            answer = mode => of(answerFor(mode, { quote: null, unreadable: 'not-on-server' }));
+            bare.onDetailAction('reply');
+            expect(bare.composeUnreadable()).withContext('no sentence from the server').toBe('The original is not quoted.');
             expect(page.composeQuoteHtml()).toBeNull();
             expect(page.composeQuoteText()).toBeNull();
         });
@@ -650,10 +651,10 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
         });
 
         it('says the original could not be read, and draws no quote', () => {
-            const el = render({ quote: null, unreadable: 'server-failed' });
+            const el = render({ quote: null, unreadable: 'server-failed', unreadableText: 'Said by the server.' });
 
             expect(el.querySelector('[data-testid="compose-unreadable"]')?.textContent?.trim())
-                .toBe('The original is not quoted: the mail server could not be read just now.');
+                .toBe('The original is not quoted: Said by the server.');
             expect(el.querySelector('[data-testid="compose-quote"]')).toBeNull();
         });
 

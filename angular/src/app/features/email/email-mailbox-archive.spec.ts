@@ -194,10 +194,10 @@ describe('EmailMailboxPageComponent -- archive', () => {
 
     it('a 422 keeps the row and says why; a 502 keeps it and offers Retry, not pressed by itself', () => {
         const refusing = build({ one: () => throwError(() => new HttpErrorResponse({
-            status: 422, error: { type: '/errors/email/cannot-archive', reason: 'not-in-inbox' } })) });
+            status: 422, error: { type: '/errors/email/cannot-archive', reason: 'not-in-inbox', detail: 'Said by the server.' } })) });
         refusing.onMessageAction('archive', ['m1']);
         expect(ids(refusing)).toEqual(['m1', 'm2', 'm3']);
-        expect(errors).toEqual(['On this server only messages in the Inbox can be archived.']);
+        expect(errors).toEqual(['Said by the server.']);
 
         const failing = build({ one: () => throwError(() => new HttpErrorResponse({ status: 502 })) });
         failing.onMessageAction('archive', ['m1']);

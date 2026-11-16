@@ -8,6 +8,13 @@ major number means here.
 
 ## Unreleased
 
+- **A refused call says the server's detail, and a fault the one generic sentence.** Archive, delete, undo, move,
+  read and star, a folder's rename, move, Mark all as read and Empty, opening a message or its original, an upload, a
+  compose prefill and opening a message from the mail server say a refusal's (4xx) `detail` as the server gives it, a
+  validation refusal's first field message when it gives no detail, and "Not available right now" when it gives
+  neither; a server fault (5xx) or a lost connection says "Something went wrong. Try again.", never its own text. The
+  admin's words per problem type are gone; the type still drives behaviour (a row taken out, a busy folder, Retry).
+  A failed send is unchanged for now.
 - **A refusal the server gives a sentence for says that sentence, as given.** The refused of a bulk archive, a bulk
   delete, undo or permanent delete say how many and the server's sentence (`reasonText`); a failed folder job says its
   sentence; a read or star change the server refused after answering (`mail.flag.refused`) says "Couldn't mark as

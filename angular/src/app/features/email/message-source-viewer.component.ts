@@ -1,9 +1,10 @@
 import { DIALOG_DATA, Dialog, DialogRef } from '@angular/cdk/dialog';
 import { HttpErrorResponse, type HttpResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { type Subscription } from 'rxjs';
 import { EmailService } from './email.service';
+import { SOMETHING_WENT_WRONG, refusalWords } from './server-words';
 
 /** Which message's original to show, and its subject for the viewer's header. */
 export interface MessageSourceViewerData {
@@ -15,10 +16,10 @@ export interface MessageSourceViewerData {
 export type MessageSourceState =
     | { readonly kind: 'loading' }
     | { readonly kind: 'shown'; readonly text: string; readonly truncated: boolean }
-    | { readonly kind: 'gone' }
-    | { readonly kind: 'missing' }
-    | { readonly kind: 'unavailable' }
-    | { readonly kind: 'failed' };
+    | { readonly kind: 'gone'; readonly text: string }
+    | { readonly kind: 'missing'; readonly text: string }
+    | { readonly kind: 'unavailable'; readonly text: string }
+    | { readonly kind: 'failed'; readonly text: string };
 
 /** The viewer's sentences. */
 export const MESSAGE_SOURCE_WORDS = {
@@ -113,19 +114,19 @@ export function downloadNameOf(disposition: string | null, fallback: string): st
                         <p class="mso__note">Loading…</p>
                     }
                     @case ('gone') {
-                        <p class="mso__note" data-test="source-gone">{{ words.gone }}</p>
+                        <p class="mso__note" data-test="source-gone">{{ failedText() }}</p>
                     }
                     @case ('missing') {
-                        <p class="mso__note" data-test="source-missing">{{ words.missing }}</p>
+                        <p class="mso__note" data-test="source-missing">{{ failedText() }}</p>
                     }
                     @case ('unavailable') {
                         <p class="mso__note" data-test="source-unavailable">
-                            {{ words.unavailable }}
+                            {{ failedText() }}
                             <button type="button" class="cms-btn cms-btn-ghost cms-btn-sm" data-test="source-retry" (click)="load()">Retry</button>
                         </p>
                     }
                     @case ('failed') {
-                        <p class="mso__note" data-test="source-failed">{{ words.failed }}</p>
+                        <p class="mso__note" data-test="source-failed">{{ failedText() }}</p>
                     }
                     @case ('shown') {
                         <pre class="mso__source" data-test="source-text" tabindex="0" aria-label="Original source" [textContent]="shownText()"></pre>
@@ -174,6 +175,8 @@ export class MessageSourceViewerComponent {
 
     protected readonly words = MESSAGE_SOURCE_WORDS;
     readonly state = signal<MessageSourceState>({ kind: 'loading' });
+    /** What a failed read says: the server's detail for a declared problem, the generic sentence for an undeclared one. */
+    protected readonly failedText = computed(() => { const s = this.state(); return 'text' in s && s.kind !== 'shown' ? s.text : ''; });
     /** A short word on what Copy or Download did, read out politely. */
     readonly status = signal('');
     readonly downloading = signal(false);
@@ -202,6 +205,7 @@ export class MessageSourceViewerComponent {
             }),
             error: (e: unknown) => this.state.set({
                 kind: e instanceof HttpErrorResponse ? sourceFailureOf(e.status, e.error) : 'failed',
+                text: refusalWords(e),
             }),
         });
     }
@@ -254,12 +258,11 @@ export class MessageSourceViewerComponent {
     /** A refused download, said as the viewer says the source's own refusals. */
     private async downloadRefusal(e: unknown): Promise<void> {
         if (!(e instanceof HttpErrorResponse)) {
-            this.status.set(MESSAGE_SOURCE_WORDS.downloadFailed);
+            this.status.set(SOMETHING_WENT_WRONG);
             return;
         }
         const body: unknown = e.error instanceof Blob ? await e.error.text().catch(() => null) : e.error;
-        const kind = sourceFailureOf(e.status, body);
-        this.status.set(kind === 'failed' ? MESSAGE_SOURCE_WORDS.downloadFailed : MESSAGE_SOURCE_WORDS[kind]);
+        this.status.set(refusalWords(new HttpErrorResponse({ status: e.status, error: body })));
     }
 }
 

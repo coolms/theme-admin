@@ -5,7 +5,8 @@ import type { Observable, Subscription } from 'rxjs';
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
 import { MailHitRowComponent } from './mail-hit-row.component';
 import type { OpeningRow } from './message-opening';
-import { MailServerSearch, matchesText, serverSearchRefusal, sizeText, type ServerSearchRefusal } from './mail-server-search';
+import { MailServerSearch, matchesText, serverSearchRefusal, sizeText } from './mail-server-search';
+import { refusalWords } from './server-words';
 
 /** The section's sentences, so one section lists a search's hits or a folder's older mail. */
 export interface ServerSectionWords {
@@ -284,7 +285,7 @@ export class MailServerSearchComponent {
                     this.openFailed.emit({ text: 'This message is no longer on the mail server.', retry: null });
                     return;
                 }
-                const text = openFailureText(refusal);
+                const text = refusalWords(error);
                 this.notice.set({ ref: hit.ref, text });
                 this.openFailed.emit({ text, retry: () => this.open(hit) });
             },
@@ -317,14 +318,7 @@ export class MailServerSearchComponent {
     }
 }
 
-/** Why opening a server hit did not work, in the page's words. */
-export function openFailureText(refusal: ServerSearchRefusal): string {
-    switch (refusal.reason) {
-        case 'unavailable':
-            return `Can't reach the mail server right now${refusal.said !== null ? `: ${refusal.said}` : ''}.`;
-        case 'failed':
-            return `${refusal.server ?? 'The mail server'} couldn't open this message.`;
-        default:
-            return 'Couldn\'t open this message from the mail server.';
-    }
+/** Why opening a server hit did not work: the server's detail as given, or the generic sentence for a fault. */
+export function openFailureText(error: unknown): string {
+    return refusalWords(error);
 }

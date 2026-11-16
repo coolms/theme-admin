@@ -3,7 +3,7 @@ import { type ConfirmDialogData, type ToastService } from '@coolms/ui-angular';
 import { concat, of, type Observable } from 'rxjs';
 import { catchError, map, toArray } from 'rxjs/operators';
 import { type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
-import { sentenceOf } from './server-words';
+import { NOT_AVAILABLE, refusalWords, sentenceOf } from './server-words';
 
 /** How long the Undo of a move to Trash stays offered. The server keeps the undo valid while the message is in Trash. */
 export const UNDO_MS = 6000;
@@ -39,7 +39,7 @@ export function inChunks(ids: readonly string[], call: (chunk: readonly string[]
     }
     const answered = (chunk: readonly string[]) => call(chunk).pipe(
         catchError((e: unknown) => of<EmailBulkResultDto>({
-            results: chunk.map(id => ({ id, outcome: 'refused' as const, reason: problemOf(e) ?? 'failed' })),
+            results: chunk.map(id => ({ id, outcome: 'refused' as const, reason: problemOf(e) ?? 'failed', reasonText: refusalWords(e) })),
         })),
     );
     return concat(...chunks.map(answered)).pipe(
@@ -98,35 +98,8 @@ export function permanentQuestion(n: number): { title: string; message: string; 
     };
 }
 
-/** Why a delete, an undo or a permanent delete changed nothing, in the page's words; never the server's detail. */
-export function trashRefusalText(step: 'delete' | 'restore' | 'permanent', problem: string | null, n: number): string {
-    switch (problem) {
-        case 'no-trash':
-            return "This mailbox's server has no Trash folder, so nothing was deleted.";
-        case 'no-move':
-            return "This mailbox's server cannot move messages, so nothing was deleted.";
-        case 'no-uidplus':
-            return "This mailbox's server cannot delete single messages permanently, so nothing was deleted.";
-        case 'not-in-trash':
-            return step === 'restore'
-                ? `${messages(n)} no longer in Trash, so not restored.`
-                : 'Only messages in Trash can be deleted permanently.';
-        case 'origin-gone':
-            return `The folder ${n === 1 ? 'it' : 'they'} came from no longer exists: move ${n === 1 ? 'it' : 'them'} out of Trash instead.`;
-        case 'permanent-deletion':
-            // Refused until the server's permanent slice: "not available", never "try again".
-            return 'Permanent delete isn\'t available yet.';
-        case 'retired-copy':
-            return 'This copy is out of date. Reload the folder.';
-        case 'renumbered':
-            return 'This folder changed on the server. Try again after it refreshes.';
-        case 'not-found':
-            return n === 1 ? 'This message no longer exists.' : `${messages(n)} no longer exist.`;
-    }
-    return step === 'restore'
-        ? `Could not restore ${messages(n)}.`
-        : `Could not delete ${messages(n)}.`;
-}
+/** What Delete permanently says while this server does not offer it: the page holds it back, nothing is sent. */
+export const PERMANENT_NOT_SERVED = 'Permanent delete isn\'t available yet.';
 
 /** The Trash view's line on when the server empties it: only where it is known for the mailbox's provider. */
 export function trashRetentionText(days: number | null | undefined): string | null {
@@ -152,8 +125,6 @@ export interface TrashPorts {
     restored(): void;
 }
 
-const firstProblem = (refused: readonly EmailMessageOutcomeDto[]): string | null => problemOf(refused[0]?.reason ?? null);
-
 /**
  * The refused of a bulk delete, undo or permanent delete: how many, and why, in the server's sentence for the first
  * refusal as given. A refusal the server gave no sentence for is a whole call that failed (its chunk's ids refused
@@ -161,10 +132,7 @@ const firstProblem = (refused: readonly EmailMessageOutcomeDto[]): string | null
  */
 export function trashRefusedText(step: 'delete' | 'restore' | 'permanent', refused: readonly EmailMessageOutcomeDto[]): string {
     const n = refused.length;
-    const said = sentenceOf(refused[0]?.reasonText);
-    if (said === null) {
-        return trashRefusalText(step, firstProblem(refused), n);
-    }
+    const said = sentenceOf(refused[0]?.reasonText) ?? NOT_AVAILABLE;
     const what = n === 1 ? 'The message was' : `${messages(n)} were`;
     const head = step === 'delete' ? `${what} not moved to Trash.` : step === 'restore' ? `${what} not restored.` : `${what} not deleted.`;
     return `${head} ${said}`;
@@ -219,7 +187,7 @@ export class TrashFlow {
             error: (e: unknown) => {
                 this.ports.busy(false);
                 this.ports.putBack(ids);
-                toast.error(trashRefusalText('delete', problemOf(e), ids.length));
+                toast.error(refusalWords(e));
             },
         });
     }
@@ -232,7 +200,7 @@ export class TrashFlow {
         const { toast } = this.ports;
         if (!this.permanentServed) {
             // Never a confirmation for something the server refuses every time.
-            toast.error(trashRefusalText('permanent', 'permanent-deletion', ids.length));
+            toast.error(PERMANENT_NOT_SERVED);
             return;
         }
         this.ports.confirm({ ...permanentQuestion(ids.length), danger: true }).subscribe(yes => {
@@ -254,7 +222,7 @@ export class TrashFlow {
                 },
                 error: (e: unknown) => {
                     this.ports.busy(false);
-                    toast.error(trashRefusalText('permanent', problemOf(e), ids.length));
+                    toast.error(refusalWords(e));
                 },
             });
         });
@@ -272,7 +240,7 @@ export class TrashFlow {
                     this.ports.toast.error(trashRefusedText('restore', outcome.refused));
                 }
             },
-            error: (e: unknown) => this.ports.toast.error(trashRefusalText('restore', problemOf(e), ids.length)),
+            error: (e: unknown) => this.ports.toast.error(refusalWords(e)),
         });
     }
 }

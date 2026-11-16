@@ -3,9 +3,8 @@ import { type NaviGraphNode } from '@coolms/core-angular';
 import { type ContextMenuItem } from '@coolms/ui-angular';
 
 import { type EmailFolderTreeNodeDto, type FolderJobAction, type FolderJobDto, type FolderJobReason } from './email.types';
-import { waitInWords } from './mail-aliases';
 import { actionOf, type NodeConditions } from './message-actions';
-import { sentenceOf } from './server-words';
+import { refusalWords, sentenceOf } from './server-words';
 
 /** The tree whose nodes are the actions on a folder: a folder row's menu, and New folder at the foot of the list. */
 export const FOLDER_TOOLBAR_TREE = 'navi.toolbar.email.folder';
@@ -234,115 +233,24 @@ export function busyRefusal(err: unknown): string | null | undefined {
     return typeof fields['action'] === 'string' ? fields['action'] : null;
 }
 
-/** A name the server refused, in words, by the reason it gives. */
-function invalidName(reason: unknown, delimiter: unknown): string {
-    switch (reason) {
-        case 'empty':
-            return 'Give the folder a name.';
-        case 'delimiter':
-            return typeof delimiter === 'string' && delimiter !== ''
-                ? `A folder name cannot contain "${delimiter}" on this mail server.`
-                : 'This name holds a character the mail server uses between folder names.';
-        case 'too-long':
-            return 'This name is too long for the mail server.';
-        case 'reserved':
-            return 'The mail server keeps this name for itself.';
-        default:
-            return 'The mail server does not accept this name.';
-    }
-}
-
-/**
- * Why the server refused a folder create, rename or move, in a sentence for the dialog: each problem type its own.
- * A folder that cannot hold folders (a server's \Noinferiors, which the tree cannot know) says so.
- */
+/** Why the server refused a folder create, rename or move: its detail as given, or the generic sentence for a fault. */
 export function folderChangeRefusalText(err: unknown): string {
-    if (err instanceof HttpErrorResponse && err.status === 429) {
-        const after = Number(err.headers.get('Retry-After'));
-
-        return `Too many folder changes. Try again ${Number.isFinite(after) && after > 0 ? `in ${waitInWords(after)}` : 'later'}.`;
-    }
-    const { kind, fields } = problemFields(err);
-    switch (kind) {
-        case 'folder-exists':
-            return 'A folder with this name is already there.';
-        case 'folder-not-found':
-            return 'This folder is no longer on the mail server.';
-        case 'folder-protected':
-            return 'The mail server keeps this folder for its own use: it cannot be changed.';
-        case 'folder-name-invalid':
-            return invalidName(fields['reason'], fields['delimiter']);
-        case 'folder-parent-invalid':
-            return 'The mail server does not allow folders inside this folder.';
-        case 'folder-busy':
-            return busyText(typeof fields['action'] === 'string' ? fields['action'] : null);
-    }
-    if (err instanceof HttpErrorResponse && err.status === 504) {
-        return 'The mail server stopped answering after the change was sent: it may have been made.';
-    }
-    if (err instanceof HttpErrorResponse && err.status === 502) {
-        return 'The mail server did not make the change.';
-    }
-
-    return 'The folder could not be changed.';
+    return refusalWords(err);
 }
 
-/** Why Mark all as read did not start, in a sentence. */
-export function markReadRefusalText(err: unknown, name: string): string {
-    const running = busyRefusal(err);
-    if (running !== undefined) {
-        return busyText(running);
-    }
-    const { kind } = problemFields(err);
-    if (kind === 'folder-not-found') {
-        return `${name} is no longer on the mail server.`;
-    }
-    if (err instanceof HttpErrorResponse && err.status === 502) {
-        return `The mail server could not be reached: nothing in ${name} was marked read.`;
-    }
-
-    return `The messages in ${name} could not be marked read.`;
+/** Why Mark all as read did not start: the server's detail as given, or the generic sentence for a fault. */
+export function markReadRefusalText(err: unknown, _name: string): string {
+    return refusalWords(err);
 }
-
-/** Why the server will not empty a folder (422 folder-not-emptiable), by its reason. */
-const NOT_EMPTIABLE: Readonly<Record<string, (name: string) => string>> = {
-    'not-allowed': name => `You may not empty ${name}: only the mailbox's owner and its managers may.`,
-    'not-trash-or-spam': name => `${name} is not Trash or Spam: only those can be emptied.`,
-    'ceiling-required': name => `The mail server needs a fresh count of ${name} before it can be emptied. Try Empty again.`,
-    'no-uidplus': name => `This mail server cannot remove exactly the messages counted in ${name}, so it is not emptied `
-        + 'from here.',
-    'empty-off': () => 'Empty is off for now. It comes back once emptying also removes the mail from CoolMS.',
-    'not-on-gmail': () => 'Empty is not available on Gmail yet: it is still being tested there.',
-};
 
 /** A refusal is the folder renumbered since its preview (409 folder-renumbered): the preview is asked again. */
 export function isRenumbered(err: unknown): boolean {
     return problemFields(err).kind === 'folder-renumbered';
 }
 
-/** Why Empty, or its preview, was refused, in a sentence: each problem its own. */
-export function emptyRefusalText(err: unknown, name: string): string {
-    const { kind, fields } = problemFields(err);
-    switch (kind) {
-        case 'folder-not-emptiable': {
-            const reason = fields['reason'];
-            const said = typeof reason === 'string' ? NOT_EMPTIABLE[reason] : undefined;
-            return said !== undefined ? said(name) : `${name} cannot be emptied.`;
-        }
-        case 'mailbox-held':
-            return `This mailbox is under a legal hold: nothing in ${name} can be removed for good.`;
-        case 'folder-renumbered':
-            return `${name} changed on the mail server since it was counted. Nothing was removed; here is what it holds now.`;
-        case 'folder-busy':
-            return busyText(typeof fields['action'] === 'string' ? fields['action'] : null);
-        case 'folder-not-found':
-            return `${name} is no longer on the mail server.`;
-    }
-    if (err instanceof HttpErrorResponse && err.status === 502) {
-        return `The mail server could not be reached: nothing in ${name} was removed.`;
-    }
-
-    return `${name} could not be emptied.`;
+/** Why Empty, or its preview, was refused: the server's detail as given, or the generic sentence for a fault. */
+export function emptyRefusalText(err: unknown, _name: string): string {
+    return refusalWords(err);
 }
 
 /** The realtime end of a folder job, on the person's mail channel. */
