@@ -8,6 +8,11 @@ major number means here.
 
 ## Unreleased
 
+- **A message action the server disables for a reason says the reason, in the row, the bar and the menu.** An action
+  whose node's `disabledWhen` holds is drawn disabled with the words for its `disabledReason` code (for Archive blocked
+  by a hidden All Mail, the same sentence as its refusal), or "not available now" for a code without words or none.
+  The message's row, the checked-rows bar and a row's menu say the same. Needs the context menu's reason words from
+  ui-angular.
 - **A folder too large to sort by date says it keeps the mail server's order.** The list reads `X-List-Order` from the
   folder's first page; when it is `server`, a line above the rows says "Shown in the mail server's order: this folder
   holds too many messages to sort them by date." In date order, or from a server that does not say, nothing is shown.
