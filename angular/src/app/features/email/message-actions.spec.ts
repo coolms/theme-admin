@@ -1,4 +1,6 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
+import { UNWORDED_REASON } from '@coolms/ui-angular';
+import { archiveReasonText, disabledReasonWords } from './archive';
 import { type EmailFolderTreeNodeDto } from './email.types';
 import {
     MESSAGE_ACTIONS_HANDLED, archiveContextOf, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds,
@@ -251,10 +253,29 @@ describe('message actions', () => {
         it('disables a node by its disabledWhen, and marks it busy by its busyWhen', () => {
             const sent = [node('/move', { icon: 'm', label: 'Move', action: 'move',
                 disabledWhen: { field: '_locked', value: true }, busyWhen: { field: '_moving', value: true } })];
+            // Never silently disabled: a node that gives no reason says it is not available now.
             expect(paneActionsOf(sent, { _locked: true, _moving: false }, MESSAGE_ACTIONS_HANDLED, conditions)[0])
-                .toEqual({ id: 'move', label: 'Move', icon: 'm', group: '', disabled: true });
+                .toEqual({ id: 'move', label: 'Move', icon: 'm', group: '', disabled: true, reason: UNWORDED_REASON });
             expect(paneActionsOf(sent, { _locked: false, _moving: true }, MESSAGE_ACTIONS_HANDLED, conditions)[0])
                 .toEqual({ id: 'move', label: 'Move', icon: 'm', group: '', busy: true });
+        });
+
+        it('words the reason a disabled node gives by its code, and says not available now for a code without words', () => {
+            const archive = (reason: string) => [node('/archive', { icon: 'a', label: 'Archive', action: 'archive',
+                disabledWhen: { field: '_archive', value: 'blocked' }, disabledReason: reason })];
+            const words = (code: string): string | null => (code === 'all-mail-hidden' ? 'Archive needs All Mail.' : null);
+
+            expect(paneActionsOf(archive('all-mail-hidden'), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0])
+                .toEqual({ id: 'archive', label: 'Archive', icon: 'a', group: '', disabled: true, reason: 'Archive needs All Mail.' });
+            expect(paneActionsOf(archive('something-new'), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0]?.reason)
+                .toBe(UNWORDED_REASON);
+            expect(paneActionsOf(archive('all-mail-hidden'), { _archive: 'can' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0])
+                .toEqual({ id: 'archive', label: 'Archive', icon: 'a', group: '' });
+        });
+
+        it('the page words an archive blocked for a hidden All Mail as the refusal does', () => {
+            expect(disabledReasonWords('all-mail-hidden')).toBe(archiveReasonText('all-mail-hidden'));
+            expect(disabledReasonWords('something-new')).toBeNull();
         });
     });
 });

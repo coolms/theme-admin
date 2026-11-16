@@ -1,5 +1,5 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
-import { capabilityStateOf, type ContextMenuItem, type PaneToolbarAction, refusalPhraseOf } from '@coolms/ui-angular';
+import { capabilityStateOf, type ContextMenuItem, type PaneToolbarAction, refusalPhraseOf, UNWORDED_REASON } from '@coolms/ui-angular';
 import { type EmailFolderTreeNodeDto, type EmailMailboxDto, type EmailMessageDto } from './email.types';
 
 /** The tree whose nodes are the actions on messages: the icon bars and a message row's menu. */
@@ -159,6 +159,7 @@ export function paneActionsOf(
     facts: Record<string, unknown>,
     handled: ReadonlySet<string>,
     conditions: NodeConditions,
+    reasonWords: (code: string) => string | null = () => null,
 ): PaneToolbarAction[] {
     const actions: PaneToolbarAction[] = [];
     for (const node of nodes) {
@@ -182,7 +183,12 @@ export function paneActionsOf(
         const running = condition(meta['busyWhen']);
         const busy = running !== null && conditions.matchesShowWhen(running, facts);
         const denied = capabilityStateOf(meta, facts) === 'denied';
-        const disabled = denied || (unavailable !== null && conditions.matchesShowWhen(unavailable, facts));
+        const off = unavailable !== null && conditions.matchesShowWhen(unavailable, facts);
+        const disabled = denied || off;
+        const code = meta['disabledReason'];
+        // Disabled for a reason the server names: its words here, or that it is not available now.
+        const worded = off && typeof code === 'string' && code !== '' ? reasonWords(code) : null;
+        const why = off ? worded ?? UNWORDED_REASON : null;
         actions.push({
             id,
             label: typeof label === 'string' && label !== '' ? label : node.title,
@@ -191,7 +197,7 @@ export function paneActionsOf(
             ...(typeof overflow === 'number' && Number.isFinite(overflow) ? { overflow } : {}),
             ...(meta['danger'] === true ? { danger: true } : {}),
             ...(disabled ? { disabled: true } : {}),
-            ...(denied ? { reason: refusalPhraseOf(meta, facts) } : {}),
+            ...(denied ? { reason: refusalPhraseOf(meta, facts) } : why !== null ? { reason: why } : {}),
             ...(busy ? { busy: true } : {}),
         });
     }

@@ -26,6 +26,17 @@ export function archiveFailedText(n: number): string {
         : `The mail server did not complete the archive of ${messages(n)}. Nothing was changed for them.`;
 }
 
+/** The reasons an archive is refused for that have words of their own here. */
+const ARCHIVE_REASONS: ReadonlySet<string> = new Set([
+    'no-archive-folder', 'not-archivable-from-here', 'not-in-inbox', 'all-mail-hidden', 'folders-not-listed', 'retired-copy',
+    'not-on-server', 'not-found', 'failed',
+]);
+
+/** The words for a reason a message action is unavailable for (a node's `disabledReason`); null for one without words. */
+export function disabledReasonWords(code: string): string | null {
+    return ARCHIVE_REASONS.has(code) ? archiveReasonText(code) : null;
+}
+
 /** Why a message cannot be archived, in the page's words per reason; never the server's detail. */
 export function archiveReasonText(reason: string | null): string {
     switch (reason) {
