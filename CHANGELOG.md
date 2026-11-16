@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+- **A disabled action says the server's sentence for it, as given.** The message's row, the checked-rows bar and a
+  row's menu show the node's `disabledReasonText`; the reason's code is no longer turned into words here, and a node
+  that gives no sentence says "Not available right now". One wording in every host, translated on the server.
 - **A message action the server disables for a reason says the reason, in the row, the bar and the menu.** An action
   whose node's `disabledWhen` holds is drawn disabled with the words for its `disabledReason` code (for Archive blocked
   by a hidden All Mail, the same sentence as its refusal), or "not available now" for a code without words or none.

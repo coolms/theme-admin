@@ -1,6 +1,5 @@
 import { type NaviGraphNode } from '@coolms/core-angular';
 import { UNWORDED_REASON } from '@coolms/ui-angular';
-import { archiveReasonText, disabledReasonWords } from './archive';
 import { type EmailFolderTreeNodeDto } from './email.types';
 import {
     MESSAGE_ACTIONS_HANDLED, archiveContextOf, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds,
@@ -260,22 +259,18 @@ describe('message actions', () => {
                 .toEqual({ id: 'move', label: 'Move', icon: 'm', group: '', busy: true });
         });
 
-        it('words the reason a disabled node gives by its code, and says not available now for a code without words', () => {
-            const archive = (reason: string) => [node('/archive', { icon: 'a', label: 'Archive', action: 'archive',
-                disabledWhen: { field: '_archive', value: 'blocked' }, disabledReason: reason })];
-            const words = (code: string): string | null => (code === 'all-mail-hidden' ? 'Archive needs All Mail.' : null);
+        it('says the sentence a disabled node gives, as given, and the one generic reason when it gives none', () => {
+            const sentence = 'Archive needs All Mail shown over IMAP.';
+            const archive = (extra: Record<string, unknown>) => [node('/archive', { icon: 'a', label: 'Archive', action: 'archive',
+                disabledWhen: { field: '_archive', value: 'blocked' }, disabledReason: 'all-mail-hidden', ...extra })];
 
-            expect(paneActionsOf(archive('all-mail-hidden'), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0])
-                .toEqual({ id: 'archive', label: 'Archive', icon: 'a', group: '', disabled: true, reason: 'Archive needs All Mail.' });
-            expect(paneActionsOf(archive('something-new'), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0]?.reason)
-                .toBe(UNWORDED_REASON);
-            expect(paneActionsOf(archive('all-mail-hidden'), { _archive: 'can' }, MESSAGE_ACTIONS_HANDLED, conditions, words)[0])
+            expect(paneActionsOf(archive({ disabledReasonText: sentence }), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions)[0])
+                .toEqual({ id: 'archive', label: 'Archive', icon: 'a', group: '', disabled: true, reason: sentence });
+            // The code alone is never turned into words here.
+            expect(paneActionsOf(archive({}), { _archive: 'blocked' }, MESSAGE_ACTIONS_HANDLED, conditions)[0]?.reason)
+                .toBe('Not available right now');
+            expect(paneActionsOf(archive({ disabledReasonText: sentence }), { _archive: 'can' }, MESSAGE_ACTIONS_HANDLED, conditions)[0])
                 .toEqual({ id: 'archive', label: 'Archive', icon: 'a', group: '' });
-        });
-
-        it('the page words an archive blocked for a hidden All Mail as the refusal does', () => {
-            expect(disabledReasonWords('all-mail-hidden')).toBe(archiveReasonText('all-mail-hidden'));
-            expect(disabledReasonWords('something-new')).toBeNull();
         });
     });
 });
