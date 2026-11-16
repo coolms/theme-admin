@@ -55,6 +55,15 @@ describe('refusalWords: a declared problem says its detail, whatever the status'
         expect(refusalWords(failure(502, 'Bad gateway'))).toBe(SOMETHING_WENT_WRONG);
     });
 
+    it("never says a framework's server fault, whose detail may be the exception's own text", () => {
+        expect(refusalWords(failure(500, { type: '/errors/500', detail: 'SQLSTATE[42P01]: relation "x" does not exist' }))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(503, { type: '/errors/503', detail: 'Internal Server Error' }))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(409, { type: '/errors/409', detail: 'Said for 409.' })))
+            .withContext("a framework's 4xx type stays declared").toBe('Said for 409.');
+        expect(refusalWords(failure(502, { type: '/errors/email/send-refused', detail: 'Said for 502.' })))
+            .withContext("a module's own 5xx type stays declared").toBe('Said for 502.');
+    });
+
     it('says the generic sentence for a network failure and anything that is not an answer', () => {
         expect(refusalWords(failure(0, new ProgressEvent('error')))).toBe(SOMETHING_WENT_WRONG);
         expect(refusalWords(new Error('thrown'))).toBe(SOMETHING_WENT_WRONG);

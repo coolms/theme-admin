@@ -28,14 +28,20 @@ function problemOf(error: HttpErrorResponse): Record<string, unknown> | null {
     return prototype === Object.prototype || prototype === null ? body as Record<string, unknown> : null;
 }
 
-/** The declared problem of a failure: its body when the type is set and not about:blank, else null. */
+/** A framework's own type for a server fault (`/errors/500`, `/errors/503`): its detail may be the exception's text. */
+const FRAMEWORK_FAULT = /^\/errors\/5\d\d$/;
+
+/**
+ * The declared problem of a failure: its body when the type is set, not about:blank and not a framework's own type for
+ * a server fault, else null.
+ */
 function declaredProblemOf(error: unknown): Record<string, unknown> | null {
     if (!(error instanceof HttpErrorResponse)) {
         return null;
     }
     const problem = problemOf(error);
     const type = problem?.['type'];
-    return typeof type === 'string' && type.trim() !== '' && type !== 'about:blank' ? problem : null;
+    return typeof type === 'string' && type.trim() !== '' && type !== 'about:blank' && !FRAMEWORK_FAULT.test(type) ? problem : null;
 }
 
 /** Whether a failure is the server's refusal (4xx), as opposed to a fault (5xx), a network failure or anything else. */
