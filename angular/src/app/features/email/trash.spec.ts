@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { of } from 'rxjs';
 import { type EmailBulkResultDto } from './email.types';
-import { inChunks, isTrashFolder, permanentQuestion, problemOf, trashOutcome, trashRefusalText, trashRetentionText } from './trash';
+import { inChunks, isTrashFolder, permanentQuestion, problemOf, trashOutcome, trashRefusalText, trashRefusedText, trashRetentionText } from './trash';
 
 describe('Trash: the move, its undo and the permanent delete', () => {
     it('drops the moved and the gone rows; only the moved can be undone; the refused stay', () => {
@@ -70,5 +70,16 @@ describe('Trash: the move, its undo and the permanent delete', () => {
     it('the permanent delete asks, naming how many', () => {
         expect(permanentQuestion(1).title).toBe('Delete this message permanently?');
         expect(permanentQuestion(4).title).toBe('Delete 4 messages permanently?');
+    });
+});
+
+describe('trashRefusedText: the refused of a bulk step in the server\'s sentence', () => {
+    it('says how many and the server\'s sentence as given; without a sentence, the call\'s own refusal', () => {
+        expect(trashRefusedText('delete', [{ id: 'a', outcome: 'refused', reason: 'no-move', reasonText: 'Said by the server.' }]))
+            .toBe('The message was not moved to Trash. Said by the server.');
+        expect(trashRefusedText('restore', [
+            { id: 'a', outcome: 'refused', reasonText: 'Said.' }, { id: 'b', outcome: 'refused', reasonText: 'Said.' },
+        ])).toBe('2 messages were not restored. Said.');
+        expect(trashRefusedText('delete', [{ id: 'a', outcome: 'refused', reason: 'failed' }])).toBe('Could not delete 1 message.');
     });
 });

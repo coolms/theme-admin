@@ -140,7 +140,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
         callTo(name, nth).answer.complete();
     };
     const refuse = (name: string, e: HttpErrorResponse, nth = 0): void => callTo(name, nth).answer.error(e);
-    const bulk = (results: { id: string; outcome: string; folder?: string; reason?: string }[]): EmailBulkResultDto =>
+    const bulk = (results: { id: string; outcome: string; folder?: string; reason?: string; reasonText?: string }[]): EmailBulkResultDto =>
         ({ results } as EmailBulkResultDto);
     const cannotArchive = (reason: string) => new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason } });
 
@@ -348,9 +348,9 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             expect(ids(page)).toEqual(['m1', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m5');
             answer('archive-bulk', bulk([
-                { id: 'm2', outcome: 'refused', folder: 'INBOX', reason: 'not-archivable-from-here' },
+                { id: 'm2', outcome: 'refused', folder: 'INBOX', reason: 'not-archivable-from-here', reasonText: 'Messages in this folder cannot be archived.' },
                 { id: 'm3', outcome: 'archived', folder: 'Archive' },
-                { id: 'm4', outcome: 'refused', folder: 'INBOX', reason: 'not-archivable-from-here' },
+                { id: 'm4', outcome: 'refused', folder: 'INBOX', reason: 'not-archivable-from-here', reasonText: 'Messages in this folder cannot be archived.' },
             ]));
 
             expect(ids(page)).toEqual(['m1', 'm2', 'm4', 'm5']);

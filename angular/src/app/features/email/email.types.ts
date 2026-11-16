@@ -514,7 +514,10 @@ export interface EmailMessageOutcomeDto {
     id: string;
     outcome: 'moved' | 'gone' | 'archived' | 'refused';
     folder?: string;
+    /** A refused one's reason, as a code: for behaviour only, never words of its own. */
     reason?: string | null;
+    /** A refused one's reason, as the server's sentence to show as given. */
+    reasonText?: string | null;
 }
 
 export interface EmailBulkResultDto {
@@ -747,8 +750,10 @@ export interface FolderJobDto {
     outcome: 'running' | 'done' | 'failed';
     /** How many messages it acted on. */
     count: number;
-    /** With `failed`: why, as a code; any other value is worded as a failure without a reason. */
+    /** With `failed`: why, as a code, for behaviour only. */
     reason: string | null;
+    /** With `failed`: why, as the server's sentence to show as given; null when it gives none. */
+    reasonText?: string | null;
 }
 
 /**

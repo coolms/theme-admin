@@ -3,6 +3,7 @@ import { type ConfirmDialogData, type ToastService } from '@coolms/ui-angular';
 import { concat, of, type Observable } from 'rxjs';
 import { catchError, map, toArray } from 'rxjs/operators';
 import { type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
+import { sentenceOf } from './server-words';
 
 /** How long the Undo of a move to Trash stays offered. The server keeps the undo valid while the message is in Trash. */
 export const UNDO_MS = 6000;
@@ -154,6 +155,22 @@ export interface TrashPorts {
 const firstProblem = (refused: readonly EmailMessageOutcomeDto[]): string | null => problemOf(refused[0]?.reason ?? null);
 
 /**
+ * The refused of a bulk delete, undo or permanent delete: how many, and why, in the server's sentence for the first
+ * refusal as given. A refusal the server gave no sentence for is a whole call that failed (its chunk's ids refused
+ * together), said as that call's refusal is.
+ */
+export function trashRefusedText(step: 'delete' | 'restore' | 'permanent', refused: readonly EmailMessageOutcomeDto[]): string {
+    const n = refused.length;
+    const said = sentenceOf(refused[0]?.reasonText);
+    if (said === null) {
+        return trashRefusalText(step, firstProblem(refused), n);
+    }
+    const what = n === 1 ? 'The message was' : `${messages(n)} were`;
+    const head = step === 'delete' ? `${what} not moved to Trash.` : step === 'restore' ? `${what} not restored.` : `${what} not deleted.`;
+    return `${head} ${said}`;
+}
+
+/**
  * Delete as decided on 2026-10-24: outside Trash it moves to Trash at once, no question, with Undo for a few
  * seconds; only a permanent delete, from Trash, asks. A refused message stays and is said why, in the page's words.
  */
@@ -186,7 +203,7 @@ export class TrashFlow {
                 const refused = outcome.refused.filter(r => !inTrash.includes(r));
                 // One notice: a refusal's sentence in place of "Moved to Trash", still offering Undo for the moved.
                 if (refused.length > 0) {
-                    const message = trashRefusalText('delete', firstProblem(refused), refused.length);
+                    const message = trashRefusedText('delete', refused);
                     if (undoable.length > 0) {
                         toast.show({ type: 'error', message, action: undo }, UNDO_MS);
                     } else {
@@ -232,7 +249,7 @@ export class TrashFlow {
                         toast.success(deletedForGoodText(outcome.removed.length));
                     }
                     if (outcome.refused.length > 0) {
-                        toast.error(trashRefusalText('permanent', firstProblem(outcome.refused), outcome.refused.length));
+                        toast.error(trashRefusedText('permanent', outcome.refused));
                     }
                 },
                 error: (e: unknown) => {
@@ -252,7 +269,7 @@ export class TrashFlow {
                     this.ports.restored();
                 }
                 if (outcome.refused.length > 0) {
-                    this.ports.toast.error(trashRefusalText('restore', firstProblem(outcome.refused), outcome.refused.length));
+                    this.ports.toast.error(trashRefusedText('restore', outcome.refused));
                 }
             },
             error: (e: unknown) => this.ports.toast.error(trashRefusalText('restore', problemOf(e), ids.length)),

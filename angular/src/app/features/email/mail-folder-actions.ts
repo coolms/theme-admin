@@ -5,6 +5,7 @@ import { type ContextMenuItem } from '@coolms/ui-angular';
 import { type EmailFolderTreeNodeDto, type FolderJobAction, type FolderJobDto, type FolderJobReason } from './email.types';
 import { waitInWords } from './mail-aliases';
 import { actionOf, type NodeConditions } from './message-actions';
+import { sentenceOf } from './server-words';
 
 /** The tree whose nodes are the actions on a folder: a folder row's menu, and New folder at the foot of the list. */
 export const FOLDER_TOOLBAR_TREE = 'navi.toolbar.email.folder';
@@ -196,8 +197,12 @@ const EMPTY_FAILURES: Readonly<Record<FolderJobReason, (name: string) => string>
         + 'nothing more was removed.',
 };
 
-/** A failed job in a sentence: its reason's, or a plain failure for a reason not known here. */
-export function jobFailureText(job: Pick<FolderJobDto, 'action' | 'reason'>, name: string): string {
+/** A failed job in a sentence: the server's sentence for its reason as given, else a plain failure of the action. */
+export function jobFailureText(job: Pick<FolderJobDto, 'action' | 'reason' | 'reasonText'>, name: string): string {
+    const said = sentenceOf(job.reasonText);
+    if (said !== null) {
+        return said;
+    }
     if (job.action === 'mark-read') {
         return isReason(job.reason) ? MARK_READ_FAILURES[job.reason](name) : `Marking the messages in ${name} as read did not finish.`;
     }
@@ -376,5 +381,6 @@ export function readFolderJob(raw: unknown): FolderJobDto | null {
         outcome,
         count: typeof o['count'] === 'number' && Number.isInteger(o['count']) && o['count'] >= 0 ? o['count'] : 0,
         reason: typeof o['reason'] === 'string' && o['reason'] !== '' ? o['reason'] : null,
+        reasonText: sentenceOf(o['reasonText']),
     };
 }

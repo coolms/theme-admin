@@ -1,3 +1,5 @@
+import { sentenceOf } from './server-words';
+
 /**
  * The mail server refused a flag change after the write had answered: its worker rolled the store back. Sent to the
  * mailbox's owner and delegates just before the mail.messages.changed that restores the flag. `value` is the value the
@@ -13,7 +15,10 @@ export interface MailFlagRefusedEvent {
     readonly value: boolean;
     /** The value the change asked for: the event's `wanted`, else the other of `value` (a refusal is a difference). */
     readonly wanted: boolean;
+    /** Not for people: an exception's own text. Never shown. */
     readonly reason: string | null;
+    /** The reason, as the server's sentence to show as given; null when it gives none. */
+    readonly reasonText: string | null;
     readonly code: string | null;
     /** Every row the refused change had reached (on Gmail, the message's row in each label); [messageId] if unsaid. */
     readonly ids: readonly string[];
@@ -39,6 +44,7 @@ export function readFlagRefused(raw: unknown): MailFlagRefusedEvent | null {
         value: o['value'],
         wanted: typeof o['wanted'] === 'boolean' ? o['wanted'] : !o['value'],
         reason: typeof o['reason'] === 'string' && o['reason'] !== '' ? o['reason'] : null,
+        reasonText: sentenceOf(o['reasonText']),
         code: typeof o['code'] === 'string' && o['code'] !== '' ? o['code'] : null,
         ids: idsOf(o['ids'], o['messageId']),
     };
