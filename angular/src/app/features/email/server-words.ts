@@ -43,26 +43,40 @@ export function isRefusal(error: unknown): boolean {
     return error instanceof HttpErrorResponse && error.status >= 400 && error.status <= 499;
 }
 
+/** The first field message of a validation refusal (422 with violations), whatever its type; null for anything else. */
+function firstFieldMessageOf(error: unknown): string | null {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 422) {
+        return null;
+    }
+    const violations = problemOf(error)?.['violations'];
+    if (!Array.isArray(violations)) {
+        return null;
+    }
+    for (const one of violations) {
+        const message = typeof one === 'object' && one !== null ? sentenceOf((one as { message?: unknown }).message) : null;
+        if (message !== null) {
+            return message;
+        }
+    }
+    return null;
+}
+
 /**
- * What a failed call says, in whose words the components contract sets: a declared problem (a type other than
- * about:blank) its `detail` as the server gives it, whatever the status; a validation refusal its first field's
- * message, never the top-level detail (a form shows each message next to its field instead); a declared problem with
- * neither NOT_AVAILABLE; an undeclared fault, a network failure or anything else SOMETHING_WENT_WRONG, never its own
- * text. The type is for behaviour only and never turned into words here. The result is plain text.
+ * What a failed call says, in whose words the components contract sets: a validation refusal (422 with violations) its
+ * first field's message, declared or not, never the top-level detail (a form shows each message next to its field
+ * instead); a declared problem (a type other than about:blank) its `detail` as the server gives it, whatever the
+ * status, or NOT_AVAILABLE when it gives none; an undeclared problem, a network failure or anything else
+ * SOMETHING_WENT_WRONG, never its own text. The type is for behaviour only and never turned into words here. The
+ * result is plain text.
  */
 export function refusalWords(error: unknown): string {
+    const field = firstFieldMessageOf(error);
+    if (field !== null) {
+        return field;
+    }
     const problem = declaredProblemOf(error);
     if (problem === null) {
         return SOMETHING_WENT_WRONG;
-    }
-    const violations = problem['violations'];
-    if (Array.isArray(violations)) {
-        for (const one of violations) {
-            const message = typeof one === 'object' && one !== null ? sentenceOf((one as { message?: unknown }).message) : null;
-            if (message !== null) {
-                return message;
-            }
-        }
     }
     return sentenceOf(problem['detail']) ?? NOT_AVAILABLE;
 }

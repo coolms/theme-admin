@@ -31,6 +31,18 @@ describe('refusalWords: a declared problem says its detail, whatever the status'
             .withContext('no field message: the detail').toBe('Said by the server.');
     });
 
+    it('says the first field message of an undeclared validation refusal, and only of a 422', () => {
+        expect(refusalWords(failure(422, {
+            type: 'about:blank',
+            title: 'Unprocessable Content',
+            violations: [{ propertyPath: 'name', message: 'Name is too long.', code: 'c1' }],
+        }))).toBe('Name is too long.');
+        expect(refusalWords(failure(422, { type: 'about:blank', violations: [{ propertyPath: 'name', message: '' }] })))
+            .withContext('no field message, undeclared').toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(400, { type: 'about:blank', violations: [{ propertyPath: 'name', message: 'Not a 422.' }] })))
+            .withContext('not a 422').toBe(SOMETHING_WENT_WRONG);
+    });
+
     it('says the one generic sentence for a declared problem with nothing to say', () => {
         expect(refusalWords(failure(409, { type: '/errors/email/no-trash' }))).toBe(NOT_AVAILABLE);
         expect(refusalWords(failure(502, { type: '/errors/email/x', detail: '   ' }))).toBe(NOT_AVAILABLE);
