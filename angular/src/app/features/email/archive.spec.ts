@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ToastInput } from '@coolms/ui-angular';
 import { of, throwError, type Observable } from 'rxjs';
-import { ArchiveFlow, archiveReasonText, type ArchivedMessage, type ArchivePorts } from './archive';
+import { ArchiveFlow, archiveReasonText, archiveRefusedText, type ArchivedMessage, type ArchivePorts } from './archive';
 import { type EmailArchiveResultDto, type EmailBulkResultDto } from './email.types';
 
 const cannot = (reason: string): HttpErrorResponse => new HttpErrorResponse({
@@ -163,5 +163,12 @@ describe('Archive: the server archives, the page says what it answered', () => {
         flow.archive(['a', 'b']);
         expect(seen.archived).toEqual([]);
         expect(seen.shown[0].input.action?.label).toBe('Retry');
+    });
+});
+
+describe('archiveRefusedText: the refused of a bulk archive in the server\'s sentence', () => {
+    it('says how many and the server\'s sentence as given', () => {
+        expect(archiveRefusedText([{ id: 'a', outcome: 'refused', reason: 'all-mail-hidden', reasonText: 'Said by the server.' }], 3))
+            .toBe('1 message of 3 not archived. Said by the server.');
     });
 });

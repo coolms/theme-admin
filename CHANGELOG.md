@@ -8,6 +8,11 @@ major number means here.
 
 ## Unreleased
 
+- **A refusal the server gives a sentence for says that sentence, as given.** The refused of a bulk archive, a bulk
+  delete, undo or permanent delete say how many and the server's sentence (`reasonText`); a failed folder job says its
+  sentence; a read or star change the server refused after answering (`mail.flag.refused`) says "Couldn't mark as
+  unread: " and its sentence, never its old `reason` field nor words for its code. A refusal without a sentence (a
+  whole call that failed) is said as before.
 - **A disabled action says the server's sentence for it, as given.** The message's row, the checked-rows bar and a
   row's menu show the node's `disabledReasonText`; the reason's code is no longer turned into words here, and a node
   that gives no sentence says "Not available right now". One wording in every host, translated on the server.

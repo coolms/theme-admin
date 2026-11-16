@@ -3,6 +3,7 @@ import { type ToastService } from '@coolms/ui-angular';
 import { type Observable } from 'rxjs';
 import { type EmailArchiveResultDto, type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
 import { inChunks, problemOf } from './trash';
+import { sentenceOf } from './server-words';
 
 /** How long a refusal with Retry stays offered. */
 export const ARCHIVE_RETRY_MS = 8000;
@@ -51,10 +52,11 @@ export function archiveReasonText(reason: string | null): string {
     return 'The mail server did not archive it.';
 }
 
-/** One summary for the refused of a bulk archive: how many, and why (the first refusal's reason, as Delete says). */
+/** One summary for the refused of a bulk archive: how many, and why, in the server's sentence for the first refusal. */
 export function archiveRefusedText(refused: readonly EmailMessageOutcomeDto[], asked: number): string {
     const n = refused.length;
-    const why = archiveReasonText(problemOf(refused[0]?.reason ?? null));
+    // The server's sentence as given; a refusal without one is said as the call's own refusal is.
+    const why = sentenceOf(refused[0]?.reasonText) ?? archiveReasonText(problemOf(refused[0]?.reason ?? null));
     const head = n === asked
         ? (n === 1 ? 'The message was not archived.' : `None of the ${n} messages were archived.`)
         : `${messages(n)} of ${asked} not archived.`;

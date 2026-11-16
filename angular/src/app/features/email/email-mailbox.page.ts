@@ -2669,7 +2669,8 @@ export class EmailMailboxPageComponent implements OnInit {
         }
         notices.forEach(id => this.toast.dismiss(id));
         // Said as the change the person asked for, never as the value the row was put back to.
-        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), evt.code, evt.reason));
+        // The server's sentence as given; its code is never worded here, and its old `reason` never shown.
+        this.toast.error(flagRefusalText(flagChangeOf(evt.flag, evt.wanted), null, evt.reasonText));
     }
 
     /** A sync ended: the open mailbox's folders and list, and when it last synced, as the server now has them. */

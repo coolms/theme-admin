@@ -4,7 +4,7 @@ import { type NaviGraphNode } from '@coolms/core-angular';
 import {
     FOLDER_NODES_UNTIL_SERVED, NO_FLAGS, busyRefusal, busyText, emptyRefusalText, flagsOf, folderChangeRefusalText,
     folderMenuItems, folderNodes, isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, offers,
-    readFolderJobEvent, withJob,
+    readFolderJob, readFolderJobEvent, withJob,
     type FolderFlags,
 } from './mail-folder-actions';
 
@@ -156,11 +156,18 @@ describe('folder actions: what is said', () => {
         said.forEach(s => expect(s).toContain('Spam'));
     });
 
+    it('a failed job says the server\'s sentence as given; without one, the action\'s plain failure', () => {
+        expect(jobFailureText({ action: 'empty', reason: 'renumbered', reasonText: 'Said by the server.' }, 'Trash')).toBe('Said by the server.');
+        expect(jobFailureText({ action: 'empty', reason: 'something-new', reasonText: null }, 'Trash')).toBe('Emptying Trash did not finish.');
+        expect(readFolderJob({ jobId: 'j', mailboxId: 'mb', folder: 'F', action: 'empty', outcome: 'failed', count: 0, reason: 'x', reasonText: 'Sentence.' })?.reasonText)
+            .toBe('Sentence.');
+    });
+
     it('the realtime end of a job is read strictly', () => {
         const evt = { type: 'mail.folders.job', mailboxId: 'mb1', jobId: 'j1', folder: 'INBOX', action: 'mark-read',
             outcome: 'failed', count: 3, reason: 'renumbered' };
 
-        expect(readFolderJobEvent(evt)).toEqual({ ...evt, type: 'mail.folders.job', action: 'mark-read', outcome: 'failed' });
+        expect(readFolderJobEvent(evt)).toEqual({ ...evt, type: 'mail.folders.job', action: 'mark-read', outcome: 'failed', reasonText: null });
         expect(readFolderJobEvent({ ...evt, outcome: 'running' })).withContext('a job ends: done or failed').toBeNull();
         expect(readFolderJobEvent({ ...evt, action: 'shred' })).toBeNull();
         expect(readFolderJobEvent({ ...evt, jobId: 7 })).toBeNull();
