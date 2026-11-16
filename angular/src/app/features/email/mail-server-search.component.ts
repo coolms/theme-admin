@@ -5,7 +5,7 @@ import type { Observable, Subscription } from 'rxjs';
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
 import { MailHitRowComponent } from './mail-hit-row.component';
 import type { OpeningRow } from './message-opening';
-import { MailServerSearch, matchesText, serverSearchRefusal, sizeText, type ServerSearchRefusal } from './mail-server-search';
+import { MailServerSearch, matchesText, serverSearchRefusal, sizeText } from './mail-server-search';
 import { refusalWords } from './server-words';
 
 /** The section's sentences, so one section lists a search's hits or a folder's older mail. */

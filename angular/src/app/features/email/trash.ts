@@ -125,8 +125,6 @@ export interface TrashPorts {
     restored(): void;
 }
 
-const firstProblem = (refused: readonly EmailMessageOutcomeDto[]): string | null => problemOf(refused[0]?.reason ?? null);
-
 /**
  * The refused of a bulk delete, undo or permanent delete: how many, and why, in the server's sentence for the first
  * refusal as given. A refusal the server gave no sentence for is a whole call that failed (its chunk's ids refused

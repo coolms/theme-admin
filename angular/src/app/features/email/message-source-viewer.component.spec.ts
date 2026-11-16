@@ -130,10 +130,16 @@ describe('MessageSourceViewerComponent', () => {
         expect(q('source-text')).toBeNull();
     });
 
-    it('says a server that could not be read (502 source-unavailable) in the generic sentence, and Retry reads again', async () => {
+    it('says an undeclared 502 in the generic sentence, never its text', async () => {
         open();
-        await refused(502, '/errors/email/message-source-unavailable', 'internals');
-        expect(q('source-unavailable')?.textContent).toContain('Something went wrong. Try again.');
+        await refused(502, 'about:blank', 'internals');
+        expect(q('source-failed')?.textContent?.trim()).toBe('Something went wrong. Try again.');
+    });
+
+    it('says a server that could not be read (502 source-unavailable) in its detail, and Retry reads again', async () => {
+        open();
+        await refused(502, '/errors/email/message-source-unavailable', 'Said for 502.');
+        expect(q('source-unavailable')?.textContent).toContain('Said for 502.');
         expect(q('source-gone')).toBeNull();
         q<HTMLButtonElement>('source-retry')!.click();
         await settle();

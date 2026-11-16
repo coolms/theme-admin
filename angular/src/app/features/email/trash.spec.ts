@@ -47,11 +47,11 @@ describe('Trash: the move, its undo and the permanent delete', () => {
         expect(problemOf(null)).toBeNull();
     });
 
-    it('says why nothing changed in the server\'s words: a refused whole call its detail, a fault the generic sentence', () => {
+    it('says why nothing changed in the server\'s words: a declared problem its detail, an undeclared fault the generic sentence', () => {
         const refused = new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash', detail: 'Said by the server.' } });
         expect(refusalWords(refused)).toBe('Said by the server.');
         expect(refusalWords(new HttpErrorResponse({ status: 409, error: { type: '/errors/email/no-trash' } }))).toBe('Not available right now');
-        expect(refusalWords(new HttpErrorResponse({ status: 502, error: { detail: 'IMAP said NO [internals]' } }))).toBe('Something went wrong. Try again.');
+        expect(refusalWords(new HttpErrorResponse({ status: 502, error: { type: 'about:blank', detail: 'IMAP said NO [internals]' } }))).toBe('Something went wrong. Try again.');
         expect(PERMANENT_NOT_SERVED).toBe('Permanent delete isn\'t available yet.');
     });
 

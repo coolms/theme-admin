@@ -1,0 +1,48 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { NOT_AVAILABLE, refusalWords, SOMETHING_WENT_WRONG } from './server-words';
+
+const failure = (status: number, error: unknown): HttpErrorResponse => new HttpErrorResponse({ status, error });
+
+describe('refusalWords: a declared problem says its detail, whatever the status', () => {
+    it('says the detail of a declared problem as given, a refusal and a fault alike', () => {
+        expect(refusalWords(failure(409, { type: '/errors/email/no-trash', detail: 'Said for a refusal.' }))).toBe('Said for a refusal.');
+        expect(refusalWords(failure(502, {
+            type: '/errors/email/send-refused',
+            detail: 'Microsoft refused the message: 550 5.1.1 mailbox unavailable',
+        }))).toBe('Microsoft refused the message: 550 5.1.1 mailbox unavailable');
+    });
+
+    it('reads a problem that came as text', () => {
+        expect(refusalWords(failure(503, JSON.stringify({ type: '/errors/email/server-search-unavailable', detail: 'Said as text.' }))))
+            .toBe('Said as text.');
+    });
+
+    it('keeps the detail as plain text, markup and all', () => {
+        expect(refusalWords(failure(422, { type: '/errors/x', detail: '<b>not bold</b>' }))).toBe('<b>not bold</b>');
+    });
+
+    it('says the first field message of a declared validation refusal without a detail', () => {
+        expect(refusalWords(failure(422, {
+            type: '/validation_errors/0',
+            violations: [{ propertyPath: 'name', message: '' }, { propertyPath: 'name', message: 'Name is too long.' }],
+        }))).toBe('Name is too long.');
+    });
+
+    it('says the one generic sentence for a declared problem with nothing to say', () => {
+        expect(refusalWords(failure(409, { type: '/errors/email/no-trash' }))).toBe(NOT_AVAILABLE);
+        expect(refusalWords(failure(502, { type: '/errors/email/x', detail: '   ' }))).toBe(NOT_AVAILABLE);
+    });
+
+    it('never says the text of an undeclared problem, whatever the status', () => {
+        expect(refusalWords(failure(500, { type: 'about:blank', detail: 'SQLSTATE internals' }))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(404, { detail: 'No type given.' }))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(400, { type: '', detail: 'Blank type.' }))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(failure(502, 'Bad gateway'))).toBe(SOMETHING_WENT_WRONG);
+    });
+
+    it('says the generic sentence for a network failure and anything that is not an answer', () => {
+        expect(refusalWords(failure(0, new ProgressEvent('error')))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(new Error('thrown'))).toBe(SOMETHING_WENT_WRONG);
+        expect(refusalWords(null)).toBe(SOMETHING_WENT_WRONG);
+    });
+});

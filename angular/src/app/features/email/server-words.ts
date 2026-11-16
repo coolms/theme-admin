@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-/** What a refusal says when the server gives no sentence for it (an older server). */
+/** What a declared problem says when the server gives no sentence for it (an older server). */
 export const NOT_AVAILABLE = 'Not available right now';
 
-/** What a server fault or a network failure says: never the fault's own text, which may carry internals. */
+/** What an undeclared fault or a network failure says: never its own text, which may carry internals. */
 export const SOMETHING_WENT_WRONG = 'Something went wrong. Try again.';
 
 /** The server's sentence, as given; null for none or a blank one. */
@@ -11,7 +11,7 @@ export function sentenceOf(text: unknown): string | null {
     return typeof text === 'string' && text.trim() !== '' ? text : null;
 }
 
-/** The problem body of an error answer, parsed when it came as text; null when it is not an object. */
+/** The problem body of an error answer, parsed when it came as text; null when it is not a plain JSON object. */
 function problemOf(error: HttpErrorResponse): Record<string, unknown> | null {
     let body: unknown = error.error;
     if (typeof body === 'string') {
@@ -21,7 +21,21 @@ function problemOf(error: HttpErrorResponse): Record<string, unknown> | null {
             return null;
         }
     }
-    return typeof body === 'object' && body !== null ? body as Record<string, unknown> : null;
+    if (typeof body !== 'object' || body === null) {
+        return null;
+    }
+    const prototype: unknown = Object.getPrototypeOf(body);
+    return prototype === Object.prototype || prototype === null ? body as Record<string, unknown> : null;
+}
+
+/** The declared problem of a failure: its body when the type is set and not about:blank, else null. */
+function declaredProblemOf(error: unknown): Record<string, unknown> | null {
+    if (!(error instanceof HttpErrorResponse)) {
+        return null;
+    }
+    const problem = problemOf(error);
+    const type = problem?.['type'];
+    return typeof type === 'string' && type.trim() !== '' && type !== 'about:blank' ? problem : null;
 }
 
 /** Whether a failure is the server's refusal (4xx), as opposed to a fault (5xx), a network failure or anything else. */
@@ -30,21 +44,22 @@ export function isRefusal(error: unknown): boolean {
 }
 
 /**
- * What a failed call says, in whose words the components contract sets: a refusal (4xx) its `detail` as the server
- * gives it, or NOT_AVAILABLE when it gives none; a validation refusal without a detail its first field's message; a
- * server fault (5xx), a network failure or anything else SOMETHING_WENT_WRONG, never the fault's own text. The
- * problem's type is for behaviour only and never turned into words here.
+ * What a failed call says, in whose words the components contract sets: a declared problem (a type other than
+ * about:blank) its `detail` as the server gives it, whatever the status; a validation refusal without a detail its
+ * first field's message; a declared problem without either NOT_AVAILABLE; an undeclared fault, a network failure or
+ * anything else SOMETHING_WENT_WRONG, never its own text. The type is for behaviour only and never turned into words
+ * here. The result is plain text.
  */
 export function refusalWords(error: unknown): string {
-    if (!isRefusal(error)) {
+    const problem = declaredProblemOf(error);
+    if (problem === null) {
         return SOMETHING_WENT_WRONG;
     }
-    const problem = problemOf(error as HttpErrorResponse);
-    const detail = sentenceOf(problem?.['detail']);
+    const detail = sentenceOf(problem['detail']);
     if (detail !== null) {
         return detail;
     }
-    const violations = problem?.['violations'];
+    const violations = problem['violations'];
     if (Array.isArray(violations)) {
         for (const one of violations) {
             const message = typeof one === 'object' && one !== null ? sentenceOf((one as { message?: unknown }).message) : null;

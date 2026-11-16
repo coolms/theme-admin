@@ -378,9 +378,9 @@ export class ComposeAttachmentsComponent {
                             return;
                         }
                         if (!row) {
-                            this.patch(key, { status: 'refused', refusal: driveRefusalText('not-found') });
+                            this.patch(key, { status: 'refused', refusal: driveRefusalText(null) });
                         } else if (row.refused !== undefined) {
-                            this.patch(key, { status: 'refused', refusal: driveRefusalText(row.refused) });
+                            this.patch(key, { status: 'refused', refusal: driveRefusalText(row.refusedText) });
                         } else {
                             this.replace(key, readyAttachment(row, 'drive', key));
                         }

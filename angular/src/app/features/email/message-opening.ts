@@ -34,24 +34,9 @@ export interface OpenFailure {
     readonly gone: boolean;
 }
 
-/** The problem type of an error answer, or '' when it carries none. */
-function problemType(error: HttpErrorResponse): string {
-    let body: unknown = error.error;
-    if (typeof body === 'string') {
-        try {
-            body = JSON.parse(body);
-        } catch {
-            body = null;
-        }
-    }
-    const type = typeof body === 'object' && body !== null ? (body as { type?: unknown }).type : undefined;
-
-    return typeof type === 'string' ? type : '';
-}
-
 /**
- * Why a message could not be opened: the server's detail as given for a refusal, the generic sentence for a fault or
- * a lost connection. The one 404 is also `gone`, so its row leaves the list.
+ * Why a message could not be opened: the server's detail as given for a declared problem, the generic sentence for an
+ * undeclared one or a lost connection. The one 404 is also `gone`, so its row leaves the list.
  */
 export function openFailureOf(error: unknown): OpenFailure {
     return { text: refusalWords(error), gone: error instanceof HttpErrorResponse && error.status === 404 };

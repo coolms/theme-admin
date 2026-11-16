@@ -126,7 +126,7 @@ describe('ComposeAttachmentsComponent', () => {
     it('shows a refused upload on its chip', () => {
         const f = create();
         f.componentInstance.uploadFiles([new File(['x'], 'bad.bin')]);
-        uploads[0].answer.error(new HttpErrorResponse({ status: 422, error: { detail: 'Said by the server.' } }));
+        uploads[0].answer.error(new HttpErrorResponse({ status: 422, error: { type: '/errors/email/upload-refused', detail: 'Said by the server.' } }));
         f.detectChanges();
         expect(chipNamed(f, 'bad.bin').getAttribute('data-status')).toBe('refused');
         expect(chipNamed(f, 'bad.bin').querySelector('[data-test="attachment-refusal"]')!.textContent).toContain('Said by the server.');
@@ -148,7 +148,7 @@ describe('ComposeAttachmentsComponent', () => {
         ];
         driveAnswer = () => of({ attachments: [
             { node: 'n1', ...dto('d1', 'plan.docx', 3000), source: 'drive' },
-            { node: 'n2', refused: 'not-found' },
+            { node: 'n2', refused: 'not-found', refusedText: 'Said for not-found.' },
         ] });
         await f.componentInstance.chooseFromFiles();
         f.detectChanges();
@@ -157,7 +157,7 @@ describe('ComposeAttachmentsComponent', () => {
         expect(chipNamed(f, 'plan.docx').getAttribute('data-status')).toBe('ready');
         const gone = chipNamed(f, 'gone.txt');
         expect(gone.getAttribute('data-status')).toBe('refused');
-        expect(gone.querySelector('[data-test="attachment-refusal"]')!.textContent).toContain('Not found, or you may not read it.');
+        expect(gone.querySelector('[data-test="attachment-refusal"]')!.textContent).toContain('Said for not-found.');
 
         // The picker was given the budget, a file costing its encoded body and part headers, and "Attach files" at 0.
         expect(pickerOptions!.budget!.limitBytes).toBe(25_000_000);

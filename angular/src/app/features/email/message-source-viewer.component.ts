@@ -175,7 +175,7 @@ export class MessageSourceViewerComponent {
 
     protected readonly words = MESSAGE_SOURCE_WORDS;
     readonly state = signal<MessageSourceState>({ kind: 'loading' });
-    /** What a failed read says: the server's words for a refusal, the generic sentence for a fault. */
+    /** What a failed read says: the server's detail for a declared problem, the generic sentence for an undeclared one. */
     protected readonly failedText = computed(() => { const s = this.state(); return 'text' in s && s.kind !== 'shown' ? s.text : ''; });
     /** A short word on what Copy or Download did, read out politely. */
     readonly status = signal('');

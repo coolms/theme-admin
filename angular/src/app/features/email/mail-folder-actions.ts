@@ -3,7 +3,6 @@ import { type NaviGraphNode } from '@coolms/core-angular';
 import { type ContextMenuItem } from '@coolms/ui-angular';
 
 import { type EmailFolderTreeNodeDto, type FolderJobAction, type FolderJobDto, type FolderJobReason } from './email.types';
-import { waitInWords } from './mail-aliases';
 import { actionOf, type NodeConditions } from './message-actions';
 import { refusalWords, sentenceOf } from './server-words';
 

@@ -248,7 +248,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             refuse('seen', new HttpErrorResponse({ status: 422 }));
 
             expect(row(page, 'm2')?.seen).toBeFalse();
-            expect(errors).withContext('a refusal without a detail').toEqual(["Couldn't mark as read: Not available right now"]);
+            expect(errors).withContext('a refusal without a problem body').toEqual(["Couldn't mark as read: Something went wrong. Try again."]);
         });
 
         it('Move refused (422 no-move): back in its place, open again, the reason said', () => {

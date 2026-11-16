@@ -1954,8 +1954,9 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly composePreparing = computed(() => preparingSentence(this.composeMode() === 'forward' ? 'forward' : 'reply'));
     /** Why the original is not quoted, when the server could not read it. */
     readonly composeUnreadable = computed(() => {
-        const reason = this.prefillAnswer()?.unreadable;
-        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(reason) : null;
+        const answer = this.prefillAnswer();
+        const reason = answer?.unreadable;
+        return reason !== null && reason !== undefined && reason !== '' ? unreadableSentence(answer?.unreadableText) : null;
     });
     /** The served `quote.html`, drawn read-only in the message view's frame below the person's text. */
     readonly composeQuoteHtml = computed<string | null>(() => {

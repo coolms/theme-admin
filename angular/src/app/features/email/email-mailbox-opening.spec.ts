@@ -267,12 +267,12 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
     it('a failed load says why in the pane, never only in a notice, and Try again loads it again', fakeAsync(() => {
         list(ROWS);
         choose('First');
-        details[0].reply.error(new HttpErrorResponse({ status: 502, error: { type: '/errors/email/body-unavailable' } }));
+        details[0].reply.error(new HttpErrorResponse({ status: 502, error: { type: '/errors/email/body-unavailable', detail: 'Said for 502.' } }));
         draw();
 
         const failed = pane().querySelector('[data-test="open-failed"]')!;
         expect(failed.getAttribute('role')).toBe('alert');
-        expect(failed.textContent).withContext('a fault: the generic sentence').toContain('Something went wrong. Try again.');
+        expect(failed.textContent).withContext('a declared fault: its detail').toContain('Said for 502.');
         expect(pane().querySelector('.mbx__detail-subject')?.textContent?.trim()).withContext('the header stays').toBe('First');
         expect(toasts).toEqual([]);
         expect(seenAsked).toEqual([]);
@@ -339,11 +339,15 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
             expect(storedNeighbours(rows, 'x')).toEqual([]);
         });
 
-        it('the server\'s detail for a refusal, the generic sentence for a fault; the one 404 is gone', () => {
-            expect(openFailureOf(new HttpErrorResponse({ status: 404, error: { detail: 'Said by the server.' } }))).toEqual({ text: 'Said by the server.', gone: true });
-            expect(openFailureOf(new HttpErrorResponse({ status: 404 }))).toEqual({ text: 'Not available right now', gone: true });
+        it('the server\'s detail for a declared problem, the generic sentence for an undeclared one; the one 404 is gone', () => {
+            expect(openFailureOf(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found', detail: 'Said by the server.' } })))
+                .toEqual({ text: 'Said by the server.', gone: true });
+            expect(openFailureOf(new HttpErrorResponse({ status: 404, error: { type: '/errors/not-found' } }))).toEqual({ text: 'Not available right now', gone: true });
+            expect(openFailureOf(new HttpErrorResponse({ status: 404 }))).toEqual({ text: 'Something went wrong. Try again.', gone: true });
             expect(openFailureOf(new HttpErrorResponse({ status: 0 })).text).toBe('Something went wrong. Try again.');
-            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: JSON.stringify({ type: '/errors/email/body-unavailable', detail: 'internals' }) })).text)
+            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: JSON.stringify({ type: '/errors/email/body-unavailable', detail: 'Said for 502.' }) })).text)
+                .toBe('Said for 502.');
+            expect(openFailureOf(new HttpErrorResponse({ status: 502, error: { type: 'about:blank', detail: 'internals' } })).text)
                 .toBe('Something went wrong. Try again.');
             expect(openFailureOf(new Error('x'))).toEqual({ text: 'Something went wrong. Try again.', gone: false });
         });
