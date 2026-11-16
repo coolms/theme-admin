@@ -135,6 +135,7 @@ import {
     ServerMessageOpenedDto,
     ServerSearchCapability,
     ServerSearchHitDto,
+    type ListOrder,
 } from './email.types';
 
 /** The two-way-bound model behind the mailbox connection editor form. */
@@ -367,6 +368,10 @@ type PhonePane = 'folders' | 'message';
                         } @else {
                             @if (serverRowGone()) {
                                 <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
+                            }
+                            @if (listOrder() === 'server') {
+                                <!-- A folder too large to sort by date keeps the mail server's order, and says so. -->
+                                <p class="mbx__note" data-test="list-order-server">Shown in the mail server's order: this folder holds too many messages to sort them by date.</p>
                             }
                             @if (newArrivals() > 0) {
                                 <!-- New mail heard while scrolled down: the view stays, and this says how many came. -->
@@ -1799,6 +1804,8 @@ export class EmailMailboxPageComponent implements OnInit {
      * cursor runs on past its stored rows into the server's older mail.
      */
     readonly serverListed = signal<boolean>(false);
+    /** The order the open folder's rows are in, as its first page said; null when it did not say. */
+    readonly listOrder = signal<ListOrder | null>(null);
     /** What the list's end says beyond its rows: a page could not be read, or the server asked to wait. */
     readonly listEnd = signal<ListEnd | null>(null);
     /** A next page is being read: the Loading... row stands at the list's end. */
@@ -5560,6 +5567,9 @@ ${this.selectedFolder()}`;
                 // A read started before a read-state write answered: those rows keep the person's value.
                 const list = this.pendingReads.heldAll(answer, readAt);
                 const unavailable = answer.serverPages === 'unavailable';
+                if (reset && !(unavailable && rereading)) {
+                    this.listOrder.set(answer.order ?? null);
+                }
                 if (reset) {
                     // The folder's own word, as its tree node or list entry carries it; the answer only when neither does.
                     this.serverListed.set(

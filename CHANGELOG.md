@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+- **A folder too large to sort by date says it keeps the mail server's order.** The list reads `X-List-Order` from the
+  folder's first page; when it is `server`, a line above the rows says "Shown in the mail server's order: this folder
+  holds too many messages to sort them by date." In date order, or from a server that does not say, nothing is shown.
 - **A mailbox signing in through a provider names it as its owner writes it.** The Connection screen reads "Signs in
   through Microsoft" or "Google", not the provider's key ("microsoft"); another provider has its first letter
   capitalised, and none still says "its provider". The mailbox editor's provider labels fall back to the same names.
