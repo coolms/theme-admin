@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { refusalWords } from './server-words';
 
 /** What the message pane shows of a message before it has loaded: what its row already has. */
 export interface OpeningHeader {
@@ -49,24 +50,11 @@ function problemType(error: HttpErrorResponse): string {
 }
 
 /**
- * The sentence for a load that failed, by the server's reason: the one 404 (gone, or never this person's to see), a
- * body the mail server did not send, no answer at all, anything else.
+ * Why a message could not be opened: the server's detail as given for a refusal, the generic sentence for a fault or
+ * a lost connection. The one 404 is also `gone`, so its row leaves the list.
  */
 export function openFailureOf(error: unknown): OpenFailure {
-    if (!(error instanceof HttpErrorResponse)) {
-        return { text: 'Couldn\'t open this message.', gone: false };
-    }
-    if (error.status === 404) {
-        return { text: 'This message is no longer here.', gone: true };
-    }
-    if (error.status === 0) {
-        return { text: 'Couldn\'t reach the server. Check the connection and try again.', gone: false };
-    }
-    if (problemType(error).endsWith('/errors/email/body-unavailable')) {
-        return { text: 'The mail server could not be reached to read this message.', gone: false };
-    }
-
-    return { text: 'Couldn\'t open this message.', gone: false };
+    return { text: refusalWords(error), gone: error instanceof HttpErrorResponse && error.status === 404 };
 }
 
 /** The refs of the server rows just before and after the row with this ref, in the list's order: at most two. */

@@ -3,7 +3,7 @@ import { type ToastService } from '@coolms/ui-angular';
 import { type Observable } from 'rxjs';
 import { type EmailArchiveResultDto, type EmailBulkResultDto, type EmailMessageOutcomeDto } from './email.types';
 import { inChunks, problemOf } from './trash';
-import { NOT_AVAILABLE, sentenceOf } from './server-words';
+import { NOT_AVAILABLE, SOMETHING_WENT_WRONG, isRefusal, refusalWords, sentenceOf } from './server-words';
 
 /** How long a refusal with Retry stays offered. */
 export const ARCHIVE_RETRY_MS = 8000;
@@ -18,38 +18,6 @@ const messages = (n: number): string => (n === 1 ? '1 message' : `${n} messages`
 
 export function archivedText(n: number): string {
     return `Archived ${messages(n)}.`;
-}
-
-/** The mail server did not complete it: nothing changed, and it can be asked again. */
-export function archiveFailedText(n: number): string {
-    return n === 1
-        ? 'The mail server did not complete the archive. Nothing was changed.'
-        : `The mail server did not complete the archive of ${messages(n)}. Nothing was changed for them.`;
-}
-
-/** Why a message cannot be archived, in the page's words per reason; never the server's detail. */
-export function archiveReasonText(reason: string | null): string {
-    switch (reason) {
-        case 'no-archive-folder':
-            return "This mailbox's server has no folder marked as its archive.";
-        case 'not-archivable-from-here':
-            return 'Messages in this folder cannot be archived.';
-        case 'not-in-inbox':
-            return 'On this server only messages in the Inbox can be archived.';
-        case 'all-mail-hidden':
-            return "Archive needs All Mail shown over IMAP: in Gmail settings, Labels, All Mail, Show in IMAP.";
-        case 'folders-not-listed':
-            return "This mailbox's folders have not been read from the server yet. Try again after it syncs.";
-        case 'retired-copy':
-            return 'This copy is out of date. Reload the folder.';
-        case 'not-on-server':
-            return 'The mail server no longer has this message.';
-        case 'not-found':
-            return 'This message no longer exists.';
-        case 'failed':
-            return 'The mail server did not complete the archive.';
-    }
-    return 'The mail server did not archive it.';
 }
 
 /** One summary for the refused of a bulk archive: how many, and why, in the server's sentence for the first refusal. */
@@ -79,18 +47,6 @@ export interface ArchivePorts {
      * `asked`: every row the archive was asked for.
      */
     archived(done: readonly ArchivedMessage[], asked: readonly string[]): void;
-}
-
-const statusOf = (e: unknown): number | null => (e instanceof HttpErrorResponse ? e.status : null);
-
-/** The `reason` member of a 422 `/errors/email/cannot-archive`, or null for any other answer. */
-export function cannotArchiveReason(e: unknown): string | null {
-    if (!(e instanceof HttpErrorResponse) || e.status !== 422 || problemOf(e) !== 'cannot-archive') {
-        return null;
-    }
-    const reason = (e.error as { reason?: unknown } | null)?.reason;
-
-    return typeof reason === 'string' ? reason : '';
 }
 
 /**
@@ -125,13 +81,11 @@ export class ArchiveFlow {
             error: (e: unknown) => {
                 this.ports.busy(false);
                 this.ports.putBack([id]);
-                const reason = cannotArchiveReason(e);
-                if (reason !== null) {
-                    toast.error(archiveReasonText(reason));
-                } else if (statusOf(e) === 502) {
-                    this.offerRetry(archiveFailedText(1), [id]);
+                // A refusal says the server's detail; a fault offers Retry with the generic sentence.
+                if (isRefusal(e)) {
+                    toast.error(refusalWords(e));
                 } else {
-                    toast.error('Could not archive the message.');
+                    this.offerRetry(SOMETHING_WENT_WRONG, [id]);
                 }
             },
         });
@@ -160,15 +114,15 @@ export class ArchiveFlow {
                 this.ports.putBack(refused.map(r => r.id));
                 const failed = refused.filter(r => problemOf(r.reason ?? null) === 'failed');
                 if (failed.length === refused.length) {
-                    this.offerRetry(archiveFailedText(failed.length), failed.map(r => r.id));
+                    this.offerRetry(SOMETHING_WENT_WRONG, failed.map(r => r.id));
                 } else {
                     toast.error(archiveRefusedText(refused, ids.length));
                 }
             },
-            error: () => {
+            error: (e: unknown) => {
                 this.ports.busy(false);
                 this.ports.putBack(ids);
-                toast.error(`Could not archive ${messages(ids.length)}.`);
+                toast.error(refusalWords(e));
             },
         });
     }

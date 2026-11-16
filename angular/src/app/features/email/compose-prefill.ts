@@ -4,6 +4,7 @@ import {
     type EmailComposeDto, type EmailComposeMode, type EmailComposePartDto, type EmailComposeRecipientDto, type EmailMessagePartRef,
     type OutgoingEmailRequest,
 } from './email.types';
+import { isRefusal, refusalWords } from './server-words';
 
 /** The message actions that open a composer the server prepares, and the mode each asks it for. */
 export const PREFILLED_ACTIONS: Readonly<Record<string, EmailComposeMode>> = {
@@ -24,22 +25,11 @@ export function preparingSentence(mode: EmailComposeMode): string {
 }
 
 /**
- * Why the composer could not be prepared, in the page's words: a 404 is a message not there to read, a 422 a way of
- * answering the server does not take; anything else may pass, and offers Retry.
+ * Why the composer could not be prepared: a refusal (4xx) says the server's detail and offers no Retry; anything else
+ * may pass, says the generic sentence and offers Retry.
  */
-export function prefillFailure(err: unknown, mode: EmailComposeMode): { sentence: string; retry: boolean } {
-    const status = err instanceof HttpErrorResponse ? err.status : 0;
-    if (status === 404) {
-        return { sentence: 'This message is not there to answer: it was removed, or you may no longer read it.', retry: false };
-    }
-    if (status === 422) {
-        return { sentence: 'The server does not prepare a message this way, so nothing was filled in.', retry: false };
-    }
-
-    return {
-        sentence: mode === 'forward' ? 'The forward could not be prepared.' : 'The reply could not be prepared.',
-        retry: true,
-    };
+export function prefillFailure(err: unknown, _mode: EmailComposeMode): { sentence: string; retry: boolean } {
+    return { sentence: refusalWords(err), retry: !isRefusal(err) };
 }
 
 /** The served recipients as the address chips hold them, in the order served. */

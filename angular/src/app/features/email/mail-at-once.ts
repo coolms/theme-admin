@@ -54,18 +54,8 @@ export function movedText(n: number, folderName: string): string {
     return n === 1 ? `Moved to ${folderName}.` : `Moved ${messages(n)} to ${folderName}.`;
 }
 
-/** Why a Move changed nothing for these, in the page's words for the server's reason; never the server's detail. */
-export function moveRefusalText(problem: string | null, n: number): string {
-    switch (problem) {
-        case 'no-move':
-            return "This mailbox's server cannot move messages, so nothing was moved.";
-        case 'retired-copy':
-            return 'This copy is out of date. Reload the folder.';
-        case 'renumbered':
-            return 'This folder changed on the server. Try again after it refreshes.';
-        case 'not-found':
-            return n === 1 ? 'This message no longer exists.' : `${messages(n)} no longer exist.`;
-    }
-    return `Could not move ${messages(n)}.`;
+/** Why a Move changed nothing for these: the server's sentence for the first, as given, with how many when several. */
+export function moveRefusalText(sentence: string, n: number): string {
+    return n === 1 ? sentence : `${messages(n)} were not moved. ${sentence}`;
 }
 

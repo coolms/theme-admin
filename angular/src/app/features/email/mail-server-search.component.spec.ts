@@ -193,7 +193,7 @@ describe('MailServerSearchComponent', () => {
             el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
             http.expectOne(OPEN).flush({ type: '/errors/email/server-search/unavailable' }, { status: 503, statusText: '503' });
 
-            expect(failures.map(f => f.text)).toEqual(['Can\'t reach the mail server right now.']);
+            expect(failures.map(f => f.text)).withContext('a fault: the generic sentence').toEqual(['Something went wrong. Try again.']);
             failures[0].retry?.();
             expect(http.match(OPEN).length).withContext('Try again stores it again').toBe(1);
         });
@@ -206,17 +206,17 @@ describe('MailServerSearchComponent', () => {
             expect(opened).toEqual([]);
         });
 
-        it('503 unavailable: said under the row, with the reason', () => {
+        it('503 unavailable: said under the row in the generic sentence, never the fault\'s text', () => {
             const el = openWith({ type: '/errors/email/server-search/unavailable', reason: 'unreachable' }, 503);
 
-            expect(text(el, 'server-hit-notice')).toBe('Can\'t reach the mail server right now: unreachable.');
+            expect(text(el, 'server-hit-notice')).toBe('Something went wrong. Try again.');
             expect(search.hits().length).toBe(2);
         });
 
-        it('502 failed: said under the row, naming the server', () => {
+        it('a refusal says the server\'s detail under the row; a 502 the generic sentence', () => {
             const el = openWith({ type: '/errors/email/server-search/failed', server: 'imap.example.test' }, 502);
 
-            expect(text(el, 'server-hit-notice')).toBe('imap.example.test couldn\'t open this message.');
+            expect(text(el, 'server-hit-notice')).toBe('Something went wrong. Try again.');
         });
     });
 

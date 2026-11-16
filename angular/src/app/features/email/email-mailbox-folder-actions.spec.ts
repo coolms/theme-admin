@@ -295,7 +295,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
 
     it('a folder-busy refusal names the running action, and the folders are read again', () => {
         markAnswer = () => throwError(() => new HttpErrorResponse({
-            status: 409, error: { type: '/errors/email/folder-busy', action: 'empty', title: 'Conflict' },
+            status: 409, error: { type: '/errors/email/folder-busy', action: 'empty', title: 'Conflict', detail: 'Empty is running in this folder.' },
         }));
         const page = build();
         const asked = treeAsked;
@@ -306,7 +306,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         expect(treeAsked).toBe(asked + 1);
     });
 
-    it('New folder inside asks for a name, creates it there, and words a \\Noinferiors refusal', () => {
+    it('New folder inside asks for a name, creates it there, and says a \\Noinferiors refusal in the server\'s words', () => {
         const page = build();
         page.onFolderAction('create-child', 'Projects');
 
@@ -315,8 +315,8 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         dialogs[0].save('Mango', dialogs[0].parent).subscribe();
         expect(creates).toEqual([['Mango', 'Projects']]);
         expect(dialogs[0].refusal(new HttpErrorResponse({
-            status: 422, error: { type: '/errors/email/folder-parent-invalid' },
-        }))).toBe('The mail server does not allow folders inside this folder.');
+            status: 422, error: { type: '/errors/email/folder-parent-invalid', detail: 'Said by the server.' },
+        }))).toBe('Said by the server.');
 
         page.createTopFolder();
         expect(dialogs[1].parent).withContext('New folder at the foot: the top level').toBeNull();

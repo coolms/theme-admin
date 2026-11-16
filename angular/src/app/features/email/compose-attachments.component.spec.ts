@@ -126,10 +126,10 @@ describe('ComposeAttachmentsComponent', () => {
     it('shows a refused upload on its chip', () => {
         const f = create();
         f.componentInstance.uploadFiles([new File(['x'], 'bad.bin')]);
-        uploads[0].answer.error(new HttpErrorResponse({ status: 422 }));
+        uploads[0].answer.error(new HttpErrorResponse({ status: 422, error: { detail: 'Said by the server.' } }));
         f.detectChanges();
         expect(chipNamed(f, 'bad.bin').getAttribute('data-status')).toBe('refused');
-        expect(chipNamed(f, 'bad.bin').querySelector('[data-test="attachment-refusal"]')!.textContent).toContain('larger than 25 MB');
+        expect(chipNamed(f, 'bad.bin').querySelector('[data-test="attachment-refusal"]')!.textContent).toContain('Said by the server.');
     });
 
     it('refuses a file that would go over the limit before uploading it', () => {

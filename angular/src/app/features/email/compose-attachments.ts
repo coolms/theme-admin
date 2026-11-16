@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { formatFilesPickerSize } from '@coolms/ui-angular';
 import type { DriveAttachRefusal, OutgoingAttachmentDto } from './email.types';
+import { refusalWords } from './server-words';
 
 /** The largest file the server takes, upload or Drive file: 25 MiB. */
 export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -111,16 +112,9 @@ export function driveRefusalText(refused: DriveAttachRefusal): string {
     }
 }
 
-/** Why an upload was refused, by the answer's status: a fixed sentence, never the server's text. */
+/** Why an upload was refused: the server's detail as given, or the generic sentence for a fault or a lost connection. */
 export function uploadRefusalText(error: unknown): string {
-    const status = error instanceof HttpErrorResponse ? error.status : 0;
-    switch (status) {
-        case 413: return 'Too large to upload.';
-        case 422: return 'Not attached: the file is larger than 25 MB, or could not be read.';
-        case 403: return 'You may not attach files to this mailbox.';
-        case 0: return 'Not uploaded: the connection was lost.';
-        default: return 'Not uploaded: the server could not take it.';
-    }
+    return refusalWords(error);
 }
 
 /** The attachment a send's 422 names as no longer there to send, or null when the answer names none. */

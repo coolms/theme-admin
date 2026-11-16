@@ -99,51 +99,17 @@ describe('folder actions: what is said', () => {
         expect(said[2]).toContain('renumbered');
     });
 
-    it('a folder-busy refusal names the running action, never a generic failure', () => {
-        const busy = problem(409, { type: '/errors/email/folder-busy', action: 'empty' });
-
-        expect(busyRefusal(busy)).toBe('empty');
+    it('a folder refusal says the server\'s detail as given; one without says Not available right now; a fault the generic sentence', () => {
+        const busy = problem(409, { type: '/errors/email/folder-busy', action: 'empty', detail: 'Empty is running in this folder.' });
+        expect(busyRefusal(busy)).withContext('the code still drives behaviour').toBe('empty');
         expect(markReadRefusalText(busy, 'Trash')).toBe('Empty is running in this folder.');
         expect(folderChangeRefusalText(busy)).toBe('Empty is running in this folder.');
-        expect(folderChangeRefusalText(problem(409, { type: '/errors/email/folder-busy', action: 'mark-read' })))
-            .toBe('Mark all as read is running in this folder.');
+        expect(emptyRefusalText(problem(409, { type: '/errors/email/mailbox-held', detail: 'Said by the server.' }), 'Trash')).toBe('Said by the server.');
+        expect(folderChangeRefusalText(problem(422, { type: '/errors/email/folder-parent-invalid' }))).toBe('Not available right now');
+        expect(folderChangeRefusalText(problem(500, { detail: 'internals' }))).toBe('Something went wrong. Try again.');
+        expect(emptyRefusalText(problem(502, {}), 'Trash')).toBe('Something went wrong. Try again.');
         expect(busyText(null)).toBe('Another action is running in this folder.');
         expect(busyRefusal(problem(404, { type: '/errors/email/folder-not-found' }))).toBeUndefined();
-    });
-
-    it('a folder that cannot hold folders (\\Noinferiors) says so; each refusal has its sentence', () => {
-        expect(folderChangeRefusalText(problem(422, { type: '/errors/email/folder-parent-invalid' })))
-            .toBe('The mail server does not allow folders inside this folder.');
-        expect(folderChangeRefusalText(problem(409, { type: '/errors/email/folder-exists' })))
-            .toBe('A folder with this name is already there.');
-        expect(folderChangeRefusalText(problem(422, { type: '/errors/email/folder-name-invalid', reason: 'delimiter', delimiter: '/' })))
-            .toBe('A folder name cannot contain "/" on this mail server.');
-        expect(folderChangeRefusalText(problem(429, {}, new HttpHeaders({ 'Retry-After': '30' }))))
-            .toBe('Too many folder changes. Try again in 30 seconds.');
-        expect(folderChangeRefusalText(problem(500, {}))).toBe('The folder could not be changed.');
-    });
-
-    it('each refusal of Empty has its own sentence', () => {
-        const said = (status: number, body: Record<string, unknown>): string => emptyRefusalText(problem(status, body), 'Trash');
-        const sentences = [
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-allowed' }),
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-trash-or-spam' }),
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'ceiling-required' }),
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'no-uidplus' }),
-            said(409, { type: '/errors/email/mailbox-held' }),
-            said(409, { type: '/errors/email/folder-renumbered' }),
-            said(409, { type: '/errors/email/folder-busy', action: 'mark-read' }),
-            said(404, { type: '/errors/email/folder-not-found' }),
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'empty-off' }),
-            said(422, { type: '/errors/email/folder-not-emptiable', reason: 'not-on-gmail' }),
-        ];
-
-        expect(new Set(sentences).size).withContext(sentences.join(' | ')).toBe(sentences.length);
-        expect(sentences[4]).toContain('legal hold');
-        expect(sentences[6]).toBe('Mark all as read is running in this folder.');
-        expect(sentences.some(s => s === 'Trash could not be emptied.')).withContext('none is the generic one').toBeFalse();
-        expect(sentences[8]).toBe('Empty is off for now. It comes back once emptying also removes the mail from CoolMS.');
-        expect(sentences[9]).toBe('Empty is not available on Gmail yet: it is still being tested there.');
         expect(isRenumbered(problem(409, { type: '/errors/email/folder-renumbered' }))).toBeTrue();
         expect(isRenumbered(problem(409, { type: '/errors/email/mailbox-held' }))).toBeFalse();
     });

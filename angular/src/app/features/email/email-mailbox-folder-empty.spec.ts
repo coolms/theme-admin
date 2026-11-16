@@ -253,7 +253,7 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
     it('a folder renumbered since the preview is previewed again, its new numbers shown, never sent with the old', () => {
         let refusals = 1;
         emptyAnswer = () => (refusals-- > 0
-            ? throwError(() => problem(409, { type: '/errors/email/folder-renumbered' }))
+            ? throwError(() => problem(409, { type: '/errors/email/folder-renumbered', detail: 'Trash changed on the mail server since it was counted.' }))
             : of({ jobId: 'job-e', mailboxId: 'mb1', folder: 'Trash', action: 'empty', outcome: 'running', count: 0, reason: null }));
         previews = [
             () => of(preview()),
@@ -270,33 +270,27 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
         hear(page, 'done');
     });
 
-    it('each other refusal of Empty says its own sentence, and nothing is busy', () => {
-        const cases: Array<[number, Record<string, unknown>]> = [
-            [422, { type: '/errors/email/folder-not-emptiable', reason: 'not-allowed' }],
-            [422, { type: '/errors/email/folder-not-emptiable', reason: 'not-trash-or-spam' }],
-            [422, { type: '/errors/email/folder-not-emptiable', reason: 'ceiling-required' }],
-            [422, { type: '/errors/email/folder-not-emptiable', reason: 'no-uidplus' }],
-            [409, { type: '/errors/email/mailbox-held' }],
-            [409, { type: '/errors/email/folder-busy', action: 'mark-read' }],
-            [404, { type: '/errors/email/folder-not-found' }],
+    it('a refusal of Empty says the server\'s detail as given, and nothing is busy', () => {
+        const cases: Array<[number, Record<string, unknown>, string]> = [
+            [422, { type: '/errors/email/folder-not-emptiable', reason: 'not-allowed', detail: 'Said for not-allowed.' }, 'Said for not-allowed.'],
+            [409, { type: '/errors/email/folder-busy', action: 'mark-read', detail: 'Said for busy.' }, 'Said for busy.'],
+            [404, { type: '/errors/email/folder-not-found' }, 'Not available right now'],
+            [502, { detail: 'internals' }, 'Something went wrong. Try again.'],
         ];
-        const said: string[] = [];
-        for (const [status, body] of cases) {
+        for (const [status, body, expected] of cases) {
             emptyAnswer = () => throwError(() => problem(status, body));
             const page = build();
             page.onFolderAction('empty', 'Trash');
 
-            expect(errors.length).withContext(String(body['type'])).toBe(1);
+            expect(errors.length).withContext(String(status)).toBe(1);
+            expect(errors[0]).withContext(String(status)).toBe(expected);
             expect(busyOf(page, 'Trash')).toBeNull();
             expect(previewsAsked.length).withContext('no second preview').toBe(1);
-            said.push(errors[0]);
         }
-        expect(new Set(said).size).toBe(cases.length);
-        expect(said[5]).toBe('Mark all as read is running in this folder.');
     });
 
     it('a preview refused (legal hold) says so, and no confirm is shown', () => {
-        previews = [() => throwError(() => problem(409, { type: '/errors/email/mailbox-held' }))];
+        previews = [() => throwError(() => problem(409, { type: '/errors/email/mailbox-held', detail: 'This mailbox is under a legal hold.' }))];
         const page = build();
         page.onFolderAction('empty', 'Trash');
 

@@ -142,7 +142,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
     const refuse = (name: string, e: HttpErrorResponse, nth = 0): void => callTo(name, nth).answer.error(e);
     const bulk = (results: { id: string; outcome: string; folder?: string; reason?: string; reasonText?: string }[]): EmailBulkResultDto =>
         ({ results } as EmailBulkResultDto);
-    const cannotArchive = (reason: string) => new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason } });
+    const cannotArchive = (reason: string) => new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason, detail: 'Said by the server.' } });
 
     describe('the effect, before the server answers', () => {
         it('Archive takes the open message out at once and opens the next; the notice says Archived when it is done', () => {
@@ -211,7 +211,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
 
             expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m2');
-            expect(errors).toEqual(['On this server only messages in the Inbox can be archived.']);
+            expect(errors).toEqual(['Said by the server.']);
             expect(calls.filter(c => c.name === 'archive').length).withContext('nothing asked again').toBe(1);
         });
 
@@ -238,7 +238,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
 
             expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m1');
-            expect(errors).toEqual(['Could not delete 1 message.']);
+            expect(errors).toEqual(['The message was not moved to Trash. Something went wrong. Try again.']);
         });
 
         it('Mark read refused: the row is unread again, and said', () => {
@@ -248,7 +248,7 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             refuse('seen', new HttpErrorResponse({ status: 422 }));
 
             expect(row(page, 'm2')?.seen).toBeFalse();
-            expect(errors).toEqual(["Couldn't mark as read."]);
+            expect(errors).withContext('a refusal without a detail').toEqual(["Couldn't mark as read: Not available right now"]);
         });
 
         it('Move refused (422 no-move): back in its place, open again, the reason said', () => {
@@ -256,11 +256,11 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             open(page, 'm3');
             page.bulkMoveTo('Projects', new Set(['m3']));
 
-            refuse('move', new HttpErrorResponse({ status: 422, error: { type: '/errors/email/no-move' } }));
+            refuse('move', new HttpErrorResponse({ status: 422, error: { type: '/errors/email/no-move', detail: 'Said by the server.' } }));
 
             expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m3');
-            expect(errors).toEqual(["This mailbox's server cannot move messages, so nothing was moved."]);
+            expect(errors).toEqual(['Said by the server.']);
         });
     });
 
@@ -366,13 +366,13 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             expect(ids(page)).toEqual(['m2', 'm4']);
             answer('delete', bulk([
                 { id: 'm1', outcome: 'moved', folder: 'Trash' },
-                { id: 'm3', outcome: 'refused', reason: 'no-move' },
+                { id: 'm3', outcome: 'refused', reason: 'no-move', reasonText: 'Said by the server.' },
                 { id: 'm5', outcome: 'moved', folder: 'Trash' },
             ]));
 
             expect(ids(page)).toEqual(['m2', 'm3', 'm4']);
             expect(shown.map(s => s.message)).withContext('one notice, the refusal in place of Moved to Trash')
-                .toEqual(["This mailbox's server cannot move messages, so nothing was deleted."]);
+                .toEqual(['The message was not moved to Trash. Said by the server.']);
             expect(shown[0].action?.label).toBe('Undo');
             expect(errors).toEqual([]);
             expect(successes).toEqual([]);
@@ -396,11 +396,11 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             page.onDetailAction('archive');
             page.openMessage(page.messages().find(m => m.id === 'm5')!);
 
-            refuse('archive', new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason: 'not-in-inbox' } }));
+            refuse('archive', new HttpErrorResponse({ status: 422, error: { type: '/errors/email/cannot-archive', reason: 'not-in-inbox', detail: 'Said by the server.' } }));
 
             expect(ids(page)).toEqual(['m1', 'm2', 'm3', 'm4', 'm5']);
             expect(page.selectedMessage()?.id).toBe('m5');
-            expect(errors).toEqual(['On this server only messages in the Inbox can be archived.']);
+            expect(errors).toEqual(['Said by the server.']);
         });
 
         it('a refusal after the person acted on the next message keeps it; only the row comes back', () => {
@@ -438,11 +438,11 @@ describe('EmailMailboxPageComponent -- mail actions at once', () => {
             page.bulkMoveTo('Projects');
             expect(ids(page)).toEqual(['m1', 'm3', 'm5']);
             answer('move', null);
-            refuse('move', new HttpErrorResponse({ status: 404, error: { type: '/errors/email/not-found' } }), 1);
+            refuse('move', new HttpErrorResponse({ status: 404, error: { type: '/errors/email/not-found', detail: 'This message is not there any more.' } }), 1);
 
             expect(ids(page)).toEqual(['m1', 'm3', 'm4', 'm5']);
             expect(successes).withContext('one notice: the refusal, in place of what was done').toEqual([]);
-            expect(errors).toEqual(['This message no longer exists.']);
+            expect(errors).toEqual(['This message is not there any more.']);
         });
     });
 });
