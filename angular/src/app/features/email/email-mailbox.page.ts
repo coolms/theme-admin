@@ -71,7 +71,7 @@ import {
     quotedMessageUnavailable, recipientOptionsOf, unreadableSentence,
     type ComposePrefillState,
 } from './compose-prefill';
-import { ArchiveFlow, disabledReasonWords, type ArchivedMessage } from './archive';
+import { ArchiveFlow, type ArchivedMessage } from './archive';
 import { movedText, moveRefusalText, putRowsBack, staysShown, type TakenRow, takeRows } from './mail-at-once';
 import { nextOpenAfter } from './mail-open-next';
 import { TrashFlow, isTrashFolder, problemOf, trashRetentionText } from './trash';
@@ -2099,12 +2099,12 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly detailActions = computed(() => {
         const m = this.selectedMessage();
         return m && !this.loadingDetail()
-            ? withPending(paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph, disabledReasonWords), this.pending(), [m.id])
+            ? withPending(paneActionsOf(this.messageNodes(), this.detailFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph), this.pending(), [m.id])
             : [];
     });
     /** The checked rows' row: the same nodes, for them. */
     readonly bulkActions = computed(() => withPending(
-        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph, disabledReasonWords),
+        paneActionsOf(this.messageNodes(), this.bulkFacts(), MESSAGE_ACTIONS_HANDLED, this.naviGraph),
         this.pending(), [...this.selectedIds()]));
     /** Where the pointer last went down on a message bar, or a row was right-clicked: Move's and Delete's second step
      *  (the folders; Trash or permanent) opens there. */
@@ -2185,7 +2185,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
         this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets, this.archiveContext()),
-            action => this.onMessageAction(action, ids), disabledReasonWords);
+            action => this.onMessageAction(action, ids));
     }
 
     /** One place for every action on messages, from either bar or a row's menu. */

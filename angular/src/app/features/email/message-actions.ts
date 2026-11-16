@@ -159,7 +159,6 @@ export function paneActionsOf(
     facts: Record<string, unknown>,
     handled: ReadonlySet<string>,
     conditions: NodeConditions,
-    reasonWords: (code: string) => string | null = () => null,
 ): PaneToolbarAction[] {
     const actions: PaneToolbarAction[] = [];
     for (const node of nodes) {
@@ -185,10 +184,9 @@ export function paneActionsOf(
         const denied = capabilityStateOf(meta, facts) === 'denied';
         const off = unavailable !== null && conditions.matchesShowWhen(unavailable, facts);
         const disabled = denied || off;
-        const code = meta['disabledReason'];
-        // Disabled for a reason the server names: its words here, or that it is not available now.
-        const worded = off && typeof code === 'string' && code !== '' ? reasonWords(code) : null;
-        const why = off ? worded ?? UNWORDED_REASON : null;
+        // Disabled for a reason: the server's sentence as given, or the one generic reason while it gives none.
+        const sentence = meta['disabledReasonText'];
+        const why = off ? (typeof sentence === 'string' && sentence.trim() !== '' ? sentence : UNWORDED_REASON) : null;
         actions.push({
             id,
             label: typeof label === 'string' && label !== '' ? label : node.title,
