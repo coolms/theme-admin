@@ -395,7 +395,13 @@ export interface EmailMessageDto {
  * (`X-Next-Cursor`, null on the last page or a folder paged by number), `serverPages` the `X-Server-Pages` header.
  * A list answered without them reads as a folder paged by number.
  */
-export type EmailMessageList = EmailMessageDto[] & { next?: string | null; serverPages?: string | null };
+export type EmailMessageList = EmailMessageDto[] & { next?: string | null; serverPages?: string | null; order?: ListOrder | null };
+
+/**
+ * The order a list's rows are in (`X-List-Order`): `date`, newest received first; `server`, the mail server's own order,
+ * for a folder too large to sort by date.
+ */
+export type ListOrder = 'date' | 'server';
 
 /** The ways of starting from a message that the server prepares (`GET /email/messages/{id}/compose?mode=`). */
 export type EmailComposeMode = 'reply' | 'reply_all' | 'forward';

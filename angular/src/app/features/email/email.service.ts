@@ -43,6 +43,7 @@ import {
     SystemMailChoice,
     SystemMailDto,
     SystemMailSendAsDto,
+    type ListOrder,
 } from './email.types';
 import type { FilterFolder, MailboxFilter, MailboxFilterWrite } from './mailbox-filters';
 import type { MailAliasAsked, MailAliasesDto, MailboxSendAsDto } from './mail-aliases';
@@ -377,6 +378,7 @@ export class EmailService {
             .pipe(map(response => Object.assign(this.unwrap<EmailMessageDto>(response.body), {
                 next: response.headers.get('X-Next-Cursor'),
                 serverPages: response.headers.get('X-Server-Pages'),
+                order: listOrderOf(response.headers.get('X-List-Order')),
             })));
     }
 
@@ -877,4 +879,10 @@ export class EmailService {
         }
         return [];
     }
+}
+
+/** The order a list answer says its rows are in; null for none, or a word this page does not know. */
+export function listOrderOf(header: string | null): ListOrder | null {
+    const word = (header ?? '').trim();
+    return word === 'date' || word === 'server' ? word : null;
 }

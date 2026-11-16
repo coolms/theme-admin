@@ -14,7 +14,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
-import { EmailService } from './email.service';
+import { EmailService, listOrderOf } from './email.service';
 import {
     type EmailFolderTreeNodeDto, type EmailMailboxDto, type EmailMessageDetailDto, type EmailMessageDto, type EmailMessageList,
     type ServerMessageOpenedDto,
@@ -185,6 +185,34 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         region.dispatchEvent(new Event('scroll'));
         draw();
     };
+
+    it('a folder kept in the mail server\'s order says so; one in date order, or one that does not say, says nothing', fakeAsync(() => {
+        const note = (): string | null => el().querySelector('[data-test="list-order-server"]')?.textContent?.trim() ?? null;
+        answer(Object.assign(page(MIXED, 'c-2'), { order: 'server' as const }));
+        expect(note()).toBe('Shown in the mail server\'s order: this folder holds too many messages to sort them by date.');
+
+        // A later page says nothing of its own: the first page's word stands.
+        scrollToEnd();
+        answer(page([stored('m-1', 'Oldest')]));
+        expect(note()).not.toBeNull();
+
+        pageOf().selectFolder(FOLDER);
+        draw();
+        answer(Object.assign(page(MIXED), { order: 'date' as const }));
+        expect(note()).toBeNull();
+
+        pageOf().selectFolder(FOLDER);
+        draw();
+        answer(page(MIXED));
+        expect(note()).withContext('an older server that does not say').toBeNull();
+    }));
+
+    it('reads the list order from its header: date or server, anything else as not said', () => {
+        expect(listOrderOf('server')).toBe('server');
+        expect(listOrderOf(' date ')).toBe('date');
+        expect(listOrderOf('uid')).toBeNull();
+        expect(listOrderOf(null)).toBeNull();
+    });
 
     it('shows a mixed page as the server ordered it, a server row keyed by its ref with no id key', fakeAsync(() => {
         expect(asked.at(-1)).toEqual({ folder: FOLDER, page: 1, cursor: null });
