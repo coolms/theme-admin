@@ -6,6 +6,7 @@ import { type CapabilityState, DateTimePipe, ToastService } from '@coolms/ui-ang
 
 import { EmailService } from './email.service';
 import { EmailMailboxDto, MailboxSecurity, MailboxTestOutcome, MailboxTestRequest, MailboxTestResult, MailboxWriteRequest, SendVia } from './email.types';
+import { sentenceOf } from './server-words';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NO_MAILBOX, afterAccess, rebaseDraft, saveFailed } from './mailbox-section-save';
 import { sendViaChoices, sendViaHint } from './send-via';
@@ -77,7 +78,7 @@ export function partPatch(patch: MailboxWriteRequest, part: ConnectionPart): Mai
             out[key] = value;
         }
     }
-    return out as MailboxWriteRequest;
+    return out;
 }
 
 /** A connection test's outcome for one protocol, in words. */
@@ -102,24 +103,23 @@ export function connectionPatch(mailbox: EmailMailboxDto, draft: ConnectionDraft
     if (password.trim() !== '') {
         patch['password'] = password;
     }
-    return patch as MailboxWriteRequest;
+    return patch;
 }
 
-/** What a mailbox's connection state reads as, for the person: the last fetch's outcome in words. */
+/**
+ * What a mailbox's connection state reads as, for the person: the last fetch's outcome in words, a stopped mailbox with
+ * the server's sentence for why, as given.
+ */
 export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'warn' | 'stop' | 'none'; text: string } {
-    const why: Record<string, string> = {
-        auth_refused: 'the server refused the sign-in',
-        reauth_required: 'the account must be connected again',
-        unreachable: 'the server could not be reached',
-        unknown: 'an unknown error',
-    };
     switch (mailbox.connectionKind) {
         case 'ok':
             return { tone: 'ok', text: 'Connected' };
         case 'transient':
             return { tone: 'warn', text: 'Retrying: the last fetch failed' };
-        case 'permanent':
-            return { tone: 'stop', text: `Stopped: ${why[mailbox.connectionErrorKind ?? 'unknown'] ?? why['unknown']}` };
+        case 'permanent': {
+            const said = sentenceOf(mailbox.connectionErrorText);
+            return { tone: 'stop', text: said === null ? 'Stopped' : `Stopped. ${said}` };
+        }
         case 'pending_recheck':
             return { tone: 'warn', text: 'Waiting for the next fetch to check the connection' };
         default:
