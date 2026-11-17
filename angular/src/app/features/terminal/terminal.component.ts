@@ -7,8 +7,10 @@ import { Terminal, type ITheme } from '@xterm/xterm';
 import { FitAddon }      from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Store } from '@ngxs/store';
-import { HttpErrorResponse } from '@angular/common/http';
-import { AuthState, ElevationService, ErrorHandlerService, ThemeService, UserPreferencesService, type ResolvedTheme } from '@coolms/core-angular';
+import {
+    AuthState, declaredTypeOf, ELEVATION_CODE_REQUIRED_TYPE, ELEVATION_RETRY_TYPES, ElevationService, ErrorHandlerService,
+    SOMETHING_WENT_WRONG, ThemeService, UserPreferencesService, type ResolvedTheme,
+} from '@coolms/core-angular';
 import { TerminalService } from './terminal.service';
 import { TerminalRefusedError } from './terminal.types';
 import { TerminalHistoryService } from './terminal-history.service';
@@ -366,8 +368,9 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                     this.askSudo(line);
                     return;
                 }
-                this.term.writeln(`\x1b[31m✗ ${(err as Error).message ?? 'Command failed'}\x1b[0m`);
-                if (elevationRequired && !isSudoLine(line) && !/\bsudo\b/.test((err as Error).message)) {
+                const words = err instanceof TerminalRefusedError ? err.message : SOMETHING_WENT_WRONG;
+                this.term.writeln(`\x1b[31m✗ ${words}\x1b[0m`);
+                if (elevationRequired && !isSudoLine(line) && !/\bsudo\b/.test(words)) {
                     this.term.writeln(`\x1b[2muse sudo ${line}\x1b[0m`);
                 }
                 this.executing = false;
@@ -452,13 +455,13 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
             error: (err: unknown) => {
                 if (this.sudo !== sudo) return;
                 sudo.busy = false;
-                const status = err instanceof HttpErrorResponse ? err.status : 0;
-                if (status === 428) {
+                const type = declaredTypeOf(err);
+                if (type === ELEVATION_CODE_REQUIRED_TYPE) {
                     sudo.stage = 'code';
                     this.writeSudoPrompt();
                     return;
                 }
-                if (status === 403) {
+                if (type !== null && ELEVATION_RETRY_TYPES.includes(type)) {
                     sudo.tries += 1;
                     sudo.stage = 'password';
                     sudo.password = '';
@@ -467,13 +470,11 @@ export class TerminalComponent implements OnInit, OnDestroy, AfterViewInit {
                         this.endSudo();
                         return;
                     }
-                    this.term.writeln('Sorry, try again.');
+                    this.term.writeln(this.errors.humanize(err));
                     this.writeSudoPrompt();
                     return;
                 }
-                this.term.writeln(status === 429
-                    ? 'sudo: too many attempts; wait a few minutes and try again.'
-                    : `sudo: ${this.errors.humanize(err)}`);
+                this.term.writeln(`sudo: ${this.errors.humanize(err)}`);
                 this.endSudo();
             },
         });

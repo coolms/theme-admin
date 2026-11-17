@@ -30,7 +30,7 @@ export interface TerminalCompletions {
 
 /**
  * The server answered the execute request with a status instead of a stream.
- * `detail` is the problem detail when the body carried one, else `HTTP <status>`.
+ * `detail` is what the refusal says: a declared problem's detail, else the generic sentence.
  * A 403 is the one the terminal can act on: the session needs elevating.
  */
 export class TerminalRefusedError extends Error {

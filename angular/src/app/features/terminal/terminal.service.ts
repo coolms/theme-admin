@@ -2,7 +2,9 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { catchError, firstValueFrom, map, Observable, of } from 'rxjs';
-import { AppConfigState, audienceRefusalOf, AuthState, ELEVATION_REQUIRED_HEADER, Logout, SetTokens } from '@coolms/core-angular';
+import {
+    AppConfigState, audienceRefusalOf, AuthState, ELEVATION_REQUIRED_HEADER, Logout, refusalWords, SetTokens,
+} from '@coolms/core-angular';
 import { ShellApiService } from '../../api/shell-api.service';
 import { TerminalCompletions, TerminalCompleteResponse, TerminalExecuteEvent, TerminalRefusedError } from './terminal.types';
 
@@ -37,9 +39,10 @@ export class TerminalService {
                 .then(async res => {
                     // On 401: try one token refresh then retry
                     if (res.status === 401) {
+                        const refused = await this.wordsOf(res);
                         const refreshed = await this.tryRefresh();
-                        if (!refreshed) {
-                            subscriber.error(new Error('HTTP 401'));
+                        if (refreshed !== true) {
+                            subscriber.error(new TerminalRefusedError(401, refreshed ?? refused));
                             return;
                         }
                         // Abort the previous signal (already responded) and open a fresh one
@@ -49,11 +52,11 @@ export class TerminalService {
 
                     if (!res.ok || !res.body) {
                         // A refusal is decided before the stream opens, and it says
-                        // why: the problem detail is the line the terminal prints and
-                        // the reason the elevation prompt shows.
+                        // why: its words are the line the terminal prints and the
+                        // reason the elevation prompt shows.
                         subscriber.error(new TerminalRefusedError(
                             res.status,
-                            await this.detailOf(res),
+                            await this.wordsOf(res),
                             res.status === 403 && !!res.headers.get(ELEVATION_REQUIRED_HEADER),
                         ));
                         return;
@@ -87,25 +90,26 @@ export class TerminalService {
         });
     }
 
-    /** The problem detail of a refused request, or the bare status when the body has none. */
-    private async detailOf(res: Response): Promise<string> {
+    /** What a refused request says: a declared problem's detail, else the generic sentence (see refusalWords). */
+    private async wordsOf(res: Response): Promise<string> {
+        let body: unknown = null;
         try {
-            const body = await res.json() as { detail?: unknown };
-            if (typeof body.detail === 'string' && body.detail !== '') return body.detail;
-        } catch { /* not a problem document */ }
-        return `HTTP ${res.status}`;
+            body = await res.text();
+        } catch { /* no body to read */ }
+        return refusalWords(new HttpErrorResponse({ status: res.status, error: body }));
     }
 
     /**
-     * Attempt a token refresh. Returns true and updates the store on success. The session ends only when the refresh
-     * says it is over -- a 401, or a refusal of entry by audience -- never on another refusal (a token for the other
-     * interface, `wrong-interface`) or a failure to ask.
+     * Attempt a token refresh. Returns true and updates the store on success; otherwise the refusal's words, or null
+     * when there was no refresh to ask for. The session ends only when the refresh says it is over -- a 401, or a
+     * refusal of entry by audience -- never on another refusal (a token for the other interface, `wrong-interface`) or
+     * a failure to ask.
      */
-    private async tryRefresh(): Promise<boolean> {
+    private async tryRefresh(): Promise<true | string | null> {
         const refreshToken = this.store.selectSnapshot(AuthState.refreshToken);
         if (!refreshToken) {
             this.store.dispatch(new Logout());
-            return false;
+            return null;
         }
         try {
             const tokens = await firstValueFrom(this.api.refresh(refreshToken));
@@ -115,7 +119,7 @@ export class TerminalService {
             if ((e instanceof HttpErrorResponse && e.status === 401) || audienceRefusalOf(e) !== null) {
                 this.store.dispatch(new Logout());
             }
-            return false;
+            return refusalWords(e);
         }
     }
 
