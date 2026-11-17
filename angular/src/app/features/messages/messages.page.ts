@@ -19,7 +19,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
-import { AppConfigState, AuthState, CmsLoaderComponent } from '@coolms/core-angular';
+import { AppConfigState, AuthState, CmsLoaderComponent, refusalWords } from '@coolms/core-angular';
 import { CmsPageHeaderComponent, CmsPaneSplitterComponent, DateTimeFormatService, DateTimePipe, DayGroup, groupByDay, ToastService, UserAvatarComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
 import { VfsSecureImgDirective } from '../vfs/vfs-secure-img.directive';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
@@ -2492,8 +2492,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.api.addParticipants(id, [prompt.userId], this.shareHistoryOnAdd()).subscribe({
             next: conv => this.applyConversation(conv),
-            error: (err: { status?: number }) =>
-                this.error.set(err?.status === 403 ? 'Only the group owner can add members.' : 'Could not add the member.'),
+            error: (err: unknown) => this.error.set(refusalWords(err)),
         });
     }
 
@@ -2803,13 +2802,9 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.select(conv.id);
                 this.reloadList();
             },
-            error: (err: { status?: number }) => {
+            error: (err: unknown) => {
                 this.starting.set(false);
-                this.error.set(
-                    err?.status === 404
-                        ? 'One of the selected users was not found.'
-                        : 'Could not start the conversation.',
-                );
+                this.error.set(refusalWords(err));
             },
         });
     }
@@ -2991,8 +2986,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.api.addParticipants(id, [userId], this.shareHistoryOnAdd()).subscribe({
             next: conv => this.applyConversation(conv),
-            error: (err: { status?: number }) => {
-                this.error.set(err?.status === 403 ? 'Only the group owner can add members.' : 'Could not add the member.');
+            error: (err: unknown) => {
+                this.error.set(refusalWords(err));
             },
         });
     }
@@ -3005,8 +3000,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         this.api.removeParticipant(id, userId).subscribe({
             next: () => this.api.getConversation(id).subscribe({ next: conv => this.applyConversation(conv) }),
-            error: (err: { status?: number }) => {
-                this.error.set(err?.status === 403 ? 'Only the group owner can remove members.' : 'Could not remove the member.');
+            error: (err: unknown) => {
+                this.error.set(refusalWords(err));
             },
         });
     }
@@ -3024,10 +3019,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.selectedId.set(null);
                 this.conversations.set(this.conversations().filter(c => c.id !== id));
             },
-            error: (err: { status?: number }) => {
-                this.error.set(err?.status === 400
-                    ? 'The group owner cannot leave; transfer ownership first.'
-                    : 'Could not leave the group.');
+            error: (err: unknown) => {
+                this.error.set(refusalWords(err));
             },
         });
     }
@@ -3125,10 +3118,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
                 this.conversations.set(this.conversations().filter(c => c.id !== conv.id));
             },
-            error: (err: { status?: number }) => {
-                this.error.set(err?.status === 400
-                    ? 'The group owner cannot leave; transfer ownership first.'
-                    : 'Could not leave the conversation.');
+            error: (err: unknown) => {
+                this.error.set(refusalWords(err));
             },
         });
     }

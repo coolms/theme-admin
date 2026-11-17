@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
 import { Subject, of, throwError } from 'rxjs';
@@ -184,6 +185,23 @@ describe('CallDialAttemptService', () => {
 
         expect(s.attempt()).toBeNull();
         expect(s.placed()?.callId).toBe('c1');
+    });
+
+    it('Cancel answered 404 ends the attempt with the server\'s sentence, or the generic one when undeclared', () => {
+        const s = service();
+        s.dial('PJSIP/101', '123').subscribe();
+        cancelAnswer = () => throwError(() => new HttpErrorResponse({
+            status: 404, error: { type: '/errors/call/not-yours', detail: 'No call of yours was found.' },
+        }));
+        s.cancel().subscribe();
+        expect(s.attempt()?.state).toBe('not_placed');
+        expect(s.attempt()?.reason).toBe('No call of yours was found.');
+
+        const t = service();
+        t.dial('PJSIP/101', '123').subscribe();
+        cancelAnswer = () => throwError(() => new HttpErrorResponse({ status: 404, error: { type: 'about:blank', status: 404 } }));
+        t.cancel().subscribe();
+        expect(t.attempt()?.reason).toBe('Something went wrong. Try again.');
     });
 
     it('Cancel answered 500 surfaces the error and keeps the attempt placing', () => {

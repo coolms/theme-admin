@@ -1,3 +1,4 @@
+import { problemOf, refusalWords, sentenceOf } from '@coolms/core-angular';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -65,6 +66,25 @@ const FORMAT_OUTPUT_FALLBACK: readonly OutputFormatOption[] = [
     { value: 'docx', label: 'Word (.docx)' },
     { value: 'pdf', label: 'PDF (.pdf)' },
 ];
+
+/** The fields a template update's validation refusal names, by propertyPath. */
+const SUFFIX_FIELD = 'instanceNameSuffix';
+const FORMAT_FIELD = 'defaultOutputFormat';
+
+/** A validation refusal's first message per propertyPath; empty for any other failure. */
+export function fieldMessagesOf(err: HttpErrorResponse): Map<string, string> {
+    const fields = new Map<string, string>();
+    if (err.status !== 422) return fields;
+    const violations = problemOf(err)?.['violations'];
+    if (!Array.isArray(violations)) return fields;
+    for (const one of violations as unknown[]) {
+        if (typeof one !== 'object' || one === null) continue;
+        const { propertyPath, message } = one as { propertyPath?: unknown; message?: unknown };
+        const said = sentenceOf(message);
+        if (typeof propertyPath === 'string' && said !== null && !fields.has(propertyPath)) fields.set(propertyPath, said);
+    }
+    return fields;
+}
 
 @Component({
     selector: 'cms-edit-template-dialog',
@@ -395,24 +415,22 @@ export class EditTemplateDialogComponent {
     }
 
     /**
-     * Routes a 422 Problem-Details message to the field-specific
-     * error signal so the user sees the failure inline.
+     * A refused save in the server's words: a validation refusal's message for the name suffix or the output format
+     * beside that field, by its propertyPath; anything else under the form and in a toast.
      */
     private applyServerError(err: HttpErrorResponse): void {
-        const detail = this.extractDetail(err);
-        if (err.status === 422 && detail.includes('suffix')) {
-            this.suffixError.set(detail);
-        } else if (err.status === 422 && detail.includes('output format')) {
-            this.formatError.set(detail);
-        } else {
-            this.genericError.set(detail);
-            this.toast.error('Failed to update template: ' + detail);
+        const fields = fieldMessagesOf(err);
+        const suffix = fields.get(SUFFIX_FIELD);
+        const format = fields.get(FORMAT_FIELD);
+        if (suffix !== undefined) this.suffixError.set(suffix);
+        if (format !== undefined) this.formatError.set(format);
+        const placed = (suffix === undefined ? 0 : 1) + (format === undefined ? 0 : 1);
+        if (placed === 0 || fields.size > placed) {
+            const words = [...fields.entries()].find(([path]) => path !== SUFFIX_FIELD && path !== FORMAT_FIELD)?.[1]
+                ?? refusalWords(err);
+            this.genericError.set(words);
+            this.toast.error('The template was not updated', words);
         }
-    }
-
-    private extractDetail(err: HttpErrorResponse): string {
-        const body = err.error as { detail?: string; message?: string } | null;
-        return body?.detail ?? body?.message ?? err.message ?? 'Unknown error';
     }
 
     protected asChecked(event: Event): boolean {
