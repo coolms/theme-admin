@@ -5294,10 +5294,15 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * A folder row's menu: the folder action tree's nodes this page has a handler for, that the folder's flags offer,
      * in the tree's order; a busy folder offers none. Asked by key, it opens under the row with its first item focused.
+     * A folder offering nothing opens no menu.
      */
     onFolderMenu(ask: FolderMenuAsk): void {
         const row = this.railRows().find(r => r.folder.folder === ask.folder);
         const items = row === undefined ? [] : folderMenuItems(folderNodes(this.folderActionNodes()), row.flags ?? NO_FLAGS, this.naviGraph);
+        if (items.every(i => i.divider === true)) {
+            ask.event.preventDefault();
+            return;
+        }
         const run = (action: string): void => this.onFolderAction(action, ask.folder);
         if (ask.opener !== null) {
             this.contextMenu.openFrom(ask.opener, items, run, { focus: 'first' });
@@ -5317,7 +5322,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'mark-read':
                 this.folderJobs.markRead(mailboxId, folder);
                 break;
-            case 'create-child':
+            case 'new-folder':
                 this.openNewFolder(mailboxId, row);
                 break;
             case 'rename':

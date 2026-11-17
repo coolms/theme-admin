@@ -169,8 +169,10 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
     });
 
     const menuOf = (page: EmailMailboxPageComponent, folder: string): ContextMenuItem[] => {
+        const before = menus.length;
         page.onFolderMenu({ folder, event: new MouseEvent('contextmenu'), opener: null });
-        return menus[menus.length - 1] ?? [];
+        // A folder offering nothing opens no menu: its items are then none.
+        return menus.length === before ? [] : menus[menus.length - 1];
     };
     const busyOf = (page: EmailMailboxPageComponent, folder: string): string | null =>
         page.railRows().find(r => r.folder.folder === folder)?.flags?.busy ?? null;
