@@ -14,7 +14,7 @@ import { MediaAssetDto } from './media.types';
 import {
     MediaPickerEmit, MediaPickerMode, MediaPickerOptions, MediaPickerSelection, MediaPickerZone,
 } from './media-picker.types';
-import { AuthState, CmsLoaderComponent } from '@coolms/core-angular';
+import { AuthState, CmsLoaderComponent, refusalWords } from '@coolms/core-angular';
 interface PendingPick {
     readonly kind:  'asset' | 'collection';
     readonly value: string;
@@ -1462,14 +1462,9 @@ export class MediaPickerComponent implements OnDestroy {
                     this.loadUploadCollections();
                     this.activeTab.set('upload');
                 },
-                error: (err: { error?: { detail?: string }; message?: string; status?: number }) => {
+                error: (err: unknown) => {
                     this.creatingInFlight.set(false);
-                    const detail = err?.error?.detail ?? err?.message ?? 'Failed to create collection.';
-                    // 409 -> already exists; surface a friendlier hint without
-                    // hiding the server's detail message for other errors.
-                    this.createCollectionError.set(
-                        err?.status === 409 ? `Collection already exists: ${detail}` : detail,
-                    );
+                    this.createCollectionError.set(refusalWords(err));
                 },
             });
     }

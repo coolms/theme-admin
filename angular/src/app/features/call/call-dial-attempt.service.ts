@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { AuthState } from '@coolms/core-angular';
+import { AuthState, refusalWords } from '@coolms/core-angular';
 import { type Observable, Subscription, catchError, map, of, tap } from 'rxjs';
 
 import { CallApiService } from './call-api.service';
@@ -91,11 +91,12 @@ export class CallDialAttemptService {
         return this.callApi.cancelCall(a.callId).pipe(
             tap(dto => this.endAttempt(a.callId, dto.reason ?? 'cancelled by the caller')),
             map(() => undefined),
-            catchError((e: { status?: number; error?: { detail?: string } }) => {
-                if (e?.status === 409) {
+            catchError((e: unknown) => {
+                const status = (e as { status?: unknown } | null)?.status;
+                if (status === 409) {
                     this.markPlaced(a.callId);
-                } else if (e?.status === 404) {
-                    this.endAttempt(a.callId, e.error?.detail ?? 'No outbound call of yours with this id.');
+                } else if (status === 404) {
+                    this.endAttempt(a.callId, refusalWords(e));
                 } else {
                     throw e;
                 }

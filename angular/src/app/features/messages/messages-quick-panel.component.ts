@@ -6,7 +6,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { EMPTY, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, merge, switchMap, timer } from 'rxjs';
-import { AppConfigState, AuthState } from '@coolms/core-angular';
+import { AppConfigState, AuthState, refusalWords } from '@coolms/core-angular';
 import {
     DateTimeFormatService,
     DateTimePipe,
@@ -431,8 +431,7 @@ export class MessagesQuickPanelComponent implements OnInit {
                 }
                 this.open(conv.id);
             },
-            error: (err: { status?: number }) =>
-                this.error.set(err?.status === 404 ? 'User not found.' : 'Could not start the conversation.'),
+            error: (err: unknown) => this.error.set(refusalWords(err)),
         });
     }
 

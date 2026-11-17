@@ -1,5 +1,5 @@
 
-import { CmsLoaderComponent } from '@coolms/core-angular';
+import { CmsLoaderComponent, refusalWords } from '@coolms/core-angular';
 import { ModalComponent } from '@coolms/ui-angular';
 import { type DocumentTemplate } from '../shared/document-explorer.types';
 import { DIALOG_DATA, Dialog, DialogRef } from '@angular/cdk/dialog';
@@ -510,39 +510,8 @@ export class DocumentUploadDialog {
         return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
     }
 
-    /**
-     * Pulls a user-readable message out of an HTTP error. The backend
-     * surfaces validation failures as RFC 7807 problem-details with a
-     * `detail` field; older / non-API-Platform endpoints land on
-     * `message`. Falls back to a generic prefix when neither is set.
-     *
-     * Template-name conflict (409): the backend's
-     * `TemplateNameConflictListener` returns a structured payload with
-     * `suggestedName` + `existing` so a future enhancement can offer a
-     * one-click Replace / Save-with-new-name dialog. Today the human-
-     * readable `detail` (which embeds the suggested name) is enough
-     * for the user to rename their file and retry.
-     */
+    /** What a failed upload says: the server's words by the declared-problem rule (see refusalWords). */
     private extractErrorMessage(err: unknown): string {
-        if (typeof err === 'object' && err !== null) {
-            const e = err as {
-                status?: number;
-                error?: { detail?: string; type?: string; suggestedName?: string };
-                message?: string;
-            };
-            const detail = e.error?.detail;
-            if (e.status === 409 && typeof e.error?.type === 'string'
-                && e.error.type.includes('template-name-conflict')) {
-                return detail ?? 'A template with this name already exists in this folder.';
-            }
-            if (e.status === 422) {
-                return detail ?? 'Validation error.';
-            }
-            if (e.status === 415) {
-                return detail ?? 'Unsupported file format.';
-            }
-            return `Upload failed: ${detail ?? e.message ?? 'unknown error'}`;
-        }
-        return 'Upload failed.';
+        return refusalWords(err);
     }
 }
