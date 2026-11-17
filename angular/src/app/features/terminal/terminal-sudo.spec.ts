@@ -78,7 +78,7 @@ describe('TerminalComponent, sudo', () => {
                     },
                 },
                 { provide: ElevationService, useValue: { elevate } },
-                { provide: ErrorHandlerService, useValue: { humanize: () => 'the server says why' } },
+                { provide: ErrorHandlerService, useValue: new ErrorHandlerService() },
                 { provide: ThemeService, useValue: { resolved: signal('dark') } },
                 { provide: UserPreferencesService, useValue: { getPageState: () => null, setPageState: () => undefined } },
                 {
@@ -140,7 +140,9 @@ describe('TerminalComponent, sudo', () => {
 
     it('takes three wrong passwords, then gives up without running the line', () => {
         answers.push(() => throwError(() => REFUSED));
-        elevate.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        elevate.and.returnValue(throwError(() => new HttpErrorResponse({
+            status: 403, error: { type: '/errors/elevation/wrong-password', detail: 'Wrong password.' },
+        })));
         type('sudo ls');
         enter();
         for (let i = 0; i < 3; i++) {
@@ -149,7 +151,8 @@ describe('TerminalComponent, sudo', () => {
         }
 
         expect(elevate).toHaveBeenCalledTimes(3);
-        expect(screen().match(/Sorry, try again\./g)?.length).toBe(2);
+        // The server's sentence for each wrong password, as given.
+        expect(screen().match(/Wrong password\./g)?.length).toBe(2);
         expect(screen()).toContain('sudo: 3 incorrect attempts');
         expect(executed).toEqual(['sudo ls']);
         expect(screen()).not.toContain('wrong0');
@@ -158,7 +161,9 @@ describe('TerminalComponent, sudo', () => {
     it('asks for the code when the server says the password is right and a code is needed, and shows neither', () => {
         answers.push(() => throwError(() => REFUSED));
         elevate.and.returnValues(
-            throwError(() => new HttpErrorResponse({ status: 428 })),
+            throwError(() => new HttpErrorResponse({
+                status: 428, error: { type: '/errors/elevation/code-required', detail: 'A code from your authenticator is required.' },
+            })),
             of({ elevated: true }),
         );
         type('sudo ls');
@@ -265,5 +270,26 @@ describe('TerminalComponent, sudo', () => {
         expect(isSudoLine('  sudo')).toBeTrue();
         expect(isSudoLine('sudoers')).toBeFalse();
         expect(isSudoLine('echo sudo')).toBeFalse();
+    });
+
+    it('says the server\'s sentence for a throttled elevation, and the generic sentence for an undeclared failure', () => {
+        answers.push(() => throwError(() => REFUSED));
+        elevate.and.returnValue(throwError(() => new HttpErrorResponse({
+            status: 429, error: { type: '/errors/too-many-attempts', detail: 'Too many elevation attempts. You can try again in 5 minutes.' },
+        })));
+        type('sudo ls');
+        enter();
+        type(PASSWORD);
+        enter();
+        expect(screen()).toContain('sudo: Too many elevation attempts. You can try again in 5 minutes.');
+
+        answers.push(() => throwError(() => REFUSED));
+        elevate.and.returnValue(throwError(() => new HttpErrorResponse({ status: 429, error: { type: 'about:blank', status: 429 } })));
+        type('sudo ls');
+        enter();
+        type(PASSWORD);
+        enter();
+        expect(screen()).toContain('sudo: Something went wrong. Try again.');
+        expect(screen()).not.toContain('wait a few minutes');
     });
 });

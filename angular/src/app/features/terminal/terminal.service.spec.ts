@@ -33,8 +33,10 @@ describe('TerminalService -- a refusal keeps its reason', () => {
         return new Response(body, { status, headers: { 'Content-Type': type } });
     }
 
-    it('turns a 403 with a problem detail into a refusal carrying that detail', async () => {
-        fetchSpy.and.resolveTo(answer(403, JSON.stringify({ detail: '"sudo" needs an elevated session: elevate, then run it again.', status: 403 })));
+    it('turns a declared refusal into a refusal carrying its detail', async () => {
+        fetchSpy.and.resolveTo(answer(403, JSON.stringify({
+            type: '/errors/terminal/elevation-required', detail: '"sudo" needs an elevated session: elevate, then run it again.', status: 403,
+        })));
 
         const failure = await new Promise<unknown>(resolve => {
             service.execute('sudo pwd', '/').subscribe({ next: () => fail('no event was expected'), error: resolve });
@@ -47,15 +49,21 @@ describe('TerminalService -- a refusal keeps its reason', () => {
         expect(refused.message).toBe(refused.detail);
     });
 
-    it('falls back to the bare status when the body is not a problem document', async () => {
-        fetchSpy.and.resolveTo(answer(500, 'not json', 'text/plain'));
+    it('says the generic sentence, never the status or an undeclared detail, for any other answer', async () => {
+        for (const [status, body, type] of [
+            [500, 'not json', 'text/plain'],
+            [403, JSON.stringify({ detail: 'Access Denied.' }), 'application/problem+json'],
+            [500, JSON.stringify({ type: '/errors/500', detail: 'PDOException at line 12' }), 'application/problem+json'],
+        ] as const) {
+            fetchSpy.and.resolveTo(answer(status, body, type));
 
-        const failure = await new Promise<unknown>(resolve => {
-            service.execute('pwd', '/').subscribe({ next: () => fail('no event was expected'), error: resolve });
-        });
+            const failure = await new Promise<unknown>(resolve => {
+                service.execute('pwd', '/').subscribe({ next: () => fail('no event was expected'), error: resolve });
+            });
 
-        expect(failure).toBeInstanceOf(TerminalRefusedError);
-        expect((failure as TerminalRefusedError).detail).toBe('HTTP 500');
+            expect(failure).toBeInstanceOf(TerminalRefusedError);
+            expect((failure as TerminalRefusedError).detail).toBe('Something went wrong. Try again.');
+        }
     });
 
     it('sends the line once per execute, with the stream accepted and the shell location aboard', async () => {

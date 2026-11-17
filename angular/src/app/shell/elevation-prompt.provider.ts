@@ -3,7 +3,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { map, type Observable } from 'rxjs';
 import {
     ELEVATION_NOTICE, ELEVATION_PROMPT, ElevationService,
-    type ElevationNoticePort, type ElevationPromptPort, type ElevationPromptRequest,
+    type ElevationNoticePort, type ElevationPromptPort, type ElevationPromptRequest, SOMETHING_WENT_WRONG,
 } from '@coolms/core-angular';
 import { ToastService } from '@coolms/ui-angular';
 import { ElevationPromptDialogComponent } from './elevation-prompt-dialog.component';
@@ -39,16 +39,16 @@ class ElevationPromptDialogPort implements ElevationPromptPort {
  */
 class ElevationNoticeToast implements ElevationNoticePort {
     private static readonly TITLE = 'Elevation required';
-    /** The sentence the client writes when the server's own says nothing more than "denied". */
-    private static readonly GENERIC = 'This needs an elevated session.';
 
     private readonly toast     = inject(ToastService);
     private readonly elevation = inject(ElevationService);
 
     refused(refusal: string, action?: string): void {
-        // The action first, in the person's words; the server's sentence after it when it says more.
+        // The action first, in the person's words: with the server's sentence when it declared one, which already
+        // says what is needed; else that it needs an elevated session.
+        const declared = refusal !== SOMETHING_WENT_WRONG;
         const message = action
-            ? `${action} needs an elevated session.` + (refusal === ElevationNoticeToast.GENERIC ? '' : ` ${refusal}`)
+            ? (declared ? `${action}: ${refusal}` : `${action} needs an elevated session.`)
             : refusal;
         // One notice per sentence while it is on screen: a request that repeats on a debounce (a
         // preview as the person types) would otherwise stack one toast per refusal.

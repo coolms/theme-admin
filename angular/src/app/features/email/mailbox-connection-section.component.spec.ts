@@ -44,10 +44,16 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         });
     });
 
-    it('says the last fetch in words, a stopped mailbox with its reason', () => {
+    it('says the last fetch in words, a stopped mailbox with the server\'s sentence for why', () => {
         expect(connectionStatusOf(MAILBOX).text).toBe('Connected');
-        expect(connectionStatusOf({ ...MAILBOX, connectionKind: 'permanent', connectionErrorKind: 'auth_refused' }))
-            .toEqual({ tone: 'stop', text: 'Stopped: the server refused the sign-in' });
+        expect(connectionStatusOf({
+            ...MAILBOX, connectionKind: 'permanent', connectionErrorKind: 'auth_refused', connectionErrorText: 'Said by the server.',
+        })).toEqual({ tone: 'stop', text: 'Stopped. Said by the server.' });
+        // The kind is for behaviour: with no sentence from the server, no reason is made up for it.
+        for (const text of [null, undefined, '  ']) {
+            expect(connectionStatusOf({ ...MAILBOX, connectionKind: 'permanent', connectionErrorKind: 'auth_refused', connectionErrorText: text }))
+                .toEqual({ tone: 'stop', text: 'Stopped' });
+        }
         expect(connectionStatusOf({ ...MAILBOX, connectionKind: null }).text).toBe('Not fetched yet');
     });
 

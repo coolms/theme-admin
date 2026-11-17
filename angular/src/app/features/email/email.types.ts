@@ -39,6 +39,8 @@ export interface EmailMailboxDto {
     connectionSince?: string | null;
     /** Why a stopped mailbox stopped: `auth_refused`, `reauth_required`, `unreachable`, `unknown`. */
     connectionErrorKind?: string | null;
+    /** The server's sentence for why a stopped mailbox stopped; null when it has not failed. */
+    connectionErrorText?: string | null;
     /** What the provider said when the mailbox last failed, with credentials removed. Answered to owner and managers only. */
     connectionErrorDetail?: string | null;
     /** When the provider said it. It stays after the mailbox recovers. */

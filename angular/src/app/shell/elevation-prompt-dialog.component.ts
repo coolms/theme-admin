@@ -9,11 +9,11 @@ import {
     ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 import { DialogRef, DIALOG_DATA } from '@angular/cdk/dialog';
 import {
     ELEVATION_WARNING_FACTOR_MISSING, ELEVATION_WARNING_MFA_OFF, ELEVATION_WARNING_PASSWORD_NOT_SET,
-    ElevationService, type ElevationPromptRequest, type ElevationState, ErrorHandlerService,
+    ELEVATION_CODE_REQUIRED_TYPE, ElevationService, type ElevationPromptRequest, type ElevationState, ErrorHandlerService,
+    declaredTypeOf,
 } from '@coolms/core-angular';
 import { DateTimeFormatService, ModalComponent } from '@coolms/ui-angular';
 
@@ -144,7 +144,7 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
 
     /**
      * The code field shows from the start when the switch is on, and appears
-     * after a 428 when the server turns out to want one.
+     * when the server's refusal asks for the code.
      */
     readonly codeStage = signal(this.data.state.mfaRequired);
 
@@ -189,8 +189,8 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
             next: () => this.dialogRef.close(true),
             error: (err: unknown) => {
                 this.busy.set(false);
-                this.error.set(this.explain(err));
-                if (err instanceof HttpErrorResponse && err.status === 428) {
+                this.error.set(this.errors.humanize(err));
+                if (declaredTypeOf(err) === ELEVATION_CODE_REQUIRED_TYPE) {
                     this.codeStage.set(true);
                     setTimeout(() => this.codeEl?.nativeElement.focus());
                 }
@@ -206,24 +206,6 @@ export class ElevationPromptDialogComponent implements AfterViewInit {
     onEnter(event: Event): void {
         event.preventDefault();
         this.submit();
-    }
-
-    /**
-     * The status codes the endpoint documents, in the person's words. 428 is
-     * not an error: the password was right and a code is now asked for.
-     */
-    private explain(err: unknown): string {
-        if (!(err instanceof HttpErrorResponse)) return this.errors.humanize(err);
-
-        switch (err.status) {
-            case 403: return this.codeStage()
-                ? 'Wrong password, or a wrong or already used code.'
-                : 'Wrong password.';
-            case 428: return 'The password is right. Enter the code from your authenticator as well.';
-            case 429: return 'Too many attempts. Wait a few minutes and try again.';
-            case 409: return this.errors.humanize(err);  // says why this account cannot elevate
-            default:  return this.errors.humanize(err);
-        }
     }
 }
 
