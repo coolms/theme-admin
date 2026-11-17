@@ -37,8 +37,8 @@ const unelevated = {
     lifetimeSeconds: 900, lifetimeCeilingSeconds: 3600, mfaRequired: false, warnings: [],
 };
 
-function refuseForElevation(req: TestRequest): void {
-    req.flush({ detail: 'Access Denied.' }, {
+function refuseForElevation(req: TestRequest, body: object = { detail: 'Access Denied.' }): void {
+    req.flush(body, {
         status: 403, statusText: 'Forbidden', headers: { 'X-Elevation-Required': 'identity.administrator_role' },
     });
 }
@@ -99,6 +99,20 @@ describe('The elevation prompt opens only on a person\'s request', () => {
         http.expectOne(ELEVATION).flush(unelevated);
 
         expect(dialogOpen).toHaveBeenCalledTimes(3);
+        http.verify();
+    });
+
+    it('names the action and then says the server\'s sentence once, for a refusal the server declared', () => {
+        const http2 = TestBed.inject(HttpClient);
+        http2.put('/api/v1/themes/site', {}).subscribe({ error: () => undefined });
+        refuseForElevation(http.expectOne('/api/v1/themes/site'), {
+            type: '/errors/elevation-required', detail: 'This needs an elevated session. Elevate, then try again.',
+        });
+        http.expectOne(ELEVATION).flush(unelevated);
+
+        const toasts = TestBed.inject(ToastService).toasts();
+        expect(toasts.length).toBe(1);
+        expect(toasts[0].message).toBe('Saving themes site: This needs an elevated session. Elevate, then try again.');
         http.verify();
     });
 

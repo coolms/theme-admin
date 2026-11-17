@@ -44,10 +44,11 @@ class ElevationNoticeToast implements ElevationNoticePort {
     private readonly elevation = inject(ElevationService);
 
     refused(refusal: string, action?: string): void {
-        // The action first, in the person's words; the server's sentence after it when it declared one.
+        // The action first, in the person's words: with the server's sentence when it declared one, which already
+        // says what is needed; else that it needs an elevated session.
         const declared = refusal !== SOMETHING_WENT_WRONG;
         const message = action
-            ? `${action} needs an elevated session.` + (declared ? ` ${refusal}` : '')
+            ? (declared ? `${action}: ${refusal}` : `${action} needs an elevated session.`)
             : refusal;
         // One notice per sentence while it is on screen: a request that repeats on a debounce (a
         // preview as the person types) would otherwise stack one toast per refusal.
