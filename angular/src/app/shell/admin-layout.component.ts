@@ -248,6 +248,15 @@ import { PageReload } from './page-reload';
             border-bottom: 1px solid var(--cms-warning-subtle-border);
         }
         .coolms-main__elevation-ended span { flex: 1; }
+        .coolms-main__reload-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 1rem;
+            color: var(--cms-text-muted);
+            border-bottom: 1px solid var(--cms-border);
+        }
+        .coolms-main__reload-notice span { flex: 1; }
         .coolms-main {
             flex: 1;
             min-height: 0;
@@ -410,8 +419,15 @@ import { PageReload } from './page-reload';
                                         (click)="elevateForPage()">Elevate</button>
                             </div>
                         }
+                        @if (pageReload.grantNotice()) {
+                            <div class="coolms-main__reload-notice" role="status" data-test="reload-after-grant">
+                                <span>Reload to see everything you can now access.</span>
+                                <button type="button" class="cms-btn cms-btn-secondary cms-btn-sm" data-test="reload-page"
+                                        (click)="pageReload.reloadFromNotice()">Reload</button>
+                            </div>
+                        }
                         @for (generation of [pageReload.generation()]; track generation) {
-                            <router-outlet />
+                            <router-outlet (activate)="pageReload.shown($event)" />
                         }
                     }
                 </main>
