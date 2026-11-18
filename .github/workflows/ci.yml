@@ -13,6 +13,16 @@ permissions:
   contents: read
 
 jobs:
+  theme-version:
+    name: theme.yaml version is the latest release tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare theme.yaml with the latest release tag and the version under way
+        run: node tools/theme-version-check.mjs theme.yaml --tag "$(git describe --tags --abbrev=0 2>/dev/null)" --changelog CHANGELOG.md
+
   # The committed lockfile's advisories against .github/advisories.txt: a new one fails, a listed one that is gone
   # fails until its line is taken off (coolms/.github, npm-advisories.yml).
   advisories:
