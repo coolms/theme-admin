@@ -250,6 +250,18 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(pageOf().selectedCount()).toBe(2);
     }));
 
+    it('a row with no sender says the server\'s sender text, stored and server rows alike', fakeAsync(() => {
+        answer(page([
+            server('r-7', 'No sender on the server', { fromName: null, fromAddress: null, senderText: '(no sender)' }),
+            stored('m-6', 'No sender here', { fromName: null, fromAddress: undefined, senderText: '(no sender)' }),
+        ]));
+        draw();
+
+        for (const subject of ['No sender on the server', 'No sender here']) {
+            expect(rowOf(subject).querySelector('.mbx__row-from')?.textContent?.trim()).withContext(subject).toBe('(no sender)');
+        }
+    }));
+
     it('a server row keeps the checkbox\'s and the star\'s room empty: its sender, subject and date line up with a stored row\'s', fakeAsync(() => {
         answer(page([
             server('r-9', 'Package published', { sentAt: '2026-11-11T09:00:00+00:00' }),

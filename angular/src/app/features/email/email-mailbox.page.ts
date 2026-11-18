@@ -325,7 +325,7 @@ type PhonePane = 'folders' | 'message';
                                 <div class="mbx__search-summary">Results for “{{ searchQuery }}”</div>
                                 @for (h of searchResults(); track h.id) {
                                     <!-- Drawn as the server section draws a hit: the two read as one list in two parts. -->
-                                    <app-mail-hit-row testId="local-hit" [from]="h.fromName || h.fromAddress" [date]="hitDate(h)"
+                                    <app-mail-hit-row testId="local-hit" [from]="h.senderText || h.fromName || h.fromAddress" [date]="hitDate(h)"
                                                       [subject]="h.subject" [chips]="localChips(h)" [snippet]="h.snippet"
                                                       [unread]="h.seen === false" [active]="h.id === selectedMessage()?.id"
                                                       (chosen)="openSearchHit(h)" />
@@ -412,7 +412,7 @@ type PhonePane = 'folders' | 'message';
                                     }
                                     <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)">
                                         <div class="mbx__row-top">
-                                            <span class="mbx__row-from">{{ m.fromName || m.fromAddress || '(unknown)' }}</span>
+                                            <span class="mbx__row-from">{{ m.senderText || m.fromName || m.fromAddress }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime }}</span>
                                         </div>
                                         <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
@@ -510,7 +510,7 @@ type PhonePane = 'folders' | 'message';
                             <div class="mbx__detail-head">
                                 <h2 class="mbx__detail-subject">{{ msg.subject || '(no subject)' }}</h2>
                                 <div class="mbx__detail-meta">
-                                    <div><strong>From:</strong> {{ msg.fromName ? msg.fromName + ' · ' : '' }}{{ msg.fromAddress }}</div>
+                                    <div><strong>From:</strong> {{ msg.fromName || msg.fromAddress ? (msg.fromName ? msg.fromName + ' · ' : '') + (msg.fromAddress ?? '') : msg.senderText }}</div>
                                     <div><strong>To:</strong> {{ (msg.toAddresses || []).join(', ') }}</div>
                                     <div><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
                                 </div>
@@ -527,7 +527,7 @@ type PhonePane = 'folders' | 'message';
                                                     [class.mbx__thread-item--active]="t.id === msg.id"
                                                     [class.mbx__thread-item--unread]="t.seen === false"
                                                     (click)="openThreadMessage(t)">
-                                                <span class="mbx__thread-from">{{ t.fromName || t.fromAddress || '(unknown)' }}</span>
+                                                <span class="mbx__thread-from">{{ t.senderText || t.fromName || t.fromAddress }}</span>
                                                 <span class="mbx__thread-subject">{{ t.subject || t.snippet || '(no subject)' }}</span>
                                                 <span class="mbx__thread-date">{{ t.sentAt | appDateTime }}</span>
                                             </button>
@@ -5294,10 +5294,15 @@ export class EmailMailboxPageComponent implements OnInit {
     /**
      * A folder row's menu: the folder action tree's nodes this page has a handler for, that the folder's flags offer,
      * in the tree's order; a busy folder offers none. Asked by key, it opens under the row with its first item focused.
+     * A folder offering nothing opens no menu.
      */
     onFolderMenu(ask: FolderMenuAsk): void {
         const row = this.railRows().find(r => r.folder.folder === ask.folder);
         const items = row === undefined ? [] : folderMenuItems(folderNodes(this.folderActionNodes()), row.flags ?? NO_FLAGS, this.naviGraph);
+        if (items.every(i => i.divider === true)) {
+            ask.event.preventDefault();
+            return;
+        }
         const run = (action: string): void => this.onFolderAction(action, ask.folder);
         if (ask.opener !== null) {
             this.contextMenu.openFrom(ask.opener, items, run, { focus: 'first' });
@@ -5317,7 +5322,7 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'mark-read':
                 this.folderJobs.markRead(mailboxId, folder);
                 break;
-            case 'create-child':
+            case 'new-folder':
                 this.openNewFolder(mailboxId, row);
                 break;
             case 'rename':

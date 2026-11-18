@@ -171,9 +171,11 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         jobAnswer = () => of(running());
     });
 
-    const menuOf = (page: EmailMailboxPageComponent, folder: string): string[] => {
+    /** The menu a folder opens, or null when it opens none. */
+    const menuOf = (page: EmailMailboxPageComponent, folder: string): string[] | null => {
+        const before = menus.length;
         page.onFolderMenu({ folder, event: new MouseEvent('contextmenu'), opener: null });
-        return (menus[menus.length - 1] ?? []).map(i => i.id);
+        return menus.length === before ? null : menus[menus.length - 1].map(i => i.id);
     };
     const busyOf = (page: EmailMailboxPageComponent, folder: string): string | null =>
         page.railRows().find(r => r.folder.folder === folder)?.flags?.busy ?? null;
@@ -182,12 +184,41 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         (page as unknown as { onFolderJob(e: MailFolderJobEvent): void }).onFolderJob(evt);
     };
 
+    /** The folder action tree as the server serves it: its action names, context surface, and the list-level node. */
+    const served = (action: string, label: string, fact: string, order: number, extra: Record<string, unknown> = {}): NaviGraphNode => ({
+        id: `folder/${action}`, path: `/${action}`, title: label, parentId: null, sortOrder: order, isActive: true, isVisible: true,
+        children: [],
+        meta: { action, label, icon: 'folder', surface: 'context', showWhen: { field: fact, op: 'eq', value: true }, ...extra },
+    });
+    const SERVED_TREE: NaviGraphNode[] = [
+        served('new-folder', 'New folder', '_canCreateChild', 10),
+        served('rename', 'Rename', '_canRename', 20),
+        served('move', 'Move', '_canRename', 30),
+        served('mark-read', 'Mark all as read', '_canMarkRead', 40),
+        served('empty', 'Empty', '_canEmpty', 50, { danger: true }),
+        served('delete', 'Delete folder', '_canDelete', 60, { danger: true }),
+        served('new-top-folder', 'New folder', '_canCreateTop', 70, { surface: 'list', icon: 'folder-plus' }),
+    ];
+
+    it('with the tree the server serves: its names reach the menus, New folder stands below the list', () => {
+        const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
+
+        expect(menuOf(page, 'INBOX')).toEqual(['mark-read']);
+        expect(menuOf(page, 'Projects')).withContext('move waits for its dialog').toEqual(['new-folder', 'rename']);
+        expect(menuOf(page, 'Old')).withContext('busy: no menu opens').toBeNull();
+        expect(page.newFolderLabel()).toBe('New folder');
+
+        page.onFolderAction('new-folder', 'Projects');
+        expect(dialogs.length).withContext('New folder inside opens its dialog').toBe(1);
+    });
+
     it('each row offers exactly what its flags say, a busy folder none; an action not offered does nothing', () => {
         const page = build();
 
         expect(menuOf(page, 'INBOX')).toEqual(['mark-read']);
-        expect(menuOf(page, 'Projects')).toEqual(['create-child', 'rename']);
-        expect(menuOf(page, 'Old')).withContext('busy with Empty').toEqual([]);
+        expect(menuOf(page, 'Projects')).toEqual(['new-folder', 'rename']);
+        expect(menuOf(page, 'Old')).withContext('busy with Empty: no menu opens').toBeNull();
         expect(busyOf(page, 'Old')).toBe('empty');
         expect(page.newFolderLabel()).toBe('New folder');
 
@@ -204,7 +235,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
 
         expect(marks).toEqual([['mb1', 'INBOX']]);
         expect(busyOf(page, 'INBOX')).toBe('mark-read');
-        expect(menuOf(page, 'INBOX')).toEqual([]);
+        expect(menuOf(page, 'INBOX')).withContext('busy: no menu opens').toBeNull();
         const asked = treeAsked;
 
         hear(page, { outcome: 'done', count: 40 });
@@ -308,7 +339,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
 
     it('New folder inside asks for a name, creates it there, and says a \\Noinferiors refusal in the server\'s words', () => {
         const page = build();
-        page.onFolderAction('create-child', 'Projects');
+        page.onFolderAction('new-folder', 'Projects');
 
         expect(dialogs.length).toBe(1);
         expect(dialogs[0].title).toBe('New folder in Projects');

@@ -13,7 +13,7 @@ import { DateTimePipe } from '@coolms/ui-angular';
         <button type="button" class="mhr" [attr.data-test]="testId()"
                 [class.mhr--unread]="unread()" [class.mhr--active]="active()" (click)="chosen.emit()">
             <span class="mhr__top">
-                <span class="mhr__from">{{ from() || '(unknown)' }}</span>
+                <span class="mhr__from">{{ from() }}</span>
                 <span class="mhr__date">{{ date() | appDateTime }}</span>
             </span>
             <span class="mhr__subject">{{ subject() || '(no subject)' }}</span>

@@ -34,10 +34,10 @@ const problem = (status: number, body: Record<string, unknown>, headers?: HttpHe
 describe('folder actions: what the server\'s flags offer', () => {
     it('each flag offers its action and nothing else; no flag, no action', () => {
         expect(ids(only({ canMarkRead: true }))).toEqual(['mark-read']);
-        expect(ids(only({ canCreateChild: true }))).toEqual(['create-child']);
+        expect(ids(only({ canCreateChild: true }))).toEqual(['new-folder']);
         expect(ids(only({ canRename: true }))).toEqual(['rename']);
         expect(ids(only({ canMarkRead: true, canCreateChild: true, canRename: true })))
-            .toEqual(['mark-read', 'create-child', 'rename']);
+            .toEqual(['mark-read', 'new-folder', 'rename']);
         expect(ids(NO_FLAGS)).toEqual([]);
     });
 
@@ -48,7 +48,7 @@ describe('folder actions: what the server\'s flags offer', () => {
         expect(ids(withJob(all, 'mark-read'))).withContext('a job started here').toEqual([]);
         expect(withJob(all, 'mark-read').busy).toBe('mark-read');
         expect(withJob(only({ busy: 'empty' }), null).busy).withContext('the tree\'s own busy stays').toBe('empty');
-        for (const action of ['mark-read', 'create-child', 'rename']) {
+        for (const action of ['mark-read', 'new-folder', 'rename']) {
             expect(offers({ ...all, busy: 'empty' }, action)).withContext(action).toBeFalse();
         }
     });

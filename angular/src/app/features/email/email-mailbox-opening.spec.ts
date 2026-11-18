@@ -323,6 +323,11 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
             expect(openingHeader({})).toEqual({ subject: '', from: '', sentAt: null });
         });
 
+        it('a row with no name and no address shows the server\'s sender text, never words of its own', () => {
+            expect(openingHeader({ senderText: '(no sender)' }).from).toBe('(no sender)');
+            expect(openingHeader({ fromName: 'Ann', senderText: 'Ann' }).from).withContext('a name is shown as before').toBe('Ann');
+        });
+
         it('the neighbours: server rows only, before and after, none for a ref not listed', () => {
             const rows = [{ fromServer: true, ref: 'a' }, { fromServer: true, ref: 'b' }, { fromServer: true, ref: 'c' }, { fromServer: false, ref: null }];
             expect(serverNeighbours(rows, 'b')).toEqual(['a', 'c']);

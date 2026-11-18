@@ -44,10 +44,10 @@ describe('MailHitRowComponent', () => {
         expect(chosen.length).toBe(1);
     });
 
-    it('a hit without a sender or a subject says so', () => {
+    it('a hit without a subject says so; its sender line is what the host passes, with no words of its own', () => {
         const { el } = render({ from: null, subject: '' });
 
-        expect(lineOf(el, 'mhr__from')).toBe('(unknown)');
+        expect(lineOf(el, 'mhr__from')).toBe('');
         expect(lineOf(el, 'mhr__subject')).toBe('(no subject)');
         expect(el.querySelector('.mhr__snippet')).toBeNull();
     });
