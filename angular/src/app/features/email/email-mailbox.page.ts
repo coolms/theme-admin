@@ -325,7 +325,7 @@ type PhonePane = 'folders' | 'message';
                                 <div class="mbx__search-summary">Results for “{{ searchQuery }}”</div>
                                 @for (h of searchResults(); track h.id) {
                                     <!-- Drawn as the server section draws a hit: the two read as one list in two parts. -->
-                                    <app-mail-hit-row testId="local-hit" [from]="h.fromName || h.fromAddress" [date]="hitDate(h)"
+                                    <app-mail-hit-row testId="local-hit" [from]="h.senderText || h.fromName || h.fromAddress" [date]="hitDate(h)"
                                                       [subject]="h.subject" [chips]="localChips(h)" [snippet]="h.snippet"
                                                       [unread]="h.seen === false" [active]="h.id === selectedMessage()?.id"
                                                       (chosen)="openSearchHit(h)" />
@@ -412,7 +412,7 @@ type PhonePane = 'folders' | 'message';
                                     }
                                     <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)">
                                         <div class="mbx__row-top">
-                                            <span class="mbx__row-from">{{ m.fromName || m.fromAddress || '(unknown)' }}</span>
+                                            <span class="mbx__row-from">{{ m.senderText || m.fromName || m.fromAddress }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime }}</span>
                                         </div>
                                         <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
@@ -510,7 +510,7 @@ type PhonePane = 'folders' | 'message';
                             <div class="mbx__detail-head">
                                 <h2 class="mbx__detail-subject">{{ msg.subject || '(no subject)' }}</h2>
                                 <div class="mbx__detail-meta">
-                                    <div><strong>From:</strong> {{ msg.fromName ? msg.fromName + ' · ' : '' }}{{ msg.fromAddress }}</div>
+                                    <div><strong>From:</strong> {{ msg.fromName || msg.fromAddress ? (msg.fromName ? msg.fromName + ' · ' : '') + (msg.fromAddress ?? '') : msg.senderText }}</div>
                                     <div><strong>To:</strong> {{ (msg.toAddresses || []).join(', ') }}</div>
                                     <div><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
                                 </div>
@@ -527,7 +527,7 @@ type PhonePane = 'folders' | 'message';
                                                     [class.mbx__thread-item--active]="t.id === msg.id"
                                                     [class.mbx__thread-item--unread]="t.seen === false"
                                                     (click)="openThreadMessage(t)">
-                                                <span class="mbx__thread-from">{{ t.fromName || t.fromAddress || '(unknown)' }}</span>
+                                                <span class="mbx__thread-from">{{ t.senderText || t.fromName || t.fromAddress }}</span>
                                                 <span class="mbx__thread-subject">{{ t.subject || t.snippet || '(no subject)' }}</span>
                                                 <span class="mbx__thread-date">{{ t.sentAt | appDateTime }}</span>
                                             </button>

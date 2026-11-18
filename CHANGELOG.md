@@ -8,6 +8,9 @@ major number means here.
 
 ## Unreleased
 
+- **A message's sender is the server's words.** The list, the conversation, the search hits and the header while a
+  message opens show `senderText`: the name, else the address, else the server's words for a message with no sender
+  ("(no sender)", in the person's language). The admin's own "(unknown)" is gone.
 - **A folder's menu offers what the server's folder action tree declares, by its names.** The admin reads
   `new-folder` (New folder inside) and the list-level `new-top-folder` (New folder below the list, while
   `canCreateTop`), the names the server serves, in place of the names it used before the tree was served; `move` and

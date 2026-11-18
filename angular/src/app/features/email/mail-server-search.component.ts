@@ -91,7 +91,7 @@ export interface ServerHitFailed {
             </div>
 
             @for (h of rows(); track h.ref) {
-                <app-mail-hit-row testId="server-hit" [from]="h.from?.name || h.from?.address" [date]="h.date"
+                <app-mail-hit-row testId="server-hit" [from]="h.senderText || h.from?.name || h.from?.address" [date]="h.date"
                                   [subject]="h.subject" [chips]="chipsOf(h)" [size]="size(h)" [kept]="h.local"
                                   [unread]="h.seen === false" (chosen)="open(h)" />
                 @if (notice()?.ref === h.ref) {
@@ -245,6 +245,7 @@ export class MailServerSearchComponent {
             subject: hit.subject ?? null,
             fromName: hit.from?.name ?? null,
             fromAddress: hit.from?.address ?? null,
+            senderText: hit.senderText,
             sentAt: hit.date ?? null,
         };
         if (hit.local && typeof hit.localId === 'string' && hit.localId !== '') {

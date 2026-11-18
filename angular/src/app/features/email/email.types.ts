@@ -94,6 +94,9 @@ export interface ServerSearchCapability {
 
 /** One message the mail server found: its headers only. `local` with `localId` when the platform already holds it. */
 export interface ServerSearchHitDto {
+    /** The sender as the server writes it for display: the name, else the address, else its own words for none. */
+    senderText?: string;
+
     /** Names the message on the server; opaque, passed back as it came. */
     ref: string;
     folder: string;
@@ -359,6 +362,9 @@ export interface EmailFolderDto {
  * row nothing here stores carries `fromServer: true` and a `ref`, and no `id` at all (see mail-server-rows).
  */
 export interface EmailMessageDto {
+    /** The sender as the server writes it for display: the name, else the address, else its own words for none. */
+    senderText?: string;
+
     /** Absent on a server row (`fromServer`): read it only once isServerRow says the row is not one. */
     id: string;
     mailboxId?: string;
@@ -670,6 +676,9 @@ export interface InboundWorkflowOption {
  * stays in the index). `sentAt` is a Unix timestamp in **seconds** (or null).
  */
 export interface EmailSearchHitDto {
+    /** The sender as the server writes it for display: the name, else the address, else its own words for none. */
+    senderText?: string;
+
     id: string;
     mailboxId?: string;
     threadId?: string;

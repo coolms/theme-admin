@@ -13,6 +13,7 @@ export interface OpeningRow {
     readonly subject?: string | null;
     readonly fromName?: string | null;
     readonly fromAddress?: string | null;
+    readonly senderText?: string;
     readonly sentAt?: string | null;
 }
 
@@ -23,7 +24,7 @@ export function openingHeader(row: OpeningRow): OpeningHeader {
 
     return {
         subject: (row.subject ?? '').trim(),
-        from: name !== '' && address !== '' ? `${name} · ${address}` : name !== '' ? name : address,
+        from: name !== '' && address !== '' ? `${name} · ${address}` : name !== '' ? name : address !== '' ? address : (row.senderText ?? ''),
         sentAt: row.sentAt ?? null,
     };
 }
