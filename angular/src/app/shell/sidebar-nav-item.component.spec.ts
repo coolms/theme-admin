@@ -140,10 +140,16 @@ describe('SidebarNavItemComponent, a locked section', () => {
         const el = render(node('elevate'));
         const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
 
-        const event = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
-        link.dispatchEvent(event);
+        // What the item decided, read as the click leaves it; then the test stops the browser following the link,
+        // which would take the test page away.
+        let preventedByItem: boolean | undefined;
+        el.addEventListener('click', (seen) => {
+            preventedByItem = seen.defaultPrevented;
+            seen.preventDefault();
+        });
+        link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
 
-        expect(event.defaultPrevented).withContext('the browser opens the address').toBeFalse();
+        expect(preventedByItem).withContext('the browser opens the address').toBeFalse();
         expect(asks).toBe(0);
         expect(navigate).not.toHaveBeenCalled();
     });
