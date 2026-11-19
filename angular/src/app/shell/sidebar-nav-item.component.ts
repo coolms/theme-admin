@@ -80,7 +80,7 @@ import { afterElevation } from './after-elevation';
                     }
                 } @else if (isExternal()) {
                     <!-- An external page: its address, opened by the browser in a new tab. -->
-                    <a [attr.href]="externalHref()" target="_blank" rel="noopener"
+                    <a [attr.href]="externalHref()" target="_blank" rel="noopener noreferrer"
                        class="cms-nav-item"
                        [style.paddingLeft.px]="indentPx()"
                        [title]="collapsed() ? node().title : null">

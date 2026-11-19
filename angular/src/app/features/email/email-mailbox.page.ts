@@ -2,7 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
-    signal, viewChild,
+    signal, untracked, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -59,12 +59,13 @@ import {
     windowTitle, windowsToClose,
 } from './compose-windows';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { openMessageSource } from './message-source-viewer.component';
+import { MESSAGE_SOURCE_WORDS, MessageSourceComponent, downloadMessageEml } from './message-source.component';
 import { attachmentViewKind, openImageAttachment, openPdfAttachment } from './attachment-view';
 import { CrumbNamesService } from '../../shell/crumb-names.service';
 import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, archiveContextOf, handledNodes, messageFacts,
     moveMenuItems, paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
+    type MessageView,
 } from './message-actions';
 import {
     NO_SEND_SENTENCE, PREFILLED_ACTIONS, QUOTE_REFUSED_SENTENCE, addressesOf, forwardFiles, preparingSentence, prefillFailure, quoteFields,
@@ -198,6 +199,7 @@ type PhonePane = 'folders' | 'message';
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
+        MessageSourceComponent,
         MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
         NgTemplateOutlet,
         ScrollingModule,
@@ -474,7 +476,7 @@ type PhonePane = 'folders' | 'message';
                                               (action)="atAction(detailRow, $event); onDetailAction($event)" />
                         </div>
                         <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
-                        <div class="mbx__detail-scroll" data-test="detail-scroll">
+                        <div class="mbx__detail-scroll" data-test="detail-scroll" (keydown.escape)="leaveOriginal($event)">
                         @if (loadingDetail() || openFailure() !== null) {
                             <!-- What the row already has, at once; the body follows, or why it could not. -->
                             @let head = opening() ?? openFailure()?.header ?? null;
@@ -507,6 +509,13 @@ type PhonePane = 'folders' | 'message';
                                 <!-- A copy opened from the server that is no longer kept: it stays shown, and says so. -->
                                 <p class="mbx__evicted" role="status" data-test="reader-evicted">No longer kept here; open it from the server again.</p>
                             }
+                            <!-- What Copy source or Download message did, or why not. -->
+                            <p class="mbx__source-note" role="status" data-test="source-note">{{ sourceNote() }}</p>
+                            @if (originalShown() === msg.id) {
+                                <!-- The original in place of the message, kept for the next message; Show message, Escape or
+                                     closing the pane brings the message back. -->
+                                <app-message-source [messageId]="msg.id" data-test="reader-original" />
+                            } @else {
                             <div class="mbx__detail-head">
                                 <h2 class="mbx__detail-subject">{{ msg.subject || '(no subject)' }}</h2>
                                 <div class="mbx__detail-meta">
@@ -597,6 +606,7 @@ type PhonePane = 'folders' | 'message';
                                     </div>
                                 }
                             </div>
+                            }
                         } @else {
                             <div class="mbx__empty-wrap">
                                 <app-empty-state icon="envelope-open"
@@ -1268,6 +1278,10 @@ type PhonePane = 'folders' | 'message';
             scrollbar-gutter: stable;
         }
         .mbx__detail-scroll > * { flex-shrink: 0; }
+        /* The original wraps every line inside the pane: nothing scrolls sideways. */
+        .mbx__detail-scroll > app-message-source { min-width: 0; margin: 0 -20px; }
+        .mbx__source-note:empty { display: none; }
+        .mbx__source-note { margin: 0 0 12px; font-size: .8125rem; color: var(--cms-text-muted); }
         /* The message pane's row of actions, at the pane's top, above the subject. */
         .mbx__pane-row { margin: 0 -20px 12px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
         .mbx__evicted {
@@ -1680,6 +1694,15 @@ export class EmailMailboxPageComponent implements OnInit {
         ? trashRetentionText(this.mailboxes().find(m => m.id === this.selectedMailboxId())?.trashRetentionDays)
         : null);
     readonly selectedMessage = signal<EmailMessageDetailDto | null>(null);
+    /** How the reading pane shows the open message: kept from one message to the next until switched back or closed. */
+    readonly readingView = signal<MessageView>('message');
+    /** The open message whose original the reading pane shows in its place; null while it shows the message. */
+    readonly originalShown = computed(() => (this.readingView() === 'original' ? this.selectedMessage()?.id ?? null : null));
+    /** What Copy source or Download message last did, or why not; cleared with another message. */
+    readonly sourceNote = signal('');
+    private readonly originalPane = viewChild(MessageSourceComponent);
+    /** The message the source note was said for. */
+    private notedFor: string | null = null;
 
     /** On a phone, the folders stand in place of the list until one is chosen. */
     readonly phoneFolders = signal(false);
@@ -2091,11 +2114,11 @@ export class EmailMailboxPageComponent implements OnInit {
         if (!m) {
             return messageFacts([], this.archiveContext());
         }
-        return messageFacts([this.messages().find(x => x.id === m.id) ?? m], this.archiveContext());
+        return messageFacts([this.messages().find(x => x.id === m.id) ?? m], this.archiveContext(), this.originalShown());
     });
     readonly bulkFacts = computed(() => {
         const ids = this.selectedIds();
-        return messageFacts(this.messages().filter(m => ids.has(m.id)), this.archiveContext());
+        return messageFacts(this.messages().filter(m => ids.has(m.id)), this.archiveContext(), this.originalShown());
     });
     /** The open message's row: the tree's nodes for it that this page can run; none while no message is open. */
     readonly detailActions = computed(() => {
@@ -2186,7 +2209,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const ids = rowTargetIds(this.selectedIds(), m.id);
         const targets = this.messages().filter(x => ids.includes(x.id));
         this.actionPoint = { x: event.clientX, y: event.clientY };
-        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets, this.archiveContext()),
+        this.contextMenu.openFromNodes(event, handledNodes(this.messageNodes(), MESSAGE_ACTIONS_HANDLED), messageFacts(targets, this.archiveContext(), this.originalShown()),
             action => this.onMessageAction(action, ids));
     }
 
@@ -2256,9 +2279,22 @@ export class EmailMailboxPageComponent implements OnInit {
                 });
                 break;
             case 'show-original':
-                // One message's source, never several.
+                // One message's source, never several: in the reading pane, in the message's place.
                 if (ids.length === 1) {
-                    this.showOriginal(ids[0]);
+                    this.withOpen(ids[0], () => this.readingView.set('original'));
+                }
+                break;
+            case 'show-message':
+                this.readingView.set('message');
+                break;
+            case 'copy-source':
+                if (ids.length === 1) {
+                    void this.copySource();
+                }
+                break;
+            case 'download-eml':
+                if (ids.length === 1) {
+                    void downloadMessageEml(this.email, ids[0]).then(why => this.sourceNote.set(why ?? ''));
                 }
                 break;
             case 'delete':
@@ -2272,12 +2308,23 @@ export class EmailMailboxPageComponent implements OnInit {
         }
     }
 
-    /** A message's original source, in the full-screen viewer; focus goes back where it was when it closes. */
-    private showOriginal(id: string): void {
-        const open = this.selectedMessage();
-        const m = open?.id === id ? open : this.messages().find(x => x.id === id);
-        const subject = m?.subject ?? '';
-        openMessageSource(this.dialog, { messageId: id, subject: subject !== '' ? subject : '(no subject)' });
+    /** Copy source: what the original shows, or why there is nothing to copy. */
+    private async copySource(): Promise<void> {
+        const pane = this.originalPane();
+        this.sourceNote.set(pane === undefined ? MESSAGE_SOURCE_WORDS.copyNone : await pane.copy());
+    }
+
+    /** Escape in the reading pane returns from the original to the message, unless a menu, a dialog or a field holds it. */
+    leaveOriginal(event: Event): void {
+        if (this.originalShown() === null || event.defaultPrevented) {
+            return;
+        }
+        const target = event.target;
+        if (target instanceof Element && target.closest('[role="menu"], [role="dialog"], input, textarea, select') !== null) {
+            return;
+        }
+        event.preventDefault();
+        this.readingView.set('message');
     }
 
     /** Run `then` on this message open in the detail pane, opening it first when another one is. */
@@ -2410,6 +2457,19 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
+        // The pane closed: the next message opens as written. Another message keeps the view; the last one's note goes.
+        effect(() => {
+            const open = this.selectedMessage()?.id ?? null;
+            untracked(() => {
+                if (open === null) {
+                    this.readingView.set('message');
+                }
+                if (this.notedFor !== open) {
+                    this.notedFor = open;
+                    this.sourceNote.set('');
+                }
+            });
+        });
         searchCommits(this.searchKeys).pipe(takeUntilDestroyed()).subscribe(commit => this.onSearchCommit(commit));
         // Each time other rows are drawn: a row control that had focus gets it back when its row is drawn again.
         effect(onCleanup => {

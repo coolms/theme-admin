@@ -1,8 +1,12 @@
-import { type NaviGraphNode } from '@coolms/core-angular';
+import { provideHttpClient } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { Store } from '@ngxs/store';
+import { ErrorHandlerService, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { UNWORDED_REASON } from '@coolms/ui-angular';
 import { type EmailFolderTreeNodeDto } from './email.types';
 import {
-    MESSAGE_ACTIONS_HANDLED, archiveContextOf, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds,
+    MESSAGE_ACTIONS_HANDLED, NO_ARCHIVE_CONTEXT, archiveContextOf, handledNodes, messageFacts, moveMenuItems, paneActionsOf, rowTargetIds,
     type NodeConditions,
 } from './message-actions';
 
@@ -37,13 +41,13 @@ describe('message actions', () => {
     describe('messageFacts', () => {
         it('says one message, and what it can still become', () => {
             expect(messageFacts([{ seen: false, flagged: true, canArchive: true }])).toEqual({
-                _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true, _archive: 'can',
+                _view: 'message', _single: true, _replyAll: false, _anyUnread: true, _anyRead: false, _anyUnflagged: false, _anyFlagged: true, _anyCanArchive: true, _archive: 'can',
             });
         });
 
         it('says several, and offers each change any of them can take', () => {
             expect(messageFacts([{ seen: true, flagged: false, canArchive: false }, { seen: false, flagged: false, canArchive: true }])).toEqual({
-                _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true, _archive: 'can',
+                _view: 'message', _single: false, _replyAll: false, _anyUnread: true, _anyRead: true, _anyUnflagged: true, _anyFlagged: false, _anyCanArchive: true, _archive: 'can',
             });
         });
 
@@ -76,6 +80,68 @@ describe('message actions', () => {
             expect(messageFacts([{ replyAllUseful: true }, { replyAllUseful: true }])['_replyAll'])
                 .withContext('several targets').toBeFalse();
             expect(messageFacts([])['_replyAll']).toBeFalse();
+        });
+
+        it('always states _view: original only for the one message whose original the pane shows, else message', () => {
+            expect(messageFacts([{ id: 'm1' }])['_view']).withContext('nothing shown as its original').toBe('message');
+            expect(messageFacts([{ id: 'm1' }], NO_ARCHIVE_CONTEXT, 'm1')['_view']).toBe('original');
+            expect(messageFacts([{ id: 'm2' }], NO_ARCHIVE_CONTEXT, 'm1')['_view']).withContext('a row not open').toBe('message');
+            expect(messageFacts([{ id: 'm1' }, { id: 'm2' }], NO_ARCHIVE_CONTEXT, 'm1')['_view']).withContext('several').toBe('message');
+            expect(messageFacts([])['_view']).withContext('none').toBe('message');
+            expect(messageFacts([{}], NO_ARCHIVE_CONTEXT, 'm1')['_view']).withContext('a row with no id').toBe('message');
+        });
+    });
+
+    /**
+     * The view actions as the server's tree declares them (navi.toolbar.email.message), read by the NaviGraph service's
+     * own evaluation, where a condition on a fact not stated is false: each one shows exactly in its view.
+     */
+    describe('the served view nodes', () => {
+        const single = { field: '_single', op: 'eq', value: true };
+        const VIEW_NODES = [
+            node('/show-original', { action: 'show-original', label: 'Show original', group: 'view', overflow: 0, surface: 'both',
+                showWhen: { and: [single, { field: '_view', op: 'ne', value: 'original' }] } }),
+            node('/show-message', { action: 'show-message', label: 'Show message', group: 'view', surface: 'both',
+                showWhen: { and: [single, { field: '_view', op: 'eq', value: 'original' }] } }),
+            node('/copy-source', { action: 'copy-source', label: 'Copy source', group: 'view', overflow: 5, surface: 'both',
+                showWhen: { and: [single, { field: '_view', op: 'eq', value: 'original' }] } }),
+            node('/download-eml', { action: 'download-eml', label: 'Download message (.eml)', group: 'view', overflow: 0, surface: 'both',
+                showWhen: single }),
+        ];
+        let served: NaviGraphService;
+
+        beforeEach(() => {
+            TestBed.configureTestingModule({
+                providers: [
+                    provideHttpClient(),
+                    { provide: Router, useValue: {} },
+                    { provide: Store, useValue: { selectSnapshot: () => null } },
+                    { provide: ErrorHandlerService, useValue: {} },
+                ],
+            });
+            served = TestBed.inject(NaviGraphService);
+        });
+        const drawn = (facts: Record<string, unknown>): string[] =>
+            paneActionsOf(VIEW_NODES, facts, MESSAGE_ACTIONS_HANDLED, served).map(a => a.id);
+
+        it('shows Show original and Download while the message shows; Show message, Copy source and Download with the original', () => {
+            expect(drawn(messageFacts([{ id: 'm1' }]))).toEqual(['show-original', 'download-eml']);
+            expect(drawn(messageFacts([{ id: 'm1' }], NO_ARCHIVE_CONTEXT, 'm1'))).toEqual(['show-message', 'copy-source', 'download-eml']);
+        });
+
+        it('offers none of them for several messages', () => {
+            expect(drawn(messageFacts([{ id: 'm1' }, { id: 'm2' }], NO_ARCHIVE_CONTEXT, 'm1'))).toEqual([]);
+        });
+
+        it('would lose Show original for a host that stated no _view: why messageFacts always states it', () => {
+            const { _view: _, ...without } = messageFacts([{ id: 'm1' }]);
+            expect(drawn(without)).toEqual(['download-eml']);
+        });
+
+        it('has a handler on this page for each of the four', () => {
+            for (const id of ['show-original', 'show-message', 'copy-source', 'download-eml']) {
+                expect(MESSAGE_ACTIONS_HANDLED.has(id)).withContext(id).toBeTrue();
+            }
         });
     });
 

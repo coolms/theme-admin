@@ -8,6 +8,18 @@ major number means here.
 
 ## Unreleased
 
+- **A message's original shows in the reading pane, in the message's place.** Show original no longer opens a viewer
+  over the whole page: the source replaces the message in the reading pane, under the pane's row, and the view toggles
+  from the row and More actions as the server's message tree declares (`navi.toolbar.email.message`). While the message
+  shows: Show original and Download message (.eml). While the original shows: Show message (in the row), Copy source
+  (in the row while it fits, behind More actions first on a narrow row) and Download message. The view is kept from one
+  message to the next; Show message, Escape in the pane or closing the pane brings the message back; there is no
+  switch row. Long header lines wrap inside the pane,
+  nothing scrolls sideways. Copy source and Download message say what they did, or why not, under the row. The page
+  states `_view` (`message` or `original`) in every set of message facts -- the open message's, the checked rows' and a
+  row's menu -- since a condition on a fact not stated is false and Show original asks `_view` is not `original`.
+- A sidebar item that opens in a new tab sends no referrer (`rel="noopener noreferrer"`).
+
 - **A message's sender is the server's words.** The list, the conversation, the search hits and the header while a
   message opens show `senderText`: the name, else the address, else the server's words for a message with no sender
   ("(no sender)", in the person's language). The admin's own "(unknown)" is gone.
