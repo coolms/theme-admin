@@ -37,7 +37,7 @@ import { afterElevation } from '../../shell/after-elevation';
                     style="background: rgba(255,255,255,.08);
                            border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
-                    [title]="locked() ? 'Chat -- needs an elevated session' : unread() > 0 ? unread() + ' unread' : 'Chat'"
+                    [title]="locked() ? 'Chat \u2014 needs an elevated session' : unread() > 0 ? unread() + ' unread' : 'Chat'"
                     [attr.aria-label]="locked() ? 'Chat, needs an elevated session' : 'Chat'"
                     (click)="onClick()">
                 <i class="bi bi-chat-dots" style="font-size:.9rem"></i>

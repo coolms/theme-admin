@@ -1,4 +1,4 @@
-import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { LocationStrategy, NgClass, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -55,24 +55,38 @@ import { afterElevation } from './after-elevation';
                          elevated. Shown, never hidden -- hiding it left no way in (2026-10-12) -- and a
                          click asks for elevation first, then opens the section in place. Checked BEFORE the
                          special targets: a locked Terminal item opened its panel without asking. -->
-                    <a href="#"
-                       class="cms-nav-item cms-nav-item--locked"
-                       [class.active]="isActive()"
-                       [style.paddingLeft.px]="indentPx()"
-                       [title]="node().title + ' -- needs an elevated session'"
-                       [attr.aria-label]="node().title + ', needs an elevated session'"
-                       (click)="onLockedClick($event)">
-                        <ng-container [ngTemplateOutlet]="rowInner" />
-                    </a>
+                    <!-- Its real address, so the status bar and a new tab name where it goes; a plain click asks
+                         for elevation first. An action or a panel has no address: it is a button. -->
+                    @if (isSpecialTarget()) {
+                        <button type="button"
+                                class="cms-nav-item cms-nav-item--locked"
+                                [class.active]="isActive()"
+                                [style.paddingLeft.px]="indentPx()"
+                                [title]="lockedTitle()"
+                                [attr.aria-label]="node().title + ', needs an elevated session'"
+                                (click)="onLockedClick($event)">
+                            <ng-container [ngTemplateOutlet]="rowInner" />
+                        </button>
+                    } @else {
+                        <a [attr.href]="hrefFor()"
+                           class="cms-nav-item cms-nav-item--locked"
+                           [class.active]="isActive()"
+                           [style.paddingLeft.px]="indentPx()"
+                           [title]="lockedTitle()"
+                           [attr.aria-label]="node().title + ', needs an elevated session'"
+                           (click)="onLockedClick($event)">
+                            <ng-container [ngTemplateOutlet]="rowInner" />
+                        </a>
+                    }
                 } @else if (isSpecialTarget()) {
-                    <a href="#"
-                       class="cms-nav-item"
-                       [class.active]="isActive()"
-                       [style.paddingLeft.px]="indentPx()"
-                       [title]="collapsed() ? node().title : null"
-                       (click)="onSpecialClick($event)">
+                    <button type="button"
+                            class="cms-nav-item"
+                            [class.active]="isActive()"
+                            [style.paddingLeft.px]="indentPx()"
+                            [title]="collapsed() ? node().title : null"
+                            (click)="onSpecialClick($event)">
                         <ng-container [ngTemplateOutlet]="rowInner" />
-                    </a>
+                    </button>
                 } @else {
                     <a [routerLink]="routerLinkFor()"
                        class="cms-nav-item"
@@ -163,6 +177,8 @@ import { afterElevation } from './after-elevation';
             align-items: center;
         }
         /* The link fills the row; the toggle button sits at the far right. */
+        /* An action or a panel is a button, drawn as the links beside it. */
+        button.cms-nav-item { width: 100%; border: 0; background: transparent; font: inherit; text-align: left; }
         .cms-nav-tree-item__row > .cms-nav-item {
             flex: 1;
             min-width: 0;
@@ -252,6 +268,7 @@ export class SidebarNavItemComponent {
     readonly specialClick = output<NaviGraphNode>();
 
     private readonly router       = inject(Router);
+    private readonly location     = inject(LocationStrategy);
     private readonly elevation    = inject(ElevationService);
     private readonly naviGraph    = inject(NaviGraphService);
     private readonly sidebarState = inject(SidebarStateService);
@@ -323,6 +340,16 @@ export class SidebarNavItemComponent {
         return this.node().path.replace(/^\/admin/, '') || '/';
     }
 
+    /** The address a locked section opens at, as the browser names it (the app's base included). */
+    hrefFor(): string {
+        return this.location.prepareExternalUrl(this.routerLinkFor());
+    }
+
+    /** A locked section's tooltip. */
+    lockedTitle(): string {
+        return this.node().title + ' \u2014 needs an elevated session';
+    }
+
     isSpecialTarget(): boolean {
         const t = this.node().meta['target'];
         return t === 'action.logout' || t === '_blank' || t === 'action.terminal' || (typeof t === 'string' && t.startsWith('action.panel:'));
@@ -361,6 +388,10 @@ export class SidebarNavItemComponent {
      * A special target (the terminal, a panel) is opened the way it always is, by the host shell, once elevated.
      */
     onLockedClick(event: MouseEvent): void {
+        // A new tab or window opens the address itself; the page there offers its Elevate.
+        if (!this.isSpecialTarget() && (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1)) {
+            return;
+        }
         event.preventDefault();
         afterElevation(this.elevation, () => {
             if (this.isSpecialTarget()) {

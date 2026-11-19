@@ -124,14 +124,28 @@ describe('SidebarNavItemComponent, a locked section', () => {
         });
     });
 
-    it('shows the section with a lock, and no link that would open it unelevated', () => {
+    it('shows the section with a lock, its real address, and says it needs an elevated session', () => {
         const el = render(node('elevate'));
 
         expect(el.querySelector('.cms-nav-item__lock')).withContext('the lock').not.toBeNull();
         const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
         expect(link.classList.contains('cms-nav-item--locked')).toBeTrue();
-        expect(link.getAttribute('href')).toBe('#');
+        expect(link.getAttribute('href')).withContext('its address, not "#"').toBe('/backups');
+        expect(link.getAttribute('title')).toBe('Backups \u2014 needs an elevated session');
         expect(link.getAttribute('aria-label')).toBe('Backups, needs an elevated session');
+    });
+
+    it('lets a new tab open a locked section at its address, without asking here', () => {
+        const navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
+        const el = render(node('elevate'));
+        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+
+        const event = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+        link.dispatchEvent(event);
+
+        expect(event.defaultPrevented).withContext('the browser opens the address').toBeFalse();
+        expect(asks).toBe(0);
+        expect(navigate).not.toHaveBeenCalled();
     });
 
     it('asks for elevation on a click, and opens the section by the router once it is granted', () => {
@@ -191,7 +205,7 @@ describe('SidebarNavItemComponent, a locked section', () => {
     it('shows a locked terminal item locked, and opens it through the shell only once elevated', () => {
         const navigate = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
         const { el, opened } = renderTerminal(terminal('elevate'));
-        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        const link = el.querySelector('button.cms-nav-item') as HTMLButtonElement;
         expect(link.classList.contains('cms-nav-item--locked')).withContext('locked, not the special link').toBeTrue();
         expect(link.getAttribute('aria-label')).toBe('Terminal, needs an elevated session');
 
@@ -206,7 +220,7 @@ describe('SidebarNavItemComponent, a locked section', () => {
         answer = false;
         const { el, opened } = renderTerminal(terminal('elevate'));
 
-        (el.querySelector('a.cms-nav-item') as HTMLAnchorElement).click();
+        (el.querySelector('button.cms-nav-item') as HTMLButtonElement).click();
 
         expect(asks).toBe(1);
         expect(opened).toEqual([]);
@@ -214,7 +228,7 @@ describe('SidebarNavItemComponent, a locked section', () => {
 
     it('opens an allowed terminal item through the shell at once, as before', () => {
         const { el, opened } = renderTerminal(terminal('allowed'));
-        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        const link = el.querySelector('button.cms-nav-item') as HTMLButtonElement;
         expect(link.classList.contains('cms-nav-item--locked')).toBeFalse();
 
         link.click();

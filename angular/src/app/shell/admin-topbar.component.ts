@@ -91,7 +91,7 @@ import { CrumbNamesService } from './crumb-names.service';
                         <button type="button"
                                 class="cms-topbar-panel cms-btn cms-btn-sm position-relative"
                                 style="font-family: var(--cms-font-mono, monospace); font-size: .8rem; padding: 4px 10px"
-                                [title]="panel.toggle.label + (access === 'elevate' ? ' -- needs an elevated session' : '')"
+                                [title]="panel.toggle.label + (access === 'elevate' ? ' \u2014 needs an elevated session' : '')"
                                 [attr.aria-label]="panel.toggle.label + (access === 'elevate' ? ', needs an elevated session' : '')"
                                 (click)="panelToggle.emit(panel.id)">
                             @if (panel.toggle.text) {

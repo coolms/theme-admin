@@ -37,7 +37,7 @@ import { afterElevation } from '../../shell/after-elevation';
                     style="background: rgba(255,255,255,.08);
                            border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
-                    [title]="locked() ? 'My Calendar -- needs an elevated session' : 'My Calendar'"
+                    [title]="locked() ? 'My Calendar \u2014 needs an elevated session' : 'My Calendar'"
                     [attr.aria-label]="locked() ? 'My Calendar, needs an elevated session' : 'My Calendar'"
                     (click)="onClick()">
                 <i class="bi bi-calendar3" style="font-size:.9rem"></i>
