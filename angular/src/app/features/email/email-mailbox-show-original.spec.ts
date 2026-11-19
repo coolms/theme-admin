@@ -239,7 +239,7 @@ describe('EmailMailboxPageComponent -- show original', () => {
         expect(scroll().textContent).toContain('The body of m1.');
     });
 
-    it('another message opens as its message, and its row\'s facts say message while one original shows', async () => {
+    it('keeps the original for the next message, read afresh; the pane closed, the next message opens as written', async () => {
         open('m1');
         await settle();
         page().onDetailAction('show-original');
@@ -248,9 +248,19 @@ describe('EmailMailboxPageComponent -- show original', () => {
         expect(page().bulkFacts()['_view']).withContext('no rows checked').toBe('message');
         open('m2');
         await settle();
+        expect(scroll().querySelector('app-message-source')).withContext('the next message opens in its original').not.toBeNull();
+        expect(sources.has('m2')).withContext('its own source is read').toBeTrue();
+        expect(page().originalShown()).toBe('m2');
+        expect(page().detailFacts()['_view']).toBe('original');
+        await sourceShown('m2', 'Received: second');
+        expect(scroll().querySelector('[data-test="source-text"]')!.textContent).toBe('Received: second');
+        page().selectedMessage.set(null);
+        await settle();
+        open('m1');
+        await settle();
         expect(el().querySelector('app-message-source')).toBeNull();
-        expect(scroll().textContent).toContain('The body of m2.');
-        expect(page().originalShown()).toBeNull();
+        expect(scroll().textContent).toContain('The body of m1.');
+        expect(page().detailFacts()['_view']).toBe('message');
     });
 
     it('opens nothing for several messages', async () => {

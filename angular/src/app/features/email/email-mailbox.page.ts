@@ -65,6 +65,7 @@ import { CrumbNamesService } from '../../shell/crumb-names.service';
 import {
     LIST_ACTIONS_HANDLED, LIST_TOOLBAR_TREE, MESSAGE_ACTIONS_HANDLED, MESSAGE_TOOLBAR_TREE, archiveContextOf, handledNodes, messageFacts,
     moveMenuItems, paneActionsOf, ACTIONS_THAT_WAIT, type PendingAction, rowTargetIds, rowWithDetailState, withPending,
+    type MessageView,
 } from './message-actions';
 import {
     NO_SEND_SENTENCE, PREFILLED_ACTIONS, QUOTE_REFUSED_SENTENCE, addressesOf, forwardFiles, preparingSentence, prefillFailure, quoteFields,
@@ -511,7 +512,8 @@ type PhonePane = 'folders' | 'message';
                             <!-- What Copy source or Download message did, or why not. -->
                             <p class="mbx__source-note" role="status" data-test="source-note">{{ sourceNote() }}</p>
                             @if (originalShown() === msg.id) {
-                                <!-- The original in place of the message; Show message, or Escape, brings the message back. -->
+                                <!-- The original in place of the message, kept for the next message; Show message, Escape or
+                                     closing the pane brings the message back. -->
                                 <app-message-source [messageId]="msg.id" data-test="reader-original" />
                             } @else {
                             <div class="mbx__detail-head">
@@ -1692,8 +1694,10 @@ export class EmailMailboxPageComponent implements OnInit {
         ? trashRetentionText(this.mailboxes().find(m => m.id === this.selectedMailboxId())?.trashRetentionDays)
         : null);
     readonly selectedMessage = signal<EmailMessageDetailDto | null>(null);
+    /** How the reading pane shows the open message: kept from one message to the next until switched back or closed. */
+    readonly readingView = signal<MessageView>('message');
     /** The open message whose original the reading pane shows in its place; null while it shows the message. */
-    readonly originalShown = signal<string | null>(null);
+    readonly originalShown = computed(() => (this.readingView() === 'original' ? this.selectedMessage()?.id ?? null : null));
     /** What Copy source or Download message last did, or why not; cleared with another message. */
     readonly sourceNote = signal('');
     private readonly originalPane = viewChild(MessageSourceComponent);
@@ -2277,11 +2281,11 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'show-original':
                 // One message's source, never several: in the reading pane, in the message's place.
                 if (ids.length === 1) {
-                    this.withOpen(ids[0], () => this.originalShown.set(ids[0]));
+                    this.withOpen(ids[0], () => this.readingView.set('original'));
                 }
                 break;
             case 'show-message':
-                this.originalShown.set(null);
+                this.readingView.set('message');
                 break;
             case 'copy-source':
                 if (ids.length === 1) {
@@ -2320,7 +2324,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         event.preventDefault();
-        this.originalShown.set(null);
+        this.readingView.set('message');
     }
 
     /** Run `then` on this message open in the detail pane, opening it first when another one is. */
@@ -2453,12 +2457,12 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
-        // Another message open, or none: its message shows, and the last one's note goes.
+        // The pane closed: the next message opens as written. Another message keeps the view; the last one's note goes.
         effect(() => {
             const open = this.selectedMessage()?.id ?? null;
             untracked(() => {
-                if (this.originalShown() !== null && this.originalShown() !== open) {
-                    this.originalShown.set(null);
+                if (open === null) {
+                    this.readingView.set('message');
                 }
                 if (this.notedFor !== open) {
                     this.notedFor = open;
