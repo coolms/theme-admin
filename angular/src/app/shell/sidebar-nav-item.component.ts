@@ -78,6 +78,14 @@ import { afterElevation } from './after-elevation';
                             <ng-container [ngTemplateOutlet]="rowInner" />
                         </a>
                     }
+                } @else if (isExternal()) {
+                    <!-- An external page: its address, opened by the browser in a new tab. -->
+                    <a [attr.href]="externalHref()" target="_blank" rel="noopener"
+                       class="cms-nav-item"
+                       [style.paddingLeft.px]="indentPx()"
+                       [title]="collapsed() ? node().title : null">
+                        <ng-container [ngTemplateOutlet]="rowInner" />
+                    </a>
                 } @else if (isSpecialTarget()) {
                     <button type="button"
                             class="cms-nav-item"
@@ -345,6 +353,16 @@ export class SidebarNavItemComponent {
         return this.location.prepareExternalUrl(this.routerLinkFor());
     }
 
+    /** An external page, opened in a new tab: a link, not an action. */
+    isExternal(): boolean {
+        return this.node().meta['target'] === '_blank';
+    }
+
+    /** Where an external page is: the address the shell opened before. */
+    externalHref(): string {
+        return String(this.node().meta['routerLink'] ?? this.node().path);
+    }
+
     /** A locked section's tooltip. */
     lockedTitle(): string {
         return this.node().title + ' \u2014 needs an elevated session';
@@ -389,7 +407,7 @@ export class SidebarNavItemComponent {
      */
     onLockedClick(event: MouseEvent): void {
         // A new tab or window opens the address itself; the page there offers its Elevate.
-        if (!this.isSpecialTarget() && (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1)) {
+        if (!this.isSpecialTarget() && (event.ctrlKey || event.metaKey || event.shiftKey)) {
             return;
         }
         event.preventDefault();

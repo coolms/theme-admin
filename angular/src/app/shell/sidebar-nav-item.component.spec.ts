@@ -236,4 +236,17 @@ describe('SidebarNavItemComponent, a locked section', () => {
         expect(asks).toBe(0);
         expect(opened.map((x) => x.id)).toEqual(['t']);
     });
+
+    it('renders an external page as a link to its address that opens in a new tab, not through the shell', () => {
+        const { el, opened } = renderTerminal({
+            ...terminal('allowed'), id: 'x', path: '/docs', title: 'Docs',
+            meta: { target: '_blank', routerLink: 'https://docs.example.test/' },
+        } as NaviGraphNode);
+        const link = el.querySelector('a.cms-nav-item') as HTMLAnchorElement;
+        expect(link).withContext('a link, not a button').not.toBeNull();
+        expect(link.getAttribute('href')).toBe('https://docs.example.test/');
+        expect(link.getAttribute('target')).toBe('_blank');
+        expect(link.getAttribute('rel')).toBe('noopener');
+        expect(opened).withContext('the browser opens it').toEqual([]);
+    });
 });
