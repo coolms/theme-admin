@@ -51,6 +51,7 @@ import '../../../ui-angular/src/ui/pane-toolbar/cms-pane-toolbar.component.spec'
 import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';
 import '../../../ui-angular/src/ui/settings-shell/cms-settings-shell.component.spec';
 import '../../../ui-angular/src/ui/state/error-banner.component.spec';
+import '../../../ui-angular/src/ui/state/page-closure.spec';
 import '../../../ui-angular/src/ui/state/state.component.spec';
 import '../../../ui-angular/src/ui/tab-strip.component.spec';
 import '../../../ui-angular/src/ui/toast-outlet.component.spec';

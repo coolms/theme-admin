@@ -35,7 +35,7 @@ import { afterElevation } from '../../shell/after-elevation';
                     style="background: rgba(255,255,255,.08);
                            border: 1px solid var(--cms-chrome-edge);
                            border-radius: 20px; padding: 4px 10px"
-                    [title]="locked() ? 'Dynamic Chat -- needs an elevated session'
+                    [title]="locked() ? 'Dynamic Chat \u2014 needs an elevated session'
                         : newCount() > 0 ? newCount() + ' awaiting a reply' : 'Dynamic Chat'"
                     [attr.aria-label]="locked() ? 'Dynamic Chat, needs an elevated session' : 'Dynamic Chat'"
                     (click)="onClick()">

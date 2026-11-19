@@ -53,7 +53,7 @@ export class CallDialQuickAccessComponent {
     /** The same item answered 'elevate': shown with a lock, and opening it asks for elevation first (2026-10-12). */
     readonly locked = navLocked(this.nav, '/api/v1/call/records');
 
-    readonly label = computed(() => 'Dial a number' + (this.locked() ? ' -- needs an elevated session' : ''));
+    readonly label = computed(() => 'Dial a number' + (this.locked() ? ' \u2014 needs an elevated session' : ''));
 
     readonly signedIn = computed(() => !!this.store.selectSnapshot(AuthState.currentUser)?.id);
 

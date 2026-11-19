@@ -10,6 +10,7 @@ import {
     BottomDrawerService,
     ContextMenuComponent,
     ContextMenuService,
+    PAGE_CLOSURE,
     RELOAD_PAGE,
     DrawerService,
     ElevationRequiredComponent,
@@ -24,6 +25,7 @@ import { panelAccessIn } from './nav-offers';
 import { afterElevation } from './after-elevation';
 import { PageLock, routeOfNavItem } from './locked-page';
 import { PageReload } from './page-reload';
+import { ShellPageClosure } from './shell-page-closure';
 
 /**
  * Root admin shell -- three-zone layout: topbar / sidebar / main / right drawer.
@@ -43,6 +45,8 @@ import { PageReload } from './page-reload';
     // A page that shows a refusal for want of elevation loads again after the grant: made anew, not reloaded.
     providers: [
         PageReload,
+        ShellPageClosure,
+        { provide: PAGE_CLOSURE, useExisting: ShellPageClosure },
         { provide: RELOAD_PAGE, useFactory: () => { const pages = inject(PageReload); return () => pages.reload(); } },
     ],
     imports: [
@@ -248,6 +252,8 @@ import { PageReload } from './page-reload';
             border-bottom: 1px solid var(--cms-warning-subtle-border);
         }
         .coolms-main__elevation-ended span { flex: 1; }
+        /* The outlet renders nothing itself; as a flex item it would add a second gap before the page. */
+        .coolms-main > router-outlet { display: none; }
         .coolms-main__reload-notice {
             display: flex;
             align-items: center;
@@ -262,6 +268,9 @@ import { PageReload } from './page-reload';
             min-height: 0;
             display: flex;
             flex-direction: column;
+            /* The space between a notice above the page and the page itself, in the layout rather than on the
+               notice, so every notice above every page header gets it. */
+            gap: var(--cms-space-3);
             /* AUTO, not hidden. Pages that manage their own inner
                scroller — the explorers, the editors — bound themselves to this
                box and never overflow it, so they see no change: auto only
@@ -409,12 +418,13 @@ import { PageReload } from './page-reload';
                     <!-- ONE outlet for the page and the notice: the notice coming or going never remounts the page. -->
                     @if (pageAccess() === 'gate') {
                         <cms-elevation-required data-test="page-elevation-required"
-                            [title]="pageLock()!.title + ' needs an elevated session'" />
+                            [title]="pageLock()!.title + ' \u2014 needs an elevated session'" />
                     } @else {
-                        @if (pageAccess() === 'banner') {
+                        <!-- Only while the page's content stays visible: a page closed in place offers its own Elevate. -->
+                        @if (pageAccess() === 'banner' && !pageClosure.closed()) {
                             <div class="coolms-main__elevation-ended" role="status" data-test="page-elevation-ended">
                                 <i class="bi bi-shield-lock" aria-hidden="true"></i>
-                                <span>The elevated session has ended. {{ pageLock()!.title }} needs it again.</span>
+                                <span>Your elevated session has ended. Elevate again to continue.</span>
                                 <button type="button" class="cms-btn cms-btn-primary cms-btn-sm" data-test="elevate"
                                         (click)="elevateForPage()">Elevate</button>
                             </div>
@@ -518,6 +528,7 @@ export class AdminLayoutComponent implements OnInit {
     private readonly ctxMenuSvc = inject(ContextMenuService);
     private readonly elevation  = inject(ElevationService);
     protected readonly pageReload = inject(PageReload);
+    protected readonly pageClosure = inject(ShellPageClosure);
 
     /** Which console panels are open, and which of them asked for the whole body. */
     readonly panelOpen      = signal<ReadonlySet<string>>(new Set());

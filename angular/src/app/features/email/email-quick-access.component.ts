@@ -52,7 +52,7 @@ export class EmailQuickAccessComponent {
     /** The same item answered 'elevate': shown with a lock, and opening it asks for elevation first (2026-10-12). */
     readonly locked = navLocked(this.nav, '/api/v1/email/mailboxes');
 
-    readonly label = computed(() => 'Email' + (this.locked() ? ' -- needs an elevated session' : ''));
+    readonly label = computed(() => 'Email' + (this.locked() ? ' \u2014 needs an elevated session' : ''));
 
     // eslint-disable-next-line @typescript-eslint/unbound-method -- ngxs static selector reference, same pattern as the sibling quick-access components
     readonly signedIn = computed<boolean>(() => this.store.selectSnapshot(AuthState.currentUser)?.id != null);
