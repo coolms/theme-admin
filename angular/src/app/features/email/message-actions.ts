@@ -88,13 +88,17 @@ export function archiveFactOfAll(
  * one message or several, whether any of them can still be marked read / unread / starred / unstarred, whether the
  * server says any of them can be archived (a missing or null `canArchive` is no), and whether the target is one
  * message for which the server says Reply all reaches someone Reply does not (a missing or null `replyAllUseful` is no).
- * `_archive` is the target's Archive (archiveFactOfAll), read with the mailbox's archive context.
+ * `_archive` is the target's Archive (archiveFactOfAll), read with the mailbox's archive context. `_view` is how the
+ * reading pane shows the target: `original` only for the one message whose original it shows, else `message` -- always
+ * stated, since a condition on a fact not stated is false, and Show original asks `_view` is not `original`.
  */
 export function messageFacts(
-    targets: readonly Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful' | 'folder'>[],
+    targets: readonly (Pick<EmailMessageDto, 'seen' | 'flagged' | 'canArchive' | 'replyAllUseful' | 'folder'> & { readonly id?: string })[],
     archive: ArchiveContext = NO_ARCHIVE_CONTEXT,
-): Record<string, boolean | ArchiveFact> {
+    originalShown: string | null = null,
+): Record<string, boolean | ArchiveFact | MessageView> {
     return {
+        _view:          targets.length === 1 && targets[0].id === originalShown ? 'original' : 'message',
         _single:        targets.length === 1,
         _replyAll:      targets.length === 1 && targets[0].replyAllUseful === true,
         _anyUnread:     targets.some(m => !(m.seen ?? false)),
@@ -117,6 +121,9 @@ export function moveMenuItems(
         : [{ id: 'none', label: 'No other folders', disabled: true }];
 }
 
+/** How the reading pane shows a message: the message itself, or its original source in its place. */
+export type MessageView = 'message' | 'original';
+
 /** The tree whose nodes are the list pane's actions. */
 export const LIST_TOOLBAR_TREE = 'navi.toolbar.email.list';
 
@@ -125,7 +132,8 @@ export const LIST_ACTIONS_HANDLED: ReadonlySet<string> = new Set(['refresh']);
 
 /** The actions on messages this page can run (onMessageAction): a node naming any other is not drawn. */
 export const MESSAGE_ACTIONS_HANDLED: ReadonlySet<string> = new Set([
-    'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete', 'show-original',
+    'reply', 'reply-all', 'forward', 'archive', 'mark-read', 'mark-unread', 'star', 'unstar', 'move', 'delete',
+    'show-original', 'show-message', 'copy-source', 'download-eml',
 ]);
 
 /** The action a node names: its `action`, else its path -- as the bars and the menu run it. */

@@ -252,7 +252,7 @@ describe('SidebarNavItemComponent, a locked section', () => {
         expect(link).withContext('a link, not a button').not.toBeNull();
         expect(link.getAttribute('href')).toBe('https://docs.example.test/');
         expect(link.getAttribute('target')).toBe('_blank');
-        expect(link.getAttribute('rel')).toBe('noopener');
+        expect(link.getAttribute('rel')).toBe('noopener noreferrer');
         expect(opened).withContext('the browser opens it').toEqual([]);
     });
 });
