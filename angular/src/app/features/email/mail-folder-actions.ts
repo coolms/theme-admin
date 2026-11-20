@@ -9,8 +9,8 @@ import { refusalWords, sentenceOf } from './server-words';
 /** The tree whose nodes are the actions on a folder: a folder row's menu, and New folder at the foot of the list. */
 export const FOLDER_TOOLBAR_TREE = 'navi.toolbar.email.folder';
 
-/** The actions on a folder this page can run. Delete is not served yet: a node naming it is not drawn. */
-export type FolderAction = 'mark-read' | 'new-folder' | 'rename' | 'empty';
+/** The actions on a folder this page can run. */
+export type FolderAction = 'mark-read' | 'new-folder' | 'rename' | 'move' | 'empty' | 'delete';
 
 /** The list-level action: a folder at the top level. */
 export const NEW_TOP_FOLDER = 'new-top-folder';
@@ -20,10 +20,12 @@ const FLAG_OF: Readonly<Record<FolderAction, keyof FolderFlags>> = {
     'mark-read': 'canMarkRead',
     'new-folder': 'canCreateChild',
     rename: 'canRename',
+    move: 'canRename',
     empty: 'canEmpty',
+    delete: 'canDelete',
 };
 
-export const FOLDER_ACTIONS_HANDLED: ReadonlySet<string> = new Set<FolderAction>(['mark-read', 'new-folder', 'rename', 'empty']);
+export const FOLDER_ACTIONS_HANDLED: ReadonlySet<string> = new Set<FolderAction>(['mark-read', 'new-folder', 'rename', 'move', 'empty', 'delete']);
 
 /** A folder's flags as the tree gives them. */
 export type FolderFlags = Required<Pick<EmailFolderTreeNodeDto,
@@ -83,35 +85,16 @@ export function offers(flags: FolderFlags, action: string): boolean {
     return flags[FLAG_OF[action as FolderAction]] === true;
 }
 
-const node = (path: string, title: string, action: string, icon: string, fact: string, order: number, danger = false): NaviGraphNode => ({
-    id: `folder${path}`, path, title, parentId: null, sortOrder: order, isActive: true, isVisible: true, children: [],
-    meta: {
-        action, icon, label: title, surface: 'both', showWhen: { field: fact, op: 'eq', value: true },
-        ...(danger ? { danger: true } : {}),
-    },
-});
 
-/**
- * The folder actions until the server serves its folder action tree: the same nodes it is to serve, each shown by the
- * flag that offers it. Replaced by the server's as soon as it answers with any node.
- */
-export const FOLDER_NODES_UNTIL_SERVED: readonly NaviGraphNode[] = [
-    node('/mark-read', 'Mark all as read', 'mark-read', 'envelope-open', '_canMarkRead', 10),
-    node('/new-folder', 'New folder inside', 'new-folder', 'folder-plus', '_canCreateChild', 20),
-    node('/rename', 'Rename or move', 'rename', 'pencil', '_canRename', 30),
-    node('/empty', 'Empty', 'empty', 'trash3', '_canEmpty', 35, true),
-];
-
-/** The list-level node until the tree is served: New folder, at the foot of the folder list. */
-export const NEW_FOLDER_NODE_UNTIL_SERVED: NaviGraphNode = {
-    ...node('/new-top-folder', 'New folder', NEW_TOP_FOLDER, 'folder-plus', '_canCreateTop', 40),
-    meta: { action: NEW_TOP_FOLDER, icon: 'folder-plus', label: 'New folder', position: 'list',
-        showWhen: { field: '_canCreateTop', op: 'eq', value: true } },
-};
-
-/** The nodes to draw: the server's when it answered with any, else the ones above. */
+/** The nodes to draw: the server's tree as it serves it; none while it serves none. */
 export function folderNodes(served: readonly NaviGraphNode[]): readonly NaviGraphNode[] {
-    return served.length > 0 ? served : [...FOLDER_NODES_UNTIL_SERVED, NEW_FOLDER_NODE_UNTIL_SERVED];
+    return served;
+}
+
+/** What a node is called where it is drawn: its label, else its title. */
+export function nodeLabel(n: NaviGraphNode): string {
+    const label = n.meta['label'];
+    return typeof label === 'string' && label !== '' ? label : n.title;
 }
 
 /** The list-level node (New folder) of the nodes, or null when the tree has none. */
@@ -148,7 +131,7 @@ export function folderMenuItems(
         }
         const icon = n.meta['icon'];
         items.push({
-            id: action, label: n.title,
+            id: action, label: nodeLabel(n),
             ...(typeof icon === 'string' && icon !== '' ? { icon } : {}),
             ...(n.meta['danger'] === true ? { danger: true } : {}),
         });
