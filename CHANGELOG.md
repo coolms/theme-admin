@@ -8,6 +8,8 @@ major number means here.
 
 ## Unreleased
 
+- katex 0.18.11: GHSA-238p-pmpm-9mq7 (low, prototype pollution bypassing trust) is cleared. Formulas render as before: katex 0.18 renames its classes (`base` to `katex-base`, `strut` to `katex-strut`), and the stylesheet loaded is always the same version's.
+
 - **A message's original shows in the reading pane, in the message's place.** Show original no longer opens a viewer
   over the whole page: the source replaces the message in the reading pane, under the pane's row, and the view toggles
   from the row and More actions as the server's message tree declares (`navi.toolbar.email.message`). While the message
