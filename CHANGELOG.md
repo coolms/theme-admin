@@ -8,6 +8,13 @@ major number means here.
 
 ## Unreleased
 
+- **Every live screen reads again when its channel comes back.** After a reconnect, or after the server ends a channel
+  and the fresh token is granted, nothing published meanwhile is replayed, so: the mail page reads the open mailbox's
+  folders and list, every mailbox's unread number and its running folder jobs again (`mail.resync`); the aliases
+  section reads its list; the notification bell, the calendar's events card and a document generation's page read
+  again; the live-calls wallboard seeds itself again from the call records. Chat, the dynamic chat queue and an
+  incoming call already did.
+
 - katex 0.18.11: GHSA-238p-pmpm-9mq7 (low, prototype pollution bypassing trust) is cleared. Formulas render as before: katex 0.18 renames its classes (`base` to `katex-base`, `strut` to `katex-strut`), and the stylesheet loaded is always the same version's.
 
 - **A message's original shows in the reading pane, in the message's place.** Show original no longer opens a viewer

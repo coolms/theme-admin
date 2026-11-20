@@ -1,6 +1,7 @@
 import { EnvironmentInjector, createEnvironmentInjector, signal } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CentrifugoClientService } from '@coolms/ui-angular';
+import { NEVER } from 'rxjs';
 import { EmailLiveEventsService } from './email-live-events.service';
 import { type EmailFolderDto, type EmailMessageDto } from './email.types';
 import { MailLiveFollower, type MailView, readMessagesChanged } from './mail-messages-changed';
@@ -92,7 +93,10 @@ class FakeServer {
             unsubscribe: () => undefined,
         };
 
-        return { isConnected: signal(true), connect: () => Promise.resolve(), getOrCreateSubscription: () => subscription };
+        return {
+            isConnected: signal(true), connect: () => Promise.resolve(), getOrCreateSubscription: () => subscription,
+            resubscribedTo: () => NEVER,
+        };
     }
 
     publish(data: unknown): void {

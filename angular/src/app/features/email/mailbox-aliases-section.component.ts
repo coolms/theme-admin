@@ -225,7 +225,7 @@ export class MailboxAliasesSectionComponent {
         if (uid !== null) {
             this.live.watch(uid)
                 .pipe(
-                    filter(evt => evt.type === 'mail.aliases.changed' && evt.mailboxId === this.mailboxId()),
+                    filter(evt => evt.type === 'mail.resync' || (evt.type === 'mail.aliases.changed' && evt.mailboxId === this.mailboxId())),
                     takeUntilDestroyed(this.destroyRef),
                 )
                 .subscribe({ next: () => this.load(), error: () => undefined });

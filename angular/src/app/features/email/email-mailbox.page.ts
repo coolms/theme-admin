@@ -9,7 +9,8 @@ import { Location, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router, type ParamMap } from '@angular/router';
 import {
-    Observable, Subject, type Subscription, catchError, debounceTime, filter, forkJoin, interval, map, of, switchMap, take,
+    Observable, Subject, type Subscription, catchError, debounceTime, filter, forkJoin, interval, map, merge, of,
+    switchMap, take,
 } from 'rxjs';
 import { Store } from '@ngxs/store';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
@@ -1609,6 +1610,8 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly contacts = inject(ContactsService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly emailLive = inject(EmailLiveEventsService);
+    /** Each time the mail channel came back: the folder jobs read their state again, as after a reconnect. */
+    private readonly resyncs = new Subject<void>();
     /**
      * Applies each mail change by seq (a late or repeated event changes nothing), and reads the open folder's list
      * again, once per burst, when messages arrive in it from another tab, device or a restore.
@@ -1726,7 +1729,7 @@ export class EmailMailboxPageComponent implements OnInit {
         empty: (mailboxId, folder, uidCeiling, uidValidity) => this.email.emptyFolder(mailboxId, folder, uidCeiling, uidValidity),
         read: (mailboxId, jobId) => this.email.folderJob(mailboxId, jobId),
         realtime: () => this.emailLive.connected(),
-        reconnects: () => this.emailLive.reconnects(),
+        reconnects: () => merge(this.emailLive.reconnects(), this.resyncs),
         ended: (job, mine) => this.folderJobEnded(job, mine),
         lost: job => this.foldersChangedIn(job.mailboxId),
         refused: (err, mailboxId, folder, action) => this.folderJobRefused(err, mailboxId, folder, action),
@@ -2563,7 +2566,9 @@ export class EmailMailboxPageComponent implements OnInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: evt => {
-                        if ('mail.sync.finished' === evt.type) {
+                        if ('mail.resync' === evt.type) {
+                            this.onResynced();
+                        } else if ('mail.sync.finished' === evt.type) {
                             this.syncBar()?.frame(evt);
                         } else if ('mail.messages.changed' === evt.type) {
                             this.onMessagesChanged(evt);
@@ -2622,6 +2627,22 @@ export class EmailMailboxPageComponent implements OnInit {
      * last applied to the mailbox's number, by either this nudge or a change event.
      * Owner-only channel auth is enforced server-side.
      */
+    /**
+     * The mail channel came back after a reconnect or a server unsubscribe, and nothing published meanwhile was
+     * replayed: the open mailbox's folders and list, every mailbox's unread number and the running folder jobs are read
+     * again.
+     */
+    private onResynced(): void {
+        if (this.selectedMailboxId() !== null) {
+            this.loadFolders(true);
+        }
+        this.email.listMailboxes().subscribe({
+            next: list => this.loadMailboxUnread(list),
+            error: () => { /* the badges stay as they are on a transient failure */ },
+        });
+        this.resyncs.next();
+    }
+
     private onMailReceived(evt: EmailLiveEvent): void {
         const unseen = evt.mailboxUnseen;
         // The mark moves only with a number applied: a frame without one leaves the order to the next that has one.

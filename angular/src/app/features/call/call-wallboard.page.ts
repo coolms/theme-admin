@@ -227,18 +227,8 @@ export class CallWallboardComponent implements OnInit {
             .sort((a, b) => b.startedAtMs - a.startedAtMs);
     });
 
-    ngOnInit(): void {
-        this.titleSvc.set('Live calls');
-
-        // Subscribe FIRST so a transition during the seed fetch isn't missed.
-        this.liveEvents.watchBroadcast().pipe(
-            takeUntilDestroyed(this.destroyRef),
-        ).subscribe({
-            next:  ev => this.upsert(this.fromEvent(ev)),
-            error: () => { /* realtime unavailable — the board just stays empty/Offline */ },
-        });
-
-        // Seed the board with recent non-terminal calls (don't clobber live entries).
+    /** Seed the board with recent non-terminal calls (don't clobber live entries). */
+    private seed(): void {
         this.callApi.listCallRecordsPage({ pageSize: 50 }).pipe(
             takeUntilDestroyed(this.destroyRef),
         ).subscribe({
@@ -251,6 +241,24 @@ export class CallWallboardComponent implements OnInit {
             },
             error: () => { /* seed is best-effort */ },
         });
+    }
+
+    ngOnInit(): void {
+        this.titleSvc.set('Live calls');
+
+        // Subscribe FIRST so a transition during the seed fetch isn't missed.
+        this.liveEvents.watchBroadcast().pipe(
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe({
+            next:  ev => this.upsert(this.fromEvent(ev)),
+            error: () => { /* realtime unavailable — the board just stays empty/Offline */ },
+        });
+
+        this.seed();
+        // Back after a reconnect or a server unsubscribe: the calls that started or ended meanwhile were not replayed.
+        this.liveEvents.broadcastResynced().pipe(
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(() => this.seed());
 
         // 1s tick: advance `now` + prune ended cards that have aged past the linger.
         interval(1_000).pipe(

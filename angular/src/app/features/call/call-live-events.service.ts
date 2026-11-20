@@ -72,6 +72,14 @@ export class CallLiveEventsService {
         return this.observeChannel('calls.broadcast');
     }
 
+    /**
+     * Each time the wallboard firehose comes back after a reconnect or a server unsubscribe: what was published
+     * meanwhile is not replayed, so the board is read again.
+     */
+    broadcastResynced(): Observable<void> {
+        return this.client.resubscribedTo('calls.broadcast');
+    }
+
     /** Subscribe to one agent's own-calls channel (`calls.{agentUuid}`). */
     watchAgent(agentUuid: string): Observable<CallLiveEvent> {
         return this.observeChannel(`calls.${agentUuid}`);

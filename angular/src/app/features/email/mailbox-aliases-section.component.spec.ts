@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { Store } from '@ngxs/store';
-import { type Observable, of, throwError } from 'rxjs';
+import { type Observable, Subject, of, throwError } from 'rxjs';
 import { AuthState, ErrorHandlerService } from '@coolms/core-angular';
 import { CentrifugoClientService, ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
@@ -17,6 +17,8 @@ const OWN = 'support@example.test';
 /** The person's mail channel: every publication reaches every handler still on it; unsubscribing stops them all. */
 class FakeChannel {
     handlers: ((ctx: { data: unknown }) => void)[] = [];
+    /** The channel coming back after a reconnect or a server unsubscribe. */
+    readonly resubscribed = new Subject<void>();
     readonly subscription = {
         state: 'subscribed',
         on: (event: string, h: (ctx: { data: unknown }) => void) => {
@@ -35,7 +37,10 @@ class FakeChannel {
     };
 
     client(): object {
-        return { isConnected: signal(true), connect: () => Promise.resolve(), getOrCreateSubscription: () => this.subscription };
+        return {
+            isConnected: signal(true), connect: () => Promise.resolve(), getOrCreateSubscription: () => this.subscription,
+            resubscribedTo: () => this.resubscribed.asObservable(),
+        };
     }
 
     publish(data: unknown): void {
@@ -334,6 +339,18 @@ describe('MailboxAliasesSectionComponent -- the addresses a mailbox sends from',
         expect(email.listAliases).toHaveBeenCalledTimes(2);
         expect(row(host, PENDING.address).textContent).toContain('Confirmed');
         expect(buttonsOf(row(host, PENDING.address))).toEqual(['Withdraw']);
+    });
+
+    it('the mail channel coming back reads the list again: what changed meanwhile was not replayed', async () => {
+        const fixture = await render({ canManage: true, aliases: [PENDING] });
+        const host = fixture.nativeElement as HTMLElement;
+        expect(email.listAliases).withContext('the subject: read once on opening').toHaveBeenCalledTimes(1);
+
+        served = { canManage: true, aliases: [{ ...PENDING, status: 'confirmed', confirmedAt: '2026-11-09T10:00:00+00:00', expiresAt: null }] };
+        channel.resubscribed.next();
+        fixture.detectChanges();
+        expect(email.listAliases).toHaveBeenCalledTimes(2);
+        expect(row(host, PENDING.address).textContent).toContain('Confirmed');
     });
 
     it('two watchers of the person\'s channel share it: one that stops leaves the other listening', async () => {
