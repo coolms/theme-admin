@@ -38,8 +38,13 @@ export interface EmailSyncFinishedEvent {
 }
 
 /** Every event of the person's mail channel. */
+/** The channel came back (a reconnect, or a fresh subscribe after a server unsubscribe): nothing was replayed. */
+export interface MailResyncEvent {
+    readonly type: 'mail.resync';
+}
+
 export type EmailEvent =
-    | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent
+    | MailResyncEvent | EmailLiveEvent | EmailSyncFinishedEvent | MailMessagesChangedEvent | MailAliasesChangedEvent | MailFlagRefusedEvent
     | MailDraftsChangedEvent | MailFolderJobEvent;
 
 /** A whole number, zero or more. */
@@ -100,6 +105,9 @@ export class EmailLiveEventsService {
         return new Observable<EmailEvent>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
+            // Back after a reconnect or a server unsubscribe: what was published meanwhile is not replayed, so the
+            // consumers read again.
+            const resynced = this.client.resubscribedTo(channel).subscribe(() => subscriber.next({ type: 'mail.resync' }));
 
             this.client.connect()
                 .then(() => {
@@ -123,6 +131,7 @@ export class EmailLiveEventsService {
 
             return () => {
                 unsubscribed = true;
+                resynced.unsubscribe();
                 const sub = this.tryGetSubscription(channel);
                 if (sub !== null) {
                     if (publicationHandler !== null) {

@@ -30,6 +30,9 @@ export class NotificationLiveEventsService {
         return new Observable<NotificationPingEvent>(subscriber => {
             let unsubscribed = false;
             let publicationHandler: ((ctx: { data: unknown }) => void) | null = null;
+            // Back after a reconnect or a server unsubscribe: what was published meanwhile is not replayed, so the
+            // consumer reads again, as for a publication.
+            const resynced = this.client.resubscribedTo(channel).subscribe(() => subscriber.next({ type: 'resync' }));
 
             this.client.connect()
                 .then(() => {
@@ -53,6 +56,7 @@ export class NotificationLiveEventsService {
 
             return () => {
                 unsubscribed = true;
+                resynced.unsubscribe();
                 const sub = this.tryGetSubscription(channel);
                 if (sub !== null) {
                     if (publicationHandler !== null) {
