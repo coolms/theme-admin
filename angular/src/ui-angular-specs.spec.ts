@@ -60,6 +60,7 @@ import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
 import '../../../ui-angular/src/notification/centrifugo-client.resubscribe.spec';
 import '../../../ui-angular/src/notification/session-ended-on-disconnect.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';
+import '../../../ui-angular/src/util/date-time-format.day-label.spec';
 import '../../../ui-angular/src/util/date-time-format.row.spec';
 import '../../../ui-angular/src/util/user-calendar-preferences.service.spec';
 import '../../../ui-angular/src/vfs/vfs-write-access.service.spec';
