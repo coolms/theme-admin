@@ -50,9 +50,9 @@ describe('mail-list-scroll', () => {
     it('a row\'s height is fixed from the root font size; the set size is the total or -1', () => {
         const tokens = (name: string, fallback: number): number =>
             ({ '--cms-list-row-height-two-line': 52, '--cms-list-row-height-phone-two-line': 60 } as Record<string, number>)[name] ?? fallback;
-        // Desktop: two lines, the two-line density token whatever the font.
+        // Desktop: two lines, the two-line density token, taller where a larger font needs it.
         expect(listRowHeight(false, 16, tokens)).toBe(52);
-        expect(listRowHeight(false, 20, tokens)).toBe(52);
+        expect(listRowHeight(false, 20, tokens)).toBe(54);
         // Phone: three lines, at least the phone's two-line token, taller as the font grows.
         expect(listRowHeight(true, 16, tokens)).toBe(72);
         expect(listRowHeight(true, 20, tokens)).toBeGreaterThan(72);

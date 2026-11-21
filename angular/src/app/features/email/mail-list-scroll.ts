@@ -70,8 +70,10 @@ export function pageRefusal(error: unknown): PageRefusal {
 /** A row's height in px, the same for every row: three lines of text, its padding and its border. */
 export function listRowHeight(phone: boolean, rootFontPx: number, tokenPx: (name: string, fallback: number) => number = cssTokenPx): number {
     if (!phone) {
-        // Two lines: the sender and the date; the subject and the preview on one line.
-        return tokenPx('--cms-list-row-height-two-line', 52);
+        // Two lines: the sender and the date; the subject and the preview on one line. Lines of .875rem and .8125rem at
+        // line-height 1.5, a 2px gap, a 1px border; never shorter than the two-line row, taller at a larger font.
+        const two = Math.ceil((0.875 + 0.8125) * 1.5 * rootFontPx + 2 + 1);
+        return Math.max(tokenPx('--cms-list-row-height-two-line', 52), two);
     }
     // Three lines, of .875rem, .8125rem and .75rem at line-height 1.4, two 2px gaps, 6px padding above and below, a 1px
     // border; never shorter than a phone's two-line row.
