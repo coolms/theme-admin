@@ -144,7 +144,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
             inside(long.querySelector<HTMLElement>('[data-part="star"]')!, 'the star');
             inside(long.querySelector<HTMLElement>('.mbx__row-date')!, 'the date');
 
-            for (const cls of ['.mbx__row-from', '.mbx__row-subject', '.mbx__row-snippet']) {
+            for (const cls of ['.mbx__row-from', '.mbx__row-text']) {
                 const text = long.querySelector<HTMLElement>(cls)!;
                 const style = getComputedStyle(text);
                 expect(style.textOverflow).withContext(`${cls} ends in an ellipsis`).toBe('ellipsis');
@@ -154,10 +154,18 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
 
             // The server row's empty room keeps its sender, subject and date in line with the stored row's.
             const at = (r: HTMLElement, cls: string): DOMRect => box(r.querySelector(cls)!);
+            // Two lines at desktop width: the subject and the muted preview share the second, the row is the two-line height.
+            const middle = (r: DOMRect): number => (r.top + r.bottom) / 2;
+            // One line: the smaller preview shares the subject's baseline, so their middles are within a few px.
+            expect(Math.abs(middle(at(long, '.mbx__row-snippet')) - middle(at(long, '.mbx__row-subject'))))
+                .withContext('the preview follows the subject on its line').toBeLessThanOrEqual(3);
+            expect(at(long, '.mbx__row-snippet').left).withContext('after it').toBeGreaterThan(at(long, '.mbx__row-subject').left);
+            expect(box(long).height).withContext('the two-line row').toBe(52);
+
             expect(box(fromServer).width).withContext('the server row is the list\'s width').toBe(region.clientWidth);
             expect(at(fromServer, '.mbx__row-from').left).toBe(at(long, '.mbx__row-from').left);
             expect(at(fromServer, '.mbx__row-subject').left).toBe(at(long, '.mbx__row-subject').left);
-            expect(at(fromServer, '.mbx__row-subject').right).toBe(at(long, '.mbx__row-subject').right);
+            expect(at(fromServer, '.mbx__row-text').right).toBe(at(long, '.mbx__row-text').right);
             expect(at(fromServer, '.mbx__row-date').right).toBe(at(long, '.mbx__row-date').right);
         });
     }

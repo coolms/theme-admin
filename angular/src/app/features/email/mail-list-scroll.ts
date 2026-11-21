@@ -68,9 +68,26 @@ export function pageRefusal(error: unknown): PageRefusal {
 }
 
 /** A row's height in px, the same for every row: three lines of text, its padding and its border. */
-export function listRowHeight(rootFontPx: number): number {
-    // Lines of .875rem, .8125rem and .75rem at line-height 1.5, two 2px gaps, 10px padding above and below, a 1px border.
-    return Math.ceil((0.875 + 0.8125 + 0.75) * 1.5 * rootFontPx + 2 * 2 + 2 * 10 + 1);
+export function listRowHeight(phone: boolean, rootFontPx: number, tokenPx: (name: string, fallback: number) => number = cssTokenPx): number {
+    if (!phone) {
+        // Two lines: the sender and the date; the subject and the preview on one line.
+        return tokenPx('--cms-list-row-height-two-line', 52);
+    }
+    // Three lines, of .875rem, .8125rem and .75rem at line-height 1.4, two 2px gaps, 6px padding above and below, a 1px
+    // border; never shorter than a phone's two-line row.
+    const lines = Math.ceil((0.875 + 0.8125 + 0.75) * 1.4 * rootFontPx + 2 * 2 + 2 * 6 + 1);
+    return Math.max(tokenPx('--cms-list-row-height-phone-two-line', 60), lines);
+}
+
+/** A design token's length in px, as the page's stylesheet sets it; `fallback` where it is not set or not in px. */
+export function cssTokenPx(name: string, fallback: number): number {
+    if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') {
+        return fallback;
+    }
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const px = /^(\d+(?:\.\d+)?)px$/.exec(value);
+
+    return px === null ? fallback : Number(px[1]);
 }
 
 /** The root font size in px; 16 where it cannot be read. */
