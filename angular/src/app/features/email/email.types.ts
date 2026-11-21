@@ -477,6 +477,20 @@ export interface EmailMessageDetailDto extends EmailMessageDto {
     bodyText?: string | null;
     /** Whether the sanitised HTML still references remote content (gated behind "Load images"). */
     hasRemoteContent?: boolean | null;
+    /** Whether the message's remote images are shown, as the server decides it, with the sentence the bar says. */
+    remoteContent?: RemoteContentDto | null;
+}
+
+/**
+ * A message's remote images as the server decides them: `none` (it names none), `blocked`, or `allowed` and why
+ * (`message`: allowed for this message; `sender`: its sender is on the person's list; `setting` or `installation`: by the
+ * person's own setting or the installation's rule). `sentence` is what the bar says, in the reader's language; null
+ * when there is nothing to say.
+ */
+export interface RemoteContentDto {
+    readonly state: 'none' | 'blocked' | 'allowed';
+    readonly reason: string | null;
+    readonly sentence: string | null;
 }
 
 /**

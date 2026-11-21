@@ -237,9 +237,10 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(quick().getBoundingClientRect().bottom).withContext('under a short message too').toBeCloseTo(section().getBoundingClientRect().bottom, 0);
     });
 
-    it('is one line reading "Reply to <name>…", grows with the text to six lines, then scrolls inside', async () => {
+    it('is one line reading "Reply…" and named for the sender, grows with the text to six lines, then scrolls inside', async () => {
         await open(3);
-        expect(box().placeholder).withContext('the sender\'s name').toBe('Reply to Ann Lee…');
+        expect(box().placeholder).withContext('as in the Workspace').toBe('Reply…');
+        expect(box().getAttribute('aria-label')).withContext('the sender\'s name').toBe('Quick reply to Ann Lee');
         expect(box().getBoundingClientRect().height).withContext('one line').toBeCloseTo(heightFor(1), 0);
 
         await type('one\ntwo\nthree');

@@ -51,6 +51,7 @@ import {
     type ComposeAttachment,
 } from './compose-attachments';
 import { MessageFrameComponent } from './message-frame.component';
+import { MailRemoteBarComponent, REMOTE_CONTENT_TREE, type RemoteContentAction } from './mail-remote-bar.component';
 import { MailQuickReplyComponent, type QuickReplyDiscarded, type QuickReplyHandOff } from './mail-quick-reply.component';
 import { PLAIN_TEXT_BACK, draftFiles, isReplyMode, paragraphsOf, replyDraftOf } from './compose-draft';
 import { type MailDraftsChangedEvent } from './mail-drafts-changed';
@@ -200,7 +201,7 @@ type PhonePane = 'folders' | 'message';
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
         CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
-        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent,
+        ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent, MailRemoteBarComponent,
         MessageSourceComponent,
         MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
         NgTemplateOutlet,
@@ -548,7 +549,13 @@ type PhonePane = 'folders' | 'message';
                             }
                             <div class="mbx__detail-body">
                                 @if (msg.bodyHtml) {
-                                    @if (msg.hasRemoteContent && !loadRemoteImages()) {
+                                    @if (msg.remoteContent; as rc) {
+                                        <!-- The server's image bar: its sentence and the actions its tree declares; one per message. -->
+                                        @for (m of [msg]; track m.id) {
+                                            <app-mail-remote-bar [content]="rc" [nodes]="remoteNodes()" [hasSender]="!!m.fromAddress"
+                                                                 [busy]="remoteBusy()" (act)="onRemoteAction($event, m.id)" />
+                                        }
+                                    } @else if (msg.hasRemoteContent && !loadRemoteImages()) {
                                         <div class="mbx__remote-note">
                                             <i class="bi bi-shield-lock"></i>
                                             <span>Remote images are blocked for your privacy.</span>
@@ -556,7 +563,8 @@ type PhonePane = 'folders' | 'message';
                                         </div>
                                     }
                                     <!-- Sandboxed to same-origin alone, as tall as its document; its links open through the page. -->
-                                    <app-message-frame [html]="msg.bodyHtml" [images]="loadRemoteImages()" />
+                                    <app-message-frame [html]="msg.bodyHtml"
+                                                       [images]="msg.remoteContent ? msg.remoteContent.state === 'allowed' : loadRemoteImages()" />
                                 } @else if (msg.bodyText) {
                                     <pre class="mbx__body-text">{{ msg.bodyText }}</pre>
                                 } @else if (msg.snippet) {
@@ -1721,6 +1729,10 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly canCreateTop = signal(false);
     /** The folder action tree's nodes (navi.toolbar.email.folder); empty while the server serves none. */
     readonly folderActionNodes = signal<NaviGraphNode[]>([]);
+    /** The image bar's tree (navi.toolbar.email.remote-content); empty while the server serves none. */
+    readonly remoteNodes = signal<NaviGraphNode[]>([]);
+    /** The image-bar action running now, or null. */
+    readonly remoteBusy = signal<RemoteContentAction | null>(null);
     /**
      * The folder jobs started here (Mark all as read): a folder is busy with its job from the server's 202 to its end,
      * told by mail.folders.job, or read over REST while realtime is down.
@@ -2526,10 +2538,14 @@ export class EmailMailboxPageComponent implements OnInit {
             this.naviGraph.loadTree(pattern.replace('{slug}', this.messageTree))
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.messageNodes.set(nodes));
-            // An unanswered folder tree reads as empty: the folder actions then come from the page's own nodes.
+            // An unanswered folder tree reads as empty: no folder offers an action then.
             this.naviGraph.loadTree(pattern.replace('{slug}', FOLDER_TOOLBAR_TREE))
                 .pipe(catchError(() => of<NaviGraphNode[]>([])), takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.folderActionNodes.set(nodes));
+            // An unanswered image-bar tree reads as empty: the bar then says the server's sentence with no action.
+            this.naviGraph.loadTree(pattern.replace('{slug}', REMOTE_CONTENT_TREE))
+                .pipe(catchError(() => of<NaviGraphNode[]>([])), takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.remoteNodes.set(nodes));
             // An unanswered tree reads as empty, and the list pane then keeps its own Refresh.
             this.naviGraph.loadTree(pattern.replace('{slug}', LIST_TOOLBAR_TREE))
                 .pipe(takeUntilDestroyed(this.destroyRef))
@@ -5392,6 +5408,30 @@ export class EmailMailboxPageComponent implements OnInit {
         } else {
             this.contextMenu.open(ask.event, items, run);
         }
+    }
+
+    /**
+     * An image-bar action, run on the server: its answer is the message's remoteContent as it now stands, which the bar
+     * and the frame follow. A refusal is said in the server's words, and the message stays as it was.
+     */
+    onRemoteAction(action: RemoteContentAction, messageId: string): void {
+        if (this.remoteBusy() !== null) {
+            return;
+        }
+        const call = action === 'allow-remote-message' ? this.email.allowRemoteMessage(messageId)
+            : action === 'allow-remote-sender' ? this.email.allowRemoteSender(messageId)
+            : this.email.disallowRemoteSender(messageId);
+        this.remoteBusy.set(action);
+        call.subscribe({
+            next: remoteContent => {
+                this.remoteBusy.set(null);
+                this.selectedMessage.update(m => (m !== null && m.id === messageId ? { ...m, remoteContent } : m));
+            },
+            error: (err: unknown) => {
+                this.remoteBusy.set(null);
+                this.toast.error(refusalWords(err));
+            },
+        });
     }
 
     /** One place for every action on a folder; one the folder's flags do not offer now does nothing. */
