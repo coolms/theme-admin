@@ -37,10 +37,12 @@ export interface EmailMailboxDto {
     /** The last fetch's outcome: `ok`, `transient`, `permanent` (stopped until a change or a retry), `pending_recheck`. */
     connectionKind?: string | null;
     connectionSince?: string | null;
-    /** Why a stopped mailbox stopped: `auth_refused`, `reauth_required`, `unreachable`, `unknown`. */
+    /** Why a mailbox failed: `auth_refused`, `reauth_required`, `unreachable`, `not_responding`, `unknown`. */
     connectionErrorKind?: string | null;
-    /** The server's sentence for why a stopped mailbox stopped; null when it has not failed. */
+    /** The server's sentence for why a mailbox failed, as given; null when it has not failed. */
     connectionErrorText?: string | null;
+    /** When every sign-in to a mailbox held back is tried again (ISO 8601); null when nothing holds it back. */
+    connectionRetryAt?: string | null;
     /** What the provider said when the mailbox last failed, with credentials removed. Answered to owner and managers only. */
     connectionErrorDetail?: string | null;
     /** When the provider said it. It stays after the mailbox recovers. */

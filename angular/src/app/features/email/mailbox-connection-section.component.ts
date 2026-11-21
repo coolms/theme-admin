@@ -107,15 +107,18 @@ export function connectionPatch(mailbox: EmailMailboxDto, draft: ConnectionDraft
 }
 
 /**
- * What a mailbox's connection state reads as, for the person: the last fetch's outcome in words, a stopped mailbox with
- * the server's sentence for why, as given.
+ * What a mailbox's connection state reads as, for the person: the last fetch's outcome in words; a stopped mailbox, and
+ * a retrying one the server gives a sentence for, with that sentence as given.
  */
 export function connectionStatusOf(mailbox: EmailMailboxDto): { tone: 'ok' | 'warn' | 'stop' | 'none'; text: string } {
     switch (mailbox.connectionKind) {
         case 'ok':
             return { tone: 'ok', text: 'Connected' };
-        case 'transient':
-            return { tone: 'warn', text: 'Retrying: the last fetch failed' };
+        case 'transient': {
+            // A mailbox held back (a server not responding) says when it is tried again, in the server's sentence.
+            const said = sentenceOf(mailbox.connectionErrorText);
+            return { tone: 'warn', text: said ?? 'Retrying: the last fetch failed' };
+        }
         case 'permanent': {
             const said = sentenceOf(mailbox.connectionErrorText);
             return { tone: 'stop', text: said === null ? 'Stopped' : `Stopped. ${said}` };
