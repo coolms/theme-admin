@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **Mail rows by the list density rule:** two lines on a desktop (the sender and the date; the subject followed by the muted preview on one line), 52px; three on a phone, at least 60px. The design tokens' copy moves to v0.12.0.
 - puppeteer 25.18.1 (test tooling only): the karma config is async, since puppeteer is ESM only and its `executablePath()` a promise; it is read only when `CHROME_BIN` is not set. It clears basic-ftp GHSA-c475-qrg2-pj4r, GHSA-5pm8-86m8-9m6r and GHSA-r4jh-29pc-gfqr, extract-zip GHSA-7pqw-9j4j-h8q3 and GHSA-jmr9-qjv8-65gv, and zod GHSA-mrhx-c7xc-m3w5, whose lines leave the advisories list.
 - **The mail image bar is the server's** (`navi.toolbar.email.remote-content`, and the message's `remoteContent`): one
   row with the server's sentence and the tree's actions in its order, the first as the main one, each with its short
