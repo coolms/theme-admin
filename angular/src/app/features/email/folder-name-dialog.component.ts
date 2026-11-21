@@ -16,6 +16,8 @@ export interface FolderNameDialogData {
     readonly title: string;
     readonly confirmLabel: string;
     readonly name: string;
+    /** A move: the name is kept and not asked; only where it goes is. */
+    readonly nameFixed?: boolean;
     /** Where the folder may go (`parent` is where it is now); fewer than two: it stays where it is. */
     readonly places: readonly FolderPlace[];
     readonly parent: string | null;
@@ -35,14 +37,16 @@ export interface FolderNameDialogData {
     imports: [FormsModule, ModalComponent],
     template: `
         <app-modal [title]="data.title">
+            @if (!data.nameFixed) {
             <label class="fnd__label" for="folder-name-dialog-name">Name</label>
             <input #nameEl id="folder-name-dialog-name" type="text" class="cms-input" data-test="folder-name-input"
                    autocomplete="off" [attr.aria-invalid]="refusal() !== null ? 'true' : null"
                    [attr.aria-describedby]="refusal() !== null ? 'folder-name-dialog-refusal' : null"
                    [ngModel]="name()" (ngModelChange)="changed($event, parent())" (keydown.enter)="save()" />
+            }
             @if (data.places.length > 1) {
-                <label class="fnd__label fnd__label--next" for="folder-name-dialog-place">Inside</label>
-                <select id="folder-name-dialog-place" class="cms-select" data-test="folder-place"
+                <label class="fnd__label" [class.fnd__label--next]="!data.nameFixed" for="folder-name-dialog-place">Inside</label>
+                <select #placeEl id="folder-name-dialog-place" class="cms-select" data-test="folder-place"
                         [ngModel]="parent()" (ngModelChange)="changed(name(), $event)">
                     @for (place of data.places; track place.parent) {
                         <option [ngValue]="place.parent">{{ place.label }}</option>
@@ -80,12 +84,17 @@ export class FolderNameDialogComponent {
     private refused: string | null = null;
 
     private readonly nameEl = viewChild<ElementRef<HTMLInputElement>>('nameEl');
+    private readonly placeEl = viewChild<ElementRef<HTMLSelectElement>>('placeEl');
 
     constructor() {
         afterNextRender(() => {
             const el = this.nameEl()?.nativeElement;
-            el?.focus();
-            el?.select();
+            if (el === undefined) {
+                this.placeEl()?.nativeElement.focus();
+                return;
+            }
+            el.focus();
+            el.select();
         });
     }
 
@@ -95,7 +104,8 @@ export class FolderNameDialogComponent {
     }
 
     canSave(): boolean {
-        return !this.saving() && this.name().trim() !== '' && this.refused !== this.asked();
+        const moved = this.data.nameFixed !== true || this.parent() !== this.data.parent;
+        return !this.saving() && moved && this.name().trim() !== '' && this.refused !== this.asked();
     }
 
     save(): void {

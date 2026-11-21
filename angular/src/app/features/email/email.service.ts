@@ -312,13 +312,24 @@ export class EmailService {
     }
 
     /**
+     * DELETE /email/mailboxes/{id}/folders?folder= -- deletes the folder as a job: 202 with it. Its messages go to Trash
+     * first on plain IMAP and Outlook; on Gmail the label goes and its messages stay in All Mail.
+     */
+    deleteFolder(mailboxId: string, folder: string): Observable<FolderJobDto> {
+        return this.http.delete<FolderJobDto>(
+            `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`,
+            { headers: this.jsonHeaders, params: new HttpParams().set('folder', folder) },
+        );
+    }
+
+    /**
      * GET /email/mailboxes/{id}/folders/action-preview -- what Empty will do to the folder, counted and worded by the
      * server for the confirm dialog, with the numbers the confirmed request sends back.
      */
-    folderActionPreview(mailboxId: string, folder: string): Observable<FolderActionPreviewDto> {
+    folderActionPreview(mailboxId: string, folder: string, action: 'empty' | 'delete'): Observable<FolderActionPreviewDto> {
         return this.http.get<FolderActionPreviewDto>(
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders/action-preview`,
-            { headers: this.jsonHeaders, params: new HttpParams().set('folder', folder).set('action', 'empty') },
+            { headers: this.jsonHeaders, params: new HttpParams().set('folder', folder).set('action', action) },
         );
     }
 

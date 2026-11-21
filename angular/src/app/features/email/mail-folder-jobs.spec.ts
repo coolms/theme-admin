@@ -25,6 +25,7 @@ describe('MailFolderJobs', () => {
     let refused: unknown[];
     let refusedActions: string[];
     let emptied: Array<[string, string, number, number]>;
+    let removed: Array<[string, string]>;
     let startAnswer: () => Observable<FolderJobDto>;
     let reconnects: Subject<void>;
 
@@ -37,6 +38,7 @@ describe('MailFolderJobs', () => {
         reconnects = new Subject<void>();
         refusedActions = [];
         emptied = [];
+        removed = [];
         return new MailFolderJobs({
             start: (mailboxId, folder) => {
                 started.push([mailboxId, folder]);
@@ -48,6 +50,10 @@ describe('MailFolderJobs', () => {
             },
             empty: (mailboxId, folder, uidCeiling, uidValidity) => {
                 emptied.push([mailboxId, folder, uidCeiling, uidValidity]);
+                return startAnswer();
+            },
+            remove: (mailboxId, folder) => {
+                removed.push([mailboxId, folder]);
                 return startAnswer();
             },
             realtime: () => realtime,
@@ -252,6 +258,18 @@ describe('MailFolderJobs', () => {
         j.heard(heard({ folder: 'Trash', action: 'empty', outcome: 'done', count: 30 }));
         expect(j.busyIn('mb1', 'Trash')).toBeNull();
         expect(ended[0][0].action).toBe('empty');
+    }));
+
+    it('Delete starts its job and follows it as the others: busy as delete until it ends', fakeAsync(() => {
+        startAnswer = () => of(job({ folder: 'Archive', action: 'delete' }));
+        const j = jobs();
+        j.remove('mb1', 'Archive');
+
+        expect(removed).toEqual([['mb1', 'Archive']]);
+        expect(j.busyIn('mb1', 'Archive')).toBe('delete');
+        j.heard(heard({ folder: 'Archive', action: 'delete', outcome: 'done', count: 4 }));
+        expect(j.busyIn('mb1', 'Archive')).toBeNull();
+        expect(ended[0][0].action).toBe('delete');
     }));
 
     it('a refused Empty is handed to the page as Empty\'s', fakeAsync(() => {

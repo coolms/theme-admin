@@ -40,7 +40,7 @@ describe('MailServerSearchComponent', () => {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
-                { provide: DateTimeFormatService, useValue: { auto: (iso: string | null | undefined) => iso ?? '' } },
+                { provide: DateTimeFormatService, useValue: { row: (iso: string | null | undefined) => iso ?? '' , auto: (iso: string | null | undefined) => iso ?? '' } },
                 provideHttpClient(), provideHttpClientTesting(), { provide: Store, useValue: { selectSnapshot: () => null } },
             ],
         });

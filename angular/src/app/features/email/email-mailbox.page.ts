@@ -85,11 +85,12 @@ import { answerSeq, PendingReads } from './mail-pending-reads';
 import { type FolderRow, folderRows } from './folder-tree.util';
 import { type FolderMenuAsk, MailFolderRailComponent } from './mail-folder-rail.component';
 import {
-    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, emptyRefusalText, folderChangeRefusalText, folderMenuItems, folderNodes,
-    isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, offers, withJob, type MailFolderJobEvent,
+    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, confirmOf, emptyRefusalText, folderChangeRefusalText, folderMenuItems,
+    folderNodes,
+    isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, nodeLabel, offers, withJob, type MailFolderJobEvent,
 } from './mail-folder-actions';
 import { MailFolderJobs } from './mail-folder-jobs';
-import { type FolderPlace, openFolderNameDialog } from './folder-name-dialog.component';
+import { type FolderPlace, openFolderNameDialog, type FolderNameDialogData } from './folder-name-dialog.component';
 import { draftRequestFromForm, requiredOnStep, usernameFieldsEditable, usernamesForCreate } from './mailbox-wizard.util';
 import { MailboxSettingsModal } from './mailbox-settings-modal.service';
 import { MailboxSwitcherComponent } from './mailbox-switcher.component';
@@ -416,7 +417,7 @@ type PhonePane = 'folders' | 'message';
                                     <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)">
                                         <div class="mbx__row-top">
                                             <span class="mbx__row-from">{{ m.senderText || m.fromName || m.fromAddress }}</span>
-                                            <span class="mbx__row-date">{{ m.sentAt | appDateTime }}</span>
+                                            <span class="mbx__row-date">{{ m.sentAt | appDateTime:'row' }}</span>
                                         </div>
                                         <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
                                         <div class="mbx__row-snippet">{{ m.snippet }}</div>
@@ -539,7 +540,7 @@ type PhonePane = 'folders' | 'message';
                                                     (click)="openThreadMessage(t)">
                                                 <span class="mbx__thread-from">{{ t.senderText || t.fromName || t.fromAddress }}</span>
                                                 <span class="mbx__thread-subject">{{ t.subject || t.snippet || '(no subject)' }}</span>
-                                                <span class="mbx__thread-date">{{ t.sentAt | appDateTime }}</span>
+                                                <span class="mbx__thread-date">{{ t.sentAt | appDateTime:'row' }}</span>
                                             </button>
                                         }
                                     </div>
@@ -1727,6 +1728,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly folderJobs = new MailFolderJobs({
         start: (mailboxId, folder) => this.email.markFolderRead(mailboxId, folder),
         empty: (mailboxId, folder, uidCeiling, uidValidity) => this.email.emptyFolder(mailboxId, folder, uidCeiling, uidValidity),
+        remove: (mailboxId, folder) => this.email.deleteFolder(mailboxId, folder),
         read: (mailboxId, jobId) => this.email.folderJob(mailboxId, jobId),
         realtime: () => this.emailLive.connected(),
         reconnects: () => merge(this.emailLive.reconnects(), this.resyncs),
@@ -1749,7 +1751,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return null;
         }
         const node = newFolderNode(folderNodes(this.folderActionNodes()));
-        return node !== null && this.naviGraph.isVisible(node, { _canCreateTop: true }) ? node.title : null;
+        return node !== null && this.naviGraph.isVisible(node, { _canCreateTop: true }) ? nodeLabel(node) : null;
     });
     /** The selected folder's name, as the server gives it; empty until the tree names it. */
     readonly selectedFolderName = computed(() => {
@@ -5409,8 +5411,14 @@ export class EmailMailboxPageComponent implements OnInit {
             case 'rename':
                 this.openRenameFolder(mailboxId, row);
                 break;
+            case 'move':
+                this.openMoveFolder(mailboxId, row);
+                break;
             case 'empty':
                 this.askToEmpty(mailboxId, folder);
+                break;
+            case 'delete':
+                this.askToDelete(mailboxId, folder);
                 break;
         }
     }
@@ -5438,7 +5446,8 @@ export class EmailMailboxPageComponent implements OnInit {
             // Empty is asked again from a fresh preview, never with the numbers of the one that failed.
             const again = job.action === 'mark-read'
                 ? (): void => this.folderJobs.markRead(job.mailboxId, job.folder)
-                : job.action === 'empty' ? (): void => this.askToEmpty(job.mailboxId, job.folder) : null;
+                : job.action === 'empty' ? (): void => this.askToEmpty(job.mailboxId, job.folder)
+                : job.action === 'delete' ? (): void => this.askToDelete(job.mailboxId, job.folder) : null;
             const retry = again === null ? {} : { action: { label: 'Retry', run: again } };
             this.toast.show({ type: 'error', message: jobFailureText(job, name), ...retry }, 10000);
         }
@@ -5463,13 +5472,15 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Empty: the server's preview first, its title, words and confirm label shown as given in a destructive confirm;
-     * confirmed, the folder is emptied with the preview's numbers, so mail that arrived after it stays.
+     * Empty: the server's preview first (the action the node's `meta.confirm` names), its title, words and confirm
+     * label shown as given in a destructive confirm, offered only when the preview says it is possible; confirmed, the
+     * folder is emptied with the preview's numbers, so mail that arrived after it stays.
      */
     private askToEmpty(mailboxId: string, folder: string): void {
         const name = this.folderNameOf(folder);
-        this.email.folderActionPreview(mailboxId, folder).subscribe({
-            next: preview => this.confirmDialog.open({
+        const asked = confirmOf(folderNodes(this.folderActionNodes()), 'empty')?.action ?? 'empty';
+        this.email.folderActionPreview(mailboxId, folder, asked).subscribe({
+            next: preview => !preview.possible ? this.toast.error(preview.body) : this.confirmDialog.open({
                 title: preview.title, message: preview.body, confirmLabel: preview.confirm, danger: true,
             }).subscribe(yes => {
                 if (yes) {
@@ -5478,6 +5489,30 @@ export class EmailMailboxPageComponent implements OnInit {
             }),
             error: (err: unknown) => {
                 this.toast.error(emptyRefusalText(err, name));
+                if (busyRefusal(err) !== undefined || problemOf(err) === 'folder-not-found') {
+                    this.foldersChangedIn(mailboxId);
+                }
+            },
+        });
+    }
+
+    /**
+     * Delete: the server's preview first (the action the node's `meta.confirm` names), its title, words and confirm
+     * label shown as given in a destructive confirm, offered only when the preview says it is possible; confirmed, the
+     * folder is deleted as a job, and the folders are read again when it ends.
+     */
+    private askToDelete(mailboxId: string, folder: string): void {
+        const asked = confirmOf(folderNodes(this.folderActionNodes()), 'delete')?.action ?? 'delete';
+        this.email.folderActionPreview(mailboxId, folder, asked).subscribe({
+            next: preview => !preview.possible ? this.toast.error(preview.body) : this.confirmDialog.open({
+                title: preview.title, message: preview.body, confirmLabel: preview.confirm, danger: true,
+            }).subscribe(yes => {
+                if (yes) {
+                    this.folderJobs.remove(mailboxId, folder);
+                }
+            }),
+            error: (err: unknown) => {
+                this.toast.error(folderChangeRefusalText(err));
                 if (busyRefusal(err) !== undefined || problemOf(err) === 'folder-not-found') {
                     this.foldersChangedIn(mailboxId);
                 }
@@ -5511,24 +5546,39 @@ export class EmailMailboxPageComponent implements OnInit {
         });
     }
 
-    /**
-     * Rename or move: the name, and where it goes -- where it is now, the top level when the tree offers a top-level
-     * folder, or any folder the tree offers a folder inside, never the folder itself or one inside it.
-     */
+    /** Rename: the folder's new name, where it is. */
     private openRenameFolder(mailboxId: string, row: FolderRow): void {
+        const here = this.parentOf(row)?.folder.folder ?? null;
+        this.openFolderChange(mailboxId, {
+            title: `Rename ${row.name}`, confirmLabel: 'Rename', name: row.name, places: [], parent: here,
+            save: (name, inside) => this.email.renameFolder(mailboxId, row.folder.folder, name, inside),
+            refusal: folderChangeRefusalText,
+        });
+    }
+
+    /** The folder above a row in the rail, or null at the top level. */
+    private parentOf(row: FolderRow): FolderRow | null {
+        const rows = this.railRows();
+        for (let i = rows.indexOf(row) - 1; i >= 0 && row.depth > 0; i--) {
+            if (rows[i].depth === row.depth - 1) {
+                return rows[i];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Move: where the folder goes, its name kept -- the top level when the tree offers a top-level folder, or any
+     * folder the tree offers a folder inside, never the folder itself or one inside it.
+     */
+    private openMoveFolder(mailboxId: string, row: FolderRow): void {
         const rows = this.railRows();
         const at = rows.indexOf(row);
         let end = at + 1;
         while (end < rows.length && rows[end].depth > row.depth) {
             end++;
         }
-        let parent: FolderRow | null = null;
-        for (let i = at - 1; i >= 0 && row.depth > 0; i--) {
-            if (rows[i].depth === row.depth - 1) {
-                parent = rows[i];
-                break;
-            }
-        }
+        const parent = this.parentOf(row);
         const indent = (depth: number): string => '\u00a0\u00a0'.repeat(depth);
         const places: FolderPlace[] = [];
         const here = parent?.folder.folder ?? null;
@@ -5540,15 +5590,20 @@ export class EmailMailboxPageComponent implements OnInit {
                 places.push({ parent: r.folder.folder, label: indent(r.depth + 1) + r.name });
             }
         });
-        openFolderNameDialog(this.dialog, {
-            title: `Rename or move ${row.name}`,
-            confirmLabel: 'Save',
-            name: row.name,
-            places,
-            parent: here,
+        if (places.length < 2) {
+            this.toast.info(`There is no other folder to move ${row.name} into.`);
+            return;
+        }
+        this.openFolderChange(mailboxId, {
+            title: `Move ${row.name}`, confirmLabel: 'Move', name: row.name, nameFixed: true, places, parent: here,
             save: (name, inside) => this.email.renameFolder(mailboxId, row.folder.folder, name, inside),
             refusal: folderChangeRefusalText,
-        }).closed.subscribe(answer => {
+        });
+    }
+
+    /** A rename or a move asked in the folder dialog; saved, the open folder follows it and the folders are read again. */
+    private openFolderChange(mailboxId: string, data: FolderNameDialogData): void {
+        openFolderNameDialog(this.dialog, data).closed.subscribe(answer => {
             if (answer !== undefined) {
                 if (answer.from !== null && this.selectedFolder() === answer.from) {
                     this.selectedFolder.set(answer.folder);

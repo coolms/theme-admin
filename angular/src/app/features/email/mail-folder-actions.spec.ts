@@ -2,8 +2,8 @@ import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { type NaviGraphNode } from '@coolms/core-angular';
 
 import {
-    FOLDER_NODES_UNTIL_SERVED, NO_FLAGS, busyRefusal, busyText, emptyRefusalText, flagsOf, folderChangeRefusalText,
-    folderMenuItems, folderNodes, isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, offers,
+    NO_FLAGS, busyRefusal, busyText, confirmOf, emptyRefusalText, flagsOf, folderChangeRefusalText,
+    folderMenuItems, folderNodes, isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, nodeLabel, offers,
     readFolderJob, readFolderJobEvent, withJob,
     type FolderFlags,
 } from './mail-folder-actions';
@@ -17,7 +17,30 @@ const conditions = {
 };
 
 const only = (over: Partial<FolderFlags>): FolderFlags => ({ ...NO_FLAGS, ...over });
-const ids = (flags: FolderFlags, nodes: readonly NaviGraphNode[] = folderNodes([])): string[] =>
+/** One node of navi.toolbar.email.folder as the server serves it (FolderMenuContributor): title and label alike. */
+function treeNode(action: string, label: string, icon: string, fact: string, sortOrder: number,
+                  extra: Record<string, unknown> = {}): NaviGraphNode {
+    return {
+        id: action, path: `/${action}`, title: label, parentId: null, sortOrder, isActive: true, isVisible: true, children: [],
+        meta: { icon, label, action, surface: 'context', resource: 'GET /api/v1/email/mailboxes',
+                showWhen: { field: fact, op: 'eq', value: true }, ...extra },
+    };
+}
+
+const PREVIEW = 'GET /api/v1/email/mailboxes/{mailboxId}/folders/action-preview';
+
+/** The served tree, in its order. */
+const TREE: readonly NaviGraphNode[] = [
+    treeNode('new-folder', 'New folder inside', 'folder-plus', '_canCreateChild', 10),
+    treeNode('rename', 'Rename', 'pencil', '_canRename', 20),
+    treeNode('move', 'Move to…', 'folder-symlink', '_canRename', 30),
+    treeNode('mark-read', 'Mark all as read', 'envelope-open', '_canMarkRead', 40),
+    treeNode('empty', 'Empty', 'trash3', '_canEmpty', 50, { danger: true, confirm: { preview: PREVIEW, action: 'empty' } }),
+    treeNode('delete', 'Delete folder', 'folder-x', '_canDelete', 60, { danger: true, confirm: { preview: PREVIEW, action: 'delete' } }),
+    treeNode('new-top-folder', 'New folder', 'folder-plus', '_canCreateTop', 70, { surface: 'list' }),
+];
+
+const ids = (flags: FolderFlags, nodes: readonly NaviGraphNode[] = folderNodes(TREE)): string[] =>
     folderMenuItems(nodes, flags, conditions).map(i => i.id);
 
 /** A served node as the server's folder tree might give it: no condition of its own. */
@@ -35,9 +58,10 @@ describe('folder actions: what the server\'s flags offer', () => {
     it('each flag offers its action and nothing else; no flag, no action', () => {
         expect(ids(only({ canMarkRead: true }))).toEqual(['mark-read']);
         expect(ids(only({ canCreateChild: true }))).toEqual(['new-folder']);
-        expect(ids(only({ canRename: true }))).toEqual(['rename']);
+        expect(ids(only({ canRename: true }))).withContext('Move is offered with Rename').toEqual(['rename', 'move']);
+        expect(ids(only({ canDelete: true }))).toEqual(['delete']);
         expect(ids(only({ canMarkRead: true, canCreateChild: true, canRename: true })))
-            .toEqual(['mark-read', 'new-folder', 'rename']);
+            .withContext('in the tree\'s order').toEqual(['new-folder', 'rename', 'move', 'mark-read']);
         expect(ids(NO_FLAGS)).toEqual([]);
     });
 
@@ -61,14 +85,15 @@ describe('folder actions: what the server\'s flags offer', () => {
         expect(ids(NO_FLAGS, nodes)).toEqual([]);
     });
 
-    it('Empty is offered only where canEmpty is true, in the danger style; Delete is not drawn (no route served yet)', () => {
+    it('Empty and Delete are offered only where their flags are true, both in the danger style', () => {
         const nodes = [served('delete', 'Delete'), served('empty', 'Empty'), served('mark-read', 'Mark all as read')];
 
-        expect(ids(only({ canDelete: true, canEmpty: true, canMarkRead: true }), nodes)).toEqual(['empty', 'mark-read']);
-        expect(ids(only({ canDelete: true, canMarkRead: true }), nodes)).withContext('canEmpty false').toEqual(['mark-read']);
-        expect(ids(only({ canEmpty: true }))).withContext('the page\'s own nodes').toEqual(['empty']);
+        expect(ids(only({ canDelete: true, canEmpty: true, canMarkRead: true }), nodes)).toEqual(['delete', 'empty', 'mark-read']);
+        expect(ids(only({ canDelete: true, canMarkRead: true }), nodes)).withContext('canEmpty false').toEqual(['delete', 'mark-read']);
+        expect(ids(only({ canEmpty: true }))).withContext('the served tree').toEqual(['empty']);
+        expect(folderMenuItems(folderNodes(TREE), only({ canDelete: true }), conditions)[0].danger).toBeTrue();
         expect(ids(only({ canEmpty: true, busy: 'mark-read' }))).withContext('busy').toEqual([]);
-        expect(folderMenuItems(folderNodes([]), only({ canEmpty: true }), conditions)[0].danger).toBeTrue();
+        expect(folderMenuItems(folderNodes(TREE), only({ canEmpty: true }), conditions)[0].danger).toBeTrue();
     });
 
     it('the tree\'s flags are read strictly: only true offers, and an unknown busy is none', () => {
@@ -77,11 +102,31 @@ describe('folder actions: what the server\'s flags offer', () => {
         expect(flagsOf({ canRename: true, busy: 'mark-read' })).toEqual(only({ canRename: true, busy: 'mark-read' }));
     });
 
-    it('until the folder tree is served, the page\'s own nodes stand in, New folder among them at list level', () => {
-        expect(folderNodes([]).length).toBe(FOLDER_NODES_UNTIL_SERVED.length + 1);
-        expect(newFolderNode(folderNodes([]))?.title).toBe('New folder');
+    it('the menu is the served tree as given: none served, no item and no New folder; no stand-in of the page\'s own', () => {
+        expect(folderNodes([])).toEqual([]);
+        expect(ids(only({ canRename: true, canDelete: true }), folderNodes([]))).toEqual([]);
+        expect(newFolderNode(folderNodes([]))).toBeNull();
+        expect(newFolderNode(folderNodes(TREE))?.meta['label']).toBe('New folder');
         expect(folderNodes([served('rename', 'Rename')]).map(n => n.title)).toEqual(['Rename']);
         expect(newFolderNode([served('rename', 'Rename')])).toBeNull();
+    });
+
+    it('each item is drawn by the node\'s label, its title only when it has none', () => {
+        const items = folderMenuItems(folderNodes(TREE), only({ canRename: true, canDelete: true }), conditions);
+        expect(items.map(i => i.label)).toEqual(['Rename', 'Move to…', 'Delete folder']);
+        const titled = { ...TREE[1], title: 'Rename this folder', meta: { ...TREE[1].meta, label: 'Rename' } };
+        expect(nodeLabel(titled)).toBe('Rename');
+        expect(nodeLabel(served('rename', 'Rename this folder'))).toBe('Rename this folder');
+    });
+
+    it('a confirmed action is the one the node\'s meta.confirm names; a node without it, or a malformed one, has none', () => {
+        expect(confirmOf(TREE, 'empty')).toEqual({ action: 'empty' });
+        expect(confirmOf(TREE, 'delete')).toEqual({ action: 'delete' });
+        expect(confirmOf(TREE, 'rename')).toBeNull();
+        expect(confirmOf([], 'empty')).toBeNull();
+        const odd = [treeNode('empty', 'Empty', 'trash3', '_canEmpty', 50, { confirm: { action: 'format-disk' } })];
+        expect(confirmOf(odd, 'empty')).toBeNull();
+        expect(confirmOf([treeNode('empty', 'Empty', 'trash3', '_canEmpty', 50, { confirm: 'yes' })], 'empty')).toBeNull();
     });
 });
 

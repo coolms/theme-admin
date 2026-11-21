@@ -18,6 +18,8 @@ export interface FolderJobsDeps {
     readonly start: (mailboxId: string, folder: string) => Observable<FolderJobDto>;
     /** Starts Empty on a folder with the preview's numbers: the job, or the one already running for it. */
     readonly empty: (mailboxId: string, folder: string, uidCeiling: number, uidValidity: number) => Observable<FolderJobDto>;
+    /** Starts Delete on a folder: the job, or the one already running for it. */
+    readonly remove: (mailboxId: string, folder: string) => Observable<FolderJobDto>;
     /** Reads a job. */
     readonly read: (mailboxId: string, jobId: string) => Observable<FolderJobDto>;
     /** Whether realtime is connected now: its event tells a job's end, and the job is read only now and then. */
@@ -38,7 +40,7 @@ const keyOf = (mailboxId: string, folder: string): string => `${mailboxId}\n${fo
 type ReadAnswer = FolderJobDto | 'wait' | 'gone';
 
 /**
- * The folder jobs this page started (Mark all as read, Empty), from the click to their end. A job's folder is busy with it
+ * The folder jobs this page started (Mark all as read, Empty, Delete), from the click to their end. A job's folder is busy with it
  * from the server's 202 until its end is known:
  *  - mail.folders.job tells it. One heard before its 202 answered (a small folder's job ends that fast) is kept a few
  *    minutes, and the 202 of that job then ends it at once with the outcome heard.
@@ -71,6 +73,11 @@ export class MailFolderJobs {
     /** Empty, with the numbers of the preview the person confirmed. */
     empty(mailboxId: string, folder: string, uidCeiling: number, uidValidity: number): void {
         this.begin(this.deps.empty(mailboxId, folder, uidCeiling, uidValidity), mailboxId, folder, 'empty');
+    }
+
+    /** Delete, once the person confirmed the server's preview. */
+    remove(mailboxId: string, folder: string): void {
+        this.begin(this.deps.remove(mailboxId, folder), mailboxId, folder, 'delete');
     }
 
     private begin(call: Observable<FolderJobDto>, mailboxId: string, folder: string, action: FolderJobAction): void {

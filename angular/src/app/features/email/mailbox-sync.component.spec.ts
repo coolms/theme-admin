@@ -44,7 +44,7 @@ describe('MailboxSyncComponent', () => {
                 { provide: EmailService, useValue: email },
                 { provide: ToastService, useValue: toast },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'refused' } },
-                { provide: DateTimeFormatService, useValue: { auto: () => '09:12' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '09:12' , auto: () => '09:12' } },
             ],
         });
         jasmine.clock().install();

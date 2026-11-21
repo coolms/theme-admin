@@ -14,7 +14,7 @@ import { DateTimePipe } from '@coolms/ui-angular';
                 [class.mhr--unread]="unread()" [class.mhr--active]="active()" (click)="chosen.emit()">
             <span class="mhr__top">
                 <span class="mhr__from">{{ from() }}</span>
-                <span class="mhr__date">{{ date() | appDateTime }}</span>
+                <span class="mhr__date">{{ date() | appDateTime:'row' }}</span>
             </span>
             <span class="mhr__subject">{{ subject() || '(no subject)' }}</span>
             <span class="mhr__meta">

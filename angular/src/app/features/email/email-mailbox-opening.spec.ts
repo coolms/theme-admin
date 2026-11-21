@@ -140,7 +140,7 @@ describe('EmailMailboxPageComponent -- opening a message never waits on its body
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
-                { provide: DateTimeFormatService, useValue: { auto: (v: unknown) => String(v ?? ''), date: () => '', time: () => '', dateTime: (v: unknown) => String(v ?? '') } },
+                { provide: DateTimeFormatService, useValue: { row: (v: unknown) => String(v ?? ''), auto: (v: unknown) => String(v ?? ''), date: () => '', time: () => '', dateTime: (v: unknown) => String(v ?? '') } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
                 { provide: ContextMenuService, useValue: { openFromNodes: (): void => {} } },

@@ -134,7 +134,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
                 { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true, matchesShowWhen: () => false } },
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
-                { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: { openFromNodes: () => { menus++; } } },

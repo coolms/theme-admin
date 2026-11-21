@@ -120,7 +120,7 @@ describe('EmailMailboxPageComponent -- the server prepares an answer or a forwar
             { provide: NaviGraphService, useValue: { loadTree: () => of([]), isVisible: () => true } },
             { provide: ConfirmDialogService, useValue: {} },
             { provide: ContactsService, useValue: {} },
-            { provide: DateTimeFormatService, useValue: { auto: () => '', dateTime: () => '' } },
+            { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', dateTime: () => '' } },
             { provide: ErrorHandlerService, useValue: {} },
             { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
             { provide: ContextMenuService, useValue: {} },

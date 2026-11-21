@@ -12,7 +12,7 @@ import {
 import { StateComponent } from '@coolms/ui-angular';
 
 import { type FolderJobAction } from './email.types';
-import { folderCount, folderCountTitle, folderUnread, importedFraction } from './folder-fraction.util';
+import { folderCountTitle, folderUnread } from './folder-fraction.util';
 import type { FolderRow } from './folder-tree.util';
 import { busyText } from './mail-folder-actions';
 
@@ -86,12 +86,6 @@ export function folderIcon(role: string | null | undefined): string {
                             @if (unread(row) > 0) {
                                 <span class="mbx__badge" aria-hidden="true" data-test="folder-unread">{{ unread(row) }}</span>
                             }
-                            <span class="mbx__folder-total" aria-hidden="true" data-test="folder-total">{{ count(row) }}</span>
-                            @if (fraction(row) !== null) {
-                                <span class="mbx__folder-progress" aria-hidden="true">
-                                    <span class="mbx__folder-progress-bar" [style.width.%]="fraction(row)"></span>
-                                </span>
-                            }
                         </button>
                     } @else {
                         <!-- A folder that only holds folders opens nothing, but may have actions: focusable then. -->
@@ -143,7 +137,6 @@ export function folderIcon(role: string | null | undefined): string {
                         @if (unread(row) > 0) {
                             <span class="mbx__badge">{{ unread(row) }}</span>
                         }
-                        <span class="mbx__folder-total">{{ count(row) }}</span>
                     }
                 </div>
             }
@@ -199,15 +192,6 @@ export function folderIcon(role: string | null | undefined): string {
         .mbx__folder-icon { flex: 0 0 1em; width: 1em; font-size: 1em; line-height: 1; color: inherit; text-align: center; }
         /* Only the name gives way: one line, cut with an ellipsis. */
         .mbx__folder-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbx__folder-total { flex: 0 0 auto; color: var(--cms-text-muted); font-size: .75rem; white-space: nowrap; }
-        /* A half-imported folder shows how far the backfill has walked it. */
-        .mbx__folder-progress {
-            position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-            background: var(--cms-border); border-radius: 0 0 4px 4px; overflow: hidden;
-        }
-        .mbx__folder-progress-bar {
-            display: block; height: 100%; background: var(--cms-text-muted); opacity: .55;
-        }
         /* A badge is always its text's width plus its padding. */
         .mbx__badge {
             flex: 0 0 auto; white-space: nowrap;
@@ -364,10 +348,6 @@ export class MailFolderRailComponent {
         return folderUnread(row.folder);
     }
 
-    protected count(row: FolderRow): string {
-        return folderCount(row.folder);
-    }
-
     /** The full name, then what the counts mean, how much is stored among them, and a job running on it. */
     protected rowTitle(row: FolderRow): string {
         const running = this.busy(row);
@@ -380,10 +360,6 @@ export class MailFolderRailComponent {
         }
 
         return lines.join('\n');
-    }
-
-    protected fraction(row: FolderRow): number | null {
-        return importedFraction(row.folder);
     }
 
     /** Reads the widest measuring row and says what the rail needs; nothing while the rail is not shown. */
