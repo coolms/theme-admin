@@ -57,6 +57,18 @@ describe('MailboxConnectionSectionComponent -- a section saved on its own, at th
         expect(connectionStatusOf({ ...MAILBOX, connectionKind: null }).text).toBe('Not fetched yet');
     });
 
+    it('says a mailbox held back as the server says it, with when it is tried again; without a sentence, that it retries', () => {
+        const held = "The mail server isn't responding; we'll try again at 01:40.";
+        expect(connectionStatusOf({
+            ...MAILBOX, connectionKind: 'transient', connectionErrorKind: 'not_responding', connectionErrorText: held,
+            connectionRetryAt: '2026-11-22T01:40:00+03:00',
+        })).toEqual({ tone: 'warn', text: held });
+        for (const text of [null, undefined, '  ']) {
+            expect(connectionStatusOf({ ...MAILBOX, connectionKind: 'transient', connectionErrorText: text }))
+                .toEqual({ tone: 'warn', text: 'Retrying: the last fetch failed' });
+        }
+    });
+
     describe('saving', () => {
         let email: jasmine.SpyObj<EmailService>;
         let toast: jasmine.SpyObj<ToastService>;
