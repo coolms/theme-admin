@@ -143,7 +143,7 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
     const loadingRow = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="list-loading"]');
     const pill = (): HTMLElement | null => el().querySelector<HTMLElement>('[data-test="new-messages"]');
     const last = (): Subject<EmailMessageList> => answers[answers.length - 1];
-    const h = (): number => pageOf().rowHeight;
+    const h = (): number => pageOf().rowHeight();
 
     /** Lets the virtual viewport draw: its own work runs after a microtask and a render. */
     async function settle(): Promise<void> {

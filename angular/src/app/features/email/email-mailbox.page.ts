@@ -392,13 +392,13 @@ type PhonePane = 'folders' | 'message';
                                  only: no checkbox, no star, no row menu. Their places stay as empty room, so its
                                  sender, subject and date line up with a stored row's. -->
                             <cdk-virtual-scroll-viewport class="mbx__rows" data-test="list-rows" role="list" aria-label="Messages"
-                                                         [itemSize]="rowHeight" [minBufferPx]="rowHeight * 4"
-                                                         [maxBufferPx]="rowHeight * 8" [style.min-height.px]="messages().length * rowHeight"
+                                                         [itemSize]="rowHeight()" [minBufferPx]="rowHeight() * 4"
+                                                         [maxBufferPx]="rowHeight() * 8" [style.min-height.px]="messages().length * rowHeight()"
                                                          (focusin)="onRowFocusIn($event)" (focusout)="onRowFocusOut($event)">
                                 <ng-container *cdkVirtualFor="let m of messages(); trackBy: trackRow; let i = index">
                                 @let server = isServerRowOf(m);
                                 <div class="mbx__row" role="listitem" (contextmenu)="onMessageRowContextMenu($event, m)"
-                                     [style.height.px]="rowHeight"
+                                     [style.height.px]="rowHeight()"
                                      [attr.aria-posinset]="i + 1" [attr.aria-setsize]="setSize()"
                                      [attr.data-key]="rowKeyOf(m)"
                                      [attr.data-ref]="server ? m.ref : null"
@@ -420,8 +420,13 @@ type PhonePane = 'folders' | 'message';
                                             <span class="mbx__row-from">{{ m.senderText || m.fromName || m.fromAddress }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime:'row' }}</span>
                                         </div>
-                                        <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
-                                        <div class="mbx__row-snippet">{{ m.snippet }}</div>
+                                        <!-- Desktop: the subject and the preview on one line; a phone: a line each. -->
+                                        <div class="mbx__row-text">
+                                            <span class="mbx__row-subject">{{ m.subject || '(no subject)' }}</span>
+                                            @if (m.snippet) {
+                                                <span class="mbx__row-snippet">{{ m.snippet }}</span>
+                                            }
+                                        </div>
                                     </button>
                                     @if (!server) {
                                         <button type="button" class="mbx__row-star" data-part="star"
@@ -1206,13 +1211,23 @@ type PhonePane = 'folders' | 'message';
         /* The rows' wrapper (the virtual scroll's own, absolutely placed) held to the viewport's width: left to size
            itself, it grows to its widest row's one-line text, and each row with it. */
         .mbx__rows ::ng-deep .cdk-virtual-scroll-content-wrapper { right: 0; }
-        /* Every row the same height (set from the three lines it holds), so the list is drawn by arithmetic. */
+        /* Every row the same height (rowHeight: the list density tokens), so the list is drawn by arithmetic. Desktop: two
+           lines, the subject and the muted preview sharing the second; a phone: three lines. */
         .mbx__row {
-            display: flex; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
-            padding: 10px 12px; border-bottom: 1px solid var(--cms-border);
+            display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
+            padding: 0 12px; border-bottom: 1px solid var(--cms-border);
             background: transparent; color: var(--cms-text);
         }
-        .mbx__row-from, .mbx__row-subject, .mbx__row-snippet { line-height: 1.5; min-height: 1.5em; }
+        .mbx__row-from, .mbx__row-text { line-height: 1.5; min-height: 1.5em; }
+        .mbx__row-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mbx__row-text .mbx__row-snippet { margin-left: 6px; }
+        @media (max-width: 599.98px) {
+            .mbx__row { padding: 6px 12px; }
+            .mbx__row-from, .mbx__row-text { line-height: 1.4; min-height: 1.4em; }
+            .mbx__row-text { display: flex; flex-direction: column; gap: 2px; white-space: normal; }
+            .mbx__row-text > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .mbx__row-text .mbx__row-snippet { margin-left: 0; }
+        }
         /* Over the rows' top, taking no room: the rows do not move when it comes and goes. */
         .mbx__new-wrap {
             position: sticky; top: 0; z-index: 3; flex: 0 0 auto; height: 0; overflow: visible;
@@ -1227,7 +1242,7 @@ type PhonePane = 'folders' | 'message';
         .mbx__row:hover { background: var(--cms-surface-hover); }
         .mbx__row--active { background: var(--cms-selected-light); }
         .mbx__row--checked { background: var(--cms-selected-light); }
-        .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
+        .mbx__row-check { margin: 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
         /* A server row's empty room where a stored row has its checkbox: the same width, nothing in it. */
         .mbx__row-check--none { display: block; cursor: default; }
         .mbx__list-end {
@@ -1250,8 +1265,8 @@ type PhonePane = 'folders' | 'message';
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
-        .mbx__row-subject { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mbx__row-subject { font-size: .8125rem; }
+        .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; }
         .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
         .mbx__others {
             display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; text-align: left;
@@ -1854,7 +1869,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** New mail heard in real time while the person was scrolled down: the pill says how many. */
     readonly newArrivals = signal<number>(0);
     /** Every row's height in px: fixed, from the three lines a row holds at the root font size. */
-    readonly rowHeight = listRowHeight(rootFontPx());
+    /** One row's height, the same for every row so the list is drawn by arithmetic: two lines, three on a phone. */
+    readonly rowHeight = computed(() => listRowHeight(this.phone(), rootFontPx()));
     /** Each row's aria-setsize: the open folder's total from the folder tree, or -1 when it is not known. */
     readonly setSize = computed(() => {
         const row = this.folderRows().find(r => r.folder.folder === this.selectedFolder());
@@ -2944,7 +2960,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         if (this.loadingMessages() || this.listEnd() !== null || this.messagesFailure() !== null || !this.listAnswered
-            || !nearListEnd(this.rowsTop() + this.messages().length * this.rowHeight, region.scrollTop, region.clientHeight)) {
+            || !nearListEnd(this.rowsTop() + this.messages().length * this.rowHeight(), region.scrollTop, region.clientHeight)) {
             return;
         }
         if (this.listNextPage !== null) {
@@ -2988,7 +3004,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const before = this.messages();
-        const anchor = anchorAt(before, offset, this.rowHeight);
+        const anchor = anchorAt(before, offset, this.rowHeight());
         change();
         if (anchor === null) {
             return;
@@ -2998,7 +3014,7 @@ export class EmailMailboxPageComponent implements OnInit {
         if (arrived > 0) {
             this.newArrivals.update(n => n + arrived);
         }
-        const to = offsetOfAnchor(after, anchor, this.rowHeight);
+        const to = offsetOfAnchor(after, anchor, this.rowHeight());
         if (to === null || to === offset) {
             return;
         }

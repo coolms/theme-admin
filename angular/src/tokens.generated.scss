@@ -108,6 +108,10 @@
     --cms-row-height: 36px;
     --cms-row-height-sm: 28px;
     --cms-row-height-lg: 48px;
+    --cms-list-row-height: 40px;
+    --cms-list-row-height-two-line: 52px;
+    --cms-list-row-height-phone: 48px;
+    --cms-list-row-height-phone-two-line: 60px;
     --cms-row-selected: #eef2f7;
     --cms-border-input: #8b929c;
     --cms-success-strong: #15803d;
@@ -162,7 +166,11 @@
     --cms-rail-width-compact: 64px;
     --cms-tabbar-height: 56px;
     --cms-touch-target-min: 44px;
+    --cms-control-height-sm: 32px;
+    --cms-control-height-md: 40px;
+    --cms-control-height-lg: 44px;
     --cms-topbar-height: 64px;
+    --cms-pane-toolbar-height: calc(var(--cms-row-height) + 2 * var(--cms-space-2));
     --cms-spinner-color: var(--cms-accent-text);
     --cms-spinner-track: var(--cms-border);
     --cms-spinner-size-inline: 16px;
@@ -243,4 +251,10 @@
     --cms-avatar-5-fg: #ede9fe;
     --cms-avatar-6-bg: #374151;
     --cms-avatar-6-fg: #e5e7eb;
+}
+
+@media (pointer: coarse) {
+    :root {
+        --cms-control-height-md: 44px;
+    }
 }
