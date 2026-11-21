@@ -301,12 +301,12 @@ describe('MailFolderRailComponent', () => {
             expect(byName(el, 'Projects').title).withContext('a heading\'s tooltip is its name').toBe('Projects');
         });
 
-        it('says the widest row\'s need, indent and badge and total with 6ch of name, over every row, and again as counts change', async () => {
+        it('says the widest row\'s need, indent and badge with 6ch of name, over every row, and again as counts change', async () => {
             const { el, needs } = await shown(FIT_ROWS);
             fixture.componentRef.setInput('selected', DEEP);
             fixture.detectChanges();
             const need = needs[needs.length - 1];
-            expect(need).withContext('the deep sub-folder with five-digit counts needs more than 200px').toBeGreaterThan(200);
+            expect(need).withContext('the deep sub-folder\'s indent and five-digit badge are counted').toBeGreaterThan(150);
 
             el.style.width = `${need}px`;
             await settle();
@@ -324,19 +324,18 @@ describe('MailFolderRailComponent', () => {
             expect(needs[needs.length - 1]).withContext('bigger counts need more').toBeGreaterThan(need);
         });
 
-        it('shows one total, the server\'s, and says how much is stored only in the tooltip; a heading shows none', async () => {
+        it('a row shows its unread count only; the total, and how much is stored, are said in the tooltip', async () => {
             const { el } = await shown(FIT_ROWS);
-            const totalOf = (name: string): string | null | undefined =>
-                byName(el, name).querySelector('[data-test="folder-total"]')?.textContent?.trim();
 
-            expect(totalOf('Important')).toBe((4044).toLocaleString());
-            expect(byName(el, 'Important').textContent).not.toContain((3688).toLocaleString());
-            expect(byName(el, 'Important').title).toContain(`${(3688).toLocaleString()} of ${(4044).toLocaleString()} stored`);
-            expect(byName(el, 'Inbox').title).withContext('fully stored').not.toContain('stored');
-            expect(totalOf('Zulu')).withContext('no server count read yet: the platform\'s').toBe('3');
-            expect(byName(el, 'Zulu').title).not.toContain(' of ');
-            expect(buttons(el).every(b => b.querySelectorAll('[data-test="folder-total"]').length === 1)).toBeTrue();
-            expect(byName(el, 'Projects').querySelector('[data-test="folder-total"]')).withContext('a heading').toBeNull();
+            expect(el.querySelectorAll('[data-test="folder-total"]').length).withContext('no total in any row').toBe(0);
+            expect(el.querySelector('.mbx__folder-progress')).withContext('no stored-so-far bar').toBeNull();
+            expect(byName(el, 'Important').querySelector('[data-test="folder-unread"]')?.textContent?.trim())
+                .toBe((396).toLocaleString());
+            expect(byName(el, 'Important').textContent).not.toContain((4044).toLocaleString());
+            expect(byName(el, 'Important').title).toContain(`${(4044).toLocaleString()} messages`);
+            expect(byName(el, 'Important').title).withContext('how much is stored').toContain('still being copied');
+            expect(byName(el, 'Inbox').title).withContext('fully stored').not.toContain('copied');
+            expect(byName(el, 'Zulu').title).withContext('no server count read yet: the platform\'s').toContain('3 messages');
         });
     });
 });

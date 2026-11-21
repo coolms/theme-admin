@@ -110,7 +110,7 @@ describe('EmailMailboxPageComponent -- the compose window', () => {
                     useValue: { open: (q: { title: string }) => { asked.push(q); return of(answer); } },
                 },
                 { provide: ContactsService, useValue: {} },
-                { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: {} },

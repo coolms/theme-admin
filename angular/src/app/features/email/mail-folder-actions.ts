@@ -91,6 +91,19 @@ export function folderNodes(served: readonly NaviGraphNode[]): readonly NaviGrap
     return served;
 }
 
+/**
+ * The confirmation the node for `action` declares (`meta.confirm`): the action its preview is asked for, or null when
+ * the node declares none.
+ */
+export function confirmOf(nodes: readonly NaviGraphNode[], action: string): { readonly action: 'empty' | 'delete' } | null {
+    const confirm = nodes.find(n => actionOf(n) === action)?.meta['confirm'];
+    if (typeof confirm !== 'object' || confirm === null) {
+        return null;
+    }
+    const asked = (confirm as Record<string, unknown>)['action'];
+    return asked === 'empty' || asked === 'delete' ? { action: asked } : null;
+}
+
 /** What a node is called where it is drawn: its label, else its title. */
 export function nodeLabel(n: NaviGraphNode): string {
     const label = n.meta['label'];

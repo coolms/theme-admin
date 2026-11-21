@@ -778,13 +778,16 @@ export interface FolderJobDto {
 export interface FolderActionPreviewDto {
     mailboxId: string;
     folder: string;
-    action: 'empty';
+    action: 'empty' | 'delete';
     title: string;
     body: string;
     confirm: string;
     count: number;
+    /** Empty's numbers, sent back with the confirmed request; Delete takes none. */
     uidCeiling: number;
     uidValidity: number;
+    /** False when the action cannot be done (the body says why): no confirm is offered. */
+    possible: boolean;
 }
 
 /** The answer of a folder create, rename or move: the folder's path now, and the path it had (null for a new one). */

@@ -28,12 +28,12 @@ const SMALL: FolderRow[] = [
     dtoRow({ folder: 'Sent', role: 'sent', total: 4 }, 'Sent'),
 ];
 
-/** A sub-folder three levels down with five-digit counts: its row needs more than 200px. */
+/** A sub-folder six levels down with a seven-digit unread count: its row needs more than 200px. */
 const WIDE: FolderRow[] = [
     ...SMALL,
     dtoRow({ folder: 'Projects' }, 'Projects', { selectable: false }),
-    dtoRow({ folder: 'Projects/Clients/Archive/Mango', total: 125000, unseen: 9000, serverTotal: 125000, serverUnseen: 12345 },
-        'Mango', { depth: 3 }),
+    dtoRow({ folder: 'Projects/Clients/Archive/2026/Q4/Mango', total: 9000000, unseen: 1234567, serverTotal: 9000000,
+        serverUnseen: 1234567 }, 'Mango', { depth: 6 }),
 ];
 
 /** The mail page's grid as the page binds it: the rail in its padded, scrolling column, two splitters. */
@@ -64,7 +64,7 @@ class SpecFolderColumnHost {
 }
 
 /**
- * The folder column is never narrower than its content needs -- the widest row's indent, icon, badge and total with
+ * The folder column is never narrower than its content needs -- the widest row's indent, icon and badge with
  * 6ch of name, over every folder -- or 200px, whichever is larger. The splitter stops there; a saved width under it is
  * drawn at it and written back only when the person moves the splitter.
  */
@@ -165,8 +165,10 @@ describe('Mail folder column minimum', () => {
             key(folderSplitter(), 'Home');
             expect(rail().offsetWidth).toBe(Math.ceil(need));
             for (const row of Array.from(rail().querySelectorAll<HTMLElement>('[data-test="folder"]'))) {
-                const total = row.querySelector('[data-test="folder-total"]') as HTMLElement;
-                expect(total.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right + 0.5);
+                const badge = row.querySelector<HTMLElement>('[data-test="folder-unread"]');
+                if (badge !== null) {
+                    expect(badge.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right + 0.5);
+                }
             }
             http.match(r => r.method === 'PATCH').forEach(r => r.flush(null));
         });
@@ -174,8 +176,8 @@ describe('Mail folder column minimum', () => {
         it('grows when the counts grow', async () => {
             await render(WIDE);
             const before = panes().foldersMin();
-            fixture.componentInstance.rows.set(WIDE.map(r => r.depth === 3
-                ? { ...r, folder: { ...r.folder, serverUnseen: 1234567, serverTotal: 99999999 } } : r));
+            fixture.componentInstance.rows.set(WIDE.map(r => r.depth === 6
+                ? { ...r, folder: { ...r.folder, serverUnseen: 123456789, serverTotal: 999999999 } } : r));
             fixture.detectChanges();
             await settle();
             expect(panes().foldersMin()).toBeGreaterThan(before);

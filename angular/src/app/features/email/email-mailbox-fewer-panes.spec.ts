@@ -60,7 +60,7 @@ describe('EmailMailboxPageComponent -- fewer panes where three would not fit', (
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: DraftStoreService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
-                { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },
                 { provide: ContextMenuService, useValue: { openFromNodes: (): void => {} } },

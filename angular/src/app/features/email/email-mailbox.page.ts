@@ -85,7 +85,8 @@ import { answerSeq, PendingReads } from './mail-pending-reads';
 import { type FolderRow, folderRows } from './folder-tree.util';
 import { type FolderMenuAsk, MailFolderRailComponent } from './mail-folder-rail.component';
 import {
-    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, emptyRefusalText, folderChangeRefusalText, folderMenuItems, folderNodes,
+    FOLDER_TOOLBAR_TREE, NO_FLAGS, busyRefusal, confirmOf, emptyRefusalText, folderChangeRefusalText, folderMenuItems,
+    folderNodes,
     isRenumbered, jobFailureText, markReadRefusalText, newFolderNode, nodeLabel, offers, withJob, type MailFolderJobEvent,
 } from './mail-folder-actions';
 import { MailFolderJobs } from './mail-folder-jobs';
@@ -5471,13 +5472,15 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Empty: the server's preview first, its title, words and confirm label shown as given in a destructive confirm;
-     * confirmed, the folder is emptied with the preview's numbers, so mail that arrived after it stays.
+     * Empty: the server's preview first (the action the node's `meta.confirm` names), its title, words and confirm
+     * label shown as given in a destructive confirm, offered only when the preview says it is possible; confirmed, the
+     * folder is emptied with the preview's numbers, so mail that arrived after it stays.
      */
     private askToEmpty(mailboxId: string, folder: string): void {
         const name = this.folderNameOf(folder);
-        this.email.folderActionPreview(mailboxId, folder, 'empty').subscribe({
-            next: preview => this.confirmDialog.open({
+        const asked = confirmOf(folderNodes(this.folderActionNodes()), 'empty')?.action ?? 'empty';
+        this.email.folderActionPreview(mailboxId, folder, asked).subscribe({
+            next: preview => !preview.possible ? this.toast.error(preview.body) : this.confirmDialog.open({
                 title: preview.title, message: preview.body, confirmLabel: preview.confirm, danger: true,
             }).subscribe(yes => {
                 if (yes) {
@@ -5494,12 +5497,14 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * Delete: the server's preview first, its title, words and confirm label shown as given in a destructive confirm;
-     * confirmed, the folder is deleted as a job, and the folders are read again when it ends.
+     * Delete: the server's preview first (the action the node's `meta.confirm` names), its title, words and confirm
+     * label shown as given in a destructive confirm, offered only when the preview says it is possible; confirmed, the
+     * folder is deleted as a job, and the folders are read again when it ends.
      */
     private askToDelete(mailboxId: string, folder: string): void {
-        this.email.folderActionPreview(mailboxId, folder, 'delete').subscribe({
-            next: preview => this.confirmDialog.open({
+        const asked = confirmOf(folderNodes(this.folderActionNodes()), 'delete')?.action ?? 'delete';
+        this.email.folderActionPreview(mailboxId, folder, asked).subscribe({
+            next: preview => !preview.possible ? this.toast.error(preview.body) : this.confirmDialog.open({
                 title: preview.title, message: preview.body, confirmLabel: preview.confirm, danger: true,
             }).subscribe(yes => {
                 if (yes) {

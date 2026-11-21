@@ -11,7 +11,7 @@ describe('MailHitRowComponent', () => {
     function render(inputs: Record<string, unknown>): { el: HTMLElement; chosen: number[] } {
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
-            providers: [{ provide: DateTimeFormatService, useValue: { auto: (iso: string | null | undefined) => iso ?? '' } }],
+            providers: [{ provide: DateTimeFormatService, useValue: { row: (iso: string | null | undefined) => iso ?? '' , auto: (iso: string | null | undefined) => iso ?? '' } }],
         });
         const fixture = TestBed.createComponent(MailHitRowComponent);
         for (const [k, v] of Object.entries(inputs)) {

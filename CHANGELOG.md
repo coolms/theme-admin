@@ -8,6 +8,17 @@ major number means here.
 
 ## Unreleased
 
+- **The mail folder menu is the server's tree as it serves it** (`navi.toolbar.email.folder`), the same as the
+  Workspace's: each item drawn by its node's label and icon, in the tree's order, offered where the folder's flags and
+  the node's condition say. The page's own stand-in tree is gone: no tree served, no menu and no New folder at the foot.
+  Move (to another folder, the name kept, never into itself) and Delete folder are handled; Delete runs as a job like
+  Mark all as read and Empty. Empty and Delete ask the preview the node's `meta.confirm` names, show its title, words
+  and confirm label as given, and offer the confirm only when the preview says it is possible; otherwise its words
+  are said and nothing is offered.
+- **A folder row shows its unread count only.** The total, and how much of a folder is stored so far, are in the row's
+  tooltip; the stored-so-far bar under the row is gone.
+- **Mail list, thread and search dates read as the Workspace's**: the time today, "Yesterday", the weekday, the day and
+  month, or the date with its year, in the interface's language (ui-angular's `row` format).
 - **Every live screen reads again when its channel comes back.** After a reconnect, or after the server ends a channel
   and the fresh token is granted, nothing published meanwhile is replayed, so: the mail page reads the open mailbox's
   folders and list, every mailbox's unread number and its running folder jobs again (`mail.resync`); the aliases

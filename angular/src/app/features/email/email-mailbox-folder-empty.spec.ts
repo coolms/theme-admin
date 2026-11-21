@@ -50,7 +50,7 @@ const TREE: EmailFolderTreeDto = {
 const preview = (over: Partial<FolderActionPreviewDto> = {}): FolderActionPreviewDto => ({
     mailboxId: 'mb1', folder: 'Trash', action: 'empty', title: 'Papierkorb leeren?',
     body: '3 Nachrichten werden endgueltig geloescht.', confirm: 'Endgueltig leeren', count: 3, uidCeiling: 812,
-    uidValidity: 1700000001, ...over,
+    uidValidity: 1700000001, possible: true, ...over,
 });
 
 const ROWS = ['t1', 't2', 't3'].map(id => ({ id, folder: 'Trash', subject: id, seen: true } as EmailMessageDto));
@@ -71,6 +71,7 @@ const isVisible = (n: NaviGraphNode, record: Record<string, unknown>): boolean =
 describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
     let previews: Array<() => Observable<FolderActionPreviewDto>>;
     let previewsAsked: string[];
+    let previewActions: string[];
     let emptyAnswer: () => Observable<FolderJobDto>;
     let emptied: Array<[string, number, number]>;
     let confirms: ConfirmDialogData[];
@@ -82,6 +83,7 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
 
     function build(): EmailMailboxPageComponent {
         previewsAsked = [];
+        previewActions = [];
         emptied = [];
         confirms = [];
         menus = [];
@@ -101,8 +103,9 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
                             return of(TREE);
                         },
                         listMessages: (_id: string, folder: string) => of(folder === 'Trash' ? ROWS : []),
-                        folderActionPreview: (_mailboxId: string, folder: string) => {
+                        folderActionPreview: (_mailboxId: string, folder: string, action: string) => {
                             previewsAsked.push(folder);
+                            previewActions.push(action);
                             return (previews.shift() ?? ((): Observable<FolderActionPreviewDto> => of(preview())))();
                         },
                         emptyFolder: (_mailboxId: string, folder: string, uidCeiling: number, uidValidity: number) => {
@@ -185,6 +188,14 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
 
     it('is offered only where canEmpty is true, in the danger style', () => {
         const page = build();
+        const node = (action: string, label: string, fact: string, extra: Record<string, unknown> = {}): NaviGraphNode => ({
+            id: action, path: `/${action}`, title: label, parentId: null, sortOrder: 0, isActive: true, isVisible: true, children: [],
+            meta: { action, label, surface: 'context', showWhen: { field: fact, op: 'eq', value: true }, ...extra },
+        });
+        page.folderActionNodes.set([
+            node('mark-read', 'Mark all as read', '_canMarkRead'),
+            node('empty', 'Empty', '_canEmpty', { danger: true }),
+        ]);
 
         expect(menuOf(page, 'Trash').map(i => [i.id, i.danger === true])).toEqual([['empty', true]]);
         expect(menuOf(page, 'Junk').map(i => i.id)).withContext('Spam without canEmpty').toEqual([]);
@@ -289,6 +300,18 @@ describe('EmailMailboxPageComponent -- Empty Trash or Spam', () => {
             expect(busyOf(page, 'Trash')).toBeNull();
             expect(previewsAsked.length).withContext('no second preview').toBe(1);
         }
+    });
+
+    it('the preview is asked for Empty, and one that says it cannot be done shows its words and offers no confirm', () => {
+        previews = [() => of(preview({ possible: false, body: 'Dieser Ordner kann nicht geleert werden.', confirm: '' }))];
+        const page = build();
+        page.onFolderAction('empty', 'Trash');
+
+        expect(previewActions).toEqual(['empty']);
+        expect(confirms).withContext('no confirm offered').toEqual([]);
+        expect(errors).toEqual(['Dieser Ordner kann nicht geleert werden.']);
+        expect(emptied).toEqual([]);
+        expect(busyOf(page, 'Trash')).toBeNull();
     });
 
     it('a preview refused (legal hold) says so, and no confirm is shown', () => {

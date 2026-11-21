@@ -20,7 +20,8 @@ import { EmailLiveEventsService } from './email-live-events.service';
 import { EmailMailboxPageComponent } from './email-mailbox.page';
 import { EmailService } from './email.service';
 import {
-    type EmailFolderTreeDto, type EmailFolderTreeNodeDto, type EmailMailboxDto, type FolderChangeDto, type FolderJobDto,
+    type EmailFolderTreeDto, type EmailFolderTreeNodeDto, type EmailMailboxDto, type FolderActionPreviewDto,
+    type FolderChangeDto, type FolderJobDto,
 } from './email.types';
 import { type FolderNameDialogData } from './folder-name-dialog.component';
 import { type MailFolderJobEvent, jobFailureText } from './mail-folder-actions';
@@ -42,6 +43,7 @@ const TREE: EmailFolderTreeDto = {
         node('INBOX', { name: 'Inbox', role: 'inbox', system: true, canMarkRead: true }),
         node('Projects', { canCreateChild: true, canRename: true }),
         node('Old', { busy: 'empty' }),
+        node('Archive', { canRename: true, canDelete: true }),
     ],
     canCreateTop: true,
     held: false,
@@ -74,6 +76,12 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
     let errors: string[];
     let dialogs: FolderNameDialogData[];
     let creates: Array<[string, string | null]>;
+    let renames: Array<[string, string, string | null]>;
+    let deletes: string[];
+    let previewsAsked: Array<[string, string]>;
+    let previewAnswer: Partial<FolderActionPreviewDto>;
+    let confirms: unknown[];
+    let confirmAnswer: boolean;
 
     function build(): EmailMailboxPageComponent {
         treeAsked = 0;
@@ -84,6 +92,10 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         errors = [];
         dialogs = [];
         creates = [];
+        renames = [];
+        deletes = [];
+        previewsAsked = [];
+        confirms = [];
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [
@@ -109,6 +121,21 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
                             creates.push([name, parent]);
                             return of({ folder: `${parent ?? ''}/${name}`, from: null });
                         },
+                        renameFolder: (_mailboxId: string, folder: string, name: string, parent: string | null): Observable<FolderChangeDto> => {
+                            renames.push([folder, name, parent]);
+                            return of({ folder: `${parent ?? ''}/${name}`, from: folder });
+                        },
+                        folderActionPreview: (_mailboxId: string, folder: string, action: string): Observable<FolderActionPreviewDto> => {
+                            previewsAsked.push([folder, action]);
+                            return of({
+                                mailboxId: 'mb1', folder, action: 'delete', title: 'Delete Archive?', body: 'Its 4 messages move to Trash.',
+                                confirm: 'Delete folder', count: 4, uidCeiling: 0, uidValidity: 0, possible: true, ...previewAnswer,
+                            });
+                        },
+                        deleteFolder: (_mailboxId: string, folder: string): Observable<FolderJobDto> => {
+                            deletes.push(folder);
+                            return of(running({ folder, action: 'delete' }));
+                        },
                     },
                 },
                 { provide: MailPreferencesService, useValue: { readOrDefaults: () => of(MAIL_PREFERENCE_DEFAULTS) } },
@@ -125,7 +152,7 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
                 { provide: Router, useValue: { events: NEVER } },
                 { provide: ActivatedRoute, useValue: { queryParamMap: NEVER } },
                 { provide: Store, useValue: { selectSnapshot: () => null } },
-                { provide: ConfirmDialogService, useValue: {} },
+                { provide: ConfirmDialogService, useValue: { open: (d: unknown) => { confirms.push(d); return of(confirmAnswer); } } },
                 { provide: DraftStoreService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
                 { provide: DateTimeFormatService, useValue: {} },
@@ -166,6 +193,8 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
     });
 
     beforeEach(() => {
+        previewAnswer = {};
+        confirmAnswer = true;
         realtime = true;
         markAnswer = () => of(running());
         jobAnswer = () => of(running());
@@ -205,19 +234,30 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         page.folderActionNodes.set(SERVED_TREE);
 
         expect(menuOf(page, 'INBOX')).toEqual(['mark-read']);
-        expect(menuOf(page, 'Projects')).withContext('move waits for its dialog').toEqual(['new-folder', 'rename']);
+        expect(menuOf(page, 'Projects')).toEqual(['new-folder', 'rename', 'move']);
+        expect(menuOf(page, 'Archive')).toEqual(['rename', 'move', 'delete']);
         expect(menuOf(page, 'Old')).withContext('busy: no menu opens').toBeNull();
         expect(page.newFolderLabel()).toBe('New folder');
+        expect(menus[1].map(i => i.label)).withContext('drawn by each node\'s label').toEqual(['New folder', 'Rename', 'Move']);
 
         page.onFolderAction('new-folder', 'Projects');
         expect(dialogs.length).withContext('New folder inside opens its dialog').toBe(1);
     });
 
-    it('each row offers exactly what its flags say, a busy folder none; an action not offered does nothing', () => {
+    it('no tree served: no row opens a menu and there is no New folder; the page has no tree of its own', () => {
         const page = build();
 
+        expect(menuOf(page, 'INBOX')).toBeNull();
+        expect(menuOf(page, 'Projects')).toBeNull();
+        expect(page.newFolderLabel()).toBeNull();
+    });
+
+    it('each row offers exactly what its flags say, a busy folder none; an action not offered does nothing', () => {
+        const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
+
         expect(menuOf(page, 'INBOX')).toEqual(['mark-read']);
-        expect(menuOf(page, 'Projects')).toEqual(['new-folder', 'rename']);
+        expect(menuOf(page, 'Projects')).toEqual(['new-folder', 'rename', 'move']);
         expect(menuOf(page, 'Old')).withContext('busy with Empty: no menu opens').toBeNull();
         expect(busyOf(page, 'Old')).toBe('empty');
         expect(page.newFolderLabel()).toBe('New folder');
@@ -337,8 +377,48 @@ describe('EmailMailboxPageComponent -- folder actions', () => {
         expect(treeAsked).toBe(asked + 1);
     });
 
+    it('Move asks only where to: the name is kept, the folder itself is not a place, and it is moved there', () => {
+        const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
+        page.onFolderAction('move', 'Archive');
+
+        expect(dialogs.length).toBe(1);
+        expect(dialogs[0].title).toBe('Move Archive');
+        expect(dialogs[0].nameFixed).toBeTrue();
+        expect(dialogs[0].places.map(pl => pl.parent)).withContext('never into itself').not.toContain('Archive');
+        expect(dialogs[0].places[0]).toEqual({ parent: null, label: 'Top level' });
+        dialogs[0].save('Archive', 'Projects').subscribe();
+        expect(renames).toEqual([['Archive', 'Archive', 'Projects']]);
+    });
+
+    it('Delete asks the server\'s preview for delete, shows its words as given, and deletes as a job once confirmed', () => {
+        const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
+        page.onFolderAction('delete', 'Archive');
+
+        expect(previewsAsked).toEqual([['Archive', 'delete']]);
+        expect(confirms).toEqual([{ title: 'Delete Archive?', message: 'Its 4 messages move to Trash.', confirmLabel: 'Delete folder', danger: true }]);
+        expect(deletes).toEqual(['Archive']);
+        expect(busyOf(page, 'Archive')).toBe('delete');
+    });
+
+    it('Delete cancelled deletes nothing; a preview that says it cannot be done offers no confirm and says why', () => {
+        confirmAnswer = false;
+        const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
+        page.onFolderAction('delete', 'Archive');
+        expect(deletes).toEqual([]);
+
+        previewAnswer = { possible: false, body: 'Archive holds mail under a legal hold.' };
+        page.onFolderAction('delete', 'Archive');
+        expect(confirms.length).withContext('only the first preview offered a confirm').toBe(1);
+        expect(errors).toEqual(['Archive holds mail under a legal hold.']);
+        expect(deletes).toEqual([]);
+    });
+
     it('New folder inside asks for a name, creates it there, and says a \\Noinferiors refusal in the server\'s words', () => {
         const page = build();
+        page.folderActionNodes.set(SERVED_TREE);
         page.onFolderAction('new-folder', 'Projects');
 
         expect(dialogs.length).toBe(1);

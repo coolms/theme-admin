@@ -78,7 +78,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
                 { provide: ContactsService, useValue: {} },
                 {
                     provide: DateTimeFormatService,
-                    useValue: { auto: () => '11 Nov 2026, 09:00', date: () => '', time: () => '', dateTime: () => '' },
+                    useValue: { row: () => '11 Nov 2026, 09:00', auto: () => '11 Nov 2026, 09:00', date: () => '', time: () => '', dateTime: () => '' },
                 },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => NEVER } },

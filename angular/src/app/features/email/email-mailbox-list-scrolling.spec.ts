@@ -111,7 +111,7 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
                 { provide: ConfirmDialogService, useValue: {} },
                 { provide: DraftStoreService, useValue: {} },
                 { provide: ContactsService, useValue: {} },
-                { provide: DateTimeFormatService, useValue: { auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: ErrorHandlerService, useValue: {} },
                 { provide: EmailLiveEventsService, useValue: { watch: () => live } },
                 { provide: ContextMenuService, useValue: { openFromNodes: (): void => {} } },
