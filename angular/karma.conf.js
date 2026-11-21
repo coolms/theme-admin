@@ -7,11 +7,17 @@
 //
 // The puppeteer lookup is wrapped because the dockerized runner mounts the
 // host's node_modules but NOT the host's ~/.cache/puppeteer; there Chrome
-// comes from the image and $CHROME_BIN is already set, so the require() is
+// comes from the image and $CHROME_BIN is already set, so the lookup is
 // both unnecessary and (its cache dir being absent) misleading if it throws.
-if (!process.env.CHROME_BIN) {
+// puppeteer is ESM only and its executablePath() a promise, so the config is an
+// async function: the karma builder parses it with promiseConfig.
+async function chromeFromPuppeteer() {
+    if (process.env.CHROME_BIN) {
+        return;
+    }
     try {
-        process.env.CHROME_BIN = require('puppeteer').executablePath();
+        const { default: puppeteer } = await import('puppeteer');
+        process.env.CHROME_BIN = await puppeteer.executablePath();
     } catch {
         // Fall through to karma-chrome-launcher's own PATH discovery.
     }
@@ -43,7 +49,8 @@ function FailedSpecsReporter() {
 }
 FailedSpecsReporter.$inject = [];
 
-module.exports = function (config) {
+module.exports = async function (config) {
+    await chromeFromPuppeteer();
     config.set({
         basePath: '',
         // No '@angular-devkit/build-angular' framework/plugin here: the test
