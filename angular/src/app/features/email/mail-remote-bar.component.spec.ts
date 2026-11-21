@@ -80,6 +80,16 @@ describe('MailRemoteBarComponent: the server\'s image bar in one row', () => {
         expect(bar(el)?.hasAttribute('data-said')).toBeTrue();
     });
 
+    it('a disabled action whose node gives no reason says the Workspace\'s words for one', () => {
+        const meta: Record<string, unknown> = { ...TREE[1].meta };
+        delete meta['disabledReasonText'];
+        const el = render(BLOCKED, false, [TREE[0], { ...TREE[1], meta }, TREE[2]]);
+        buttons(el)[1].click();
+        fixture.detectChanges();
+        expect(acted).toEqual([]);
+        expect(el.querySelector('.mrb__said')?.textContent?.trim()).toBe('Not available right now');
+    });
+
     it('allowed for this message: the question, Always as the main action, and a close that hides it for this view only', () => {
         const el = render(BY_MESSAGE);
         expect(buttons(el).map(b => b.getAttribute('data-action'))).toEqual(['allow-remote-sender']);

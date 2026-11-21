@@ -119,7 +119,7 @@ export class MailRemoteBarComponent {
                     label,
                     shortLabel: typeof short === 'string' && short !== '' ? short : null,
                     icon: typeof icon === 'string' ? icon : null,
-                    reason: blocked ? (typeof words === 'string' && words !== '' ? words : 'Not available for this message.') : null,
+                    reason: blocked ? (typeof words === 'string' && words !== '' ? words : 'Not available right now') : null,
                 };
             });
     });

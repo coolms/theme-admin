@@ -12,7 +12,7 @@ major number means here.
   row with the server's sentence and the tree's actions in its order, the first as the main one, each with its short
   label at phone width. Load images, Always show from this sender and Stop are answered by the server, and the frame
   shows images when the server says they are allowed. An action the tree disables for this message stays in sight and,
-  pressed, says why in the server's words. A close appears only when images are allowed for this message alone.
+  pressed, says why in the server's words ("Not available right now" when the node gives none). A close appears only when images are allowed for this message alone.
 - **Quick reply** reads "Reply…", is named for its sender ("Quick reply to …"), and its Expand shows the full-screen
   icon.
 - **The mail folder menu is the server's tree as it serves it** (`navi.toolbar.email.folder`), the same as the
