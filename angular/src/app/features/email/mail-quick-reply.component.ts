@@ -90,17 +90,17 @@ export interface QuickReplyDiscarded {
                 <div class="mqr__row">
                     <app-compose-attach-button [target]="files" />
                     <textarea #box class="mqr__box" rows="1" data-test="quick-reply-box"
-                              [placeholder]="placeholder()" [attr.aria-label]="label()"
+                              placeholder="Reply…" [attr.aria-label]="fieldName()"
                               [value]="text()" (input)="onInput(box.value)"
                               (keydown)="onKeydown($event)"></textarea>
                     <button type="button" class="cms-btn cms-btn-ghost mqr__icon" data-test="quick-reply-expand"
-                            title="Expand to the full form" aria-label="Expand to the full form" (click)="expandNow()">
-                        <i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>
+                            title="Expand" aria-label="Expand" (click)="expandNow()">
+                        <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
                     </button>
                     <button type="button" class="cms-btn cms-btn-primary mqr__send" data-test="quick-reply-send"
                             title="Send (Ctrl+Enter)" aria-label="Send" [disabled]="!canSend()" (click)="send()">
-                        <i class="bi bi-send mqr__send-icon" aria-hidden="true"></i>
                         <span class="mqr__send-text">{{ sending() ? 'Sending…' : 'Send' }}</span>
+                        <i class="bi bi-send mqr__send-icon" aria-hidden="true"></i>
                     </button>
                 </div>
             }
@@ -190,9 +190,10 @@ export class MailQuickReplyComponent {
     readonly storedText = signal('');
     readonly draftLine = computed(() => draftLine(this.storedText()));
     readonly inWindow = computed(() => this.windowHolds() || this.storedInWindow());
-    readonly placeholder = computed(() => {
+    /** The field's accessible name: whom the reply goes to, the sender's name, else the address; the placeholder stays 'Reply…'. */
+    readonly fieldName = computed(() => {
         const who = this.sender().trim();
-        return who !== '' ? `Reply to ${who}…` : 'Reply…';
+        return who !== '' ? `Quick reply to ${who}` : this.label();
     });
     readonly bodyBytes = computed(() => new TextEncoder().encode(this.text()).length);
     /** Send waits for text, and for every file to be attached. */

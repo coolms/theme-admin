@@ -21,6 +21,7 @@ import {
     EmailMailboxDto,
     EmailImportResultDto,
     EmailMessageDetailDto,
+    RemoteContentDto,
     EmailMessageDto,
     EmailMessageList,
     EmailOAuthProviderDto,
@@ -320,6 +321,27 @@ export class EmailService {
             `${this.apiBase}/email/mailboxes/${encodeURIComponent(mailboxId)}/folders`,
             { headers: this.jsonHeaders, params: new HttpParams().set('folder', folder) },
         );
+    }
+
+    /** POST /email/messages/{id}/remote-content -- show this message's remote images: its remoteContent as it now stands. */
+    allowRemoteMessage(messageId: string): Observable<RemoteContentDto> {
+        return this.http.post<{ remoteContent: RemoteContentDto }>(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/remote-content`, {}, { headers: this.jsonHeaders },
+        ).pipe(map(answer => answer.remoteContent));
+    }
+
+    /** POST /email/remote-senders -- always show the message's sender's remote images; the call names the message, never an address. */
+    allowRemoteSender(messageId: string): Observable<RemoteContentDto> {
+        return this.http.post<{ remoteContent: RemoteContentDto }>(
+            `${this.apiBase}/email/remote-senders`, { messageId }, { headers: this.jsonHeaders },
+        ).pipe(map(answer => answer.remoteContent));
+    }
+
+    /** POST /email/messages/{id}/remote-content/disallow-sender -- stop showing the message's sender's remote images. */
+    disallowRemoteSender(messageId: string): Observable<RemoteContentDto> {
+        return this.http.post<{ remoteContent: RemoteContentDto }>(
+            `${this.apiBase}/email/messages/${encodeURIComponent(messageId)}/remote-content/disallow-sender`, {}, { headers: this.jsonHeaders },
+        ).pipe(map(answer => answer.remoteContent));
     }
 
     /**
