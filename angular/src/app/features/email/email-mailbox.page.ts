@@ -210,7 +210,7 @@ type PhonePane = 'folders' | 'message';
     template: `
         <div class="mbx">
             <cms-page-header icon="envelope" [title]="'Email'"
-                             [actions]="headerActions()" (actionClick)="onHeaderAction($event)" />
+                             [actions]="pageHeaderActions()" (actionClick)="onHeaderAction($event)" />
 
             <!-- Declares nothing: the tree names the page's actions, says which
                  need a mailbox, and says that Import greys out while one is
@@ -247,6 +247,15 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back to {{ selectedFolderName() || 'the list' }}</span>
                         </button>
+                        <!-- Compose heads the column, above the mailbox card: the tree's node, its words and its state. -->
+                        @if (composeAction(); as compose) {
+                            <button type="button" class="mbx__btn mbx__btn--primary mbx__rail-compose" data-test="rail-compose"
+                                    [disabled]="compose.disabled ?? false" [attr.title]="compose.title ?? null"
+                                    (click)="onHeaderAction(compose.id)">
+                                <i class="bi bi-{{ compose.icon }}" aria-hidden="true"></i>
+                                <span>{{ compose.label || compose.title }}</span>
+                            </button>
+                        }
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
                              with Retry reading it again. The message pane is not touched. -->
                         @if (mailboxesFailure() !== null) {
@@ -420,13 +429,8 @@ type PhonePane = 'folders' | 'message';
                                             <span class="mbx__row-from">{{ m.senderText || m.fromName || m.fromAddress }}</span>
                                             <span class="mbx__row-date">{{ m.sentAt | appDateTime:'row' }}</span>
                                         </div>
-                                        <!-- Desktop: the subject and the preview on one line; a phone: a line each. -->
-                                        <div class="mbx__row-text">
-                                            <span class="mbx__row-subject">{{ m.subject || '(no subject)' }}</span>
-                                            @if (m.snippet) {
-                                                <span class="mbx__row-snippet">{{ m.snippet }}</span>
-                                            }
-                                        </div>
+                                        <div class="mbx__row-subject">{{ m.subject || '(no subject)' }}</div>
+                                        <div class="mbx__row-snippet">{{ m.snippet }}</div>
                                     </button>
                                     @if (!server) {
                                         <button type="button" class="mbx__row-star" data-part="star"
@@ -623,10 +627,12 @@ type PhonePane = 'folders' | 'message';
                             </div>
                             }
                         } @else {
-                            <div class="mbx__empty-wrap">
-                                <app-empty-state icon="envelope-open"
-                                                 title="No message selected"
-                                                 hint="Pick a message from the list to read it." />
+                            <!-- The empty pane as the message tree declares it; these words until the node is served. -->
+                            @let declaredEmpty = emptyPane();
+                            <div class="mbx__empty-wrap" data-test="empty-pane">
+                                <app-empty-state [icon]="declaredEmpty?.icon ?? 'envelope-open'"
+                                                 [title]="declaredEmpty?.title ?? 'No message selected'"
+                                                 [hint]="declaredEmpty?.hint ?? 'Pick a message from the list to read it.'" />
                             </div>
                         }
                         </div>
@@ -1211,23 +1217,14 @@ type PhonePane = 'folders' | 'message';
         /* The rows' wrapper (the virtual scroll's own, absolutely placed) held to the viewport's width: left to size
            itself, it grows to its widest row's one-line text, and each row with it. */
         .mbx__rows ::ng-deep .cdk-virtual-scroll-content-wrapper { right: 0; }
-        /* Every row the same height (rowHeight: the list density tokens), so the list is drawn by arithmetic. Desktop: two
-           lines, the subject and the muted preview sharing the second; a phone: three lines. */
+        /* Every row the same height (rowHeight: three lines, never under list-row-height-three-line), so the list is drawn
+           by arithmetic: the sender and the date; the subject; the preview, at every width. */
         .mbx__row {
-            display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
-            padding: 0 12px; border-bottom: 1px solid var(--cms-border);
+            display: flex; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box; overflow: hidden;
+            padding: 10px 12px; border-bottom: 1px solid var(--cms-border);
             background: transparent; color: var(--cms-text);
         }
-        .mbx__row-from, .mbx__row-text { line-height: 1.5; min-height: 1.5em; }
-        .mbx__row-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbx__row-text .mbx__row-snippet { margin-left: 6px; }
-        @media (max-width: 599.98px) {
-            .mbx__row { padding: 6px 12px; }
-            .mbx__row-from, .mbx__row-text { line-height: 1.4; min-height: 1.4em; }
-            .mbx__row-text { display: flex; flex-direction: column; gap: 2px; white-space: normal; }
-            .mbx__row-text > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .mbx__row-text .mbx__row-snippet { margin-left: 0; }
-        }
+        .mbx__row-from, .mbx__row-subject, .mbx__row-snippet { line-height: 1.5; min-height: 1.5em; }
         /* Over the rows' top, taking no room: the rows do not move when it comes and goes. */
         .mbx__new-wrap {
             position: sticky; top: 0; z-index: 3; flex: 0 0 auto; height: 0; overflow: visible;
@@ -1242,7 +1239,7 @@ type PhonePane = 'folders' | 'message';
         .mbx__row:hover { background: var(--cms-surface-hover); }
         .mbx__row--active { background: var(--cms-selected-light); }
         .mbx__row--checked { background: var(--cms-selected-light); }
-        .mbx__row-check { margin: 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
+        .mbx__row-check { margin: 3px 0 0; width: 15px; height: 15px; flex: 0 0 auto; cursor: pointer; accent-color: var(--cms-accent, #F5A623); }
         /* A server row's empty room where a stored row has its checkbox: the same width, nothing in it. */
         .mbx__row-check--none { display: block; cursor: default; }
         .mbx__list-end {
@@ -1265,8 +1262,8 @@ type PhonePane = 'folders' | 'message';
         .mbx__row-top { display: flex; justify-content: space-between; gap: 8px; }
         .mbx__row-from { font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__row-date { color: var(--cms-text-muted); font-size: .75rem; flex: 0 0 auto; }
-        .mbx__row-subject { font-size: .8125rem; }
-        .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; }
+        .mbx__row-subject { font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .mbx__row-snippet { color: var(--cms-text-muted); font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
         .mbx__others {
             display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; text-align: left;
@@ -1388,6 +1385,10 @@ type PhonePane = 'folders' | 'message';
             cursor: pointer; font-size: .8125rem;
         }
         .mbx__btn:hover { background: var(--cms-surface-hover); }
+        .mbx__rail-compose {
+            display: flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto;
+            margin: 8px 8px 4px; min-height: var(--cms-touch-target-min, 44px);
+        }
         .mbx__btn--primary { background: var(--cms-accent, #F5A623); border-color: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); }
         .mbx__btn:disabled { opacity: .6; cursor: default; }
 
@@ -1869,8 +1870,8 @@ export class EmailMailboxPageComponent implements OnInit {
     /** New mail heard in real time while the person was scrolled down: the pill says how many. */
     readonly newArrivals = signal<number>(0);
     /** Every row's height in px: fixed, from the three lines a row holds at the root font size. */
-    /** One row's height, the same for every row so the list is drawn by arithmetic: two lines, three on a phone. */
-    readonly rowHeight = computed(() => listRowHeight(this.phone(), rootFontPx()));
+    /** One row's height, the same for every row so the list is drawn by arithmetic: three lines at every width. */
+    readonly rowHeight = computed(() => listRowHeight(rootFontPx()));
     /** Each row's aria-setsize: the open folder's total from the folder tree, or -1 when it is not known. */
     readonly setSize = computed(() => {
         const row = this.folderRows().find(r => r.folder.folder === this.selectedFolder());
@@ -2113,6 +2114,10 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Which actions exist, and when, is declared by this tree -- not here. */
     readonly toolbarTree = 'navi.toolbar.email.mailbox';
     readonly headerActions = signal<ToolbarAction[]>([]);
+    /** The header's actions: every node of the tree's header but Compose, which heads the left column. */
+    readonly pageHeaderActions = computed(() => this.headerActions().filter(a => a.id !== 'compose'));
+    /** Compose as the tree declares it, at the top of the left column; null when the tree offers none. */
+    readonly composeAction = computed(() => this.headerActions().find(a => a.id === 'compose' && a.hidden !== true) ?? null);
 
     /**
      * What the tree's conditions are evaluated against.
@@ -2133,6 +2138,28 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly messageTree = MESSAGE_TOOLBAR_TREE;
     readonly messageNodes = signal<NaviGraphNode[]>([]);
+    /**
+     * The reading pane with no message open, as the message tree declares it: the node whose action is `empty`, its
+     * label, description and icon. Its condition names `_empty`, a fact only a pane drawing it states, so a host that
+     * draws the tree's nodes as buttons never shows it; null when the tree has no such node or it does not hold.
+     */
+    readonly emptyPane = computed((): { readonly title: string; readonly hint: string; readonly icon: string } | null => {
+        const node = this.messageNodes().find(n => (n.meta as Record<string, unknown>)['action'] === 'empty');
+        if (node === undefined) {
+            return null;
+        }
+        const meta = node.meta as Record<string, unknown>;
+        const showWhen = meta['showWhen'] as Record<string, unknown> | undefined;
+        if (!this.naviGraph.matchesShowWhen(showWhen, { _empty: true })) {
+            return null;
+        }
+        const text = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+        const title = text(meta['label']) || text(node.title);
+        if (title === '') {
+            return null;
+        }
+        return { title, hint: text(meta['description']), icon: text(meta['icon']) || 'envelope-open' };
+    });
     /** The list pane's actions, the server's tree (navi.toolbar.email.list); empty while it serves none. */
     readonly listNodes = signal<NaviGraphNode[]>([]);
     readonly listActions = computed(() => paneActionsOf(this.listNodes(), {}, LIST_ACTIONS_HANDLED, this.naviGraph));
