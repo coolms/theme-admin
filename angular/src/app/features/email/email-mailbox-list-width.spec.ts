@@ -118,6 +118,60 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         await settle();
     }
 
+    it('Compose heads the left column above the mailbox card; the header keeps the tree\'s other actions', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        const opened = spyOn(page, 'openCompose');
+        page.headerActions.set([
+            { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' },
+            { id: 'mailbox-settings', icon: 'gear', label: 'Email settings' },
+            { id: 'import', icon: 'upload', label: 'Import' },
+            { id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true },
+        ]);
+        await settle();
+        expect(page.pageHeaderActions().map(a => a.id)).toEqual(['add-mailbox', 'mailbox-settings', 'import']);
+        const compose = part('.mbx__rail [data-test="rail-compose"]');
+        expect(compose).withContext('Compose is in the left column').not.toBeNull();
+        expect(compose.textContent?.trim()).toBe('Compose');
+        const card = part('.mbx__rail app-mailbox-switcher');
+        expect(compose.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).withContext('above the mailbox card').toBeTruthy();
+        compose.click();
+        expect(opened).toHaveBeenCalledTimes(1);
+
+        // A tree that offers no Compose draws none.
+        page.headerActions.set([{ id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' }]);
+        await settle();
+        expect(el().querySelector('[data-test="rail-compose"]')).toBeNull();
+    });
+
+    it('the empty reading pane says what the message tree declares for it, and its own words until then', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        const pane = (): string => (part('[data-test="empty-pane"]').textContent ?? '').replace(/\s+/g, ' ').trim();
+        expect(pane()).toContain('No message selected');
+        expect(pane()).toContain('Pick a message from the list to read it.');
+
+        // Shown only while the pane states _empty: the tree's condition names it.
+        const graph = TestBed.inject(NaviGraphService) as unknown as { matchesShowWhen: (when: unknown, facts: Record<string, unknown>) => boolean };
+        graph.matchesShowWhen = (_when, facts) => facts['_empty'] === true;
+        const empty = {
+            id: '/empty', path: '/empty', title: 'Empty', parentId: null, sortOrder: 0, isActive: true, isVisible: true, children: [],
+            meta: { action: 'empty', label: 'Nothing open', description: 'Choose a message on the left.', icon: 'envelope-open',
+                showWhen: { field: '_empty', op: 'eq', value: true } },
+        };
+        page.messageNodes.set([empty as never]);
+        await settle();
+        expect(pane()).toContain('Nothing open');
+        expect(pane()).toContain('Choose a message on the left.');
+        expect(pane()).not.toContain('No message selected');
+
+        // A condition that does not hold keeps the pane's own words.
+        graph.matchesShowWhen = () => false;
+        page.messageNodes.set([{ ...empty } as never]);
+        await settle();
+        expect(pane()).toContain('No message selected');
+    });
+
     for (const width of [1440, 760]) {
         it(`at ${width}px a row with a very long sender, subject and snippet is the list's width, nothing scrolls sideways`, async () => {
             await render(width);
@@ -144,7 +198,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
             inside(long.querySelector<HTMLElement>('[data-part="star"]')!, 'the star');
             inside(long.querySelector<HTMLElement>('.mbx__row-date')!, 'the date');
 
-            for (const cls of ['.mbx__row-from', '.mbx__row-text']) {
+            for (const cls of ['.mbx__row-from', '.mbx__row-subject', '.mbx__row-snippet']) {
                 const text = long.querySelector<HTMLElement>(cls)!;
                 const style = getComputedStyle(text);
                 expect(style.textOverflow).withContext(`${cls} ends in an ellipsis`).toBe('ellipsis');
@@ -154,18 +208,16 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
 
             // The server row's empty room keeps its sender, subject and date in line with the stored row's.
             const at = (r: HTMLElement, cls: string): DOMRect => box(r.querySelector(cls)!);
-            // Two lines at desktop width: the subject and the muted preview share the second, the row is the two-line height.
-            const middle = (r: DOMRect): number => (r.top + r.bottom) / 2;
-            // One line: the smaller preview shares the subject's baseline, so their middles are within a few px.
-            expect(Math.abs(middle(at(long, '.mbx__row-snippet')) - middle(at(long, '.mbx__row-subject'))))
-                .withContext('the preview follows the subject on its line').toBeLessThanOrEqual(3);
-            expect(at(long, '.mbx__row-snippet').left).withContext('after it').toBeGreaterThan(at(long, '.mbx__row-subject').left);
-            expect(box(long).height).withContext('the two-line row').toBe(52);
+            // Three lines at every width: the preview on a line of its own, under the subject; the row the three-line height.
+            expect(at(long, '.mbx__row-snippet').top).withContext('the preview under the subject')
+                .toBeGreaterThanOrEqual(at(long, '.mbx__row-subject').bottom - 1);
+            expect(at(long, '.mbx__row-snippet').left).withContext('starting where it starts').toBe(at(long, '.mbx__row-subject').left);
+            expect(box(long).height).withContext('the three-line row').toBe(84);
 
             expect(box(fromServer).width).withContext('the server row is the list\'s width').toBe(region.clientWidth);
             expect(at(fromServer, '.mbx__row-from').left).toBe(at(long, '.mbx__row-from').left);
             expect(at(fromServer, '.mbx__row-subject').left).toBe(at(long, '.mbx__row-subject').left);
-            expect(at(fromServer, '.mbx__row-text').right).toBe(at(long, '.mbx__row-text').right);
+            expect(at(fromServer, '.mbx__row-subject').right).toBe(at(long, '.mbx__row-subject').right);
             expect(at(fromServer, '.mbx__row-date').right).toBe(at(long, '.mbx__row-date').right);
         });
     }
