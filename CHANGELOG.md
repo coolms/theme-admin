@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **The product is Mail wherever people see it**: the mailbox settings panes name their owner Mail (was Email). The address and the medium keep their words ("Email address", a field labelled Email).
 - **The file manager restarts a folder whose page link is no longer valid**: a next page refused with `/errors/page-link-invalid` (409) reads the folder's first page again, once, the selection kept by id (a file picked on a later page stays picked). A second such refusal before a next page is read, or any other refusal, is the error as before.
 - **Attach from Drive restarts the folder on the same problem**: the loader hands the files picker a restart for `/errors/page-link-invalid` (409), ahead of denied and failure; any other 409 stays a failure.
 - **Mail is headed by the section head** (ui-angular's `cms-section-head`, the components contract's `section-header`): where the folders show beside the list, row 1 of the left column holds the title, Compose and More (Add mailbox, Email settings, Import, as the tree serves them) and row 2 the mailbox card; with one or two panes, or no mailbox, the head spans the page. The title is the tree's title node, "Mail" until it answers; the quick-access button says Mail. Compose is greyed with the server's reason while the selected mailbox needs a new sign-in (`_mailboxNeedsReconnect`, from the mailbox's `connectionNeedsSignIn`).
