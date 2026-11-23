@@ -172,6 +172,7 @@
     --cms-control-height-lg: 44px;
     --cms-topbar-height: 64px;
     --cms-pane-toolbar-height: calc(var(--cms-row-height) + 2 * var(--cms-space-2));
+    --cms-pane-header-height: calc(var(--cms-row-height) + 2 * var(--cms-space-3));
     --cms-spinner-color: var(--cms-accent-text);
     --cms-spinner-track: var(--cms-border);
     --cms-spinner-size-inline: 16px;
