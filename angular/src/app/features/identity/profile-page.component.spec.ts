@@ -410,6 +410,19 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         expect(entries().find(b => b.textContent!.trim() === preferences.label)!.getAttribute('aria-current')).toBe('page');
     });
 
+ it('a failed read of the profile shows no card and nothing on it to press; the card returns once it is read', () => {
+        const host = fixture.nativeElement as HTMLElement;
+        expect(host.querySelector('[data-test="profile-card"]')).withContext('read: the card is there').not.toBeNull();
+        page.loadFailure.set(new Error('unreachable'));
+        fixture.detectChanges();
+        expect(host.querySelector('[data-test="profile-card"]')).withContext('failed: no card').toBeNull();
+        expect(host.querySelector('input[type="file"]')).withContext('no avatar upload').toBeNull();
+        expect(host.querySelector('.color-dot')).withContext('no colour to press').toBeNull();
+        page.loadFailure.set(null);
+        fixture.detectChanges();
+        expect(host.querySelector('[data-test="profile-card"]')).withContext('read again: the card is back').not.toBeNull();
+    });
+
  // -- the profile.tab slot -------------------------------------------------
 
  it('a section another module bound a pane for renders that pane, handed the section name', () => {

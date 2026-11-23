@@ -200,6 +200,8 @@ type Tab = 'personal' | string;
         <cms-settings-shell icon="person-circle" title="My Profile" listLabel="Profile sections"
                             splitterKey="cms.profile.listW"
                             [sections]="shellSections()" [selectedId]="activeTab()" (picked)="activeTab.set($event)">
+                <!-- The card once the profile has been read: none while it loads, and none when the read failed. -->
+                @if (user() !== null && loadFailure() === null) {
                 <div cmsSettingsListHead class="profile-card" data-test="profile-card">
                     <label class="avatar-wrap">
                         <app-user-avatar [user]="user()" size="lg" />
@@ -246,6 +248,7 @@ type Tab = 'personal' | string;
                         </span>
                     }
                 </div>
+                }
 
                 <!-- A failed read of the profile is shown in place of the section's pane: the failure itself goes to
                      the banner, with Retry reading it again. -->
