@@ -2162,7 +2162,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly treeTitle = signal<string | null>(null);
     /** The section's title: the tree's, else the section's name in both hosts, "Mail". */
     readonly sectionTitle = computed(() => this.treeTitle() ?? 'Mail');
-    /** The section head's actions: Compose the primary, the tree's other header nodes under More, in its order. */
+    /** The section head's actions: the tree's primary node shown, its other header nodes under More, in its order. */
     readonly sectionActions = computed(() => {
         const actions = this.headerActions();
         // The tree's primary flag decides; Compose stands in only while the served tree marks none.
