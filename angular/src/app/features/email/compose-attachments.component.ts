@@ -7,6 +7,7 @@ import {
     CmsFilesPickerService,
     FilesPickerDenied,
     FilesPickerFailure,
+    FilesPickerRestart,
     VfsTreeService,
     type FilesPickerChoice,
     type FilesPickerEntry,
@@ -15,6 +16,7 @@ import {
     type FilesPickerSpace,
 } from '@coolms/ui-angular';
 import { EmailService } from './email.service';
+import { isPageLinkInvalid } from '../vfs/page-link-invalid';
 import {
     MAX_ATTACHMENT_BYTES,
     attachmentCost,
@@ -447,8 +449,9 @@ export class ComposeAttachmentsComponent {
 
                 return { entries: sorted, next: page.hasMore ? page.nextCursor : null };
             }),
-            catchError((e: unknown) => throwError(() => (e instanceof HttpErrorResponse && (e.status === 403 || e.status === 404)
-                ? new FilesPickerDenied()
+            // A next page whose link is no longer valid: the picker reads the folder again from its first page, once.
+            catchError((e: unknown) => throwError(() => (isPageLinkInvalid(e) ? new FilesPickerRestart()
+                : e instanceof HttpErrorResponse && (e.status === 403 || e.status === 404) ? new FilesPickerDenied()
                 : new FilesPickerFailure('The folder could not be read.')))),
         );
     }
