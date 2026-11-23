@@ -77,6 +77,7 @@ async function ask(url) {
             throw new Unevaluable(`${url} answered ${response.status}`);
         }
         failure ??= `${url} answered ${response.status}`;
+        await response?.body?.cancel();
         if (attempt >= RETRY_WAITS.length) {
             throw new Unevaluable(`${failure} (asked ${attempt + 1} times)`);
         }
