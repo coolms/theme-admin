@@ -157,6 +157,20 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(el().querySelector('[data-action="primary"]')).toBeNull();
     });
 
+    it('measures the head again when a font comes in, so a wider face still fits the title', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        page.headerActions.set([{ id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true }]);
+        await settle();
+        const before = page.headNeed();
+        const title = part('[data-test="section-head"] h1');
+        title.style.fontSize = '32px';
+        document.fonts.dispatchEvent(new Event('loadingdone'));
+        await settle();
+        expect(page.headNeed()).withContext('the need follows the face').toBeGreaterThan(before);
+        expect(title.scrollWidth).withContext('the title still fits').toBeLessThanOrEqual(title.clientWidth + 1);
+    });
+
     it('the message pane draws no empty row: with no message open no action row, its content at the top', async () => {
         await render(1440);
         expect(el().querySelector('[data-test="detail-header-row"]')).toBeNull();

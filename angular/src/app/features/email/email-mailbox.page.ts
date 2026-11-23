@@ -2603,13 +2603,20 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
-        // The section head's row 1 measured again whenever its title or its actions change.
+        // The section head's row 1 measured again whenever its title or its actions change, and once a web font is in:
+        // a row measured in the fallback face would be too narrow for the real one.
         afterRenderEffect(() => {
             this.sectionTitle();
             this.sectionActions();
             this.headInRail();
             untracked(() => this.measureHeadNeed());
         });
+        if (typeof document !== 'undefined' && document.fonts) {
+            const remeasure = (): void => this.measureHeadNeed();
+            void document.fonts.ready.then(remeasure);
+            document.fonts.addEventListener('loadingdone', remeasure);
+            this.destroyRef.onDestroy(() => document.fonts.removeEventListener('loadingdone', remeasure));
+        }
         // The pane closed: the next message opens as written. Another message keeps the view; the last one's note goes.
         effect(() => {
             const open = this.selectedMessage()?.id ?? null;
