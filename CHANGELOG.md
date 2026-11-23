@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **The design-tokens lock check asks GitHub again on a 5xx**: `tools/design-tokens-lock.mjs --network` asks a URL again after 2 s and 5 s when GitHub answers 5xx or the request cannot be made, and is unevaluable only when the third try fails too. A 404 stays a mismatch and any other 4xx stays unevaluable at once.
 - **Mail's folder column fits its section head**: never narrower than the head's first row at its natural width (the icon, the whole title, Compose and More), the wider of that and the folder rail's widest row; the title is no longer cut to its first letter where three panes show.
 - **The product is Mail wherever people see it**: the mailbox settings panes name their owner Mail (was Email). The address and the medium keep their words ("Email address", a field labelled Email).
 - **The file manager restarts a folder whose page link is no longer valid**: a next page refused with `/errors/page-link-invalid` (409) reads the folder's first page again, once, the selection kept by id (a file picked on a later page stays picked). A second such refusal before a next page is read, or any other refusal, is the error as before.

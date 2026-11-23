@@ -53,21 +53,35 @@ function offline({ files }) {
     return found;
 }
 
-/** A response, or null for a 404 (the thing does not exist: a mismatch, never a failure to ask). */
+/** The waits, in milliseconds, before asking again after a 5xx or a request that could not be made. */
+const RETRY_WAITS = [2000, 5000];
+
+/** A response, or null for a 404 (the thing does not exist: a mismatch, never a failure to ask). A 5xx or a request
+ *  that could not be made is asked again after each wait; still failing after the last, it is unevaluable. */
 async function ask(url) {
-    let response;
-    try {
-        response = await fetch(url, { headers: { 'User-Agent': 'design-tokens-lock' } });
-    } catch (error) {
-        throw new Unevaluable(`${url} could not be asked: ${error.message}`);
+    for (let attempt = 0; ; attempt++) {
+        let response;
+        let failure;
+        try {
+            response = await fetch(url, { headers: { 'User-Agent': 'design-tokens-lock' } });
+        } catch (error) {
+            failure = `${url} could not be asked: ${error.message}`;
+        }
+        if (response && response.status === 404) {
+            return null;
+        }
+        if (response && response.ok) {
+            return response;
+        }
+        if (response && response.status < 500) {
+            throw new Unevaluable(`${url} answered ${response.status}`);
+        }
+        failure ??= `${url} answered ${response.status}`;
+        if (attempt >= RETRY_WAITS.length) {
+            throw new Unevaluable(`${failure} (asked ${attempt + 1} times)`);
+        }
+        await new Promise(resolve => setTimeout(resolve, RETRY_WAITS[attempt]));
     }
-    if (response.status === 404) {
-        return null;
-    }
-    if (!response.ok) {
-        throw new Unevaluable(`${url} answered ${response.status}`);
-    }
-    return response;
 }
 
 async function network({ lock, files }) {
