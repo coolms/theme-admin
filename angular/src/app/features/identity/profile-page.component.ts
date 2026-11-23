@@ -12,13 +12,13 @@ import { DatePipe } from '@angular/common';
 import {
     CalendarPrefs,
     calendarPrefsFromSettings,
-    CmsPageHeaderComponent,
+    CmsSettingsPaneComponent,
+    type CmsSettingsSection,
+    CmsSettingsShellComponent,
     DynamicFormComponent,
     PageTitleService,
     SlotComponent,
     StateComponent,
-    TabStripComponent,
-    TabStripItem,
     ToastService,
     UserAvatarComponent,
     UserCalendarPreferencesService,
@@ -67,43 +67,27 @@ type Tab = 'personal' | string;
     imports: [DeclaredSectionComponent, SessionsListComponent, StateComponent, CmsLoaderComponent, 
         FormsModule,
         DatePipe,
-        CmsPageHeaderComponent,
+        CmsSettingsShellComponent,
+        CmsSettingsPaneComponent,
         DynamicFormComponent,
         UserAvatarComponent,
         ProfileCalendarTabComponent,
         SlotComponent,
-        TabStripComponent,
     ],
     styles: [`
         :host { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-        cms-page-header { margin-bottom: 16px; }
 
-        .profile-body {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-        }
+        /* The settings layout: the profile card heads the section list, one section's pane at a time beside it. */
+        cms-settings-shell { flex: 1; min-height: 0; }
 
-        /* Two-panel card */
-        .profile-layout {
-            display: flex;
-            min-height: 480px;
-        }
-        /* A phone stacks the two: side by side, the tabs had the width the 200px panel left them, about 80px at 390. */
-        @media (max-width: 599.98px) {
-            .profile-layout { flex-direction: column; }
-            .profile-layout .profile-sidebar { width: auto; border-right: 0; border-bottom: 1px solid var(--cms-border); }
-        }
-
-        /* -- Left sidebar ------------------------------------------------------- */
-        .profile-sidebar {
-            width: 200px;
-            flex-shrink: 0;
+        /* -- The card, at the head of the section list ------------------------- */
+        .profile-card {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px 16px 24px 16px;
-            border-right: 1px solid var(--cms-border);
+            padding: 16px 12px 20px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--cms-border);
             gap: 8px;
         }
 
@@ -177,26 +161,11 @@ type Tab = 'personal' | string;
             margin-top: 4px;
         }
 
-        /* -- Right content ------------------------------------------------------ */
-        .profile-content {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* The tab bar is the shared app-tab-strip: one row, with the tabs
-           that do not fit behind its "more" menu. Six tabs are wider than
-           this column below ~1000px; a hand-rolled strip here overflowed into
-           .profile-body and scrolled it sideways, then wrapped onto two rows. */
-        .profile-content app-tab-strip { flex-shrink: 0; }
-
+        /* -- The section's pane ----------------------------------------------- */
         .profile-tab-body {
-            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 16px;
-            flex: 1;
         }
 
         /* Identifiers */
@@ -210,13 +179,11 @@ type Tab = 'personal' | string;
         }
         .profile-identifier-value { flex: 1 1 12em; min-width: 0; overflow-wrap: anywhere; }
 
-        /* Footer */
+        /* A section's own Save, for the forms that are not the pane's (the calendar's). */
         .profile-footer {
             display: flex;
             justify-content: flex-end;
-            padding: 12px 20px;
-            border-top: 1px solid var(--cms-border);
-            flex-shrink: 0;
+            padding-top: 12px;
         }
 
         /* Cap input width — personal tab uses cms-input, DynamicForm uses Bootstrap form-control/form-select */
@@ -228,18 +195,12 @@ type Tab = 'personal' | string;
         .profile-tab-body app-dynamic-form { display: block; }
     `],
     template: `
-        <cms-page-header icon="person-circle" title="My Profile" />
-
-        <div class="profile-body">
-            <!-- A failed read of the profile is shown in place of the profile form: the failure itself goes to the
-                 banner, with Retry reading it again. -->
-            @if (loadFailure() !== null) {
-                <cms-state kind="error" title="Failed to load profile" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
-            }
-            <div class="profile-layout cms-card" [hidden]="loadFailure() !== null">
-
-                <!-- Left sidebar -->
-                <aside class="profile-sidebar">
+        <!-- The settings layout: the sections the server lists, the profile card at the head of their list, one
+             section's pane at a time. -->
+        <cms-settings-shell icon="person-circle" title="My Profile" listLabel="Profile sections"
+                            splitterKey="cms.profile.listW"
+                            [sections]="shellSections()" [selectedId]="activeTab()" (picked)="activeTab.set($event)">
+                <div cmsSettingsListHead class="profile-card" data-test="profile-card">
                     <label class="avatar-wrap">
                         <app-user-avatar [user]="user()" size="lg" />
                         <div class="avatar-overlay">
@@ -284,18 +245,17 @@ type Tab = 'personal' | string;
                             Member since {{ user()!.createdAt | date:'MMM yyyy' }}
                         </span>
                     }
-                </aside>
+                </div>
 
-                <!-- Right content -->
-                <div class="profile-content">
-
-                    <!-- Tab bar -->
-                    <app-tab-strip [tabs]="tabItems()"
-                                   [activeId]="activeTab()"
-                                   (selected)="activeTab.set($event)" />
-
-                    <!-- Personal tab -->
+                <!-- A failed read of the profile is shown in place of the section's pane: the failure itself goes to
+                     the banner, with Retry reading it again. -->
+                @if (loadFailure() !== null) {
+                    <cms-state kind="error" title="Failed to load profile" [error]="loadFailure()" actionLabel="Retry" (acted)="load()" />
+                } @else {
+                    <!-- Personal: the pane's own Save and Discard. -->
                     @if (activeTab() === 'personal') {
+                        <cms-settings-pane title="Personal" icon="person" [dirty]="personalDirty()" [saving]="savingProfile()"
+                                           saveLabel="Save changes" (save)="saveProfile()" (discard)="discardProfile()">
                         <div class="profile-tab-body">
                             @if (user()?.identifiers?.length) {
                                 <div class="cms-form-group">
@@ -327,19 +287,12 @@ type Tab = 'personal' | string;
                                 <input class="cms-input" [(ngModel)]="lastName" placeholder="Last name" />
                             </div>
                         </div>
-                        <div class="profile-footer">
-                            <button class="cms-btn cms-btn-primary"
-                                    [disabled]="savingProfile()"
-                                    (click)="saveProfile()">
-                                @if (savingProfile()) {
-                                    <cms-loader [inline]="true" />
-                                }
-                                Save changes
-                            </button>
-                        </div>
+                        </cms-settings-pane>
                     }
 
+                    <!-- The other sections save through their own forms: their panes have no Save of their own. -->
                     @if (declaredTab(); as tabSections) {
+                        <cms-settings-pane [title]="activeLabel()" [icon]="activeIcon()" [editable]="false">
                         <div class="profile-tab-body">
                             @for (sec of tabSections; track sec.section) {
                                 <app-declared-section [section]="sec"
@@ -348,17 +301,21 @@ type Tab = 'personal' | string;
                                                       (stale)="readDeclared()" />
                             }
                         </div>
+                        </cms-settings-pane>
                     }
 
                     @if (activeTab() === 'security') {
+                        <cms-settings-pane title="Security" icon="shield-lock" [editable]="false">
                         <div class="profile-tab-body">
                             <app-sessions-list />
                         </div>
+                        </cms-settings-pane>
                     }
 
-                    <!-- Dynamic settings tabs -->
+                    <!-- The sections other modules declare -->
                     @for (sec of moduleSections(); track sec.section) {
                         @if (activeTab() === sec.section) {
+                            <cms-settings-pane [title]="sec.label" [icon]="sec.icon || 'sliders'" [editable]="false">
                             @if (hasProfileTab(sec.section)) {
                                 <!-- Another module's pane for this section, through
                                      the profile.tab slot (see PROFILE_TAB_SLOT). The
@@ -397,12 +354,11 @@ type Tab = 'personal' | string;
                                         (submitted)="saveSection(sec.section, $event)" />
                                 </div>
                             }
+                            </cms-settings-pane>
                         }
                     }
-
-                </div>
-            </div>
-        </div>
+                }
+        </cms-settings-shell>
     `,
 })
 export class ProfilePageComponent implements OnInit {
@@ -434,14 +390,19 @@ export class ProfilePageComponent implements OnInit {
 
     readonly user           = signal<IdentityUserDto | null>(null);
     readonly sections       = signal<ProfileSection[]>([]);
-    /** The tab bar: Personal, then one tab per section the server listed. */
-    readonly tabItems       = computed<TabStripItem[]>(() => [
+    /** The section list: Personal, then one entry per section the server listed, then Security. */
+    readonly tabItems       = computed<ReadonlyArray<{ id: string; label: string; icon: string }>>(() => [
         { id: 'personal', label: 'Personal', icon: 'person' },
         ...(this.sectionNamed('region') ? [{ id: 'region', label: 'Language & region', icon: 'globe' }] : []),
         ...(this.sectionNamed('appearance') ? [{ id: 'appearance', label: 'Appearance', icon: 'palette' }] : []),
         ...this.moduleSections().map(sec => ({ id: sec.section, label: sec.label, icon: sec.icon })),
         { id: 'security', label: 'Security', icon: 'shield-lock' },
     ]);
+    /** The shell's entries, in the list's order. */
+    readonly shellSections  = computed<CmsSettingsSection[]>(() => this.tabItems().map(t => ({ id: t.id, label: t.label })));
+    /** The open section's label and icon, for its pane's heading. */
+    readonly activeLabel    = computed(() => this.tabItems().find(t => t.id === this.activeTab())?.label ?? '');
+    readonly activeIcon     = computed(() => this.tabItems().find(t => t.id === this.activeTab())?.icon ?? 'sliders');
     /** The declared sections, read apart: a server without them still draws its older tabs. */
     readonly declaredSections = signal<ReadonlyArray<DeclaredSection>>([]);
     private readonly declaredAnswered = signal(false);
@@ -584,6 +545,19 @@ export class ProfilePageComponent implements OnInit {
     }
 
     // -- Personal --------------------------------------------------------------
+
+    /** The names typed differ from the ones read: the pane offers Save and Discard. */
+    personalDirty(): boolean {
+        const u = this.user();
+        return u !== null && (this.firstName !== (u.firstName ?? '') || this.lastName !== (u.lastName ?? ''));
+    }
+
+    /** The names back as they were read. */
+    discardProfile(): void {
+        const u = this.user();
+        this.firstName = u?.firstName ?? '';
+        this.lastName  = u?.lastName  ?? '';
+    }
 
     saveProfile(): void {
         this.savingProfile.set(true);

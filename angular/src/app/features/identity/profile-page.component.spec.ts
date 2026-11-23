@@ -365,59 +365,49 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         expect(page.savingCalendar()).toBeFalse();
     });
 
- // -- the tab strip at a narrow width ---------------------------------------
+ // -- the settings layout -------------------------------------------------
 
- it('a tab strip wider than the content column keeps one row and a more menu; it never scrolls the body sideways', async () => {
- // Seen 2026-09-21 at a 964px viewport with six tabs: the page's own strip
- // overflowed into .profile-body, which scrolls (overflow-y: auto implies
- // overflow-x), and clicking the half-visible Calls tab focused it and
- // scrolled the body 118px -- the sidebar was cut off at the left. The
- // strip is the shared app-tab-strip now; 480px here makes four tabs
- // overflow the column beside the 200px sidebar the same way.
+ it('the settings layout: the card heads the section list, each entry opens its pane, Personal saves through its pane', () => {
         const host = fixture.nativeElement as HTMLElement;
-        host.style.width = '480px';
+        const column = host.querySelector('.cms-settings-shell__list') as HTMLElement;
+        const nav = column.querySelector('nav') as HTMLElement;
+        expect(column.firstElementChild?.getAttribute('data-test')).withContext('the card heads the list column').toBe('profile-card');
+        expect(nav.querySelector('[data-test="profile-card"]')).withContext('outside the navigation of the sections').toBeNull();
+        expect(column.querySelector('[data-test="profile-card"] app-user-avatar')).withContext('the avatar is on the card').not.toBeNull();
+
+        const entries = () => [...nav.querySelectorAll<HTMLButtonElement>('.cms-settings-shell__item')];
+        expect(entries().map(b => b.textContent!.trim())).toEqual(page.tabItems().map(t => t.label));
+        expect(entries()[0].textContent!.trim()).toBe('Personal');
+        expect(entries().at(-1)!.textContent!.trim()).toBe('Security');
+        expect(entries()[0].getAttribute('aria-current')).toBe('page');
+
+        // Personal: the pane's Save and Discard, offered once a name differs from the one read.
+        const button = (label: string) => [...host.querySelectorAll<HTMLButtonElement>('.cms-settings-pane__buttons button')]
+            .find(b => b.textContent!.trim() === label)!;
+        expect(button('Save changes').disabled).withContext('nothing changed yet').toBeTrue();
+        // Typed, as a person does: the field's input event is what marks the page for checking.
+        const first = host.querySelector<HTMLInputElement>('input[placeholder="First name"]')!;
+        first.value = 'Janet';
+        first.dispatchEvent(new Event('input'));
         fixture.detectChanges();
-
-        const body    = host.querySelector('.profile-body') as HTMLElement;
-        const sidebar = host.querySelector('.profile-sidebar') as HTMLElement;
-        const moreShown = () => !!host.querySelector('.cms-tab-strip__more--shown');
-        for (let i = 0; i < 40 && !moreShown(); i++) {
-            await new Promise(r => setTimeout(r, 10));
-            fixture.detectChanges();
-        }
-        expect(moreShown()).withContext('the tabs that do not fit are behind the more button').toBeTrue();
-
-        const inRow = [...host.querySelectorAll<HTMLButtonElement>('.cms-tab-strip__tab')]
-            .filter(b => !b.classList.contains('cms-tab-strip__tab--overflow'));
-        expect(inRow.length).toBeGreaterThan(0);
-        expect(inRow.length).toBeLessThan(4);
-        expect(new Set(inRow.map(t => t.offsetTop)).size).withContext('one row').toBe(1);
-        expect(body.scrollWidth).withContext('nothing overflows the body sideways').toBe(body.clientWidth);
-        const sidebarLeft = Math.round(sidebar.getBoundingClientRect().left);
-
- // The last tab is in the menu; picking it opens Preferences as the tab
- // bar would, and the picked tab is then in the row.
-        (host.querySelector('.cms-tab-strip__more-btn') as HTMLButtonElement).click();
+        expect(page.firstName).toBe('Janet');
+        expect(button('Save changes').disabled).toBeFalse();
+        button('Discard').click();
         fixture.detectChanges();
-        const item = host.querySelector('.cms-tab-strip__menu-item[data-tab="preferences"]') as HTMLButtonElement | null;
-        expect(item).withContext('Preferences is in the more menu').not.toBeNull();
-        item!.focus();
-        item!.click();
+        expect(page.personalDirty()).withContext('Discard puts the names back').toBeFalse();
+        expect(button('Save changes').disabled).toBeTrue();
+
+        // Another entry opens its own pane, headed by its label, with no Save of the pane's.
+        const preferences = page.tabItems().find(t => t.id === 'preferences')!;
+        entries().find(b => b.textContent!.trim() === preferences.label)!.click();
         fixture.detectChanges();
         http.expectOne(`${API_BASE}/forms/${encodeURIComponent('identity:user_preferences')}/render?context=create`)
             .flush(PREFERENCES_FORM);
         fixture.detectChanges();
         expect(page.activeTab()).toBe('preferences');
-        const shown = () => !!host.querySelector('.cms-tab-strip__tab[data-tab="preferences"]:not(.cms-tab-strip__tab--overflow)');
-        for (let i = 0; i < 40 && !shown(); i++) {
-            await new Promise(r => setTimeout(r, 10));
-            fixture.detectChanges();
-        }
-        expect(shown()).withContext('the picked tab took a place in the row').toBeTrue();
-        expect(body.scrollLeft).toBe(0);
-        expect(Math.round(sidebar.getBoundingClientRect().left))
-            .withContext('the sidebar did not move')
-            .toBe(sidebarLeft);
+        expect(host.querySelector('cms-settings-pane cms-section-header')?.textContent).toContain(preferences.label);
+        expect(host.querySelector('.cms-settings-pane__buttons button')).withContext('the form saves itself').toBeNull();
+        expect(entries().find(b => b.textContent!.trim() === preferences.label)!.getAttribute('aria-current')).toBe('page');
     });
 
  // -- the profile.tab slot -------------------------------------------------
