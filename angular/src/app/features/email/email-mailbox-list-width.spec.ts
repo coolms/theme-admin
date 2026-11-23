@@ -133,6 +133,8 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         const head = part('.mbx__rail [data-test="section-head"]');
         const row1 = head.querySelector<HTMLElement>('[data-row="1"]')!;
         expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the section name before the tree answers').toBe('Mail');
+        const title = row1.querySelector<HTMLElement>('h1')!;
+        expect(title.scrollWidth).withContext('the folder column fits the whole title beside Compose and More').toBeLessThanOrEqual(title.clientWidth + 1);
         page.treeTitle.set('Mail (tree)');
         await settle();
         expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the title node of the tree').toBe('Mail (tree)');
@@ -153,6 +155,20 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         page.headerActions.set([{ id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' }]);
         await settle();
         expect(el().querySelector('[data-action="primary"]')).toBeNull();
+    });
+
+    it('measures the head again when a font comes in, so a wider face still fits the title', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        page.headerActions.set([{ id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true }]);
+        await settle();
+        const before = page.headNeed();
+        const title = part('[data-test="section-head"] h1');
+        title.style.fontSize = '32px';
+        document.fonts.dispatchEvent(new Event('loadingdone'));
+        await settle();
+        expect(page.headNeed()).withContext('the need follows the face').toBeGreaterThan(before);
+        expect(title.scrollWidth).withContext('the title still fits').toBeLessThanOrEqual(title.clientWidth + 1);
     });
 
     it('the message pane draws no empty row: with no message open no action row, its content at the top', async () => {

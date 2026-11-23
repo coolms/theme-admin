@@ -1,7 +1,8 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
-    ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
+    ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, afterRenderEffect, computed,
+    effect, inject,
     linkedSignal, signal, untracked, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -265,7 +266,7 @@ type PhonePane = 'folders' | 'message';
                         </ng-template>
                         <!-- The section head: row 1 the title, Compose and More, row 2 the mailbox card. -->
                         @if (headInRail()) {
-                            <cms-section-head class="mbx__section-head" data-test="section-head" icon="envelope" [title]="sectionTitle()"
+                            <cms-section-head #railHead class="mbx__section-head" data-test="section-head" icon="envelope" [title]="sectionTitle()"
                                               [primary]="sectionActions().primary" [more]="sectionActions().more"
                                               (action)="onHeaderAction($event)">
                                 <div section-context class="mbx__head-card" data-test="rail-card">
@@ -292,7 +293,7 @@ type PhonePane = 'folders' | 'message';
                                               (retry)="retryFolders()"
                                               (menu)="onFolderMenu($event)"
                                               (create)="createTopFolder()"
-                                              (need)="panes.foldersNeedIn($event, railPane)" />
+                                              (need)="railNeed.set($event); reportFoldersNeed(railPane)" />
                     </aside>
 
                     <!-- Where folders show beside the list the column is as wide as its widest row needs, at least 200px. -->
@@ -1830,6 +1831,36 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly phone = signal(this.phoneWidth?.matches === true);
     /** The mail grid's panes, measured on the grid itself. */
     private readonly gridPanes = viewChild(MailPanesDirective);
+    /** The folder rail's widest row, as it reports it. */
+    readonly railNeed = signal(0);
+    /** The section head's row 1 at its natural width: the icon, the whole title, the primary and More, and their gaps. */
+    readonly headNeed = signal(0);
+    private readonly railHead = viewChild('railHead', { read: ElementRef });
+    private readonly railPaneRef = viewChild<ElementRef<HTMLElement>>('railPane');
+
+    /** The folder column's minimum: the wider of what the folder rail and the section head's row 1 need. */
+    reportFoldersNeed(pane: HTMLElement): void {
+        this.gridPanes()?.foldersNeedIn(Math.max(this.railNeed(), this.headNeed()), pane);
+    }
+
+    /** Row 1's natural width, the title at its whole text however narrow the column is now. */
+    private measureHeadNeed(): void {
+        const host = this.railHead()?.nativeElement as HTMLElement | undefined;
+        const row = host?.querySelector<HTMLElement>('[data-row="1"]');
+        const title = row?.querySelector<HTMLElement>('h1');
+        if (!row || !title) return;
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const text = Math.ceil(range.getBoundingClientRect().width);
+        const shown = [...row.children].filter((c): c is HTMLElement => c instanceof HTMLElement && (c === title || c.offsetWidth > 0));
+        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+        const others = shown.filter(c => c !== title).reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
+        const need = Math.ceil(others + text + gap * Math.max(0, shown.length - 1));
+        if (need === this.headNeed()) return;
+        this.headNeed.set(need);
+        const pane = this.railPaneRef()?.nativeElement;
+        if (pane) this.reportFoldersNeed(pane);
+    }
     /** One pane at a time, on a phone or in a grid too narrow for the list and the message; the pane shown is then in the address. */
     readonly onePane = computed(() => this.phone() || this.gridPanes()?.count() === 1);
     /** The list and the message side by side; the folders stand in the list's place when asked for. */
@@ -2572,6 +2603,20 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
+        // The section head's row 1 measured again whenever its title or its actions change, and once a web font is in:
+        // a row measured in the fallback face would be too narrow for the real one.
+        afterRenderEffect(() => {
+            this.sectionTitle();
+            this.sectionActions();
+            this.headInRail();
+            untracked(() => this.measureHeadNeed());
+        });
+        if (typeof document !== 'undefined' && document.fonts) {
+            const remeasure = (): void => this.measureHeadNeed();
+            void document.fonts.ready.then(remeasure);
+            document.fonts.addEventListener('loadingdone', remeasure);
+            this.destroyRef.onDestroy(() => document.fonts.removeEventListener('loadingdone', remeasure));
+        }
         // The pane closed: the next message opens as written. Another message keeps the view; the last one's note goes.
         effect(() => {
             const open = this.selectedMessage()?.id ?? null;
