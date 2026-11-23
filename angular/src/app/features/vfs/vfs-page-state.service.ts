@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { AppConfigState, ElevationService, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
 import { VfsHomeLabelService } from './vfs-home-label.service';
+import { isPageLinkInvalid } from './page-link-invalid';
 import { UploadItem, VfsDirectoryPage, VfsNodeDto, VfsViewMode } from '@coolms/ui-angular';
 
 /**
@@ -149,6 +150,7 @@ export class VfsPageStateService {
 
     private loadDirectory(path: string): void {
         // Reset pagination state on every new directory navigation
+        this.restarted = false;
         this.hasMore.set(false);
         this.nextCursor.set(null);
         this.pendingReveal = null;
@@ -182,7 +184,13 @@ export class VfsPageStateService {
         if (!this.hasMore()) this.pendingReveal = null;
     }
 
-    private loadPage(path: string, cursor?: string): void {
+    /**
+     * A restart was made in this folder and no next page has been read since: a second one is the error, never a loop.
+     * Cleared by a next page read and by another folder.
+     */
+    private restarted = false;
+
+    private loadPage(path: string, cursor?: string, restart = false): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
 
@@ -215,10 +223,12 @@ export class VfsPageStateService {
 
                 if (cursor) {
                     // Append new page at the end, preserving sort within the new items
+                    this.restarted = false;
                     this.nodes.update(prev => [...prev, ...sorted]);
                 } else {
                     this.nodes.set(sorted);
-                    this.refreshSelection(sorted);
+                    // A restart keeps the selection by id: what was picked on a later page is still picked.
+                    if (!restart) this.refreshSelection(sorted);
                 }
 
                 this.hasMore.set(r.hasMore ?? false);
@@ -229,6 +239,13 @@ export class VfsPageStateService {
                 this.reloadTrigger.update(v => v + 1);
             },
             error: err => {
+                // A next page whose link is no longer valid: the folder from its first page, once.
+                if (cursor && !this.restarted && isPageLinkInvalid(err)) {
+                    this.restarted = true;
+                    this.loading.set(false);
+                    this.loadPage(path, undefined, true);
+                    return;
+                }
                 this.error.set(this.errors.humanize(err));
                 this.loading.set(false);
             },
