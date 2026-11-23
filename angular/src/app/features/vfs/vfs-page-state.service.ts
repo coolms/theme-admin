@@ -1,10 +1,11 @@
 import { DestroyRef, computed, inject, Injectable, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngxs/store';
 import { AppConfigState, ElevationService, ErrorHandlerService, NaviGraphNode } from '@coolms/core-angular';
 import { VfsHomeLabelService } from './vfs-home-label.service';
+import { isPageLinkInvalid } from './page-link-invalid';
 import { UploadItem, VfsDirectoryPage, VfsNodeDto, VfsViewMode } from '@coolms/ui-angular';
 
 /**
@@ -189,14 +190,6 @@ export class VfsPageStateService {
      */
     private restarted = false;
 
-    /** Whether a next page was refused because its page link is no longer valid (/errors/page-link-invalid, 409). */
-    private static pageLinkInvalid(err: unknown): boolean {
-        if (!(err instanceof HttpErrorResponse) || 409 !== err.status) return false;
-        const type = (err.error as { type?: unknown } | null)?.type;
-
-        return typeof type === 'string' && type.endsWith('/errors/page-link-invalid');
-    }
-
     private loadPage(path: string, cursor?: string, restart = false): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
@@ -247,7 +240,7 @@ export class VfsPageStateService {
             },
             error: err => {
                 // A next page whose link is no longer valid: the folder from its first page, once.
-                if (cursor && !this.restarted && VfsPageStateService.pageLinkInvalid(err)) {
+                if (cursor && !this.restarted && isPageLinkInvalid(err)) {
                     this.restarted = true;
                     this.loading.set(false);
                     this.loadPage(path, undefined, true);

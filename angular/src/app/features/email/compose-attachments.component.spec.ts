@@ -6,6 +6,8 @@ import {
     CmsFilesPickerComponent,
     CmsFilesPickerService,
     FilesPickerDenied,
+    FilesPickerFailure,
+    FilesPickerRestart,
     VfsTreeService,
     type FilesPickerChoice,
     type FilesPickerOptions,
@@ -195,6 +197,17 @@ describe('ComposeAttachmentsComponent', () => {
         const answer = pickerOptions!.list('home', 'Docs');
         await expectAsync(firstValueFrom(answer as Observable<unknown>)).toBeRejectedWith(jasmine.any(FilesPickerDenied));
         expect(listed).toEqual(['/home/u1/Docs']);
+    });
+
+    it('hands the picker a restart for a page link no longer valid, and a failure for any other 409', async () => {
+        const f = create();
+        await f.componentInstance.chooseFromFiles();
+        listAnswer = () => throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/page-link-invalid', status: 409 } }));
+        await expectAsync(firstValueFrom(pickerOptions!.list('home', 'Docs', 'stale') as Observable<unknown>))
+            .toBeRejectedWith(jasmine.any(FilesPickerRestart));
+        listAnswer = () => throwError(() => new HttpErrorResponse({ status: 409, error: { type: '/errors/vfs/something-else', status: 409 } }));
+        await expectAsync(firstValueFrom(pickerOptions!.list('home', 'Docs', 'c2') as Observable<unknown>))
+            .toBeRejectedWith(jasmine.any(FilesPickerFailure));
     });
 
     it('keeps a Drive batch going when one of its chips is removed before the answer, and removes that one on the server', () => {
