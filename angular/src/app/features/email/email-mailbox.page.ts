@@ -2,7 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed, effect, inject,
-    signal, untracked, viewChild,
+    linkedSignal, signal, untracked, viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -396,6 +396,8 @@ type PhonePane = 'folders' | 'message';
                                     </button>
                                 </div>
                             }
+                            <!-- How many rows are checked, read out as it changes; a clear says so. -->
+                            <span class="visually-hidden" role="status" data-test="selection-status">{{ selectionStatus() }}</span>
                             <!-- Only the rows in view and a small buffer are drawn, each the same height. A server row
                                  (listed by the mail server, stored nowhere here) is keyed by its ref and offers Open
                                  only: no checkbox, no star, no row menu. Their places stay as empty room, so its
@@ -403,7 +405,8 @@ type PhonePane = 'folders' | 'message';
                             <cdk-virtual-scroll-viewport class="mbx__rows" data-test="list-rows" role="list" aria-label="Messages"
                                                          [itemSize]="rowHeight()" [minBufferPx]="rowHeight() * 4"
                                                          [maxBufferPx]="rowHeight() * 8" [style.min-height.px]="messages().length * rowHeight()"
-                                                         (focusin)="onRowFocusIn($event)" (focusout)="onRowFocusOut($event)">
+                                                         (focusin)="onRowFocusIn($event)" (focusout)="onRowFocusOut($event)"
+                                                         (keydown)="onListKeydown($event)">
                                 <ng-container *cdkVirtualFor="let m of messages(); trackBy: trackRow; let i = index">
                                 @let server = isServerRowOf(m);
                                 <div class="mbx__row" role="listitem" (contextmenu)="onMessageRowContextMenu($event, m)"
@@ -422,7 +425,7 @@ type PhonePane = 'folders' | 'message';
                                         <input type="checkbox" class="mbx__row-check" data-part="check"
                                                [checked]="isSelected(m.id)"
                                                (click)="onCheckboxClick(m, $event)"
-                                               aria-label="Select message" />
+                                               [attr.aria-label]="'Select ' + (m.subject || '(no subject)')" />
                                     }
                                     <button type="button" class="mbx__row-main" data-part="main" (click)="onRowClick(m, $event)">
                                         <div class="mbx__row-top">
@@ -484,12 +487,18 @@ type PhonePane = 'folders' | 'message';
                         <!-- The open message's actions, the server's tree (navi.toolbar.email.message): a row above the
                              subject, kept empty at its height while no message is open. -->
                         <div #detailRow class="mbx__pane-row" data-test="detail-row">
-                            <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
+                            <cms-pane-toolbar [actions]="manyChecked() ? [] : detailActions()" label="Message actions"
                                               (action)="atAction(detailRow, $event); onDetailAction($event)" />
                         </div>
                         <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
                         <div class="mbx__detail-scroll" data-test="detail-scroll" (keydown.escape)="leaveOriginal($event)">
-                        @if (loadingDetail() || openFailure() !== null) {
+                        @if (manyChecked()) {
+                            <!-- From two checked rows the pane says how many, in place of a message. -->
+                            <div class="mbx__empty-wrap" data-test="checked-count">
+                                <app-empty-state icon="check2-square" [title]="selectedCount() + ' selected'"
+                                                 hint="The bar above the list acts on them all." />
+                            </div>
+                        } @else if (loadingDetail() || openFailure() !== null) {
                             <!-- What the row already has, at once; the body follows, or why it could not. -->
                             @let head = opening() ?? openFailure()?.header ?? null;
                             <div class="mbx__detail-head" data-test="opening-head">
@@ -1910,6 +1919,18 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly selectedIds = signal<Set<string>>(new Set<string>());
     readonly selectedCount = computed(() => this.selectedIds().size);
+    /** Two or more rows checked in the folder view: the reading pane says how many in place of a message. */
+    readonly manyChecked = computed(() => !this.searchActive() && this.selectedCount() >= 2);
+    /** The status line under the list: the count while rows are checked, "Selection cleared" once they no longer are. */
+    readonly selectionStatus = linkedSignal<number, string>({
+        source: () => this.selectedCount(),
+        computation: (count, previous) => {
+            if (count > 0) {
+                return `${count} selected`;
+            }
+            return previous !== undefined && previous.source > 0 ? 'Selection cleared' : '';
+        },
+    });
     readonly bulkBusy = signal<boolean>(false);
     /** The action pressed and not yet answered: busy where it was pressed, the row's others disabled, not run again. */
     readonly pending = signal<PendingAction | null>(null);
@@ -3881,7 +3902,10 @@ export class EmailMailboxPageComponent implements OnInit {
         return this.selectedIds().has(id);
     }
 
-    /** Row click: plain = open the message; Ctrl/Cmd = toggle in selection; Shift = range-select. */
+    /**
+     * Row click, as a desktop file list: plain opens the row, clears every check and makes it the anchor; Ctrl/Cmd
+     * toggles its check without opening it; Shift checks the range from the anchor to it.
+     */
     onRowClick(m: EmailMessageDto, ev: MouseEvent): void {
         // A server row is never checked: any click opens it.
         if (isServerRow(m)) {
@@ -3894,24 +3918,125 @@ export class EmailMailboxPageComponent implements OnInit {
             ev.preventDefault();
             this.toggleSelect(m.id);
         } else {
+            this.clearSelection();
+            this.selectAnchorId = m.id;
             this.openMessage(m);
         }
     }
 
     /**
-     * Checkbox click: a plain toggle of this one message; never opens it. We let the
-     * NATIVE checkbox toggle drive its own tick (so it always renders checked) and
-     * mirror the same flip into the selection signal -- they agree for a plain toggle,
-     * and `[checked]` re-asserts from the signal on the next change detection. Shift/Ctrl
-     * range selection lives on the row body ({@link onRowClick}), so the checkbox never
-     * hits a case where the signal and the native tick could drift.
+     * Checkbox click: toggles this one message, never opens it; with Shift, checks the range from the anchor to it.
+     * The native tick drives a plain toggle and the selection signal mirrors it. A Shift click's tick is the range's:
+     * the browser's own toggle is cancelled, and the box is set from the selection once the click is over (the browser
+     * puts a cancelled box back after the handlers, change detection included).
      */
     onCheckboxClick(m: EmailMessageDto, ev: MouseEvent): void {
         ev.stopPropagation(); // don't bubble to the row's open handler
         if (isServerRow(m)) {
             return;
         }
+        if (ev.shiftKey) {
+            ev.preventDefault();
+            this.selectRangeTo(m.id);
+            const box = ev.target as HTMLInputElement;
+            setTimeout(() => { box.checked = this.isSelected(m.id); });
+            return;
+        }
         this.toggleSelect(m.id);
+    }
+
+    /**
+     * The list's keys, while one of its rows has the focus: Up/Down move it, and open the row as a click would unless
+     * two or more are checked; Shift+Up/Down move it and check the range from the anchor; Space toggles the focused
+     * row's check; Ctrl/Cmd+A checks every loaded row; Esc clears the checks (with none checked it is left as it was).
+     */
+    onListKeydown(ev: KeyboardEvent): void {
+        if (ev.defaultPrevented || this.searchActive()) {
+            return;
+        }
+        const target = ev.target as HTMLElement;
+        if (ev.key === 'Escape') {
+            if (this.selectedCount() > 0) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.clearSelection();
+            }
+            return;
+        }
+        if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && (ev.key === 'a' || ev.key === 'A')) {
+            ev.preventDefault();
+            this.selectAllLoaded();
+            return;
+        }
+        const key = target.closest('[data-key]')?.getAttribute('data-key') ?? null;
+        const list = this.messages();
+        const at = key === null ? -1 : list.findIndex(m => rowKey(m) === key);
+        if (at === -1) {
+            return;
+        }
+        const row = list[at];
+        if (ev.key === ' ' && target.getAttribute('data-part') === 'main') {
+            ev.preventDefault();
+            if (!isServerRow(row)) {
+                this.toggleSelect(row.id);
+            }
+            return;
+        }
+        if ((ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') || ev.ctrlKey || ev.metaKey || ev.altKey) {
+            return;
+        }
+        const next = list[at + (ev.key === 'ArrowDown' ? 1 : -1)];
+        if (next === undefined) {
+            return;
+        }
+        ev.preventDefault();
+        this.focusRow(next);
+        if (ev.shiftKey) {
+            if (!isServerRow(next)) {
+                this.selectRangeTo(next.id, isServerRow(row) ? null : row.id);
+            }
+            return;
+        }
+        if (!isServerRow(next)) {
+            this.selectAnchorId = next.id;
+        }
+        if (this.selectedCount() >= 2) {
+            return;
+        }
+        if (isServerRow(next)) {
+            this.openServerRow(next);
+        } else {
+            this.openMessage(next);
+        }
+    }
+
+    /**
+     * Gives a row's open control the focus: at once when it is drawn; otherwise the list region holds focus, scrolls the
+     * row into view, and the row takes focus when it is drawn ({@link keepRowFocus}).
+     */
+    private focusRow(m: EmailMessageDto): void {
+        const key = rowKey(m);
+        const region = this.listScroll()?.nativeElement;
+        const rows = this.rowsViewport()?.elementRef.nativeElement;
+        if (region === undefined || rows === undefined) {
+            return;
+        }
+        const control = rows.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"] [data-part="main"]`);
+        const index = this.messages().indexOf(m);
+        const height = this.rowHeight();
+        const top = rows.getBoundingClientRect().top - region.getBoundingClientRect().top + region.scrollTop + index * height;
+        if (top < region.scrollTop) {
+            region.scrollTop = top;
+        } else if (top + height > region.scrollTop + region.clientHeight) {
+            region.scrollTop = top + height - region.clientHeight;
+        }
+        if (control !== null) {
+            control.focus({ preventScroll: true });
+            return;
+        }
+        // Kept after the move: the focus leaving the old row drops what was kept before.
+        region.focus({ preventScroll: true });
+        this.focusedRow = { key, part: 'main' };
     }
 
     /** Add/remove one message id; it becomes the Shift-range anchor. */
@@ -3926,23 +4051,24 @@ export class EmailMailboxPageComponent implements OnInit {
         this.selectAnchorId = id;
     }
 
-    /** Select the contiguous run (by display order) from the anchor to `id`. */
-    private selectRangeTo(id: string): void {
+    /**
+     * The checks become the run (by display order) from the anchor to `id`: going back shrinks it. With no anchor in
+     * the list, `fallback` (or `id` itself) becomes it.
+     */
+    private selectRangeTo(id: string, fallback: string | null = null): void {
         // Server rows between the two are left out: they are never checked.
         const ids = storedIds(this.messages());
         const to = ids.indexOf(id);
-        const from = this.selectAnchorId !== null ? ids.indexOf(this.selectAnchorId) : -1;
-        if (to === -1 || from === -1) {
-            this.toggleSelect(id);
+        if (to === -1) {
             return;
         }
-        const [lo, hi] = from <= to ? [from, to] : [to, from];
-        const next = new Set(this.selectedIds());
-        for (let i = lo; i <= hi; i++) {
-            next.add(ids[i]);
+        if (this.selectAnchorId === null || !ids.includes(this.selectAnchorId)) {
+            this.selectAnchorId = fallback !== null && ids.includes(fallback) ? fallback : id;
         }
-        this.selectedIds.set(next);
-        // Anchor stays put so successive Shift-clicks grow/shrink from the same origin.
+        const from = ids.indexOf(this.selectAnchorId);
+        const [lo, hi] = from <= to ? [from, to] : [to, from];
+        this.selectedIds.set(new Set(ids.slice(lo, hi + 1)));
+        // The anchor stays, so a second Shift+click or Shift+arrow re-spans from it.
     }
 
     /** Select every currently-loaded message in the folder. */
