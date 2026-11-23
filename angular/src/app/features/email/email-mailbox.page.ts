@@ -487,6 +487,9 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back</span>
                         </button>
+                        <!-- Two panes: the list has its Folders bar above its rows, so this pane keeps that bar's row,
+                             empty, and the toolbar and header rows stay one line across both. -->
+                        <div class="mbx__folders-bar-row" data-test="detail-folders-bar-row" aria-hidden="true"></div>
                         <!-- The open message's actions, the server's tree (navi.toolbar.email.message): a row above the
                              subject, kept empty at its height while no message is open. -->
                         <div #detailRow class="mbx__pane-row" data-test="detail-row">
@@ -1182,6 +1185,12 @@ type PhonePane = 'folders' | 'message';
            standing in the list's place at the list's width until one is chosen, so the message keeps its minimum. */
         .mbx__body--two .mbx__rail, .mbx__body--two > .mbx__split-folders { display: none; }
         .mbx__body--two .mbx__list > .mbx__phone-bar, .mbx__body--two .mbx__rail > .mbx__phone-bar { display: flex; }
+        /* The message pane's row beside the list's Folders bar: that bar's height, its rule inside it, as the bar's is. */
+        .mbx__folders-bar-row { display: none; }
+        .mbx__body--two .mbx__detail > .mbx__folders-bar-row {
+            display: block; flex: 0 0 auto; box-sizing: border-box; min-height: 44px; margin: 0 -20px;
+            border-bottom: 1px solid var(--cms-border);
+        }
         .mbx__body--two.mbx__body--folders .mbx__list, .mbx__body--two.mbx__body--folders > cms-pane-splitter { display: none; }
         .mbx__body--two.mbx__body--folders .mbx__rail {
             display: flex; flex: 0 0 var(--mbx-list-width) !important; width: var(--mbx-list-width) !important;
