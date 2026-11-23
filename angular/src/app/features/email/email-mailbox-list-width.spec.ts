@@ -133,6 +133,8 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         const head = part('.mbx__rail [data-test="section-head"]');
         const row1 = head.querySelector<HTMLElement>('[data-row="1"]')!;
         expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the section name before the tree answers').toBe('Mail');
+        const title = row1.querySelector<HTMLElement>('h1')!;
+        expect(title.scrollWidth).withContext('the folder column fits the whole title beside Compose and More').toBeLessThanOrEqual(title.clientWidth + 1);
         page.treeTitle.set('Mail (tree)');
         await settle();
         expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the title node of the tree').toBe('Mail (tree)');

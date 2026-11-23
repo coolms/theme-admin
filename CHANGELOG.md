@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **Mail's folder column fits its section head**: never narrower than the head's first row at its natural width (the icon, the whole title, Compose and More), the wider of that and the folder rail's widest row; the title is no longer cut to its first letter where three panes show.
 - **The product is Mail wherever people see it**: the mailbox settings panes name their owner Mail (was Email). The address and the medium keep their words ("Email address", a field labelled Email).
 - **Mail is headed by the section head** (ui-angular's `cms-section-head`, the components contract's `section-header`): where the folders show beside the list, row 1 of the left column holds the title, Compose and More (Add mailbox, Email settings, Import, as the tree serves them) and row 2 the mailbox card; with one or two panes, or no mailbox, the head spans the page. The title is the tree's title node, "Mail" until it answers; the quick-access button says Mail. Compose is greyed with the server's reason while the selected mailbox needs a new sign-in (`_mailboxNeedsReconnect`, from the mailbox's `connectionNeedsSignIn`).
 - **No empty rows and no row dividers in Mail**: the message pane no longer keeps an empty header row (nor, with two panes, an empty row beside the Folders bar) above the subject; the lines under the list's top row, the search row and the message's action row are gone. The lines between the columns stay.
