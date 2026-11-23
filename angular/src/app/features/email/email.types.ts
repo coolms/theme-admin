@@ -37,6 +37,8 @@ export interface EmailMailboxDto {
     /** The last fetch's outcome: `ok`, `transient`, `permanent` (stopped until a change or a retry), `pending_recheck`. */
     connectionKind?: string | null;
     connectionSince?: string | null;
+    /** The server says the mailbox needs a new sign-in (its sign-in refused, or its grant to be given again): sending is off. */
+    connectionNeedsSignIn?: boolean;
     /** Why a mailbox failed: `auth_refused`, `reauth_required`, `unreachable`, `not_responding`, `unknown`. */
     connectionErrorKind?: string | null;
     /** The server's sentence for why a mailbox failed, as given; null when it has not failed. */

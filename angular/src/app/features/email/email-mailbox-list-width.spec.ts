@@ -118,30 +118,71 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         await settle();
     }
 
-    it('Compose heads the left column above the mailbox card; the header keeps the tree\'s other actions', async () => {
+    it('the section head heads the left column: Email, Compose and More on row 1, the mailbox card on row 2', async () => {
         await render(1440);
         const page = fixture.componentInstance;
         const opened = spyOn(page, 'openCompose');
         page.headerActions.set([
             { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' },
-            { id: 'mailbox-settings', icon: 'gear', label: 'Email settings' },
-            { id: 'import', icon: 'upload', label: 'Import' },
+            { id: 'module-settings', icon: 'gear', label: 'Email settings' },
+            { id: 'import', icon: 'upload', label: 'Import', title: 'Import a file', disabled: true, refusal: 'An import is running.' },
             { id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true },
         ]);
         await settle();
-        expect(page.pageHeaderActions().map(a => a.id)).toEqual(['add-mailbox', 'mailbox-settings', 'import']);
-        const compose = part('.mbx__rail [data-test="rail-compose"]');
-        expect(compose).withContext('Compose is in the left column').not.toBeNull();
+        expect(el().querySelector('[data-test="section-head-wide"]')).withContext('no head across the page').toBeNull();
+        const head = part('.mbx__rail [data-test="section-head"]');
+        const row1 = head.querySelector<HTMLElement>('[data-row="1"]')!;
+        expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the section name before the tree answers').toBe('Mail');
+        page.treeTitle.set('Mail (tree)');
+        await settle();
+        expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the title node of the tree').toBe('Mail (tree)');
+        const compose = row1.querySelector<HTMLElement>('[data-action="primary"]')!;
         expect(compose.textContent?.trim()).toBe('Compose');
-        const card = part('.mbx__rail app-mailbox-switcher');
-        expect(compose.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).withContext('above the mailbox card').toBeTruthy();
+        expect(row1.querySelector('[data-action="more"]')).withContext('the other actions under More').not.toBeNull();
+        expect(page.sectionActions().more.map(a => a.id)).toEqual(['add-mailbox', 'module-settings', 'import']);
+        expect(page.sectionActions().more[2]).toEqual(jasmine.objectContaining({ disabled: true, reason: 'An import is running.' }));
+        const card = head.querySelector('[data-row="2"] app-mailbox-switcher');
+        expect(card).withContext('the mailbox card on row 2').not.toBeNull();
+        for (const row of [row1, head.querySelector<HTMLElement>('[data-row="2"]')!]) {
+            expect(getComputedStyle(row).borderBottomStyle).withContext('no divider under a row').toBe('none');
+        }
         compose.click();
         expect(opened).toHaveBeenCalledTimes(1);
 
         // A tree that offers no Compose draws none.
         page.headerActions.set([{ id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' }]);
         await settle();
-        expect(el().querySelector('[data-test="rail-compose"]')).toBeNull();
+        expect(el().querySelector('[data-action="primary"]')).toBeNull();
+    });
+
+    it('the message pane draws no empty row: its content starts under its own action row', async () => {
+        await render(1440);
+        expect(el().querySelector('[data-test="detail-header-row"]')).toBeNull();
+        expect(el().querySelector('[data-test="detail-folders-bar-row"]')).toBeNull();
+        const row = part('[data-test="detail-row"]');
+        const scroll = part('[data-test="detail-scroll"]');
+        expect(row.nextElementSibling).withContext('the scroll region right under the row').toBe(scroll);
+        expect(getComputedStyle(row).borderBottomStyle).toBe('none');
+    });
+
+    it('tells the tree when the selected mailbox needs a new sign-in, so Compose is declared disabled', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        const id = page.selectedMailboxId()!;
+        expect(page.toolbarContext()['_mailboxNeedsReconnect']).toBeFalse();
+        page.mailboxes.update(list => list.map(m => (m.id === id ? { ...m, connectionNeedsSignIn: true } : m)));
+        expect(page.toolbarContext()['_mailboxNeedsReconnect']).toBeTrue();
+    });
+
+    it('where the section column does not show, the section head spans the page', async () => {
+        await render(760);
+        const page = fixture.componentInstance;
+        page.headerActions.set([{ id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true }]);
+        await settle();
+        expect(page.headInRail()).toBeFalse();
+        const wide = part('[data-test="section-head-wide"]');
+        expect(wide.querySelector('[data-action="primary"]')!.textContent?.trim()).toBe('Compose');
+        expect(el().querySelector('[data-test="section-head"]')).toBeNull();
     });
 
     it('the empty reading pane says what the message tree declares for it, and its own words until then', async () => {
