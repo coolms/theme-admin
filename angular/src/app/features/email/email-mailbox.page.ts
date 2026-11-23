@@ -1165,7 +1165,7 @@ type PhonePane = 'folders' | 'message';
            the header. */
         .mbx__body { flex: 1; display: flex; min-height: 0; margin-top: var(--cms-content-padding); }
         .mbx__phone-bar {
-            display: none; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px;
+            display: none; align-items: center; gap: 8px; width: 100%; min-height: var(--cms-touch-target-min); padding: 0 12px;
             border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
             font: inherit; text-align: left; cursor: pointer;
         }
@@ -1194,10 +1194,10 @@ type PhonePane = 'folders' | 'message';
            standing in the list's place at the list's width until one is chosen, so the message keeps its minimum. */
         .mbx__body--two .mbx__rail, .mbx__body--two > .mbx__split-folders { display: none; }
         .mbx__body--two .mbx__list > .mbx__phone-bar, .mbx__body--two .mbx__rail > .mbx__phone-bar { display: flex; }
-        /* The message pane's row beside the list's Folders bar: that bar's height, its rule inside it, as the bar's is. */
+        /* The message pane's row beside the list's Folders bar: the same touch-target height, its rule inside it, as the bar's is. */
         .mbx__folders-bar-row { display: none; }
         .mbx__body--two .mbx__detail > .mbx__folders-bar-row {
-            display: block; flex: 0 0 auto; box-sizing: border-box; min-height: 44px; margin: 0 -20px;
+            display: block; flex: 0 0 auto; box-sizing: border-box; min-height: var(--cms-touch-target-min); margin: 0 -20px;
             border-bottom: 1px solid var(--cms-border);
         }
         .mbx__body--two.mbx__body--folders .mbx__list, .mbx__body--two.mbx__body--folders > cms-pane-splitter { display: none; }
