@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **The product is Mail wherever people see it**: the mailbox settings panes name their owner Mail (was Email). The address and the medium keep their words ("Email address", a field labelled Email).
 - **Mail is headed by the section head** (ui-angular's `cms-section-head`, the components contract's `section-header`): where the folders show beside the list, row 1 of the left column holds the title, Compose and More (Add mailbox, Email settings, Import, as the tree serves them) and row 2 the mailbox card; with one or two panes, or no mailbox, the head spans the page. The title is the tree's title node, "Mail" until it answers; the quick-access button says Mail. Compose is greyed with the server's reason while the selected mailbox needs a new sign-in (`_mailboxNeedsReconnect`, from the mailbox's `connectionNeedsSignIn`).
 - **No empty rows and no row dividers in Mail**: the message pane no longer keeps an empty header row (nor, with two panes, an empty row beside the Folders bar) above the subject; the lines under the list's top row, the search row and the message's action row are gone. The lines between the columns stay.
 - **Chat rows write dates by the kit's one rule** (`DateTimeFormatService.row()`): the time today, yesterday and the weekday in the person's language, the day and month this year, the full date before it; no more "now", and the year shows on an older date.

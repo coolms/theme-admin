@@ -89,7 +89,7 @@ interface PaneBody {
             } @else if (mailbox(); as mb) {
                 @switch (pane()) {
                     @case ('general') {
-                        <cms-settings-pane [title]="current().title" icon="envelope" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="envelope" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.general" [dirty]="body()?.dirty() ?? false"
                                            [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
                                            (save)="save()" (discard)="body()?.discard()">
@@ -101,13 +101,13 @@ interface PaneBody {
                     }
                     @case ('addresses') {
                         <!-- Each address is added, sent again or withdrawn on its own: nothing to Save. -->
-                        <cms-settings-pane [title]="current().title" icon="at" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="at" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.addresses" [editable]="false">
                             <app-mailbox-aliases-section [mailboxId]="mb.id" [ownAddress]="mb.emailAddress ?? null" />
                         </cms-settings-pane>
                     }
                     @case ('connection') {
-                        <cms-settings-pane [title]="current().title" icon="plug" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="plug" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.connection" [dirty]="body()?.dirty() ?? false"
                                            [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
                                            (save)="save()" (discard)="body()?.discard()">
@@ -127,7 +127,7 @@ interface PaneBody {
                         </cms-settings-pane>
                     }
                     @case ('sync') {
-                        <cms-settings-pane [title]="current().title" icon="arrow-repeat" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="arrow-repeat" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.sync" [dirty]="body()?.dirty() ?? false"
                                            [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
                                            (save)="save()" (discard)="body()?.discard()">
@@ -140,7 +140,7 @@ interface PaneBody {
                     @case ('filters') {
                         <!-- Turning a filter on or off, reordering and deleting are writes of their own; the pane's Save
                              and Discard are the open filter's, shown only while one is open. -->
-                        <cms-settings-pane [title]="current().title" icon="funnel" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="funnel" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.filters" [dirty]="body()?.dirty() ?? false"
                                            [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
                                            saveLabel="Save filter" (save)="save()" (discard)="body()?.discard()">
@@ -150,7 +150,7 @@ interface PaneBody {
                         </cms-settings-pane>
                     }
                     @case ('rules') {
-                        <cms-settings-pane [title]="current().title" icon="diagram-3" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="diagram-3" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.rules" [dirty]="body()?.dirty() ?? false"
                                            [saving]="body()?.saving() ?? false" [editable]="body()?.editable() ?? false"
                                            (save)="save()" (discard)="body()?.discard()">
@@ -162,13 +162,13 @@ interface PaneBody {
                     }
                     @case ('access') {
                         <!-- Delegations are granted and revoked one by one, each its own write: nothing to Save. -->
-                        <cms-settings-pane [title]="current().title" icon="people" owner="Email" [help]="current().help"
+                        <cms-settings-pane [title]="current().title" icon="people" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.access" [editable]="false">
                             <app-email-delegations-card [mailboxId]="mb.id" />
                         </cms-settings-pane>
                     }
                     @case ('delete') {
-                        <cms-settings-pane [title]="current().title" icon="trash" owner="Email" [danger]="true"
+                        <cms-settings-pane [title]="current().title" icon="trash" owner="Mail" [danger]="true"
                                            settingKey="email.mailbox.delete">
                             <p>
                                 CoolMS's copies of its mail, its rules and its settings are deleted. The account at the
