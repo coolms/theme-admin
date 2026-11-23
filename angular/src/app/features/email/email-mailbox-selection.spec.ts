@@ -286,7 +286,8 @@ describe('EmailMailboxPageComponent -- selecting as a desktop file list does', (
         expect(checked()).toEqual(['m-1', 'm-3']);
 
         main('On the server').focus();
-        press(main('On the server'), { key: ' ' });
+        const space = press(main('On the server'), { key: ' ' });
         expect(checked()).withContext('Space on a server row checks nothing').toEqual(['m-1', 'm-3']);
+        expect(space.defaultPrevented).withContext('...and presses its button as ever').toBeFalse();
     }));
 });

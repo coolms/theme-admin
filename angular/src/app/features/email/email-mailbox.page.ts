@@ -3975,11 +3975,10 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const row = list[at];
-        if (ev.key === ' ' && target.getAttribute('data-part') === 'main') {
+        // Space toggles a stored row's check; on a server row, which is never checked, it presses the button as ever.
+        if (ev.key === ' ' && target.getAttribute('data-part') === 'main' && !isServerRow(row)) {
             ev.preventDefault();
-            if (!isServerRow(row)) {
-                this.toggleSelect(row.id);
-            }
+            this.toggleSelect(row.id);
             return;
         }
         if ((ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') || ev.ctrlKey || ev.metaKey || ev.altKey) {
