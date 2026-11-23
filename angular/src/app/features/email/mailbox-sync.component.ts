@@ -26,7 +26,7 @@ export const SYNC_ANSWER_WAIT_MS = 60_000;
         <span class="mbsync__sr" role="status" data-test="mail-syncing">{{ syncing() ? 'Syncing this mailbox' : '' }}</span>
     `,
     styles: [`
-        :host { display: block; padding: 0 10px; border-bottom: 1px solid var(--cms-border); }
+        :host { display: block; padding: 0 10px; }
         .mbsync__sr {
             position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
         }

@@ -18,7 +18,8 @@ import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
-    CmsPageHeaderComponent,
+    CmsSectionHeadComponent,
+    sectionActionsOf,
     CmsPaneSplitterComponent,
     CmsPaneToolbarComponent,
     ContextMenuItem,
@@ -200,7 +201,7 @@ type PhonePane = 'folders' | 'message';
         MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
-        CmsPageHeaderComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
+        CmsSectionHeadComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent, MailRemoteBarComponent,
         MessageSourceComponent,
         MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
@@ -209,8 +210,13 @@ type PhonePane = 'folders' | 'message';
     ],
     template: `
         <div class="mbx">
-            <cms-page-header icon="envelope" [title]="'Email'"
-                             [actions]="pageHeaderActions()" (actionClick)="onHeaderAction($event)" />
+            <!-- The section head across the page wherever the section column does not show it: one or two panes, or
+                 no mailbox yet. -->
+            @if (!headInRail()) {
+                <cms-section-head class="mbx__head-wide" data-test="section-head-wide" icon="envelope" [title]="sectionTitle()"
+                                  [fullWidth]="true" [primary]="sectionActions().primary" [more]="sectionActions().more"
+                                  (action)="onHeaderAction($event)" />
+            }
 
             <!-- Declares nothing: the tree names the page's actions, says which
                  need a mailbox, and says that Import greys out while one is
@@ -222,6 +228,7 @@ type PhonePane = 'folders' | 'message';
                 [context]="toolbarContext()"
                 [iconsOnly]="true"
                 (headerActionsChanged)="headerActions.set($event)"
+                (titleChanged)="treeTitle.set($event)"
                 (actionClick)="onHeaderAction($event)" />
             <!-- Always-present hidden file input for the "Import" header action. -->
             <input #importInput type="file" accept=".eml,.mbox,message/rfc822,text/plain" hidden
@@ -247,33 +254,35 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back to {{ selectedFolderName() || 'the list' }}</span>
                         </button>
-                        <!-- Compose heads the column, above the mailbox card: the tree's node, its words and its state.
-                             Its row is the toolbar row across the screen, kept empty while the tree serves no Compose. -->
-                        <div class="mbx__rail-row mbx__rail-row--toolbar" data-test="rail-toolbar-row">
-                        @if (composeAction(); as compose) {
-                            <button type="button" class="mbx__btn mbx__btn--primary mbx__rail-compose" data-test="rail-compose"
-                                    [disabled]="compose.disabled ?? false" [attr.title]="compose.title ?? null"
-                                    (click)="onHeaderAction(compose.id)">
-                                <i class="bi bi-{{ compose.icon }}" aria-hidden="true"></i>
-                                <span>{{ compose.label || compose.title }}</span>
-                            </button>
+                        <ng-template #mailboxCard>
+                            <app-mailbox-switcher [mailboxes]="mailboxes()"
+                                                  [currentId]="selectedMailboxId()"
+                                                  [unread]="mailboxUnread()"
+                                                  [hasSettings]="hasMailboxSettings()"
+                                                  (chosen)="pickMailbox($event)"
+                                                  (settings)="openMailboxSettings()"
+                                                  (menu)="onMailboxContextMenu($event.event, $event.id)" />
+                        </ng-template>
+                        <!-- The section head: row 1 the title, Compose and More, row 2 the mailbox card. -->
+                        @if (headInRail()) {
+                            <cms-section-head class="mbx__section-head" data-test="section-head" icon="envelope" [title]="sectionTitle()"
+                                              [primary]="sectionActions().primary" [more]="sectionActions().more"
+                                              (action)="onHeaderAction($event)">
+                                <div section-context class="mbx__head-card" data-test="rail-card">
+                                    <ng-container *ngTemplateOutlet="mailboxCard" />
+                                </div>
+                            </cms-section-head>
                         }
-                        </div>
                         <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
                              with Retry reading it again. The message pane is not touched. -->
                         @if (mailboxesFailure() !== null) {
                             <cms-state kind="error" title="Could not load mailboxes." [error]="mailboxesFailure()" actionLabel="Retry" (acted)="loadMailboxes()" />
                         }
-                        <!-- The mailbox card: the header row across the screen. -->
-                        <div class="mbx__rail-row mbx__rail-row--header" data-test="rail-header-row">
-                        <app-mailbox-switcher [mailboxes]="mailboxes()"
-                                              [currentId]="selectedMailboxId()"
-                                              [unread]="mailboxUnread()"
-                                              [hasSettings]="hasMailboxSettings()"
-                                              (chosen)="pickMailbox($event)"
-                                              (settings)="openMailboxSettings()"
-                                              (menu)="onMailboxContextMenu($event.event, $event.id)" />
-                        </div>
+                        @if (!headInRail()) {
+                            <div class="mbx__rail-card" data-test="rail-card">
+                                <ng-container *ngTemplateOutlet="mailboxCard" />
+                            </div>
+                        }
                         <app-mail-folder-rail [rows]="railRows()"
                                               [selected]="selectedFolder()"
                                               [failure]="foldersFailure()"
@@ -490,17 +499,15 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back</span>
                         </button>
-                        <!-- Two panes: the list has its Folders bar above its rows, so this pane keeps that bar's row,
-                             empty, and the toolbar and header rows stay one line across both. -->
-                        <div class="mbx__folders-bar-row" data-test="detail-folders-bar-row" aria-hidden="true"></div>
                         <!-- The open message's actions, the server's tree (navi.toolbar.email.message): a row above the
-                             subject, kept empty at its height while no message is open. -->
-                        <div #detailRow class="mbx__pane-row" data-test="detail-row">
-                            <cms-pane-toolbar [actions]="manyChecked() ? [] : detailActions()" label="Message actions"
-                                              (action)="atAction(detailRow, $event); onDetailAction($event)" />
-                        </div>
-                        <!-- The header row across the screen: the message pane has nothing for it, so it is kept empty. -->
-                        <div class="mbx__pane-header-row" data-test="detail-header-row" aria-hidden="true"></div>
+                             subject, drawn while a message is open, loading or failed to open; with nothing to act on,
+                             no row. -->
+                        @if (!manyChecked() && (selectedMessage() !== null || loadingDetail() || openFailure() !== null)) {
+                            <div #detailRow class="mbx__pane-row" data-test="detail-row">
+                                <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
+                                                  (action)="atAction(detailRow, $event); onDetailAction($event)" />
+                            </div>
+                        }
                         <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
                         <div class="mbx__detail-scroll" data-test="detail-scroll" (keydown.escape)="leaveOriginal($event)">
                         @if (manyChecked()) {
@@ -1194,12 +1201,6 @@ type PhonePane = 'folders' | 'message';
            standing in the list's place at the list's width until one is chosen, so the message keeps its minimum. */
         .mbx__body--two .mbx__rail, .mbx__body--two > .mbx__split-folders { display: none; }
         .mbx__body--two .mbx__list > .mbx__phone-bar, .mbx__body--two .mbx__rail > .mbx__phone-bar { display: flex; }
-        /* The message pane's row beside the list's Folders bar: the same touch-target height, its rule inside it, as the bar's is. */
-        .mbx__folders-bar-row { display: none; }
-        .mbx__body--two .mbx__detail > .mbx__folders-bar-row {
-            display: block; flex: 0 0 auto; box-sizing: border-box; min-height: var(--cms-touch-target-min); margin: 0 -20px;
-            border-bottom: 1px solid var(--cms-border);
-        }
         .mbx__body--two.mbx__body--folders .mbx__list, .mbx__body--two.mbx__body--folders > cms-pane-splitter { display: none; }
         .mbx__body--two.mbx__body--folders .mbx__rail {
             display: flex; flex: 0 0 var(--mbx-list-width) !important; width: var(--mbx-list-width) !important;
@@ -1217,21 +1218,12 @@ type PhonePane = 'folders' | 'message';
             overflow-y: auto; display: flex; flex-direction: column;
         }
         .mbx__rail > cms-state, .mbx__rail > app-mail-folder-rail { margin-top: 8px; }
-        /* From tablet width up the columns share two rows (the pane-toolbar entry's header row): the toolbar row, then
-           the header row, each its token's height with a 1px rule under it, so the rules are one line across the screen.
-           The rail's rows run to its edges; their content keeps the column's padding. */
-        .mbx__rail-row {
-            flex: 0 0 auto; display: flex; align-items: center; min-width: 0; box-sizing: content-box;
-            margin: 0 calc(-1 * var(--cms-panel-padding)) 0 calc(-1 * var(--cms-content-padding));
-            padding: 0 var(--cms-panel-padding) 0 var(--cms-content-padding);
-            border-bottom: 1px solid var(--cms-border);
-        }
-        .mbx__rail-row--toolbar { height: var(--cms-pane-toolbar-height); }
-        .mbx__rail-row--header { height: var(--cms-pane-header-height); }
-        .mbx__rail-row--header > app-mailbox-switcher { flex: 1 1 auto; min-width: 0; }
-        /* One pane at a time: the screen shell's rows, not these; the card and Compose as they were. */
-        .mbx__body--one .mbx__rail-row { display: block; height: auto; margin: 0; padding: 0; border-bottom: 0; }
-        .mbx__body--one .mbx__rail-row + .mbx__rail-row { margin-top: 8px; }
+        /* The section head: row 1 level with the panes' rows, row 2 the mailbox card; no rules under either. */
+        .mbx__section-head { flex: 0 0 auto; }
+        .mbx__head-card { flex: 1 1 auto; min-width: 0; }
+        .mbx__head-card > app-mailbox-switcher, .mbx__rail-card > app-mailbox-switcher { display: block; min-width: 0; }
+        .mbx__rail-card { margin-top: 8px; }
+        .mbx__head-wide { padding-top: 0; }
         .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
         .mbx__open-failed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; padding: 12px; color: var(--cms-text); }
 
@@ -1317,7 +1309,7 @@ type PhonePane = 'folders' | 'message';
         /* The list's header row: the search field, centred in the header row's height. */
         .mbx__search {
             display: flex; align-items: center; gap: 6px; box-sizing: content-box; height: var(--cms-pane-header-height); padding: 0 10px;
-            border-bottom: 1px solid var(--cms-border); flex: 0 0 auto;
+            flex: 0 0 auto;
             background: var(--cms-surface);
         }
         .mbx__body--one .mbx__search { height: auto; padding: 8px 10px; }
@@ -1349,13 +1341,7 @@ type PhonePane = 'folders' | 'message';
         .mbx__source-note:empty { display: none; }
         .mbx__source-note { margin: 0 0 12px; font-size: .8125rem; color: var(--cms-text-muted); }
         /* The message pane's row of actions, at the pane's top, above the subject. */
-        .mbx__pane-row { margin: 0 -20px; padding: 0 20px; border-bottom: 1px solid var(--cms-border); }
-        /* The header row, empty in the message pane: the list's search and the mailbox card's row run on through it. */
-        .mbx__pane-header-row {
-            flex: 0 0 auto; box-sizing: content-box; height: var(--cms-pane-header-height); margin: 0 -20px 12px;
-            border-bottom: 1px solid var(--cms-border);
-        }
-        .mbx__body--one .mbx__pane-header-row { display: none; }
+        .mbx__pane-row { margin: 0 -20px; padding: 0 20px; }
         .mbx__evicted {
             margin: 0 0 12px; padding: 8px 10px; border: 1px solid var(--cms-warning-subtle-border);
             border-radius: var(--cms-radius-md); background: var(--cms-warning-subtle); color: var(--cms-warning-text);
@@ -1435,11 +1421,6 @@ type PhonePane = 'folders' | 'message';
             cursor: pointer; font-size: .8125rem;
         }
         .mbx__btn:hover { background: var(--cms-surface-hover); }
-        .mbx__rail-compose {
-            display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1 1 auto;
-            margin: 0; min-height: var(--cms-touch-target-min, 44px);
-        }
-        .mbx__body--one .mbx__rail-compose { width: calc(100% - 16px); margin: 8px 8px 4px; }
         .mbx__btn--primary { background: var(--cms-accent, #F5A623); border-color: var(--cms-accent, #F5A623); color: var(--cms-accent-fg, #1a1a1a); }
         .mbx__btn:disabled { opacity: .6; cursor: default; }
 
@@ -2177,10 +2158,20 @@ export class EmailMailboxPageComponent implements OnInit {
     /** Which actions exist, and when, is declared by this tree -- not here. */
     readonly toolbarTree = 'navi.toolbar.email.mailbox';
     readonly headerActions = signal<ToolbarAction[]>([]);
-    /** The header's actions: every node of the tree's header but Compose, which heads the left column. */
-    readonly pageHeaderActions = computed(() => this.headerActions().filter(a => a.id !== 'compose'));
-    /** Compose as the tree declares it, at the top of the left column; null when the tree offers none. */
-    readonly composeAction = computed(() => this.headerActions().find(a => a.id === 'compose' && a.hidden !== true) ?? null);
+    /** The tree's title node, once it has answered. */
+    readonly treeTitle = signal<string | null>(null);
+    /** The section's title: the tree's, else the section's name in both hosts, "Mail". */
+    readonly sectionTitle = computed(() => this.treeTitle() ?? 'Mail');
+    /** The section head's actions: Compose the primary, the tree's other header nodes under More, in its order. */
+    readonly sectionActions = computed(() => {
+        const actions = this.headerActions();
+        // The tree's primary flag decides; Compose stands in only while the served tree marks none.
+        return sectionActionsOf(actions.some(a => a.primary === true)
+            ? actions
+            : actions.map(a => ({ ...a, primary: a.id === 'compose' })));
+    });
+    /** The section head sits in the section column where three panes show; elsewhere it spans the page. */
+    readonly headInRail = computed(() => this.mailboxes().length > 0 && !this.onePane() && !this.twoPanes());
 
     /**
      * What the tree's conditions are evaluated against.
@@ -2192,6 +2183,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly toolbarContext = computed((): Record<string, unknown> => ({
         _hasMailbox: null !== this.selectedMailboxId(),
         _importing:  this.importing(),
+        _mailboxNeedsReconnect: this.selectedMailbox()?.connectionNeedsSignIn === true,
     }));
 
     /**

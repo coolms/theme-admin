@@ -201,8 +201,10 @@ describe('conversation row', () => {
             utcDay.toLocaleDateString([], { weekday: 'short', timeZone: 'UTC' });
 
         let dtf: DateTimeFormatService;
+        let chosen = false;
 
         beforeEach(() => {
+            chosen = false;
             TestBed.configureTestingModule({
                 providers: [{
                     provide:  UserCalendarPreferencesService,
@@ -211,6 +213,8 @@ describe('conversation row', () => {
                         tz:           () => PROFILE_TZ,
                         dateFormat:   () => 'yyyy-MM-dd',
                         timeFormat:   () => '24h',
+                        language:     () => 'en-GB',
+                        dateFormatChosen: () => chosen,
                     },
                 }],
             });
@@ -267,9 +271,17 @@ describe('conversation row', () => {
             expect(shown).toMatch(/\b1\b/);
         });
 
- it('says now within a minute and nothing for an unparseable instant', () => {
-            expect(rowWhen(new Date(NOW.getTime() - 30_000).toISOString(), dtf, NOW)).toBe('now');
+ it('says the time even within a minute, and nothing for an unparseable instant', () => {
+            expect(rowWhen(new Date(NOW.getTime() - 30_000).toISOString(), dtf, NOW)).toBe('11:59');
             expect(rowWhen('not a date', dtf, NOW)).toBe('');
+        });
+
+ it('says the day and month this year, and the chosen format only for a date before this year', () => {
+            expect(rowWhen('2026-03-02T03:00:00.000Z', dtf, NOW)).toBe('2 Mar');
+            expect(rowWhen('2025-03-02T03:00:00.000Z', dtf, NOW)).toBe('2 Mar 2025');
+            chosen = true;
+            expect(rowWhen('2026-03-02T03:00:00.000Z', dtf, NOW)).withContext('this year: day and month, chosen or not').toBe('2 Mar');
+            expect(rowWhen('2025-03-02T03:00:00.000Z', dtf, NOW)).withContext('before this year: the chosen format').toBe('2025-03-02');
         });
     });
 });
