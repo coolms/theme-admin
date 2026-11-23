@@ -155,14 +155,32 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(el().querySelector('[data-action="primary"]')).toBeNull();
     });
 
-    it('the message pane draws no empty row: its content starts under its own action row', async () => {
+    it('the message pane draws no empty row: with no message open no action row, its content at the top', async () => {
         await render(1440);
         expect(el().querySelector('[data-test="detail-header-row"]')).toBeNull();
         expect(el().querySelector('[data-test="detail-folders-bar-row"]')).toBeNull();
-        const row = part('[data-test="detail-row"]');
+        expect(el().querySelector('[data-test="detail-row"]')).withContext('nothing to act on, no row').toBeNull();
         const scroll = part('[data-test="detail-scroll"]');
-        expect(row.nextElementSibling).withContext('the scroll region right under the row').toBe(scroll);
-        expect(getComputedStyle(row).borderBottomStyle).toBe('none');
+        const pane = scroll.parentElement!;
+        const before = [...pane.children].slice(0, [...pane.children].indexOf(scroll))
+            .filter(e => getComputedStyle(e).display !== 'none' && (e as HTMLElement).offsetHeight > 0);
+        expect(before.map(e => e.className)).withContext('nothing drawn above the scroll region').toEqual([]);
+    });
+
+    it('the primary flag of the tree decides the primary; Compose stands in only while none is marked', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        page.headerActions.set([
+            { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox', primary: true },
+            { id: 'compose', icon: 'pencil-square', label: 'Compose' },
+        ]);
+        expect(page.sectionActions().primary?.id).toBe('add-mailbox');
+        expect(page.sectionActions().more.map(a => a.id)).toEqual(['compose']);
+        page.headerActions.set([
+            { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' },
+            { id: 'compose', icon: 'pencil-square', label: 'Compose' },
+        ]);
+        expect(page.sectionActions().primary?.id).toBe('compose');
     });
 
     it('tells the tree when the selected mailbox needs a new sign-in, so Compose is declared disabled', async () => {

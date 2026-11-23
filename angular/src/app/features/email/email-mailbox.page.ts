@@ -500,11 +500,14 @@ type PhonePane = 'folders' | 'message';
                             <span class="mbx__phone-bar-label">Back</span>
                         </button>
                         <!-- The open message's actions, the server's tree (navi.toolbar.email.message): a row above the
-                             subject, kept empty at its height while no message is open. -->
-                        <div #detailRow class="mbx__pane-row" data-test="detail-row">
-                            <cms-pane-toolbar [actions]="manyChecked() ? [] : detailActions()" label="Message actions"
-                                              (action)="atAction(detailRow, $event); onDetailAction($event)" />
-                        </div>
+                             subject, drawn while a message is open, loading or failed to open; with nothing to act on,
+                             no row. -->
+                        @if (!manyChecked() && (selectedMessage() !== null || loadingDetail() || openFailure() !== null)) {
+                            <div #detailRow class="mbx__pane-row" data-test="detail-row">
+                                <cms-pane-toolbar [actions]="detailActions()" label="Message actions"
+                                                  (action)="atAction(detailRow, $event); onDetailAction($event)" />
+                            </div>
+                        }
                         <!-- Under the row, the message pane's one scroll region: header, banner, body, attachments. -->
                         <div class="mbx__detail-scroll" data-test="detail-scroll" (keydown.escape)="leaveOriginal($event)">
                         @if (manyChecked()) {
@@ -2160,7 +2163,13 @@ export class EmailMailboxPageComponent implements OnInit {
     /** The section's title: the tree's, else the section's name in both hosts, "Mail". */
     readonly sectionTitle = computed(() => this.treeTitle() ?? 'Mail');
     /** The section head's actions: Compose the primary, the tree's other header nodes under More, in its order. */
-    readonly sectionActions = computed(() => sectionActionsOf(this.headerActions().map(a => ({ ...a, primary: a.id === 'compose' }))));
+    readonly sectionActions = computed(() => {
+        const actions = this.headerActions();
+        // The tree's primary flag decides; Compose stands in only while the served tree marks none.
+        return sectionActionsOf(actions.some(a => a.primary === true)
+            ? actions
+            : actions.map(a => ({ ...a, primary: a.id === 'compose' })));
+    });
     /** The section head sits in the section column where three panes show; elsewhere it spans the page. */
     readonly headInRail = computed(() => this.mailboxes().length > 0 && !this.onePane() && !this.twoPanes());
 
