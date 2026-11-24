@@ -93,7 +93,7 @@ import { VfsPageStateService } from './vfs-page-state.service';
         }
         /* The manager takes focus only so its keys follow it: it is not a control, and draws no focus ring around the
            page; the items inside it keep theirs. */
-        :host:focus, :host:focus-visible { outline: none; }
+        :host:focus, :host:focus-visible { /* ring: on the row or control focused inside; the manager itself is focused only by a press in it, never by Tab (tabindex -1) */ outline: none; }
         .clipboard-indicator {
             display: flex;
             align-items: center;
