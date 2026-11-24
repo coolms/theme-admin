@@ -48,6 +48,8 @@ export class VfsPageStateService {
     readonly currentFolderWritable = signal<boolean | null>(null);
     /** The file kinds the server says can be created in the open folder (its listing's `creatable`); none when absent. */
     readonly currentCreatable = signal<readonly string[]>([]);
+    /** The folder whose kinds currentCreatable holds: another folder's first page clears them until it answers. */
+    private creatableFor: string | null = null;
 
     // -- Pagination ------------------------------------------------------------
 
@@ -221,6 +223,11 @@ export class VfsPageStateService {
         this.loading.set(true);
         this.error.set(null);
         if (!cursor) this.readFolderWritable(baseUrl, path);
+        // Another folder: its kinds are unknown until its first page answers, and stay none if it fails.
+        if (!cursor && path !== this.creatableFor) {
+            this.currentCreatable.set([]);
+            this.creatableFor = path;
+        }
 
         const showHidden = this.showHidden();
         let url = `${baseUrl}/vfs/directories/list?path=${encodeURIComponent(path)}&showHidden=${showHidden}&limit=100`;

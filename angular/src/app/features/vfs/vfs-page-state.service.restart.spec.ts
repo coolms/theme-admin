@@ -120,7 +120,26 @@ describe('VfsPageStateService -- a page link no longer valid starts the folder a
         next('p2').flush({ member: [node('b')], hasMore: false, nextCursor: null });
         expect(state.currentCreatable()).toEqual(['docx', 'xlsx']);
         state.navigateTo('/shared');
+        // Another folder: none until its first page answers.
+        expect(state.currentCreatable()).toEqual([]);
         first(null);
+        expect(state.currentCreatable()).toEqual([]);
+        answerFolderReads();
+        http.verify();
+    });
+
+    it('offers no kinds in a folder whose first page fails, and keeps a folder own kinds through its own restart', () => {
+        const state = setUp();
+        state.navigateTo('/docs');
+        http.expectOne(r => r.url.startsWith(LIST) && !r.url.includes('cursor='))
+            .flush({ member: [node('a')], hasMore: true, nextCursor: 'p2', creatable: ['docx'] });
+        state.loadMore();
+        next('p2').flush(pageLinkInvalid, { status: 409, statusText: 'Conflict' });
+        // The restart reads the same folder first page again: its kinds stay meanwhile.
+        expect(state.currentCreatable()).toEqual(['docx']);
+        first(null);
+        state.navigateTo('/broken');
+        http.expectOne(r => r.url.startsWith(LIST) && r.url.includes('broken')).flush({ title: 'Server error' }, { status: 500, statusText: 'Server Error' });
         expect(state.currentCreatable()).toEqual([]);
         answerFolderReads();
         http.verify();
