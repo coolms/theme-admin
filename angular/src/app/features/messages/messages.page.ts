@@ -78,8 +78,8 @@ import { RtcMediaKind } from '../rtc/rtc.types';
  * the `[innerHTML]`-injected paragraphs (neither carries `_ngcontent`). Every
  * rule is anchored to the `.msg`/`app-messages-page` prefix to stay scoped.
  */
-/** The header node ids that open the public channels list. */
-const CHANNEL_ACTIONS: readonly string[] = ['browse-channels', 'channels'];
+/** The header node id that opens the public channels list (the Chat tree's /browse-channels). */
+const BROWSE_CHANNELS = 'browse-channels';
 
 @Component({
     selector: 'app-messages-page',
@@ -89,8 +89,8 @@ const CHANNEL_ACTIONS: readonly string[] = ['browse-channels', 'channels'];
     imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsFilterChipsComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
     template: `
         <!-- The page header: the tree's title; the status control, then the tree's header nodes -- its primary (New
-             chat) filled, the others under More, with Browse channels there while the tree serves no node for it. -->
-        <cms-page-header icon="chat-dots" [title]="treeTitle() ?? 'Chat'" [actions]="shownHeaderActions()" (actionClick)="onHeaderAction($event)">
+             chat) filled, the others (Browse channels) under More. -->
+        <cms-page-header icon="chat-dots" [title]="treeTitle() ?? 'Chat'" [actions]="headerActions()" (actionClick)="onHeaderAction($event)">
             <div class="msg__status" header-actions>
                 <button type="button" class="msg__status-btn" (click)="toggleStatusMenu()"
                         [title]="'Your status: ' + statusLabel(myStatus())">
@@ -1502,16 +1502,6 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly treeTitle = signal<string | null>(null);
     /** The tree's header nodes, as the page toolbar resolves them: its primary filled, the others under More. */
     readonly headerActions = signal<ToolbarAction[]>([]);
-    /**
-     * The header's actions: the tree's, and Browse channels under More while the tree serves no node for it, so
-     * public channels stay reachable; the tree's node takes its place once served.
-     */
-    readonly shownHeaderActions = computed<ToolbarAction[]>(() => {
-        const served = this.headerActions();
-        return served.some(a => CHANNEL_ACTIONS.includes(a.id))
-            ? served
-            : [...served, { id: CHANNEL_ACTIONS[0], icon: 'hash', label: 'Browse channels' }];
-    });
     /** What the tree's conditions read: whether any read conversation is unread (it shows the Unread filter). */
     readonly listContext = computed((): Record<string, unknown> => ({
         _anyUnread: this.conversations().some(c => this.unreadCount(c) > 0),
@@ -1535,7 +1525,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     onHeaderAction(id: string): void {
         if (id === 'new-conversation') {
             this.toggleNew();
-        } else if (CHANNEL_ACTIONS.includes(id)) {
+        } else if (id === BROWSE_CHANNELS) {
             this.toggleChannels();
         }
     }
