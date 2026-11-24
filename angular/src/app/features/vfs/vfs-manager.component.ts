@@ -91,6 +91,9 @@ import { VfsPageStateService } from './vfs-page-state.service';
             min-height: 0;
             overflow: hidden;
         }
+        /* The manager takes focus only so its keys follow it: it is not a control, and draws no focus ring around the
+           page; the items inside it keep theirs. */
+        :host:focus, :host:focus-visible { outline: none; }
         .clipboard-indicator {
             display: flex;
             align-items: center;
@@ -236,6 +239,9 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             // Delete hides for an all-system selection (`isSystem` below) and
             // greys out for a mixed one -- two different answers, two fields.
             _anySystemSelected: selected.some(n => n.isSystem),
+            // A folder is always open here; whether the person may write in it is the server's, read with it.
+            _hasFolder:    true,
+            _canWrite:     this.state.currentFolderWritable() !== false,
         };
 
         if (selected.length === 0) {
@@ -274,6 +280,8 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
      * for elevation, a denied one does nothing (it is drawn disabled) -- and every other runs at once.
      */
     onVfsToolbarAction(action: string): void {
+        // A menu entry comes by its node's path (New's kinds).
+        if (this.vfsActions.runEntry(action)) return;
         const node = this.toolbarNodes().find(n => n.meta['action'] === action);
         this.vfsActions.whenAllowed(node, this.selectedNodes(), () => this.runToolbarAction(action));
     }

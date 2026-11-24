@@ -34,7 +34,7 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
 
     afterEach(() => host.remove());
 
-    function build(selected: VfsNodeDto[]): { component: VfsManagerComponent; whenAllowed: jasmine.Spy } {
+    function build(selected: VfsNodeDto[], writable: boolean | null = null): { component: VfsManagerComponent; whenAllowed: jasmine.Spy } {
         const whenAllowed = jasmine.createSpy('whenAllowed');
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({
@@ -45,7 +45,7 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
                 { provide: ActivatedRoute, useValue: {} },
                 { provide: NaviGraphService, useValue: {} },
                 { provide: UserPreferencesService, useValue: { setPageState: (): void => {} } },
-                { provide: VfsActionsService, useValue: { whenAllowed } },
+                { provide: VfsActionsService, useValue: { whenAllowed, runEntry: () => false } },
                 { provide: VfsClipboardService, useValue: { hasAny: () => false } },
                 { provide: VfsUploadService, useValue: {} },
                 { provide: PageFooterService, useValue: { set: (): void => {} } },
@@ -62,6 +62,7 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
                         activeItem:      signal(null),
                         nodes:           signal(selected),
                         loading:         signal(false),
+                        currentFolderWritable: signal(writable),
                     },
                 },
             ],
@@ -109,5 +110,12 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
         const [node, subjects] = whenAllowed.calls.mostRecent().args as [unknown, VfsNodeDto[]];
         expect(node).toBe(deleteNode);
         expect(subjects).toEqual(selected);
+    });
+
+    it('publishes the open folder write permission, read by the server, and that a folder is open', () => {
+        expect(build([], false).component.toolbarContext()).toEqual(jasmine.objectContaining({ _hasFolder: true, _canWrite: false }));
+        // Not yet read: no refusal is claimed; the server still refuses a write it does not allow.
+        expect(build([], null).component.toolbarContext()['_canWrite']).toBe(true);
+        expect(build([file('/docs/a', {})], true).component.toolbarContext()['_canWrite']).toBe(true);
     });
 });

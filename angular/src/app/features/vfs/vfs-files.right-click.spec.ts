@@ -61,6 +61,7 @@ describe('VfsFilesComponent -- a right-click on a row', () => {
         const selected = signal<VfsNodeDto[]>(selection);
         const state = {
             currentPath:     signal('/docs'),
+            currentFolderWritable: signal<boolean | null>(null),
             nodes:           signal<VfsNodeDto[]>(nodes),
             loading:         signal(false),
             error:           signal<string | null>(null),
@@ -99,7 +100,7 @@ describe('VfsFilesComponent -- a right-click on a row', () => {
                     provide: VfsIconService,
                     useValue: { nodeIcon: () => 'bi-file-earmark', nodeIconClass: () => '', nodeIconBadge: () => null },
                 },
-                { provide: VfsActionsService,    useValue: { whenAllowed, executeOn } },
+                { provide: VfsActionsService,    useValue: { whenAllowed, executeOn, runEntry: () => false } },
                 { provide: ElevationService,     useValue: {} },
             ],
         });

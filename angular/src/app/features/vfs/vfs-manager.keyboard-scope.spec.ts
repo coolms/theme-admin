@@ -86,7 +86,7 @@ describe('VfsManagerComponent -- no shortcut reaches it while a surface is open 
                 { provide: ActivatedRoute, useValue: {} },
                 { provide: NaviGraphService, useValue: {} },
                 { provide: UserPreferencesService, useValue: { setPageState: (): void => {} } },
-                { provide: VfsActionsService, useValue: { whenAllowed } },
+                { provide: VfsActionsService, useValue: { whenAllowed, runEntry: () => false } },
                 { provide: VfsClipboardService, useValue: clipboard },
                 { provide: VfsUploadService, useValue: {} },
                 { provide: PageFooterService, useValue: { set: (): void => {} } },
@@ -96,7 +96,7 @@ describe('VfsManagerComponent -- no shortcut reaches it while a surface is open 
                     useValue: {
                         viewMode: signal('grid'), selectedNodes: signal(selected), showHidden: signal(false),
                         currentPath: signal('/docs'), vfsToolbarNodes: signal([]), panelOpen: signal(false),
-                        activeItem: signal(null), nodes: signal(selected), loading: signal(false),
+                        activeItem: signal(null), nodes: signal(selected), loading: signal(false), currentFolderWritable: signal(null),
                     },
                 },
             ],

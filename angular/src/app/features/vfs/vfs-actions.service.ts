@@ -198,6 +198,35 @@ export class VfsActionsService {
         return this.fileKindsPromise;
     }
 
+    /**
+     * A menu entry chosen by its node's path (the toolbar's or the right-click menu's New): true when it was one, and
+     * it ran. A `new-file` entry creates its own kind, asking for the name only.
+     */
+    runEntry(path: string): boolean {
+        if (!path.startsWith('/')) return false;
+        const entry = this.state.vfsToolbarNodes().flatMap(n => n.children ?? []).find(c => c.path === path);
+        if (entry === undefined) return false;
+        if (entry.meta['action'] === 'new-file' && typeof entry.meta['kind'] === 'string') void this.newFileOfKind(entry.meta['kind']);
+        return true;
+    }
+
+    /** A new file of one kind: its name asked for, then the kind's module creates it, as New File does. */
+    async newFileOfKind(kindId: string): Promise<void> {
+        const kind = (await this.fileKinds()).find(k => k.id === kindId);
+        if (kind === undefined) {
+            await this.newFile();
+            return;
+        }
+        const name = await this.nativeDialog.input({
+            title:        kind.label,
+            label:        'Name',
+            confirmLabel: 'Create',
+            required:     true,
+        });
+        if (name === null || name.trim() === '') return;
+        this.createOfKind(kind, name.trim());
+    }
+
     async newFile(): Promise<void> {
         const kinds = await this.fileKinds();
 
@@ -238,11 +267,14 @@ export class VfsActionsService {
             return;
         }
 
-        // The MODULE creates it, at its own endpoint, with its own slugging,
-        // seeding, mime stamping and conflict handling. VFS only knew the menu.
+        this.createOfKind(kind, result.value.trim());
+    }
+
+    /** The MODULE creates it, at its own endpoint, with its own slugging, seeding, mime stamping and conflict handling. */
+    private createOfKind(kind: VfsFileKind, name: string): void {
         this.http.post(kind.endpoint, {
             ...kind.payload,
-            [kind.nameField]:   result.value.trim(),
+            [kind.nameField]:   name,
             // `|| '/'` because the ROOT is the one path where stripping the
             // trailing slash empties the string, and the folder travels ALONE
             // here rather than being concatenated with a filename the way the

@@ -315,6 +315,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
         .vfs-list-header {
             display: flex;
             align-items: center;
+            column-gap: var(--cms-space-4);
             padding: 6px 12px;
             background: var(--cms-surface-muted);
             border-bottom: 1px solid var(--cms-border);
@@ -337,6 +338,7 @@ import { ViewerModalComponent, type ViewerModalData } from '@coolms/document-vie
         .vfs-list-row {
             display: flex;
             align-items: center;
+            column-gap: var(--cms-space-4);
             height: var(--cms-row-height, 36px);
             padding: 0 12px;
             cursor: pointer;
@@ -724,6 +726,8 @@ export class VfsFilesComponent {
             _context:      'node',
             _single:       single,
             _hasClipboard: this.clipboard.hasAny(),
+            _hasFolder:    true,
+            _canWrite:     this.state.currentFolderWritable() !== false,
             type:          focused.type,
             name:          focused.name,
             path:          focused.path,
@@ -756,6 +760,9 @@ export class VfsFilesComponent {
             _context:      'background',
             _single:       false,
             _hasClipboard: this.clipboard.hasAny(),
+            // The open folder, as the toolbar has it: a create the person cannot use here stays, disabled.
+            _hasFolder:    true,
+            _canWrite:     this.state.currentFolderWritable() !== false,
             type:          'directory',
             name:          '',
             path:          '',
@@ -776,6 +783,8 @@ export class VfsFilesComponent {
             this.state.uploadRequested$.next();
             return;
         }
+        // A submenu entry comes by its node's path: New's kinds.
+        if (this.vfsActions.runEntry(actionId)) return;
         const node = this.state.vfsToolbarNodes().find(
             (n) => String(n.meta['action']) === actionId,
         );

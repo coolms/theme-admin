@@ -44,6 +44,8 @@ export class VfsPageStateService {
     readonly nodes         = signal<VfsNodeDto[]>([]);
     readonly loading       = signal<boolean>(false);
     readonly error         = signal<string | null>(null);
+    /** Whether the person may write in the open folder, as the server reads it with the listing; null until known. */
+    readonly currentFolderWritable = signal<boolean | null>(null);
 
     // -- Pagination ------------------------------------------------------------
 
@@ -190,6 +192,19 @@ export class VfsPageStateService {
      */
     private restarted = false;
 
+    /** The open folder's own write permission, read with its first page; unknown (null) when it cannot be read. */
+    private readFolderWritable(baseUrl: string, path: string): void {
+        this.currentFolderWritable.set(null);
+        this.http.get<VfsNodeDto>(`${baseUrl}/vfs/files?path=${encodeURIComponent(path)}`, {
+            headers: { Accept: 'application/ld+json' },
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (folder) => {
+                if (this.currentPath() === path) this.currentFolderWritable.set(folder?.permissions?.write === true);
+            },
+            error: () => undefined,
+        });
+    }
+
     private loadPage(path: string, cursor?: string, restart = false): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
@@ -203,6 +218,7 @@ export class VfsPageStateService {
 
         this.loading.set(true);
         this.error.set(null);
+        if (!cursor) this.readFolderWritable(baseUrl, path);
 
         const showHidden = this.showHidden();
         let url = `${baseUrl}/vfs/directories/list?path=${encodeURIComponent(path)}&showHidden=${showHidden}&limit=100`;
