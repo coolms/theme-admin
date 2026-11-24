@@ -139,14 +139,14 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
         fixture.destroy();
     });
 
-    it('the page header holds the tree\'s title, the Online status, then New chat, the one filled button; no empty More', () => {
+    it('the page header holds the tree\'s title, the Online status, then New chat, the one filled button, then More', () => {
         render();
         const header = part('cms-page-header');
         expect(header.querySelector('h1')!.textContent!.trim()).toBe('Chat');
         const actions = header.querySelector<HTMLElement>('.page-header__actions')!;
         const order = [...actions.querySelectorAll('.msg__status, [data-action]')]
             .map(n => (n.classList.contains('msg__status') ? 'status' : n.getAttribute('data-action')));
-        expect(order).toEqual(['status', 'primary']);
+        expect(order).toEqual(['status', 'primary', 'more']);
         const newChat = actions.querySelector<HTMLElement>('[data-action="primary"]')!;
         expect(newChat.textContent!.trim()).toBe('New chat');
         expect(newChat.classList).toContain('cms-btn-primary');
@@ -168,6 +168,17 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
         const channels = spyOn(fixture.componentInstance, 'toggleChannels');
         const more = part('cms-page-header [data-action="more"]');
         more.click();
+        const menu = TestBed.inject(ContextMenuService) as unknown as { openFrom: jasmine.Spy };
+        const items = menu.openFrom.calls.mostRecent().args[1] as { id: string; label: string }[];
+        expect(items.map(i => i.label)).toEqual(['Browse channels']);
+        fixture.componentInstance.onHeaderAction(items[0].id);
+        expect(channels).toHaveBeenCalledTimes(1);
+    });
+
+    it('while the tree serves no channels node, More still holds Browse channels, and it opens the channels list', () => {
+        render();
+        const channels = spyOn(fixture.componentInstance, 'toggleChannels');
+        part('cms-page-header [data-action="more"]').click();
         const menu = TestBed.inject(ContextMenuService) as unknown as { openFrom: jasmine.Spy };
         const items = menu.openFrom.calls.mostRecent().args[1] as { id: string; label: string }[];
         expect(items.map(i => i.label)).toEqual(['Browse channels']);
