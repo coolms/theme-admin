@@ -37,6 +37,9 @@ import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto,
 import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
 
+/** The header node id that opens the public channels list (the Chat tree's /browse-channels). */
+const BROWSE_CHANNELS = 'browse-channels';
+
 /**
  * Internal chat (`/admin/chat`, shell - rich composer
  * - attachments - realtime - emoji - self-set status -
@@ -78,9 +81,6 @@ import { RtcMediaKind } from '../rtc/rtc.types';
  * the `[innerHTML]`-injected paragraphs (neither carries `_ngcontent`). Every
  * rule is anchored to the `.msg`/`app-messages-page` prefix to stay scoped.
  */
-/** The header node id that opens the public channels list (the Chat tree's /browse-channels). */
-const BROWSE_CHANNELS = 'browse-channels';
-
 @Component({
     selector: 'app-messages-page',
     standalone: true,
