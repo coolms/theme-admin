@@ -96,7 +96,7 @@ describe('VfsManagerComponent -- no shortcut reaches it while a surface is open 
                     useValue: {
                         viewMode: signal('grid'), selectedNodes: signal(selected), showHidden: signal(false),
                         currentPath: signal('/docs'), vfsToolbarNodes: signal([]), panelOpen: signal(false),
-                        activeItem: signal(null), nodes: signal(selected), loading: signal(false), currentFolderWritable: signal(null),
+                        activeItem: signal(null), nodes: signal(selected), loading: signal(false), currentFolderWritable: signal(null), currentCreatable: signal<readonly string[]>(["docx"]),
                     },
                 },
             ],

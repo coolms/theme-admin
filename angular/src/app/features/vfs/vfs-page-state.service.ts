@@ -46,6 +46,8 @@ export class VfsPageStateService {
     readonly error         = signal<string | null>(null);
     /** Whether the person may write in the open folder, as the server reads it with the listing; null until known. */
     readonly currentFolderWritable = signal<boolean | null>(null);
+    /** The file kinds the server says can be created in the open folder (its listing's `creatable`); none when absent. */
+    readonly currentCreatable = signal<readonly string[]>([]);
 
     // -- Pagination ------------------------------------------------------------
 
@@ -231,6 +233,11 @@ export class VfsPageStateService {
         ).subscribe({
             next: r => {
                 const raw   = Array.isArray(r.member) ? r.member : [];
+                // The folder's creatable kinds come with its first page; an answer without them offers none.
+                if (!cursor) {
+                    const creatable = (r as { creatable?: unknown }).creatable;
+                    this.currentCreatable.set(Array.isArray(creatable) ? creatable.filter((k): k is string => typeof k === 'string') : []);
+                }
                 const sorted = [...raw].sort((a, b) => {
                     if (a.type === 'directory' && b.type !== 'directory') return -1;
                     if (a.type !== 'directory' && b.type === 'directory') return 1;

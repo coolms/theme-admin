@@ -62,7 +62,7 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
                         activeItem:      signal(null),
                         nodes:           signal(selected),
                         loading:         signal(false),
-                        currentFolderWritable: signal(writable),
+                        currentFolderWritable: signal(writable), currentCreatable: signal<readonly string[]>(["docx"]),
                     },
                 },
             ],
@@ -113,7 +113,7 @@ describe('VfsManagerComponent -- the bar reads the selection\'s capability answe
     });
 
     it('publishes the open folder write permission, read by the server, and that a folder is open', () => {
-        expect(build([], false).component.toolbarContext()).toEqual(jasmine.objectContaining({ _hasFolder: true, _canWrite: false }));
+        expect(build([], false).component.toolbarContext()).toEqual(jasmine.objectContaining({ _hasFolder: true, _canWrite: false, _creatable: ['docx'] }));
         // Not yet read: no refusal is claimed; the server still refuses a write it does not allow.
         expect(build([], null).component.toolbarContext()['_canWrite']).toBe(true);
         expect(build([file('/docs/a', {})], true).component.toolbarContext()['_canWrite']).toBe(true);

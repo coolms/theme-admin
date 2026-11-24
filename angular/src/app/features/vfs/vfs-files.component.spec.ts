@@ -86,7 +86,7 @@ describe('VfsFilesComponent -- a live node event refetches the row by path', () 
         const watched: string[] = [];
         const state = {
             currentPath:   signal(currentPath),
-            currentFolderWritable: signal<boolean | null>(null),
+            currentFolderWritable: signal<boolean | null>(null), currentCreatable: signal<readonly string[]>(["docx"]),
             nodes:         signal<VfsNodeDto[]>(nodes),
             loading:       signal(false),
             error:         signal<string | null>(null),
@@ -216,7 +216,7 @@ describe('VfsFilesComponent -- the right-click menu carries the node\'s capabili
         const executeOn = jasmine.createSpy('executeOn');
         const state = {
             currentPath:     signal('/docs'),
-            currentFolderWritable: signal<boolean | null>(null),
+            currentFolderWritable: signal<boolean | null>(null), currentCreatable: signal<readonly string[]>(["docx"]),
             nodes:           signal<VfsNodeDto[]>([]),
             loading:         signal(false),
             error:           signal<string | null>(null),
@@ -339,7 +339,7 @@ describe('VfsFilesComponent -- two homes with one name show their owners', () =>
     function build(nodes: VfsNodeDto[]): VfsFilesComponent {
         const state = {
             currentPath:     signal('/home'),
-            currentFolderWritable: signal<boolean | null>(null),
+            currentFolderWritable: signal<boolean | null>(null), currentCreatable: signal<readonly string[]>(["docx"]),
             nodes:           signal<VfsNodeDto[]>(nodes),
             loading:         signal(false),
             error:           signal<string | null>(null),

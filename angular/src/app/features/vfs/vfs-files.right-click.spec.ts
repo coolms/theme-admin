@@ -61,7 +61,7 @@ describe('VfsFilesComponent -- a right-click on a row', () => {
         const selected = signal<VfsNodeDto[]>(selection);
         const state = {
             currentPath:     signal('/docs'),
-            currentFolderWritable: signal<boolean | null>(null),
+            currentFolderWritable: signal<boolean | null>(null), currentCreatable: signal<readonly string[]>(["docx"]),
             nodes:           signal<VfsNodeDto[]>(nodes),
             loading:         signal(false),
             error:           signal<string | null>(null),

@@ -109,4 +109,20 @@ describe('VfsPageStateService -- a page link no longer valid starts the folder a
         first(null);
         http.verify();
     });
+
+    it('takes the folder creatable kinds from its first page, and none when the answer gives none', () => {
+        const state = setUp();
+        state.navigateTo('/docs');
+        http.expectOne(r => r.url.startsWith(LIST) && !r.url.includes('cursor='))
+            .flush({ member: [node('a')], hasMore: true, nextCursor: 'p2', creatable: ['docx', 'xlsx', 7] });
+        expect(state.currentCreatable()).toEqual(['docx', 'xlsx']);
+        state.loadMore();
+        next('p2').flush({ member: [node('b')], hasMore: false, nextCursor: null });
+        expect(state.currentCreatable()).toEqual(['docx', 'xlsx']);
+        state.navigateTo('/shared');
+        first(null);
+        expect(state.currentCreatable()).toEqual([]);
+        answerFolderReads();
+        http.verify();
+    });
 });

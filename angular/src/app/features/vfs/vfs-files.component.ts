@@ -728,6 +728,7 @@ export class VfsFilesComponent {
             _hasClipboard: this.clipboard.hasAny(),
             _hasFolder:    true,
             _canWrite:     this.state.currentFolderWritable() !== false,
+            _creatable:    this.state.currentCreatable(),
             type:          focused.type,
             name:          focused.name,
             path:          focused.path,
@@ -763,6 +764,7 @@ export class VfsFilesComponent {
             // The open folder, as the toolbar has it: a create the person cannot use here stays, disabled.
             _hasFolder:    true,
             _canWrite:     this.state.currentFolderWritable() !== false,
+            _creatable:    this.state.currentCreatable(),
             type:          'directory',
             name:          '',
             path:          '',

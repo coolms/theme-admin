@@ -242,6 +242,7 @@ export class VfsManagerComponent implements OnInit, OnDestroy {
             // A folder is always open here; whether the person may write in it is the server's, read with it.
             _hasFolder:    true,
             _canWrite:     this.state.currentFolderWritable() !== false,
+            _creatable:    this.state.currentCreatable(),
         };
 
         if (selected.length === 0) {
