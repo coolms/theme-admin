@@ -1,7 +1,7 @@
 import { Dialog } from '@angular/cdk/dialog';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import {
-    ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, afterRenderEffect, computed,
+    ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed,
     effect, inject,
     linkedSignal, signal, untracked, viewChild,
 } from '@angular/core';
@@ -19,8 +19,8 @@ import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
-    CmsSectionHeadComponent,
-    sectionActionsOf,
+    CmsFilterChipsComponent,
+    CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
     CmsPaneToolbarComponent,
     ContextMenuItem,
@@ -39,6 +39,7 @@ import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.serv
 import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
 import { MailPreferencesService } from './mail-preferences.service';
 import { MailPanesDirective } from './mail-panes.directive';
+import { MAIL_LIST_FILTERS, type MailListFilter, mailListFilterOf, mailRowsShown } from './mail-list-filter';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
@@ -202,7 +203,7 @@ type PhonePane = 'folders' | 'message';
         MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
-        CmsSectionHeadComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
+        CmsPageHeaderComponent, CmsFilterChipsComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent, MailRemoteBarComponent,
         MessageSourceComponent,
         MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
@@ -211,13 +212,10 @@ type PhonePane = 'folders' | 'message';
     ],
     template: `
         <div class="mbx">
-            <!-- The section head across the page wherever the section column does not show it: one or two panes, or
-                 no mailbox yet. -->
-            @if (!headInRail()) {
-                <cms-section-head class="mbx__head-wide" data-test="section-head-wide" icon="envelope" [title]="sectionTitle()"
-                                  [fullWidth]="true" [primary]="sectionActions().primary" [more]="sectionActions().more"
-                                  (action)="onHeaderAction($event)" />
-            }
+            <!-- The page header across the page: the tree's title, Compose filled and the tree's other header actions
+                 under More. -->
+            <cms-page-header data-test="page-header" icon="envelope" [title]="sectionTitle()"
+                             [actions]="pageActions()" (actionClick)="onHeaderAction($event)" />
 
             <!-- Declares nothing: the tree names the page's actions, says which
                  need a mailbox, and says that Import greys out while one is
@@ -255,7 +253,13 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-left" aria-hidden="true"></i>
                             <span class="mbx__phone-bar-label">Back to {{ selectedFolderName() || 'the list' }}</span>
                         </button>
-                        <ng-template #mailboxCard>
+                        <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
+                             with Retry reading it again. The message pane is not touched. -->
+                        @if (mailboxesFailure() !== null) {
+                            <cms-state kind="error" title="Could not load mailboxes." [error]="mailboxesFailure()" actionLabel="Retry" (acted)="loadMailboxes()" />
+                        }
+                        <!-- The mailbox card heads the column, level with the panes' first row. -->
+                        <div class="mbx__rail-card" data-test="rail-card">
                             <app-mailbox-switcher [mailboxes]="mailboxes()"
                                                   [currentId]="selectedMailboxId()"
                                                   [unread]="mailboxUnread()"
@@ -263,27 +267,7 @@ type PhonePane = 'folders' | 'message';
                                                   (chosen)="pickMailbox($event)"
                                                   (settings)="openMailboxSettings()"
                                                   (menu)="onMailboxContextMenu($event.event, $event.id)" />
-                        </ng-template>
-                        <!-- The section head: row 1 the title, Compose and More, row 2 the mailbox card. -->
-                        @if (headInRail()) {
-                            <cms-section-head #railHead class="mbx__section-head" data-test="section-head" icon="envelope" [title]="sectionTitle()"
-                                              [primary]="sectionActions().primary" [more]="sectionActions().more"
-                                              (action)="onHeaderAction($event)">
-                                <div section-context class="mbx__head-card" data-test="rail-card">
-                                    <ng-container *ngTemplateOutlet="mailboxCard" />
-                                </div>
-                            </cms-section-head>
-                        }
-                        <!-- A failed read of the mailboxes stands in place of the mailbox list (which is then empty),
-                             with Retry reading it again. The message pane is not touched. -->
-                        @if (mailboxesFailure() !== null) {
-                            <cms-state kind="error" title="Could not load mailboxes." [error]="mailboxesFailure()" actionLabel="Retry" (acted)="loadMailboxes()" />
-                        }
-                        @if (!headInRail()) {
-                            <div class="mbx__rail-card" data-test="rail-card">
-                                <ng-container *ngTemplateOutlet="mailboxCard" />
-                            </div>
-                        }
+                        </div>
                         <app-mail-folder-rail [rows]="railRows()"
                                               [selected]="selectedFolder()"
                                               [failure]="foldersFailure()"
@@ -293,7 +277,7 @@ type PhonePane = 'folders' | 'message';
                                               (retry)="retryFolders()"
                                               (menu)="onFolderMenu($event)"
                                               (create)="createTopFolder()"
-                                              (need)="railNeed.set($event); reportFoldersNeed(railPane)" />
+                                              (need)="panes.foldersNeedIn($event, railPane)" />
                     </aside>
 
                     <!-- Where folders show beside the list the column is as wide as its widest row needs, at least 200px. -->
@@ -324,6 +308,13 @@ type PhonePane = 'folders' | 'message';
                                 </button>
                             }
                         </div>
+
+                        <!-- The folder's filter: one chip chosen, All by default; the chips wrap whole onto a line below. -->
+                        @if (!searchActive()) {
+                            <cms-filter-chips class="mbx__chips" data-test="mail-chips" label="Show messages"
+                                              [options]="listFilters" [value]="listFilter()"
+                                              (valueChange)="chooseListFilter($event)" />
+                        }
 
                         <!-- Under the list's row and its search field, the list's one scroll region. -->
                         <!-- The rows are virtualized against this region: only those in view and a few around are drawn. -->
@@ -396,6 +387,9 @@ type PhonePane = 'folders' | 'message';
                         } @else if (messages().length === 0 && listEnd() === null) {
                             <app-empty-state icon="inbox" title="No messages"
                                              hint="This folder is empty." />
+                        } @else if (shownMessages().length === 0 && listEnd() === null && !hasMore() && !loadingNextPage()) {
+                            <app-empty-state icon="funnel" data-test="mail-filter-empty" [title]="filterEmptyTitle()"
+                                             hint="Choose All to see every message in this folder." />
                         } @else {
                             @if (serverRowGone()) {
                                 <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
@@ -420,10 +414,10 @@ type PhonePane = 'folders' | 'message';
                                  sender, subject and date line up with a stored row's. -->
                             <cdk-virtual-scroll-viewport class="mbx__rows" data-test="list-rows" role="list" aria-label="Messages"
                                                          [itemSize]="rowHeight()" [minBufferPx]="rowHeight() * 4"
-                                                         [maxBufferPx]="rowHeight() * 8" [style.min-height.px]="messages().length * rowHeight()"
+                                                         [maxBufferPx]="rowHeight() * 8" [style.min-height.px]="shownMessages().length * rowHeight()"
                                                          (focusin)="onRowFocusIn($event)" (focusout)="onRowFocusOut($event)"
                                                          (keydown)="onListKeydown($event)">
-                                <ng-container *cdkVirtualFor="let m of messages(); trackBy: trackRow; let i = index">
+                                <ng-container *cdkVirtualFor="let m of shownMessages(); trackBy: trackRow; let i = index">
                                 @let server = isServerRowOf(m);
                                 <div class="mbx__row" role="listitem" (contextmenu)="onMessageRowContextMenu($event, m)"
                                      [style.height.px]="rowHeight()"
@@ -1219,12 +1213,10 @@ type PhonePane = 'folders' | 'message';
             overflow-y: auto; display: flex; flex-direction: column;
         }
         .mbx__rail > cms-state, .mbx__rail > app-mail-folder-rail { margin-top: 8px; }
-        /* The section head: row 1 level with the panes' rows, row 2 the mailbox card; no rules under either. */
-        .mbx__section-head { flex: 0 0 auto; }
-        .mbx__head-card { flex: 1 1 auto; min-width: 0; }
-        .mbx__head-card > app-mailbox-switcher, .mbx__rail-card > app-mailbox-switcher { display: block; min-width: 0; }
-        .mbx__rail-card { margin-top: 8px; }
-        .mbx__head-wide { padding-top: 0; }
+        /* The mailbox card: the column's first row, level with the panes' first row. */
+        .mbx__rail-card { flex: 0 0 auto; display: flex; align-items: center; min-height: var(--cms-pane-toolbar-height); }
+        .mbx__rail-card > app-mailbox-switcher { display: block; flex: 1 1 auto; min-width: 0; }
+        .mbx__body--one .mbx__rail-card, .mbx__body--two .mbx__rail-card { min-height: 0; margin-top: 8px; }
         .mbx__note { color: var(--cms-text-muted); font-size: .8125rem; padding: 12px; }
         .mbx__open-failed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; padding: 12px; color: var(--cms-text); }
 
@@ -1314,6 +1306,8 @@ type PhonePane = 'folders' | 'message';
             background: var(--cms-surface);
         }
         .mbx__body--one .mbx__search { height: auto; padding: 8px 10px; }
+        /* The filter chips under the search field, wrapping whole; never scrolled, never cut. */
+        .mbx__chips { flex: 0 0 auto; padding: 0 10px 8px; }
         .mbx__search-icon { color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__search-input {
             flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--cms-border);
@@ -1831,36 +1825,6 @@ export class EmailMailboxPageComponent implements OnInit {
     private readonly phone = signal(this.phoneWidth?.matches === true);
     /** The mail grid's panes, measured on the grid itself. */
     private readonly gridPanes = viewChild(MailPanesDirective);
-    /** The folder rail's widest row, as it reports it. */
-    readonly railNeed = signal(0);
-    /** The section head's row 1 at its natural width: the icon, the whole title, the primary and More, and their gaps. */
-    readonly headNeed = signal(0);
-    private readonly railHead = viewChild('railHead', { read: ElementRef });
-    private readonly railPaneRef = viewChild<ElementRef<HTMLElement>>('railPane');
-
-    /** The folder column's minimum: the wider of what the folder rail and the section head's row 1 need. */
-    reportFoldersNeed(pane: HTMLElement): void {
-        this.gridPanes()?.foldersNeedIn(Math.max(this.railNeed(), this.headNeed()), pane);
-    }
-
-    /** Row 1's natural width, the title at its whole text however narrow the column is now. */
-    private measureHeadNeed(): void {
-        const host = this.railHead()?.nativeElement as HTMLElement | undefined;
-        const row = host?.querySelector<HTMLElement>('[data-row="1"]');
-        const title = row?.querySelector<HTMLElement>('h1');
-        if (!row || !title) return;
-        const range = document.createRange();
-        range.selectNodeContents(title);
-        const text = Math.ceil(range.getBoundingClientRect().width);
-        const shown = [...row.children].filter((c): c is HTMLElement => c instanceof HTMLElement && (c === title || c.offsetWidth > 0));
-        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-        const others = shown.filter(c => c !== title).reduce((sum, c) => sum + c.getBoundingClientRect().width, 0);
-        const need = Math.ceil(others + text + gap * Math.max(0, shown.length - 1));
-        if (need === this.headNeed()) return;
-        this.headNeed.set(need);
-        const pane = this.railPaneRef()?.nativeElement;
-        if (pane) this.reportFoldersNeed(pane);
-    }
     /** One pane at a time, on a phone or in a grid too narrow for the list and the message; the pane shown is then in the address. */
     readonly onePane = computed(() => this.phone() || this.gridPanes()?.count() === 1);
     /** The list and the message side by side; the folders stand in the list's place when asked for. */
@@ -1940,7 +1904,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const row = this.folderRows().find(r => r.folder.folder === this.selectedFolder());
         const total = this.serverListed() ? row?.folder.serverTotal : row?.folder.total;
 
-        return listSetSize(total, this.messages().length);
+        return this.listFilter() === 'all' ? listSetSize(total, this.messages().length) : -1;
     });
     /** The server row being opened, by its ref: it is not opened twice. */
     readonly openingRef = signal<string | null>(null);
@@ -2193,16 +2157,28 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly treeTitle = signal<string | null>(null);
     /** The section's title: the tree's, else the section's name in both hosts, "Mail". */
     readonly sectionTitle = computed(() => this.treeTitle() ?? 'Mail');
-    /** The section head's actions: the tree's primary node shown, its other header nodes under More, in its order. */
-    readonly sectionActions = computed(() => {
+    /** The page header's actions: the tree's primary node filled, its other header nodes under More, in its order. */
+    readonly pageActions = computed((): ToolbarAction[] => {
         const actions = this.headerActions();
         // The tree's primary flag decides; Compose stands in only while the served tree marks none.
-        return sectionActionsOf(actions.some(a => a.primary === true)
-            ? actions
-            : actions.map(a => ({ ...a, primary: a.id === 'compose' })));
+        return actions.some(a => a.primary === true) ? actions : actions.map(a => ({ ...a, primary: a.id === 'compose' }));
     });
-    /** The section head sits in the section column where three panes show; elsewhere it spans the page. */
-    readonly headInRail = computed(() => this.mailboxes().length > 0 && !this.onePane() && !this.twoPanes());
+
+    /** The list's filter chips. */
+    readonly listFilters = MAIL_LIST_FILTERS;
+    /** The chosen chip: the read rows are filtered here, the server is asked for the folder as ever. */
+    readonly listFilter = signal<MailListFilter>('all');
+    /** The rows the list draws: the folder's read rows the chosen chip keeps. */
+    readonly shownMessages = computed(() => mailRowsShown(this.messages(), this.listFilter()));
+    /** The words for a filter that keeps none of the folder's rows. */
+    readonly filterEmptyTitle = computed(() => (this.listFilter() === 'unread' ? 'No unread messages' : 'No messages with attachments'));
+
+    /** A chip chosen: the list shows the rows it keeps, reading on while they do not fill the view. */
+    chooseListFilter(id: string): void {
+        this.listFilter.set(mailListFilterOf(id));
+        this.clearSelection();
+        this.readOnAfterRender();
+    }
 
     /**
      * What the tree's conditions are evaluated against.
@@ -2603,20 +2579,6 @@ export class EmailMailboxPageComponent implements OnInit {
 
     constructor() {
         this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query => this.followPane(query));
-        // The section head's row 1 measured again whenever its title or its actions change, and once a web font is in:
-        // a row measured in the fallback face would be too narrow for the real one.
-        afterRenderEffect(() => {
-            this.sectionTitle();
-            this.sectionActions();
-            this.headInRail();
-            untracked(() => this.measureHeadNeed());
-        });
-        if (typeof document !== 'undefined' && document.fonts) {
-            const remeasure = (): void => this.measureHeadNeed();
-            void document.fonts.ready.then(remeasure);
-            document.fonts.addEventListener('loadingdone', remeasure);
-            this.destroyRef.onDestroy(() => document.fonts.removeEventListener('loadingdone', remeasure));
-        }
         // The pane closed: the next message opens as written. Another message keeps the view; the last one's note goes.
         effect(() => {
             const open = this.selectedMessage()?.id ?? null;
@@ -3087,7 +3049,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         if (this.loadingMessages() || this.listEnd() !== null || this.messagesFailure() !== null || !this.listAnswered
-            || !nearListEnd(this.rowsTop() + this.messages().length * this.rowHeight(), region.scrollTop, region.clientHeight)) {
+            || !nearListEnd(this.rowsTop() + this.shownMessages().length * this.rowHeight(), region.scrollTop, region.clientHeight)) {
             return;
         }
         if (this.listNextPage !== null) {
@@ -4048,7 +4010,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const key = target.closest('[data-key]')?.getAttribute('data-key') ?? null;
-        const list = this.messages();
+        const list = this.shownMessages();
         const at = key === null ? -1 : list.findIndex(m => rowKey(m) === key);
         if (at === -1) {
             return;
@@ -4100,7 +4062,7 @@ export class EmailMailboxPageComponent implements OnInit {
             return;
         }
         const control = rows.querySelector<HTMLElement>(`[data-key="${CSS.escape(key)}"] [data-part="main"]`);
-        const index = this.messages().indexOf(m);
+        const index = this.shownMessages().indexOf(m);
         const height = this.rowHeight();
         const top = rows.getBoundingClientRect().top - region.getBoundingClientRect().top + region.scrollTop + index * height;
         if (top < region.scrollTop) {
@@ -4135,7 +4097,7 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     private selectRangeTo(id: string, fallback: string | null = null): void {
         // Server rows between the two are left out: they are never checked.
-        const ids = storedIds(this.messages());
+        const ids = storedIds(this.shownMessages());
         const to = ids.indexOf(id);
         if (to === -1) {
             return;
@@ -4149,9 +4111,9 @@ export class EmailMailboxPageComponent implements OnInit {
         // The anchor stays, so a second Shift+click or Shift+arrow re-spans from it.
     }
 
-    /** Select every currently-loaded message in the folder. */
+    /** Select every currently-loaded message the list shows. */
     selectAllLoaded(): void {
-        this.selectedIds.set(new Set(storedIds(this.messages())));
+        this.selectedIds.set(new Set(storedIds(this.shownMessages())));
     }
 
     /** Drop the whole selection (and the range anchor). */

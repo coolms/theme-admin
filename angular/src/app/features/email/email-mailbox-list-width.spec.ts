@@ -56,7 +56,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
                         listMessages: () => of(page([
                             stored('m-1', LONG, { fromName: LONG, snippet: LONG, flagged: true }),
                             server('r-2', LONG, { fromName: LONG, snippet: LONG }),
-                            stored('m-3', 'Short', { snippet: 'Short' }),
+                            stored('m-3', 'Short', { snippet: 'Short', hasAttachments: true }),
                         ])),
                         olderMessages: () => NEVER,
                         listThread: () => of([]),
@@ -118,38 +118,43 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         await settle();
     }
 
-    it('the section head heads the left column: Email, Compose and More on row 1, the mailbox card on row 2', async () => {
+    it('the page header spans the page: the envelope, Mail, Compose filled and More with the tree\'s other actions', async () => {
         await render(1440);
         const page = fixture.componentInstance;
         const opened = spyOn(page, 'openCompose');
         page.headerActions.set([
             { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' },
-            { id: 'module-settings', icon: 'gear', label: 'Email settings' },
+            { id: 'module-settings', icon: 'gear', label: 'Mail settings' },
             { id: 'import', icon: 'upload', label: 'Import', title: 'Import a file', disabled: true, refusal: 'An import is running.' },
             { id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true },
         ]);
         await settle();
-        expect(el().querySelector('[data-test="section-head-wide"]')).withContext('no head across the page').toBeNull();
-        const head = part('.mbx__rail [data-test="section-head"]');
-        const row1 = head.querySelector<HTMLElement>('[data-row="1"]')!;
-        expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the section name before the tree answers').toBe('Mail');
-        const title = row1.querySelector<HTMLElement>('h1')!;
-        expect(title.scrollWidth).withContext('the folder column fits the whole title beside Compose and More').toBeLessThanOrEqual(title.clientWidth + 1);
+        const header = part('[data-test="page-header"]');
+        expect(header.parentElement!.classList).withContext('the header is the page\'s, above the grid').toContain('mbx');
+        expect(el().querySelector('.mbx__rail [data-test="page-header"], .mbx__rail cms-section-head')).withContext('no head in the folder column').toBeNull();
+        const band = header.querySelector<HTMLElement>('.page-header')!;
+        expect(box(band).width).withContext('the page\'s width').toBeCloseTo(box(el()).width, 0);
+        expect(box(band).bottom).withContext('the grid starts under the header').toBeLessThanOrEqual(box(part('.mbx__body')).top);
+        expect(header.querySelector('.bi-envelope')).not.toBeNull();
+        expect(header.querySelector('h1')!.textContent!.trim()).withContext('the section name before the tree answers').toBe('Mail');
         page.treeTitle.set('Mail (tree)');
         await settle();
-        expect(row1.querySelector('h1')!.textContent!.trim()).withContext('the title node of the tree').toBe('Mail (tree)');
-        const compose = row1.querySelector<HTMLElement>('[data-action="primary"]')!;
+        expect(header.querySelector('h1')!.textContent!.trim()).withContext('the title node of the tree').toBe('Mail (tree)');
+
+        const compose = header.querySelector<HTMLElement>('[data-action="primary"]')!;
         expect(compose.textContent?.trim()).toBe('Compose');
-        expect(row1.querySelector('[data-action="more"]')).withContext('the other actions under More').not.toBeNull();
-        expect(page.sectionActions().more.map(a => a.id)).toEqual(['add-mailbox', 'module-settings', 'import']);
-        expect(page.sectionActions().more[2]).toEqual(jasmine.objectContaining({ disabled: true, reason: 'An import is running.' }));
-        const card = head.querySelector('[data-row="2"] app-mailbox-switcher');
-        expect(card).withContext('the mailbox card on row 2').not.toBeNull();
-        for (const row of [row1, head.querySelector<HTMLElement>('[data-row="2"]')!]) {
-            expect(getComputedStyle(row).borderBottomStyle).withContext('no divider under a row').toBe('none');
-        }
+        expect(compose.classList).withContext('filled').toContain('cms-btn-primary');
+        expect(header.querySelectorAll('.cms-btn-primary').length).withContext('one filled button').toBe(1);
         compose.click();
         expect(opened).toHaveBeenCalledTimes(1);
+
+        const menu = Object.assign(TestBed.inject(ContextMenuService), {
+            openFrom: jasmine.createSpy('openFrom'), menu: () => null, close: (): void => {},
+        }) as unknown as { openFrom: jasmine.Spy };
+        header.querySelector<HTMLElement>('[data-action="more"]')!.click();
+        const items = menu.openFrom.calls.mostRecent().args[1] as { id: string; label: string; disabled: boolean; refusal?: string }[];
+        expect(items.map(i => i.label)).withContext('More holds the others, in the tree\'s order').toEqual(['Add mailbox', 'Mail settings', 'Import']);
+        expect(items[2]).toEqual(jasmine.objectContaining({ disabled: true, refusal: 'An import is running.' }));
 
         // A tree that offers no Compose draws none.
         page.headerActions.set([{ id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' }]);
@@ -157,18 +162,84 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(el().querySelector('[data-action="primary"]')).toBeNull();
     });
 
-    it('measures the head again when a font comes in, so a wider face still fits the title', async () => {
+    it('the mailbox card heads the folder column, level with the list\'s first row', async () => {
+        await render(1440);
+        const card = part('.mbx__rail [data-test="rail-card"]');
+        expect(card.querySelector('app-mailbox-switcher')).not.toBeNull();
+        const rail = part('.mbx__rail');
+        const first = [...rail.children].find(e => getComputedStyle(e).display !== 'none');
+        expect(first).withContext('the card is the column\'s first element').toBe(card);
+        expect(Math.round(box(card).top)).toBe(Math.round(box(part('.mbx__list')).top));
+    });
+
+    it('a disabled Compose stays filled in the header with the tree\'s reason', async () => {
         await render(1440);
         const page = fixture.componentInstance;
-        page.headerActions.set([{ id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true }]);
+        const opened = spyOn(page, 'openCompose');
+        page.headerActions.set([
+            { id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true, disabled: true, refusal: 'Sign in to this mailbox again.' },
+        ]);
         await settle();
-        const before = page.headNeed();
-        const title = part('[data-test="section-head"] h1');
-        title.style.fontSize = '32px';
-        document.fonts.dispatchEvent(new Event('loadingdone'));
+        const compose = part('[data-test="page-header"] [data-action="primary"]');
+        expect(compose.getAttribute('aria-disabled')).toBe('true');
+        expect(compose.getAttribute('title')).toBe('Sign in to this mailbox again.');
+        compose.click();
+        expect(opened).not.toHaveBeenCalled();
+    });
+
+    it('over the list: the search, then the chips All, Unread and Attachments, All chosen', async () => {
+        await render(1440);
+        const search = part('[data-test="mail-search"]');
+        const chips = part('[data-test="mail-chips"]');
+        expect(box(chips).top).withContext('the chips under the search').toBeGreaterThanOrEqual(box(search).bottom);
+        expect(box(chips).bottom).withContext('the rows under the chips').toBeLessThanOrEqual(box(part('[data-test="list-scroll"]')).top + 1);
+        const labels = [...chips.querySelectorAll('[role="radio"]')].map(c => c.textContent!.trim());
+        expect(labels).toEqual(['All', 'Unread', 'Attachments']);
+        expect(chips.querySelector('[data-chip="all"]')!.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('a chip keeps the rows it names: Unread the unseen, Attachments those with some, All every one', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        const subjects = (): string[] => rows().map(r => r.querySelector('.mbx__row-subject')!.textContent!.trim());
+        const choose = async (id: string): Promise<void> => {
+            part(`[data-test="mail-chips"] [data-chip="${id}"]`).click();
+            await settle();
+        };
+        expect(rows().length).toBe(3);
+
+        await choose('unread');
+        expect(page.listFilter()).toBe('unread');
+        expect(rows().length).withContext('the unseen server row only').toBe(1);
+        expect(rows()[0].getAttribute('data-ref')).toBe('r-2');
+
+        await choose('attachments');
+        expect(subjects()).toEqual(['Short']);
+
+        await choose('all');
+        expect(rows().length).toBe(3);
+    });
+
+    it('a chip that keeps none of a read-to-its-end folder says so; checked rows are cleared on a choice', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        page.selectAllLoaded();
+        expect(page.selectedCount()).toBe(2);
+        page.messages.update(list => list.map(m => ({ ...m, seen: true })));
+        part('[data-test="mail-chips"] [data-chip="unread"]').click();
         await settle();
-        expect(page.headNeed()).withContext('the need follows the face').toBeGreaterThan(before);
-        expect(title.scrollWidth).withContext('the title still fits').toBeLessThanOrEqual(title.clientWidth + 1);
+        expect(page.selectedCount()).toBe(0);
+        expect(rows().length).toBe(0);
+        expect(part('[data-test="mail-filter-empty"]').textContent).toContain('No unread messages');
+    });
+
+    it('the chips wrap onto a line below rather than scroll or cut', async () => {
+        await render(1440);
+        const chips = part('[data-test="mail-chips"]');
+        const group = chips.querySelector<HTMLElement>('[role="radiogroup"]')!;
+        expect(getComputedStyle(group).flexWrap).toBe('wrap');
+        expect(getComputedStyle(group).overflowX).withContext('no scroller of their own').toBe('visible');
+        expect(group.scrollWidth).toBeLessThanOrEqual(group.clientWidth + 1);
     });
 
     it('the message pane draws no empty row: with no message open no action row, its content at the top', async () => {
@@ -186,17 +257,19 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
     it('the primary flag of the tree decides the primary; Compose stands in only while none is marked', async () => {
         await render(1440);
         const page = fixture.componentInstance;
+        const primary = (): string | undefined => page.pageActions().find(a => a.primary === true)?.id;
         page.headerActions.set([
             { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox', primary: true },
             { id: 'compose', icon: 'pencil-square', label: 'Compose' },
         ]);
-        expect(page.sectionActions().primary?.id).toBe('add-mailbox');
-        expect(page.sectionActions().more.map(a => a.id)).toEqual(['compose']);
+        expect(primary()).toBe('add-mailbox');
+        await settle();
+        expect(part('[data-test="page-header"] [data-action="primary"]').textContent?.trim()).toBe('Add mailbox');
         page.headerActions.set([
             { id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' },
             { id: 'compose', icon: 'pencil-square', label: 'Compose' },
         ]);
-        expect(page.sectionActions().primary?.id).toBe('compose');
+        expect(primary()).toBe('compose');
     });
 
     it('tells the tree when the selected mailbox needs a new sign-in, so Compose is declared disabled', async () => {
@@ -208,15 +281,14 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(page.toolbarContext()['_mailboxNeedsReconnect']).toBeTrue();
     });
 
-    it('where the section column does not show, the section head spans the page', async () => {
+    it('with two panes the page header still spans the page, Compose in it', async () => {
         await render(760);
         const page = fixture.componentInstance;
         page.headerActions.set([{ id: 'compose', icon: 'pencil-square', label: 'Compose', primary: true }]);
         await settle();
-        expect(page.headInRail()).toBeFalse();
-        const wide = part('[data-test="section-head-wide"]');
-        expect(wide.querySelector('[data-action="primary"]')!.textContent?.trim()).toBe('Compose');
-        expect(el().querySelector('[data-test="section-head"]')).toBeNull();
+        const header = part('[data-test="page-header"]');
+        expect(header.querySelector('[data-action="primary"]')!.textContent?.trim()).toBe('Compose');
+        expect(box(header).width).toBeCloseTo(box(el()).width, 0);
     });
 
     it('the empty reading pane says what the message tree declares for it, and its own words until then', async () => {

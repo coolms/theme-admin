@@ -19,12 +19,13 @@ import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
-import { AppConfigState, AuthState, CmsLoaderComponent, refusalWords } from '@coolms/core-angular';
-import { CmsPageHeaderComponent, CmsPaneSplitterComponent, DateTimeFormatService, DateTimePipe, DayGroup, groupByDay, ToastService, UserAvatarComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
+import { AppConfigState, AuthState, CmsLoaderComponent, NaviGraphService, type NaviGraphNode, refusalWords } from '@coolms/core-angular';
+import { CmsFilterChipsComponent, CmsPageHeaderComponent, CmsPaneSplitterComponent, DateTimeFormatService, DateTimePipe, DayGroup, groupByDay, PageToolbarComponent, ToastService, ToolbarAction, UserAvatarComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
 import { VfsSecureImgDirective } from '../vfs/vfs-secure-img.directive';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
+import { conversationFiltersOf, conversationsShown } from './conversation-filter.util';
 import { conversationLabel, lastActivityTs, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
@@ -82,9 +83,11 @@ import { RtcMediaKind } from '../rtc/rtc.types';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None,
-    imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
+    imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsFilterChipsComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
     template: `
-        <cms-page-header icon="chat-dots" [title]="'Chat'">
+        <!-- The page header: the tree's title; the status control, then the tree's header nodes -- its primary (New
+             chat) filled, the others under More. -->
+        <cms-page-header icon="chat-dots" [title]="treeTitle() ?? 'Chat'" [actions]="headerActions()" (actionClick)="onHeaderAction($event)">
             <div class="msg__status" header-actions>
                 <button type="button" class="msg__status-btn" (click)="toggleStatusMenu()"
                         [title]="'Your status: ' + statusLabel(myStatus())">
@@ -116,18 +119,14 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                 }
             </div>
         </cms-page-header>
+        <!-- Declares nothing: feeds the header the tree's title and header nodes; the bar itself is not drawn. -->
+        <app-page-toolbar class="msg__header-feed" [treeSlug]="listTree" [context]="listContext()"
+                          (headerActionsChanged)="headerActions.set($event)" (titleChanged)="treeTitle.set($event)"
+                          (actionClick)="onHeaderAction($event)" />
         <div class="msg">
             <aside class="msg__list">
                 <div class="msg__list-head">
                     <span class="msg__list-label">Conversations</span>
-                    <div class="msg__head-actions">
-                        <button type="button" class="msg__browse"
-                                [class.msg__browse--on]="showChannels()"
-                                (click)="toggleChannels()" title="Browse public channels">
-                            <i class="bi bi-hash"></i> Channels
-                        </button>
-                        <button type="button" class="cms-btn cms-btn-sm cms-btn-primary" (click)="toggleNew()">＋ New</button>
-                    </div>
                 </div>
 
                 @if (showNew()) {
@@ -201,7 +200,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                         @if (loadingChannels()) {
                             <div class="msg__loading"><cms-loader label="Loading channels" /></div>
                         } @else if (channels().length === 0) {
-                            <p class="msg__hint">No public channels yet. Create one with ＋ New → Channel.</p>
+                            <p class="msg__hint">No public channels yet. Create one with New chat → Channel.</p>
                         } @else {
                             <ul class="msg__channels-list">
                                 @for (ch of channels(); track ch.id) {
@@ -222,7 +221,7 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                 } @else if (loadingList()) {
                     <div class="msg__loading"><cms-loader label="Loading conversations" /></div>
                 } @else if (conversations().length === 0) {
-                    <p class="msg__hint">No conversations yet. Start one with ＋ New.</p>
+                    <p class="msg__hint">No conversations yet. Start one with New chat.</p>
                 } @else {
                     <div class="msg__search cms-field-box">
                         <i class="bi bi-search msg__search-icon"></i>
@@ -232,8 +231,18 @@ import { RtcMediaKind } from '../rtc/rtc.types';
                             <button type="button" class="msg__search-clear" (click)="convQuery.set('')" title="Clear">×</button>
                         }
                     </div>
+                    <!-- The tree's filters: one chip chosen, the tree's default first; the chips wrap whole onto a line below. -->
+                    @if (listFilters().options.length > 0) {
+                        <cms-filter-chips class="msg__filter" data-test="chat-chips" label="Show conversations"
+                                          [options]="listFilters().options" [value]="listFilter() ?? ''"
+                                          (valueChange)="chosenFilter.set($event)" />
+                    }
                     @if (filteredConversations().length === 0) {
-                        <p class="msg__hint">No conversations match "{{ convQuery() }}".</p>
+                        @if (convQuery().trim() !== '') {
+                            <p class="msg__hint">No conversations match "{{ convQuery() }}".</p>
+                        } @else {
+                            <p class="msg__hint" data-test="chat-filter-empty">No conversations under {{ listFilterLabel() }}.</p>
+                        }
                     } @else {
                     <ul class="msg__rows">
                         @for (c of filteredConversations(); track c.id) {
@@ -749,10 +758,6 @@ import { RtcMediaKind } from '../rtc/rtc.types';
            40px spinner would push the conversation around. A loader replaces
            a placeholder that owns the whole pane, not one that shares it. */
         .msg__loading { display: flex; align-items: center; justify-content: center; padding: 24px 0; }
-        .msg__head-actions { display: flex; align-items: center; gap: .35rem; }
-        .msg__browse { display: inline-flex; align-items: center; gap: .25rem; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .35rem .6rem; font: inherit; font-size: .82rem; cursor: pointer; }
-        .msg__browse:hover { border-color: var(--cms-btn-hover-border, #6b7280); }
-        .msg__browse--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); }
         .msg__newmode { display: flex; gap: .25rem; margin-bottom: .5rem; }
         .msg__newmode-btn { flex: 1 1 0; border: 1px solid var(--cms-btn-border, #868c96); background: var(--cms-surface); color: var(--cms-text-secondary, #525a66); border-radius: var(--cms-radius, 6px); padding: .3rem; font: inherit; font-size: .82rem; cursor: pointer; }
         .msg__newmode-btn--on { background: var(--cms-selected-light); color: var(--cms-selected-text); border-color: var(--cms-selected); font-weight: 500; }
@@ -795,6 +800,8 @@ import { RtcMediaKind } from '../rtc/rtc.types';
         .msg__status-away { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem .2rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
         .msg__status-away-sel { font: inherit; font-size: .78rem; padding: .15rem .3rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); color: var(--cms-text, #111827); cursor: pointer; }
         .msg__search { display: flex; align-items: center; gap: .4rem; margin: .5rem .75rem; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
+        .msg__filter { margin: 0 .75rem .5rem; }
+        .msg__header-feed { display: none; }
         .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #525a66); flex: 0 0 auto; }
         .msg__search-input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); }
         .msg__search-input:focus { outline: none; /* ring: its box, .msg__search.cms-field-box */ }
@@ -1484,16 +1491,52 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     /** Client-side conversation-list filter query (matches the counterpart name / group title). */
     readonly convQuery = signal('');
 
+    /** The conversation list's tree: the page's title, its header actions and the list's filters. */
+    readonly listTree = 'navi.toolbar.chat.list';
+    private readonly naviGraph = inject(NaviGraphService);
+    private readonly listNodes = signal<NaviGraphNode[]>([]);
+    /** The tree's title node, once it has answered. */
+    readonly treeTitle = signal<string | null>(null);
+    /** The tree's header nodes, as the page toolbar resolves them: its primary filled, the others under More. */
+    readonly headerActions = signal<ToolbarAction[]>([]);
+    /** What the tree's conditions read: whether any read conversation is unread (it shows the Unread filter). */
+    readonly listContext = computed((): Record<string, unknown> => ({
+        _anyUnread: this.conversations().some(c => this.unreadCount(c) > 0),
+    }));
+    /** The list's filter chips: the tree's filter nodes this context shows, in its order. */
+    readonly listFilters = computed(() => {
+        const ctx = this.listContext();
+        return conversationFiltersOf(this.listNodes(), n => this.naviGraph.isVisible(n, ctx));
+    });
+    /** The chip chosen; null until one is, when the tree's default holds. */
+    readonly chosenFilter = signal<string | null>(null);
+    /** The filter in force: the chosen chip while the tree shows it, else the tree's default. The rows are filtered here. */
+    readonly listFilter = computed(() => {
+        const chosen = this.chosenFilter();
+        const { options, initial } = this.listFilters();
+        return chosen !== null && options.some(o => o.id === chosen) ? chosen : initial;
+    });
+    readonly listFilterLabel = computed(() => this.listFilters().options.find(o => o.id === this.listFilter())?.label ?? '');
+
+    /** A header node chosen: New chat opens the new-conversation picker; browsing channels opens the channels list. */
+    onHeaderAction(id: string): void {
+        if (id === 'new-conversation') {
+            this.toggleNew();
+        } else if (id === 'browse-channels' || id === 'channels') {
+            this.toggleChannels();
+        }
+    }
+
     /**
-     * The conversation list narrowed by {@link convQuery} (empty query -> the
-     * full list) and sorted most-recently-active first -- the inbox convention,
+     * The conversation list narrowed by the chosen chip and {@link convQuery}
+     * (empty query -> every row the chip keeps) and sorted most-recently-active first -- the inbox convention,
      * keyed on {@link ChatConversationDto.lastMessageAt} (falling back to
      * `updatedAt` for a conversation with no messages yet). The `watchUser`
      * refetch keeps it live as new messages land.
      */
     readonly filteredConversations = computed<readonly ChatConversationDto[]>(() => {
         const q = this.convQuery().trim().toLowerCase();
-        const all = this.conversations();
+        const all = conversationsShown(this.conversations(), this.listFilter(), c => this.unreadCount(c) > 0);
         const matched = q === ''
             ? [...all]
             : all.filter(c => this.counterpartName(c).toLowerCase().includes(q));
@@ -1658,6 +1701,13 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        // The list's filters come from the tree the header reads (one request: the tree is cached by its address).
+        const pattern = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.graphBySlug;
+        if (pattern) {
+            this.naviGraph.loadTree(pattern.replace('{slug}', this.listTree))
+                .pipe(catchError(() => EMPTY), takeUntilDestroyed(this.destroyRef))
+                .subscribe(nodes => this.listNodes.set(nodes));
+        }
         this.reloadList();
         // The channel list is what a `#handle` in an already-received message
         // resolves against, so it has to be here before the first render
