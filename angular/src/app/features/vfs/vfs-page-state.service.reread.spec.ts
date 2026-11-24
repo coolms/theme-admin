@@ -42,6 +42,10 @@ describe('VfsPageStateService -- the selection follows a listing read again', ()
         return TestBed.inject(VfsPageStateService);
     }
 
+    /** The open folder's own read, made with each first page: answered writable, as these cases do not turn on it. */
+    const answerFolderReads = (): void => http.match(r => r.url.includes('/vfs/files?path='))
+        .forEach(r => r.flush({ permissions: { read: true, write: true, execute: true } }));
+
     function answer(nodes: VfsNodeDto[]): void {
         http.expectOne(req => req.url.startsWith(LIST)).flush({ member: nodes, hasMore: false, nextCursor: null });
     }
@@ -60,6 +64,7 @@ describe('VfsPageStateService -- the selection follows a listing read again', ()
         expect(selected.id).toBe('other');
         expect(selected).toBe(byId('other'));
         expect((selected.capabilities as Record<string, string>)['vfs.node.delete']).toBe('elevate');
+        answerFolderReads();
         http.verify();
     });
 
@@ -74,6 +79,7 @@ describe('VfsPageStateService -- the selection follows a listing read again', ()
 
         expect(state.selectedNodes().map(n => n.id)).toEqual(['c', 'a']);
         expect(state.selectedNodes().every(n => (n.capabilities as Record<string, string>)['vfs.node.delete'] === 'denied')).toBe(true);
+        answerFolderReads();
         http.verify();
     });
 
@@ -86,6 +92,7 @@ describe('VfsPageStateService -- the selection follows a listing read again', ()
         answer([node('a', 'denied')]);
 
         expect(state.selectedNodes()).toEqual([]);
+        answerFolderReads();
         http.verify();
     });
 });

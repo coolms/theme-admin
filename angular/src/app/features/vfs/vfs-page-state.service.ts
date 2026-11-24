@@ -44,6 +44,12 @@ export class VfsPageStateService {
     readonly nodes         = signal<VfsNodeDto[]>([]);
     readonly loading       = signal<boolean>(false);
     readonly error         = signal<string | null>(null);
+    /** Whether the person may write in the open folder, as the server reads it with the listing; null until known. */
+    readonly currentFolderWritable = signal<boolean | null>(null);
+    /** The file kinds the server says can be created in the open folder (its listing's `creatable`); none when absent. */
+    readonly currentCreatable = signal<readonly string[]>([]);
+    /** The folder whose kinds currentCreatable holds: another folder's first page clears them until it answers. */
+    private creatableFor: string | null = null;
 
     // -- Pagination ------------------------------------------------------------
 
@@ -190,6 +196,19 @@ export class VfsPageStateService {
      */
     private restarted = false;
 
+    /** The open folder's own write permission, read with its first page; unknown (null) when it cannot be read. */
+    private readFolderWritable(baseUrl: string, path: string): void {
+        this.currentFolderWritable.set(null);
+        this.http.get<VfsNodeDto>(`${baseUrl}/vfs/files?path=${encodeURIComponent(path)}`, {
+            headers: { Accept: 'application/ld+json' },
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (folder) => {
+                if (this.currentPath() === path) this.currentFolderWritable.set(folder?.permissions?.write === true);
+            },
+            error: () => undefined,
+        });
+    }
+
     private loadPage(path: string, cursor?: string, restart = false): void {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const baseUrl  = manifest?.apiBase ?? '';
@@ -203,6 +222,12 @@ export class VfsPageStateService {
 
         this.loading.set(true);
         this.error.set(null);
+        if (!cursor) this.readFolderWritable(baseUrl, path);
+        // Another folder: its kinds are unknown until its first page answers, and stay none if it fails.
+        if (!cursor && path !== this.creatableFor) {
+            this.currentCreatable.set([]);
+            this.creatableFor = path;
+        }
 
         const showHidden = this.showHidden();
         let url = `${baseUrl}/vfs/directories/list?path=${encodeURIComponent(path)}&showHidden=${showHidden}&limit=100`;
@@ -215,6 +240,11 @@ export class VfsPageStateService {
         ).subscribe({
             next: r => {
                 const raw   = Array.isArray(r.member) ? r.member : [];
+                // The folder's creatable kinds come with its first page; an answer without them offers none.
+                if (!cursor) {
+                    const creatable = (r as { creatable?: unknown }).creatable;
+                    this.currentCreatable.set(Array.isArray(creatable) ? creatable.filter((k): k is string => typeof k === 'string') : []);
+                }
                 const sorted = [...raw].sort((a, b) => {
                     if (a.type === 'directory' && b.type !== 'directory') return -1;
                     if (a.type !== 'directory' && b.type === 'directory') return 1;
