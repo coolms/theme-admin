@@ -524,8 +524,9 @@ const BROWSE_CHANNELS = 'browse-channels';
                                (change)="onFilesPicked($event)" />
 
                         <!-- One unified input shell: the rich editor fills the width,
-                             with an action bar (emoji · attach | Send) beneath it. -->
-                        <div class="msg__composer-shell cms-field-box">
+                             with an action bar (emoji · attach | Send) beneath it. Its edge
+                             is stronger while the text has the focus (styles.scss). -->
+                        <div class="msg__composer-shell cms-message-input">
                             <coolms-editor class="msg__editor"
                                            profile="comment"
                                            [content]="composerHtml()"
@@ -579,7 +580,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                         }
                     </div>
                     <div class="msg__tp-composer">
-                        <textarea #tpInput class="msg__tp-input cms-field" rows="1" placeholder="Reply in thread…"
+                        <textarea #tpInput class="msg__tp-input cms-message-input" rows="1" placeholder="Reply in thread…"
                                   [value]="threadReply()"
                                   (input)="threadReply.set(tpInput.value)"
                                   (keydown)="onThreadKeydown($event)"></textarea>
@@ -871,7 +872,7 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__tp-body { flex: 1 1 auto; overflow-y: auto; padding: .7rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
         .msg__tp-empty { color: var(--cms-text-secondary, #525a66); font-size: .8rem; font-style: italic; margin: .2rem 0; }
         .msg__tp-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding: .6rem .8rem; border-top: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); }
-        .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
+        .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
         .msg__tp-send { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 0; border-radius: var(--cms-radius-lg, 10px); background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); cursor: pointer; font-size: 1rem; }
         .msg__tp-send:disabled { background: var(--cms-text-muted); cursor: default; }
         /* Error strip on the palette's own danger pair. The text was #b91c1c and
@@ -1006,7 +1007,7 @@ const BROWSE_CHANNELS = 'browse-channels';
          * Send) beneath it, like a modern chat composer. .msg__composer stays the
          * relatively-positioned padding wrapper so the emoji popover anchors to it. */
         .msg__composer { position: relative; padding: .7rem 1.1rem; border-top: 1px solid var(--cms-border, #e5e7eb); flex-shrink: 0; background: var(--cms-surface); }
-        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-card, 12px); background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-card, 12px); background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
         /* The rich editor now spans the full shell width (was flex:0 0 auto -> cramped). */
         .msg__editor { display: block; width: 100%; }
         .msg__composer .cms-editor { min-height: 0; border: 0; background: transparent; }

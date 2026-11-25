@@ -83,7 +83,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                 </div>
 
                 <div class="mqp__composer">
-                    <textarea class="mqp__input" rows="1" placeholder="Reply…"
+                    <textarea class="mqp__input cms-message-input" rows="1" placeholder="Reply…"
                               [value]="composerText()"
                               (input)="composerText.set(asValue($event))"
                               (keydown)="onComposerKeydown($event)"></textarea>
@@ -188,7 +188,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__daysep { align-self: center; margin: .3rem 0 .1rem; padding: .12rem .55rem; font-size: .64rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
         .mqp__hint--older { text-align: center; padding: .3rem; }
         .mqp__composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding-top: .5rem; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
+        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
         .mqp__send { flex: 0 0 auto; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius-md, 8px); width: 38px; height: 38px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .mqp__send:disabled { opacity: .5; cursor: default; }
     `],
