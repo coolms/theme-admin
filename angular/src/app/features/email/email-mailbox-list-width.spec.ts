@@ -329,7 +329,10 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
             await settle();
             expect(part('[data-test="phone-title"]').getAttribute('title')).toBe(LONG_FOLDER + ' \u00b7 ' + long);
             const cut = part('[data-test="phone-title"] .mbx__phone-bar-filter');
-            expect(box(part('[data-test="phone-title"] .mbx__phone-bar-label')).width).withContext('no room for the name').toBeLessThan(1);
+            const line = box(part('[data-test="phone-title"]'));
+            expect(box(part('[data-test="phone-title"] .mbx__phone-bar-place')).top).withContext('the name is under the line, not drawn').toBeGreaterThanOrEqual(line.bottom - 1);
+            expect(box(part('[data-test="phone-title"] .mbx__phone-bar-dot')).top).withContext('its dot with it').toBeGreaterThanOrEqual(line.bottom - 1);
+            expect(box(cut).left).withContext('the title starts with the filter').toBeCloseTo(line.left, 0);
             expect(cut.scrollWidth).withContext('the filter cut').toBeGreaterThan(cut.clientWidth);
             expect(getComputedStyle(cut).textOverflow).toBe('ellipsis');
             expect(box(cut).width).toBeCloseTo(box(part('[data-test="phone-title"]')).width, 0);

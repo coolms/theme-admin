@@ -292,10 +292,14 @@ type PhonePane = 'folders' | 'message';
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders"
                                 [attr.aria-expanded]="phoneFolders()" (click)="showPane('folders')">
                             <i class="bi bi-folder2" aria-hidden="true"></i>
-                            <!-- The list's title, with its filter when that is not All: the folder's name is cut first. -->
+                            <!-- The list's title, with its filter when that is not All: the folder's name is cut first, and goes with its dot
+                                 once under 24px of it would show. -->
                             <span class="mbx__phone-bar-title" data-test="phone-title"
-                                  [attr.title]="(selectedFolderName() || 'Folders') + titleFilter()">
-                                <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
+                                  [attr.title]="(selectedFolderName() || 'Folders') + (titleFilter() === '' ? '' : ' \u00b7 ' + titleFilter())">
+                                <span class="mbx__phone-bar-place">
+                                    <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
+                                    @if (titleFilter() !== '') {<span class="mbx__phone-bar-dot">{{ ' \u00b7 ' }}</span>}
+                                </span>
                                 @if (titleFilter() !== '') {
                                     <span class="mbx__phone-bar-filter">{{ titleFilter() }}</span>
                                 }
@@ -1190,10 +1194,16 @@ type PhonePane = 'folders' | 'message';
             font: inherit; text-align: left; cursor: pointer;
         }
         .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mbx__phone-bar-title { display: flex; flex: 1 1 auto; min-width: 0; }
-        .mbx__phone-bar-title > .mbx__phone-bar-label { flex: 0 9999 auto; }
-        /* The folder's name is cut first; the filter's only once the name has no room. */
-        .mbx__phone-bar-filter { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+        /* One line: the folder's name is cut first, and with under 24px of it left it and its dot wrap under the line and
+           are not drawn; the filter's name is cut only then. */
+        .mbx__phone-bar-title {
+            display: flex; flex: 1 1 auto; flex-wrap: wrap-reverse; align-content: flex-end; min-width: 0; height: 1lh;
+            overflow: hidden; overflow: clip;
+        }
+        .mbx__phone-bar-place { display: flex; flex: 1 1 40px; min-width: 0; max-width: max-content; }
+        .mbx__phone-bar-place > .mbx__phone-bar-label { flex: 0 1 auto; }
+        .mbx__phone-bar-dot { flex: none; white-space: pre; }
+        .mbx__phone-bar-filter { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* One pane at a time (a phone, or a grid too narrow for the list and the message): the list; the folders when
            asked for; a message once one is opened. The pane shown fills the grid over the width a splitter wrote on it
            inline (the person's saved width), as the two-pane rule does. */
@@ -2203,12 +2213,12 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly listFilter = computed(() => listFilterInForce(this.listFilters(), this.chosenListFilter()));
     /** The rows it keeps. */
     readonly rowFilter = computed(() => mailListFilterOf(this.listFilter()));
-    /** What the folders bar adds to the folder's name while the list is filtered; nothing on the default, or over search results. */
+    /** The filter's name in the folders bar while the list is filtered; nothing on the default, or over search results. */
     readonly titleFilter = computed(() => {
         const current = this.listFilter();
         const { options, initial } = this.listFilters();
         if (current === null || current === initial || this.searchActive()) return '';
-        return ' \u00b7 ' + (options.find(o => o.id === current)?.label ?? '');
+        return options.find(o => o.id === current)?.label ?? '';
     });
     /** The rows the list draws: the folder's read rows the filter keeps. */
     readonly shownMessages = computed(() => mailRowsShown(this.messages(), this.rowFilter()));
