@@ -68,7 +68,7 @@ export interface ServerHitFailed {
  * A hit the local results already show is not shown again; a hit the platform holds opens as stored; any other opens
  * through `opener`, which answers null where opening one is not offered. Each refusal is said in its own words. The
  * next page is read when the section's end comes into view, with a row saying so; a page not read is asked for again
- * only by Try again, or after a rate limit's countdown.
+ * only by Try again, or after a rate limit's countdown. What the host puts between its tags is drawn under its head.
  */
 @Component({
     selector: 'app-mail-server-search',
@@ -82,6 +82,7 @@ export interface ServerHitFailed {
                     <span class="mss__matches" data-test="server-search-matches">{{ note }}</span>
                 }
             </div>
+            <ng-content />
 
             @for (h of rows(); track h.ref) {
                 <app-mail-hit-row testId="server-hit" [from]="h.senderText || h.from?.name || h.from?.address" [date]="h.date"

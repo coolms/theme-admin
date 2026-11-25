@@ -164,20 +164,47 @@ describe('EmailMailboxPageComponent -- the search sections and the notes', () =>
         const press = el().querySelector<HTMLButtonElement>('[data-test="server-search-others"]')!;
         expect(press.textContent?.trim()).toBe('Search other mailboxes');
         expect(asked).withContext('not before the press').toEqual(['mb1 first']);
+        const head = sections()[0].querySelector<HTMLElement>('.mss__head')!;
+        const firstHit = sections()[0].querySelector<HTMLElement>('[data-test="server-hit"]')!;
+        expect(Math.abs(press.getBoundingClientRect().top - head.getBoundingClientRect().bottom)).withContext('right under the head').toBeLessThanOrEqual(1);
+        expect(firstHit.getBoundingClientRect().top).withContext('above every hit').toBeGreaterThanOrEqual(press.getBoundingClientRect().bottom);
 
         press.click();
+        await frames(() => sections().length > 1);
+        await frames(() => false, 5);
+        expect(el().querySelector('[data-test="server-search-others"]')).withContext('one press').toBeNull();
+        const other = sections()[0].getBoundingClientRect();
+        const view = region().getBoundingClientRect();
+        expect(other.top).withContext('its section is in view').toBeGreaterThanOrEqual(view.top - 1);
+        expect(other.top).toBeLessThan(view.bottom);
         await reply('mb2', 20, 'b1');
-        expect(sections().map(s => s.getAttribute('aria-label'))).toEqual(['More results', 'More results: Home']);
+        expect(sections().map(s => s.getAttribute('aria-label'))).toEqual(['More results: Home', 'More results']);
         expect(asked).toEqual(['mb1 first', 'mb2 first']);
 
-        // Straight to the second section's end: the first one's is above the view, and asks nothing.
+        // Straight to the open mailbox's end: the other's is above the view, and asks nothing.
         scrollTo(ends()[1]);
         await frames(() => asked.length > 2);
-        expect(asked).withContext('the second section\'s own').toEqual(['mb1 first', 'mb2 first', 'mb2 b1']);
+        expect(asked).withContext('the open mailbox\'s own').toEqual(['mb1 first', 'mb2 first', 'mb1 a1']);
 
         scrollTo(ends()[0]);
         await frames(() => asked.length > 3);
-        expect(asked).withContext('the first section\'s own').toEqual(['mb1 first', 'mb2 first', 'mb2 b1', 'mb1 a1']);
+        expect(asked).withContext('the other\'s own').toEqual(['mb1 first', 'mb2 first', 'mb1 a1', 'mb2 b1']);
+        pageOf().clearSearch();
+    });
+
+    it('pressed with the head above the view, the other mailbox\'s section is brought into it', async () => {
+        pageOf().runSearch('report');
+        await reply('mb1', 20, 'a1');
+        const press = el().querySelector<HTMLButtonElement>('[data-test="server-search-others"]')!;
+        region().scrollTop += press.getBoundingClientRect().top - region().getBoundingClientRect().top;
+        await frames(() => false, 3);
+        expect(sections()[0].getBoundingClientRect().top).withContext('the head is above the view').toBeLessThan(region().getBoundingClientRect().top - 5);
+
+        press.click();
+        await frames(() => sections().length > 1);
+        await frames(() => false, 5);
+        expect(sections()[0].getAttribute('aria-label')).toBe('More results: Home');
+        expect(sections()[0].getBoundingClientRect().top).toBeGreaterThanOrEqual(region().getBoundingClientRect().top - 1);
         pageOf().clearSearch();
     });
 

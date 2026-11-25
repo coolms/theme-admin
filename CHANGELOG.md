@@ -12,7 +12,8 @@ major number means here.
 - **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
   once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a
   "Loading more results…" row; at the end the list just ends. A page not read says so with Try again and is not asked
-  for again by itself; a rate limit counts down and goes on. The Load more button is gone.
+  for again by itself; a rate limit counts down and goes on. The Load more button is gone. Search other mailboxes is the
+  first row under More results, and its results open there, above the open mailbox's.
 - **Mail's sentences to a person speak of their mailbox, not of a server**: the search's, the note on a folder too large
   to sort by date, the note on a copy no longer kept, the Trash line, a folder's tooltip, and a message gone at the
   provider ("This message was deleted in your Gmail mailbox."). Settings that configure a server, and the reasons a

@@ -3,7 +3,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed,
     effect, inject,
-    linkedSignal, signal, untracked, viewChild,
+    linkedSignal, signal, untracked, viewChild, viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -357,6 +357,15 @@ type PhonePane = 'folders' | 'message';
                                 <ng-container [ngTemplateOutlet]="listEndRow"
                                               [ngTemplateOutletContext]="{ loading: searchingMore(), end: searchEnd(), retry: retrySearchEnd, words: searchEndWords }" />
                             }
+                            <!-- The other mailboxes' results open where they were asked for: above the open mailbox's, which
+                                 go on as they are scrolled. -->
+                            @for (s of otherServerSearches.sections(); track s.mailboxId) {
+                                <app-mail-server-search #otherSection [search]="s.search" [heading]="'More results: ' + s.title"
+                                                        [mailboxWords]="mailboxWords(s.mailboxId)"
+                                                        [opener]="s.open"
+                                                        (opened)="onServerHitOpened($event)"
+                                                        (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
+                            }
                             <!-- Older mail the open mailbox's server finds, headers only, under the stored results. -->
                             <app-mail-server-search [search]="serverSearch"
                                                     [localIds]="localResultIds()"
@@ -364,24 +373,15 @@ type PhonePane = 'folders' | 'message';
                                                     [mailboxWords]="mailboxWords(selectedMailboxId())"
                                                     [opener]="openServerHitFn"
                                                     (opened)="onServerHitOpened($event)"
-                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
-                            @if (otherMailboxes().length > 0) {
-                                @if (otherServerSearches.sections().length === 0) {
+                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)">
+                                @if (otherMailboxes().length > 0 && otherServerSearches.sections().length === 0) {
                                     <button type="button" class="mbx__others" data-test="server-search-others"
                                             (click)="searchOtherMailboxes()">
                                         <i class="bi bi-search" aria-hidden="true"></i>
                                         Search other mailboxes
                                     </button>
-                                } @else {
-                                    @for (s of otherServerSearches.sections(); track s.mailboxId) {
-                                        <app-mail-server-search [search]="s.search" [heading]="'More results: ' + s.title"
-                                                                [mailboxWords]="mailboxWords(s.mailboxId)"
-                                                                [opener]="s.open"
-                                                                (opened)="onServerHitOpened($event)"
-                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
-                                    }
                                 }
-                            }
+                            </app-mail-server-search>
                         } @else if (messagesFailure() !== null) {
                             <!-- A failed read of the folder's messages stands in place of the message list, with
                                  Retry reading it again. The mailbox pane is not touched. -->
@@ -1298,7 +1298,7 @@ type PhonePane = 'folders' | 'message';
         .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
         .mbx__others {
             display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; text-align: left;
-            border: 0; border-top: 1px solid var(--cms-border); border-bottom: 1px solid var(--cms-border);
+            border: 0; border-bottom: 1px solid var(--cms-border);
             background: transparent; color: var(--cms-accent-text); font: inherit; font-size: .8125rem; cursor: pointer;
         }
         .mbx__others:hover { background: var(--cms-surface-hover); }
@@ -2542,6 +2542,7 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
     readonly otherServerSearches = new OtherMailboxesSearch();
+    private readonly otherSections = viewChildren<string, ElementRef<HTMLElement>>('otherSection', { read: ElementRef });
     /** Which mailbox and folder the list shows: another one starts it again from its top. */
     private listKey = '';
     /** The message open in the reader was evicted: shown still, as no longer kept here. */
@@ -3477,7 +3478,10 @@ export class EmailMailboxPageComponent implements OnInit {
         this.otherServerSearches.stop();
     }
 
-    /** The same query on the server of each of the person's other mailboxes, one after another. */
+    /**
+     * The same query on the server of each of the person's other mailboxes, one after another. Their sections stand
+     * over the open mailbox's, and the first is kept in the list's view.
+     */
     searchOtherMailboxes(): void {
         const q = this.activeQuery;
         if (q === '') {
@@ -3493,6 +3497,7 @@ export class EmailMailboxPageComponent implements OnInit {
             ),
             open: hit => this.email.openServerMessage(mb.id, hit),
         })));
+        afterNextRender(() => this.otherSections().at(0)?.nativeElement.scrollIntoView({ block: 'nearest' }), { injector: this.injector });
     }
 
     /** A mailbox as a sentence to its person names it. */
