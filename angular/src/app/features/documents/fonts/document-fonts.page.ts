@@ -148,19 +148,13 @@ import {
         // --cms-* is CHROME, not paper: this panel is admin furniture and has
         // to follow the theme, dark mode included.
         '.catalogue-backdrop { position: fixed; inset: 0; background: var(--cms-overlay-scrim); z-index: 40; }',
-        '.catalogue { position: fixed; top: 10vh; left: 50%; transform: translateX(-50%);'
-            + ' width: min(560px, 92vw); max-height: 74vh; overflow: auto; z-index: 41;'
-            + ' background: var(--cms-surface); color: var(--cms-text);'
-            + ' border: 1px solid var(--cms-border); border-radius: .5rem; padding: 1rem; }',
+        '.catalogue { position: fixed; top: 10vh; left: 50%; transform: translateX(-50%); width: min(560px, 92vw); max-height: 74vh; overflow: auto; z-index: 41; background: var(--cms-surface); color: var(--cms-text); border: 1px solid var(--cms-border); border-radius: .5rem; padding: 1rem; }',
         '.catalogue header { display: flex; align-items: center; justify-content: space-between; }',
         '.catalogue h2 { font-size: 1rem; margin: 0 0 .5rem; }',
         '.catalogue .close { background: none; border: 0; color: inherit; font-size: 1.25rem; cursor: pointer; }',
-        '.catalogue input[type=search] { width: 100%; padding: .4rem .6rem; margin-bottom: .75rem;'
-            + ' background: var(--cms-input-bg, #ffffff); color: inherit;'
-            + ' border: 1px solid var(--cms-border); border-radius: .25rem; }',
+        '.catalogue input[type=search] { width: 100%; padding: .4rem .6rem; margin-bottom: .75rem; background: var(--cms-input-bg, #ffffff); color: inherit; border: 1px solid var(--cms-border); border-radius: .25rem; }',
         '.catalogue ul { list-style: none; margin: 0; padding: 0; }',
-        '.catalogue li { display: flex; align-items: center; gap: .5rem; padding: .4rem 0;'
-            + ' border-bottom: 1px solid var(--cms-border); }',
+        '.catalogue li { display: flex; align-items: center; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--cms-border); }',
         '.catalogue .name { font-weight: 600; }',
         '.catalogue .meta { flex: 1; opacity: .7; font-size: .85em; }',
         '.catalogue .already { opacity: .6; font-size: .85em; }',
