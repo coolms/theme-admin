@@ -20,12 +20,13 @@ import { Store } from '@ngxs/store';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
 import { AppConfigState, AuthState, CmsLoaderComponent, NaviGraphService, type NaviGraphNode, refusalWords } from '@coolms/core-angular';
-import { CmsFilterChipsComponent, CmsPageHeaderComponent, CmsPaneSplitterComponent, DateTimeFormatService, DateTimePipe, DayGroup, groupByDay, PageToolbarComponent, ToastService, ToolbarAction, UserAvatarComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
+import { CmsFilterMenuComponent, CmsPageHeaderComponent, CmsPaneSplitterComponent, DateTimeFormatService, DateTimePipe, DayGroup, groupByDay, PageToolbarComponent, ToastService, ToolbarAction, UserAvatarComponent, UserSearchSelectComponent } from '@coolms/ui-angular';
 import { VfsSecureImgDirective } from '../vfs/vfs-secure-img.directive';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
-import { conversationFiltersOf, conversationsShown } from './conversation-filter.util';
+import { listFilterInForce, listFiltersOf } from '../tree-list-filters';
+import { CONVERSATION_FILTER_VALUES, conversationsShown } from './conversation-filter.util';
 import { conversationLabel, lastActivityTs, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
@@ -86,11 +87,11 @@ const BROWSE_CHANNELS = 'browse-channels';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None,
-    imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsFilterChipsComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
+    imports: [UserSearchSelectComponent, CoolmsEditorComponent, VfsSecureImgDirective, UserAvatarComponent, DateTimePipe, NgTemplateOutlet, CmsPageHeaderComponent, CmsFilterMenuComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsLoaderComponent],
     template: `
         <!-- The page header: the tree's title; the status control, then the tree's header nodes -- its primary (New
              chat) filled, the others (Browse channels) under More. -->
-        <cms-page-header icon="chat-dots" [title]="treeTitle() ?? 'Chat'" [actions]="headerActions()" (actionClick)="onHeaderAction($event)">
+        <cms-page-header icon="chat-dots" [title]="pageTitle()" [actions]="headerActions()" (actionClick)="onHeaderAction($event)">
             <div class="msg__status" header-actions>
                 <button type="button" class="msg__status-btn" (click)="toggleStatusMenu()"
                         [title]="'Your status: ' + statusLabel(myStatus())">
@@ -128,9 +129,19 @@ const BROWSE_CHANNELS = 'browse-channels';
                           (actionClick)="onHeaderAction($event)" />
         <div class="msg">
             <aside class="msg__list">
-                <div class="msg__list-head">
-                    <span class="msg__list-label">Conversations</span>
-                </div>
+                <!-- The list's header row: its name, and its filter at the end. A phone has none: the page's title says the
+                     filter, and its icon is beside the search. -->
+                @if (!phone()) {
+                    <div class="msg__list-head">
+                        <h2 class="msg__list-label" title="Conversations">Conversations</h2>
+                        @if (listShown()) {
+                            <cms-filter-menu data-test="chat-filter" label="Show"
+                                             [options]="listFilters().options" [value]="listFilter() ?? listFilters().initial ?? ''"
+                                             [defaultValue]="listFilters().initial"
+                                             (valueChange)="chooseFilter($event)" />
+                        }
+                    </div>
+                }
 
                 @if (showNew()) {
                     <div class="msg__picker">
@@ -226,20 +237,22 @@ const BROWSE_CHANNELS = 'browse-channels';
                 } @else if (conversations().length === 0) {
                     <p class="msg__hint">No conversations yet. Start one with New chat.</p>
                 } @else {
-                    <div class="msg__search cms-field-box">
-                        <i class="bi bi-search msg__search-icon"></i>
-                        <input type="text" class="msg__search-input" placeholder="Search conversations…"
-                               [value]="convQuery()" (input)="convQuery.set($any($event.target).value)" />
-                        @if (convQuery()) {
-                            <button type="button" class="msg__search-clear" (click)="convQuery.set('')" title="Clear">×</button>
+                    <div class="msg__search-row">
+                        <div class="msg__search cms-field-box">
+                            <i class="bi bi-search msg__search-icon"></i>
+                            <input type="text" class="msg__search-input" placeholder="Search conversations…"
+                                   [value]="convQuery()" (input)="convQuery.set($any($event.target).value)" />
+                            @if (convQuery()) {
+                                <button type="button" class="msg__search-clear" (click)="convQuery.set('')" title="Clear">×</button>
+                            }
+                        </div>
+                        @if (phone()) {
+                            <cms-filter-menu data-test="chat-filter" label="Show" [iconOnly]="true"
+                                             [options]="listFilters().options" [value]="listFilter() ?? listFilters().initial ?? ''"
+                                             [defaultValue]="listFilters().initial"
+                                             (valueChange)="chooseFilter($event)" />
                         }
                     </div>
-                    <!-- The tree's filters: one chip chosen, the tree's default first; the chips wrap whole onto a line below. -->
-                    @if (listFilters().options.length > 0) {
-                        <cms-filter-chips class="msg__filter" data-test="chat-chips" label="Show conversations"
-                                          [options]="listFilters().options" [value]="listFilter() ?? ''"
-                                          (valueChange)="chosenFilter.set($event)" />
-                    }
                     @if (filteredConversations().length === 0) {
                         @if (convQuery().trim() !== '') {
                             <p class="msg__hint">No conversations match "{{ convQuery() }}".</p>
@@ -247,7 +260,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                             <p class="msg__hint" data-test="chat-filter-empty">No conversations under {{ listFilterLabel() }}.</p>
                         }
                     } @else {
-                    <ul class="msg__rows">
+                    <ul #convRows class="msg__rows">
                         @for (c of filteredConversations(); track c.id) {
                             <li>
                                 <button type="button"
@@ -752,9 +765,9 @@ const BROWSE_CHANNELS = 'browse-channels';
         app-messages-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
         .msg { display: flex; flex: 1 1 auto; min-height: 0; background: var(--cms-surface, #fff); }
         .msg__list { flex: 0 0 280px; display: flex; flex-direction: column; min-height: 0; }
-        .msg__list-head { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
+        .msg__list-head { display: flex; align-items: center; gap: var(--cms-space-2); flex: 0 0 auto; box-sizing: border-box; height: var(--cms-pane-header-height); padding: 0 .75rem 0 1rem; border-bottom: 1px solid var(--cms-border, #e5e7eb); }
         .msg__title { margin: 0; font-size: 1rem; font-weight: 600; }
-        .msg__list-label { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--cms-text-secondary, #525a66); }
+        .msg__list-label { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--cms-font-size-title-sm); font-weight: var(--cms-font-weight-semibold); color: var(--cms-text); }
         .msg__thread-presence { flex: 0 0 auto; font-size: .72rem; font-weight: 600; padding: .05rem .45rem; border-radius: 999px; background: var(--cms-canvas, #f3f4f6); }
         /* The composer placeholder and the "older messages" hint stay TEXT:
            they sit inline above a list that is already on screen, where a
@@ -802,8 +815,8 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__status-sep { height: 1px; background: var(--cms-border-light, #f0f2f5); margin: 4px 2px; }
         .msg__status-away { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .5rem .2rem; font-size: .78rem; color: var(--cms-text-secondary, #525a66); }
         .msg__status-away-sel { font: inherit; font-size: .78rem; padding: .15rem .3rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); color: var(--cms-text, #111827); cursor: pointer; }
-        .msg__search { display: flex; align-items: center; gap: .4rem; margin: .5rem .75rem; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
-        .msg__filter { margin: 0 .75rem .5rem; }
+        .msg__search { display: flex; align-items: center; gap: .4rem; flex: 1 1 auto; min-width: 0; padding: .3rem .55rem; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); background: var(--cms-canvas, #f3f4f6); }
+        .msg__search-row { display: flex; align-items: center; gap: var(--cms-space-2); margin: .5rem .75rem; }
         .msg__header-feed { display: none; }
         .msg__search-icon { font-size: .8rem; color: var(--cms-text-secondary, #525a66); flex: 0 0 auto; }
         .msg__search-input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; font: inherit; font-size: .85rem; color: var(--cms-text, #111827); }
@@ -1506,20 +1519,40 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly listContext = computed((): Record<string, unknown> => ({
         _anyUnread: this.conversations().some(c => this.unreadCount(c) > 0),
     }));
-    /** The list's filter chips: the tree's filter nodes this context shows, in its order. */
+    /** The filter chosen; null until one is, when the tree's default holds. */
+    readonly chosenFilter = signal<string | null>(null);
+    /** The list's filter: the tree's filter nodes this context shows, and the chosen one, in its order. */
     readonly listFilters = computed(() => {
         const ctx = this.listContext();
-        return conversationFiltersOf(this.listNodes(), n => this.naviGraph.isVisible(n, ctx));
+        return listFiltersOf(
+            this.listNodes(), { shown: n => this.naviGraph.isVisible(n, ctx), values: CONVERSATION_FILTER_VALUES }, this.chosenFilter(),
+        );
     });
-    /** The chip chosen; null until one is, when the tree's default holds. */
-    readonly chosenFilter = signal<string | null>(null);
-    /** The filter in force: the chosen chip while the tree shows it, else the tree's default. The rows are filtered here. */
-    readonly listFilter = computed(() => {
-        const chosen = this.chosenFilter();
-        const { options, initial } = this.listFilters();
-        return chosen !== null && options.some(o => o.id === chosen) ? chosen : initial;
-    });
+    /** The filter in force: the chosen one while the tree has it, else the tree's default. The rows are filtered here. */
+    readonly listFilter = computed(() => listFilterInForce(this.listFilters(), this.chosenFilter()));
     readonly listFilterLabel = computed(() => this.listFilters().options.find(o => o.id === this.listFilter())?.label ?? '');
+    /** The conversations stand in the list column: not its loading or empty words, nor the public channels. */
+    readonly listShown = computed(() => !this.showChannels() && !this.loadingList() && this.conversations().length > 0);
+
+    /** A phone's width: the list's filter is said in the page's title. */
+    private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 599.98px)') : null;
+    readonly phone = signal(this.phoneWidth?.matches === true);
+    /** The tree's title; on a phone with a filter other than the default, the filter's name after it. */
+    readonly pageTitle = computed(() => {
+        const title = this.treeTitle() ?? 'Chat';
+        const current = this.listFilter();
+        const filtered = this.phone() && this.listShown() && current !== null && current !== this.listFilters().initial;
+        return filtered ? title + ' \u00b7 ' + this.listFilterLabel() : title;
+    });
+
+    private readonly convRows = viewChild<ElementRef<HTMLElement>>('convRows');
+
+    /** A filter chosen: the list shows the conversations it keeps, from its top. */
+    chooseFilter(id: string): void {
+        this.chosenFilter.set(id);
+        this.convRows()?.nativeElement.scrollTo({ top: 0 });
+    }
 
     /** A header node chosen: New chat opens the new-conversation picker; browsing channels opens the channels list. */
     onHeaderAction(id: string): void {
@@ -1531,8 +1564,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * The conversation list narrowed by the chosen chip and {@link convQuery}
-     * (empty query -> every row the chip keeps) and sorted most-recently-active first -- the inbox convention,
+     * The conversation list narrowed by the chosen filter and {@link convQuery}
+     * (empty query -> every row the filter keeps) and sorted most-recently-active first -- the inbox convention,
      * keyed on {@link ChatConversationDto.lastMessageAt} (falling back to
      * `updatedAt` for a conversation with no messages yet). The `watchUser`
      * refetch keeps it live as new messages land.
@@ -1704,6 +1737,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        // The window crossing a phone's width moves the list's filter.
+        const phoneChanged = (e: MediaQueryListEvent): void => this.phone.set(e.matches);
+        this.phoneWidth?.addEventListener?.('change', phoneChanged);
+        this.destroyRef.onDestroy(() => this.phoneWidth?.removeEventListener?.('change', phoneChanged));
         // The list's filters come from the tree the header reads (one request: the tree is cached by its address).
         const pattern = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.graphBySlug;
         if (pattern) {
