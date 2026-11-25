@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
 - **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
   once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a
   "Loading more results…" row; at the end the list just ends. A page not read says so with Try again and is not asked
