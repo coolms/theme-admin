@@ -243,6 +243,11 @@ jobs:
           node --test scripts/check-redraw.test.mjs
           npm run lint:redraw
 
+      # A component's inline styles and template are each a plain literal, and the styles hold no line comment.
+      - name: Inline styles and templates are plain literals
+        working-directory: sources/theme-admin/angular
+        run: npm run lint:styles
+
       # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an
       # eval or Function( call outside the sites read and pinned by text and count fails. The tests' two cases that
       # ask the advisory database run here (the version read, and a throwaway copy claiming 4.1.392).
