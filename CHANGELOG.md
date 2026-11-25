@@ -8,6 +8,18 @@ major number means here.
 
 ## Unreleased
 
+- **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
+  once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a
+  "Loading more results…" row; at the end the list just ends. A page not read says so with Try again and is not asked
+  for again by itself; a rate limit counts down and goes on. The Load more button is gone.
+- **Mail's sentences to a person speak of their mailbox, not of a server**: the search's, the note on a folder too large
+  to sort by date, the note on a copy no longer kept, the Trash line, a folder's tooltip, and a message gone at the
+  provider ("This message was deleted in your Gmail mailbox."). Settings that configure a server, and the reasons a
+  move or a folder action was refused, keep their words.
+- **Mailbox settings from Settings > Email > System mail**: a button opens the system mailbox's settings over the page,
+  by its id, once the state was read; an address with `?mailbox=<id>` of the system mailbox does the same, on the pane
+  `settings` names, and says `oauth`'s outcome. The notification destination `email.system_mail.settings` goes there. An
+  administrator who may not read a mailbox is not offered the addresses it sends from.
 - **The file manager's Upload is the bar's first action, its one filled button**, before New Folder, once the server's files tree puts it there: the layout is unchanged. New is a menu of the file kinds the server offers, in the bar and in the right-click menu over empty space (a submenu); choosing one asks for the name and creates that kind. In a folder the person cannot write in, Upload, New Folder and New stay, disabled with the server's reason: the page reads the open folder's write permission with its listing and gives the tree `_hasFolder` and `_canWrite`, the right-click menus included. The page draws no focus ring around itself (it takes focus only so its keys follow it), and the list's Size and Permissions columns no longer run together.
 - **Mail's header spans the page again**: the envelope and the tree's title (Mail), Compose the one filled button and More (⋯) holding Add mailbox, Mail settings and Import, each with the tree's state and reason. The mailbox card heads the folder column; the column is no longer widened to fit a head. Over the message list, under the search: the chips All, Unread and Attachments, filtering the rows read so far (the next pages are read as ever and filtered the same way).
 - **Chat reads its tree, navi.toolbar.chat.list**: the page header takes the tree's title, its header primary (New chat) as the one filled button after the Online status control, and its other header nodes under More (none: no More). Over the conversation list, under the search: the tree's filter nodes as chips (All, Direct, Groups; Unread while a conversation is unread), the default chosen first, filtering the read conversations by kind or unread. The column's own New and Channels buttons are gone.

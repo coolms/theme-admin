@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import type { Observable, Subscription } from 'rxjs';
 
 import type { ServerMessageOpenedDto, ServerSearchHitDto } from './email.types';
@@ -7,48 +7,39 @@ import { MailHitRowComponent } from './mail-hit-row.component';
 import type { OpeningRow } from './message-opening';
 import { MailServerSearch, matchesText, serverSearchRefusal, sizeText } from './mail-server-search';
 import { refusalWords } from './server-words';
+import { deletedText } from './your-mailbox';
 
 /** The section's sentences, so one section lists a search's hits or a folder's older mail. */
 export interface ServerSectionWords {
+    /** While the first page is read. */
     working: string;
+    /** While a later page is read, at the section's end. */
+    workingMore: string;
     empty: string;
     allLocal: string;
     rateLimited: string;
-    /** Before a countdown that asks again by itself. */
-    againIn: string;
-    /** Before a countdown after which the person asks. */
-    youCanIn: string;
-    /** After the server's name. */
-    failed: string;
     invalid: string;
     error: string;
-    more: string;
 }
 
 export const SEARCH_WORDS: ServerSectionWords = {
-    working: 'Searching the mail server…',
-    empty: 'The mail server found nothing more.',
-    allLocal: 'Everything the mail server found is in the results above.',
-    rateLimited: 'Too many server searches in a minute.',
-    againIn: 'Searching again in',
-    youCanIn: 'You can search again in',
-    failed: 'answered the search with an error.',
-    invalid: 'The mail server searches for 1 to 200 characters; this search is not one it takes.',
-    error: 'Couldn\'t search the mail server.',
-    more: 'Load more from the server',
+    working: 'Looking for more results…',
+    workingMore: 'Loading more results…',
+    empty: 'No more results.',
+    allLocal: 'Everything found is in the results above.',
+    rateLimited: 'Too many searches.',
+    invalid: 'This search is empty or too long.',
+    error: 'More results couldn\'t be loaded. Try again later.',
 };
 
 export const OLDER_WORDS: ServerSectionWords = {
-    working: 'Loading older mail from the server…',
-    empty: 'No older mail on the server.',
+    working: 'Loading older mail…',
+    workingMore: 'Loading older mail…',
+    empty: 'No older mail.',
     allLocal: 'This older mail is already in the list above.',
-    rateLimited: 'Too many pages asked of the mail server in a minute.',
-    againIn: 'Loading again in',
-    youCanIn: 'You can load more in',
-    failed: 'answered with an error.',
-    invalid: 'The mail server has no such folder.',
-    error: 'Couldn\'t load older mail from the server.',
-    more: 'Load older from the server',
+    rateLimited: 'Too many pages asked for.',
+    invalid: 'This folder no longer exists.',
+    error: 'Older mail couldn\'t be loaded.',
 };
 
 /** A message to open in the reader: its stored id, the folder it is in, and whether it was read. */
@@ -73,9 +64,11 @@ export interface ServerHitFailed {
 }
 
 /**
- * One mailbox's "More on the server" section: the hits its server search found, headers only, under the local results.
+ * One mailbox's "More results" section: the hits its server search found, headers only, under the local results.
  * A hit the local results already show is not shown again; a hit the platform holds opens as stored; any other opens
- * through `opener`, which answers null where opening one is not offered. Each refusal is said in its own words.
+ * through `opener`, which answers null where opening one is not offered. Each refusal is said in its own words. The
+ * next page is read when the section's end comes into view, with a row saying so; a page not read is asked for again
+ * only by Try again, or after a rate limit's countdown.
  */
 @Component({
     selector: 'app-mail-server-search',
@@ -100,7 +93,7 @@ export interface ServerHitFailed {
             }
 
             @if (gone()) {
-                <p class="mss__note" role="status" data-test="server-hit-gone">No longer on the server.</p>
+                <p class="mss__note" role="status" data-test="server-hit-gone">{{ goneText() }}</p>
             }
 
             @switch (shown().kind) {
@@ -108,20 +101,23 @@ export interface ServerHitFailed {
                     <p class="mss__note" role="status">{{ words().working }}</p>
                     @if (capabilityState() === 'unknown') {
                         <p class="mss__note" data-test="server-search-unknown">
-                            It is not known yet whether this mail server can search; this first search decides.
+                            It is not known yet whether this mailbox can be searched for more; this first search decides.
                         </p>
                     }
                 }
                 @case ('answered') {
-                    @if (search().hits().length === 0) {
-                        <p class="mss__note" data-test="server-search-empty">{{ words().empty }}</p>
-                    } @else if (rows().length === 0) {
-                        <p class="mss__note" data-test="server-search-all-local">{{ words().allLocal }}</p>
+                    <!-- Said at the end only: while a page remains, the pages so far are not the whole answer. -->
+                    @if (search().next() === null) {
+                        @if (search().hits().length === 0) {
+                            <p class="mss__note" data-test="server-search-empty">{{ words().empty }}</p>
+                        } @else if (rows().length === 0) {
+                            <p class="mss__note" data-test="server-search-all-local">{{ words().allLocal }}</p>
+                        }
                     }
                 }
                 @case ('unsupported') {
                     <div class="mss__state mss__state--warn" role="status" data-test="server-search-unsupported">
-                        <p class="mss__state-text">This mail server can't search older mail.</p>
+                        <p class="mss__state-text">This mailbox can't be searched for more, so only the mail kept here was searched.</p>
                         @if (reasonOf(shown()); as r) {
                             <p class="mss__state-detail">It answered: {{ r }}</p>
                         }
@@ -129,7 +125,7 @@ export interface ServerHitFailed {
                 }
                 @case ('unavailable') {
                     <div class="mss__state mss__state--warn" role="status" data-test="server-search-unavailable">
-                        <p class="mss__state-text">Can't reach the mail server right now.</p>
+                        <p class="mss__state-text">This mailbox can't be reached now, so it wasn't searched for more.</p>
                         @if (reasonOf(shown()); as r) {
                             <p class="mss__state-detail">{{ r }}</p>
                         }
@@ -137,22 +133,20 @@ export interface ServerHitFailed {
                 }
                 @case ('rate-limited') {
                     <div class="mss__state mss__state--warn" role="status" data-test="server-search-rate-limited">
-                        <p class="mss__state-text">{{ words().rateLimited }}</p>
                         @if (secondsOf(shown()) > 0) {
-                            <p class="mss__state-detail" data-test="server-search-countdown">
-                                {{ willRetry(shown()) ? words().againIn : words().youCanIn }} {{ secondsOf(shown()) }} s.
+                            <p class="mss__state-text" data-test="server-search-countdown">
+                                {{ words().rateLimited }} Try again in {{ secondsOf(shown()) }} s.
                             </p>
                         } @else {
-                            <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
+                            <p class="mss__state-text">{{ words().rateLimited }}</p>
+                            <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Try again</button>
                         }
                     </div>
                 }
                 @case ('failed') {
                     <div class="mss__state mss__state--error" role="status" data-test="server-search-failed">
-                        <p class="mss__state-text">
-                            {{ serverOf(shown()) ?? 'The mail server' }} {{ words().failed }}
-                        </p>
-                        <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
+                        <p class="mss__state-text">{{ words().error }}</p>
+                        <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Try again</button>
                     </div>
                 }
                 @case ('query-invalid') {
@@ -163,19 +157,21 @@ export interface ServerHitFailed {
                 @case ('error') {
                     <div class="mss__state mss__state--error" role="status" data-test="server-search-error">
                         <p class="mss__state-text">{{ words().error }}</p>
-                        <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Retry</button>
+                        <button type="button" class="cms-btn cms-btn-sm" data-test="server-search-retry" (click)="search().retry()">Try again</button>
                     </div>
                 }
             }
 
-            @if (search().next() !== null && shown().kind === 'answered') {
-                <button type="button" class="mss__more" data-test="server-search-more"
-                        [disabled]="search().loadingMore()" (click)="search().more()">
-                    {{ search().loadingMore() ? 'Loading…' : words().more }}
-                </button>
+            @if (search().loadingMore()) {
+                <p class="mss__note" role="status" data-test="server-search-loading">{{ words().workingMore }}</p>
+            } @else if (search().next() !== null && shown().kind === 'answered') {
+                <!-- The section's end: in view, the next page is read. Drawn anew after each page. -->
+                <div #end class="mss__end" data-test="server-search-end" aria-hidden="true"></div>
             }
             @if (search().capped()) {
-                <p class="mss__note" data-test="server-search-capped">Showing the first 500.</p>
+                <p class="mss__note" data-test="server-search-capped">
+                    There are more results than can be shown: add a word to narrow the search.
+                </p>
             }
         </section>
     `,
@@ -202,17 +198,16 @@ export interface ServerHitFailed {
         }
         .mss__state-text { margin: 0; flex: 1 1 100%; }
         .mss__state-detail { margin: 0; flex: 1 1 auto; font-size: .75rem; overflow-wrap: anywhere; }
-        .mss__more {
-            display: block; margin: 10px 12px; padding: 8px; width: calc(100% - 24px); border: 1px solid var(--cms-border);
-            border-radius: var(--cms-radius); background: var(--cms-surface); color: var(--cms-text); cursor: pointer; font: inherit;
-        }
+        .mss__end { height: 1px; }
     `],
 })
 export class MailServerSearchComponent {
     readonly search = input.required<MailServerSearch>();
-    readonly heading = input('More on the server');
+    readonly heading = input('More results');
     /** What the section says, by what it lists: a search's hits, or a folder's older mail. */
     readonly words = input<ServerSectionWords>(SEARCH_WORDS);
+    /** The mailbox as a sentence names it, for a message deleted in it. */
+    readonly mailboxWords = input('your mailbox');
     /** The ids of the messages the local results show: a hit among them is not shown again. */
     readonly localIds = input<ReadonlySet<string>>(new Set<string>());
     readonly folderName = input<(path: string) => string>((path: string) => path);
@@ -237,6 +232,27 @@ export class MailServerSearchComponent {
     readonly notice = signal<{ ref: string; text: string } | null>(null);
     /** The message last opened was gone from the server, and its row left the list. */
     readonly gone = signal(false);
+    readonly goneText = computed(() => deletedText(this.mailboxWords()));
+    /** The section's end, drawn while a next page may be read. */
+    private readonly end = viewChild<ElementRef<HTMLElement>>('end');
+
+    constructor() {
+        // Clipped by whatever scrolls the section, so it is in view only where the person sees it.
+        effect(onCleanup => {
+            const end = this.end()?.nativeElement;
+            const search = this.search();
+            if (end === undefined || typeof IntersectionObserver === 'undefined') {
+                return;
+            }
+            const observer = new IntersectionObserver(seen => {
+                if (seen.some(entry => entry.isIntersecting)) {
+                    search.readOn();
+                }
+            });
+            observer.observe(end);
+            onCleanup(() => observer.disconnect());
+        });
+    }
 
     open(hit: ServerSearchHitDto): void {
         this.notice.set(null);
@@ -283,7 +299,7 @@ export class MailServerSearchComponent {
                 if (refusal.reason === 'gone' || (error instanceof HttpErrorResponse && error.status === 404)) {
                     this.search().drop(hit.ref);
                     this.gone.set(true);
-                    this.openFailed.emit({ text: 'This message is no longer on the mail server.', retry: null });
+                    this.openFailed.emit({ text: this.goneText(), retry: null });
                     return;
                 }
                 const text = refusalWords(error);
@@ -306,16 +322,8 @@ export class MailServerSearchComponent {
         return view.reason ?? null;
     }
 
-    serverOf(view: { kind: string; server?: string | null }): string | null {
-        return view.server ?? null;
-    }
-
     secondsOf(view: { kind: string; seconds?: number }): number {
         return view.seconds ?? 0;
-    }
-
-    willRetry(view: { kind: string; willRetry?: boolean }): boolean {
-        return view.willRetry === true;
     }
 }
 

@@ -45,7 +45,7 @@ const hit = (n: number): EmailSearchHitDto => ({ id: `h-${n}`, folder: FOLDER, s
 
 /**
  * The message list loads more as the person scrolls: the next page is asked for with about one and a half screens of
- * rows left below the view, a Loading... row stands at the list's end while it reads, and a page not read says so on
+ * rows left below the view, a loading row stands at the list's end while it reads, and a page not read says so on
  * that row only, with Retry. The list is virtualized at a fixed row height; new mail heard in real time never moves
  * the view, and a pill says how many came; Select all checks the rows loaded. Real layout in the browser.
  */
@@ -199,12 +199,12 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
         expect(asked.length).withContext('one read at a time').toBe(first + 1);
     });
 
-    it('a Loading... row stands at the list\'s end while the next page reads, and goes with its answer', async () => {
+    it('a loading row stands at the list\'s end while the next page reads, and goes with its answer', async () => {
         await answer(page(rows(1, 50)));
         expect(loadingRow()).withContext('nothing read: no Loading row').toBeNull();
 
         await leaveBelow(VIEW);
-        expect(loadingRow()?.textContent?.trim()).toBe('Loading...');
+        expect(loadingRow()?.textContent?.trim()).toBe('Loading older mail…');
         expect(loadingRow()!.getBoundingClientRect().top).withContext('after the rows')
             .toBeGreaterThanOrEqual(viewport().getBoundingClientRect().bottom - 0.5);
         expect(endRow()).toBeNull();
@@ -214,13 +214,13 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
         expect(pageOf().messages().length).toBe(100);
     });
 
-    it('a failed page shows Couldn\'t load with Retry on that row only; Retry asks for the same page', async () => {
+    it('a failed page says older mail couldn\'t be loaded, with Retry, on that row only; Retry asks for the same page', async () => {
         await answer(page(rows(1, 50)));
         await leaveBelow(VIEW);
         last().error(failure(500));
         await settle();
 
-        expect(endRow()?.textContent).toContain('Couldn\'t load');
+        expect(endRow()?.textContent).toContain('Older mail couldn\'t be loaded.');
         const retry = endRow()!.querySelector<HTMLElement>('[data-test="list-end-retry"]')!;
         expect(retry.textContent?.trim()).toBe('Retry');
         expect(loadingRow()).toBeNull();
@@ -269,12 +269,12 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
         flush();
     }));
 
-    it('an answer with X-Server-Pages: unavailable shows Couldn\'t load with Retry, the rows shown kept', async () => {
+    it('an answer with X-Server-Pages: unavailable says the same with Retry, the rows shown kept', async () => {
         await answer(page(rows(1, 50), 'c-2'));
         await leaveBelow(VIEW);
         await answer(page([], null, 'unavailable'));
 
-        expect(endRow()?.textContent).toContain('Couldn\'t load');
+        expect(endRow()?.textContent).toContain('Older mail couldn\'t be loaded.');
         expect(pageOf().messages().length).toBe(50);
         endRow()!.querySelector<HTMLElement>('[data-test="list-end-retry"]')!.click();
         await settle();
@@ -417,7 +417,7 @@ describe('EmailMailboxPageComponent -- the list loads more as it is scrolled', (
         expect(el().querySelector('app-mail-server-search')).toBeNull();
     });
 
-    it('the search results load more as they are scrolled, with the same end row', async () => {
+    it('the search results load more as they are scrolled, with an end row of their own words', async () => {
         pageOf().runSearch('report');
         await settle();
         searches[0].reply.next(Array.from({ length: 20 }, (_, i) => hit(i + 1)));

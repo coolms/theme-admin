@@ -56,7 +56,8 @@ describe('Trash: the move, its undo and the permanent delete', () => {
     });
 
     it("the Trash view says when the server empties it only where that is known", () => {
-        expect(trashRetentionText(30)).toBe('The mail server deletes messages in Trash after 30 days.');
+        expect(trashRetentionText(30)).toBe('Messages in Trash are deleted in your mailbox after 30 days.');
+        expect(trashRetentionText(30, 'your Gmail mailbox')).toBe('Messages in Trash are deleted in your Gmail mailbox after 30 days.');
         expect(trashRetentionText(null)).toBeNull();
         expect(trashRetentionText(undefined)).toBeNull();
         expect(trashRetentionText(0)).toBeNull();
@@ -64,6 +65,7 @@ describe('Trash: the move, its undo and the permanent delete', () => {
 
     it('the permanent delete asks, naming how many', () => {
         expect(permanentQuestion(1).title).toBe('Delete this message permanently?');
+        expect(permanentQuestion(1).message).toBe('It is deleted in your mailbox and cannot be undone.');
         expect(permanentQuestion(4).title).toBe('Delete 4 messages permanently?');
     });
 });
