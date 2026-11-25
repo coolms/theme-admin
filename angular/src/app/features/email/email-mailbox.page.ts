@@ -1343,7 +1343,11 @@ type PhonePane = 'folders' | 'message';
             font-size: .8125rem;
         }
         .mbx__detail-head { border-bottom: 1px solid var(--cms-border); padding-bottom: 12px; margin-bottom: 12px; }
-        .mbx__detail-subject { margin: 0 0 8px; font-size: 1.125rem; }
+        /* The open message's subject: whole, on as many lines as it takes. */
+        .mbx__detail-subject {
+            margin: 0 0 8px; font-size: var(--cms-font-size-title-lg); font-weight: var(--cms-font-weight-semibold);
+            line-height: 1.3; white-space: normal; overflow-wrap: anywhere;
+        }
         .mbx__detail-meta { display: flex; flex-direction: column; gap: 2px; font-size: .8125rem; color: var(--cms-text-secondary); }
         .mbx__detail-snippet { white-space: pre-wrap; }
         .mbx__thread {
