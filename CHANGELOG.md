@@ -8,6 +8,8 @@ major number means here.
 
 ## Unreleased
 
+- **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
+- **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
 - **The elevation prompt says a second factor was reset**: an elevation ended for the reason `factor_reset` reads "Your elevated session was ended at {time} because your second factor was reset." An unknown reason still asks plainly.
 - **The file manager's Upload is the bar's first action, its one filled button**, before New Folder, once the server's files tree puts it there: the layout is unchanged. New is a menu of the file kinds the server offers, in the bar and in the right-click menu over empty space (a submenu); choosing one asks for the name and creates that kind. In a folder the person cannot write in, Upload, New Folder and New stay, disabled with the server's reason: the page reads the open folder's write permission with its listing and gives the tree `_hasFolder` and `_canWrite`, the right-click menus included. The page draws no focus ring around itself (it takes focus only so its keys follow it), and the list's Size and Permissions columns no longer run together.
