@@ -28,11 +28,13 @@ const stored = (id: string, subject: string): EmailMessageDto => ({
     id, mailboxId: 'mb1', folder: FOLDER, subject, fromAddress: 'a@example.test', seen: true, flagged: false,
     fromServer: false, ref: null, sentAt: '2026-11-11T09:00:00+00:00',
 });
+let body = 'The body.';
+let to: string[] = [];
 const opened = (subject: string, id: string): EmailMessageDetailDto =>
-    ({ ...stored(id, subject), bodyHtml: null, bodyText: 'The body.', hasAttachments: false }) as unknown as EmailMessageDetailDto;
+    ({ ...stored(id, subject), toAddresses: to, bodyHtml: null, bodyText: body, hasAttachments: false }) as unknown as EmailMessageDetailDto;
 const page = (rows: EmailMessageDto[]): EmailMessageList => Object.assign([...rows], { next: null, serverPages: null });
 
-/** The open message's subject, in the browser's real layout: the type scale's step over 18px, semibold, whole on its lines. */
+/** The open message, in the browser's real layout: its subject, the header fields that have a value, and a text body. */
 describe('EmailMailboxPageComponent -- the open message\'s subject', () => {
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
 
@@ -132,5 +134,49 @@ describe('EmailMailboxPageComponent -- the open message\'s subject', () => {
         expect(subject.scrollWidth).toBeLessThanOrEqual(subject.clientWidth);
         expect(subject.scrollHeight).toBeLessThanOrEqual(subject.clientHeight);
         expect(getComputedStyle(subject).textOverflow).toBe('clip');
+    });
+
+    it('is 18px at phone widths: one step under the desktop size', async () => {
+        await open(SHORT, 1440);
+        const phone = Array.from(document.styleSheets)
+            .flatMap(sheet => Array.from(sheet.cssRules))
+            .filter((r): r is CSSMediaRule => r instanceof CSSMediaRule && r.conditionText.includes('max-width: 599.98px'))
+            .flatMap(media => Array.from(media.cssRules))
+            .filter((r): r is CSSStyleRule => r instanceof CSSStyleRule && r.selectorText.includes('.mbx__detail-subject'));
+        expect(phone.length).withContext('one phone rule for the subject').toBe(1);
+        expect(phone[0].style.fontSize).toBe('var(--cms-font-size-title-md)');
+    });
+
+    it('a header field with no value is not drawn', async () => {
+        to = [];
+        await open(SHORT, 1440);
+        const fields = () => Array.from(el().querySelectorAll<HTMLElement>('.mbx__detail-meta [data-field]')).map(f => f.dataset['field']);
+        expect(fields()).toEqual(['from', 'date']);
+        fixture.destroy();
+        el().remove();
+
+        to = ['s.taylor@example.test', 'sam@example.test'];
+        await open(SHORT, 1440);
+        expect(fields()).toEqual(['from', 'to', 'date']);
+        expect(el().querySelector('[data-field="to"]')!.textContent!.trim()).toBe('To: s.taylor@example.test, sam@example.test');
+        to = [];
+    });
+
+    it('a text body is text: the page\'s font, its line breaks kept, its addresses links in a new tab, never HTML', async () => {
+        body = 'Hello,\n\nSee https://example.com/a and write to s.taylor@example.test.\n<b>not bold</b>';
+        await open(SHORT, 1440);
+        const plain = el().querySelector<HTMLElement>('[data-test="plain-body"]')!;
+        expect(plain.tagName).toBe('DIV');
+        expect(plain.textContent).toBe(body);
+        expect(plain.querySelector('b')).withContext('not read as HTML').toBeNull();
+        const css = getComputedStyle(plain);
+        expect(css.fontFamily).withContext('the page\'s font').toBe(getComputedStyle(el().querySelector('.mbx__detail-meta')!).fontFamily);
+        expect(css.whiteSpace).toBe('pre-wrap');
+        expect(css.backgroundColor).withContext('no box').toBe('rgba(0, 0, 0, 0)');
+        expect(css.borderTopWidth).toBe('0px');
+        const links = Array.from(plain.querySelectorAll('a'));
+        expect(links.map(a => a.getAttribute('href'))).toEqual(['https://example.com/a', 'mailto:s.taylor@example.test']);
+        expect(links.map(a => [a.target, a.rel])).toEqual([['_blank', 'noopener noreferrer'], ['_blank', 'noopener noreferrer']]);
+        body = 'The body.';
     });
 });

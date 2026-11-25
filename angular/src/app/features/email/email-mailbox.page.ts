@@ -41,6 +41,7 @@ import { MailPreferencesService } from './mail-preferences.service';
 import { MailPanesDirective } from './mail-panes.directive';
 import { MAIL_LIST_FILTERS, type MailListFilter, mailListFilterOf, mailRowsShown } from './mail-list-filter';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
+import { plainTextRuns } from '@coolms/editor-client/plain-text';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
 import { ComposeAttachButtonComponent } from './compose-attach-button.component';
@@ -553,9 +554,16 @@ type PhonePane = 'folders' | 'message';
                             <div class="mbx__detail-head">
                                 <h2 class="mbx__detail-subject">{{ msg.subject || '(no subject)' }}</h2>
                                 <div class="mbx__detail-meta">
-                                    <div><strong>From:</strong> {{ msg.fromName || msg.fromAddress ? (msg.fromName ? msg.fromName + ' · ' : '') + (msg.fromAddress ?? '') : msg.senderText }}</div>
-                                    <div><strong>To:</strong> {{ (msg.toAddresses || []).join(', ') }}</div>
-                                    <div><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
+                                    <!-- A field with no value is not drawn. -->
+                                    @if (fromLine(msg); as from) {
+                                        <div data-field="from"><strong>From:</strong> {{ from }}</div>
+                                    }
+                                    @if ((msg.toAddresses || []).join(', '); as to) {
+                                        <div data-field="to"><strong>To:</strong> {{ to }}</div>
+                                    }
+                                    @if (msg.sentAt) {
+                                        <div data-field="date"><strong>Date:</strong> {{ msg.sentAt | appDateTime }}</div>
+                                    }
                                 </div>
                             </div>
                             @if (thread().length > 1) {
@@ -597,7 +605,8 @@ type PhonePane = 'folders' | 'message';
                                     <app-message-frame [html]="msg.bodyHtml"
                                                        [images]="msg.remoteContent ? msg.remoteContent.state === 'allowed' : loadRemoteImages()" />
                                 } @else if (msg.bodyText) {
-                                    <pre class="mbx__body-text">{{ msg.bodyText }}</pre>
+                                    <!-- Text as text: its line breaks kept, its addresses links; never HTML. -->
+                                    <div class="mbx__plain" data-test="plain-body">@for (run of plainRuns(); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}</div>
                                 } @else if (msg.snippet) {
                                     <p class="mbx__detail-snippet">{{ msg.snippet }}</p>
                                 }
@@ -1348,6 +1357,7 @@ type PhonePane = 'folders' | 'message';
             margin: 0 0 8px; font-size: var(--cms-font-size-title-lg); font-weight: var(--cms-font-weight-semibold);
             line-height: 1.3; white-space: normal; overflow-wrap: anywhere;
         }
+        @media (max-width: 599.98px) { .mbx__detail-subject { font-size: var(--cms-font-size-title-md); } }
         .mbx__detail-meta { display: flex; flex-direction: column; gap: 2px; font-size: .8125rem; color: var(--cms-text-secondary); }
         .mbx__detail-snippet { white-space: pre-wrap; }
         .mbx__thread {
@@ -1381,6 +1391,8 @@ type PhonePane = 'folders' | 'message';
             border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px);
             font-size: .8125rem; white-space: pre-wrap; word-break: break-word;
         }
+        .mbx__plain { margin: 0 0 12px; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .mbx__plain a { color: var(--cms-accent-text); }
         .mbx__remote-note {
             display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 12px;
             background: var(--cms-surface-alt, var(--cms-surface)); border: 1px solid var(--cms-border);
@@ -2167,6 +2179,14 @@ export class EmailMailboxPageComponent implements OnInit {
         // The tree's primary flag decides; Compose stands in only while the served tree marks none.
         return actions.some(a => a.primary === true) ? actions : actions.map(a => ({ ...a, primary: a.id === 'compose' }));
     });
+
+    /** The open message's text as words and links. */
+    protected readonly plainRuns = computed(() => plainTextRuns(this.selectedMessage()?.bodyText ?? ''));
+    /** The sender as the header says it: the name and the address, or what the row has; empty with neither. */
+    protected fromLine(msg: EmailMessageDetailDto): string {
+        const named = [msg.fromName, msg.fromAddress].filter(Boolean).join(' · ');
+        return named !== '' ? named : msg.senderText ?? '';
+    }
 
     /** The list's filter chips. */
     readonly listFilters = MAIL_LIST_FILTERS;
