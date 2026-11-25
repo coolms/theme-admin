@@ -8,6 +8,8 @@ major number means here.
 
 ## Unreleased
 
+- **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
+- **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
 - **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
   once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a
