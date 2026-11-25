@@ -18,14 +18,14 @@ describe('endedSentence', () => {
         expect(endedSentence(ended('refresh_from_other_pair'), clock)).toContain('continued from another address or browser');
     });
 
-    it('a second factor reset on the server asks for a new one, not the password', () => {
+    it('a second factor reset on the server is said, and the sentence ends there', () => {
         expect(endedSentence(ended('factor_reset'), clock)).toBe(
-            'Your elevated session was ended at 08:30 because your second factor was reset. Enroll a new one before elevating.');
+            'Your elevated session was ended at 08:30 because your second factor was reset.');
     });
 
     it('without a time, the sentence names none; never, or a reason it does not know, asks plainly', () => {
         expect(endedSentence(ended('factor_reset', null), clock)).toBe(
-            'Your elevated session was ended because your second factor was reset. Enroll a new one before elevating.');
+            'Your elevated session was ended because your second factor was reset.');
         expect(endedSentence(ended('never', null), clock)).toBe(
             'This action needs an elevated session. Enter your password to elevate.');
         expect(endedSentence(ended('something_new' as ElevationEndedReason), clock)).toBe(

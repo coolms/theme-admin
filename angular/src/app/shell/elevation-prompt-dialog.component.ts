@@ -230,7 +230,7 @@ export function endedSentence(state: ElevationState, clock: (iso: string) => str
         case 'refresh_from_other_pair':
             return `Your elevated session was ended${at} because the sign-in continued from another address or browser. ${again}`;
         case 'factor_reset':
-            return `Your elevated session was ended${at} because your second factor was reset. Enroll a new one before elevating.`;
+            return `Your elevated session was ended${at} because your second factor was reset.`;
         case 'never':
         default:
             return 'This action needs an elevated session. Enter your password to elevate.';
