@@ -1998,3 +1998,11 @@ figure > figcaption {
 // the dashboard first, but the ordered builder, the column chooser and the VFS
 // grid all drag previews through the same top layer.
 .cdk-drag-preview { overflow: visible; }
+
+/* A chat message's formatted body, wherever one is drawn (the conversation, a thread, the quick panel). Two paragraphs
+   with text are one empty line apart, and an empty paragraph is that empty line itself, so a blank line typed inside a
+   paragraph (two line breaks), one that starts a new paragraph, and an empty paragraph between two all look the same. */
+.cms-message-body { display: block; }
+.cms-message-body p { margin: 0; }
+.cms-message-body p:not(:empty) + p:not(:empty) { margin-top: 1lh; }
+.cms-message-body p:empty { min-height: 1lh; }

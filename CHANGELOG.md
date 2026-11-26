@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **A chat message's paragraphs are one empty line apart**, in the conversation, a thread and the quick panel, so a typed blank line and a pasted one look the same; an empty paragraph is that empty line, never a gap of its own. The quick panel's paragraphs had the browser's own margins.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.

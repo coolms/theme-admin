@@ -71,7 +71,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                         <div class="mqp__line" [class.mqp__line--mine]="isMine(m)">
                             <div class="mqp__bubble" [class.mqp__bubble--mine]="isMine(m)">
                                 @if (isHtml(m)) {
-                                    <span [innerHTML]="m.body"></span>
+                                    <span class="cms-message-body" [innerHTML]="m.body"></span>
                                 } @else {
                                     {{ m.body }}
                                 }
@@ -180,7 +180,6 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__line--mine { justify-content: flex-end; }
         .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
-        .mqp__bubble :is(p) { margin: 0; }
         /* Per-bubble timestamp + per-day separator chip — same model as
          * the full Messages thread, scaled to the drawer. */
         .mqp__meta { margin-top: .15rem; font-size: .62rem; line-height: 1; text-align: right; color: var(--cms-text-secondary, #525a66); font-variant-numeric: tabular-nums; }
