@@ -26,7 +26,7 @@ import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 import { conversationFiltersOf, conversationsShown } from './conversation-filter.util';
-import { conversationLabel, lastActivityTs, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
+import { byLastMessage, conversationLabel, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
@@ -1532,10 +1532,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /**
      * The conversation list narrowed by the chosen chip and {@link convQuery}
-     * (empty query -> every row the chip keeps) and sorted most-recently-active first -- the inbox convention,
-     * keyed on {@link ChatConversationDto.lastMessageAt} (falling back to
-     * `updatedAt` for a conversation with no messages yet). The `watchUser`
-     * refetch keeps it live as new messages land.
+     * (empty query -> every row the chip keeps) and in the inbox's order ({@link byLastMessage}): only a message moves a
+     * row. The `watchUser` refetch keeps it live as new messages land.
      */
     readonly filteredConversations = computed<readonly ChatConversationDto[]>(() => {
         const q = this.convQuery().trim().toLowerCase();
@@ -1543,7 +1541,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         const matched = q === ''
             ? [...all]
             : all.filter(c => this.counterpartName(c).toLowerCase().includes(q));
-        return matched.sort((a, b) => lastActivityTs(b) - lastActivityTs(a));
+        return matched.sort(byLastMessage);
     });
 
     /**

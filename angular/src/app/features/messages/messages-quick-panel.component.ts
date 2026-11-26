@@ -17,7 +17,7 @@ import {
 } from '@coolms/ui-angular';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
-import { conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
+import { byLastMessage, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 import { MessagesService } from './messages.service';
@@ -120,7 +120,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                     <p class="mqp__hint">No conversations yet. Start one with ＋ New message.</p>
                 } @else {
                     <ul class="mqp__rows">
-                        @for (c of conversations(); track c.id) {
+                        @for (c of listed(); track c.id) {
                             <li>
                                 <button type="button" class="mqp__row" (click)="open(c.id)">
                                     <app-user-avatar size="sm" [user]="rowAvatar(c)" [status]="rowStatus(c)" />
@@ -203,6 +203,8 @@ export class MessagesQuickPanelComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly conversations = signal<ChatConversationDto[]>([]);
+    /** The rows as listed: only a message moves one. */
+    readonly listed = computed(() => [...this.conversations()].sort(byLastMessage));
     readonly loading       = signal(false);
     readonly error         = signal<string | null>(null);
     readonly showNew       = signal(false);
