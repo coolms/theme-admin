@@ -3,7 +3,7 @@ import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrollin
 import {
     ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, computed,
     effect, inject,
-    linkedSignal, signal, untracked, viewChild,
+    linkedSignal, signal, untracked, viewChild, viewChildren,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Location, NgTemplateOutlet } from '@angular/common';
@@ -41,6 +41,7 @@ import { MailPreferencesService } from './mail-preferences.service';
 import { MailPanesDirective } from './mail-panes.directive';
 import { MAIL_LIST_FILTERS, type MailListFilter, mailListFilterOf, mailRowsShown } from './mail-list-filter';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
+import { OAUTH_CONNECTED, sayOAuthReturn } from './oauth-return';
 import { plainTextRuns } from '@coolms/editor-client/plain-text';
 import { mailboxMenuNodes } from './mailbox-menu';
 import { sendFailureText } from './send-via';
@@ -146,6 +147,7 @@ import {
     type ListOrder,
 } from './email.types';
 import { refusalWords } from './server-words';
+import { deletedText, yourMailbox } from './your-mailbox';
 
 /** The two-way-bound model behind the mailbox connection editor form. */
 interface MailboxFormModel {
@@ -354,31 +356,34 @@ type PhonePane = 'folders' | 'message';
                                 }
                                 <!-- The next page is read as the results are scrolled; this row says how it went. -->
                                 <ng-container [ngTemplateOutlet]="listEndRow"
-                                              [ngTemplateOutletContext]="{ loading: searchingMore(), end: searchEnd(), retry: retrySearchEnd }" />
+                                              [ngTemplateOutletContext]="{ loading: searchingMore(), end: searchEnd(), retry: retrySearchEnd, words: searchEndWords }" />
+                            }
+                            <!-- The other mailboxes' results open where they were asked for: above the open mailbox's, which
+                                 go on as they are scrolled. -->
+                            @for (s of otherServerSearches.sections(); track s.mailboxId) {
+                                <app-mail-server-search #otherSection [search]="s.search" [heading]="'More results: ' + s.title"
+                                                        [mailboxWords]="mailboxWords(s.mailboxId)"
+                                                        [folderName]="s.folderName"
+                                                        [opener]="s.open"
+                                                        (opened)="onServerHitOpened($event)"
+                                                        (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
                             }
                             <!-- Older mail the open mailbox's server finds, headers only, under the stored results. -->
                             <app-mail-server-search [search]="serverSearch"
                                                     [localIds]="localResultIds()"
                                                     [folderName]="folderNameFn"
+                                                    [mailboxWords]="mailboxWords(selectedMailboxId())"
                                                     [opener]="openServerHitFn"
                                                     (opened)="onServerHitOpened($event)"
-                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
-                            @if (otherMailboxes().length > 0) {
-                                @if (otherServerSearches.sections().length === 0) {
+                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)">
+                                @if (otherMailboxes().length > 0 && otherServerSearches.sections().length === 0) {
                                     <button type="button" class="mbx__others" data-test="server-search-others"
                                             (click)="searchOtherMailboxes()">
                                         <i class="bi bi-search" aria-hidden="true"></i>
-                                        Search other mailboxes on the server
+                                        Search other mailboxes
                                     </button>
-                                } @else {
-                                    @for (s of otherServerSearches.sections(); track s.mailboxId) {
-                                        <app-mail-server-search [search]="s.search" [heading]="'On the server of ' + s.title"
-                                                                [opener]="s.open"
-                                                                (opened)="onServerHitOpened($event)"
-                                                    (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
-                                    }
                                 }
-                            }
+                            </app-mail-server-search>
                         } @else if (messagesFailure() !== null) {
                             <!-- A failed read of the folder's messages stands in place of the message list, with
                                  Retry reading it again. The mailbox pane is not touched. -->
@@ -393,11 +398,11 @@ type PhonePane = 'folders' | 'message';
                                              hint="Choose All to see every message in this folder." />
                         } @else {
                             @if (serverRowGone()) {
-                                <p class="mbx__note" role="status" data-test="server-row-gone">That message is no longer on the mail server.</p>
+                                <p class="mbx__note" role="status" data-test="server-row-gone">{{ messageDeletedText() }}</p>
                             }
                             @if (listOrder() === 'server') {
                                 <!-- A folder too large to sort by date keeps the mail server's order, and says so. -->
-                                <p class="mbx__note" data-test="list-order-server">Shown in the mail server's order: this folder holds too many messages to sort them by date.</p>
+                                <p class="mbx__note" data-test="list-order-server">This folder holds too many messages to sort them by date, so they are not in date order.</p>
                             }
                             @if (newArrivals() > 0) {
                                 <!-- New mail heard while scrolled down: the view stays, and this says how many came. -->
@@ -460,25 +465,25 @@ type PhonePane = 'folders' | 'message';
                                 </div>
                                 </ng-container>
                             </cdk-virtual-scroll-viewport>
-                            <!-- The list's end: Loading... while the next page is read; a page not read says so here,
+                            <!-- The list's end: a loading row while the next page is read; a page not read says so here,
                                  with the only Retry. -->
                             <ng-container [ngTemplateOutlet]="listEndRow"
-                                          [ngTemplateOutletContext]="{ loading: loadingNextPage(), end: listEnd(), retry: retryListEndFn }" />
+                                          [ngTemplateOutletContext]="{ loading: loadingNextPage(), end: listEnd(), retry: retryListEndFn, words: olderWords }" />
                         }
-                        <ng-template #listEndRow let-loading="loading" let-end="end" let-retry="retry">
+                        <ng-template #listEndRow let-loading="loading" let-end="end" let-retry="retry" let-words="words">
                             @if (end !== null) {
                                 <div class="mbx__list-end" role="status" data-test="list-end">
                                     @if (end.kind === 'rate-limited' && end.seconds > 0) {
                                         <span>Retry in {{ end.seconds }} s</span>
                                     } @else {
                                         @if (end.kind === 'failed') {
-                                            <span>Couldn't load</span>
+                                            <span>{{ words.failed }}</span>
                                         }
                                         <button type="button" class="mbx__more" data-test="list-end-retry" (click)="retry()">Retry</button>
                                     }
                                 </div>
                             } @else if (loading) {
-                                <div class="mbx__list-end" role="status" data-test="list-loading">Loading...</div>
+                                <div class="mbx__list-end" role="status" data-test="list-loading">{{ words.loading }}</div>
                             }
                         </ng-template>
                         </div>
@@ -541,8 +546,8 @@ type PhonePane = 'folders' | 'message';
                         } @else if (selectedMessage()) {
                             @let msg = selectedMessage()!;
                             @if (openEvicted()) {
-                                <!-- A copy opened from the server that is no longer kept: it stays shown, and says so. -->
-                                <p class="mbx__evicted" role="status" data-test="reader-evicted">No longer kept here; open it from the server again.</p>
+                                <!-- A copy of older mail that is no longer kept: it stays shown, and says so. -->
+                                <p class="mbx__evicted" role="status" data-test="reader-evicted">This message is no longer kept here. It is still in your mailbox: search for it, or scroll to the end of its folder's list, to open it again.</p>
                             }
                             <!-- What Copy source or Download message did, or why not. -->
                             <p class="mbx__source-note" role="status" data-test="source-note">{{ sourceNote() }}</p>
@@ -1303,7 +1308,7 @@ type PhonePane = 'folders' | 'message';
         .mbx__more { margin: 10px; padding: 8px; border: 1px solid var(--cms-border); border-radius: var(--cms-radius, 6px); background: var(--cms-surface); cursor: pointer; color: var(--cms-text); }
         .mbx__others {
             display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 12px; text-align: left;
-            border: 0; border-top: 1px solid var(--cms-border); border-bottom: 1px solid var(--cms-border);
+            border: 0; border-bottom: 1px solid var(--cms-border);
             background: transparent; color: var(--cms-accent-text); font: inherit; font-size: .8125rem; cursor: pointer;
         }
         .mbx__others:hover { background: var(--cms-surface-hover); }
@@ -1762,7 +1767,7 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly messages = signal<EmailMessageDto[]>([]);
     /** In Trash, when the mail server empties it -- only where that is known for the mailbox's provider. */
     readonly trashRetention = computed(() => isTrashFolder(this.selectedFolder())
-        ? trashRetentionText(this.mailboxes().find(m => m.id === this.selectedMailboxId())?.trashRetentionDays)
+        ? trashRetentionText(this.selectedMailbox()?.trashRetentionDays, yourMailbox(this.selectedMailbox()))
         : null);
     readonly selectedMessage = signal<EmailMessageDetailDto | null>(null);
     /** How the reading pane shows the open message: kept from one message to the next until switched back or closed. */
@@ -2562,10 +2567,16 @@ export class EmailMailboxPageComponent implements OnInit {
     );
     /** The same query on the person's other mailboxes' servers, asked for from the open mailbox's section. */
     readonly otherServerSearches = new OtherMailboxesSearch();
+    private readonly otherSections = viewChildren<string, ElementRef<HTMLElement>>('otherSection', { read: ElementRef });
     /** Which mailbox and folder the list shows: another one starts it again from its top. */
     private listKey = '';
     /** The message open in the reader was evicted: shown still, as no longer kept here. */
     readonly openEvicted = signal(false);
+    /** What the row at the folder list's end says, and what the stored results' says. */
+    readonly olderWords = { loading: 'Loading older mail…', failed: 'Older mail couldn\'t be loaded.' } as const;
+    readonly searchEndWords = { loading: 'Loading...', failed: 'Couldn\'t load' } as const;
+    /** What is said of a message of the open mailbox that is gone at its provider. */
+    readonly messageDeletedText = computed(() => deletedText(yourMailbox(this.selectedMailbox())));
     readonly otherMailboxes = computed(() => this.mailboxes().filter(m => m.id !== this.selectedMailboxId()));
     /** The stored results' ids: a server hit among them is not shown twice. */
     readonly localResultIds = computed(() => new Set(this.searchResults().map(h => h.id)));
@@ -3239,7 +3250,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 if (refusal.reason === 'gone') {
                     this.messages.set(withoutServerRow(this.messages(), ref));
                     this.serverRowGone.set(true);
-                    this.failOpen(header, 'This message is no longer on the mail server.', null);
+                    this.failOpen(header, this.messageDeletedText(), null);
                     return;
                 }
                 this.failOpen(header, refusalWords(error), () => this.openServerRow(m));
@@ -3492,7 +3503,10 @@ export class EmailMailboxPageComponent implements OnInit {
         this.otherServerSearches.stop();
     }
 
-    /** The same query on the server of each of the person's other mailboxes, one after another. */
+    /**
+     * The same query on the server of each of the person's other mailboxes, one after another. Their sections stand
+     * over the open mailbox's, and the first is kept in the list's view.
+     */
     searchOtherMailboxes(): void {
         const q = this.activeQuery;
         if (q === '') {
@@ -3507,7 +3521,29 @@ export class EmailMailboxPageComponent implements OnInit {
                 capability => this.learnServerSearch(mb.id, capability),
             ),
             open: hit => this.email.openServerMessage(mb.id, hit),
+            folderName: this.folderNamesOf(mb.id),
         })));
+        afterNextRender(() => this.otherSections().at(0)?.nativeElement.scrollIntoView({ block: 'nearest' }), { injector: this.injector });
+    }
+
+    /**
+     * The names of a mailbox's folders by path, read once for its search. Until they are read, or when they are not,
+     * the inbox is "Inbox" and any other folder is its path.
+     */
+    private folderNamesOf(mailboxId: string): (path: string) => string {
+        const names = signal<ReadonlyMap<string, string>>(new Map());
+        this.email.folderTree(mailboxId).pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef)).subscribe(tree => {
+            if (tree !== null) {
+                names.set(new Map(folderRows(tree.folders, []).map(row => [row.folder.folder, row.name])));
+            }
+        });
+
+        return path => names().get(path) ?? (path.toUpperCase() === INBOX_PATH ? 'Inbox' : path);
+    }
+
+    /** A mailbox as a sentence to its person names it. */
+    mailboxWords(mailboxId: string | null): string {
+        return yourMailbox(this.mailboxes().find(m => m.id === mailboxId));
     }
 
     /** A server hit to read: opened by its stored id, as a search hit is. */
@@ -5519,12 +5555,10 @@ export class EmailMailboxPageComponent implements OnInit {
         if (outcome === null) {
             return;
         }
-        if (outcome === 'connected') {
+        if (outcome === OAUTH_CONNECTED) {
             this.pendingSelectId = params.get('mailbox');
-            this.toast.success('Mailbox connected.');
-        } else {
-            this.toast.error('The account was not connected — nothing was saved. Please try again.');
         }
+        sayOAuthReturn(outcome, this.toast);
         history.replaceState(null, '', window.location.pathname + window.location.hash);
     }
 
