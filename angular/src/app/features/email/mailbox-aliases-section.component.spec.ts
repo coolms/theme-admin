@@ -225,6 +225,37 @@ describe('MailboxAliasesSectionComponent -- the addresses a mailbox sends from',
         expect(hints.join(' ')).not.toContain('could not be read');
     });
 
+    it('a list refused to the caller (403) shows nothing, says nothing, and tells the host', async () => {
+        email.listAliases.and.callFake(() => throwError(() => new HttpErrorResponse({ status: 403 })));
+        email.getSendAs.and.callFake(() => throwError(() => new HttpErrorResponse({ status: 403 })));
+        const fixture = TestBed.createComponent(MailboxAliasesSectionComponent);
+        let told = 0;
+        fixture.componentInstance.refused.subscribe(() => told++);
+        fixture.componentRef.setInput('mailboxId', MAILBOX);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(told).toBe(1);
+        expect((fixture.nativeElement as HTMLElement).textContent?.trim()).toBe('');
+        expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it('any other failure of the list is said', async () => {
+        email.listAliases.and.callFake(() => throwError(() => new HttpErrorResponse({ status: 500 })));
+        email.getSendAs.and.callFake(() => throwError(() => new HttpErrorResponse({ status: 500 })));
+        const fixture = TestBed.createComponent(MailboxAliasesSectionComponent);
+        let told = 0;
+        fixture.componentInstance.refused.subscribe(() => told++);
+        fixture.componentRef.setInput('mailboxId', MAILBOX);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(told).toBe(0);
+        expect((fixture.nativeElement as HTMLElement).querySelector('.sfa__error')?.textContent).toContain('failed');
+    });
+
     it('Add mails the link: the row waits for confirmation, with the line that names the address and the 24 hours', async () => {
         const fixture = await render({ canManage: true, aliases: [] });
         const host = fixture.nativeElement as HTMLElement;

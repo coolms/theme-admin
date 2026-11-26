@@ -105,6 +105,32 @@ describe('Settings-section echo -> profile caches', () => {
         return echo;
     }
 
+    /**
+     * The declared read the calendar prefs make after a region is applied, answered as the server does for a person
+     * whose own region is `prefs`. A UI kit whose prefs make no such read leaves none open, and none is answered.
+     */
+    function flushDeclaredRegion(prefs: CalendarPrefs): void {
+        const d = MANIFEST.platformDefaults;
+        const key = (name: string, type: string, label: string, choices: string[], fallback: unknown, own: unknown) => ({
+            key: name, type, default: fallback, label, min: null, max: null, choices,
+            nullable: false, readOnly: false, serverChecked: false, value: own ?? fallback, own: own ?? null, locked: false,
+        });
+        const answer = [{
+            section: 'region',
+            label:   'Language & region',
+            icon:    'globe',
+            version: 'region-version',
+            keys:    [
+                key('language',   'language', 'Language',       [], 'en', null),
+                key('timezone',   'timezone', 'Time zone',      ['automatic'], d.timezone, prefs.tz),
+                key('dateFormat', 'choice',   'Date format',    ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd MMM yyyy', 'MMM d, yyyy'], d.dateFormat, prefs.dateFormat),
+                key('timeFormat', 'choice',   'Time format',    ['12h', '24h'], d.timeFormat, prefs.timeFormat),
+                key('weekStart',  'choice',   'Week starts on', ['monday', 'sunday'], d.weekStart, prefs.weekStart),
+            ],
+        }];
+        http.match(`${MANIFEST.identity.settingsUrl}/declared`).forEach(req => req.flush(answer));
+    }
+
     beforeEach(() => {
         localStorage.removeItem(THEME_CACHE_KEY);
         localStorage.removeItem(ACCENT_CACHE_KEY);
@@ -157,6 +183,7 @@ describe('Settings-section echo -> profile caches', () => {
 
  it('a calendar save reaches the live prefs — the default calendar moves, and only it', () => {
         calPrefs.update(CALENDAR_BEFORE);              // page ngOnInit seeds from GET /settings
+        flushDeclaredRegion(CALENDAR_BEFORE);
         expect(calPrefs.tz()).toBe('UTC');
 
         const echo = saveSection('calendar', { ...CALENDAR_SAVED });

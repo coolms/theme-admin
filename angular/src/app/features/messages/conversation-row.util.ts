@@ -88,16 +88,19 @@ export function rowPreview(conversation: ChatConversationDto): string {
 }
 
 /**
- * Epoch-ms of a row's last activity -- the inbox's most-recent-first sort key.
- * Falls back to `updatedAt` for a conversation with no messages yet, and to 0
- * when neither parses, so an unreadable date sorts last instead of throwing the
- * comparator.
+ * Epoch-ms of a row's place in the inbox: its last message's, sent or received, or when it was started while it has
+ * none. 0 when that does not parse, so an unreadable date sorts last instead of throwing the comparator.
  */
-export function lastActivityTs(conversation: ChatConversationDto): number {
-    const iso = conversation.lastMessageAt ?? conversation.updatedAt;
+export function lastMessageTs(conversation: ChatConversationDto): number {
+    const iso = conversation.lastMessageAt ?? conversation.createdAt;
     const ts = iso !== null && iso !== undefined ? Date.parse(iso) : Number.NaN;
 
     return Number.isNaN(ts) ? 0 : ts;
+}
+
+/** The inbox's order: the latest message first, and by id, as the server breaks a tie. */
+export function byLastMessage(a: ChatConversationDto, b: ChatConversationDto): number {
+    return lastMessageTs(b) - lastMessageTs(a) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
 }
 
 /**

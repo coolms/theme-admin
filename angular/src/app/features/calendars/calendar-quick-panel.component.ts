@@ -18,7 +18,7 @@ import { filter } from 'rxjs/operators';
 import { CalendarItemDto } from './calendars.types';
 import { CalendarsApiService } from './calendars-api.service';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { DateTimeFormatService, DrawerService, ToastService } from '@coolms/ui-angular';
+import { DateTimeFormatService, DrawerService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import {
     CalendarEventEditorComponent,
     CalendarEventEditorData,
@@ -266,6 +266,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     private readonly drawer     = inject(DrawerService);
     private readonly router     = inject(Router);
     private readonly dtf        = inject(DateTimeFormatService);
+    private readonly userPrefs = inject(UserCalendarPreferencesService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly lookaheadDays = LOOKAHEAD_DAYS;
@@ -325,7 +326,7 @@ export class CalendarQuickPanelComponent implements OnInit {
     });
 
     readonly horizonLabel = computed(() =>
-        monthDayName(shiftDayKey(localDayKey(this.selectedDate()), LOOKAHEAD_DAYS - 1)),
+        monthDayName(shiftDayKey(localDayKey(this.selectedDate()), LOOKAHEAD_DAYS - 1), this.userPrefs.language()),
     );
 
     constructor() {
@@ -464,9 +465,9 @@ export class CalendarQuickPanelComponent implements OnInit {
     /** "Today, Mar 10" / "Tomorrow, Mar 11" / "Mon, Mar 11" -- days of the person's calendar. */
     private dayLabel(key: string, today: string): string {
         const days = calendarDaysBetween(today, key);
-        const md   = monthDayName(key);
+        const md   = monthDayName(key, this.userPrefs.language());
         if (days === 0) return `Today, ${md}`;
         if (days === 1) return `Tomorrow, ${md}`;
-        return `${weekdayName(key)}, ${md}`;
+        return `${weekdayName(key, this.userPrefs.language())}, ${md}`;
     }
 }

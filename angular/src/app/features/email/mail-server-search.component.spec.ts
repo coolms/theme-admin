@@ -1,4 +1,4 @@
-import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { TestBed, type ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
 import { HttpErrorResponse, HttpHeaders, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
@@ -8,8 +8,8 @@ import { DateTimeFormatService } from '@coolms/ui-angular';
 
 import { EmailService, SERVER_MESSAGE_OPEN_SERVED } from './email.service';
 import type { ServerSearchAnswerDto, ServerSearchCapability, ServerSearchHitDto } from './email.types';
-import { MailServerSearchComponent, OLDER_WORDS, type ServerHitFailed, type ServerHitOpened, type ServerHitOpening } from './mail-server-search.component';
-import { MailServerSearch } from './mail-server-search';
+import { MailServerSearchComponent, OLDER_WORDS, SEARCH_WORDS, type ServerHitFailed, type ServerHitOpened, type ServerHitOpening } from './mail-server-search.component';
+import { MailServerSearch, matchesText } from './mail-server-search';
 
 const hit = (n: number, extra: Partial<ServerSearchHitDto> = {}): ServerSearchHitDto => ({
     ref: `ref-${n}`, folder: 'INBOX', uid: n, from: { name: `Sender ${n}`, address: `s${n}@example.test` },
@@ -25,8 +25,9 @@ const refused = (status: number, reason: string, extra: Record<string, string> =
     new HttpErrorResponse({ status, error: { type: `/errors/email/server-search/${reason}`, ...extra } });
 
 /**
- * The "More on the server" section as drawn: hit rows with their headers; a hit the local results show is not drawn
- * twice; a held hit opens as stored and any other says opening is coming; each refusal in its own words; the cap.
+ * The "More results" section as drawn: hit rows with their headers; a hit the local results show is not drawn twice; a
+ * held hit opens as stored and any other says opening is coming; each refusal in its own words; the cap; the next page
+ * read when the section's end comes into view, once, with a row saying so. No word of a server in what it says.
  */
 describe('MailServerSearchComponent', () => {
     let fixture: ComponentFixture<MailServerSearchComponent>;
@@ -53,6 +54,27 @@ describe('MailServerSearchComponent', () => {
 
         return fixture.nativeElement as HTMLElement;
     }
+
+    it('its heading, and what it says while the first page is read', () => {
+        const el = render();
+        search.run('q');
+        fixture.detectChanges();
+
+        expect(el.querySelector('.mss__title')?.textContent?.trim()).toBe('More results');
+        expect(el.querySelector('[data-test="server-search"]')?.getAttribute('aria-label')).toBe('More results');
+        expect(el.querySelector('[role="status"]')?.textContent?.trim()).toBe('Looking for more results…');
+        replies.next(answer('q', []));
+        fixture.detectChanges();
+        expect(text(el, 'server-search-empty')).toBe('No more results.');
+    });
+
+    it('none of its words names a server', () => {
+        for (const said of [...Object.values(SEARCH_WORDS), ...Object.values(OLDER_WORDS), matchesText('imap-text'), matchesText('other')]) {
+            expect(said).not.toMatch(/server/i);
+        }
+        expect(matchesText('imap-text')).toBe('The mailbox\'s own search, of headers and message text.');
+        expect(matchesText('other')).toBe('The mailbox\'s own search (other).');
+    });
 
     const text = (el: HTMLElement, test: string): string =>
         (el.querySelector(`[data-test="${test}"]`)?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -107,7 +129,7 @@ describe('MailServerSearchComponent', () => {
         fixture.detectChanges();
 
         expect(el.querySelectorAll('[data-test="server-hit"]').length).toBe(0);
-        expect(text(el, 'server-search-all-local')).toContain('in the results above');
+        expect(text(el, 'server-search-all-local')).toBe('Everything found is in the results above.');
     });
 
     it('once open is offered: the stored id opens, and a hit gone from the server leaves the list', () => {
@@ -201,12 +223,23 @@ describe('MailServerSearchComponent', () => {
             expect(http.match(OPEN).length).withContext('Try again stores it again').toBe(1);
         });
 
-        it('404 gone: the row leaves, and the section says so', () => {
+        it('404 gone: the row leaves, and the section and the host say it was deleted in the person\'s mailbox', () => {
             const el = openWith({ type: '/errors/email/server-search/gone' }, 404);
 
             expect(search.hits().map(h => h.ref)).toEqual(['ref-4']);
-            expect(text(el, 'server-hit-gone')).toBe('No longer on the server.');
+            expect(text(el, 'server-hit-gone')).toBe('This message was deleted in your mailbox.');
             expect(opened).toEqual([]);
+
+            const failures: ServerHitFailed[] = [];
+            fixture.componentInstance.openFailed.subscribe(f => failures.push(f));
+            fixture.componentRef.setInput('mailboxWords', 'your Gmail mailbox');
+            fixture.detectChanges();
+            el.querySelector<HTMLButtonElement>('[data-test="server-hit"]')?.click();
+            TestBed.inject(HttpTestingController).expectOne('/api/v1/email/mailboxes/mb1/server-messages/ref-4/open')
+                .flush({ type: '/errors/email/server-search/gone' }, { status: 404, statusText: '404' });
+            fixture.detectChanges();
+            expect(text(el, 'server-hit-gone')).toBe('This message was deleted in your Gmail mailbox.');
+            expect(failures).toEqual([{ text: 'This message was deleted in your Gmail mailbox.', retry: null }]);
         });
 
         it('503 unavailable: said under the row in the server\'s detail', () => {
@@ -233,7 +266,7 @@ describe('MailServerSearchComponent', () => {
         capability.set({ state: 'unsupported', reason: 'BAD [BADCHARSET] (US-ASCII)' });
         const el = render();
 
-        expect(text(el, 'server-search-unsupported')).toContain('This mail server can\'t search older mail.');
+        expect(text(el, 'server-search-unsupported')).toContain('This mailbox can\'t be searched for more, so only the mail kept here was searched.');
         expect(text(el, 'server-search-unsupported')).toContain('BAD [BADCHARSET] (US-ASCII)');
         expect(asked).toBe(0);
     });
@@ -242,7 +275,7 @@ describe('MailServerSearchComponent', () => {
         capability.set({ state: 'unavailable', reason: 'auth_refused' });
         const el = render();
 
-        expect(text(el, 'server-search-unavailable')).toContain('Can\'t reach the mail server right now.');
+        expect(text(el, 'server-search-unavailable')).toContain('This mailbox can\'t be reached now, so it wasn\'t searched for more.');
         expect(text(el, 'server-search-unavailable')).toContain('auth_refused');
     });
 
@@ -252,17 +285,18 @@ describe('MailServerSearchComponent', () => {
         search.run('q');
         fixture.detectChanges();
 
-        expect(text(el, 'server-search-unknown')).toContain('this first search decides');
+        expect(text(el, 'server-search-unknown'))
+            .toBe('It is not known yet whether this mailbox can be searched for more; this first search decides.');
     });
 
     it('each refusal in its own words', () => {
         const el = render();
         const cases: Array<[HttpErrorResponse, string, string]> = [
-            [refused(422, 'query-invalid'), 'server-search-query-invalid', '1 to 200 characters'],
+            [refused(422, 'query-invalid'), 'server-search-query-invalid', 'This search is empty or too long.'],
             [refused(503, 'unavailable', { reason: 'unreachable' }), 'server-search-unavailable', 'unreachable'],
-            [refused(502, 'failed', { server: 'imap.example.test' }), 'server-search-failed', 'imap.example.test answered the search with an error'],
+            [refused(502, 'failed', { server: 'imap.example.test' }), 'server-search-failed', 'More results couldn\'t be loaded. Try again later.'],
             [refused(422, 'unsupported', { reason: 'NO [CANNOT]' }), 'server-search-unsupported', 'NO [CANNOT]'],
-            [new HttpErrorResponse({ status: 500 }), 'server-search-error', 'Couldn\'t search the mail server.'],
+            [new HttpErrorResponse({ status: 500 }), 'server-search-error', 'More results couldn\'t be loaded. Try again later.'],
         ];
         for (const [error, test, words] of cases) {
             capability.set({ state: 'supported' });
@@ -270,6 +304,10 @@ describe('MailServerSearchComponent', () => {
             replies.error(error);
             fixture.detectChanges();
             expect(text(el, test)).withContext(test).toContain(words);
+            expect(text(el, test)).withContext(test).not.toMatch(/server|imap\./);
+            expect(Array.from(el.querySelectorAll('[data-test="server-search-retry"]')).map(b => b.textContent?.trim()))
+                .withContext(`${test}: Try again after a failure only`)
+                .toEqual(['server-search-failed', 'server-search-error'].includes(test) ? ['Try again'] : []);
         }
     });
 
@@ -283,21 +321,21 @@ describe('MailServerSearchComponent', () => {
         }));
         fixture.detectChanges();
 
-        expect(text(el, 'server-search-rate-limited')).toContain('Too many server searches in a minute.');
-        expect(text(el, 'server-search-countdown')).toBe('Searching again in 42 s.');
+        expect(text(el, 'server-search-countdown')).toBe('Too many searches. Try again in 42 s.');
+        expect(el.querySelector('[data-test="server-search-retry"]')).withContext('none while it counts').toBeNull();
         search.stop();
     });
 
     describe('as the older mail of a folder', () => {
         const renderOlder = (listed: string[]): HTMLElement => {
             const el = render(listed);
-            fixture.componentRef.setInput('heading', 'On the server');
+            fixture.componentRef.setInput('heading', 'Older mail');
             fixture.componentRef.setInput('words', OLDER_WORDS);
             fixture.detectChanges();
             return el;
         };
 
-        it('a held row the list shows is skipped; one it does not show opens as stored; more reads older', () => {
+        it('a held row the list shows is skipped; one it does not show opens as stored', () => {
             const el = renderOlder(['m2']);
             search.run('Archive');
             replies.next(answer('Archive', [hit(1, { local: true, localId: 'm2' }), hit(2, { local: true, localId: 'm7', seen: false }), hit(3)], { next: 'c1' }));
@@ -306,7 +344,6 @@ describe('MailServerSearchComponent', () => {
             const rows = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-test="server-hit"]'));
             expect(rows.map(r => /Sender (\d)/.exec(r.textContent ?? '')?.[1])).withContext('m2 is in the list above').toEqual(['2', '3']);
             expect(rows[0].textContent).toContain('Kept here');
-            expect(text(el, 'server-search-more')).toBe('Load older from the server');
 
             rows[0].click();
             expect(opened).toEqual([jasmine.objectContaining({ id: 'm7', folder: 'INBOX', seen: false })]);
@@ -317,41 +354,249 @@ describe('MailServerSearchComponent', () => {
             search.run('Archive');
             replies.next(answer('Archive', []));
             fixture.detectChanges();
-            expect(text(el, 'server-search-empty')).toBe('No older mail on the server.');
+            expect(text(el, 'server-search-empty')).toBe('No older mail.');
 
             search.run('Spam');
             replies.error(new HttpErrorResponse({
                 status: 429, error: { type: '/errors/email/server-search/rate-limited' }, headers: new HttpHeaders({ 'Retry-After': '30' }),
             }));
             fixture.detectChanges();
-            expect(text(el, 'server-search-rate-limited')).toContain('Too many pages asked of the mail server in a minute.');
-            expect(text(el, 'server-search-countdown')).toBe('Loading again in 30 s.');
+            expect(text(el, 'server-search-countdown')).toBe('Too many pages asked for. Try again in 30 s.');
             search.stop();
+
+            search.run('Old');
+            fixture.detectChanges();
+            expect(el.querySelector('[role="status"]')?.textContent?.trim()).toBe('Loading older mail…');
+            replies.error(refused(422, 'query-invalid'));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-query-invalid')).toBe('This folder no longer exists.');
+
+            search.run('Old');
+            replies.error(new HttpErrorResponse({ status: 500 }));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-error')).toContain('Older mail couldn\'t be loaded.');
         });
     });
 
-    it('capped: "Showing the first 500."', () => {
+    it('capped: says to narrow the search, and reads nothing more', () => {
         const el = render();
         search.run('q');
         replies.next(answer('q', [hit(1)], { capped: true, next: null }));
         fixture.detectChanges();
 
-        expect(text(el, 'server-search-capped')).toBe('Showing the first 500.');
-        expect(el.querySelector('[data-test="server-search-more"]')).toBeNull();
+        expect(text(el, 'server-search-capped')).toBe('There are more results than can be shown: add a word to narrow the search.');
+        expect(el.querySelector('[data-test="server-search-end"]')).toBeNull();
     });
 
-    it('load more while a next page is named', () => {
+    describe('its end', () => {
+        /** What watches the section's end, in place of the browser's: each watched end comes into view when told to. */
+        class FakeObserver {
+            static all: FakeObserver[] = [];
+            readonly watched: Element[] = [];
+            closed = false;
+            constructor(private readonly seen: (entries: Array<{ isIntersecting: boolean }>) => void) {
+                FakeObserver.all.push(this);
+            }
+            observe(target: Element): void { this.watched.push(target); }
+            unobserve(): void { /* never used */ }
+            disconnect(): void { this.closed = true; }
+            tell(inView: boolean): void { this.seen([{ isIntersecting: inView }]); }
+        }
+        const real = window.IntersectionObserver;
+        /** The ends watched now. */
+        const open = (): FakeObserver[] => FakeObserver.all.filter(o => !o.closed);
+        const end = (el: HTMLElement): HTMLElement | null => el.querySelector('[data-test="server-search-end"]');
+        /** The end is seen, whichever end is watched now. */
+        const reach = (): void => {
+            open().forEach(o => o.tell(true));
+            fixture.detectChanges();
+        };
+        const reply = (hits: ServerSearchHitDto[], extra: Partial<ServerSearchAnswerDto> = {}): void => {
+            replies.next(answer('q', hits, extra));
+            fixture.detectChanges();
+        };
+
+        beforeEach(() => {
+            FakeObserver.all = [];
+            window.IntersectionObserver = FakeObserver as unknown as typeof IntersectionObserver;
+        });
+        afterEach(() => {
+            window.IntersectionObserver = real;
+        });
+
+        it('nothing is asked before the end is in view; in view, the next page, with a row saying it loads', () => {
+            const el = render();
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            expect(end(el)).not.toBeNull();
+            expect(open().map(o => o.watched)).withContext('the end is watched').toEqual([[end(el)!]]);
+            expect(el.querySelector('button[data-test="server-search-more"]')).withContext('no button').toBeNull();
+
+            open().forEach(o => o.tell(false));
+            expect(asked).withContext('out of view').toBe(1);
+
+            reach();
+            expect(asked).withContext('the next page').toBe(2);
+            const row = el.querySelector('[data-test="server-search-loading"]');
+            expect(row?.textContent?.trim()).toBe('Loading more results…');
+            expect(row?.getAttribute('role')).toBe('status');
+
+            reply([hit(2)]);
+            expect(el.querySelectorAll('[data-test="server-hit"]').length).toBe(2);
+            expect(el.querySelector('[data-test="server-search-loading"]')).withContext('the row goes').toBeNull();
+            expect(end(el)).withContext('nothing more: the list just ends').toBeNull();
+            expect(open()).withContext('nothing watched at the end').toEqual([]);
+        });
+
+        it('one call for a page, however often its end is seen; the next page\'s end asks for the next', () => {
+            render();
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            const first = open();
+            first.forEach(o => { o.tell(true); o.tell(true); });
+            fixture.detectChanges();
+            first.forEach(o => o.tell(true));
+            expect(asked).withContext('one call for page 2').toBe(2);
+
+            reply([hit(2)], { next: 'c2' });
+            expect(asked).withContext('not before its own end is seen').toBe(2);
+            reach();
+            expect(asked).withContext('page 3').toBe(3);
+        });
+
+        it('an answer dropped, or one that names the page just read, is not asked for again by itself', () => {
+            render();
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            reach();
+            replies.next(answer('another', []));
+            fixture.detectChanges();
+            reach();
+            expect(asked).withContext('the same cursor is asked for once').toBe(2);
+
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            reach();
+            reply([hit(2)], { next: 'c1' });
+            reach();
+            expect(asked).withContext('a cursor repeated ends the reading on').toBe(4);
+        });
+
+        it('a page not read says so with Try again, and is not asked for again by itself; Try again asks for it', () => {
+            const el = render();
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            reach();
+            replies.error(new HttpErrorResponse({ status: 500 }));
+            fixture.detectChanges();
+
+            expect(text(el, 'server-search-error')).toContain('More results couldn\'t be loaded. Try again later.');
+            expect(el.querySelectorAll('[data-test="server-hit"]').length).withContext('the results stay').toBe(1);
+            expect(end(el)).withContext('no end to reach').toBeNull();
+            reach();
+            FakeObserver.all.forEach(o => o.tell(true));
+            expect(asked).withContext('no loop').toBe(2);
+
+            el.querySelector<HTMLButtonElement>('[data-test="server-search-retry"]')!.click();
+            fixture.detectChanges();
+            expect(asked).toBe(3);
+            expect(text(el, 'server-search-error')).withContext('the sentence makes way for the row').toBe('');
+            expect(text(el, 'server-search-loading')).toBe('Loading more results…');
+            reply([hit(2)], { next: 'c2' });
+            reach();
+            expect(asked).withContext('and it reads on').toBe(4);
+        });
+
+        it('a rate limit on a page counts down, then goes on by itself; refused, the query\'s own sentence', fakeAsync(() => {
+            const el = render();
+            search.run('q');
+            reply([hit(1)], { next: 'c1' });
+            reach();
+            replies.error(new HttpErrorResponse({
+                status: 429, error: { type: '/errors/email/server-search/rate-limited' }, headers: new HttpHeaders({ 'Retry-After': '2' }),
+            }));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-countdown')).toBe('Too many searches. Try again in 2 s.');
+            expect(end(el)).toBeNull();
+            tick(1000);
+            fixture.detectChanges();
+            expect(text(el, 'server-search-countdown')).toBe('Too many searches. Try again in 1 s.');
+            expect(asked).toBe(2);
+
+            tick(1000);
+            fixture.detectChanges();
+            expect(asked).withContext('asked again once the pause ends').toBe(3);
+            expect(text(el, 'server-search-loading')).toBe('Loading more results…');
+            expect(text(el, 'server-search-countdown')).toBe('');
+
+            replies.error(refused(422, 'query-invalid'));
+            fixture.detectChanges();
+            expect(text(el, 'server-search-query-invalid')).toBe('This search is empty or too long.');
+            expect(end(el)).toBeNull();
+        }));
+
+        it('what is said of a whole answer waits for its last page', () => {
+            const el = render(['m1']);
+            search.run('q');
+            reply([hit(1, { local: true, localId: 'm1' })], { next: 'c1' });
+            expect(text(el, 'server-search-all-local')).toBe('');
+            reach();
+            reply([]);
+            expect(text(el, 'server-search-all-local')).toBe('Everything found is in the results above.');
+        });
+
+        it('two sections: each one\'s end reads its own next page', () => {
+            const askedOf: string[] = [];
+            const pages = new Map<string, Subject<ServerSearchAnswerDto>>();
+            const section = (id: string): MailServerSearch => new MailServerSearch((_q, cursor) => {
+                askedOf.push(`${id} ${cursor ?? 'first'}`);
+                const s = new Subject<ServerSearchAnswerDto>();
+                pages.set(id, s);
+                return s;
+            });
+            render();
+            const [a, b] = [section('a'), section('b')].map((of, i) => {
+                const f = TestBed.createComponent(MailServerSearchComponent);
+                f.componentRef.setInput('search', of);
+                f.detectChanges();
+                of.run('q');
+                pages.get(i === 0 ? 'a' : 'b')!.next(answer('q', [hit(i)], { next: `c-${i}` }));
+                f.detectChanges();
+                return { f, watcher: open().at(-1)! };
+            });
+
+            b.watcher.tell(true);
+            expect(askedOf).withContext('b\'s end').toEqual(['a first', 'b first', 'b c-1']);
+            a.watcher.tell(true);
+            expect(askedOf).withContext('a\'s end').toEqual(['a first', 'b first', 'b c-1', 'a c-0']);
+        });
+    });
+
+    it('in a real scrolling list: read on when the end is scrolled into view, not before', async () => {
         const el = render();
-        search.run('q');
-        replies.next(answer('q', [hit(1)], { next: 'c1' }));
-        fixture.detectChanges();
+        const scroller = document.createElement('div');
+        scroller.style.cssText = 'height: 200px; overflow-y: auto; position: fixed; top: 0; left: 0; width: 320px;';
+        document.body.appendChild(scroller);
+        scroller.appendChild(el);
+        try {
+            search.run('q');
+            replies.next(answer('q', Array.from({ length: 20 }, (_, i) => hit(i)), { next: 'c1' }));
+            fixture.detectChanges();
+            const frames = async (until: () => boolean): Promise<void> => {
+                for (let i = 0; i < 120 && !until(); i++) {
+                    await new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve)));
+                }
+            };
+            expect(scroller.scrollHeight).withContext('the end is below the view').toBeGreaterThan(400);
+            let frame = 0;
+            await frames(() => ++frame > 10);
+            expect(asked).withContext('not yet in view').toBe(1);
 
-        el.querySelector<HTMLButtonElement>('[data-test="server-search-more"]')?.click();
-        expect(asked).toBe(2);
-        replies.next(answer('q', [hit(2)]));
-        fixture.detectChanges();
-
-        expect(el.querySelectorAll('[data-test="server-hit"]').length).toBe(2);
-        expect(el.querySelector('[data-test="server-search-more"]')).toBeNull();
+            scroller.scrollTop = scroller.scrollHeight;
+            await frames(() => asked > 1);
+            expect(asked).withContext('scrolled to the end').toBe(2);
+        } finally {
+            scroller.remove();
+        }
     });
 });

@@ -4,7 +4,8 @@ import { DateTimeFormatService, UserCalendarPreferencesService } from '@coolms/u
 import {
     conversationLabel,
     counterpartOf,
-    lastActivityTs,
+    byLastMessage,
+    lastMessageTs,
     presenceDot,
     rowPreview,
     rowWhen,
@@ -118,20 +119,32 @@ describe('conversation row', () => {
         });
     });
 
- describe('lastActivityTs', () => {
+ describe('lastMessageTs', () => {
  it('uses the last message time', () => {
-            expect(lastActivityTs(conv({ lastMessageAt: '2026-08-13T10:00:00Z' })))
+            expect(lastMessageTs(conv({ lastMessageAt: '2026-08-13T10:00:00Z' })))
                 .toBe(Date.parse('2026-08-13T10:00:00Z'));
         });
 
- it('falls back to updatedAt for a conversation with no messages', () => {
-            expect(lastActivityTs(conv({ lastMessageAt: null, updatedAt: '2026-08-01T10:00:00Z' })))
+ it('with no message is when it was started, never when it last changed', () => {
+            expect(lastMessageTs(conv({ lastMessageAt: null, createdAt: '2026-08-01T10:00:00Z', updatedAt: '2026-08-20T10:00:00Z' })))
                 .toBe(Date.parse('2026-08-01T10:00:00Z'));
         });
 
  it('is 0 when neither is present or parseable, so the row sorts last', () => {
-            expect(lastActivityTs(conv({ lastMessageAt: null, updatedAt: null }))).toBe(0);
-            expect(lastActivityTs(conv({ lastMessageAt: 'not a date' }))).toBe(0);
+            expect(lastMessageTs(conv({ lastMessageAt: null, createdAt: null, updatedAt: '2026-08-20T10:00:00Z' }))).toBe(0);
+            expect(lastMessageTs(conv({ lastMessageAt: 'not a date' }))).toBe(0);
+        });
+    });
+
+ describe('byLastMessage', () => {
+ it('is the latest message first, whatever changed later, and by id where two are of one instant', () => {
+            const rows = [
+                conv({ id: 'a', lastMessageAt: '2026-08-01T10:00:00Z', updatedAt: '2026-08-30T10:00:00Z' }),
+                conv({ id: 'b', lastMessageAt: '2026-08-02T10:00:00Z', updatedAt: '2026-08-02T10:00:00Z' }),
+                conv({ id: 'c', lastMessageAt: null, createdAt: '2026-08-03T10:00:00Z' }),
+                conv({ id: 'd', lastMessageAt: '2026-08-02T10:00:00Z' }),
+            ];
+            expect(rows.sort(byLastMessage).map(c => c.id)).toEqual(['c', 'd', 'b', 'a']);
         });
     });
 

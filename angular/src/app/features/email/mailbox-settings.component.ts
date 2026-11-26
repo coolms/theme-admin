@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
-import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
+import { HttpErrorResponse } from '@angular/common/http';
+import { type Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { ElevationService, ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
 import {
     type CapabilityState,
     CmsSettingsPaneComponent,
@@ -62,7 +63,8 @@ interface PaneBody {
  * Each pane saves only its own fields, naming the version of the settings it was read at (If-Match); a save's answer
  * is the page's new read, laid under what another pane holds unsaved. What the caller may change is the server's
  * capability answer for the mailbox: a delegate who may only read them sees every pane read-only, with no Save, and
- * no Delete. Access is a shared mailbox's; Delete is last, and asks.
+ * no Delete. Access is a shared mailbox's; Delete is last, and asks. What reads the mailbox's mail is its people's: an
+ * administrator who may not read it is not offered the addresses it sends from.
  */
 @Component({
     selector: 'app-mailbox-settings',
@@ -103,7 +105,8 @@ interface PaneBody {
                         <!-- Each address is added, sent again or withdrawn on its own: nothing to Save. -->
                         <cms-settings-pane [title]="current().title" icon="at" owner="Mail" [help]="current().help"
                                            settingKey="email.mailbox.addresses" [editable]="false">
-                            <app-mailbox-aliases-section [mailboxId]="mb.id" [ownAddress]="mb.emailAddress ?? null" />
+                            <app-mailbox-aliases-section [mailboxId]="mb.id" [ownAddress]="mb.emailAddress ?? null"
+                                                         (refused)="addressesOffered.set(false)" />
                         </cms-settings-pane>
                     }
                     @case ('connection') {
@@ -215,7 +218,13 @@ export class MailboxSettingsComponent implements HasUnsavedChanges {
 
     readonly id = computed((): string => this.mailboxId());
     /** The pane open: the host's, when it is one of the panes. */
-    readonly pane = computed((): MailboxPane['id'] => PANES.find(p => p.id === this.paneId())?.id ?? 'general');
+    readonly pane = computed((): MailboxPane['id'] => {
+        const pane = PANES.find(p => p.id === this.paneId())?.id ?? 'general';
+
+        return 'addresses' === pane && !this.addressesOffered() ? 'general' : pane;
+    });
+    /** Whether the caller may read the addresses the mailbox sends from. */
+    readonly addressesOffered = signal(true);
 
     /** The open pane's section, whatever kind it is. */
     readonly body = viewChild<PaneBody>('paneBody');
@@ -227,7 +236,7 @@ export class MailboxSettingsComponent implements HasUnsavedChanges {
         const mb = this.mailbox();
         const mayChange = this.access()['email.mailbox.update'] !== 'denied';
 
-        return PANES.filter(p => ('access' !== p.id || (mayChange && 'shared' === mb?.kind)) && ('delete' !== p.id || mayChange));
+        return PANES.filter(p => ('addresses' !== p.id || this.addressesOffered()) && ('access' !== p.id || (mayChange && 'shared' === mb?.kind)) && ('delete' !== p.id || mayChange));
     });
 
     readonly sections = computed((): CmsSettingsSection[] =>
@@ -320,14 +329,33 @@ export class MailboxSettingsComponent implements HasUnsavedChanges {
     load(id: string = this.id()): void {
         this.error.set(null);
         forkJoin({ mailbox: this.email.getMailbox(id), access: this.email.mailboxCapabilities(id) })
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(
+                switchMap(({ mailbox, access }) => this.mayReadAddresses(mailbox).pipe(map(addresses => ({ mailbox, access, addresses })))),
+                takeUntilDestroyed(this.destroyRef),
+            )
             .subscribe({
-                next: ({ mailbox, access }) => {
+                next: ({ mailbox, access, addresses }) => {
                     this.access.set(access);
+                    this.addressesOffered.set(addresses);
                     this.resetToken.update(n => n + 1);
                     this.mailbox.set(mailbox);
                 },
                 error: (err: unknown) => this.error.set(this.errors.humanize(err)),
             });
+    }
+
+    /**
+     * Whether the caller may read the addresses the mailbox sends from. Only a manager (an administrator who does not
+     * own it) is asked about: the read refused them, its pane is not offered.
+     */
+    private mayReadAddresses(mailbox: EmailMailboxDto): Observable<boolean> {
+        if ('manager' !== mailbox.access) {
+            return of(true);
+        }
+
+        return this.email.listAliases(mailbox.id).pipe(
+            map(() => true),
+            catchError((err: unknown) => of(!(err instanceof HttpErrorResponse && 403 === err.status && !isElevationRefusal(err)))),
+        );
     }
 }

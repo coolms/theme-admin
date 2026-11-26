@@ -155,6 +155,14 @@ describe('MessageSourceComponent', () => {
         expect(q('source-text')).toBeNull();
     });
 
+    it('none of its own sentences names a server', () => {
+        for (const said of Object.values(MESSAGE_SOURCE_WORDS)) {
+            expect(said).not.toMatch(/server/i);
+        }
+        expect(MESSAGE_SOURCE_WORDS.gone).toBe('The original of this message is gone: it is no longer stored here, nor in your mailbox.');
+        expect(MESSAGE_SOURCE_WORDS.unavailable).toBe('Your mailbox could not be read for the original just now.');
+    });
+
     it('says an undeclared 502 in the generic sentence, never its text', async () => {
         open();
         await refused(502, 'about:blank', 'internals');
