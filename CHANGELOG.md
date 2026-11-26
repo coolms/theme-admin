@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **A detail page's header stays on one line** (ui-angular's header rule): the chips a page also says in its body carry `data-said-elsewhere` and give way before the title is cut -- a site's host (and its slug where the title or the content root's path says it), a schedule's state and kind (and its slug when it has no name), a site's member count (its members page lists them), a contact's visibility and linked user, a lead's channel, a call's direction and state. A chip said only there stays: a site's active state and your roles on it, a site's read-only, a lead's status, a missed call.
 - **Enter sends a chat message again in a conversation opened after the page was drawn**: the key was bound only to a composer present when the page first drew, which there never is.
 - **A chat message's paragraphs are one empty line apart**, in the conversation, a thread and the quick panel, so a typed blank line and a pasted one look the same; an empty paragraph is that empty line, never a gap of its own. The quick panel's paragraphs had the browser's own margins.
 - **Only a message moves a conversation in Chat's list and quick panel**: its place is its last message's, or when it was started while it has none, never when it last changed.

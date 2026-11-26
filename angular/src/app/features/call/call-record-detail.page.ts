@@ -58,8 +58,9 @@ import { formatCallDuration } from './call-format';
                 [actions]="headerActions()"
                 (actionClick)="onAction($event)">
                 <div header-meta class="detail-chips">
-                    <span class="chip">{{ c.direction || 'unknown' }}</span>
-                    <span class="chip" [class.chip--ok]="c.answered" [class.chip--off]="c.missed">
+                    <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                    <span class="chip" data-said-elsewhere>{{ c.direction || 'unknown' }}</span>
+                    <span class="chip" [class.chip--ok]="c.answered" [class.chip--off]="c.missed" data-said-elsewhere>
                         {{ c.state || '—' }}
                     </span>
                     @if (c.missed) {
