@@ -362,6 +362,7 @@ type PhonePane = 'folders' | 'message';
                             @for (s of otherServerSearches.sections(); track s.mailboxId) {
                                 <app-mail-server-search #otherSection [search]="s.search" [heading]="'More results: ' + s.title"
                                                         [mailboxWords]="mailboxWords(s.mailboxId)"
+                                                        [folderName]="s.folderName"
                                                         [opener]="s.open"
                                                         (opened)="onServerHitOpened($event)"
                                                         (opening)="onServerHitOpening($event)" (openFailed)="onServerHitFailed($event)" />
@@ -3496,8 +3497,24 @@ export class EmailMailboxPageComponent implements OnInit {
                 capability => this.learnServerSearch(mb.id, capability),
             ),
             open: hit => this.email.openServerMessage(mb.id, hit),
+            folderName: this.folderNamesOf(mb.id),
         })));
         afterNextRender(() => this.otherSections().at(0)?.nativeElement.scrollIntoView({ block: 'nearest' }), { injector: this.injector });
+    }
+
+    /**
+     * The names of a mailbox's folders by path, read once for its search. Until they are read, or when they are not,
+     * the inbox is "Inbox" and any other folder is its path.
+     */
+    private folderNamesOf(mailboxId: string): (path: string) => string {
+        const names = signal<ReadonlyMap<string, string>>(new Map());
+        this.email.folderTree(mailboxId).pipe(catchError(() => of(null)), takeUntilDestroyed(this.destroyRef)).subscribe(tree => {
+            if (tree !== null) {
+                names.set(new Map(folderRows(tree.folders, []).map(row => [row.folder.folder, row.name])));
+            }
+        });
+
+        return path => names().get(path) ?? (path.toUpperCase() === INBOX_PATH ? 'Inbox' : path);
     }
 
     /** A mailbox as a sentence to its person names it. */

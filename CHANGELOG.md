@@ -16,6 +16,8 @@ major number means here.
   "Loading more results…" row; at the end the list just ends. A page not read says so with Try again and is not asked
   for again by itself; a rate limit counts down and goes on. The Load more button is gone. Search other mailboxes is the
   first row under More results, and its results open there, above the open mailbox's.
+- **Mail's list says when the mailbox last synced by the dates rule**: "Synced at 09:12" today, "Synced yesterday at
+  22:44", then the weekday, the day and the year. A hit of another mailbox names its folder as that mailbox does.
 - **Mail's sentences to a person speak of their mailbox, not of a server**: the search's, the note on a folder too large
   to sort by date, the note on a copy no longer kept, the Trash line, a folder's tooltip, and a message gone at the
   provider ("This message was deleted in your Gmail mailbox."). Settings that configure a server, and the reasons a

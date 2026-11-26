@@ -1,13 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ErrorHandlerService } from '@coolms/core-angular';
-import { DateTimeFormatService, ToastService } from '@coolms/ui-angular';
+import { DateTimeFormatService, ToastService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { Subject, of, throwError } from 'rxjs';
 
 import { EmailSyncFinishedEvent } from './email-live-events.service';
 import { EmailService, MailboxSyncStarted } from './email.service';
 import { EmailMailboxDto } from './email.types';
-import { MailboxSyncComponent, SYNC_ANSWER_WAIT_MS } from './mailbox-sync.component';
+import { MailboxSyncComponent, SYNC_ANSWER_WAIT_MS, syncedWords } from './mailbox-sync.component';
 
 const BOX: EmailMailboxDto = { id: 'mb-1', label: 'Work', lastSuccessAt: '2026-11-05T09:12:00+00:00' };
 const STARTED: MailboxSyncStarted = { id: 'mb-1', syncId: 's-1', startedAt: '2026-11-05T10:00:00+00:00', repeated: false };
@@ -44,7 +44,7 @@ describe('MailboxSyncComponent', () => {
                 { provide: EmailService, useValue: email },
                 { provide: ToastService, useValue: toast },
                 { provide: ErrorHandlerService, useValue: { humanize: () => 'refused' } },
-                { provide: DateTimeFormatService, useValue: { row: () => '09:12' , auto: () => '09:12' } },
+                { provide: DateTimeFormatService, useValue: { row: () => '09:12', time: () => '09:12', dayKey: () => '2026-11-05' } },
             ],
         });
         jasmine.clock().install();
@@ -257,5 +257,40 @@ describe('MailboxSyncComponent', () => {
         sync.frame(frame());
         expect(finished).toEqual(['mb-1']);
         expect(sync.syncing()).toBeFalse();
+    });
+});
+
+describe('syncedWords', () => {
+    /** The kit's own formatter, for a person in Tokyo reading English, with no date format chosen. */
+    function formatter(over: Record<string, unknown> = {}): DateTimeFormatService {
+        TestBed.configureTestingModule({
+            providers: [{
+                provide: UserCalendarPreferencesService,
+                useValue: {
+                    ensureLoaded: (): void => {}, tz: () => 'Asia/Tokyo', dateFormat: () => 'yyyy-MM-dd', timeFormat: () => '24h',
+                    language: () => 'en', dateFormatChosen: () => false, ...over,
+                },
+            }],
+        });
+
+        return TestBed.inject(DateTimeFormatService);
+    }
+    /** 09:00 on Wednesday 25 November 2026 in Tokyo. */
+    const NOW = new Date('2026-11-25T00:00:00Z');
+
+    it('says the day as a list row does, in the person\'s zone, with the time', () => {
+        const dates = formatter();
+        const said = (at: string): string | null => syncedWords(at, dates, NOW);
+        expect(said('2026-11-24T23:30:00Z')).withContext('today in Tokyo, the day before in UTC').toBe('Synced at 08:30');
+        expect(said('2026-11-24T13:44:00Z')).toBe('Synced yesterday at 22:44');
+        expect(said('2026-11-20T13:44:00Z')).toBe('Synced Fri at 22:44');
+        expect(said('2026-11-04T13:44:00Z')).toBe('Synced Nov 4 at 22:44');
+        expect(said('2025-11-04T13:44:00Z')).toBe('Synced Nov 4, 2025 at 22:44');
+        expect(said('not a time')).toBeNull();
+    });
+
+    it('before this year takes the date format the person chose', () => {
+        const dates = formatter({ dateFormatChosen: () => true, dateFormat: () => 'dd/MM/yyyy' });
+        expect(syncedWords('2025-11-04T13:44:00Z', dates, NOW)).toBe('Synced 04/11/2025 at 22:44');
     });
 });

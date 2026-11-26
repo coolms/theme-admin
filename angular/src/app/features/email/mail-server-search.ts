@@ -355,6 +355,8 @@ export interface OtherMailboxSection {
     search: MailServerSearch;
     /** Opens a hit of this mailbox the platform does not hold; null while that is not offered. */
     open: (hit: ServerSearchHitDto) => Observable<ServerMessageOpenedDto> | null;
+    /** A folder of this mailbox as the person sees it named. */
+    folderName: (path: string) => string;
 }
 
 /**

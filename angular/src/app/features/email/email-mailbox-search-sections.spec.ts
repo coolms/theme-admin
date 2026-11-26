@@ -40,10 +40,13 @@ describe('EmailMailboxPageComponent -- the search sections and the notes', () =>
     let fixture: ComponentFixture<EmailMailboxPageComponent>;
     let asked: string[];
     let replies: Map<string, Subject<ServerSearchAnswerDto>>;
+    /** A mailbox's folder tree still to come; with none, it is there at once. */
+    let trees: Map<string, Subject<unknown>>;
 
     beforeEach(() => {
         asked = [];
         replies = new Map();
+        trees = new Map();
         TestBed.configureTestingModule({
             imports: [EmailMailboxPageComponent],
             providers: [
@@ -52,7 +55,7 @@ describe('EmailMailboxPageComponent -- the search sections and the notes', () =>
                     useValue: {
                         listMailboxes: () => of(MAILBOXES),
                         listFolders: () => of([]),
-                        folderTree: () => of({ folders: [{ folder: FOLDER, name: 'Inbox', selectable: true, children: [], total: 1, unseen: 0 }], canCreateTop: false, held: false }),
+                        folderTree: (mailboxId: string) => trees.get(mailboxId) ?? of({ folders: [{ folder: FOLDER, name: 'Inbox', selectable: true, children: [], total: 1, unseen: 0 }], canCreateTop: false, held: false }),
                         listMessages: (): Observable<EmailMessageList> => of(Object.assign([], { next: null, serverPages: null })),
                         searchMessages: () => of([]),
                         serverSearch: (mailboxId: string, _q: string, cursor: string | null): Observable<ServerSearchAnswerDto> => {
@@ -189,6 +192,22 @@ describe('EmailMailboxPageComponent -- the search sections and the notes', () =>
         scrollTo(ends()[0]);
         await frames(() => asked.length > 3);
         expect(asked).withContext('the other\'s own').toEqual(['mb1 first', 'mb2 first', 'mb1 a1', 'mb2 b1']);
+        pageOf().clearSearch();
+    });
+
+    it('a hit of another mailbox names its folder as that mailbox does, never by its path; Inbox before that is known', async () => {
+        pageOf().runSearch('report');
+        await reply('mb1', 1, null);
+        trees.set('mb2', new Subject());
+        pageOf().searchOtherMailboxes();
+        await reply('mb2', 1, null);
+        const chip = (): string => sections()[0].querySelector('[data-test="server-hit"]')!.textContent!.replace(/\s+/g, ' ');
+        expect(chip()).withContext('before the names are read').toContain('Inbox');
+        expect(chip()).not.toContain('INBOX');
+        trees.get('mb2')!.next({ folders: [{ folder: FOLDER, name: 'Entrada', selectable: true, children: [], total: 1, unseen: 0 }], canCreateTop: false, held: false });
+        await frames(() => false, 5);
+        expect(chip()).toContain('Entrada');
+        expect(chip()).not.toContain('INBOX');
         pageOf().clearSearch();
     });
 

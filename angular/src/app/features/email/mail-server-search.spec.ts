@@ -341,6 +341,7 @@ describe('Mail server search', () => {
                     return answer();
                 }),
                 open: () => null,
+                folderName: (path: string) => path,
             });
             const others = new OtherMailboxesSearch();
             const first = section('mb2', () => throwError(() => limited()));
@@ -370,6 +371,7 @@ describe('Mail server search', () => {
                     return s;
                 }),
                 open: () => null,
+                folderName: (path: string) => path,
             });
             const others = new OtherMailboxesSearch();
 

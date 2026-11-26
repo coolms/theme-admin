@@ -10,6 +10,24 @@ import { EmailMailboxDto } from './email.types';
 export const SYNC_ANSWER_WAIT_MS = 60_000;
 
 /**
+ * When a mailbox last synced, its day as a list's row says it: "Synced at 09:12" today, "Synced yesterday at 22:44",
+ * "Synced Wed at 22:44", "Synced Nov 4 at 22:44". Nothing for an instant that cannot be read.
+ */
+export function syncedWords(at: string, dates: DateTimeFormatService, now: Date = new Date()): string | null {
+    const day = dates.dayKey(at);
+    if (day === '') {
+        return null;
+    }
+    const days = Math.round((Date.parse(dates.dayKey(now.toISOString())) - Date.parse(day)) / 86_400_000);
+    if (days === 0) {
+        return `Synced at ${dates.time(at)}`;
+    }
+    const word = dates.row(at, now);
+
+    return `Synced ${days === 1 ? word.charAt(0).toLowerCase() + word.slice(1) : word} at ${dates.time(at)}`;
+}
+
+/**
  * The list pane's row (the pane toolbar): Refresh for the open mailbox, which asks the server to sync it now and is busy
  * while it runs, and at the row's end when the mailbox last synced, kept until the sync ends.
  * The server answers at once and says later, on the person's mailbox channel, how the sync it started ended. A frame
@@ -61,7 +79,7 @@ export class MailboxSyncComponent {
     /** When the open mailbox last synced, as the server says; nothing when it never has. */
     readonly status = computed(() => {
         const at = this.mailbox()?.lastSuccessAt;
-        return at !== undefined && at !== null && at !== '' ? 'Synced at ' + this.dates.auto(at) : null;
+        return at !== undefined && at !== null && at !== '' ? syncedWords(at, this.dates) : null;
     });
 
     private waitingFor: string | null = null;
