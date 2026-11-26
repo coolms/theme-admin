@@ -232,7 +232,7 @@ export class MiniCalendarComponent {
 
     readonly monthLabel = computed(() => {
         const c = this.cursor();
-        return new Date(c.year, c.month, 1).toLocaleString(undefined, {
+        return new Date(c.year, c.month, 1).toLocaleString(this.userPrefs.language(), {
             month: 'long',
             year:  'numeric',
         });

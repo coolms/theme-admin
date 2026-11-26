@@ -7,8 +7,8 @@
  * behind each helper therefore sits at UTC midnight of that day, so the
  * browser's own zone can never move the day, and the names Intl gives a day
  * (`Mon`, `Mar 11`) are taken with `timeZone: 'UTC'` for the same reason.
- * Those names are locale-sensitive but never ambiguous, so the browser's
- * language is kept; the DAY is the profile's.
+ * Those names are written in the interface language the caller gives; the DAY
+ * is the profile's.
  *
  * Its natural home is the kit, beside `dayKey()`; it lives here until a second
  * package needs it.
@@ -50,13 +50,13 @@ export function localDateOf(key: string): Date {
 }
 
 /** The day's short weekday name, e.g. `Mon`. */
-export function weekdayName(key: string): string {
-    return utcDayOf(key).toLocaleDateString([], { weekday: 'short', timeZone: 'UTC' });
+export function weekdayName(key: string, language: string): string {
+    return utcDayOf(key).toLocaleDateString(language, { weekday: 'short', timeZone: 'UTC' });
 }
 
 /** The day as a short month and a day number, e.g. `Mar 11`. */
-export function monthDayName(key: string): string {
-    return utcDayOf(key).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
+export function monthDayName(key: string, language: string): string {
+    return utcDayOf(key).toLocaleDateString(language, { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 function pad(n: number): string {
