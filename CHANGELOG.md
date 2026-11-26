@@ -12,6 +12,24 @@ major number means here.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
+- **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
+  once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a
+  "Loading more results…" row; at the end the list just ends. A page not read says so with Try again and is not asked
+  for again by itself; a rate limit counts down and goes on. The Load more button is gone. Search other mailboxes is the
+  first row under More results, and its results open there, above the open mailbox's.
+- **Mail's list says when the mailbox last synced by the dates rule**: "Synced at 09:12" today, "Synced yesterday at
+  22:44", then the weekday, the day and the year. A hit of another mailbox names its folder as that mailbox does.
+- **Mail's sentences to a person speak of their mailbox, not of a server**: the search's, the note on a folder too large
+  to sort by date, the note on a copy no longer kept, the Trash line, a folder's tooltip, and a message gone at the
+  provider ("This message was deleted in your Gmail mailbox."). Settings that configure a server, and the reasons a
+  move or a folder action was refused, keep their words.
+- **Mailbox settings from Settings > Email > System mail**: a button opens the system mailbox's settings over the page,
+  by its id, once the state was read; an address with `?mailbox=<id>` of the system mailbox does the same, on the pane
+  `settings` names, and says `oauth`'s outcome. The notification destination `email.system_mail.settings` goes there. An
+  administrator who may not read a mailbox is not offered the addresses it sends from.
+- **The elevation prompt says a second factor was reset**: an elevation ended for the reason `factor_reset` reads "Your elevated session was ended at {time} because your second factor was reset." An unknown reason still asks plainly.
+- **An open message in Mail draws no empty header field, and a text message reads as text**: From, To and Date are drawn only with a value, and a plain-text body is in the normal text font, its line breaks kept and its web and email addresses links (`@coolms/editor-client/plain-text`, http, https and mailto only), in place of a monospace box; it is never read as HTML. Chat's messages, on its page and in its quick panel, link the addresses in their text the same way; existing links and code are left alone.
+- **The open message's subject in Mail is one step larger** on the type scale (22px, title-lg; 18px, title-md, on a phone), semibold, and a long one wraps onto more lines instead of being cut.
 - **The file manager's Upload is the bar's first action, its one filled button**, before New Folder, once the server's files tree puts it there: the layout is unchanged. New is a menu of the file kinds the server offers, in the bar and in the right-click menu over empty space (a submenu); choosing one asks for the name and creates that kind. In a folder the person cannot write in, Upload, New Folder and New stay, disabled with the server's reason: the page reads the open folder's write permission with its listing and gives the tree `_hasFolder` and `_canWrite`, the right-click menus included. The page draws no focus ring around itself (it takes focus only so its keys follow it), and the list's Size and Permissions columns no longer run together.
 - **Mail's header spans the page again**: the envelope and the tree's title (Mail), Compose the one filled button and More (⋯) holding Add mailbox, Mail settings and Import, each with the tree's state and reason. The mailbox card heads the folder column; the column is no longer widened to fit a head. Over the message list, under the search: the chips All, Unread and Attachments, filtering the rows read so far (the next pages are read as ever and filtered the same way).
 - **Chat reads its tree, navi.toolbar.chat.list**: the page header takes the tree's title, its header primary (New chat) as the one filled button after the Online status control, and its other header nodes under More (none: no More). Over the conversation list, under the search: the tree's filter nodes as chips (All, Direct, Groups; Unread while a conversation is unread), the default chosen first, filtering the read conversations by kind or unread. The column's own New and Channels buttons are gone.

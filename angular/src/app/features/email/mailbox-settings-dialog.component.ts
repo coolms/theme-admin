@@ -3,7 +3,7 @@ import { DIALOG_DATA } from '@angular/cdk/dialog';
 
 import { type MailboxPane, MailboxSettingsComponent } from './mailbox-settings.component';
 
-/** What the modal's host hands it: the URL's mailbox and pane, and where its requests go. */
+/** What the modal's host hands it: the mailbox and the pane open, and where its requests go. */
 export interface MailboxSettingsDialogData {
     readonly mailboxId: Signal<string>;
     readonly pane: Signal<string | null>;
@@ -14,9 +14,9 @@ export interface MailboxSettingsDialogData {
 }
 
 /**
- * A mailbox's settings in a modal over the Email page: the same settings shell, list and panes as before, framed
- * with a close button. It does nothing with the URL itself -- the host keeps the URL and the modal in step -- so
- * Esc and the close button are only requests to close.
+ * A mailbox's settings in a modal over a page: the same settings shell, list and panes as before, framed with a close
+ * button. It does nothing with the URL itself -- a host that keeps one keeps it and the modal in step -- so Esc and
+ * the close button are only requests to close.
  */
 @Component({
     selector: 'app-mailbox-settings-dialog',

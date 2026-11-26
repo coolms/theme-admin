@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -224,5 +225,19 @@ describe('MailboxFiltersSectionComponent -- a mailbox\'s filters', () => {
         c.remove(c.filters()[0]);
         expect(email.deleteFilter).toHaveBeenCalledWith('mb-1', 'a');
         expect(c.filters()).toEqual([]);
+    });
+
+    it('folders the caller may not read are not spoken of; folders not read for another reason are', () => {
+        email.listFilterFolders.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        email.listFolders.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        const { c } = make(true, []);
+        c.add();
+        expect(c.folderOptions()).toEqual([]);
+        expect(c.foldersNote()).toBe('');
+
+        email.listFolders.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+        const other = make(true, []);
+        other.c.add();
+        expect(other.c.foldersNote()).toContain('could not be read');
     });
 });

@@ -93,7 +93,7 @@ export function deletedForGoodText(n: number): string {
 export function permanentQuestion(n: number): { title: string; message: string; confirmLabel: string } {
     return {
         title:        n === 1 ? 'Delete this message permanently?' : `Delete ${n} messages permanently?`,
-        message:      'It is removed from the mail server and cannot be undone.',
+        message:      'It is deleted in your mailbox and cannot be undone.',
         confirmLabel: 'Delete permanently',
     };
 }
@@ -101,10 +101,13 @@ export function permanentQuestion(n: number): { title: string; message: string; 
 /** What Delete permanently says while this server does not offer it: the page holds it back, nothing is sent. */
 export const PERMANENT_NOT_SERVED = 'Permanent delete isn\'t available yet.';
 
-/** The Trash view's line on when the server empties it: only where it is known for the mailbox's provider. */
-export function trashRetentionText(days: number | null | undefined): string | null {
+/**
+ * The Trash view's line on when the provider empties it: only where it is known for the mailbox's provider.
+ * `mailboxWords` as `yourMailbox` gives them.
+ */
+export function trashRetentionText(days: number | null | undefined, mailboxWords = 'your mailbox'): string | null {
     return typeof days === 'number' && days > 0
-        ? `The mail server deletes messages in Trash after ${days} days.`
+        ? `Messages in Trash are deleted in ${mailboxWords} after ${days} days.`
         : null;
 }
 

@@ -262,6 +262,42 @@ describe('Mail server search', () => {
             expect(search.view().kind).toBe('answered');
         });
 
+        it('a cursor stale again after starting over waits for a press, which starts over once more', () => {
+            search.run('a');
+            firstPage().flush(serverAnswer('a', [serverHit(1)], { next: 'c1' }));
+            search.readOn();
+            cursorPage('c1').flush(problem('stale-cursor'), { status: 409, statusText: 'Conflict' });
+            firstPage().flush(serverAnswer('a', [serverHit(1)], { next: 'c2' }));
+            search.readOn();
+            cursorPage('c2').flush(problem('stale-cursor'), { status: 409, statusText: 'Conflict' });
+
+            http.expectNone(r => r.url === URL);
+            expect(search.view()).toEqual({ kind: 'error' });
+
+            search.retry();
+            cursorPage('c2').flush(problem('stale-cursor'), { status: 409, statusText: 'Conflict' });
+            firstPage().flush(serverAnswer('a', [serverHit(1)]));
+            expect(search.view().kind).toBe('answered');
+        });
+
+        it('reading on asks for each page once; a search run again may read on from its own first page', () => {
+            search.run('a');
+            firstPage().flush(serverAnswer('a', [serverHit(1)], { next: 'c1' }));
+            search.readOn();
+            search.readOn();
+            cursorPage('c1').flush(serverAnswer('a', [serverHit(2)], { next: 'c1' }));
+            search.readOn();
+            http.expectNone(r => r.url === URL);
+
+            search.run('a');
+            firstPage().flush(serverAnswer('a', [serverHit(1)], { next: 'c1' }));
+            search.readOn();
+            cursorPage('c1').flush(serverAnswer('a', [serverHit(2)]));
+            search.readOn();
+            http.expectNone(r => r.url === URL);
+            expect(search.hits().length).toBe(2);
+        });
+
         it('opening a hit: a POST with no body, answering the stored id; offered', () => {
             const email = TestBed.inject(EmailService);
             let stored: unknown = null;
@@ -305,6 +341,7 @@ describe('Mail server search', () => {
                     return answer();
                 }),
                 open: () => null,
+                folderName: (path: string) => path,
             });
             const others = new OtherMailboxesSearch();
             const first = section('mb2', () => throwError(() => limited()));
@@ -334,6 +371,7 @@ describe('Mail server search', () => {
                     return s;
                 }),
                 open: () => null,
+                folderName: (path: string) => path,
             });
             const others = new OtherMailboxesSearch();
 
