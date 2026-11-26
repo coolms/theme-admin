@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **A detail page's header stays on one line** (ui-angular's header rule): the chips a page also says in its body carry `data-said-elsewhere` and give way before the title is cut -- a site's host (and its slug where the title or the content root's path says it), a schedule's state and kind (and its slug when it has no name), a site's member count (its members page lists them), a contact's visibility and linked user, a lead's channel, a call's direction and state. A chip said only there stays: a site's active state and your roles on it, a site's read-only, a lead's status, a missed call.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.

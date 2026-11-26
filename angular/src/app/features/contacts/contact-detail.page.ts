@@ -64,11 +64,12 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
                 [actions]="headerActions()"
                 (actionClick)="onAction($event)">
                 <div header-meta class="detail-chips">
-                    <span class="chip" [class.chip--shared]="c.visibility === 'shared'">
+                    <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                    <span class="chip" [class.chip--shared]="c.visibility === 'shared'" data-said-elsewhere>
                         {{ c.visibility === 'shared' ? 'Shared' : 'Personal' }}
                     </span>
                     @if (c.userDisplayName) {
-                        <span class="chip chip--user">User: {{ c.userDisplayName }}</span>
+                        <span class="chip chip--user" data-said-elsewhere>User: {{ c.userDisplayName }}</span>
                     }
                 </div>
             </cms-page-header>

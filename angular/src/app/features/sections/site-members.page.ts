@@ -93,8 +93,9 @@ import {
                     [actions]="headerActions()"
                     (actionClick)="onAction($event)">
                     <div header-meta class="detail-chips">
-                        <span class="chip chip--slug">{{ s.slug }}</span>
-                        <span class="chip chip--count">
+                        <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                        <span class="chip chip--slug" [attr.data-said-elsewhere]="slugSaidElsewhere() ? '' : null">{{ s.slug }}</span>
+                        <span class="chip chip--count" data-said-elsewhere>
                             {{ members().length }} member{{ members().length === 1 ? '' : 's' }}
                         </span>
                         @if (!canAdminister()) {
@@ -536,6 +537,11 @@ export class SiteMembersPageComponent implements OnInit {
         () => this.members().filter(m => m.isEditor),
     );
 
+    /** The slug is said in the content root's path, which only an administrator is shown. */
+    readonly slugSaidElsewhere = computed(() => {
+        const s = this.site();
+        return !!s?.slug && this.canAdminister() && (s.contentRoot?.path ?? '').split('/').includes(s.slug);
+    });
     readonly canAdminister = computed(
         () => this.site()?.currentUserMembership?.isAdministrator === true,
     );

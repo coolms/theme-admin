@@ -63,13 +63,14 @@ import { RecurrenceFormComponent } from '../calendars/recurrence-form/recurrence
                     [actions]="headerActions()"
                     (actionClick)="onAction($event)">
                     <div header-meta class="detail-chips">
-                        <span class="chip mono">{{ s.slug }}</span>
+                        <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                        <span class="chip mono" [attr.data-said-elsewhere]="s.name ? null : ''">{{ s.slug }}</span>
                         @if (s.enabled) {
-                            <span class="chip chip--ok">enabled</span>
+                            <span class="chip chip--ok" data-said-elsewhere>enabled</span>
                         } @else {
-                            <span class="chip chip--off">disabled</span>
+                            <span class="chip chip--off" data-said-elsewhere>disabled</span>
                         }
-                        <span class="chip">{{ s.triggerKind }}</span>
+                        <span class="chip" data-said-elsewhere>{{ s.triggerKind }}</span>
                     </div>
                 </cms-page-header>
 
