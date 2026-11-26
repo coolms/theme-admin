@@ -52,6 +52,7 @@ import '../../../ui-angular/src/ui/page-toolbar.component.spec';
 import '../../../ui-angular/src/ui/pane-splitter/cms-pane-splitter.component.spec';
 import '../../../ui-angular/src/ui/pane-toolbar/cms-pane-toolbar.component.spec';
 import '../../../ui-angular/src/ui/section-head/cms-section-head.component.spec';
+import '../../../ui-angular/src/ui/section-head/section-fit.spec';
 import '../../../ui-angular/src/ui/range-picker/prefs-format.spec';
 import '../../../ui-angular/src/ui/settings-shell/cms-settings-shell.component.spec';
 import '../../../ui-angular/src/ui/state/error-banner.component.spec';
