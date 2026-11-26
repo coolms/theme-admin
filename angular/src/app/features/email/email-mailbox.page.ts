@@ -37,7 +37,7 @@ import {
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
-import { MailPreferencesService } from './mail-preferences.service';
+import { type MailPreferences, MailPreferencesService, preferencesUnread } from './mail-preferences.service';
 import { MailPanesDirective } from './mail-panes.directive';
 import { listFilterInForce, listFiltersOf } from '../tree-list-filters';
 import { MAIL_LIST_FILTER_VALUES, mailListFilterOf, mailRowsShown } from './mail-list-filter';
@@ -310,10 +310,17 @@ type PhonePane = 'folders' | 'message';
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
                         </button>
                         <app-mailbox-sync [mailbox]="selectedMailbox()" [served]="listActions()" (finished)="onSyncFinished($event)" />
-                        <!-- The list's second row: the folder's name, and the list's filter at its end. With the folders bar
-                             over the list there is none: the bar names the folder and the filter is beside the search. -->
-                        @if (!foldersBar()) {
+                        <!-- The list's second row: the box for every loaded row, the folder's name, and the list's filter at
+                             its end. With one pane at a time there is none: the bar names the folder and the filter is
+                             beside the search. -->
+                        @if (!onePane()) {
                             <div class="mbx__name-row" data-test="list-name-row">
+                                @if (!searchActive() && checkableIds().length > 0) {
+                                    <input type="checkbox" class="mbx__row-check mbx__all-check" data-test="list-select-all"
+                                           aria-label="Select all loaded messages"
+                                           [checked]="allLoadedChecked()" [indeterminate]="someLoadedChecked()"
+                                           (change)="toggleAllLoaded()" />
+                                }
                                 <h2 class="mbx__list-name" data-test="list-name" [attr.title]="selectedFolderName() || null">{{ selectedFolderName() }}</h2>
                                 @if (!searchActive()) {
                                     <cms-filter-menu data-test="mail-filter" label="Show" [defaultValue]="listFilters().initial"
@@ -334,7 +341,7 @@ type PhonePane = 'folders' | 'message';
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             }
-                            @if (foldersBar() && !searchActive()) {
+                            @if (onePane() && !searchActive()) {
                                 <cms-filter-menu data-test="mail-filter" label="Show" [defaultValue]="listFilters().initial" [iconOnly]="true"
                                                  [options]="listFilters().options" [value]="listFilter() ?? listFilters().initial ?? ''"
                                                  (valueChange)="chooseListFilter($event)" />
@@ -1359,6 +1366,8 @@ type PhonePane = 'folders' | 'message';
             background: var(--cms-surface);
         }
         .mbx__name-row + .mbx__search { padding-top: 0; }
+        /* The box for every loaded row, in the rows' checkbox column, centred in the row. */
+        .mbx__name-row > .mbx__all-check { margin: 0; }
         .mbx__search-icon { color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__search-input {
             flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--cms-border);
@@ -1784,11 +1793,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
 
     /**
-     * localStorage key for the last-selected mailbox, so a reload restores it instead
-     * of snapping to the first mailbox. Per-browser UI state -- sits beside the list-pane
-     * width (`coolms.email.listWidth`, cached by `MailPanesDirective`) in the same store.
+     * The browser's key the last mailbox was kept under before the person's mail settings held it: read once, where
+     * the settings hold none, to move it there, and removed.
      */
-    private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
+    static readonly BROWSER_LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
 
 
     readonly mailboxes = signal<EmailMailboxDto[]>([]);
@@ -1887,8 +1895,6 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly onePane = computed(() => this.phone() || this.gridPanes()?.count() === 1);
     /** The list and the message side by side; the folders stand in the list's place when asked for. */
     readonly twoPanes = computed(() => !this.onePane() && this.gridPanes()?.count() === 2);
-    /** The folders bar stands over the list: it names the open folder, in place of the list's own name row. */
-    readonly foldersBar = computed(() => this.onePane() || this.twoPanes());
     /** The pane the address names now, and whether this page added that entry to the history (so Back can return). */
     private paneInAddress: PhonePane | null = null;
     private addedPaneEntry = false;
@@ -1997,6 +2003,19 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly selectedIds = signal<Set<string>>(new Set<string>());
     readonly selectedCount = computed(() => this.selectedIds().size);
+    /** The loaded rows the list shows that can be checked: the stored ones. */
+    readonly checkableIds = computed(() => storedIds(this.shownMessages()));
+    /** Every one of them checked, and there is at least one. */
+    readonly allLoadedChecked = computed(() => {
+        const ids = this.checkableIds();
+        const checked = this.selectedIds();
+        return ids.length > 0 && ids.every(id => checked.has(id));
+    });
+    /** Some of them checked, not all. */
+    readonly someLoadedChecked = computed(() => {
+        const checked = this.selectedIds();
+        return !this.allLoadedChecked() && this.checkableIds().some(id => checked.has(id));
+    });
     /** Two or more rows checked in the folder view: the reading pane says how many in place of a message. */
     readonly manyChecked = computed(() => !this.searchActive() && this.selectedCount() >= 2);
     /** The status line under the list: the count while rows are checked, "Selection cleared" once they no longer are. */
@@ -2242,11 +2261,14 @@ export class EmailMailboxPageComponent implements OnInit {
     readonly listFilter = computed(() => listFilterInForce(this.listFilters(), this.chosenListFilter()));
     /** The rows it keeps. */
     readonly rowFilter = computed(() => mailListFilterOf(this.listFilter()));
-    /** The filter's name in the folders bar while the list is filtered; nothing on the default, or over search results. */
+    /**
+     * The filter's name in the folders bar while the list is filtered and one pane shows at a time; nothing on the
+     * default, over search results, or where the list's second row says it.
+     */
     readonly titleFilter = computed(() => {
         const current = this.listFilter();
         const { options, initial } = this.listFilters();
-        if (current === null || current === initial || this.searchActive()) return '';
+        if (current === null || current === initial || this.searchActive() || !this.onePane()) return '';
         return options.find(o => o.id === current)?.label ?? '';
     });
     /** The rows the list draws: the folder's read rows the filter keeps. */
@@ -2817,7 +2839,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.loadingMailboxes.set(false);
                 this.loadMailboxUnread(list);
 
-                const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
+                const saved = this.lastMailboxOnOpening(prefs, list);
                 const prefer = this.pendingSelectId;
                 this.pendingSelectId = null;
                 // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
@@ -3003,17 +3025,47 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * The user picked a mailbox from the switcher -- select it AND remember the
-     * choice in localStorage (`coolms.email.lastMailboxId`) so a reload restores it
-     * instead of defaulting to the first mailbox. Distinct from {@link selectMailbox}
-     * so the initial restore-on-load doesn't re-persist what it just read.
+     * The person picked a mailbox: it is selected and saved as their last mailbox in their mail settings, so the next
+     * opening, in any of their clients, starts there. Distinct from {@link selectMailbox} so the opening does not save
+     * again what it just read.
      */
     pickMailbox(id: string): void {
         if (id === this.selectedMailboxId()) {
             return;
         }
         this.selectMailbox(id);
-        localStorage.setItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY, id);
+        this.mailPrefs.rememberLastMailbox(id);
+    }
+
+    /**
+     * The last mailbox to open on: the one the mail settings hold. Where they hold none, the browser's old key, once:
+     * a mailbox of the list is saved to the settings, and the key is removed either way. Settings that could not be
+     * read leave the key in place and use it. A mailbox that is gone or no longer readable is left to the opening's
+     * own order.
+     */
+    private lastMailboxOnOpening(prefs: MailPreferences, list: readonly EmailMailboxDto[]): string | null {
+        const key = EmailMailboxPageComponent.BROWSER_LAST_MAILBOX_KEY;
+        let browser: string | null = null;
+        try {
+            browser = localStorage.getItem(key);
+        } catch {
+            return prefs.lastMailboxId ?? null;
+        }
+        if (preferencesUnread(prefs)) {
+            return browser;
+        }
+        if (browser !== null) {
+            try {
+                localStorage.removeItem(key);
+            } catch { /* nothing kept to move */ }
+        }
+        if (prefs.lastMailboxId !== undefined) {
+            return prefs.lastMailboxId;
+        }
+        if (browser !== null && list.some(m => m.id === browser)) {
+            this.mailPrefs.rememberLastMailbox(browser);
+        }
+        return browser;
     }
 
     /**
@@ -4231,7 +4283,16 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Select every currently-loaded message the list shows. */
     selectAllLoaded(): void {
-        this.selectedIds.set(new Set(storedIds(this.shownMessages())));
+        this.selectedIds.set(new Set(this.checkableIds()));
+    }
+
+    /** The second row's box: every loaded row checked clears them; otherwise it checks every one. */
+    toggleAllLoaded(): void {
+        if (this.allLoadedChecked()) {
+            this.clearSelection();
+        } else {
+            this.selectAllLoaded();
+        }
     }
 
     /** Drop the whole selection (and the range anchor). */

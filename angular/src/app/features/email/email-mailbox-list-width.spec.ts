@@ -297,7 +297,99 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
     });
 
-    for (const width of [400, 760]) {
+    const allBox = (): HTMLInputElement | null => el().querySelector<HTMLInputElement>('[data-test="list-select-all"]');
+    const rowBoxes = (): HTMLInputElement[] => Array.from(el().querySelectorAll<HTMLInputElement>('.mbx__row input[data-part="check"]'));
+    const boxState = (): [boolean, boolean] => [allBox()!.checked, allBox()!.indeterminate];
+
+    it('the second row reads: the box, the folder\'s name, the filter; then the search', async () => {
+        await render(1440);
+        const row = part('[data-test="list-name-row"]');
+        const all = allBox()!;
+        expect(all.parentElement).toBe(row);
+        expect(row.firstElementChild).withContext('the box first').toBe(all);
+        expect(all.type).toBe('checkbox');
+        expect(all.getAttribute('aria-label')).toBe('Select all loaded messages');
+        expect(box(all).right).toBeLessThanOrEqual(box(part('[data-test="list-name"]')).left);
+        expect(box(part('[data-test="list-name"]')).right).toBeLessThanOrEqual(box(filterButton()!).left);
+        expect(Math.abs(box(all).left - box(rowBoxes()[0]).left)).withContext('in the rows\' checkbox column').toBeLessThanOrEqual(1);
+        expect(Math.abs((box(all).top + box(all).bottom) / 2 - (box(row).top + box(row).bottom) / 2)).toBeLessThanOrEqual(1);
+        expect(box(part('.mbx__search')).top).toBeGreaterThanOrEqual(box(row).bottom - 1);
+    });
+
+    it('the box checks every loaded row, and a second press clears them', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        expect(boxState()).withContext('none checked').toEqual([false, false]);
+        allBox()!.click();
+        await settle();
+        expect([...page.selectedIds()].sort()).toEqual(['m-1', 'm-3']);
+        expect(rowBoxes().map(b => b.checked)).toEqual([true, true]);
+        expect(boxState()).toEqual([true, false]);
+        expect(el().querySelector('app-mail-bulk-bar')).withContext('the bulk bar agrees').not.toBeNull();
+
+        allBox()!.click();
+        await settle();
+        expect(page.selectedCount()).toBe(0);
+        expect(rowBoxes().map(b => b.checked)).toEqual([false, false]);
+        expect(boxState()).toEqual([false, false]);
+        expect(el().querySelector('app-mail-bulk-bar')).toBeNull();
+    });
+
+    it('with some rows checked the box is indeterminate; a press checks them all; the bulk bar\'s clear unchecks it', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        rowBoxes()[0].click();
+        await settle();
+        expect(page.selectedCount()).toBe(1);
+        expect(boxState()).withContext('some').toEqual([false, true]);
+
+        allBox()!.click();
+        await settle();
+        expect(page.selectedCount()).toBe(2);
+        expect(boxState()).toEqual([true, false]);
+
+        rowBoxes()[1].click();
+        await settle();
+        expect(boxState()).withContext('one unchecked again').toEqual([false, true]);
+        part('[data-test="bulk-select-all"]').click();
+        await settle();
+        expect(boxState()).withContext('the bulk bar\'s select-all').toEqual([true, false]);
+        part('[data-test="bulk-clear"]').click();
+        await settle();
+        expect(boxState()).withContext('cleared').toEqual([false, false]);
+    });
+
+    it('with no row the box can check there is no box, and none over search results; the name stays', async () => {
+        await render(1440);
+        await openFilter().choose('unread');
+        expect(rows().length).withContext('the server row only').toBe(1);
+        expect(allBox()).toBeNull();
+        await openFilter().choose('all');
+        expect(allBox()).not.toBeNull();
+        fixture.componentInstance.searchActive.set(true);
+        await settle();
+        expect(allBox()).toBeNull();
+        expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
+    });
+
+    it('with two panes the second row stays under the folders bar: the box, the name and the filter, which says its choice', async () => {
+        await render(760);
+        expect(fixture.componentInstance.twoPanes()).withContext('two panes').toBeTrue();
+        const row = part('[data-test="list-name-row"]');
+        expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
+        expect(row.contains(part('[data-test="list-select-all"]'))).toBeTrue();
+        expect(el().querySelectorAll('[data-test="mail-filter"]').length).withContext('one filter').toBe(1);
+        expect(row.contains(filterButton()!)).withContext('in the row, not beside the search').toBeTrue();
+        expect(box(row).top).toBeGreaterThanOrEqual(box(part('[data-test="phone-folders"]')).bottom - 1);
+        expect(box(part('.mbx__search')).top).toBeGreaterThanOrEqual(box(row).bottom - 1);
+
+        await openFilter().choose('unread');
+        expect(filterButton()!.textContent!.trim()).toBe('Unread');
+        expect(filterButton()!.classList).toContain('cms-filter-menu--active');
+        expect(part('[data-test="phone-title"]').textContent!.trim()).withContext('the row says the choice, not the bar').toBe('Inbox');
+    });
+
+    for (const width of [400]) {
         it(`at ${width}px the folders bar names the folder: no second row, the filter an icon beside the search`, async () => {
             await render(width);
             expect(el().querySelector('[data-test="list-name-row"]')).toBeNull();
