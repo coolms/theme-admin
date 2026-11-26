@@ -65,7 +65,8 @@ const CHANNEL_LABELS: Record<LeadChannel, string> = {
                 [actions]="headerActions()"
                 (actionClick)="onAction($event)">
                 <div header-meta class="detail-chips">
-                    <span class="chip chip--channel">{{ channelLabel(l.channel) }}</span>
+                    <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                    <span class="chip chip--channel" data-said-elsewhere>{{ channelLabel(l.channel) }}</span>
                     <span class="chip"
                           [class.chip--ok]="l.status === 'handled'"
                           [class.chip--off]="l.status === 'spam'"

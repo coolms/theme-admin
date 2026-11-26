@@ -84,14 +84,15 @@ Status / role chips project into the header-meta
                     [actions]="headerActions()"
                     (actionClick)="onAction($event)">
                     <div header-meta class="detail-chips">
-                        <span class="chip chip--slug">{{ s.slug }}</span>
+                        <!-- A chip marked data-said-elsewhere is said in the page too: it gives way before the title is cut. -->
+                        <span class="chip chip--slug" [attr.data-said-elsewhere]="slugSaidElsewhere() ? '' : null">{{ s.slug }}</span>
                         @if (s.isActive) {
                             <span class="chip chip--active">active</span>
                         } @else {
                             <span class="chip chip--inactive">inactive</span>
                         }
                         @if (s.host) {
-                            <span class="chip chip--host" title="Host matcher">
+                            <span class="chip chip--host" title="Host matcher" data-said-elsewhere>
                                 <i class="bi bi-globe"></i> {{ s.host }}
                             </span>
                         }
@@ -470,6 +471,13 @@ export class SiteDetailPageComponent implements OnInit {
     readonly membersPreview = computed(() => this.members().slice(0, this.previewLimit));
 
     /** Roles from the embedded membership (for header role chips). */
+    /** The slug is said in the title (no label) or in the content root's path. */
+    readonly slugSaidElsewhere = computed(() => {
+        const s = this.site();
+        if (!s?.slug) return false;
+        return !s.label || (s.contentRoot?.path ?? '').split('/').includes(s.slug);
+    });
+
     readonly membershipRoles = computed(() => {
         const m = this.site()?.currentUserMembership;
         return m ? [...m.roles] : [];

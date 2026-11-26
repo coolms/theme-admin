@@ -73,7 +73,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                         <div class="mqp__line" [class.mqp__line--mine]="isMine(m)">
                             <div class="mqp__bubble" [class.mqp__bubble--mine]="isMine(m)">
                                 @if (isHtml(m)) {
-                                    <span [innerHTML]="linkedHtml(m.body)"></span>
+                                    <span class="cms-message-body" [innerHTML]="linkedHtml(m.body)"></span>
                                 } @else {
                                     @for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}
                                 }
@@ -85,7 +85,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                 </div>
 
                 <div class="mqp__composer">
-                    <textarea class="mqp__input" rows="1" placeholder="Reply…"
+                    <textarea class="mqp__input cms-message-input" rows="1" placeholder="Reply…"
                               [value]="composerText()"
                               (input)="composerText.set(asValue($event))"
                               (keydown)="onComposerKeydown($event)"></textarea>
@@ -182,7 +182,6 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__line--mine { justify-content: flex-end; }
         .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
-        .mqp__bubble :is(p) { margin: 0; }
         .mqp__bubble ::ng-deep a { color: inherit; text-decoration: underline; }
         /* Per-bubble timestamp + per-day separator chip — same model as
          * the full Messages thread, scaled to the drawer. */
@@ -191,7 +190,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__daysep { align-self: center; margin: .3rem 0 .1rem; padding: .12rem .55rem; font-size: .64rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
         .mqp__hint--older { text-align: center; padding: .3rem; }
         .mqp__composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding-top: .5rem; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
+        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
         .mqp__send { flex: 0 0 auto; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius-md, 8px); width: 38px; height: 38px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .mqp__send:disabled { opacity: .5; cursor: default; }
     `],
