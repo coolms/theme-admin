@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **Enter sends a chat message again in a conversation opened after the page was drawn**: the key was bound only to a composer present when the page first drew, which there never is.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **Message inputs draw no focus ring**: Chat's composer, a thread's reply, the quick panel's field and Mail's quick reply have the edge `--cms-border-input` at rest and `--cms-border-input-focus` while their text has the focus, at one width (`cms-message-input` in styles.scss). The buttons beside them and every other field keep their rings.

@@ -1,5 +1,4 @@
 import {
-    AfterViewInit,
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
@@ -9,6 +8,7 @@ import {
     OnInit,
     ViewEncapsulation,
     computed,
+    effect,
     inject,
     signal,
     viewChild,
@@ -1077,7 +1077,7 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__att-size { flex: 0 0 auto; opacity: .7; font-size: .72rem; }
     `],
 })
-export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
+export class MessagesPageComponent implements OnInit, OnDestroy {
     private readonly api       = inject(MessagesService);
     private readonly live      = inject(MessagesLiveEventsService);
     private readonly presenceLive = inject(ChatPresenceLiveService);
@@ -1365,9 +1365,6 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         '👍', '👎', '👏', '🙌', '🙏', '💪', '👀', '🤝', '✌️', '🤞',
         '❤️', '🔥', '⭐', '✅', '❌', '⚠️', '🎉', '🚀', '💡', '📌',
     ];
-
-    /** Bound capture-phase Enter handler; detached on destroy. */
-    private enterHandler?: (ev: KeyboardEvent) => void;
 
     /**
      * Slow RECONCILE poll -- realtime is the primary update path; this is
@@ -1837,83 +1834,87 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
 
-    ngAfterViewInit(): void {
-        // Enter-to-send: intercept a bare Enter in the composer during the
-        // CAPTURE phase, before ProseMirror's own keymap (bound on the inner
-        // contenteditable) can split the paragraph. Shift+Enter and IME
-        // composition fall through to the editor -> soft newline / candidate
-        // commit. Bound once on the stable composer wrapper; the editor
-        // re-mounts inside it without needing re-binding.
-        this.enterHandler = (ev: KeyboardEvent) => {
-            // The #-channel popover takes the same priority as the @ one -- only
-            // one of the two can be open, since their triggers are different
-            // characters at the caret.
-            const chans = this.channelCandidates();
-            if (this.channelMenuOpen() && chans.length && !ev.isComposing) {
-                if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    const n = chans.length;
-                    const dir = ev.key === 'ArrowDown' ? 1 : -1;
-                    this.channelActiveIndex.update(i => (i + dir + n) % n);
-                    return;
-                }
-                if (ev.key === 'Enter' || ev.key === 'Tab') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.pickChannelRef(chans[this.channelActiveIndex()]);
-                    return;
-                }
-                if (ev.key === 'Escape') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.closeChannelMenu();
-                    return;
-                }
-            }
-            // The @-mention popover takes priority: arrow-navigate, Enter/Tab to
-            // pick, Escape to dismiss -- none of these reach the editor or send.
-            const candidates = this.mentionCandidates();
-            if (this.mentionMenuOpen() && candidates.length && !ev.isComposing) {
-                if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    const n = candidates.length;
-                    const dir = ev.key === 'ArrowDown' ? 1 : -1;
-                    this.mentionActiveIndex.update(i => (i + dir + n) % n);
-                    return;
-                }
-                if (ev.key === 'Enter' || ev.key === 'Tab') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.pickMention(candidates[this.mentionActiveIndex()]);
-                    return;
-                }
-                if (ev.key === 'Escape') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.closeMentionMenu();
-                    return;
-                }
-            }
-            if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) {
+    /**
+     * Enter-to-send: a bare Enter in the composer, caught in the CAPTURE phase before the editor's own keymap (bound on
+     * the inner contenteditable) can split the paragraph. Shift+Enter and IME composition fall through to the editor.
+     */
+    private readonly enterHandler = (ev: KeyboardEvent): void => {
+        // The #-channel popover takes the same priority as the @ one -- only
+        // one of the two can be open, since their triggers are different
+        // characters at the caret.
+        const chans = this.channelCandidates();
+        if (this.channelMenuOpen() && chans.length && !ev.isComposing) {
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const n = chans.length;
+                const dir = ev.key === 'ArrowDown' ? 1 : -1;
+                this.channelActiveIndex.update(i => (i + dir + n) % n);
                 return;
             }
-            ev.preventDefault();
-            ev.stopPropagation();
-            this.doSend();
-        };
-        this.composerEl()?.nativeElement.addEventListener('keydown', this.enterHandler, true);
-    }
+            if (ev.key === 'Enter' || ev.key === 'Tab') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.pickChannelRef(chans[this.channelActiveIndex()]);
+                return;
+            }
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.closeChannelMenu();
+                return;
+            }
+        }
+        // The @-mention popover takes priority: arrow-navigate, Enter/Tab to
+        // pick, Escape to dismiss -- none of these reach the editor or send.
+        const candidates = this.mentionCandidates();
+        if (this.mentionMenuOpen() && candidates.length && !ev.isComposing) {
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const n = candidates.length;
+                const dir = ev.key === 'ArrowDown' ? 1 : -1;
+                this.mentionActiveIndex.update(i => (i + dir + n) % n);
+                return;
+            }
+            if (ev.key === 'Enter' || ev.key === 'Tab') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.pickMention(candidates[this.mentionActiveIndex()]);
+                return;
+            }
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.closeMentionMenu();
+                return;
+            }
+        }
+        if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) {
+            return;
+        }
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.doSend();
+    };
+
+    /**
+     * The handler on the composer's wrapper while it is drawn: the wrapper is there only while a conversation is open
+     * and the person may write in it, so it is bound each time it appears and unbound as it goes. The editor re-mounts
+     * inside it without a new binding.
+     */
+    private readonly enterToSend = effect(onCleanup => {
+        const el = this.composerEl()?.nativeElement;
+        if (el === undefined) return;
+        el.addEventListener('keydown', this.enterHandler, true);
+        onCleanup(() => el.removeEventListener('keydown', this.enterHandler, true));
+    });
 
     ngOnDestroy(): void {
         this.stopPolling();
         this.clearTyping();
         this.teardownIdleTracking();
         this.closeMentionMenu(); // tears down the mention search timer + subscription
-        if (this.enterHandler) {
-            this.composerEl()?.nativeElement.removeEventListener('keydown', this.enterHandler, true);
-        }
     }
 
     /**

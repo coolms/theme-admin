@@ -32,6 +32,9 @@ const ROWS: ChatConversationDto[] = [
 const node = (path: string, sortOrder: number, meta: Record<string, unknown>): NaviGraphNode => ({
     id: 'n' + path, path, title: String(meta['label'] ?? ''), parentId: null, sortOrder, isActive: true, isVisible: true, children: [], meta,
 }) as unknown as NaviGraphNode;
+/** What the page posted, as postMessage's arguments. */
+const posted: unknown[][] = [];
+
 /** navi.toolbar.chat.list as the server serves it. */
 const TREE: NaviGraphNode[] = [
     node('/title', 10, { label: 'Chat', action: 'title' }),
@@ -66,6 +69,7 @@ describe('MessagesPageComponent -- the composer\'s focus', () => {
                         listConversations: () => of(ROWS),
                         listChannels: () => of([]),
                         fetchOnline: () => of({}),
+                        postMessage: (...args: unknown[]) => { posted.push(args); return NEVER; },
                     } as Record<string, unknown>, { get: (known, name) => known[String(name)] ?? (() => NEVER) }),
                 },
                 { provide: MessagesLiveEventsService, useValue: { watchRoom: () => NEVER, watchUser: () => NEVER, isConnected: signal(false) } },
@@ -138,6 +142,22 @@ describe('MessagesPageComponent -- the composer\'s focus', () => {
             fixture.detectChanges();
         }
     }
+
+    it('Enter sends what is written in a conversation opened after the page was drawn; Shift+Enter does not', async () => {
+        posted.length = 0;
+        await show();
+        const text = el().querySelector<HTMLElement>('.msg__composer-shell [contenteditable="true"]')!;
+        text.focus();
+        const press = (shiftKey: boolean): void => {
+            fixture.componentInstance.composerHtml.set('<p>Hello</p>');
+            text.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey, bubbles: true, cancelable: true }));
+        };
+        press(true);
+        expect(posted.length).withContext('Shift+Enter').toBe(0);
+        press(false);
+        expect(posted.length).withContext('Enter').toBe(1);
+        expect(posted[0].slice(0, 2)).toEqual(['d1', '<p>Hello</p>']);
+    });
 
     it('typing in the composer draws a stronger edge and no ring; a button in it, and the search field, draw theirs', async () => {
         await show();
