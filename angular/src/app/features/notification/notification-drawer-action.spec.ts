@@ -55,6 +55,16 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
             expect(notificationActionTarget(reconnect({ mailboxId: MAILBOX_ID }))?.queryParams).toEqual({ settings: 'general' });
         });
 
+        it('email.system_mail.settings opens the System mail settings page, naming the mailbox and the section\'s pane', () => {
+            const action = (params: Record<string, string>): NotificationAction => ({ ...reconnect(), destination: { name: 'email.system_mail.settings', params } });
+            expect(notificationActionTarget(action({ mailboxId: MAILBOX_ID, section: 'reconnect' }))).toEqual({
+                label: 'Reconnect', presentation: 'button', commands: ['/email', 'settings', 'email.system_mail'],
+                queryParams: { mailbox: MAILBOX_ID, settings: 'connection' },
+            });
+            expect(notificationActionTarget(action({ mailboxId: MAILBOX_ID }))?.queryParams).toEqual({ mailbox: MAILBOX_ID, settings: 'general' });
+            expect(notificationActionTarget(action({ section: 'reconnect' }))).withContext('no mailbox').toBeNull();
+        });
+
         it('a label code the admin has no words for shows the server\'s labelText', () => {
             const action = { ...reconnect(), label: 'check-storage', labelText: 'Check storage' };
             expect(notificationActionTarget(action)?.label).toBe('Check storage');

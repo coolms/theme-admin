@@ -17,9 +17,9 @@ export type MessageSourceState =
 /** The original's sentences. */
 export const MESSAGE_SOURCE_WORDS = {
     truncated: 'Showing the first 1 MB; download for the full source',
-    gone: 'The original of this message is gone: it is no longer stored here, nor on the mail server.',
+    gone: 'The original of this message is gone: it is no longer stored here, nor in your mailbox.',
     missing: 'This message is not there any more.',
-    unavailable: 'The mail server could not be read for the original just now.',
+    unavailable: 'Your mailbox could not be read for the original just now.',
     failed: 'Could not open the message.',
     copied: 'Copied.',
     copyLoading: 'The source is still loading; copy it once it shows.',

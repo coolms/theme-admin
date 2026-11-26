@@ -147,6 +147,10 @@ export class MailServerSearch {
     private request: Subscription | null = null;
     private countdown: Subscription | null = null;
     private lastCursor: string | null = null;
+    /** The cursors the section's end asked for, of the pages listed now: each is asked for once by itself. */
+    private readonly readOnAsked = new Set<string>();
+    /** A stale cursor has started the search again from its first page, and no later page has answered since. */
+    private startedAgain = false;
 
     constructor(
         private readonly fetch: ServerSearchFetch,
@@ -156,6 +160,7 @@ export class MailServerSearch {
 
     /** Search for `q` from its first page. An empty query stops. */
     run(q: string): void {
+        this.startedAgain = false;
         this.start(q.trim(), null, false);
     }
 
@@ -168,8 +173,19 @@ export class MailServerSearch {
         this.start(this.query(), cursor, false);
     }
 
+    /** The section's end is in view: the next page, unless the end already asked for it. */
+    readOn(): void {
+        const cursor = this.next();
+        if (cursor === null || this.readOnAsked.has(cursor)) {
+            return;
+        }
+        this.readOnAsked.add(cursor);
+        this.more();
+    }
+
     /** The page last asked for, asked again. */
     retry(): void {
+        this.startedAgain = false;
         this.start(this.query(), this.lastCursor, false);
     }
 
@@ -223,7 +239,9 @@ export class MailServerSearch {
         if (cursor === null) {
             this.view.set({ kind: 'searching' });
         } else {
+            // What an earlier asking of this page showed makes way for the loading row.
             this.loadingMore.set(true);
+            this.view.set({ kind: 'answered' });
         }
         this.request = this.fetch(q, cursor).subscribe({
             next: answer => this.answered(answer, cursor),
@@ -241,6 +259,9 @@ export class MailServerSearch {
                 this.settled.next();
             }
             return;
+        }
+        if (cursor !== null) {
+            this.startedAgain = false;
         }
         // A later page never repeats a hit already listed (a page can overlap the last when the server moved on).
         const listed = new Set(cursor === null ? [] : this.hits().map(h => h.ref));
@@ -260,7 +281,9 @@ export class MailServerSearch {
         const refusal = serverSearchRefusal(error);
         switch (refusal.reason) {
             case 'stale-cursor':
-                if (cursor !== null) {
+                // From the first page again, once; a later page refused so again waits for a press.
+                if (cursor !== null && !this.startedAgain) {
+                    this.startedAgain = true;
                     this.start(this.query(), null, false);
                     return;
                 }
@@ -321,6 +344,7 @@ export class MailServerSearch {
         this.capped.set(false);
         this.matches.set(null);
         this.lastCursor = null;
+        this.readOnAsked.clear();
     }
 }
 
@@ -331,6 +355,8 @@ export interface OtherMailboxSection {
     search: MailServerSearch;
     /** Opens a hit of this mailbox the platform does not hold; null while that is not offered. */
     open: (hit: ServerSearchHitDto) => Observable<ServerMessageOpenedDto> | null;
+    /** A folder of this mailbox as the person sees it named. */
+    folderName: (path: string) => string;
 }
 
 /**
@@ -386,8 +412,8 @@ export function matchesText(code: string | null): string | null {
         case 'gmail-raw':
             return 'Gmail\'s own search, over the whole mailbox.';
         case 'imap-text':
-            return 'The mail server\'s search of headers and message text.';
+            return 'The mailbox\'s own search, of headers and message text.';
         default:
-            return `The mail server's search (${code}).`;
+            return `The mailbox's own search (${code}).`;
     }
 }

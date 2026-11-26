@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngxs/store';
 import { catchError, filter, forkJoin, of } from 'rxjs';
-import { AuthState, ErrorHandlerService } from '@coolms/core-angular';
+import { AuthState, ErrorHandlerService, isElevationRefusal } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
 import { EmailLiveEventsService } from './email-live-events.service';
@@ -32,7 +32,8 @@ interface Notice {
  *
  * Who may change the mailbox's settings (the list's `canManage`) adds an address, sends its link again, and withdraws
  * one; anyone else reads the list. Confirming, declining and withdrawing, from any tab or from the mailed link, arrive
- * as `mail.aliases.changed` on the person's mail channel, and the list is read again.
+ * as `mail.aliases.changed` on the person's mail channel, and the list is read again. Who may not read the list is
+ * shown nothing: the host is told, and does not offer the pane.
  */
 @Component({
     selector: 'app-mailbox-aliases-section',
@@ -40,12 +41,16 @@ interface Notice {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [DatePipe, FormsModule],
     template: `
-        <p class="cms-field-hint">
-            A message sent from this mailbox can come from any address below. An address you add is used only once its
-            owner answers the mail sent to it.
-        </p>
+        @if (!unoffered()) {
+            <p class="cms-field-hint">
+                A message sent from this mailbox can come from any address below. An address you add is used only once its
+                owner answers the mail sent to it.
+            </p>
+        }
 
-        @if (loading()) {
+        @if (unoffered()) {
+            <!-- Not the caller's to read. -->
+        } @else if (loading()) {
             <p class="sfa__empty">Loading addresses…</p>
         } @else if (loadError(); as message) {
             <p class="sfa__error" role="alert">{{ message }}</p>
@@ -181,6 +186,8 @@ export class MailboxAliasesSectionComponent {
     readonly mailboxId = input.required<string>();
     /** The mailbox's own address, always first. */
     readonly ownAddress = input<string | null>(null);
+    /** The list was refused to the caller. */
+    readonly refused = output<void>();
 
     private readonly email = inject(EmailService);
     private readonly errors = inject(ErrorHandlerService);
@@ -197,6 +204,8 @@ export class MailboxAliasesSectionComponent {
     readonly sendAs = signal<MailboxSendAsDto | null>(null);
     readonly loading = signal(true);
     readonly loadError = signal<string | null>(null);
+    /** The list was refused to the caller, who may not read the mailbox. */
+    readonly unoffered = signal(false);
     readonly busy = signal(false);
     readonly address = signal('');
     readonly notice = signal<Notice | null>(null);
@@ -242,6 +251,7 @@ export class MailboxAliasesSectionComponent {
         }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ list, sendAs }) => {
                 this.loadError.set(null);
+                this.unoffered.set(false);
                 this.sendAsRefused.set(sendAs === 'refused');
                 this.canManage.set(list.canManage);
                 this.aliases.set(list.aliases);
@@ -250,6 +260,11 @@ export class MailboxAliasesSectionComponent {
             },
             error: (err: unknown) => {
                 this.loading.set(false);
+                if (err instanceof HttpErrorResponse && err.status === 403 && !isElevationRefusal(err)) {
+                    this.unoffered.set(true);
+                    this.refused.emit();
+                    return;
+                }
                 this.loadError.set(this.errors.humanize(err));
             },
         });
