@@ -1,19 +1,13 @@
-import type { FilterChipOption } from '@coolms/ui-angular';
-
 import type { EmailMessageDto } from './email.types';
 
 /** Which of a folder's read rows the list shows: all of them, the unread, or those with attachments. */
 export type MailListFilter = 'all' | 'unread' | 'attachments';
 
-/** The list's filter chips, in their order; All is the default. */
-export const MAIL_LIST_FILTERS: readonly FilterChipOption[] = [
-    { id: 'all', label: 'All' },
-    { id: 'unread', label: 'Unread' },
-    { id: 'attachments', label: 'Attachments' },
-];
+/** The values the list can apply. */
+export const MAIL_LIST_FILTER_VALUES: readonly MailListFilter[] = ['all', 'unread', 'attachments'];
 
-/** The filter a chip names; anything else reads as All. */
-export function mailListFilterOf(id: string): MailListFilter {
+/** The rows a choice's value keeps; every row without one. */
+export function mailListFilterOf(id: string | null): MailListFilter {
     return id === 'unread' || id === 'attachments' ? id : 'all';
 }
 
