@@ -61,6 +61,7 @@ describe('CalendarQuickPanelComponent', () => {
                         tz:           () => PROFILE_TZ,
                         dateFormat:   () => 'yyyy-MM-dd',
                         timeFormat:   () => '24h',
+                        language:     () => 'en',
                         weekStart:    () => 'monday',
                     },
                 },
