@@ -78,8 +78,8 @@ const BROWSE_CHANNELS = 'browse-channels';
  *
  * `ViewEncapsulation.None` (mirrors RichTextFieldComponent + the editor itself):
  * required so the `.msg__composer` height overrides reach the editor's
- * imperatively-mounted `.cms-editor__mount`, and so `.msg__body p { ... }` reaches
- * the `[innerHTML]`-injected paragraphs (neither carries `_ngcontent`). Every
+ * imperatively-mounted `.cms-editor__mount`, and so the page's rules reach the
+ * `[innerHTML]`-injected nodes (neither carries `_ngcontent`). Every
  * rule is anchored to the `.msg`/`app-messages-page` prefix to stay scoped.
  */
 @Component({
@@ -648,7 +648,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                     }
                     @if (m.body) {
                         @if (isHtml(m)) {
-                            <span class="msg__body msg__body--html" [innerHTML]="renderMentions(m)"
+                            <span class="msg__body msg__body--html cms-message-body" [innerHTML]="renderMentions(m)"
                                   (click)="onBodyClick($event)"></span>
                         } @else {
                             <span class="msg__body" data-test="plain-body">@for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}</span>
@@ -970,13 +970,7 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__bubble--me.msg__bubble--mentionsme { box-shadow: inset 3px 0 0 rgba(255, 255, 255, .65); }
         .msg__body { white-space: pre-wrap; }
         .msg__body--html { white-space: normal; }
-        /* The comment-profile editor emits block <p> + inline marks; neutralize
-         * default paragraph margins so a single-line message reads tight inside
-         * the bubble while multi-paragraph messages still gain spacing. These
-         * target [innerHTML]-injected nodes — reachable only because the host
-         * uses ViewEncapsulation.None. */
-        .msg__body p { margin: 0; }
-        .msg__body p + p { margin-top: .4rem; }
+        /* The body's paragraphs: .cms-message-body in styles.scss. */
         .msg__body a { color: inherit; text-decoration: underline; }
         .msg__bubble--me .msg__body a { color: var(--cms-text-inverse); }
         .msg__sys { align-self: center; display: inline-flex; align-items: center; gap: .5rem; color: var(--cms-text-secondary, #525a66); font-size: .78rem; font-style: italic; }
