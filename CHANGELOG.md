@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **Only a message moves a conversation in Chat's list and quick panel**: its place is its last message's, or when it was started while it has none, never when it last changed.
 - **The Calendar's title, its mini calendar's month and the quick panel's days are written in the interface language**, not the browser's.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
