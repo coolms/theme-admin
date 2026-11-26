@@ -89,7 +89,7 @@ export interface QuickReplyDiscarded {
                                          [(attachments)]="attachments" (changed)="scheduleSave()" />
                 <div class="mqr__row">
                     <app-compose-attach-button [target]="files" />
-                    <textarea #box class="mqr__box" rows="1" data-test="quick-reply-box"
+                    <textarea #box class="mqr__box cms-message-input" rows="1" data-test="quick-reply-box"
                               placeholder="Reply…" [attr.aria-label]="fieldName()"
                               [value]="text()" (input)="onInput(box.value)"
                               (keydown)="onKeydown($event)"></textarea>
@@ -119,10 +119,9 @@ export interface QuickReplyDiscarded {
         .mqr__box {
             flex: 1 1 auto; min-width: 0; resize: none; box-sizing: border-box; min-height: 36px;
             font: inherit; line-height: 1.4; padding: 7px 14px; overflow-y: hidden;
-            border: 1px solid var(--cms-border-control); border-radius: 18px;
+            border: 1px solid var(--cms-border-input); border-radius: 18px;
             background: var(--cms-input-bg); color: var(--cms-text);
         }
-        .mqr__box:focus-visible { outline: 2px solid var(--cms-focus-ring); outline-offset: 1px; }
         .mqr__icon { justify-content: center; width: 36px; height: 36px; padding: 0; flex: 0 0 auto; }
         .mqr__icon .bi { font-size: 1.05rem; }
         .mqr__send { height: 36px; padding: 0 16px; border-radius: var(--cms-radius-pill); font-weight: 600; flex: 0 0 auto; }

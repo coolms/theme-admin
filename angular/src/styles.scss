@@ -920,6 +920,22 @@ html .form-group :is(input[type="text"], input[type="number"], select, textarea)
     cursor: pointer;
 }
 
+// The input of a message being written (Chat's composer, a thread's reply, the quick panel's field, Mail's quick reply):
+// no ring. The class is on what draws the input's edge, the field itself or the box around it, --cms-border-input at
+// rest; the edge is stronger while the text, not a button in the box, has the focus. The edge keeps its width.
+html .cms-message-input:focus,
+html .cms-message-input:has(:is(textarea, [contenteditable="true"]):focus) {
+    border-color: var(--cms-border-input-focus);
+    outline: none;
+}
+
+@media (forced-colors: active) {
+    html .cms-message-input:focus,
+    html .cms-message-input:has(:is(textarea, [contenteditable="true"]):focus) {
+        outline: 2px solid CanvasText;
+    }
+}
+
 // --- Compact size modifier for the form controls -----------------------------
 //  These MUST stay below `.cms-input` / `.cms-select`. Both are single-class
 // selectors, so specificity ties and SOURCE ORDER decides — and `.cms-input-sm`
@@ -1998,3 +2014,11 @@ figure > figcaption {
 // the dashboard first, but the ordered builder, the column chooser and the VFS
 // grid all drag previews through the same top layer.
 .cdk-drag-preview { overflow: visible; }
+
+/* A chat message's formatted body, wherever one is drawn (the conversation, a thread, the quick panel). Two paragraphs
+   with text are one empty line apart, and an empty paragraph is that empty line itself, so a blank line typed inside a
+   paragraph (two line breaks), one that starts a new paragraph, and an empty paragraph between two all look the same. */
+.cms-message-body { display: block; }
+.cms-message-body p { margin: 0; }
+.cms-message-body p:not(:empty) + p:not(:empty) { margin-top: 1lh; }
+.cms-message-body p:empty { min-height: 1lh; }

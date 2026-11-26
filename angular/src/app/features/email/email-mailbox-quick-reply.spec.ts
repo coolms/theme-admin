@@ -643,6 +643,30 @@ describe('EmailMailboxPageComponent -- the quick reply, pinned below the message
         expect(win.contains(document.activeElement)).withContext('and focused').toBeTrue();
     });
 
+    it('the box has a stronger edge and no ring while it has the focus, and is the size it was', async () => {
+        await open(1);
+        const rest = { edge: getComputedStyle(box()).borderTopColor, h: box().offsetHeight, w: box().offsetWidth };
+        const probe = document.createElement('span');
+        quick().appendChild(probe);
+        const resolved = (token: string): string => {
+            probe.style.color = `var(${token})`;
+            return getComputedStyle(probe).color;
+        };
+        const [resting, focused] = [resolved('--cms-border-input'), resolved('--cms-border-input-focus')];
+        probe.remove();
+        expect(rest.edge).toBe(resting);
+
+        box().focus();
+        expect(document.activeElement).toBe(box());
+        await wait(250);
+        const on = getComputedStyle(box());
+        expect(on.borderTopColor).toBe(focused);
+        expect(focused).not.toBe(resting);
+        expect(on.outlineStyle).toBe('none');
+        expect(on.boxShadow).toBe('none');
+        expect([box().offsetHeight, box().offsetWidth]).toEqual([rest.h, rest.w]);
+    });
+
     it('closed with the draft kept: the line shows the draft\'s first words with Open and Discard, never the text in the box', async () => {
         await open(3);
         await typeAndSave('Hi Ann, Friday works for me and I will bring the plan of the new desks with me.');

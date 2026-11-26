@@ -56,6 +56,13 @@ function offline({ files }) {
 /** The waits, in milliseconds, before asking again after a 5xx or a request that could not be made. */
 const RETRY_WAITS = [2000, 5000];
 
+/** GITHUB_TOKEN, when set, goes to GitHub's API and nowhere else: without one the API's hourly limit is the network's. */
+function headersFor(url) {
+    const token = process.env.GITHUB_TOKEN;
+    const api = new URL(url).origin === 'https://api.github.com';
+    return { 'User-Agent': 'design-tokens-lock', ...(token && api ? { Authorization: `Bearer ${token}` } : {}) };
+}
+
 /** A response, or null for a 404 (the thing does not exist: a mismatch, never a failure to ask). A 5xx or a request
  *  that could not be made is asked again after each wait; still failing after the last, it is unevaluable. */
 async function ask(url) {
@@ -63,7 +70,7 @@ async function ask(url) {
         let response;
         let failure;
         try {
-            response = await fetch(url, { headers: { 'User-Agent': 'design-tokens-lock' } });
+            response = await fetch(url, { headers: headersFor(url) });
         } catch (error) {
             failure = `${url} could not be asked: ${error.message}`;
         }

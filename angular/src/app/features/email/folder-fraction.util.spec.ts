@@ -73,13 +73,16 @@ describe('folder import fraction', () => {
             // The whole point: 1,507 of the imported messages are unread, but 2,549 of
             // the FOLDER is. Showing the former understates it by a thousand.
             expect(folderUnread(folder())).toBe(2549);
-            expect(folderCountTitle(folder())).toContain('2,549 unread on the server');
+            expect(folderCountTitle(folder())).toContain(' 2,549 unread. ');
+            expect(folderCountTitle(folder())).not.toContain('server');
+            expect(folderCountTitle(folder({ serverTotal: null }))).not.toContain('server');
+            expect(folderCountTitle(folder({ serverTotal: null }))).toContain('(the folder\'s whole count is not known yet). 2,549 unread.');
         });
 
         it('falls back to the imported count when the server did not say', () => {
             expect(folderUnread(folder({ serverUnseen: null }))).toBe(1507);
             expect(folderUnread(folder({ serverUnseen: undefined }))).toBe(1507);
-            expect(folderCountTitle(folder({ serverUnseen: null }))).not.toContain('unread on the server');
+            expect(folderCountTitle(folder({ serverUnseen: null }))).not.toContain('unread');
         });
 
         it('still moves when a message is read, because marking read reaches the server', () => {

@@ -131,7 +131,8 @@ jobs:
   design-tokens:
     # The design tokens come from coolms/design-tokens at a tagged version: angular/src/tokens.generated.scss
     # is a copy of its dist/coolms-tokens.scss, and design-tokens.lock.json records the tag, its commit
-    # and the copy's sha256. Plain Node, no install, no secret: the package is public.
+    # and the copy's sha256. Plain Node, no install: the package is public, and the
+    # job's own token is there for GitHub's request limit alone.
     name: Design tokens
     runs-on: ubuntu-latest
     steps:
@@ -144,6 +145,8 @@ jobs:
         run: node tools/design-tokens-lock.mjs
       - name: The lock's tag and commit, and the file at that commit, are what the package holds
         run: node tools/design-tokens-lock.mjs --network
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       # Every focus indicator draws the ring (2026-10-06, from the review of #69): no
       # component's halo or off-token ring, and Bootstrap's focus variables bound to the token. The
       # rendered half -- what Bootstrap draws, and its contrast -- is src/app/shell/focus-ring.spec.ts
@@ -242,6 +245,11 @@ jobs:
         run: |
           node --test scripts/check-redraw.test.mjs
           npm run lint:redraw
+
+      # A component's inline styles and template are each a plain literal, and the styles hold no line comment.
+      - name: Inline styles and templates are plain literals
+        working-directory: sources/theme-admin/angular
+        run: npm run lint:styles
 
       # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an
       # eval or Function( call outside the sites read and pinned by text and count fails. The tests' two cases that

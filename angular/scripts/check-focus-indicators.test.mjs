@@ -64,6 +64,18 @@ test('an edge in another colour passes beside the ring, and is found without it'
     assert.deepEqual(found('.s:focus { outline: none; border-color: var(--bs-primary, #0d6efd); }'), ['REMOVED 1', 'OFF-TOKEN 1']);
 });
 
+test('a message input\'s edge is the one edge without a ring: in styles.scss, in its own token, on that class alone', () => {
+    const kinds = (css, file) => focusRules(css, file).flatMap(judge).map((f) => f.kind);
+    const rule = (sel, colour) => `${sel} { border-color: ${colour}; outline: none; }`;
+    const sel = 'html .cms-message-input:focus, html .cms-message-input:has(:is(textarea, [contenteditable="true"]):focus)';
+    assert.deepEqual(kinds(rule(sel, 'var(--cms-border-input-focus)'), 'styles.scss'), []);
+    assert.deepEqual(kinds(rule(sel, 'var(--cms-text)'), 'styles.scss'), ['OFF-TOKEN']);
+    assert.deepEqual(kinds(rule(sel, 'var(--cms-accent)'), 'styles.scss'), ['OFF-TOKEN']);
+    assert.deepEqual(kinds(rule(`${sel}, html .cms-input:focus`, 'var(--cms-border-input-focus)'), 'styles.scss'), ['OFF-TOKEN']);
+    assert.deepEqual(kinds(rule('html .cms-input:focus', 'var(--cms-border-input-focus)'), 'styles.scss'), ['OFF-TOKEN']);
+    assert.deepEqual(kinds(rule(sel, 'var(--cms-border-input-focus)'), 'a.component.ts'), ['REMOVED', 'OFF-TOKEN']);
+});
+
 test('a component rule that takes the ring away is found in every spelling, whatever else it sets', () => {
     assert.deepEqual(found('.page-editor__title-input:focus { outline: none; }'), ['REMOVED 1']);
     assert.deepEqual(found('.rmd-textarea:focus { outline-style: none; }'), ['REMOVED 1']);

@@ -17,9 +17,10 @@ import {
 } from '@coolms/ui-angular';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
-import { conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
+import { byLastMessage, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
+import { linkedMessageHtml, messageRuns } from './message-links.util';
 import { MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatConversationDto, ChatMessageDto } from './messages.types';
@@ -71,9 +72,9 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                         <div class="mqp__line" [class.mqp__line--mine]="isMine(m)">
                             <div class="mqp__bubble" [class.mqp__bubble--mine]="isMine(m)">
                                 @if (isHtml(m)) {
-                                    <span [innerHTML]="m.body"></span>
+                                    <span class="cms-message-body" [innerHTML]="linkedHtml(m.body)"></span>
                                 } @else {
-                                    {{ m.body }}
+                                    @for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}
                                 }
                                 <div class="mqp__meta">{{ m.createdAt | appDateTime:'time' }}</div>
                             </div>
@@ -83,7 +84,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                 </div>
 
                 <div class="mqp__composer">
-                    <textarea class="mqp__input" rows="1" placeholder="Reply…"
+                    <textarea class="mqp__input cms-message-input" rows="1" placeholder="Reply…"
                               [value]="composerText()"
                               (input)="composerText.set(asValue($event))"
                               (keydown)="onComposerKeydown($event)"></textarea>
@@ -120,7 +121,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                     <p class="mqp__hint">No conversations yet. Start one with ＋ New message.</p>
                 } @else {
                     <ul class="mqp__rows">
-                        @for (c of conversations(); track c.id) {
+                        @for (c of listed(); track c.id) {
                             <li>
                                 <button type="button" class="mqp__row" (click)="open(c.id)">
                                     <app-user-avatar size="sm" [user]="rowAvatar(c)" [status]="rowStatus(c)" />
@@ -180,7 +181,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__line--mine { justify-content: flex-end; }
         .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
-        .mqp__bubble :is(p) { margin: 0; }
+        .mqp__bubble ::ng-deep a { color: inherit; text-decoration: underline; }
         /* Per-bubble timestamp + per-day separator chip — same model as
          * the full Messages thread, scaled to the drawer. */
         .mqp__meta { margin-top: .15rem; font-size: .62rem; line-height: 1; text-align: right; color: var(--cms-text-secondary, #525a66); font-variant-numeric: tabular-nums; }
@@ -188,7 +189,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__daysep { align-self: center; margin: .3rem 0 .1rem; padding: .12rem .55rem; font-size: .64rem; font-weight: 600; color: var(--cms-text-secondary, #525a66); background: var(--cms-surface); border: 1px solid var(--cms-border, #e5e7eb); border-radius: 999px; }
         .mqp__hint--older { text-align: center; padding: .3rem; }
         .mqp__composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding-top: .5rem; border-top: 1px solid var(--cms-border, #e5e7eb); }
-        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
+        .mqp__input { flex: 1 1 auto; resize: none; max-height: 110px; min-height: 38px; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-md, 8px); padding: .45rem .6rem; font: inherit; font-size: .85rem; }
         .mqp__send { flex: 0 0 auto; border: 0; background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); border-radius: var(--cms-radius-md, 8px); width: 38px; height: 38px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .mqp__send:disabled { opacity: .5; cursor: default; }
     `],
@@ -203,6 +204,8 @@ export class MessagesQuickPanelComponent implements OnInit {
     private readonly destroyRef = inject(DestroyRef);
 
     readonly conversations = signal<ChatConversationDto[]>([]);
+    /** The rows as listed: only a message moves one. */
+    readonly listed = computed(() => [...this.conversations()].sort(byLastMessage));
     readonly loading       = signal(false);
     readonly error         = signal<string | null>(null);
     readonly showNew       = signal(false);
@@ -472,6 +475,10 @@ export class MessagesQuickPanelComponent implements OnInit {
         const mine = this.myParticipantId();
         return mine !== null && m.senderParticipantId === mine;
     }
+
+    /** A body's addresses made links. */
+    protected readonly linkedHtml = linkedMessageHtml;
+    protected readonly bodyRuns = messageRuns;
 
     isHtml(m: ChatMessageDto): boolean {
         return m.bodyFormat === 'html' && !!m.body;
