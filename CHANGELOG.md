@@ -8,11 +8,13 @@ major number means here.
 
 ## Unreleased
 
+- **Enter sends a chat message again in a conversation opened after the page was drawn**: the key was bound only to a composer present when the page first drew, which there never is.
 - **A chat message's paragraphs are one empty line apart**, in the conversation, a thread and the quick panel, so a typed blank line and a pasted one look the same; an empty paragraph is that empty line, never a gap of its own. The quick panel's paragraphs had the browser's own margins.
 - **Only a message moves a conversation in Chat's list and quick panel**: its place is its last message's, or when it was started while it has none, never when it last changed.
 - **The Calendar's title, its mini calendar's month and the quick panel's days are written in the interface language**, not the browser's.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
+- **Message inputs draw no focus ring**: Chat's composer, a thread's reply, the quick panel's field and Mail's quick reply have the edge `--cms-border-input` at rest and `--cms-border-input-focus` while their text has the focus, at one width (`cms-message-input` in styles.scss). The buttons beside them and every other field keep their rings.
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
 - **Mail's search goes on by itself**: each section under the results ("More results", and "More results: <mailbox>"
   once Search other mailboxes is pressed) reads its next page when its end comes into view, one call for a page, with a

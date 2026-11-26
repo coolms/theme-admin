@@ -1,5 +1,4 @@
 import {
-    AfterViewInit,
     ChangeDetectionStrategy,
     Component,
     DestroyRef,
@@ -9,6 +8,7 @@ import {
     OnInit,
     ViewEncapsulation,
     computed,
+    effect,
     inject,
     signal,
     viewChild,
@@ -525,8 +525,9 @@ const BROWSE_CHANNELS = 'browse-channels';
                                (change)="onFilesPicked($event)" />
 
                         <!-- One unified input shell: the rich editor fills the width,
-                             with an action bar (emoji · attach | Send) beneath it. -->
-                        <div class="msg__composer-shell cms-field-box">
+                             with an action bar (emoji · attach | Send) beneath it. Its edge
+                             is stronger while the text has the focus (styles.scss). -->
+                        <div class="msg__composer-shell cms-message-input">
                             <coolms-editor class="msg__editor"
                                            profile="comment"
                                            [content]="composerHtml()"
@@ -580,7 +581,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                         }
                     </div>
                     <div class="msg__tp-composer">
-                        <textarea #tpInput class="msg__tp-input cms-field" rows="1" placeholder="Reply in thread…"
+                        <textarea #tpInput class="msg__tp-input cms-message-input" rows="1" placeholder="Reply in thread…"
                                   [value]="threadReply()"
                                   (input)="threadReply.set(tpInput.value)"
                                   (keydown)="onThreadKeydown($event)"></textarea>
@@ -872,7 +873,7 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__tp-body { flex: 1 1 auto; overflow-y: auto; padding: .7rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
         .msg__tp-empty { color: var(--cms-text-secondary, #525a66); font-size: .8rem; font-style: italic; margin: .2rem 0; }
         .msg__tp-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: .4rem; padding: .6rem .8rem; border-top: 1px solid var(--cms-border, #e5e7eb); background: var(--cms-surface); }
-        .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
+        .msg__tp-input { flex: 1 1 auto; resize: none; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-lg, 10px); padding: .5rem .7rem; font: inherit; font-size: .85rem; min-height: 38px; max-height: 140px; }
         .msg__tp-send { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 0; border-radius: var(--cms-radius-lg, 10px); background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); cursor: pointer; font-size: 1rem; }
         .msg__tp-send:disabled { background: var(--cms-text-muted); cursor: default; }
         /* Error strip on the palette's own danger pair. The text was #b91c1c and
@@ -1001,7 +1002,7 @@ const BROWSE_CHANNELS = 'browse-channels';
          * Send) beneath it, like a modern chat composer. .msg__composer stays the
          * relatively-positioned padding wrapper so the emoji popover anchors to it. */
         .msg__composer { position: relative; padding: .7rem 1.1rem; border-top: 1px solid var(--cms-border, #e5e7eb); flex-shrink: 0; background: var(--cms-surface); }
-        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border, #e5e7eb); border-radius: var(--cms-radius-card, 12px); background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+        .msg__composer-shell { display: flex; flex-direction: column; border: 1px solid var(--cms-border-input); border-radius: var(--cms-radius-card, 12px); background: var(--cms-surface); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
         /* The rich editor now spans the full shell width (was flex:0 0 auto -> cramped). */
         .msg__editor { display: block; width: 100%; }
         .msg__composer .cms-editor { min-height: 0; border: 0; background: transparent; }
@@ -1071,7 +1072,7 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__att-size { flex: 0 0 auto; opacity: .7; font-size: .72rem; }
     `],
 })
-export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
+export class MessagesPageComponent implements OnInit, OnDestroy {
     private readonly api       = inject(MessagesService);
     private readonly live      = inject(MessagesLiveEventsService);
     private readonly presenceLive = inject(ChatPresenceLiveService);
@@ -1359,9 +1360,6 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         '👍', '👎', '👏', '🙌', '🙏', '💪', '👀', '🤝', '✌️', '🤞',
         '❤️', '🔥', '⭐', '✅', '❌', '⚠️', '🎉', '🚀', '💡', '📌',
     ];
-
-    /** Bound capture-phase Enter handler; detached on destroy. */
-    private enterHandler?: (ev: KeyboardEvent) => void;
 
     /**
      * Slow RECONCILE poll -- realtime is the primary update path; this is
@@ -1829,83 +1827,87 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
 
-    ngAfterViewInit(): void {
-        // Enter-to-send: intercept a bare Enter in the composer during the
-        // CAPTURE phase, before ProseMirror's own keymap (bound on the inner
-        // contenteditable) can split the paragraph. Shift+Enter and IME
-        // composition fall through to the editor -> soft newline / candidate
-        // commit. Bound once on the stable composer wrapper; the editor
-        // re-mounts inside it without needing re-binding.
-        this.enterHandler = (ev: KeyboardEvent) => {
-            // The #-channel popover takes the same priority as the @ one -- only
-            // one of the two can be open, since their triggers are different
-            // characters at the caret.
-            const chans = this.channelCandidates();
-            if (this.channelMenuOpen() && chans.length && !ev.isComposing) {
-                if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    const n = chans.length;
-                    const dir = ev.key === 'ArrowDown' ? 1 : -1;
-                    this.channelActiveIndex.update(i => (i + dir + n) % n);
-                    return;
-                }
-                if (ev.key === 'Enter' || ev.key === 'Tab') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.pickChannelRef(chans[this.channelActiveIndex()]);
-                    return;
-                }
-                if (ev.key === 'Escape') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.closeChannelMenu();
-                    return;
-                }
-            }
-            // The @-mention popover takes priority: arrow-navigate, Enter/Tab to
-            // pick, Escape to dismiss -- none of these reach the editor or send.
-            const candidates = this.mentionCandidates();
-            if (this.mentionMenuOpen() && candidates.length && !ev.isComposing) {
-                if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    const n = candidates.length;
-                    const dir = ev.key === 'ArrowDown' ? 1 : -1;
-                    this.mentionActiveIndex.update(i => (i + dir + n) % n);
-                    return;
-                }
-                if (ev.key === 'Enter' || ev.key === 'Tab') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.pickMention(candidates[this.mentionActiveIndex()]);
-                    return;
-                }
-                if (ev.key === 'Escape') {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    this.closeMentionMenu();
-                    return;
-                }
-            }
-            if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) {
+    /**
+     * Enter-to-send: a bare Enter in the composer, caught in the CAPTURE phase before the editor's own keymap (bound on
+     * the inner contenteditable) can split the paragraph. Shift+Enter and IME composition fall through to the editor.
+     */
+    private readonly enterHandler = (ev: KeyboardEvent): void => {
+        // The #-channel popover takes the same priority as the @ one -- only
+        // one of the two can be open, since their triggers are different
+        // characters at the caret.
+        const chans = this.channelCandidates();
+        if (this.channelMenuOpen() && chans.length && !ev.isComposing) {
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const n = chans.length;
+                const dir = ev.key === 'ArrowDown' ? 1 : -1;
+                this.channelActiveIndex.update(i => (i + dir + n) % n);
                 return;
             }
-            ev.preventDefault();
-            ev.stopPropagation();
-            this.doSend();
-        };
-        this.composerEl()?.nativeElement.addEventListener('keydown', this.enterHandler, true);
-    }
+            if (ev.key === 'Enter' || ev.key === 'Tab') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.pickChannelRef(chans[this.channelActiveIndex()]);
+                return;
+            }
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.closeChannelMenu();
+                return;
+            }
+        }
+        // The @-mention popover takes priority: arrow-navigate, Enter/Tab to
+        // pick, Escape to dismiss -- none of these reach the editor or send.
+        const candidates = this.mentionCandidates();
+        if (this.mentionMenuOpen() && candidates.length && !ev.isComposing) {
+            if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const n = candidates.length;
+                const dir = ev.key === 'ArrowDown' ? 1 : -1;
+                this.mentionActiveIndex.update(i => (i + dir + n) % n);
+                return;
+            }
+            if (ev.key === 'Enter' || ev.key === 'Tab') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.pickMention(candidates[this.mentionActiveIndex()]);
+                return;
+            }
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this.closeMentionMenu();
+                return;
+            }
+        }
+        if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) {
+            return;
+        }
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.doSend();
+    };
+
+    /**
+     * The handler on the composer's wrapper while it is drawn: the wrapper is there only while a conversation is open
+     * and the person may write in it, so it is bound each time it appears and unbound as it goes. The editor re-mounts
+     * inside it without a new binding.
+     */
+    private readonly enterToSend = effect(onCleanup => {
+        const el = this.composerEl()?.nativeElement;
+        if (el === undefined) return;
+        el.addEventListener('keydown', this.enterHandler, true);
+        onCleanup(() => el.removeEventListener('keydown', this.enterHandler, true));
+    });
 
     ngOnDestroy(): void {
         this.stopPolling();
         this.clearTyping();
         this.teardownIdleTracking();
         this.closeMentionMenu(); // tears down the mention search timer + subscription
-        if (this.enterHandler) {
-            this.composerEl()?.nativeElement.removeEventListener('keydown', this.enterHandler, true);
-        }
     }
 
     /**
