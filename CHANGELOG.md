@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **Chat shows one pane at a time on a phone, as Mail does**: under 600px the conversation list fills the page; an open conversation fills it in the list's place, headed by a Back button that closes it and returns to the list with the focus on its row. A thread opened in it fills the page in its place until closed. Wider, the list and the conversation stand side by side as before.
 - **Only a message moves a conversation in Chat's list and quick panel**: its place is its last message's, or when it was started while it has none, never when it last changed.
 - **The Calendar's title, its mini calendar's month and the quick panel's days are written in the interface language**, not the browser's.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).

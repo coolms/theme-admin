@@ -7,7 +7,9 @@ import {
     HostListener,
     OnDestroy,
     OnInit,
+    Injector,
     ViewEncapsulation,
+    afterNextRender,
     computed,
     inject,
     signal,
@@ -127,7 +129,9 @@ const BROWSE_CHANNELS = 'browse-channels';
         <app-page-toolbar class="msg__header-feed" [treeSlug]="listTree" [context]="listContext()"
                           (headerActionsChanged)="headerActions.set($event)" (titleChanged)="treeTitle.set($event)"
                           (actionClick)="onHeaderAction($event)" />
-        <div class="msg">
+        <!-- On a phone one pane at a time: the list; the conversation once one is open; its thread once one is open. -->
+        <div class="msg" [class.msg--one]="phone()" [class.msg--reading]="selectedId() !== null"
+             [class.msg--side]="openThreadRoot() !== null">
             <aside class="msg__list">
                 <div class="msg__list-head">
                     <span class="msg__list-label">Conversations</span>
@@ -257,6 +261,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                                         [class.msg__row--readonly]="c.viewerState === 'excluded'"
                                         [class.msg__row--muted]="c.viewerMuted"
                                         [class.msg__row--unread]="!c.viewerMuted && unreadCount(c) > 0"
+                                        [attr.data-conversation]="c.id"
                                         (click)="select(c.id)"
                                         (contextmenu)="onRowContextMenu($event, c)">
                                     <app-user-avatar size="sm" [user]="rowAvatar(c)" [status]="rowStatus(c)" />
@@ -312,6 +317,11 @@ const BROWSE_CHANNELS = 'browse-channels';
                 @if (!selectedId()) {
                     <div class="msg__empty">Select a conversation, or start a new one.</div>
                 } @else {
+                    <!-- On a phone the conversation fills the screen; Back returns to the list. -->
+                    <button type="button" class="msg__phone-back" data-test="chat-phone-back" (click)="backToList()">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        <span>Back</span>
+                    </button>
                     <header class="msg__thread-head">
                         <app-user-avatar size="sm" [user]="rowAvatar(selected())" [status]="rowStatus(selected())" />
                         <span class="msg__thread-name">{{ counterpartName(selected()) }}</span>
@@ -838,6 +848,18 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .msg__more:disabled { cursor: default; opacity: .7; }
         .msg__thread { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+        .msg__phone-back {
+            display: none; flex: 0 0 auto; align-items: center; gap: 8px; width: 100%; min-height: var(--cms-touch-target-min);
+            padding: 0 12px; border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
+            font: inherit; text-align: left; cursor: pointer;
+        }
+        /* One pane at a time (a phone): the list; the conversation once one is open; its thread over it once that is
+           open. The pane shown fills the page over the width a splitter wrote on it inline. */
+        .msg--one > .msg__list, .msg--one > .msg__thread, .msg--one > .msg__tp, .msg--one > cms-pane-splitter { display: none; }
+        .msg--one:not(.msg--reading) > .msg__list { display: flex; width: 100% !important; flex: 1 1 auto !important; }
+        .msg--one.msg--reading:not(.msg--side) > .msg__thread { display: flex; }
+        .msg--one.msg--reading.msg--side > .msg__tp { display: flex; width: 100% !important; flex: 1 1 auto !important; }
+        .msg--one .msg__phone-back { display: flex; }
         /* - Threads T2: per-message thread affordances + the thread side-panel - */
         .msg__threadbar { display: flex; align-items: center; gap: .4rem; margin-top: .3rem; }
         .msg__threadcount { display: inline-flex; align-items: center; gap: .3rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 600; color: var(--cms-primary, #2563eb); padding: 0; }
@@ -1087,6 +1109,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly dtf       = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly rtcCall   = inject(RtcCallService);
+    private readonly injector  = inject(Injector);
+    private readonly host      = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+    /** A phone's width: the page shows one pane at a time. */
+    private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 599.98px)') : null;
+    /** The window is at a phone's width now. */
+    readonly phone = signal(this.phoneWidth?.matches === true);
 
     /**
      * Pending `?c=<id>` preselect (from the topbar quick-panel, /).
@@ -1718,6 +1748,12 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadChannels();
         this.setupIdleTracking();
         this.destroyRef.onDestroy(() => this.stopPolling());
+        // The window crossing a phone's width redraws the panes.
+        const phoneChanged = (e: MediaQueryListEvent): void => this.phone.set(e.matches);
+        if (typeof this.phoneWidth?.addEventListener === 'function') {
+            this.phoneWidth.addEventListener('change', phoneChanged);
+            this.destroyRef.onDestroy(() => this.phoneWidth?.removeEventListener('change', phoneChanged));
+        }
     }
 
     /**
@@ -2778,6 +2814,35 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Seed the read-receipt cursors from the peers' persisted values so a
         // re-opened thread shows "Read" without waiting for a fresh nudge.
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
+    }
+
+    /**
+     * The phone's Back: closes the open conversation, so the list stands in its place, and puts the focus on the
+     * conversation's row once the list is drawn.
+     */
+    backToList(): void {
+        const id = this.selectedId();
+        if (id === null) {
+            return;
+        }
+        this.closeThread();
+        this.selectedId.set(null);
+        this.messages.set([]);
+        this.pending.set([]);
+        this.mentionDraft.set(new Map());
+        this.mentionAddPrompt.set(null);
+        this.closeMentionMenu();
+        this.showEmoji.set(false);
+        this.showMembers.set(false);
+        this.clearTyping();
+        this.stopPolling();
+        afterNextRender({
+            write: () => {
+                const row = Array.from(this.host.querySelectorAll<HTMLElement>('.msg__row[data-conversation]'))
+                    .find(r => r.dataset['conversation'] === id);
+                row?.focus();
+            },
+        }, { injector: this.injector });
     }
 
     /** Clear the "X is typing..." indicator + its idle timer. */
