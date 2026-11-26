@@ -189,7 +189,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
     it('a folder kept in the mail server\'s order says so; one in date order, or one that does not say, says nothing', fakeAsync(() => {
         const note = (): string | null => el().querySelector('[data-test="list-order-server"]')?.textContent?.trim() ?? null;
         answer(Object.assign(page(MIXED, 'c-2'), { order: 'server' as const }));
-        expect(note()).toBe('Shown in the mail server\'s order: this folder holds too many messages to sort them by date.');
+        expect(note()).toBe('This folder holds too many messages to sort them by date, so they are not in date order.');
 
         // A later page says nothing of its own: the first page's word stands.
         scrollToEnd();
@@ -309,7 +309,7 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(rowOf('Package published').classList.contains('mbx__row--active')).withContext('a server row is never the open one').toBeFalse();
     }));
 
-    it('a ref the server no longer has takes the row out, saying it is no longer on the mail server', fakeAsync(() => {
+    it('a ref the server no longer has takes the row out, saying it was deleted in the person\'s mailbox', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
 
         click(rowOf('Package published').querySelector<HTMLElement>('.mbx__row-main')!);
@@ -318,8 +318,15 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
 
         expect(subjects()).toEqual(['Weekly digest', 'Security advisory', 'Token created']);
         expect(el().querySelector('[data-test="server-row-gone"]')?.textContent?.trim())
-            .toBe('That message is no longer on the mail server.');
+            .toBe('This message was deleted in your mailbox.');
+        expect(pageOf().openFailure()?.text).toBe('This message was deleted in your mailbox.');
         expect(detailsAsked).toEqual([]);
+
+        // The mailbox carries its provider: the note names it.
+        pageOf().mailboxes.update(list => list.map(m => ({ ...m, oauthProvider: 'google' })));
+        draw();
+        expect(el().querySelector('[data-test="server-row-gone"]')?.textContent?.trim())
+            .toBe('This message was deleted in your Gmail mailbox.');
     }));
 
     it('reads the next page by the X-Next-Cursor header as the list is scrolled to its end, without a page number', fakeAsync(() => {
@@ -350,13 +357,13 @@ describe('EmailMailboxPageComponent -- server rows in a folder not fully synced'
         expect(subjects()).toEqual(['Brand new', 'Weekly digest']);
     }));
 
-    it('a server that could not be read keeps the rows shown and says Couldn\'t load at the list\'s end, with Retry', fakeAsync(() => {
+    it('a server that could not be read keeps the rows shown and says older mail couldn\'t be loaded at the list\'s end, with Retry', fakeAsync(() => {
         answer(page(MIXED, 'c-2'));
         scrollToEnd();
         answer(page([], null, 'unavailable'));
 
         expect(subjects().length).withContext('the rows shown stay').toBe(4);
-        expect(endLine()?.textContent).toContain('Couldn\'t load');
+        expect(endLine()?.textContent).toContain('Older mail couldn\'t be loaded.');
         const retry = el().querySelector<HTMLElement>('[data-test="list-end-retry"]')!;
         expect(retry.textContent?.trim()).toBe('Retry');
 

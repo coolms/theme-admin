@@ -194,6 +194,40 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         flushSection(http.expectOne(`${SETTINGS_URL}/${section}`), stored);
     }
 
+    /**
+     * The declared read the calendar prefs make after a region is applied, answered as the server does: the region
+     * section, each key with its declaration, the value in force, the person's own and whether it is locked. A UI kit
+     * whose prefs make no such read leaves none open, and none is answered.
+     */
+    function flushDeclaredRegion(own: Record<string, unknown>): void {
+        const defaults: Record<string, unknown> = {
+            language:   'en',
+            timezone:   MANIFEST.platformDefaults.timezone,
+            dateFormat: MANIFEST.platformDefaults.dateFormat,
+            timeFormat: MANIFEST.platformDefaults.timeFormat,
+            weekStart:  MANIFEST.platformDefaults.weekStart,
+        };
+        const declared: Record<string, { type: string; label: string; choices: string[] }> = {
+            language:   { type: 'language', label: 'Language',       choices: [] },
+            timezone:   { type: 'timezone', label: 'Time zone',      choices: ['automatic'] },
+            dateFormat: { type: 'choice',   label: 'Date format',    choices: ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd MMM yyyy', 'MMM d, yyyy'] },
+            timeFormat: { type: 'choice',   label: 'Time format',    choices: ['12h', '24h'] },
+            weekStart:  { type: 'choice',   label: 'Week starts on', choices: ['monday', 'sunday'] },
+        };
+        const answer = [{
+            section: 'region',
+            label:   'Language & region',
+            icon:    'globe',
+            version: 'region-version',
+            keys:    Object.entries(declared).map(([key, d]) => ({
+                key, type: d.type, default: defaults[key], label: d.label, min: null, max: null, choices: d.choices,
+                nullable: false, readOnly: false, serverChecked: false,
+                value: own[key] ?? defaults[key], own: own[key] ?? null, locked: false,
+            })),
+        }];
+        http.match(`${SETTINGS_URL}/declared`).forEach(req => req.flush(answer));
+    }
+
     /** Switch tabs the way the tab bar does, and settle the new tab body. */
     function openTab(section: string): void {
         page.activeTab.set(section);
@@ -231,6 +265,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
         http.expectOne(ME_URL).flush(USER);
         http.expectOne(SECTIONS_URL).flush({ member: SECTIONS });
         http.expectOne(SETTINGS_URL).flush(SETTINGS_ON_LOAD);
+        flushDeclaredRegion(SETTINGS_ON_LOAD.region);
         fixture.detectChanges();
     });
 
@@ -290,6 +325,7 @@ describe('ProfilePageComponent — save handlers over a real render', () => {
             ...SETTINGS_ON_LOAD,
             region: { ...SETTINGS_ON_LOAD.region, timezone: 'automatic' },
         });
+        flushDeclaredRegion({ ...SETTINGS_ON_LOAD.region, timezone: 'automatic' });
  // The console's declared read is where the device zone would come from;
  // answered with nothing, the platform default is what is left.
         http.expectOne(`${SETTINGS_URL}/declared?host=console`).flush([]);

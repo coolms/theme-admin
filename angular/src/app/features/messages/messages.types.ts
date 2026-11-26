@@ -62,6 +62,9 @@ export interface ChatConversationDto {
     readonly visibility?: string;
     /** Per-conversation seq high-water mark (last message seq). */
     readonly lastSeq: number | null;
+    /** When it was started: its place in the list while it has no message. */
+    readonly createdAt?: string | null;
+    /** When anything of it last changed; never its place in the list. */
     readonly updatedAt: string | null;
     /**
      * One-line plain-text preview of the most recent top-level message -- the

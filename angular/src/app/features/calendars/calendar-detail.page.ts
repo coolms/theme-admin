@@ -26,6 +26,7 @@ import {
     PageTitleService,
     ToastService,
     ToolbarAction,
+    UserCalendarPreferencesService,
 } from '@coolms/ui-angular';
 import { CalendarEventsCardComponent } from './calendar-events-card.component';
 import { CalendarSettingsSidePanelComponent } from './calendar-settings-side-panel.component';
@@ -376,6 +377,7 @@ export class CalendarDetailPageComponent implements OnInit {
     private readonly store       = inject(Store);
     private readonly config      = inject(ConfigService);
     private readonly dtf         = inject(DateTimeFormatService);
+    private readonly userPrefs = inject(UserCalendarPreferencesService);
 
     /** Backend-defined page chrome (`calendar:detail` layout config). */
     readonly layout    = signal<LayoutConfig | null>(null);
@@ -715,7 +717,7 @@ export class CalendarDetailPageComponent implements OnInit {
         // Without this, every view showed just the month + year, which
         // was useless context in Day view (the user couldn't tell
         // which day they were looking at).
-        this.activeMonthLabel.set(viewTitle(range.viewType, range.currentStart, range.currentEnd, this.dtf));
+        this.activeMonthLabel.set(viewTitle(range.viewType, range.currentStart, range.currentEnd, this.dtf, this.userPrefs.language()));
 
         // Sync the mini-cal's displayed month directly via setMonth() so
         // it always tracks the main grid. For Month view we deliberately

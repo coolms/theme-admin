@@ -18,7 +18,8 @@
 //     no colour but one other than the ring. A box-shadow may lay the ring over a
 //     --cms-focus-gap (or --cms-surface) band; forced colours may use the system's;
 //     a border colour of another token is the control's own edge only when the same
-//     rule draws the ring beside it.
+//     rule draws the ring beside it -- but for the message inputs' rule in styles.scss
+//     (`html .cms-message-input`), whose edge is --cms-border-input-focus in place of a ring.
 //   * a REMOVED ring: a component's focus rule (anywhere but styles.scss) that takes
 //     the outline or the box-shadow away -- `outline: none`, `outline-style: none` or
 //     `hidden`, `outline-width: 0`, `box-shadow: none` -- and draws no outline or
@@ -128,6 +129,12 @@ export function removal(rule) {
     return drawn ? null : away;
 }
 
+/** A message input's edge: the one field with no ring, in styles.scss alone and in its own border token. */
+export function messageInputEdge(rule, draw) {
+    return /(^|\/)styles\.scss$/.test(rule.file) && draw.value === 'var(--cms-border-input-focus)'
+        && rule.selector.split(/,(?![^(]*\))/).every((s) => /^html \.cms-message-input:/.test(s.trim()));
+}
+
 /** FOUND rows for one rule. */
 export function judge(rule) {
     const found = [];
@@ -145,7 +152,7 @@ export function judge(rule) {
         }
         if (d.prop.startsWith('border')) {
             // the control's own edge beside the ring, or the ring itself
-            if (RING.test(d.value) || ringDrawn) continue;
+            if (RING.test(d.value) || ringDrawn || messageInputEdge(rule, d)) continue;
             if (!/#|rgb|hsl|var\(|color-mix|\b[a-z]+\s*$/.test(d.value)) continue;
             found.push({ kind: 'OFF-TOKEN', ...d, detail: 'an edge in another colour, and no ring' });
             continue;

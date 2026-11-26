@@ -76,7 +76,7 @@ export function folderCountTitle(f: EmailFolderDto): string {
     if (stored === null) {
         return typeof f.serverTotal === 'number'
             ? `${total} messages.${unread} Counts messages, not conversations.`
-            : `${total} messages stored (the server's own count is not known yet).${unread}`;
+            : `${total} messages stored (the folder's whole count is not known yet).${unread}`;
     }
 
     return `${total} messages; ${stored} (${percent}%) -- the rest is still being copied.${unread} Counts messages, not conversations: a mail app that groups by conversation will show fewer.`;
@@ -101,11 +101,11 @@ export function applyUnreadDelta(f: EmailFolderDto, delta: number): EmailFolderD
     };
 }
 
-/** " 2,549 unread on the server." -- omitted when the server did not say. */
+/** " 2,549 unread." -- omitted when the server did not say. */
 function unreadClause(f: EmailFolderDto): string {
     if (typeof f.serverUnseen !== 'number') {
         return '';
     }
 
-    return ` ${f.serverUnseen.toLocaleString()} unread on the server.`;
+    return ` ${f.serverUnseen.toLocaleString()} unread.`;
 }

@@ -36,6 +36,7 @@ describe('MiniCalendarComponent', () => {
                     dateFormat:   () => 'yyyy-MM-dd',
                     timeFormat:   () => '24h',
                     weekStart:    () => 'monday',
+                    language:     () => 'fr',
                 },
             }],
         });
@@ -69,5 +70,11 @@ describe('MiniCalendarComponent', () => {
         expect(selected!.getFullYear()).toBe(2030);
         expect(selected!.getMonth()).toBe(2);
         expect(selected!.getDate()).toBe(11);
+    });
+
+    it('writes the month in the interface language, not the browser\'s', () => {
+        fixture.detectChanges();
+        expect(navigator.language.startsWith('fr')).withContext('this spec is vacuous in a French browser').toBeFalse();
+        expect(fixture.componentInstance.monthLabel()).toBe('mars 2030');
     });
 });
