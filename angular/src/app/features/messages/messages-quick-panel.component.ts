@@ -72,7 +72,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                         <div class="mqp__line" [class.mqp__line--mine]="isMine(m)">
                             <div class="mqp__bubble" [class.mqp__bubble--mine]="isMine(m)">
                                 @if (isHtml(m)) {
-                                    <span [innerHTML]="linkedHtml(m.body)"></span>
+                                    <span class="cms-message-body" [innerHTML]="linkedHtml(m.body)"></span>
                                 } @else {
                                     @for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}
                                 }
@@ -181,7 +181,6 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__line--mine { justify-content: flex-end; }
         .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
-        .mqp__bubble :is(p) { margin: 0; }
         .mqp__bubble ::ng-deep a { color: inherit; text-decoration: underline; }
         /* Per-bubble timestamp + per-day separator chip — same model as
          * the full Messages thread, scaled to the drawer. */

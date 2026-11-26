@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **A chat message's paragraphs are one empty line apart**, in the conversation, a thread and the quick panel, so a typed blank line and a pasted one look the same; an empty paragraph is that empty line, never a gap of its own. The quick panel's paragraphs had the browser's own margins.
 - **Only a message moves a conversation in Chat's list and quick panel**: its place is its last message's, or when it was started while it has none, never when it last changed.
 - **The Calendar's title, its mini calendar's month and the quick panel's days are written in the interface language**, not the browser's.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
