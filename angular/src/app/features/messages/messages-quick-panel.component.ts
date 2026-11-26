@@ -20,6 +20,7 @@ import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { byLastMessage, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
+import { linkedMessageHtml, messageRuns } from './message-links.util';
 import { MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatConversationDto, ChatMessageDto } from './messages.types';
@@ -71,9 +72,9 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
                         <div class="mqp__line" [class.mqp__line--mine]="isMine(m)">
                             <div class="mqp__bubble" [class.mqp__bubble--mine]="isMine(m)">
                                 @if (isHtml(m)) {
-                                    <span [innerHTML]="m.body"></span>
+                                    <span [innerHTML]="linkedHtml(m.body)"></span>
                                 } @else {
-                                    {{ m.body }}
+                                    @for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}
                                 }
                                 <div class="mqp__meta">{{ m.createdAt | appDateTime:'time' }}</div>
                             </div>
@@ -181,6 +182,7 @@ import { ChatConversationDto, ChatMessageDto } from './messages.types';
         .mqp__bubble { max-width: 80%; padding: .4rem .6rem; border-radius: var(--cms-radius-card, 12px); background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); font-size: .85rem; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
         .mqp__bubble--mine { background: var(--cms-primary, #2563eb); color: var(--cms-text-inverse); }
         .mqp__bubble :is(p) { margin: 0; }
+        .mqp__bubble ::ng-deep a { color: inherit; text-decoration: underline; }
         /* Per-bubble timestamp + per-day separator chip — same model as
          * the full Messages thread, scaled to the drawer. */
         .mqp__meta { margin-top: .15rem; font-size: .62rem; line-height: 1; text-align: right; color: var(--cms-text-secondary, #525a66); font-variant-numeric: tabular-nums; }
@@ -474,6 +476,10 @@ export class MessagesQuickPanelComponent implements OnInit {
         const mine = this.myParticipantId();
         return mine !== null && m.senderParticipantId === mine;
     }
+
+    /** A body's addresses made links. */
+    protected readonly linkedHtml = linkedMessageHtml;
+    protected readonly bodyRuns = messageRuns;
 
     isHtml(m: ChatMessageDto): boolean {
         return m.bodyFormat === 'html' && !!m.body;

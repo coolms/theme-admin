@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, filter, map, of, switchMap } from 'rxjs';
 import { ErrorHandlerService } from '@coolms/core-angular';
@@ -496,7 +497,13 @@ export class MailboxFiltersSectionComponent {
                     rows: rows.map(r => ({ folder: r.folder }) as FilterFolder),
                     note: 'Only folders that already hold mail here are listed.',
                 })),
-                catchError(() => of({ rows: [] as FilterFolder[], note: 'The folders could not be read: type the folder as the server names it.' })),
+                // Folders the caller may not read are not spoken of: the folder is typed.
+                catchError((err: unknown) => of({
+                    rows: [] as FilterFolder[],
+                    note: err instanceof HttpErrorResponse && err.status === 403
+                        ? ''
+                        : 'The folders could not be read: type the folder as the server names it.',
+                })),
             )),
             takeUntilDestroyed(this.destroyRef),
         ).subscribe(({ rows, note }) => {

@@ -18,19 +18,26 @@ const LABELS: Readonly<Record<string, string>> = {
     'open-conversation': 'Open conversation',
 };
 
-/** The mailbox settings pane each section of `email.mailbox.settings` opens; no section opens the first pane. */
+/** The mailbox settings pane each section of a mailbox settings destination opens; no section opens the first pane. */
 const MAILBOX_SECTION_PANES: Readonly<Record<string, string>> = {
     reconnect: 'connection',
     delegations: 'access',
 };
 
-/** The query parameter the Email page's settings modal follows (`/email;mailbox={id}?settings={pane}`). */
+/** The query parameter that names the settings pane (`/email;mailbox={id}?settings={pane}`). */
 const SETTINGS_PARAM = 'settings';
 
 /** A param as a non-empty string, or null. */
 function param(params: Record<string, unknown>, key: string): string | null {
     const value = params[key];
     return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+/** The mailbox settings pane the params' section opens. */
+function sectionPane(params: Record<string, unknown>): string {
+    const section = param(params, 'section');
+
+    return (null !== section ? MAILBOX_SECTION_PANES[section] : undefined) ?? 'general';
 }
 
 /** How the server says to draw the action: the whole row for `row`, else a button (the default when absent). */
@@ -64,13 +71,24 @@ export function notificationActionTarget(action: NotificationAction | null | und
             if (null === mailboxId) {
                 return null;
             }
-            const section = param(params, 'section');
-            const pane = (null !== section ? MAILBOX_SECTION_PANES[section] : undefined) ?? 'general';
             return {
                 label,
                 presentation: notificationActionPresentation(action),
                 commands: ['/email', { mailbox: mailboxId }],
-                queryParams: { [SETTINGS_PARAM]: pane },
+                queryParams: { [SETTINGS_PARAM]: sectionPane(params) },
+            };
+        }
+        case 'email.system_mail.settings': {
+            // The System mail settings page opens the system mailbox's settings over itself.
+            const mailboxId = param(params, 'mailboxId');
+            if (null === mailboxId) {
+                return null;
+            }
+            return {
+                label,
+                presentation: notificationActionPresentation(action),
+                commands: ['/email', 'settings', 'email.system_mail'],
+                queryParams: { mailbox: mailboxId, [SETTINGS_PARAM]: sectionPane(params) },
             };
         }
         case 'chat.conversation': {

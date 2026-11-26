@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Store } from '@ngxs/store';
-import { of } from 'rxjs';
-import { ElevationService, ErrorHandlerService } from '@coolms/core-angular';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
+import { ELEVATION_REQUIRED_HEADER, ElevationService, ErrorHandlerService } from '@coolms/core-angular';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
 
 import { EmailService } from './email.service';
@@ -43,7 +44,7 @@ describe('MailboxSettingsComponent -- one mailbox\'s settings, a pane at a time'
     beforeEach(() => {
         email = jasmine.createSpyObj<EmailService>('EmailService', [
             'getMailbox', 'mailboxCapabilities', 'deleteMailbox', 'listInboundWorkflowOptions', 'listDelegations',
-            'saveMailboxSection', 'authorizeMailbox', 'testMailbox',
+            'saveMailboxSection', 'authorizeMailbox', 'testMailbox', 'listAliases',
         ]);
         email.listInboundWorkflowOptions.and.returnValue(of([]));
         email.listDelegations.and.returnValue(of([]));
@@ -123,6 +124,31 @@ describe('MailboxSettingsComponent -- one mailbox\'s settings, a pane at a time'
         expect(panes(render(MAILBOX, 'allowed').nativeElement)).not.toContain('Access');
         expect(panes(render({ ...MAILBOX, kind: 'shared' }, 'allowed').nativeElement)).toContain('Access');
         expect(panes(render({ ...MAILBOX, kind: 'shared' }, 'denied').nativeElement)).not.toContain('Access');
+    });
+
+    it('an administrator refused the addresses is not offered their pane; any other answer offers it', () => {
+        const manager: EmailMailboxDto = { ...MAILBOX, access: 'manager' };
+        const addresses = 'Addresses you send from';
+        email.listAliases.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+        const host = render(manager, 'allowed', 'addresses').nativeElement as HTMLElement;
+        expect(panes(host)).toEqual(['General', 'Connection', 'Sync', 'Filters', 'Rules', 'Delete this mailbox']);
+        expect(host.querySelector('app-mailbox-aliases-section')).toBeNull();
+        expect(host.querySelector('app-mailbox-details-section')).withContext('the first pane instead').not.toBeNull();
+
+        email.listAliases.and.returnValue(of({ canManage: true, aliases: [] }));
+        expect(panes(render(manager, 'allowed').nativeElement)).toContain(addresses);
+        email.listAliases.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+        expect(panes(render(manager, 'allowed').nativeElement)).withContext('a failure is the pane\'s to say').toContain(addresses);
+        email.listAliases.and.returnValue(throwError(() => new HttpErrorResponse({
+            status: 403, headers: new HttpHeaders({ [ELEVATION_REQUIRED_HEADER]: '1' }),
+        })));
+        expect(panes(render(manager, 'allowed').nativeElement)).withContext('so is one for want of elevation').toContain(addresses);
+    });
+
+    it('its own people are not asked about: their addresses are read when the pane opens', () => {
+        render({ ...MAILBOX, access: 'owner' }, 'allowed');
+        render(MAILBOX, 'allowed');
+        expect(email.listAliases).not.toHaveBeenCalled();
     });
 
     it('a delegate reads the settings, told it reads them as a delegate', () => {

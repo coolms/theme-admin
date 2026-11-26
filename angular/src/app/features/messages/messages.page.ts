@@ -31,6 +31,7 @@ import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
 import { channelTriggerAt, linkifyChannelRefs, matchChannels } from './channel-refs.util';
+import { linkedMessageHtml, messageRuns } from './message-links.util';
 import { MentionDirectoryUser, MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
@@ -649,7 +650,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                             <span class="msg__body msg__body--html" [innerHTML]="renderMentions(m)"
                                   (click)="onBodyClick($event)"></span>
                         } @else {
-                            <span class="msg__body">{{ m.body }}</span>
+                            <span class="msg__body" data-test="plain-body">@for (run of bodyRuns(m.body); track $index) {@if (run.href) {<a [href]="run.href" target="_blank" rel="noopener noreferrer">{{ run.text }}</a>} @else {<ng-container>{{ run.text }}</ng-container>}}</span>
                         }
                     }
                     @if (m.attachments?.length) {
@@ -2571,6 +2572,9 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         return out;
     }
 
+    /** A plain body as its words and links. */
+    protected readonly bodyRuns = messageRuns;
+
     /**
      * A message body with its `@label` mention tokens wrapped in a tint span. The
      * labels come from the message's OWN stored `mentions` (snapshotted at send),
@@ -2579,11 +2583,11 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
      * binding.
      */
     renderMentions(m: ChatMessageDto): string {
-        let html = m.body ?? '';
-        html = linkifyChannelRefs(html, this.channels());
+        // Addresses last, in the text that is neither a mention nor a channel: the markup written here stays whole.
+        let html = linkifyChannelRefs(m.body ?? '', this.channels());
         const refs = m.mentions ?? [];
         if (!refs.length) {
-            return html;
+            return linkedMessageHtml(html);
         }
         // The server sanitiser encodes `@` as a numeric entity (e.g. `&;`) in the
         // stored HTML body, so a literal-`@` regex never matches. Decode the `@`
@@ -2600,7 +2604,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             const pattern = new RegExp('@' + this.escapeRegExp(esc) + '(?![\\p{L}\\p{N}])', 'gu');
             html = html.replace(pattern, () => `<span class="msg__mention">@${esc}</span>`);
         }
-        return html;
+        return linkedMessageHtml(html);
     }
 
     /**
