@@ -20,14 +20,16 @@ export type FcViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay';
  *
  * `currentEnd` is FullCalendar's EXCLUSIVE end (for the week Mon May 25 -
  * Sun May 31 it names Mon Jun 1), so the visible last day is one day back.
+ *
+ * `language` is the interface language (a BCP 47 tag): the names are written in it.
  */
-export function viewTitle(view: FcViewName, currentStart: Date, currentEnd: Date, dtf: DateTimeFormatService): string {
+export function viewTitle(view: FcViewName, currentStart: Date, currentEnd: Date, dtf: DateTimeFormatService, language: string): string {
     const startKey = dtf.dayKey(currentStart.toISOString());
     const lastKey  = shiftDayKey(dtf.dayKey(currentEnd.toISOString()), -1);
     const start    = utcDayOf(startKey);
 
     if (view === 'timeGridDay') {
-        return start.toLocaleString(undefined, {
+        return start.toLocaleString(language, {
             weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
         });
     }
@@ -35,13 +37,13 @@ export function viewTitle(view: FcViewName, currentStart: Date, currentEnd: Date
         const last = utcDayOf(lastKey);
         if (startKey.slice(0, 7) === lastKey.slice(0, 7)) {
             // "May 25 - 31, 2026"
-            const month = start.toLocaleString(undefined, { month: 'long', timeZone: 'UTC' });
+            const month = start.toLocaleString(language, { month: 'long', timeZone: 'UTC' });
             return `${month} ${start.getUTCDate()} – ${last.getUTCDate()}, ${start.getUTCFullYear()}`;
         }
         // Month-crossing or year-crossing -- show both ends explicitly.
         const fmt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' };
-        return `${start.toLocaleString(undefined, fmt)} – ${last.toLocaleString(undefined, fmt)}`;
+        return `${start.toLocaleString(language, fmt)} – ${last.toLocaleString(language, fmt)}`;
     }
     // dayGridMonth -- "May 2026"
-    return start.toLocaleString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    return start.toLocaleString(language, { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }

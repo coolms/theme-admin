@@ -20,7 +20,7 @@ describe('calendar view title', () => {
         new Date(Date.UTC(y, m - 1, d - 1, 15, 0, 0));
 
     const utc = (y: number, m: number, d: number, opts: Intl.DateTimeFormatOptions): string =>
-        new Date(Date.UTC(y, m - 1, d)).toLocaleString(undefined, { ...opts, timeZone: 'UTC' });
+        new Date(Date.UTC(y, m - 1, d)).toLocaleString('en', { ...opts, timeZone: 'UTC' });
 
     let dtf: DateTimeFormatService;
 
@@ -47,7 +47,7 @@ describe('calendar view title', () => {
             .withContext('this spec is vacuous unless the browser puts the instant in the previous month')
             .not.toBe(8);
 
-        const title = viewTitle('dayGridMonth', start, tokyoMidnight(2026, 10, 1), dtf);
+        const title = viewTitle('dayGridMonth', start, tokyoMidnight(2026, 10, 1), dtf, 'en');
         expect(title).toBe(utc(2026, 9, 1, { month: 'long', year: 'numeric' }));
         expect(title).not.toBe(utc(2026, 8, 1, { month: 'long', year: 'numeric' }));
     });
@@ -61,19 +61,33 @@ describe('calendar view title', () => {
             .not.toBe(15);
 
         const opts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-        const title = viewTitle('timeGridDay', start, tokyoMidnight(2026, 9, 16), dtf);
+        const title = viewTitle('timeGridDay', start, tokyoMidnight(2026, 9, 16), dtf, 'en');
         expect(title).toBe(utc(2026, 9, 15, opts));
         expect(title).not.toBe(utc(2026, 9, 14, opts));
     });
 
     it('titles a week inside one month with its first and last day, the exclusive end stepped back', () => {
-        const title = viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 7), tokyoMidnight(2026, 9, 14), dtf);
+        const title = viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 7), tokyoMidnight(2026, 9, 14), dtf, 'en');
         expect(title).toBe(`${utc(2026, 9, 7, { month: 'long' })} 7 – 13, 2026`);
     });
 
     it('titles a week that crosses a month with both ends spelled out', () => {
-        const title = viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 28), tokyoMidnight(2026, 10, 5), dtf);
+        const title = viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 28), tokyoMidnight(2026, 10, 5), dtf, 'en');
         const fmt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
         expect(title).toBe(`${utc(2026, 9, 28, fmt)} – ${utc(2026, 10, 4, fmt)}`);
+    });
+
+    it('writes the names in the interface language, whatever the browser\'s is', () => {
+        const start = tokyoMidnight(2026, 9, 15);
+        const day = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } as const;
+        for (const language of ['de', 'fr', 'en']) {
+            expect(viewTitle('timeGridDay', start, tokyoMidnight(2026, 9, 16), dtf, language))
+                .toBe(new Date(Date.UTC(2026, 8, 15)).toLocaleString(language, day));
+            expect(viewTitle('dayGridMonth', tokyoMidnight(2026, 9, 1), tokyoMidnight(2026, 10, 1), dtf, language))
+                .toBe(new Date(Date.UTC(2026, 8, 1)).toLocaleString(language, { month: 'long', year: 'numeric', timeZone: 'UTC' }));
+        }
+        expect(viewTitle('timeGridDay', start, tokyoMidnight(2026, 9, 16), dtf, 'de')).toContain('Dienstag');
+        expect(viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 7), tokyoMidnight(2026, 9, 14), dtf, 'fr')).toContain('septembre');
+        expect(viewTitle('timeGridWeek', tokyoMidnight(2026, 9, 28), tokyoMidnight(2026, 10, 5), dtf, 'de')).toContain('Okt.');
     });
 });

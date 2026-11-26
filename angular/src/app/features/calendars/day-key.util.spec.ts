@@ -48,9 +48,12 @@ describe('day keys', () => {
     it('names the day the key says, not the day the browser would put its midnight on', () => {
         // Monday 11 March 2030. A browser west of UTC turns UTC midnight into
         // the evening of the 10th; the names must not follow it there.
-        expect(weekdayName('2030-03-11'))
-            .toBe(new Date(Date.UTC(2030, 2, 11)).toLocaleDateString([], { weekday: 'short', timeZone: 'UTC' }));
-        expect(monthDayName('2030-03-11')).toContain('11');
-        expect(monthDayName('2030-03-11')).not.toContain('10');
+        expect(weekdayName('2030-03-11', 'en'))
+            .toBe(new Date(Date.UTC(2030, 2, 11)).toLocaleDateString('en', { weekday: 'short', timeZone: 'UTC' }));
+        expect(monthDayName('2030-03-11', 'en')).toContain('11');
+        expect(monthDayName('2030-03-11', 'en')).not.toContain('10');
+        // In the language given, not the browser's.
+        expect([weekdayName('2030-03-11', 'fr'), monthDayName('2030-03-11', 'fr')]).toEqual(['lun.', '11 mars']);
+        expect([weekdayName('2030-03-11', 'en'), monthDayName('2030-03-11', 'en')]).toEqual(['Mon', 'Mar 11']);
     });
 });

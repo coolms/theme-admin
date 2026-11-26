@@ -8,6 +8,7 @@ major number means here.
 
 ## Unreleased
 
+- **The Calendar's title, its mini calendar's month and the quick panel's days are written in the interface language**, not the browser's.
 - **The design-tokens lock check asks GitHub's API with the job's token**, so the limit on requests without one no longer makes it unevaluable (403).
 - **katex `^0.19.1`** (was `^0.18.11`, a deprecated release).
 - **The inline-style check passes and runs in CI**: the fonts page's styles are plain strings, not joined from pieces (the CSS is the same), and the admin suite's job runs `npm run lint:styles`.
