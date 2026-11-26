@@ -15,6 +15,7 @@ import {
     UserAvatarComponent,
     UserSearchSelectComponent,
 } from '@coolms/ui-angular';
+import { chatCommands } from './chat-address';
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { byLastMessage, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
@@ -465,11 +466,11 @@ export class MessagesQuickPanelComponent implements OnInit {
     /** Jump to the full `/admin/chat` view (the drawer auto-closes on navigation). */
     openFull(): void {
         const id = this.openId();
-        void this.router.navigate(['/chat'], id ? { queryParams: { c: id } } : {});
+        void this.router.navigate(chatCommands(id));
     }
 
     openList(): void {
-        void this.router.navigate(['/chat']);
+        void this.router.navigate(chatCommands(null));
     }
 
     isMine(m: ChatMessageDto): boolean {

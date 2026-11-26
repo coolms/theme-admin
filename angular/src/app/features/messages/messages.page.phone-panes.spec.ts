@@ -1,90 +1,40 @@
-import { ApplicationRef, signal } from '@angular/core';
+import { ApplicationRef } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { Store } from '@ngxs/store';
-import { NEVER, of } from 'rxjs';
-import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
-import { EDITOR_MANIFEST_PROVIDER, provideCoolmsEditor } from '@coolms/editor-angular';
-import { ContextMenuService, DateTimeFormatService, ToastService } from '@coolms/ui-angular';
 
-import { RtcCallService } from '../rtc/rtc-call.service';
-import { ChatPresenceLiveService } from './chat-presence-live.service';
-import { MessagesLiveEventsService } from './messages-live-events.service';
+import { ChatAddressFake } from './chat-address.fake';
 import { MessagesPageComponent } from './messages.page';
-import { MessagesService } from './messages.service';
-import type { ChatConversationDto, ChatMessageDto } from './messages.types';
-
-const person = (userId: string, displayName: string) => ({ participantId: 'p-' + userId, userId, displayName, kind: 'human', role: 'member' });
-const conversation = (id: string, lastMessageAt: string): ChatConversationDto => ({
-    id, kind: 'direct', title: null, status: 'open', lastSeq: 3, updatedAt: lastMessageAt, lastMessageAt, createdAt: lastMessageAt,
-    lastMessagePreview: 'Hello', viewerUnread: 0,
-    participants: [{ ...person('u1', 'Me'), presenceStatus: 'online' }, person('u-' + id, 'Person ' + id)],
-}) as unknown as ChatConversationDto;
-const ROWS: ChatConversationDto[] = [
-    conversation('d1', '2026-11-20T10:00:00+00:00'),
-    conversation('d2', '2026-11-20T09:00:00+00:00'),
-    conversation('d3', '2026-11-20T08:00:00+00:00'),
-];
-
-/** The query the page asks for a phone's width; the same as Mail's. */
-const PHONE_QUERY = '(max-width: 599.98px)';
+import { chatPageProviders, FAKE_ROWS, type FakeChatServer, PHONE_QUERY } from './messages-page.fake';
+import type { ChatMessageDto } from './messages.types';
 
 /**
  * At a phone's width Chat shows one pane at a time, as Mail does: the list with nothing open; the open conversation
  * filling the page with a Back that returns to the list, the focus on the row it came from. At a desktop's width both
  * panes stand side by side and there is no Back. The page is rendered in the browser at each width, with the stand-in
- * services, the phone's width answered by the media query the page asks.
+ * services, the phone's width answered by the media query the page asks, and the address and history stood in for.
  */
 describe('Chat -- one pane at a time on a phone', () => {
     let fixture: ComponentFixture<MessagesPageComponent>;
+    let address: ChatAddressFake;
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
     const q = (sel: string): HTMLElement | null => el().querySelector<HTMLElement>(sel);
     const shown = (node: HTMLElement | null): boolean => node !== null && getComputedStyle(node).display !== 'none' && node.offsetWidth > 0;
 
     beforeEach(() => {
-        TestBed.configureTestingModule({
-            imports: [MessagesPageComponent],
-            providers: [
-                provideHttpClient(),
-                provideHttpClientTesting(),
-                {
-                    provide: MessagesService,
-                    useValue: new Proxy({
-                        listConversations: () => of(ROWS.map(c => ({ ...c }))),
-                        listChannels: () => of([]),
-                        fetchOnline: () => of({}),
-                        markRead: () => of(null),
-                    } as Record<string, unknown>, { get: (known, name) => known[String(name)] ?? (() => NEVER) }),
-                },
-                { provide: MessagesLiveEventsService, useValue: { watchRoom: () => NEVER, watchUser: () => NEVER, isConnected: signal(false) } },
-                { provide: ChatPresenceLiveService, useValue: { live: signal(true), online: signal(new Set<string>()) } },
-                {
-                    provide: Store,
-                    useValue: {
-                        selectSnapshot: (sel: unknown) => (sel === AuthState.currentUser ? { id: 'u1' }
-                            : sel === AppConfigState.manifest ? { navi: { graphBySlug: '/api/v1/navi/trees/{slug}/graph' } } : null),
-                    },
-                },
-                {
-                    provide: NaviGraphService,
-                    useValue: { loadTree: () => of([] as NaviGraphNode[]), isVisible: () => true, matchesShowWhen: () => true },
-                },
-                { provide: ContextMenuService, useValue: { openFrom: (): void => {}, menu: () => null, close: (): void => {} } },
-                { provide: ToastService, useValue: { error: (): void => {} } },
-                { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
-                { provide: DateTimeFormatService, useValue: new Proxy({}, { get: () => () => '' }) },
-                provideCoolmsEditor(),
-                { provide: EDITOR_MANIFEST_PROVIDER, useValue: { getProfile: () => ({ contributors: [], allowedWidgets: [] }) } },
-                { provide: RtcCallService, useValue: { activeCall: signal(null), place: (): void => {}, downloadRecording: (): void => {} } },
-            ],
-        });
+        address = new ChatAddressFake();
+        const server: FakeChatServer = { rows: FAKE_ROWS, reads: [] };
+        TestBed.configureTestingModule({ imports: [MessagesPageComponent], providers: chatPageProviders(server, address) });
     });
     afterEach(() => {
         (fixture?.nativeElement as HTMLElement | undefined)?.remove();
         fixture?.destroy();
     });
+
+    /** The address's change reaches the page, and the page is drawn again, its after-render work done. */
+    async function settle(): Promise<void> {
+        await new Promise<void>(resolve => setTimeout(resolve));
+        fixture.detectChanges();
+        TestBed.inject(ApplicationRef).tick();
+    }
 
     /** The page drawn this wide, the window answering the phone's query as a window that wide would. */
     function show(width: number): void {
@@ -100,9 +50,9 @@ describe('Chat -- one pane at a time on a phone', () => {
         expect(el().querySelectorAll('.msg__row').length).withContext('the rows drawn').toBe(3);
     }
 
-    function open(id: string): void {
+    async function open(id: string): Promise<void> {
         (q(`.msg__row[data-conversation="${id}"]`) as HTMLButtonElement).click();
-        fixture.detectChanges();
+        await settle();
         expect(fixture.componentInstance.selectedId()).withContext('opened').toBe(id);
     }
 
@@ -115,9 +65,9 @@ describe('Chat -- one pane at a time on a phone', () => {
         expect(shown(q('[data-test="chat-phone-back"]'))).withContext('back').toBe(false);
     });
 
-    it('on a phone with one open: the conversation fills the page with Back, the list is not shown', () => {
+    it('on a phone with one open: the conversation fills the page with Back, the list is not shown', async () => {
         show(390);
-        open('d2');
+        await open('d2');
         const page = q('.msg')!;
         const thread = q('.msg__thread')!;
         expect(shown(thread)).withContext('conversation pane').toBe(true);
@@ -132,24 +82,38 @@ describe('Chat -- one pane at a time on a phone', () => {
         expect(back.parentElement).withContext('Back is in the conversation pane').toBe(thread);
     });
 
-    it('on a phone, Back returns to the list with the focus on the row it came from', () => {
+    it('on a phone, Back returns to the list through the history, the focus on the row it came from', async () => {
         show(390);
-        open('d2');
+        await open('d2');
+        expect(address.entries.length).withContext('the open is an entry of its own').toBe(2);
         const back = q('[data-test="chat-phone-back"]') as HTMLButtonElement;
         back.focus();
         back.click();
-        fixture.detectChanges();
-        TestBed.inject(ApplicationRef).tick();
+        await settle();
 
+        expect(address.index).withContext('stepped back in the history').toBe(0);
+        expect(address.current.conversationId).withContext('the address').toBeNull();
         expect(fixture.componentInstance.selectedId()).withContext('closed').toBeNull();
         expect(shown(q('.msg__list'))).withContext('list').toBe(true);
         expect(shown(q('.msg__thread'))).withContext('conversation pane').toBe(false);
         expect(document.activeElement).withContext('focus').toBe(q('.msg__row[data-conversation="d2"]'));
     });
 
-    it('on a phone, a thread opened in the conversation fills the page in its place', () => {
+    it("on a phone, the browser's Back returns to the list, the focus on the row it came from", async () => {
         show(390);
-        open('d1');
+        await open('d3');
+        address.back();
+        await settle();
+
+        expect(fixture.componentInstance.selectedId()).withContext('closed').toBeNull();
+        expect(shown(q('.msg__list'))).withContext('list').toBe(true);
+        expect(shown(q('.msg__thread'))).withContext('conversation pane').toBe(false);
+        expect(document.activeElement).withContext('focus').toBe(q('.msg__row[data-conversation="d3"]'));
+    });
+
+    it('on a phone, a thread opened in the conversation fills the page in its place', async () => {
+        show(390);
+        await open('d1');
         fixture.componentInstance.openThreadRoot.set({ id: 'm1', conversationId: 'd1', seq: 1, body: 'Root', replyCount: 0 } as unknown as ChatMessageDto);
         fixture.detectChanges();
         const page = q('.msg')!;
@@ -159,11 +123,11 @@ describe('Chat -- one pane at a time on a phone', () => {
         expect(shown(q('.msg__list'))).withContext('list').toBe(false);
     });
 
-    it('on a desktop: the list and the conversation side by side, no Back', () => {
+    it('on a desktop: the list and the conversation side by side, no Back', async () => {
         show(1200);
         expect(shown(q('.msg__list'))).withContext('list, nothing open').toBe(true);
         expect(shown(q('.msg__thread'))).withContext('conversation pane, nothing open').toBe(true);
-        open('d2');
+        await open('d2');
         const list = q('.msg__list')!;
         const thread = q('.msg__thread')!;
         expect(shown(list)).withContext('list').toBe(true);

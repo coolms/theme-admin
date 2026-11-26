@@ -398,9 +398,9 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 expect(navigate).not.toHaveBeenCalled();
             });
 
-            it('a missed call\'s row to chat.conversation opens /chat?c=<id> on Enter and on a click, and reads the row; named "3 missed calls"', () => {
+            it('a missed call\'s row to chat.conversation opens /chat/<id> on Enter and on a click, and reads the row; named "3 missed calls"', () => {
                 expect(notificationActionTarget(openConversation)).toEqual({
-                    label: 'Open conversation', presentation: 'row', commands: ['/chat'], queryParams: { c: CONVERSATION_ID },
+                    label: 'Open conversation', presentation: 'row', commands: ['/chat', CONVERSATION_ID], queryParams: {},
                 });
                 const n = row({ type: 'rtc.call.missed', extras: { title: '3 missed calls' }, action: openConversation });
                 const host = render([n]);
@@ -413,7 +413,7 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
 
                 enter(r);
                 expect(markRead).toHaveBeenCalledOnceWith('n-1');
-                expect(navigate).toHaveBeenCalledOnceWith(['/chat'], { queryParams: { c: CONVERSATION_ID } });
+                expect(navigate).toHaveBeenCalledOnceWith(['/chat', CONVERSATION_ID], { queryParams: {} });
                 expect(close).toHaveBeenCalledTimes(1);
 
                 activate(n);
@@ -428,7 +428,7 @@ describe('NotificationDrawerContentComponent -- a notification\'s action', () =>
                 activate(n);
 
                 expect(markRead).toHaveBeenCalledOnceWith('n-1');
-                expect(navigate).toHaveBeenCalledOnceWith(['/chat'], { queryParams: { c: CONVERSATION_ID } });
+                expect(navigate).toHaveBeenCalledOnceWith(['/chat', CONVERSATION_ID], { queryParams: {} });
             });
 
             it('a row action to chat.conversation without a conversationId stays inert: no button, no role, pressing reads it and goes nowhere', () => {

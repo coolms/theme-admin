@@ -16,8 +16,8 @@ import {
     viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { NgTemplateOutlet } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { Location, NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
@@ -34,6 +34,7 @@ import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
 import { channelTriggerAt, linkifyChannelRefs, matchChannels } from './channel-refs.util';
 import { linkedMessageHtml, messageRuns } from './message-links.util';
+import { chatCommands, CONVERSATION_PARAM } from './chat-address';
 import { MentionDirectoryUser, MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
@@ -1111,6 +1112,8 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly rtcCall   = inject(RtcCallService);
     private readonly injector  = inject(Injector);
     private readonly host      = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    private readonly router    = inject(Router);
+    private readonly location  = inject(Location);
 
     /** A phone's width: the page shows one pane at a time. */
     private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -1119,14 +1122,14 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly phone = signal(this.phoneWidth?.matches === true);
 
     /**
-     * Pending `?c=<id>` preselect (from the topbar quick-panel, /).
-     * Re-armed on every distinct `?c=` value -- so clicking "open full" on a
-     * conversation while ALREADY on `/messages` switches to it (the snapshot-once
-     * approach didn't, since Angular reuses the component on a query-param change).
-     * Cleared once applied so a later list reload can't yank you off a thread you
-     * navigated to manually.
+     * The conversation the address names, waiting to be opened once it is read. Cleared once applied so a later list
+     * reload can't yank you off a thread you navigated to manually.
      */
     private pendingPreselect: string | null = null;
+    /** The conversation the address names now (`/chat/<id>`), or null for the list alone (`/chat`). */
+    private addressId: string | null = null;
+    /** This page added the address's entry to the history, so its Back can return through the history. */
+    private addedEntry = false;
 
     private readonly threadScroll = viewChild<ElementRef<HTMLElement>>('threadScroll');
     private readonly composerEl   = viewChild<ElementRef<HTMLElement>>('composer');
@@ -1639,21 +1642,25 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     constructor() {
-        // Deep-link: arm the `?c=<id>` preselect on every distinct
-        // value and apply it once the list contains it. As an OBSERVABLE (not a
-        // one-shot snapshot) so clicking "open full" on a conversation while
-        // already on `/messages` switches the open thread -- Angular reuses the
-        // component on a query-param change, so ngOnInit/snapshot never re-fire.
+        // The older `?c=<id>` link: replaced by `/chat/<id>`.
         this.route.queryParamMap
             .pipe(
                 map(p => p.get('c')),
-                distinctUntilChanged(),
+                filter((cid): cid is string => cid !== null && cid !== ''),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(cid => {
-                this.pendingPreselect = cid;
-                this.applyPreselect();
+                void this.router.navigate(chatCommands(cid), { replaceUrl: true });
             });
+        // The address leads: `/chat/<id>` opens that conversation once the list (or its own row) is read; `/chat`
+        // closes the open one. The page is reused as the address changes, so it follows every value.
+        this.route.paramMap
+            .pipe(
+                map(p => p.get(CONVERSATION_PARAM)),
+                distinctUntilChanged(),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe(id => this.followAddress(id));
 
         // Realtime: (re)subscribe to the selected conversation's
         // `chat.room.{id}` channel whenever the selection changes -- switchMap
@@ -2718,10 +2725,54 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /**
-     * Honor a pending `?c=<conversationId>` deep-link (the topbar quick-panel
-     * /) once the conversation list contains it -- open that thread.
-     * Re-runs after each list load and on every `?c=` change (see the ctor),
-     * so the deep-link works both on first arrival and while already on the page.
+     * The address named this conversation, or none: a conversation is opened once it is read (see
+     * {@link applyPreselect}); none closes the open one, the focus on its row.
+     */
+    private followAddress(id: string | null): void {
+        this.addressId = id;
+        if (id === null) {
+            this.addedEntry = false;
+            this.pendingPreselect = null;
+            if (this.selectedId() !== null) {
+                this.closeConversation();
+            }
+            return;
+        }
+        this.pendingPreselect = id;
+        this.applyPreselect();
+    }
+
+    /**
+     * Writes the open conversation into the address: one opened from the list alone is an entry of its own in the
+     * history; one opened in place of another replaces that one's entry.
+     */
+    private writeAddress(id: string): void {
+        if (this.addressId === id) {
+            return;
+        }
+        const replace = this.addressId !== null;
+        this.addressId = id;
+        if (!replace) {
+            this.addedEntry = true;
+        }
+        void this.router.navigate(chatCommands(id), { replaceUrl: replace });
+    }
+
+    /** The list alone in the address, in place of the entry naming a conversation. */
+    private dropAddress(): void {
+        if (this.addressId === null) {
+            return;
+        }
+        this.addressId = null;
+        this.addedEntry = false;
+        void this.router.navigate(chatCommands(null), { replaceUrl: true });
+    }
+
+    /**
+     * Honor a pending conversation the address names once the conversation list
+     * contains it -- open that thread. Re-runs after each list load and on every
+     * address change (see the ctor), so it works both on first arrival and while
+     * already on the page.
      */
     private applyPreselect(): void {
         const id = this.pendingPreselect;
@@ -2736,7 +2787,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             // conversation the caller is not a member of; drop the pending id so
             // the next list load doesn't ask again.
             // Guarded by the id, not a bare flag: a plain "already fetching" would
-            // make a `?c=` change land while an earlier fetch was in flight and be
+            // make an address change land while an earlier fetch was in flight and be
             // dropped on the floor.
             if (this.preselectFetchingId === id) {
                 return;
@@ -2756,6 +2807,10 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                     // may have moved on to a different conversation since.
                     if (this.pendingPreselect === id) {
                         this.pendingPreselect = null;
+                    }
+                    // A conversation not read leaves the address too, in place: the list alone.
+                    if (this.addressId === id && this.selectedId() !== id) {
+                        this.dropAddress();
                     }
                 },
             });
@@ -2814,13 +2869,32 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Seed the read-receipt cursors from the peers' persisted values so a
         // re-opened thread shows "Read" without waiting for a fresh nudge.
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
+        this.writeAddress(id);
     }
 
     /**
-     * The phone's Back: closes the open conversation, so the list stands in its place, and puts the focus on the
-     * conversation's row once the list is drawn.
+     * The phone's Back, through the history as the browser's Back: the entry this page added is left, else the list
+     * alone replaces the address. The address closing the conversation returns the focus to its row.
      */
     backToList(): void {
+        if (this.addressId === null) {
+            this.closeConversation();
+            return;
+        }
+        if (this.addedEntry) {
+            this.addedEntry = false;
+            this.location.back();
+            return;
+        }
+        this.dropAddress();
+        this.closeConversation();
+    }
+
+    /**
+     * Closes the open conversation, so the list stands in its place, and puts the focus on the conversation's row
+     * once the list is drawn.
+     */
+    private closeConversation(): void {
         const id = this.selectedId();
         if (id === null) {
             return;
@@ -3137,6 +3211,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
             next: () => {
                 this.showMembers.set(false);
                 this.selectedId.set(null);
+                this.dropAddress();
                 this.conversations.set(this.conversations().filter(c => c.id !== id));
             },
             error: (err: unknown) => {
@@ -3235,6 +3310,7 @@ export class MessagesPageComponent implements OnInit, AfterViewInit, OnDestroy {
                 if (this.selectedId() === conv.id) {
                     this.showMembers.set(false);
                     this.selectedId.set(null);
+                    this.dropAddress();
                 }
                 this.conversations.set(this.conversations().filter(c => c.id !== conv.id));
             },

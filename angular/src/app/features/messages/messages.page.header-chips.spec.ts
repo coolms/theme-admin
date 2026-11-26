@@ -2,7 +2,6 @@ import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { NEVER, of } from 'rxjs';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
@@ -12,6 +11,7 @@ import { RtcCallService } from '../rtc/rtc-call.service';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { conversationFiltersOf, conversationsShown } from './conversation-filter.util';
 import { MessagesLiveEventsService } from './messages-live-events.service';
+import { ChatAddressFake } from './chat-address.fake';
 import { MessagesPageComponent } from './messages.page';
 import { MessagesService } from './messages.service';
 import type { ChatConversationDto } from './messages.types';
@@ -128,7 +128,7 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
                 },
                 { provide: ContextMenuService, useValue: { openFrom: jasmine.createSpy('openFrom'), menu: () => null, close: (): void => {} } },
                 { provide: ToastService, useValue: { error: (): void => {} } },
-                { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
+                ...new ChatAddressFake().providers,
                 { provide: DateTimeFormatService, useValue: { row: () => '', auto: () => '', date: () => '', time: () => '', dateTime: () => '' } },
                 { provide: RtcCallService, useValue: { activeCall: signal(null), place: (): void => {}, downloadRecording: (): void => {} } },
             ],

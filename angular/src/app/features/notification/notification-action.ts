@@ -92,7 +92,7 @@ export function notificationActionTarget(action: NotificationAction | null | und
             };
         }
         case 'chat.conversation': {
-            // The chat page opens the conversation its `c` query parameter names.
+            // The chat page opens the conversation its address names: /chat/<id>.
             const conversationId = param(params, 'conversationId');
             if (null === conversationId) {
                 return null;
@@ -100,8 +100,8 @@ export function notificationActionTarget(action: NotificationAction | null | und
             return {
                 label,
                 presentation: notificationActionPresentation(action),
-                commands: ['/chat'],
-                queryParams: { c: conversationId },
+                commands: ['/chat', conversationId],
+                queryParams: {},
             };
         }
         default:

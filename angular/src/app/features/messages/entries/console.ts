@@ -7,8 +7,8 @@ import { MessagesQuickAccessComponent } from '../messages-quick-access.component
  * (console@1).
  *
  * The mount is `chat`; `messages`, what it was called until 2026-09-22,
- * redirects, so a bookmark, a link in a notification and the drawer's
- * "Open chat" all keep working.
+ * redirects, an open conversation's address too, so a bookmark, a link in a
+ * notification and the drawer's "Open chat" all keep working.
  */
 export default consoleEntry({
     module:   'chat',
@@ -21,6 +21,7 @@ export default consoleEntry({
             nav:      { activeNav: '/chat', fullHeight: true },
         },
         { path: 'messages', redirectTo: 'chat' },
+        { path: 'messages/:conversationId', redirectTo: 'chat/:conversationId' },
     ],
     topbar: [{ id: 'chat.quick-access', order: 30, component: MessagesQuickAccessComponent }],
 });
