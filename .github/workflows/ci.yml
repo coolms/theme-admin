@@ -251,6 +251,16 @@ jobs:
         working-directory: sources/theme-admin/angular
         run: npm run lint:styles
 
+      # The words a person sees use no dash as a separator (2026-11-27): an em dash, "--" or a spaced hyphen in a
+      # template's text or a read attribute fails, unless the string is on the grandfather list, which may only shrink
+      # against develop's. An en dash passes only between two values with no spaces.
+      - name: UI text uses no dash as a separator
+        working-directory: sources/theme-admin/angular
+        run: |
+          git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
+          node --test scripts/check-ui-text.test.mjs
+          npm run lint:ui-text -- --base origin/develop
+
       # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an
       # eval or Function( call outside the sites read and pinned by text and count fails. The tests' two cases that
       # ask the advisory database run here (the version read, and a throwaway copy claiming 4.1.392).
