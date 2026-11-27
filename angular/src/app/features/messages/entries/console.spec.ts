@@ -14,11 +14,13 @@ import chatEntry from './console';
 describe('the Chat console entry', () => {
     it('mounts at chat and keeps messages as a redirect', () => {
         const routes = consoleChildren([chatEntry]);
-        expect(routes.map(r => r.path)).toEqual(['chat', 'messages']);
+        expect(routes.map(r => r.path)).toEqual(['chat', 'messages', 'messages/:conversationId']);
         expect(routes[0].loadChildren).toBeDefined();
         expect(routes[0].data).toEqual({ activeNav: '/chat', fullHeight: true });
         expect(routes[1].redirectTo).toBe('chat');
         expect(routes[1].pathMatch).toBe('full');
+        expect(routes[2].redirectTo).withContext('an open conversation').toBe('chat/:conversationId');
+        expect(routes[2].pathMatch).toBe('full');
     });
 
     it('is the chat module, so the manifest gates both paths together', () => {

@@ -6,7 +6,9 @@ import {
     HostListener,
     OnDestroy,
     OnInit,
+    Injector,
     ViewEncapsulation,
+    afterNextRender,
     computed,
     effect,
     inject,
@@ -14,8 +16,8 @@ import {
     viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { NgTemplateOutlet } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { Location, NgTemplateOutlet } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { EMPTY, Subject, catchError, debounceTime, distinctUntilChanged, filter, fromEvent, interval, map, merge, switchMap } from 'rxjs';
 import { CoolmsEditorComponent } from '@coolms/editor-angular';
@@ -33,6 +35,7 @@ import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
 import { channelTriggerAt, linkifyChannelRefs, matchChannels } from './channel-refs.util';
 import { linkedMessageHtml, messageRuns } from './message-links.util';
+import { chatCommands, CONVERSATION_PARAM } from './chat-address';
 import { MentionDirectoryUser, MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
@@ -128,7 +131,9 @@ const BROWSE_CHANNELS = 'browse-channels';
         <app-page-toolbar class="msg__header-feed" [treeSlug]="listTree" [context]="listContext()"
                           (headerActionsChanged)="headerActions.set($event)" (titleChanged)="treeTitle.set($event)"
                           (actionClick)="onHeaderAction($event)" />
-        <div class="msg">
+        <!-- On a phone one pane at a time: the list; the conversation once one is open; its thread once one is open. -->
+        <div class="msg" [class.msg--one]="phone()" [class.msg--reading]="selectedId() !== null"
+             [class.msg--side]="openThreadRoot() !== null">
             <aside class="msg__list">
                 <!-- The list's header row: its name, and its filter at the end. A phone has none: the page's title says the
                      filter, and its icon is beside the search. -->
@@ -270,6 +275,7 @@ const BROWSE_CHANNELS = 'browse-channels';
                                         [class.msg__row--readonly]="c.viewerState === 'excluded'"
                                         [class.msg__row--muted]="c.viewerMuted"
                                         [class.msg__row--unread]="!c.viewerMuted && unreadCount(c) > 0"
+                                        [attr.data-conversation]="c.id"
                                         (click)="select(c.id)"
                                         (contextmenu)="onRowContextMenu($event, c)">
                                     <app-user-avatar size="sm" [user]="rowAvatar(c)" [status]="rowStatus(c)" />
@@ -325,6 +331,11 @@ const BROWSE_CHANNELS = 'browse-channels';
                 @if (!selectedId()) {
                     <div class="msg__empty">Select a conversation, or start a new one.</div>
                 } @else {
+                    <!-- On a phone the conversation fills the screen; Back returns to the list. -->
+                    <button type="button" class="msg__phone-back" data-test="chat-phone-back" (click)="backToList()">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        <span>Back</span>
+                    </button>
                     <header class="msg__thread-head">
                         <app-user-avatar size="sm" [user]="rowAvatar(selected())" [status]="rowStatus(selected())" />
                         <span class="msg__thread-name">{{ counterpartName(selected()) }}</span>
@@ -852,6 +863,18 @@ const BROWSE_CHANNELS = 'browse-channels';
         .msg__more:hover:not(:disabled) { background: var(--cms-hover, #f3f4f6); color: var(--cms-text, #111827); }
         .msg__more:disabled { cursor: default; opacity: .7; }
         .msg__thread { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+        .msg__phone-back {
+            display: none; flex: 0 0 auto; align-items: center; gap: 8px; width: 100%; min-height: var(--cms-touch-target-min);
+            padding: 0 12px; border: 0; border-bottom: 1px solid var(--cms-border); background: transparent; color: var(--cms-text);
+            font: inherit; text-align: left; cursor: pointer;
+        }
+        /* One pane at a time (a phone): the list; the conversation once one is open; its thread over it once that is
+           open. The pane shown fills the page over the width a splitter wrote on it inline. */
+        .msg--one > .msg__list, .msg--one > .msg__thread, .msg--one > .msg__tp, .msg--one > cms-pane-splitter { display: none; }
+        .msg--one:not(.msg--reading) > .msg__list { display: flex; width: 100% !important; flex: 1 1 auto !important; }
+        .msg--one.msg--reading:not(.msg--side) > .msg__thread { display: flex; }
+        .msg--one.msg--reading.msg--side > .msg__tp { display: flex; width: 100% !important; flex: 1 1 auto !important; }
+        .msg--one .msg__phone-back { display: flex; }
         /* - Threads T2: per-message thread affordances + the thread side-panel - */
         .msg__threadbar { display: flex; align-items: center; gap: .4rem; margin-top: .3rem; }
         .msg__threadcount { display: inline-flex; align-items: center; gap: .3rem; border: 0; background: transparent; cursor: pointer; font: inherit; font-size: .72rem; font-weight: 600; color: var(--cms-primary, #2563eb); padding: 0; }
@@ -1095,16 +1118,26 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     private readonly dtf       = inject(DateTimeFormatService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly rtcCall   = inject(RtcCallService);
+    private readonly injector  = inject(Injector);
+    private readonly host      = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    private readonly router    = inject(Router);
+    private readonly location  = inject(Location);
+
+    /** A phone's width: the page shows one pane at a time, and the list's filter is said in the page's title. */
+    private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(max-width: 599.98px)') : null;
+    /** The window is at a phone's width now. */
+    readonly phone = signal(this.phoneWidth?.matches === true);
 
     /**
-     * Pending `?c=<id>` preselect (from the topbar quick-panel, /).
-     * Re-armed on every distinct `?c=` value -- so clicking "open full" on a
-     * conversation while ALREADY on `/messages` switches to it (the snapshot-once
-     * approach didn't, since Angular reuses the component on a query-param change).
-     * Cleared once applied so a later list reload can't yank you off a thread you
-     * navigated to manually.
+     * The conversation the address names, waiting to be opened once it is read. Cleared once applied so a later list
+     * reload can't yank you off a thread you navigated to manually.
      */
     private pendingPreselect: string | null = null;
+    /** The conversation the address names now (`/chat/<id>`), or null for the list alone (`/chat`). */
+    private addressId: string | null = null;
+    /** This page added the address's entry to the history, so its Back can return through the history. */
+    private addedEntry = false;
 
     private readonly threadScroll = viewChild<ElementRef<HTMLElement>>('threadScroll');
     private readonly composerEl   = viewChild<ElementRef<HTMLElement>>('composer');
@@ -1527,10 +1560,6 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     /** The conversations stand in the list column: not its loading or empty words, nor the public channels. */
     readonly listShown = computed(() => !this.showChannels() && !this.loadingList() && this.conversations().length > 0);
 
-    /** A phone's width: the list's filter is said in the page's title. */
-    private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(max-width: 599.98px)') : null;
-    readonly phone = signal(this.phoneWidth?.matches === true);
     /** The tree's title; on a phone with a filter other than the default, the filter's name after it. */
     readonly pageTitle = computed(() => {
         const title = this.treeTitle() ?? 'Chat';
@@ -1634,21 +1663,25 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     );
 
     constructor() {
-        // Deep-link: arm the `?c=<id>` preselect on every distinct
-        // value and apply it once the list contains it. As an OBSERVABLE (not a
-        // one-shot snapshot) so clicking "open full" on a conversation while
-        // already on `/messages` switches the open thread -- Angular reuses the
-        // component on a query-param change, so ngOnInit/snapshot never re-fire.
+        // The older `?c=<id>` link: replaced by `/chat/<id>`.
         this.route.queryParamMap
             .pipe(
                 map(p => p.get('c')),
-                distinctUntilChanged(),
+                filter((cid): cid is string => cid !== null && cid !== ''),
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(cid => {
-                this.pendingPreselect = cid;
-                this.applyPreselect();
+                void this.router.navigate(chatCommands(cid), { replaceUrl: true });
             });
+        // The address leads: `/chat/<id>` opens that conversation once the list (or its own row) is read; `/chat`
+        // closes the open one. The page is reused as the address changes, so it follows every value.
+        this.route.paramMap
+            .pipe(
+                map(p => p.get(CONVERSATION_PARAM)),
+                distinctUntilChanged(),
+                takeUntilDestroyed(this.destroyRef),
+            )
+            .subscribe(id => this.followAddress(id));
 
         // Realtime: (re)subscribe to the selected conversation's
         // `chat.room.{id}` channel whenever the selection changes -- switchMap
@@ -1728,10 +1761,6 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        // The window crossing a phone's width moves the list's filter.
-        const phoneChanged = (e: MediaQueryListEvent): void => this.phone.set(e.matches);
-        this.phoneWidth?.addEventListener?.('change', phoneChanged);
-        this.destroyRef.onDestroy(() => this.phoneWidth?.removeEventListener?.('change', phoneChanged));
         // The list's filters come from the tree the header reads (one request: the tree is cached by its address).
         const pattern = this.store.selectSnapshot(AppConfigState.manifest)?.navi?.graphBySlug;
         if (pattern) {
@@ -1747,6 +1776,12 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         this.loadChannels();
         this.setupIdleTracking();
         this.destroyRef.onDestroy(() => this.stopPolling());
+        // The window crossing a phone's width redraws the panes and moves the list's filter.
+        const phoneChanged = (e: MediaQueryListEvent): void => this.phone.set(e.matches);
+        if (typeof this.phoneWidth?.addEventListener === 'function') {
+            this.phoneWidth.addEventListener('change', phoneChanged);
+            this.destroyRef.onDestroy(() => this.phoneWidth?.removeEventListener('change', phoneChanged));
+        }
     }
 
     /**
@@ -2703,10 +2738,54 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Honor a pending `?c=<conversationId>` deep-link (the topbar quick-panel
-     * /) once the conversation list contains it -- open that thread.
-     * Re-runs after each list load and on every `?c=` change (see the ctor),
-     * so the deep-link works both on first arrival and while already on the page.
+     * The address named this conversation, or none: a conversation is opened once it is read (see
+     * {@link applyPreselect}); none closes the open one, the focus on its row.
+     */
+    private followAddress(id: string | null): void {
+        this.addressId = id;
+        if (id === null) {
+            this.addedEntry = false;
+            this.pendingPreselect = null;
+            if (this.selectedId() !== null) {
+                this.closeConversation();
+            }
+            return;
+        }
+        this.pendingPreselect = id;
+        this.applyPreselect();
+    }
+
+    /**
+     * Writes the open conversation into the address: one opened from the list alone is an entry of its own in the
+     * history; one opened in place of another replaces that one's entry.
+     */
+    private writeAddress(id: string): void {
+        if (this.addressId === id) {
+            return;
+        }
+        const replace = this.addressId !== null;
+        this.addressId = id;
+        if (!replace) {
+            this.addedEntry = true;
+        }
+        void this.router.navigate(chatCommands(id), { replaceUrl: replace });
+    }
+
+    /** The list alone in the address, in place of the entry naming a conversation. */
+    private dropAddress(): void {
+        if (this.addressId === null) {
+            return;
+        }
+        this.addressId = null;
+        this.addedEntry = false;
+        void this.router.navigate(chatCommands(null), { replaceUrl: true });
+    }
+
+    /**
+     * Honor a pending conversation the address names once the conversation list
+     * contains it -- open that thread. Re-runs after each list load and on every
+     * address change (see the ctor), so it works both on first arrival and while
+     * already on the page.
      */
     private applyPreselect(): void {
         const id = this.pendingPreselect;
@@ -2721,7 +2800,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
             // conversation the caller is not a member of; drop the pending id so
             // the next list load doesn't ask again.
             // Guarded by the id, not a bare flag: a plain "already fetching" would
-            // make a `?c=` change land while an earlier fetch was in flight and be
+            // make an address change land while an earlier fetch was in flight and be
             // dropped on the floor.
             if (this.preselectFetchingId === id) {
                 return;
@@ -2741,6 +2820,10 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
                     // may have moved on to a different conversation since.
                     if (this.pendingPreselect === id) {
                         this.pendingPreselect = null;
+                    }
+                    // A conversation not read leaves the address too, in place: the list alone.
+                    if (this.addressId === id && this.selectedId() !== id) {
+                        this.dropAddress();
                     }
                 },
             });
@@ -2799,6 +2882,54 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         // Seed the read-receipt cursors from the peers' persisted values so a
         // re-opened thread shows "Read" without waiting for a fresh nudge.
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
+        this.writeAddress(id);
+    }
+
+    /**
+     * The phone's Back, through the history as the browser's Back: the entry this page added is left, else the list
+     * alone replaces the address. The address closing the conversation returns the focus to its row.
+     */
+    backToList(): void {
+        if (this.addressId === null) {
+            this.closeConversation();
+            return;
+        }
+        if (this.addedEntry) {
+            this.addedEntry = false;
+            this.location.back();
+            return;
+        }
+        this.dropAddress();
+        this.closeConversation();
+    }
+
+    /**
+     * Closes the open conversation, so the list stands in its place, and puts the focus on the conversation's row
+     * once the list is drawn.
+     */
+    private closeConversation(): void {
+        const id = this.selectedId();
+        if (id === null) {
+            return;
+        }
+        this.closeThread();
+        this.selectedId.set(null);
+        this.messages.set([]);
+        this.pending.set([]);
+        this.mentionDraft.set(new Map());
+        this.mentionAddPrompt.set(null);
+        this.closeMentionMenu();
+        this.showEmoji.set(false);
+        this.showMembers.set(false);
+        this.clearTyping();
+        this.stopPolling();
+        afterNextRender({
+            write: () => {
+                const row = Array.from(this.host.querySelectorAll<HTMLElement>('.msg__row[data-conversation]'))
+                    .find(r => r.dataset['conversation'] === id);
+                row?.focus();
+            },
+        }, { injector: this.injector });
     }
 
     /** Clear the "X is typing..." indicator + its idle timer. */
@@ -3093,6 +3224,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
             next: () => {
                 this.showMembers.set(false);
                 this.selectedId.set(null);
+                this.dropAddress();
                 this.conversations.set(this.conversations().filter(c => c.id !== id));
             },
             error: (err: unknown) => {
@@ -3191,6 +3323,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
                 if (this.selectedId() === conv.id) {
                     this.showMembers.set(false);
                     this.selectedId.set(null);
+                    this.dropAddress();
                 }
                 this.conversations.set(this.conversations().filter(c => c.id !== conv.id));
             },
