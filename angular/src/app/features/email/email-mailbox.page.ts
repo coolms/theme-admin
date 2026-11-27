@@ -19,7 +19,7 @@ import { CoolmsEditorComponent } from '@coolms/editor-angular';
 
 import { ContactDto, ContactsService } from '../contacts/contacts.service';
 import {
-    CmsFilterChipsComponent,
+    CmsFilterMenuComponent,
     CmsPageHeaderComponent,
     CmsPaneSplitterComponent,
     CmsPaneToolbarComponent,
@@ -37,9 +37,10 @@ import {
 } from '@coolms/ui-angular';
 import { EmailLiveEvent, EmailLiveEventsService } from './email-live-events.service';
 import { MailLiveFollower, type MailMessagesChangedEvent } from './mail-messages-changed';
-import { MailPreferencesService } from './mail-preferences.service';
+import { type MailPreferences, MailPreferencesService, preferencesUnread } from './mail-preferences.service';
 import { MailPanesDirective } from './mail-panes.directive';
-import { MAIL_LIST_FILTERS, type MailListFilter, mailListFilterOf, mailRowsShown } from './mail-list-filter';
+import { listFilterInForce, listFiltersOf } from '../tree-list-filters';
+import { MAIL_LIST_FILTER_VALUES, mailListFilterOf, mailRowsShown } from './mail-list-filter';
 import { loadsRemoteImagesAtOnce, openingMailbox } from './mail-opening';
 import { OAUTH_CONNECTED, sayOAuthReturn } from './oauth-return';
 import { plainTextRuns } from '@coolms/editor-client/plain-text';
@@ -206,7 +207,7 @@ type PhonePane = 'folders' | 'message';
         MailPanesDirective,
         StateComponent, MailboxSwitcherComponent, MailboxSyncComponent, MailFolderRailComponent,
         FormsModule, CoolmsEditorComponent, EmptyStateComponent, DateTimePipe,
-        CmsPageHeaderComponent, CmsFilterChipsComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
+        CmsPageHeaderComponent, CmsFilterMenuComponent, PageToolbarComponent, CmsPaneSplitterComponent, CmsPaneToolbarComponent, TagInputComponent,
         ComposeAttachmentsComponent, MailServerSearchComponent, MailHitRowComponent, MailBulkBarComponent, MessageFrameComponent, MailRemoteBarComponent,
         MessageSourceComponent,
         MailQuickReplyComponent, CdkTrapFocus, ComposeAttachButtonComponent, InnerLabelDirective,
@@ -294,10 +295,40 @@ type PhonePane = 'folders' | 'message';
                         <button type="button" class="mbx__phone-bar" data-test="phone-folders"
                                 [attr.aria-expanded]="phoneFolders()" (click)="showPane('folders')">
                             <i class="bi bi-folder2" aria-hidden="true"></i>
-                            <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
+                            <!-- The list's title, with its filter when that is not All: the folder's name is cut first, and goes with its dot
+                                 once under 24px of it would show. -->
+                            <span class="mbx__phone-bar-title" data-test="phone-title"
+                                  [attr.title]="(selectedFolderName() || 'Folders') + (titleFilter() === '' ? '' : ' \u00b7 ' + titleFilter())">
+                                <span class="mbx__phone-bar-place">
+                                    <span class="mbx__phone-bar-label">{{ selectedFolderName() || 'Folders' }}</span>
+                                    @if (titleFilter() !== '') {<span class="mbx__phone-bar-dot">{{ ' \u00b7 ' }}</span>}
+                                </span>
+                                @if (titleFilter() !== '') {
+                                    <span class="mbx__phone-bar-filter">{{ titleFilter() }}</span>
+                                }
+                            </span>
                             <i class="bi bi-chevron-down" aria-hidden="true"></i>
                         </button>
                         <app-mailbox-sync [mailbox]="selectedMailbox()" [served]="listActions()" (finished)="onSyncFinished($event)" />
+                        <!-- The list's second row: the box for every loaded row, the folder's name, and the list's filter at
+                             its end. With one pane at a time there is none: the bar names the folder and the filter is
+                             beside the search. -->
+                        @if (!onePane()) {
+                            <div class="mbx__name-row" data-test="list-name-row">
+                                @if (!searchActive() && checkableIds().length > 0) {
+                                    <input type="checkbox" class="mbx__row-check mbx__all-check" data-test="list-select-all"
+                                           aria-label="Select all loaded messages"
+                                           [checked]="allLoadedChecked()" [indeterminate]="someLoadedChecked()"
+                                           (change)="toggleAllLoaded()" />
+                                }
+                                <h2 class="mbx__list-name" data-test="list-name" [attr.title]="selectedFolderName() || null">{{ selectedFolderName() }}</h2>
+                                @if (!searchActive()) {
+                                    <cms-filter-menu data-test="mail-filter" label="Show" [defaultValue]="listFilters().initial"
+                                                     [options]="listFilters().options" [value]="listFilter() ?? listFilters().initial ?? ''"
+                                                     (valueChange)="chooseListFilter($event)" />
+                                }
+                            </div>
+                        }
                         <div class="mbx__search">
                             <i class="bi bi-search mbx__search-icon"></i>
                             <input type="text" class="mbx__search-input" [(ngModel)]="searchQuery"
@@ -310,14 +341,12 @@ type PhonePane = 'folders' | 'message';
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             }
+                            @if (onePane() && !searchActive()) {
+                                <cms-filter-menu data-test="mail-filter" label="Show" [defaultValue]="listFilters().initial" [iconOnly]="true"
+                                                 [options]="listFilters().options" [value]="listFilter() ?? listFilters().initial ?? ''"
+                                                 (valueChange)="chooseListFilter($event)" />
+                            }
                         </div>
-
-                        <!-- The folder's filter: one chip chosen, All by default; the chips wrap whole onto a line below. -->
-                        @if (!searchActive()) {
-                            <cms-filter-chips class="mbx__chips" data-test="mail-chips" label="Show messages"
-                                              [options]="listFilters" [value]="listFilter()"
-                                              (valueChange)="chooseListFilter($event)" />
-                        }
 
                         <!-- Under the list's row and its search field, the list's one scroll region. -->
                         <!-- The rows are virtualized against this region: only those in view and a few around are drawn. -->
@@ -395,7 +424,7 @@ type PhonePane = 'folders' | 'message';
                                              hint="This folder is empty." />
                         } @else if (shownMessages().length === 0 && listEnd() === null && !hasMore() && !loadingNextPage()) {
                             <app-empty-state icon="funnel" data-test="mail-filter-empty" [title]="filterEmptyTitle()"
-                                             hint="Choose All to see every message in this folder." />
+                                             [hint]="'Choose ' + defaultFilterLabel() + ' to see every message in this folder.'" />
                         } @else {
                             @if (serverRowGone()) {
                                 <p class="mbx__note" role="status" data-test="server-row-gone">{{ messageDeletedText() }}</p>
@@ -1186,6 +1215,16 @@ type PhonePane = 'folders' | 'message';
             font: inherit; text-align: left; cursor: pointer;
         }
         .mbx__phone-bar-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* One line: the folder's name is cut first, and with under 24px of it left it and its dot wrap under the line and
+           are not drawn; the filter's name is cut only then. */
+        .mbx__phone-bar-title {
+            display: flex; flex: 1 1 auto; flex-wrap: wrap-reverse; align-content: flex-end; min-width: 0; height: 1lh;
+            overflow: hidden; overflow: clip;
+        }
+        .mbx__phone-bar-place { display: flex; flex: 1 1 40px; min-width: 0; max-width: max-content; }
+        .mbx__phone-bar-place > .mbx__phone-bar-label { flex: 0 1 auto; }
+        .mbx__phone-bar-dot { flex: none; white-space: pre; }
+        .mbx__phone-bar-filter { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* One pane at a time (a phone, or a grid too narrow for the list and the message): the list; the folders when
            asked for; a message once one is opened. The pane shown fills the grid over the width a splitter wrote on it
            inline (the person's saved width), as the two-pane rule does. */
@@ -1313,15 +1352,22 @@ type PhonePane = 'folders' | 'message';
         }
         .mbx__others:hover { background: var(--cms-surface-hover); }
 
-        /* The list's header row: the search field, centred in the header row's height. */
+        /* The list's header row: the folder's name, cut with an ellipsis, and the filter, which keeps its width. */
+        .mbx__name-row {
+            display: flex; align-items: center; gap: var(--cms-space-2); box-sizing: border-box; flex: 0 0 auto;
+            height: var(--cms-pane-header-height); padding: 0 10px 0 12px; background: var(--cms-surface);
+        }
+        .mbx__list-name {
+            flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            font-size: var(--cms-font-size-title-sm); font-weight: var(--cms-font-weight-semibold); color: var(--cms-text);
+        }
         .mbx__search {
-            display: flex; align-items: center; gap: 6px; box-sizing: content-box; height: var(--cms-pane-header-height); padding: 0 10px;
-            flex: 0 0 auto;
+            display: flex; align-items: center; gap: 6px; padding: 8px 10px; flex: 0 0 auto;
             background: var(--cms-surface);
         }
-        .mbx__body--one .mbx__search { height: auto; padding: 8px 10px; }
-        /* The filter chips under the search field, wrapping whole; never scrolled, never cut. */
-        .mbx__chips { flex: 0 0 auto; padding: 0 10px 8px; }
+        .mbx__name-row + .mbx__search { padding-top: 0; }
+        /* The box for every loaded row, in the rows' checkbox column, centred in the row. */
+        .mbx__name-row > .mbx__all-check { margin: 0; }
         .mbx__search-icon { color: var(--cms-text-muted); font-size: .8125rem; }
         .mbx__search-input {
             flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--cms-border);
@@ -1747,11 +1793,10 @@ export class EmailMailboxPageComponent implements OnInit {
 
 
     /**
-     * localStorage key for the last-selected mailbox, so a reload restores it instead
-     * of snapping to the first mailbox. Per-browser UI state -- sits beside the list-pane
-     * width (`coolms.email.listWidth`, cached by `MailPanesDirective`) in the same store.
+     * The browser's key the last mailbox was kept under before the person's mail settings held it: read once, where
+     * the settings hold none, to move it there, and removed.
      */
-    private static readonly LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
+    static readonly BROWSER_LAST_MAILBOX_KEY = 'coolms.email.lastMailboxId';
 
 
     readonly mailboxes = signal<EmailMailboxDto[]>([]);
@@ -1925,7 +1970,7 @@ export class EmailMailboxPageComponent implements OnInit {
         const row = this.folderRows().find(r => r.folder.folder === this.selectedFolder());
         const total = this.serverListed() ? row?.folder.serverTotal : row?.folder.total;
 
-        return this.listFilter() === 'all' ? listSetSize(total, this.messages().length) : -1;
+        return this.rowFilter() === 'all' ? listSetSize(total, this.messages().length) : -1;
     });
     /** The server row being opened, by its ref: it is not opened twice. */
     readonly openingRef = signal<string | null>(null);
@@ -1958,6 +2003,19 @@ export class EmailMailboxPageComponent implements OnInit {
      */
     readonly selectedIds = signal<Set<string>>(new Set<string>());
     readonly selectedCount = computed(() => this.selectedIds().size);
+    /** The loaded rows the list shows that can be checked: the stored ones. */
+    readonly checkableIds = computed(() => storedIds(this.shownMessages()));
+    /** Every one of them checked, and there is at least one. */
+    readonly allLoadedChecked = computed(() => {
+        const ids = this.checkableIds();
+        const checked = this.selectedIds();
+        return ids.length > 0 && ids.every(id => checked.has(id));
+    });
+    /** Some of them checked, not all. */
+    readonly someLoadedChecked = computed(() => {
+        const checked = this.selectedIds();
+        return !this.allLoadedChecked() && this.checkableIds().some(id => checked.has(id));
+    });
     /** Two or more rows checked in the folder view: the reading pane says how many in place of a message. */
     readonly manyChecked = computed(() => !this.searchActive() && this.selectedCount() >= 2);
     /** The status line under the list: the count while rows are checked, "Selection cleared" once they no longer are. */
@@ -2193,19 +2251,41 @@ export class EmailMailboxPageComponent implements OnInit {
         return named !== '' ? named : msg.senderText ?? '';
     }
 
-    /** The list's filter chips. */
-    readonly listFilters = MAIL_LIST_FILTERS;
-    /** The chosen chip: the read rows are filtered here, the server is asked for the folder as ever. */
-    readonly listFilter = signal<MailListFilter>('all');
-    /** The rows the list draws: the folder's read rows the chosen chip keeps. */
-    readonly shownMessages = computed(() => mailRowsShown(this.messages(), this.listFilter()));
+    /** The filter chosen; null until one is, when the default holds. */
+    readonly chosenListFilter = signal<string | null>(null);
+    /** The list's filter: its tree's filter nodes shown, and the chosen one. A tree that declares none has no filter. */
+    readonly listFilters = computed(() => listFiltersOf(
+        this.listNodes(), { shown: n => this.naviGraph.isVisible(n, {}), values: MAIL_LIST_FILTER_VALUES }, this.chosenListFilter(),
+    ));
+    /** The filter in force, none without choices: the read rows are filtered here, the server is asked for the folder as ever. */
+    readonly listFilter = computed(() => listFilterInForce(this.listFilters(), this.chosenListFilter()));
+    /** The rows it keeps. */
+    readonly rowFilter = computed(() => mailListFilterOf(this.listFilter()));
+    /**
+     * The filter's name in the folders bar while the list is filtered and one pane shows at a time; nothing on the
+     * default, over search results, or where the list's second row says it.
+     */
+    readonly titleFilter = computed(() => {
+        const current = this.listFilter();
+        const { options, initial } = this.listFilters();
+        if (current === null || current === initial || this.searchActive() || !this.onePane()) return '';
+        return options.find(o => o.id === current)?.label ?? '';
+    });
+    /** The rows the list draws: the folder's read rows the filter keeps. */
+    readonly shownMessages = computed(() => mailRowsShown(this.messages(), this.rowFilter()));
+    /** The default choice's words. */
+    readonly defaultFilterLabel = computed(() => {
+        const { options, initial } = this.listFilters();
+        return options.find(o => o.id === initial)?.label ?? '';
+    });
     /** The words for a filter that keeps none of the folder's rows. */
-    readonly filterEmptyTitle = computed(() => (this.listFilter() === 'unread' ? 'No unread messages' : 'No messages with attachments'));
+    readonly filterEmptyTitle = computed(() => (this.rowFilter() === 'unread' ? 'No unread messages' : 'No messages with attachments'));
 
-    /** A chip chosen: the list shows the rows it keeps, reading on while they do not fill the view. */
+    /** A filter chosen: the list shows the rows it keeps from its top, reading on while they do not fill the view. */
     chooseListFilter(id: string): void {
-        this.listFilter.set(mailListFilterOf(id));
+        this.chosenListFilter.set(id);
         this.clearSelection();
+        this.toListTop();
         this.readOnAfterRender();
     }
 
@@ -2686,9 +2766,9 @@ export class EmailMailboxPageComponent implements OnInit {
             this.naviGraph.loadTree(pattern.replace('{slug}', REMOTE_CONTENT_TREE))
                 .pipe(catchError(() => of<NaviGraphNode[]>([])), takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.remoteNodes.set(nodes));
-            // An unanswered tree reads as empty, and the list pane then keeps its own Refresh.
+            // An unanswered tree reads as empty, and the list pane then keeps its own Refresh and has no filter.
             this.naviGraph.loadTree(pattern.replace('{slug}', LIST_TOOLBAR_TREE))
-                .pipe(takeUntilDestroyed(this.destroyRef))
+                .pipe(catchError(() => of<NaviGraphNode[]>([])), takeUntilDestroyed(this.destroyRef))
                 .subscribe(nodes => this.listNodes.set(nodes));
         }
         this.loadMailboxes();
@@ -2759,7 +2839,7 @@ export class EmailMailboxPageComponent implements OnInit {
                 this.loadingMailboxes.set(false);
                 this.loadMailboxUnread(list);
 
-                const saved = localStorage.getItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY);
+                const saved = this.lastMailboxOnOpening(prefs, list);
                 const prefer = this.pendingSelectId;
                 this.pendingSelectId = null;
                 // Precedence: an OAuth-return target, then the default mailbox the person chose in their profile, then
@@ -2945,17 +3025,47 @@ export class EmailMailboxPageComponent implements OnInit {
     }
 
     /**
-     * The user picked a mailbox from the switcher -- select it AND remember the
-     * choice in localStorage (`coolms.email.lastMailboxId`) so a reload restores it
-     * instead of defaulting to the first mailbox. Distinct from {@link selectMailbox}
-     * so the initial restore-on-load doesn't re-persist what it just read.
+     * The person picked a mailbox: it is selected and saved as their last mailbox in their mail settings, so the next
+     * opening, in any of their clients, starts there. Distinct from {@link selectMailbox} so the opening does not save
+     * again what it just read.
      */
     pickMailbox(id: string): void {
         if (id === this.selectedMailboxId()) {
             return;
         }
         this.selectMailbox(id);
-        localStorage.setItem(EmailMailboxPageComponent.LAST_MAILBOX_KEY, id);
+        this.mailPrefs.rememberLastMailbox(id);
+    }
+
+    /**
+     * The last mailbox to open on: the one the mail settings hold. Where they hold none, the browser's old key, once:
+     * a mailbox of the list is saved to the settings, and the key is removed either way. Settings that could not be
+     * read leave the key in place and use it. A mailbox that is gone or no longer readable is left to the opening's
+     * own order.
+     */
+    private lastMailboxOnOpening(prefs: MailPreferences, list: readonly EmailMailboxDto[]): string | null {
+        const key = EmailMailboxPageComponent.BROWSER_LAST_MAILBOX_KEY;
+        let browser: string | null = null;
+        try {
+            browser = localStorage.getItem(key);
+        } catch {
+            return prefs.lastMailboxId ?? null;
+        }
+        if (preferencesUnread(prefs)) {
+            return browser;
+        }
+        if (browser !== null) {
+            try {
+                localStorage.removeItem(key);
+            } catch { /* nothing kept to move */ }
+        }
+        if (prefs.lastMailboxId !== undefined) {
+            return prefs.lastMailboxId;
+        }
+        if (browser !== null && list.some(m => m.id === browser)) {
+            this.mailPrefs.rememberLastMailbox(browser);
+        }
+        return browser;
     }
 
     /**
@@ -4173,7 +4283,16 @@ export class EmailMailboxPageComponent implements OnInit {
 
     /** Select every currently-loaded message the list shows. */
     selectAllLoaded(): void {
-        this.selectedIds.set(new Set(storedIds(this.shownMessages())));
+        this.selectedIds.set(new Set(this.checkableIds()));
+    }
+
+    /** The second row's box: every loaded row checked clears them; otherwise it checks every one. */
+    toggleAllLoaded(): void {
+        if (this.allLoadedChecked()) {
+            this.clearSelection();
+        } else {
+            this.selectAllLoaded();
+        }
     }
 
     /** Drop the whole selection (and the range anchor). */

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { DateTimeFormatService, UserCalendarPreferencesService } from '@coolms/ui-angular';
 
 import {
+    conversationAvatar,
     conversationLabel,
     counterpartOf,
     byLastMessage,
@@ -295,6 +296,52 @@ describe('conversation row', () => {
             chosen = true;
             expect(rowWhen('2026-03-02T03:00:00.000Z', dtf, NOW)).withContext('this year: day and month, chosen or not').toBe('2 Mar');
             expect(rowWhen('2025-03-02T03:00:00.000Z', dtf, NOW)).withContext('before this year: the chosen format').toBe('2025-03-02');
+        });
+    });
+
+    describe('conversationAvatar', () => {
+        const visitor = (name: string | null) =>
+            ({ participantId: 'p-visitor', userId: null, displayName: name, lastReadSeq: 0, kind: 'human', role: 'member' });
+
+        it('a live chat takes the visitor\'s name, not an id, from the agent who is me', () => {
+            const c = conv({ id: '019efb47-07fc', kind: 'dynamic_chat', title: 'Phone Only',
+                participants: [visitor('Phone Only'), participant(me, null)] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Phone Only');
+        });
+
+        it('a live chat takes the visitor before another agent, seen by someone not in it', () => {
+            const c = conv({ kind: 'dynamic_chat', title: 'T',
+                participants: [participant('agent', 'Agent Ann'), visitor('Smoke Visitor')] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Smoke Visitor');
+        });
+
+        it('a live chat whose participants have no name takes its title', () => {
+            const c = conv({ kind: 'dynamic_chat', title: 'Test Visitor',
+                participants: [visitor(null), participant(me, null)] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Test Visitor');
+        });
+
+        it('a direct conversation takes the other person\'s name', () => {
+            const c = conv({ title: 'ignored', participants: [participant(me, 'Me'), participant('u2', 'Lena Novak')] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Lena Novak');
+        });
+
+        it('a group or a channel takes its title, not a member', () => {
+            const c = conv({ kind: 'group', title: 'Design team',
+                participants: [participant(me, 'Me'), participant('u2', 'Priya Shah')] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Design team');
+        });
+
+        it('with no name and no title there is no name at all, so the avatar shows "?"', () => {
+            const c = conv({ id: '019efd7a-d4d1', kind: 'group', title: '  ', participants: [participant(me, null)] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBeNull();
+            expect(conversationAvatar(conv({ id: '019e', participants: [] } as Partial<ChatConversationDto>), me).firstName).toBeNull();
+            expect(conversationAvatar(null, me).firstName).toBeNull();
+        });
+
+        it('notes take my own name', () => {
+            const c = conv({ kind: 'self_notes', participants: [participant(me, 'Dana')] } as Partial<ChatConversationDto>);
+            expect(conversationAvatar(c, me).firstName).toBe('Dana');
         });
     });
 });

@@ -16,9 +16,9 @@ import {
     UserSearchSelectComponent,
 } from '@coolms/ui-angular';
 import { chatCommands } from './chat-address';
-import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
+import { ChatAvatarUser } from './chat-avatar.util';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
-import { byLastMessage, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
+import { byLastMessage, conversationAvatar, conversationLabel, presenceDot, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 import { linkedMessageHtml, messageRuns } from './message-links.util';
@@ -366,11 +366,9 @@ export class MessagesQuickPanelComponent implements OnInit {
         return unreadFor(c, this.meId, this.readSeqOverride()[c.id] ?? 0);
     }
 
-    /** Avatar for a row -- counterpart's photo if any, else colored initials. */
+    /** Avatar for a row ({@link conversationAvatar}). */
     rowAvatar(c: ChatConversationDto | null): ChatAvatarUser {
-        const me = this.meId;
-        const other = (c?.participants ?? []).find(p => p.userId && p.userId !== me);
-        return avatarUserFor(other?.displayName ?? null, other?.userId ?? c?.id ?? null, other?.avatarUrl);
+        return conversationAvatar(c, this.meId);
     }
 
     /** Counterpart's presence dot -- connection-online ([]) with away/busy overlaid. */

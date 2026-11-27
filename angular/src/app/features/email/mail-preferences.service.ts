@@ -1,8 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
-import { AppConfigState } from '@coolms/core-angular';
+import { EMPTY, Observable, Subject, catchError, concatMap, debounceTime, map, of, switchMap, tap, throwError } from 'rxjs';
+import { AppConfigState, BACKGROUND_REQUEST } from '@coolms/core-angular';
 
 /** How remote images in a message are treated: the installation's rule, always blocked, or always loaded. */
 export type RemoteImages = 'inherit' | 'block' | 'allow';
@@ -24,7 +24,15 @@ export interface MailPreferences {
     readonly remoteImagesEffective: RemoteImagesRule;
     /** Read-only, the server's: the installation's own rule, which `inherit` follows; null when not answered. */
     readonly remoteImagesInstallation: RemoteImagesRule | null;
+    /**
+     * The mailbox last open, in any of the person's clients; absent when none is kept, or when the server reads the one
+     * kept as no longer readable. Written by the mail page alone ({@link MailPreferencesService.rememberLastMailbox}).
+     */
+    readonly lastMailboxId?: string;
 }
+
+/** How long a mailbox stays chosen before it is saved as the last one: a run of choices saves the last of them. */
+export const LAST_MAILBOX_SAVE_DELAY_MS = 1000;
 
 /** The fields the server answers and never stores: a save leaves them out. */
 export const MAIL_PREFERENCES_READ_ONLY: ReadonlyArray<keyof MailPreferences> = [
@@ -72,6 +80,7 @@ function prefsOf(body: unknown): MailPreferences {
         remoteImagesInstallation: b.remoteImagesInstallation === 'allow' || b.remoteImagesInstallation === 'block'
             ? b.remoteImagesInstallation
             : null,
+        ...(typeof b.lastMailboxId === 'string' && b.lastMailboxId !== '' ? { lastMailboxId: b.lastMailboxId } : {}),
     };
 }
 
@@ -96,16 +105,30 @@ export class MailPreferencesService {
         return `${base}/auth/me/settings/mail`;
     }
 
-    /** The section and its version, from one read. */
-    read(): Observable<MailPreferencesRead> {
-        return this.http.get<unknown>(this.url, { observe: 'response', headers: new HttpHeaders({ Accept: 'application/json' }) })
+    private readonly lastMailboxSaves = new Subject<string>();
+
+    constructor() {
+        this.lastMailboxSaves.pipe(
+            debounceTime(LAST_MAILBOX_SAVE_DELAY_MS),
+            concatMap(id => this.saveLastMailbox(id)),
+        ).subscribe();
+    }
+
+    /** The section and its version, from one read; `background`: a failure opens no dialog. */
+    read(background = false): Observable<MailPreferencesRead> {
+        return this.http.get<unknown>(this.url, {
+            observe: 'response', headers: new HttpHeaders({ Accept: 'application/json' }), context: contextOf(background),
+        })
             .pipe(
                 map(r => ({ prefs: prefsOf(r.body), version: versionOf(r.headers.get('ETag')) })),
                 tap(read => this.current.set(read.prefs)),
             );
     }
 
-    /** The section for a reader that only needs it, never failing: the defaults when it cannot be read. */
+    /**
+     * The section for a reader that only needs it, never failing: the defaults when it cannot be read, as the very
+     * {@link MAIL_PREFERENCE_DEFAULTS} object, which a read never answers ({@link preferencesUnread}).
+     */
     readOrDefaults(): Observable<MailPreferences> {
         return this.read().pipe(map(r => r.prefs), catchError(() => of(MAIL_PREFERENCE_DEFAULTS)));
     }
@@ -115,7 +138,7 @@ export class MailPreferencesService {
      * and its new version. A section saved since is refused ({@link MailPreferencesChangedError}); one read without a
      * version is never saved over.
      */
-    save(changes: Partial<MailPreferences>, version: string | null): Observable<MailPreferencesRead> {
+    save(changes: Partial<MailPreferences>, version: string | null, background = false): Observable<MailPreferencesRead> {
         if (version === null) {
             return throwError(() => new MailPreferencesChangedError());
         }
@@ -130,6 +153,7 @@ export class MailPreferencesService {
                 Accept: 'application/json',
                 'If-Match': `"${version}"`,
             }),
+            context: contextOf(background),
         }).pipe(
             map(r => ({ prefs: prefsOf(r.body), version: versionOf(r.headers.get('ETag')) })),
             tap(saved => this.current.set(saved.prefs)),
@@ -137,4 +161,33 @@ export class MailPreferencesService {
                 err instanceof HttpErrorResponse && err.status === 412 ? new MailPreferencesChangedError() : err)),
         );
     }
+
+    /**
+     * The mailbox the person opened, saved as the section's last mailbox once no other has been chosen for
+     * {@link LAST_MAILBOX_SAVE_DELAY_MS}: that key alone, over the version read just before. Saved on the way, not a
+     * step the person waits on: a refusal (a mailbox the person may not read) or a failure opens no dialog and is
+     * dropped; a section saved since in between is read again and saved over once.
+     */
+    rememberLastMailbox(id: string): void {
+        this.lastMailboxSaves.next(id);
+    }
+
+    private saveLastMailbox(id: string): Observable<unknown> {
+        const once = (): Observable<unknown> => this.read(true).pipe(
+            switchMap(read => this.save({ lastMailboxId: id }, read.version, true)),
+        );
+        return once().pipe(
+            catchError((err: unknown) => (err instanceof MailPreferencesChangedError ? once() : throwError(() => err))),
+            catchError(() => EMPTY),
+        );
+    }
+}
+
+/** Whether {@link MailPreferencesService.readOrDefaults} answered without the section: it could not be read. */
+export function preferencesUnread(prefs: MailPreferences): boolean {
+    return prefs === MAIL_PREFERENCE_DEFAULTS;
+}
+
+function contextOf(background: boolean): HttpContext {
+    return background ? new HttpContext().set(BACKGROUND_REQUEST, true) : new HttpContext();
 }

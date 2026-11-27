@@ -3,13 +3,13 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Store } from '@ngxs/store';
-import { NEVER, of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import { AppConfigState, AuthState, NaviGraphService, type NaviGraphNode } from '@coolms/core-angular';
 import { ContextMenuService, DateTimeFormatService, ToastService } from '@coolms/ui-angular';
 
 import { RtcCallService } from '../rtc/rtc-call.service';
 import { ChatPresenceLiveService } from './chat-presence-live.service';
-import { conversationFiltersOf, conversationsShown } from './conversation-filter.util';
+import { conversationsShown } from './conversation-filter.util';
 import { MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatAddressFake } from './chat-address.fake';
 import { MessagesPageComponent } from './messages.page';
@@ -49,19 +49,7 @@ const holds = (when: unknown, ctx: Record<string, unknown>): boolean => {
     return ctx[w.field] === w.value;
 };
 
-describe('conversationFiltersOf / conversationsShown', () => {
-    const shownIn = (ctx: Record<string, unknown>) => (n: NaviGraphNode) => holds(n.meta['showWhen'], ctx);
-
-    it('the chips are the tree\'s filter nodes this context shows, in order; the default is the one it marks', () => {
-        expect(conversationFiltersOf(TREE, shownIn({ _anyUnread: false })).options.map(o => o.label)).toEqual(['All', 'Direct', 'Groups']);
-        const all = conversationFiltersOf(TREE, shownIn({ _anyUnread: true }));
-        expect(all.options).toEqual([
-            { id: 'all', label: 'All' }, { id: 'direct', label: 'Direct' }, { id: 'group', label: 'Groups' }, { id: 'unread', label: 'Unread' },
-        ]);
-        expect(all.initial).toBe('all');
-        expect(conversationFiltersOf([], shownIn({})).initial).toBeNull();
-    });
-
+describe('conversationsShown', () => {
     it('keeps every row for all, the unread for unread, the rows of that kind otherwise', () => {
         const unread = (c: ChatConversationDto) => c.id === 'd1';
         expect(conversationsShown(ROWS, 'all', unread).map(c => c.id)).toEqual(['d1', 'g1', 'd2', 'n1']);
@@ -72,16 +60,31 @@ describe('conversationFiltersOf / conversationsShown', () => {
     });
 });
 
-/** Chat's page header (the tree's title, New chat beside the status control) and the conversation list's chips. */
-describe('MessagesPageComponent -- the header and the list\'s chips', () => {
+/** Chat's page header (the tree's title, New chat beside the status control) and the conversation list's filter. */
+describe('MessagesPageComponent -- the header and the list\'s filter', () => {
     let fixture: ComponentFixture<MessagesPageComponent>;
     let tree: NaviGraphNode[];
+    /** The window is at a phone's width. */
+    let phone: boolean;
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
     const part = (selector: string): HTMLElement => el().querySelector<HTMLElement>(selector)!;
     const names = (): string[] => [...el().querySelectorAll('.msg__row-name')].map(n => n.textContent!.trim());
-    const chips = (): string[] => [...el().querySelectorAll('[data-test="chat-chips"] [role="radio"]')].map(c => c.textContent!.trim());
+    const title = (): string => part('cms-page-header h1').textContent!.trim();
+    const filterButton = (): HTMLButtonElement | null => el().querySelector<HTMLButtonElement>('[data-test="chat-filter"] button');
+    /** The filter's menu as the page opens it: its choices, and what choosing one does. */
+    function openFilter(): { items: { id: string; label: string; checked: boolean }[]; act: (id: string) => void } {
+        const menu = TestBed.inject(ContextMenuService) as unknown as { openFrom: jasmine.Spy };
+        filterButton()!.click();
+        const args = menu.openFrom.calls.mostRecent().args;
+        return { items: args[1], act: args[2] };
+    }
     const choose = (value: string): void => {
-        part(`[data-test="chat-chips"] [data-chip="${value}"]`).click();
+        fixture.detectChanges();
+        openFilter().act(value);
+        fixture.detectChanges();
+    };
+    const noneUnread = (): void => {
+        fixture.componentInstance.conversations.set(ROWS.map(c => ({ ...c, viewerUnread: 0 }) as ChatConversationDto));
         fixture.detectChanges();
     };
 
@@ -95,6 +98,11 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
 
     beforeEach(() => {
         tree = TREE;
+        phone = false;
+        const media = window.matchMedia.bind(window);
+        spyOn(window, 'matchMedia').and.callFake((query: string) => (query === '(max-width: 599.98px)'
+            ? { matches: phone, addEventListener: (): void => {}, removeEventListener: (): void => {} } as unknown as MediaQueryList
+            : media(query)));
         TestBed.configureTestingModule({
             imports: [MessagesPageComponent],
             providers: [
@@ -159,7 +167,7 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
         const toggled = spyOn(fixture.componentInstance, 'toggleNew');
         part('cms-page-header [data-action="primary"]').click();
         expect(toggled).toHaveBeenCalledTimes(1);
-        expect(part('.msg__list-head').querySelectorAll('button').length).toBe(0);
+        expect(part('.msg__list-head').querySelectorAll('button:not(.cms-filter-menu)').length).toBe(0);
     });
 
     it('the tree\'s other header nodes are under More: Browse channels opens the channels list', () => {
@@ -182,24 +190,37 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
         expect(part('.msg').getBoundingClientRect().top).toBeGreaterThanOrEqual(band.getBoundingClientRect().bottom);
     });
 
-    it('over the list: the search, then the tree\'s chips, its default chosen; Unread shown while a row is unread', () => {
+    it('the column\'s header row: Conversations at the start, the filter at its end, the tree\'s default chosen', () => {
         render();
-        const search = part('.msg__search');
-        const group = part('[data-test="chat-chips"]');
-        expect(group.getBoundingClientRect().top).toBeGreaterThanOrEqual(search.getBoundingClientRect().bottom);
-        expect(chips()).toEqual(['All', 'Direct', 'Groups', 'Unread']);
-        expect(group.querySelector('[data-chip="all"]')!.getAttribute('aria-checked')).toBe('true');
+        const head = part('.msg__list-head');
+        const name = part('.msg__list-label');
+        const b = filterButton()!;
+        expect(name.textContent!.trim()).toBe('Conversations');
+        expect(name.getAttribute('title')).toBe('Conversations');
+        expect(getComputedStyle(name).textOverflow).toBe('ellipsis');
+        expect(head.contains(b)).toBeTrue();
+        expect(el().querySelectorAll('[data-test="chat-filter"]').length).toBe(1);
+        expect(head.getBoundingClientRect().right - b.getBoundingClientRect().right).toBeLessThanOrEqual(14);
+        expect(part('.msg__search').getBoundingClientRect().top).toBeGreaterThanOrEqual(head.getBoundingClientRect().bottom);
+        expect(b.getAttribute('aria-label')).toBe('Show: All');
+        expect(b.querySelector('.bi-funnel')).not.toBeNull();
         expect(names().length).toBe(4);
-
-        fixture.componentInstance.conversations.set(ROWS.map(c => ({ ...c, viewerUnread: 0 }) as ChatConversationDto));
-        fixture.detectChanges();
-        expect(chips()).toEqual(['All', 'Direct', 'Groups']);
     });
 
-    it('a chip keeps the conversations it names; the search narrows within it', () => {
+    it('the menu holds the tree\'s filters in its order, the current one marked; Unread while a row is unread', () => {
+        render();
+        expect(openFilter().items.map(i => i.label)).toEqual(['All', 'Direct', 'Groups', 'Unread']);
+        expect(openFilter().items.filter(i => i.checked).map(i => i.id)).toEqual(['all']);
+
+        noneUnread();
+        expect(openFilter().items.map(i => i.label)).toEqual(['All', 'Direct', 'Groups']);
+    });
+
+    it('a filter keeps the conversations it names and is said on the button; the search narrows within it', () => {
         render();
         choose('group');
         expect(names()).toEqual(['Design team']);
+        expect(filterButton()!.textContent!.trim()).toBe('Groups');
         choose('unread');
         expect(names()).toEqual(['Person d1']);
         choose('direct');
@@ -210,19 +231,128 @@ describe('MessagesPageComponent -- the header and the list\'s chips', () => {
         fixture.componentInstance.convQuery.set('');
         choose('all');
         expect(names().length).toBe(4);
+        expect(filterButton()!.querySelector('.bi-funnel')).not.toBeNull();
     });
 
-    it('a chip that keeps none says so; a chosen chip the tree stops showing gives way to the default', () => {
+    it('the chosen filter stays while it is chosen, though the tree no longer shows it; left, it is offered no more', () => {
         render();
         choose('unread');
-        fixture.componentInstance.conversations.set(ROWS.map(c => ({ ...c, viewerUnread: 0 }) as ChatConversationDto));
+        noneUnread();
+        expect(fixture.componentInstance.listFilter()).toBe('unread');
+        expect(filterButton()!.textContent!.trim()).toBe('Unread');
+        expect(openFilter().items.map(i => i.label)).toEqual(['All', 'Direct', 'Groups', 'Unread']);
+        expect(names().length).toBe(0);
+        expect(part('[data-test="chat-filter-empty"]').textContent!.trim()).toBe('No conversations under Unread.');
+
+        choose('all');
+        expect(openFilter().items.map(i => i.label)).toEqual(['All', 'Direct', 'Groups']);
+        expect(names().length).toBe(4);
+    });
+
+    it('a value that names no filter of the tree reads as the default', () => {
+        render();
+        fixture.componentInstance.chosenFilter.set('gone');
         fixture.detectChanges();
         expect(fixture.componentInstance.listFilter()).toBe('all');
+        expect(filterButton()!.querySelector('.bi-funnel')).not.toBeNull();
         expect(names().length).toBe(4);
+    });
+
+    it('a filter that keeps none says so; a choice starts the list from its top', () => {
+        render();
+        const rows = part('.msg__rows');
+        rows.style.cssText = 'height: 40px; flex: none; overflow-y: auto';
+        rows.scrollTop = 30;
+        expect(rows.scrollTop).toBe(30);
+        choose('direct');
+        expect(rows.scrollTop).toBe(0);
 
         fixture.componentInstance.conversations.set(ROWS.filter(c => c.kind !== 'group'));
         fixture.detectChanges();
         choose('group');
         expect(part('[data-test="chat-filter-empty"]').textContent!.trim()).toBe('No conversations under Groups.');
+    });
+
+    it('a tree with fewer than two filters shown has no filter button', () => {
+        tree = TREE.filter(n => !n.path.startsWith('/filter') || n.path === '/filter-all');
+        render();
+        expect(filterButton()).toBeNull();
+        expect(names().length).toBe(4);
+    });
+
+    it('a filter whose value the page cannot apply is not in the menu, a kind of conversation is', () => {
+        tree = [...TREE, node('/filter-odd', 70, { label: 'Odd', action: 'filter', value: 'odd' }),
+            node('/filter-notes', 80, { label: 'Notes', action: 'filter', value: 'self_notes' })];
+        render();
+        expect(openFilter().items.map(i => i.label)).toEqual(['All', 'Direct', 'Groups', 'Unread', 'Notes']);
+        fixture.componentInstance.chosenFilter.set('odd');
+        fixture.detectChanges();
+        expect(fixture.componentInstance.listFilter()).toBe('all');
+        choose('self_notes');
+        expect(names().length).toBe(1);
+    });
+
+    it('a tree that declares no filters has no filter button and keeps every row, whatever value was kept; phone or not', () => {
+        for (const narrow of [false, true]) {
+            phone = narrow;
+            tree = TREE.filter(n => !n.path.startsWith('/filter'));
+            render();
+            fixture.componentInstance.chosenFilter.set('unread');
+            fixture.detectChanges();
+            expect(filterButton()).toBeNull();
+            expect(fixture.componentInstance.listFilter()).toBeNull();
+            expect(names().length).toBe(4);
+            expect(title()).toBe('Chat');
+            if (!narrow) {
+                el().remove();
+                fixture.destroy();
+            }
+        }
+    });
+
+    it('a tree that does not load has no filter button, and every row', () => {
+        (TestBed.inject(NaviGraphService) as unknown as { loadTree: () => unknown }).loadTree = () => throwError(() => new Error('unavailable'));
+        render();
+        expect(filterButton()).toBeNull();
+        expect(names().length).toBe(4);
+    });
+
+    it('while the public channels stand in the list\'s place there is no filter', () => {
+        render();
+        fixture.componentInstance.showChannels.set(true);
+        fixture.detectChanges();
+        expect(filterButton()).toBeNull();
+        expect(part('.msg__list-label').textContent!.trim()).toBe('Conversations');
+    });
+
+    it('on a phone: no header row, the filter an icon beside the search, an active one said in the page\'s title', () => {
+        phone = true;
+        render();
+        expect(el().querySelector('.msg__list-head')).toBeNull();
+        const b = filterButton()!;
+        expect(el().querySelectorAll('[data-test="chat-filter"]').length).toBe(1);
+        const search = part('.msg__search').getBoundingClientRect();
+        expect(b.getBoundingClientRect().left).toBeGreaterThanOrEqual(search.right);
+        expect(b.getBoundingClientRect().top).toBeLessThan(search.bottom);
+        expect(title()).toBe('Chat');
+
+        choose('unread');
+        expect(title()).toBe('Chat \u00b7 Unread');
+        expect(filterButton()!.textContent!.trim()).withContext('still an icon').toBe('');
+        expect(filterButton()!.classList).withContext('with the accent').toContain('cms-filter-menu--active');
+        expect(filterButton()!.getAttribute('aria-label')).toBe('Show: Unread');
+
+        fixture.componentInstance.showChannels.set(true);
+        fixture.detectChanges();
+        expect(title()).withContext('the channels are not filtered').toBe('Chat');
+        fixture.componentInstance.showChannels.set(false);
+        choose('all');
+        expect(title()).toBe('Chat');
+    });
+
+    it('wider than a phone the title never says the filter', () => {
+        render();
+        choose('unread');
+        expect(title()).toBe('Chat');
     });
 });

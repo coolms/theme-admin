@@ -2,7 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Store } from '@ngxs/store';
 import { NEVER, of } from 'rxjs';
-import { AuthState, ErrorHandlerService, NaviGraphService } from '@coolms/core-angular';
+import { AuthState, ErrorHandlerService, type NaviGraphNode, NaviGraphService } from '@coolms/core-angular';
 import {
     ConfirmDialogService,
     ContextMenuService,
@@ -32,6 +32,12 @@ const server = (ref: string, subject: string, extra: Record<string, unknown> = {
     fromServer: true, ref, sentAt: '2026-11-11T08:00:00+00:00', ...extra,
 }) as unknown as EmailMessageDto;
 const page = (rows: EmailMessageDto[]): EmailMessageList => Object.assign([...rows], { next: null, serverPages: null });
+
+/** The list's filters as its tree serves them. */
+const FILTER_NODES = [['all', 'All', true], ['unread', 'Unread', false], ['attachments', 'Attachments', false]].map(([value, label, isDefault], i) => ({
+    id: 'n-' + String(value), path: '/filter-' + String(value), title: String(label), parentId: null, sortOrder: 20 + i, isActive: true, isVisible: true, children: [],
+    meta: { action: 'filter', group: 'filters', value, label, ...(isDefault === true ? { default: true } : {}) },
+})) as unknown as NaviGraphNode[];
 
 /**
  * A row of the message list is the list's width, however long its sender, subject and snippet: those end in an
@@ -114,6 +120,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         el().style.cssText = `display: flex; flex-direction: column; width: ${width}px; height: 700px`;
         document.body.appendChild(el());
         await settle();
+        fixture.componentInstance.listNodes.set(FILTER_NODES);
         fixture.componentInstance.selectFolder(FOLDER);
         await settle();
     }
@@ -187,60 +194,259 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         expect(opened).not.toHaveBeenCalled();
     });
 
-    it('over the list: the search, then the chips All, Unread and Attachments, All chosen', async () => {
+    /** The filter's menu as the page opens it: its choices, and what choosing one does. */
+    interface FilterMenu { items: { id: string; label: string; checked: boolean }[]; choose: (id: string) => Promise<void> }
+    const filterButton = (): HTMLButtonElement | null => el().querySelector<HTMLButtonElement>('[data-test="mail-filter"] button');
+    function openFilter(): FilterMenu {
+        const menu = Object.assign(TestBed.inject(ContextMenuService), {
+            openFrom: jasmine.createSpy('openFrom'), menu: () => null, close: (): void => {},
+        }) as unknown as { openFrom: jasmine.Spy };
+        filterButton()!.click();
+        const [, items, act] = menu.openFrom.calls.mostRecent().args as [unknown, FilterMenu['items'], (id: string) => void];
+        return { items, choose: async id => { act(id); await settle(); } };
+    }
+    const LONG_FOLDER = 'A folder whose name is far longer than the list column is wide';
+    /** The open folder's name, as the folder tree serves it. */
+    async function nameFolder(name: string): Promise<void> {
+        fixture.componentInstance.folderTree.update(list => (list ?? []).map(f => (f.folder === FOLDER ? { ...f, name } : f)));
+        await settle();
+    }
+
+    it('the list\'s second row: the folder\'s name at the start, the filter at its end, over the search', async () => {
         await render(1440);
-        const search = part('[data-test="mail-search"]');
-        const chips = part('[data-test="mail-chips"]');
-        expect(box(chips).top).withContext('the chips under the search').toBeGreaterThanOrEqual(box(search).bottom);
-        expect(box(chips).bottom).withContext('the rows under the chips').toBeLessThanOrEqual(box(part('[data-test="list-scroll"]')).top + 1);
-        const labels = [...chips.querySelectorAll('[role="radio"]')].map(c => c.textContent!.trim());
-        expect(labels).toEqual(['All', 'Unread', 'Attachments']);
-        expect(chips.querySelector('[data-chip="all"]')!.getAttribute('aria-checked')).toBe('true');
+        const row = part('[data-test="list-name-row"]');
+        const name = part('[data-test="list-name"]');
+        expect(name.textContent!.trim()).toBe('Inbox');
+        expect(name.getAttribute('title')).toBe('Inbox');
+        expect(box(row).top).withContext('under the list\'s action row').toBeGreaterThanOrEqual(box(part('app-mailbox-sync')).bottom - 1);
+        expect(box(part('.mbx__search')).top).withContext('the search under it').toBeGreaterThanOrEqual(box(row).bottom - 1);
+        const b = filterButton()!;
+        expect(row.contains(b)).toBeTrue();
+        expect(el().querySelectorAll('[data-test="mail-filter"]').length).withContext('one filter').toBe(1);
+        expect(b.getAttribute('aria-label')).toBe('Show: All');
+        expect(b.querySelector('.bi-funnel')).not.toBeNull();
+        expect(box(row).right - box(b).right).withContext('at the row\'s end').toBeLessThanOrEqual(12);
+        expect(box(name).right).toBeLessThanOrEqual(box(b).left);
+        expect(Math.abs((box(b).top + box(b).bottom) / 2 - (box(row).top + box(row).bottom) / 2)).toBeLessThanOrEqual(1);
     });
 
-    it('a chip keeps the rows it names: Unread the unseen, Attachments those with some, All every one', async () => {
+    it('a long folder name is cut with an ellipsis, its whole text as its title; the filter keeps its place and width', async () => {
+        await render(1440);
+        await openFilter().choose('attachments');
+        const before = box(filterButton()!);
+        await nameFolder(LONG_FOLDER);
+        const name = part('[data-test="list-name"]');
+        expect(getComputedStyle(name).textOverflow).toBe('ellipsis');
+        expect(name.scrollWidth).withContext('cut').toBeGreaterThan(name.clientWidth);
+        expect(name.getAttribute('title')).toBe(LONG_FOLDER);
+        const b = filterButton()!;
+        expect(b.textContent!.trim()).toBe('Attachments');
+        expect(box(b).right).toBeCloseTo(before.right, 0);
+        expect(box(b).width).toBeCloseTo(before.width, 0);
+        expect(b.scrollWidth).toBeLessThanOrEqual(b.clientWidth + 1);
+    });
+
+    it('the filter\'s menu holds All, Unread and Attachments, the current one marked; another one is said on the button', async () => {
+        await render(1440);
+        expect(openFilter().items.map(i => [i.id, i.label, i.checked])).toEqual([
+            ['all', 'All', true], ['unread', 'Unread', false], ['attachments', 'Attachments', false],
+        ]);
+        await openFilter().choose('unread');
+        expect(filterButton()!.textContent!.trim()).toBe('Unread');
+        expect(filterButton()!.getAttribute('aria-label')).toBe('Show: Unread');
+        expect(openFilter().items.filter(i => i.checked).map(i => i.id)).toEqual(['unread']);
+    });
+
+    it('a filter keeps the rows it names: Unread the unseen, Attachments those with some, All every one', async () => {
         await render(1440);
         const page = fixture.componentInstance;
         const subjects = (): string[] => rows().map(r => r.querySelector('.mbx__row-subject')!.textContent!.trim());
-        const choose = async (id: string): Promise<void> => {
-            part(`[data-test="mail-chips"] [data-chip="${id}"]`).click();
-            await settle();
-        };
         expect(rows().length).toBe(3);
 
-        await choose('unread');
+        await openFilter().choose('unread');
         expect(page.listFilter()).toBe('unread');
         expect(rows().length).withContext('the unseen server row only').toBe(1);
         expect(rows()[0].getAttribute('data-ref')).toBe('r-2');
 
-        await choose('attachments');
+        await openFilter().choose('attachments');
         expect(subjects()).toEqual(['Short']);
 
-        await choose('all');
+        await openFilter().choose('all');
         expect(rows().length).toBe(3);
     });
 
-    it('a chip that keeps none of a read-to-its-end folder says so; checked rows are cleared on a choice', async () => {
+    it('a filter that keeps none of a read-to-its-end folder says so; checked rows are cleared on a choice, the list at its top', async () => {
         await render(1440);
         const page = fixture.componentInstance;
         page.selectAllLoaded();
         expect(page.selectedCount()).toBe(2);
+        const top = spyOn(page, 'toListTop').and.callThrough();
         page.messages.update(list => list.map(m => ({ ...m, seen: true })));
-        part('[data-test="mail-chips"] [data-chip="unread"]').click();
-        await settle();
+        await openFilter().choose('unread');
+        expect(top).toHaveBeenCalledTimes(1);
         expect(page.selectedCount()).toBe(0);
         expect(rows().length).toBe(0);
         expect(part('[data-test="mail-filter-empty"]').textContent).toContain('No unread messages');
     });
 
-    it('the chips wrap onto a line below rather than scroll or cut', async () => {
+    it('over search results there is no filter, and the name row stays', async () => {
         await render(1440);
-        const chips = part('[data-test="mail-chips"]');
-        const group = chips.querySelector<HTMLElement>('[role="radiogroup"]')!;
-        expect(getComputedStyle(group).flexWrap).toBe('wrap');
-        expect(getComputedStyle(group).overflowX).withContext('no scroller of their own').toBe('visible');
-        expect(group.scrollWidth).toBeLessThanOrEqual(group.clientWidth + 1);
+        fixture.componentInstance.searchActive.set(true);
+        await settle();
+        expect(filterButton()).toBeNull();
+        expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
     });
+
+    const allBox = (): HTMLInputElement | null => el().querySelector<HTMLInputElement>('[data-test="list-select-all"]');
+    const rowBoxes = (): HTMLInputElement[] => Array.from(el().querySelectorAll<HTMLInputElement>('.mbx__row input[data-part="check"]'));
+    const boxState = (): [boolean, boolean] => [allBox()!.checked, allBox()!.indeterminate];
+
+    it('the second row reads: the box, the folder\'s name, the filter; then the search', async () => {
+        await render(1440);
+        const row = part('[data-test="list-name-row"]');
+        const all = allBox()!;
+        expect(all.parentElement).toBe(row);
+        expect(row.firstElementChild).withContext('the box first').toBe(all);
+        expect(all.type).toBe('checkbox');
+        expect(all.getAttribute('aria-label')).toBe('Select all loaded messages');
+        expect(box(all).right).toBeLessThanOrEqual(box(part('[data-test="list-name"]')).left);
+        expect(box(part('[data-test="list-name"]')).right).toBeLessThanOrEqual(box(filterButton()!).left);
+        expect(Math.abs(box(all).left - box(rowBoxes()[0]).left)).withContext('in the rows\' checkbox column').toBeLessThanOrEqual(1);
+        expect(Math.abs((box(all).top + box(all).bottom) / 2 - (box(row).top + box(row).bottom) / 2)).toBeLessThanOrEqual(1);
+        expect(box(part('.mbx__search')).top).toBeGreaterThanOrEqual(box(row).bottom - 1);
+    });
+
+    it('the box checks every loaded row, and a second press clears them', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        expect(boxState()).withContext('none checked').toEqual([false, false]);
+        allBox()!.click();
+        await settle();
+        expect([...page.selectedIds()].sort()).toEqual(['m-1', 'm-3']);
+        expect(rowBoxes().map(b => b.checked)).toEqual([true, true]);
+        expect(boxState()).toEqual([true, false]);
+        expect(el().querySelector('app-mail-bulk-bar')).withContext('the bulk bar agrees').not.toBeNull();
+
+        allBox()!.click();
+        await settle();
+        expect(page.selectedCount()).toBe(0);
+        expect(rowBoxes().map(b => b.checked)).toEqual([false, false]);
+        expect(boxState()).toEqual([false, false]);
+        expect(el().querySelector('app-mail-bulk-bar')).toBeNull();
+    });
+
+    it('with some rows checked the box is indeterminate; a press checks them all; the bulk bar\'s clear unchecks it', async () => {
+        await render(1440);
+        const page = fixture.componentInstance;
+        rowBoxes()[0].click();
+        await settle();
+        expect(page.selectedCount()).toBe(1);
+        expect(boxState()).withContext('some').toEqual([false, true]);
+
+        allBox()!.click();
+        await settle();
+        expect(page.selectedCount()).toBe(2);
+        expect(boxState()).toEqual([true, false]);
+
+        rowBoxes()[1].click();
+        await settle();
+        expect(boxState()).withContext('one unchecked again').toEqual([false, true]);
+        part('[data-test="bulk-select-all"]').click();
+        await settle();
+        expect(boxState()).withContext('the bulk bar\'s select-all').toEqual([true, false]);
+        part('[data-test="bulk-clear"]').click();
+        await settle();
+        expect(boxState()).withContext('cleared').toEqual([false, false]);
+    });
+
+    it('with no row the box can check there is no box, and none over search results; the name stays', async () => {
+        await render(1440);
+        await openFilter().choose('unread');
+        expect(rows().length).withContext('the server row only').toBe(1);
+        expect(allBox()).toBeNull();
+        await openFilter().choose('all');
+        expect(allBox()).not.toBeNull();
+        fixture.componentInstance.searchActive.set(true);
+        await settle();
+        expect(allBox()).toBeNull();
+        expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
+    });
+
+    it('with two panes the second row stays under the folders bar: the box, the name and the filter, which says its choice', async () => {
+        await render(760);
+        expect(fixture.componentInstance.twoPanes()).withContext('two panes').toBeTrue();
+        const row = part('[data-test="list-name-row"]');
+        expect(part('[data-test="list-name"]').textContent!.trim()).toBe('Inbox');
+        expect(row.contains(part('[data-test="list-select-all"]'))).toBeTrue();
+        expect(el().querySelectorAll('[data-test="mail-filter"]').length).withContext('one filter').toBe(1);
+        expect(row.contains(filterButton()!)).withContext('in the row, not beside the search').toBeTrue();
+        expect(box(row).top).toBeGreaterThanOrEqual(box(part('[data-test="phone-folders"]')).bottom - 1);
+        expect(box(part('.mbx__search')).top).toBeGreaterThanOrEqual(box(row).bottom - 1);
+
+        await openFilter().choose('unread');
+        expect(filterButton()!.textContent!.trim()).toBe('Unread');
+        expect(filterButton()!.classList).toContain('cms-filter-menu--active');
+        expect(part('[data-test="phone-title"]').textContent!.trim()).withContext('the row says the choice, not the bar').toBe('Inbox');
+    });
+
+    for (const width of [400]) {
+        it(`at ${width}px the folders bar names the folder: no second row, the filter an icon beside the search`, async () => {
+            await render(width);
+            expect(el().querySelector('[data-test="list-name-row"]')).toBeNull();
+            expect(el().querySelectorAll('[data-test="mail-filter"]').length).withContext('one filter').toBe(1);
+            const search = part('.mbx__search');
+            const b = filterButton()!;
+            expect(search.contains(b)).toBeTrue();
+            expect(b.textContent!.trim()).toBe('');
+            expect(box(b).left).toBeGreaterThanOrEqual(box(part('[data-test="mail-search"]')).right);
+            expect(part('[data-test="phone-title"]').textContent!.trim()).toBe('Inbox');
+
+            await openFilter().choose('unread');
+            expect(filterButton()!.textContent!.trim()).withContext('still an icon').toBe('');
+            expect(filterButton()!.classList).withContext('with the accent').toContain('cms-filter-menu--active');
+            expect(part('[data-test="phone-title"]').textContent!.trim()).toBe('Inbox \u00b7 Unread');
+            expect(part('[data-test="phone-title"]').getAttribute('title')).toBe('Inbox \u00b7 Unread');
+
+            // A long name is cut first; the filter's name stays whole.
+            await nameFolder(LONG_FOLDER);
+            const label = part('[data-test="phone-title"] .mbx__phone-bar-label');
+            const said = part('[data-test="phone-title"] .mbx__phone-bar-filter');
+            expect(label.scrollWidth).toBeGreaterThan(label.clientWidth);
+            expect(said.scrollWidth).toBeLessThanOrEqual(said.clientWidth + 1);
+            expect(box(said).right).toBeLessThanOrEqual(box(part('[data-test="phone-folders"]')).right);
+
+            // With a filter's name longer than the bar, the folder's name goes to nothing, then the filter's is cut.
+            const long = 'Messages waiting for an answer from the supplier before Friday afternoon';
+            fixture.componentInstance.listNodes.set(FILTER_NODES.map(n => (n.meta['value'] === 'unread' ? { ...n, meta: { ...n.meta, label: long } } : n)));
+            await settle();
+            expect(part('[data-test="phone-title"]').getAttribute('title')).toBe(LONG_FOLDER + ' \u00b7 ' + long);
+            const cut = part('[data-test="phone-title"] .mbx__phone-bar-filter');
+            const line = box(part('[data-test="phone-title"]'));
+            expect(box(part('[data-test="phone-title"] .mbx__phone-bar-place')).top).withContext('the name is under the line, not drawn').toBeGreaterThanOrEqual(line.bottom - 1);
+            expect(box(part('[data-test="phone-title"] .mbx__phone-bar-dot')).top).withContext('its dot with it').toBeGreaterThanOrEqual(line.bottom - 1);
+            expect(box(cut).left).withContext('the title starts with the filter').toBeCloseTo(line.left, 0);
+            expect(cut.scrollWidth).withContext('the filter cut').toBeGreaterThan(cut.clientWidth);
+            expect(getComputedStyle(cut).textOverflow).toBe('ellipsis');
+            expect(box(cut).width).toBeCloseTo(box(part('[data-test="phone-title"]')).width, 0);
+            const bar = box(part('[data-test="phone-folders"]'));
+            const icon = box(part('[data-test="phone-folders"] .bi-chevron-down'));
+            expect(box(cut).right).toBeLessThanOrEqual(icon.left);
+            expect(bar.right - icon.right).withContext('the chevron keeps its place').toBeCloseTo(12, 0);
+            fixture.componentInstance.listNodes.set(FILTER_NODES);
+            await settle();
+
+            // Search results are not filtered, so the title does not say a filter.
+            fixture.componentInstance.searchActive.set(true);
+            await settle();
+            expect(part('[data-test="phone-title"]').textContent!.trim()).toBe(LONG_FOLDER);
+            expect(filterButton()).toBeNull();
+
+            fixture.componentInstance.searchActive.set(false);
+            await settle();
+            await openFilter().choose('all');
+            expect(part('[data-test="phone-title"]').textContent!.trim()).toBe(LONG_FOLDER);
+        });
+    }
 
     it('the message pane draws no empty row: with no message open no action row, its content at the top', async () => {
         await render(1440);

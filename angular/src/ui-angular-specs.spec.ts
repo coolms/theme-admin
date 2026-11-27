@@ -16,6 +16,7 @@
  * disagree. Add a spec to the package, add it here -- or let the check tell
  * you that you did not.
  */
+import '../../../ui-angular/src/context-menu/context-menu.component.spec';
 import '../../../ui-angular/src/context-menu/context-menu.service.spec';
 import '../../../ui-angular/src/datagrid/datagrid-declared-rows.spec';
 import '../../../ui-angular/src/datagrid/datagrid-empty-state.spec';
@@ -42,7 +43,7 @@ import '../../../ui-angular/src/ui/keyboard-scope/keyboard-scope.service.spec';
 import '../../../ui-angular/src/ui/explorer-accordion/space-selection.store.spec';
 import '../../../ui-angular/src/ui/files-picker/cms-files-picker.component.spec';
 import '../../../ui-angular/src/ui/filter-builder/cms-filter-builder.component.spec';
-import '../../../ui-angular/src/ui/filter-chips/cms-filter-chips.component.spec';
+import '../../../ui-angular/src/ui/filter-menu/cms-filter-menu.component.spec';
 import '../../../ui-angular/src/ui/item-interactions/cms-item-interactions.directive.spec';
 import '../../../ui-angular/src/ui/layout-actions.service.spec';
 import '../../../ui-angular/src/ui/layout-tree-editor/layout-tree-editor.component.spec';
@@ -61,6 +62,7 @@ import '../../../ui-angular/src/ui/tab-strip.component.spec';
 import '../../../ui-angular/src/ui/toast-outlet.component.spec';
 import '../../../ui-angular/src/ui/toast.service.spec';
 import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
+import '../../../ui-angular/src/ui/user-avatar.component.spec';
 import '../../../ui-angular/src/notification/centrifugo-client.resubscribe.spec';
 import '../../../ui-angular/src/notification/session-ended-on-disconnect.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';

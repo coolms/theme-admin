@@ -23,7 +23,7 @@ import { EditorPeer } from './editor-collab.service';
                 <div class="epb__avatars">
                     @for (p of inline(); track p.userId) {
                         <span class="epb__avatar" [title]="p.name">
-                            <app-user-avatar size="sm" [user]="{ identifier: p.name }" />
+                            <app-user-avatar size="sm" [user]="{ firstName: p.name }" />
                         </span>
                     }
                     @if (overflow() > 0) {
