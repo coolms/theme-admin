@@ -1263,9 +1263,11 @@ type PhonePane = 'folders' | 'message';
         .mbx__rail {
             width: 230px; flex: 0 0 230px; min-width: 200px;
             padding: 0 var(--cms-panel-padding) var(--cms-panel-padding) var(--cms-content-padding);
-            overflow-y: auto; display: flex; flex-direction: column;
+            display: flex; flex-direction: column; min-height: 0; overflow: hidden;
         }
         .mbx__rail > cms-state, .mbx__rail > app-mail-folder-rail { margin-top: 8px; }
+        /* The mailbox card stays at the column's top; the folders under it are the column's one scroll region. */
+        .mbx__rail > app-mail-folder-rail { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         /* The mailbox card: the column's first row, level with the panes' first row. */
         .mbx__rail-card { flex: 0 0 auto; display: flex; align-items: center; min-height: var(--cms-pane-toolbar-height); }
         .mbx__rail-card > app-mailbox-switcher { display: block; flex: 1 1 auto; min-width: 0; }
