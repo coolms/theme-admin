@@ -27,6 +27,7 @@ import {
     StateComponent,
     ToastService,
 } from '@coolms/ui-angular';
+import { personLabel } from '../identity/person-label';
 
 /**
  * Sibling -- Schedules admin list page (/admin/schedules).
@@ -140,7 +141,7 @@ export class SchedulesListComponent implements OnInit {
                 ...s,
                 slug:         s.slug ?? '',
                 calendarSlug: s.calendarSlug ?? '',
-                ownerLabel:   s.ownerLabel ?? '',
+                ownerLabel:   s.ownerId ? personLabel(s.ownerLabel) : '',
             })),
             totalItems: this.totalItems(),
             page:       1,

@@ -17,6 +17,7 @@ import { IdentityApiService } from './identity-api.service';
 import { AccountDeletionDto, LegalHoldDto } from './identity.types';
 import { DELETION_STATE_LABELS } from './deletion-detail-panel.component';
 import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dialog.component';
+import { personLabel } from './person-label';
 
 /**
  * Level two of "Legal holds": one person's pending deletion
@@ -40,7 +41,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
                 } @else if (pending(); as d) {
                     <p class="mb-1">
                         <span class="badge text-bg-{{ stateOf(d).variant }} me-1">{{ stateOf(d).label }}</span>
-                        Requested by {{ d.requestedByLabel }} on {{ dtf.dateTime(d.requestedAt) }};
+                        Requested by {{ personLabel(d.requestedByLabel) }} on {{ dtf.dateTime(d.requestedAt) }};
                         due {{ dtf.dateTime(d.dueAt) }}
                         @if (d.daysLeft !== null && d.daysLeft !== undefined) {
                             ({{ d.daysLeft === 0 ? 'due now' : d.daysLeft + ' day' + (d.daysLeft === 1 ? '' : 's') + ' left' }})
@@ -103,6 +104,7 @@ import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dial
     `],
 })
 export class UserDeletionPanelComponent implements OnInit {
+    protected readonly personLabel = personLabel;
     readonly userId       = input.required<string>();
     readonly accountLabel = input<string>('this account');
     /** After a cancel, a hold or a release succeeded: the host may want to refresh its own view. */

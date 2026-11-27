@@ -11,6 +11,7 @@ import { sortQueue } from './agent-queue.util';
 import { DynamicChatService } from './dynamic-chat.service';
 import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service';
 import { AgentConversationDto, QueueAgentDto } from './dynamic-chat.types';
+import { personLabel } from '../identity/person-label';
 
 /**
  * DynamicChat quick-panel, Slice C) -- the right-drawer content for
@@ -191,7 +192,7 @@ export class DynamicChatQuickPanelComponent implements OnInit {
     }
 
     agentsTitle(conv: AgentConversationDto): string {
-        const names = (conv.agents ?? []).map(a => a.displayName ?? 'Agent');
+        const names = (conv.agents ?? []).map(a => personLabel(a.displayName));
         return names.length ? `Handled by ${names.join(', ')}` : '';
     }
 }

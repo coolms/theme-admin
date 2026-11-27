@@ -38,7 +38,7 @@ export interface AccountDeletionHoldDto {
     id:               string;
     reason:           string;
     placedBy:         string;
-    placedByLabel:    string;
+    placedByLabel:    string | null;
     placedAt:         string;
     active:           boolean;
     releasedAt?:      string | null;
@@ -68,10 +68,10 @@ export type AccountDeletionState = 'pending' | 'held' | 'cancelled' | 'executed'
 export interface AccountDeletionDto {
     id:               string;
     userId:           string;
-    accountLabel:     string;
+    accountLabel:     string | null;
     requestedByKind:  'person' | 'administrator';
     requestedBy?:     string | null;
-    requestedByLabel: string;
+    requestedByLabel: string | null;
     requestedAt:      string;
     dueAt:            string;
     daysLeft?:        number | null;

@@ -4,6 +4,7 @@ import { Store } from '@ngxs/store';
 import { Observable, catchError, map, of } from 'rxjs';
 import { AppConfigState } from '@coolms/core-angular';
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, MentionRef } from './messages.types';
+import { personLabel } from '../identity/person-label';
 
 /** A directory user surfaced by the mention typeahead (member or not). */
 export interface MentionDirectoryUser {
@@ -177,21 +178,20 @@ export class MessagesService {
     /**
      * GET {identity.usersUrl}/{id} -> a user's display label, for a group-composer
      * chip (the group slice). Best-effort: falls back to the raw id on any error
-     * or missing manifest URL, so a chip always renders. Mirrors the label
-     * fallback chain used by `<app-user-search-select>`
-     * (name -> fullName -> email -> identifier -> slug).
+     * or missing manifest URL, so a chip always renders. The label is the
+     * name the person gave, or the neutral label: never a login, an email or an id.
      */
     resolveUserLabel(userId: string): Observable<string> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
         const usersUrl = manifest?.identity?.usersUrl;
         if (!usersUrl) {
-            return of(userId);
+            return of(personLabel(null));
         }
         return this.http
             .get<Record<string, unknown>>(`${usersUrl}/${encodeURIComponent(userId)}`, { headers: this.jsonHeaders })
             .pipe(
-                map(row => this.userLabel(row, userId)),
-                catchError(() => of(userId)),
+                map(row => this.userLabel(row)),
+                catchError(() => of(personLabel(null))),
             );
     }
 
@@ -199,12 +199,12 @@ export class MessagesService {
      * GET {identity.usersUrl}?filter=firstName cn "q"|lastName cn "q"|identifier cn "q"
      * &filter=isSystem eq false -- the mention typeahead's DIRECTORY search
      * (`@`-mentions v2 / ): find users NOT (necessarily) in the conversation
-     * so a mention can reach anyone. Matches by NAME (profile first/last) OR email
-     * -- the pipe (`|`) is one RQL OR-group inside a single `filter` param; the
+     * so a mention can reach anyone. Matches by the NAME the person gave (profile
+     * first/last) -- the pipe (`|`) is one RQL OR-group inside a single `filter` param; the
      * repeated `filter` AND-combines the system-user exclusion. System
      * users are hidden. Best-effort: degrades to `[]` on error / missing manifest
-     * URL / blank query. Labels prefer the full name (the backend's `displayName`
-     * policy), so results read as real names, not emails.
+     * URL / blank query. Labels are the name the person gave or the neutral label,
+     * never an email: a mention's label is read by everyone in the conversation.
      */
     searchUsers(query: string, limit = 8): Observable<MentionDirectoryUser[]> {
         const manifest = this.store.selectSnapshot(AppConfigState.manifest);
@@ -217,9 +217,9 @@ export class MessagesService {
         }
         // Repeated `filter` params AND-combine server-side (the raw-QUERY_STRING RQL
         // parser honours duplicate keys, ); the first clause is a single
-        // pipe-separated OR group (name OR email) -- hide system users.
+        // pipe-separated OR group (first OR last name) -- hide system users.
         const params = new HttpParams()
-            .append('filter', `firstName cn "${q}"|lastName cn "${q}"|identifier cn "${q}"`)
+            .append('filter', `firstName cn "${q}"|lastName cn "${q}"`)
             .append('filter', 'isSystem eq false')
             .set('itemsPerPage', String(limit));
         return this.http
@@ -228,7 +228,7 @@ export class MessagesService {
                 map(raw => this.unwrap<Record<string, unknown>>(raw)
                     .map(row => ({
                         userId: typeof row['id'] === 'string' ? row['id'] : '',
-                        displayName: this.userLabel(row, ''),
+                        displayName: this.userLabel(row),
                         avatarUrl: typeof row['avatarUrl'] === 'string' ? row['avatarUrl'] : null,
                     }))
                     .filter(u => u.userId !== '')
@@ -237,15 +237,15 @@ export class MessagesService {
             );
     }
 
-    /** Best display label for a user row (name -> fullName -> email -> identifier -> slug -> fallback). */
-    private userLabel(row: Record<string, unknown>, fallback: string): string {
-        for (const key of ['name', 'fullName', 'email', 'identifier', 'slug']) {
+    /** A user row's label: the name the person gave, or the neutral label. */
+    private userLabel(row: Record<string, unknown>): string {
+        for (const key of ['name', 'fullName']) {
             const v = row[key];
             if (typeof v === 'string' && v.trim() !== '') {
                 return v;
             }
         }
-        return fallback;
+        return personLabel(null);
     }
 
     /** GET /chat/messages?conversationId=&afterSeq=&limit= -- the in-order cursor read. */

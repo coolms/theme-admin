@@ -43,6 +43,7 @@ import { EditorPresenceBarComponent } from './editor-presence-bar.component';
 import { DrawnByNoticeComponent, type DrawnByDto } from './drawn-by-notice.component';
 import { PagePropertiesPanelComponent } from './page-properties-panel.component';
 import { AppConfigState } from '@coolms/core-angular';
+import { personLabel } from '../identity/person-label';
 
 /**
  * Which side-rail panel is open (null = collapsed). A panel *id* -- the set of
@@ -116,7 +117,7 @@ type RailTab = string;
                 <div class="page-editor__peer-saved" role="status">
                     <i class="bi bi-arrow-repeat"></i>
                     <span class="page-editor__peer-saved-msg">
-                        <strong>{{ saved.byName || 'Someone' }}</strong> saved a newer version.
+                        <strong>{{ personLabel(saved.byName) }}</strong> saved a newer version.
                     </span>
                     <button class="cms-btn cms-btn-sm cms-btn-primary"
                             (click)="reloadFromPeerSave()">
@@ -777,6 +778,7 @@ type RailTab = string;
     `],
 })
 export class PageEditorComponent implements OnInit {
+    protected readonly personLabel = personLabel;
     private readonly dialogRef   = inject(DialogRef);
     private readonly rawData     = inject(DIALOG_DATA) as { page?: PageDto; node?: VfsNodeDto };
     private readonly pageSvc     = inject(PageService);
