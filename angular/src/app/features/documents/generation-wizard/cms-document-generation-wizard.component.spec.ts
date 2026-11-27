@@ -79,3 +79,31 @@ describe('CmsDocumentGenerationWizardComponent -- what a generation sends', () =
         expect(sent.map(payload => payload.plainVariables)).toEqual([{ customer: { name: 'Ada' } }]);
     });
 });
+
+/** The wizard's subtitle names the template: its own name, or its id when it was never named. */
+describe('CmsDocumentGenerationWizardComponent -- the template it names', () => {
+    function subtitle(name: string, slug: string): string {
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: DIALOG_DATA, useValue: { template: { id: 't1', name, slug, contextSchema: { variables: [] } } as unknown as DocumentTemplate } },
+                { provide: DialogRef, useValue: { close: () => undefined } },
+                { provide: DocumentsApiService, useValue: { createDocumentGeneration: () => of({ id: 'g1' }) } },
+                { provide: ToastService, useValue: { success: () => undefined, error: () => undefined } },
+                { provide: WizardDraftService, useValue: { maybeRestore: () => undefined, save: () => undefined, clear: () => undefined } },
+                { provide: FilterAudienceEntity, useValue: { matches: () => false, value: () => '' } },
+            ],
+        });
+        const fixture = TestBed.createComponent(CmsDocumentGenerationWizardComponent);
+        fixture.detectChanges();
+        const sub = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-test="template-name"]');
+        return sub ? sub.textContent!.replace(/\s+/g, ' ').trim() + (sub.querySelector('code') ? ' [code]' : '') : '';
+    }
+
+    it('shows the template\'s name, in plain text, when it has one', () => {
+        expect(subtitle('Welcome letter', 'welcome-letter')).toBe('Welcome letter');
+    });
+
+    it('shows the id when the template was never named (its name is its id)', () => {
+        expect(subtitle('table-verify-1800', 'table-verify-1800')).toBe('Template table-verify-1800 [code]');
+    });
+});

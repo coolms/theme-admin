@@ -247,7 +247,10 @@ export class MailPanesDirective {
     foldersNeedIn(need: number, pane: HTMLElement): void {
         const style = getComputedStyle(pane);
         const padding = parseFloat(style.paddingLeft || '0') + parseFloat(style.paddingRight || '0');
-        this.foldersNeed(need + padding + Math.max(0, pane.offsetWidth - pane.clientWidth));
+        // The scroll bar takes width from the rows, on the pane or on the folder list that scrolls inside it.
+        const list = pane.querySelector<HTMLElement>('app-mail-folder-rail');
+        const bars = Math.max(0, pane.offsetWidth - pane.clientWidth) + (list ? Math.max(0, list.offsetWidth - list.clientWidth) : 0);
+        this.foldersNeed(need + padding + bars);
     }
 
     /** A splitter's drag or key ended at this width: kept, cached, and saved for the person. */
