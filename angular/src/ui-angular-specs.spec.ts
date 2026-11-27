@@ -62,6 +62,7 @@ import '../../../ui-angular/src/ui/tab-strip.component.spec';
 import '../../../ui-angular/src/ui/toast-outlet.component.spec';
 import '../../../ui-angular/src/ui/toast.service.spec';
 import '../../../ui-angular/src/ui/tree-picker/cms-tree-picker.component.spec';
+import '../../../ui-angular/src/ui/user-avatar.component.spec';
 import '../../../ui-angular/src/notification/centrifugo-client.resubscribe.spec';
 import '../../../ui-angular/src/notification/session-ended-on-disconnect.spec';
 import '../../../ui-angular/src/ui/wizard/cms-wizard.component.spec';

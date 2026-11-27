@@ -1,5 +1,6 @@
 import { type DateTimeFormatService } from '@coolms/ui-angular';
 
+import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatConversationDto, ConversationParticipantDto } from './messages.types';
 
 /**
@@ -148,4 +149,34 @@ export function counterpartOf(
  */
 export function rowWhen(iso: string, dtf: DateTimeFormatService, now: Date = new Date()): string {
     return Number.isNaN(new Date(iso).getTime()) ? '' : dtf.row(iso, now);
+}
+
+/**
+ * Avatar for a conversation row / thread header, by the conversation's kind:
+ * - notes: my own;
+ * - direct and live chat: the other participant's name (a visitor counts,
+ *   and comes first in a live chat), then the conversation's title;
+ * - group and channel: the conversation's title.
+ * With none of these the avatar shows "?"; a name never comes from an id.
+ */
+export function conversationAvatar(c: ChatConversationDto | null, me: Viewer): ChatAvatarUser {
+    if (c === null) {
+        return avatarUserFor(null, null);
+    }
+    const named = (name: string | null | undefined): boolean => !!name && name.trim() !== '';
+    if (c.kind === 'self_notes') {
+        const mine = (c.participants ?? []).find(p => p.userId === me);
+        return avatarUserFor(mine?.displayName ?? null, mine?.userId ?? c.id, mine?.avatarUrl);
+    }
+    if (c.kind === 'direct' || c.kind === 'dynamic_chat') {
+        const others = (c.participants ?? []).filter(p => p.userId === null || p.userId !== me);
+        const ordered = c.kind === 'dynamic_chat'
+            ? [...others.filter(p => p.userId === null), ...others.filter(p => p.userId !== null)]
+            : others;
+        const other = ordered.find(p => named(p.displayName));
+        if (other) {
+            return avatarUserFor(other.displayName, other.userId ?? other.participantId, other.avatarUrl);
+        }
+    }
+    return avatarUserFor(named(c.title) ? c.title : null, c.id);
 }
