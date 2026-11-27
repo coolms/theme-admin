@@ -258,7 +258,7 @@ jobs:
         working-directory: sources/theme-admin/angular
         run: |
           git fetch --no-tags --depth=1 origin develop:refs/remotes/origin/develop
-          node --test scripts/check-ui-text.test.mjs
+          node --test scripts/check-ui-text.test.mjs scripts/check-ui-text.base.test.mjs
           npm run lint:ui-text -- --base origin/develop
 
       # The same tripwire as the mobile app's vendored pdf.js, on the bundled pdf.js files this build ships: an

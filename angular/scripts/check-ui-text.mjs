@@ -21,16 +21,15 @@
 //
 // Exit: 0 CLEAR, 1 FOUND, 2 UNEVALUABLE (no template read, or the base's list unreadable).
 //
-// Run:  node scripts/check-ui-text.mjs [--base origin/develop] [--write-baseline]
+// Run:  node scripts/check-ui-text.mjs [--base origin/develop] [--write-baseline] [--root <an angular/ folder>]
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const SRC = join(ROOT, 'src');
-const BASELINE = join(HERE, 'check-ui-text.baseline.json');
 /** A start tag, its quoted attribute values allowed to hold < and >. */
 const TAG = /<[a-zA-Z](?:[^<>"'`]|"[^"]*"|'[^']*')*>/g;
 const READ_ATTRS = /^(title|label|placeholder|alt|aria-label|[a-z][a-zA-Z]*(Label|Title|Text|Hint|Help|Description))$/;
@@ -61,8 +60,9 @@ export function visibleStrings(template) {
     const lineAt = (i) => t.slice(0, i).split('\n').length;
     // Static attributes a person reads, inside each tag.
     for (const tag of t.matchAll(TAG)) {
-        for (const a of tag[0].matchAll(/\s([a-zA-Z][\w.-]*)="([^"]*)"/g)) {
-            if (READ_ATTRS.test(a[1]) && a[2].trim() !== '') out.push({ text: a[2].trim(), line: lineAt(tag.index) });
+        for (const a of tag[0].matchAll(/\s([a-zA-Z][\w.-]*)=(?:"([^"]*)"|'([^']*)')/g)) {
+            const value = (a[2] ?? a[3]).trim();
+            if (READ_ATTRS.test(a[1]) && value !== '') out.push({ text: value, line: lineAt(tag.index) });
         }
     }
     // The text between tags, Angular blocks taken out.
@@ -117,20 +117,24 @@ function main(argv) {
     const write = argv.includes('--write-baseline');
     const b = argv.indexOf('--base');
     const base = b !== -1 ? argv[b + 1] : null;
-    const found = findings();
-    if (templates().length === 0) { console.log('UNEVALUABLE -- no template read under src/'); return 2; }
+    const r = argv.indexOf('--root');
+    const root = r !== -1 ? resolve(argv[r + 1]) : ROOT;
+    const src = join(root, 'src');
+    const list = join(root, 'scripts', 'check-ui-text.baseline.json');
+    const found = findings(src, root);
+    if (templates(src).length === 0) { console.log('UNEVALUABLE -- no template read under src/'); return 2; }
     if (write) {
-        writeFileSync(BASELINE, JSON.stringify([...found.keys()].sort(), null, 1) + '\n');
+        writeFileSync(list, JSON.stringify([...found.keys()].sort(), null, 1) + '\n');
         console.log(`baseline written: ${found.size} grandfathered string(s)`);
         return 0;
     }
-    const baseline = readBaseline(readFileSync(BASELINE, 'utf8'));
+    const baseline = readBaseline(readFileSync(list, 'utf8'));
     const held = new Set(baseline);
     const fresh = [...found.keys()].filter((k) => !held.has(k));
     const stale = baseline.filter((k) => !found.has(k));
     let added = [];
     let begins = false;
-    const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const git = (args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     if (base) {
         try {
             git(['rev-parse', '--verify', `${base}^{commit}`]);
@@ -147,8 +151,7 @@ function main(argv) {
     if (base && !begins) {
         let before;
         try {
-            before = new Set(readBaseline(execFileSync('git', ['show', `${base}:angular/scripts/check-ui-text.baseline.json`],
-                { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })));
+            before = new Set(readBaseline(git(['show', `${base}:angular/scripts/check-ui-text.baseline.json`])));
         } catch {
             console.log(`UNEVALUABLE -- the grandfather list at ${base} could not be read`);
             return 2;

@@ -43,6 +43,10 @@ test('never reads CSS, bindings, interpolations, blocks or comments', () => {
     assert.deepEqual(texts(tpl).filter((t) => breaks(t).length), []);
 });
 
+test('a single-quoted attribute a person reads is read too', () => {
+    assert.deepEqual(texts("<button title='Save — close' aria-label='Close'>Go</button>").sort(), ['Close', 'Go', 'Save — close']);
+});
+
 test('an attribute value holding > does not end its tag early', () => {
     const tpl = '<cms-x [prev]="i > 0 ? items[i - 1] : null" label="Fine">Words</cms-x>';
     assert.deepEqual(texts(tpl).sort(), ['Fine', 'Words']);
