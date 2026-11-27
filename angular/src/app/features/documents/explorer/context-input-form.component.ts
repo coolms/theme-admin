@@ -11,6 +11,8 @@ import {
 import { FormsModule } from '@angular/forms';
 
 import { CmsEntityPickerComponent } from '@coolms/ui-angular';
+import { EntitySearchService } from '@coolms/core-angular';
+import { DocumentRecipientSearchService } from '../document-recipient-search.service';
 import { type ContextVariableGroup, type FormVariableInput } from '../shared/document-explorer.types';
 import {
     buildGroupTree,
@@ -53,6 +55,8 @@ import {
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, NgTemplateOutlet, CmsEntityPickerComponent],
+    // A person is picked among the people a document may go to.
+    providers: [{ provide: EntitySearchService, useClass: DocumentRecipientSearchService }],
     template: `
         @if (groups().length === 0) {
             <p class="cms-context-form__empty">

@@ -3,6 +3,8 @@ import {
 } from '@angular/core';
 
 import { CmsEntityPickerComponent } from '@coolms/ui-angular';
+import { EntitySearchService } from '@coolms/core-angular';
+import { DocumentRecipientSearchService } from '../../document-recipient-search.service';
 import { type ContextSchemaVariable, type FormVariableInput } from '../../shared/document-explorer.types';
 import { ContextInputFormComponent } from '../../explorer/context-input-form.component';
 import type { ContextFormValue } from '../../explorer/context-form.helpers';
@@ -31,6 +33,8 @@ import { callerFillablePaths } from '../caller-fillable.helpers';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CmsEntityPickerComponent, ContextInputFormComponent],
+    // A person is picked among the people a document may go to.
+    providers: [{ provide: EntitySearchService, useClass: DocumentRecipientSearchService }],
     template: `
         <div class="cms-audience-step">
             @if (entityRefs().length > 0) {

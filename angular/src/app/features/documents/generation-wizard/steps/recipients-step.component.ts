@@ -80,7 +80,7 @@ import { FilterAudienceEntity } from '../filter-audience-entity';
             @if (!loading() && !error() && sample().length > 0) {
                 <ul class="cms-recipients-step__sample">
                     @for (row of sample(); track row.id) {
-                        <li>{{ row.label }}</li>
+                        <li>{{ row.label ?? 'No name' }}</li>
                     }
                     @if ((count() ?? 0) > sample().length) {
                         <li class="cms-recipients-step__sample-more">
@@ -162,7 +162,7 @@ export class CmsWizardRecipientsStepComponent implements OnDestroy {
     protected readonly error = signal<boolean>(false);
 
     /** Up to 10 matching recipients, for a "yes, these are the right people" check. */
-    protected readonly sample = signal<readonly { id: string; label: string }[]>([]);
+    protected readonly sample = signal<readonly { id: string; label: string | null }[]>([]);
 
     private readonly rqlChanges$ = new Subject<string>();
     private readonly subscription: Subscription;

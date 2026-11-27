@@ -10,9 +10,20 @@
  * `sample` is up to 10 rows so the operator can check "yes, these are the
  * right people" before committing.
  */
+/**
+ * One person a document may go to (GET /api/v1/document/recipients): the name the person gave, or the literal
+ * "No name"; the address, or null.
+ */
+export interface DocumentRecipientDto {
+    readonly id:      string;
+    readonly name:    string;
+    readonly address: string | null;
+}
+
 export interface AudiencePreviewDto {
     readonly count:  number;
-    readonly sample: readonly { readonly id: string; readonly label: string }[];
+    /** A person with no name has a null label; the step shows "No name". */
+    readonly sample: readonly { readonly id: string; readonly label: string | null }[];
 }
 
 /**
