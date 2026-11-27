@@ -196,7 +196,7 @@ export class MessagesService {
     }
 
     /**
-     * GET {identity.usersUrl}?filter=firstName cn "q"|lastName cn "q"|identifier cn "q"
+     * GET {identity.usersUrl}?filter=firstName cn "q"|lastName cn "q"
      * &filter=isSystem eq false -- the mention typeahead's DIRECTORY search
      * (`@`-mentions v2 / ): find users NOT (necessarily) in the conversation
      * so a mention can reach anyone. Matches by the NAME the person gave (profile
