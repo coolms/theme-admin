@@ -27,7 +27,7 @@ import { ChatPresenceLiveService } from './chat-presence-live.service';
 import { firstInboxPage, InboxPage, nextInboxPage, refreshWindow } from './inbox-paging.util';
 import { listFilterInForce, listFiltersOf } from '../tree-list-filters';
 import { CONVERSATION_FILTER_VALUES, conversationsShown } from './conversation-filter.util';
-import { byLastMessage, conversationLabel, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
+import { byLastMessage, conversationAvatar, conversationLabel, presenceDot, rowPreview as rowPreviewOf, rowWhen, unreadFor } from './conversation-row.util';
 import { advanceReadOverride, mayMarkRead } from './mark-read.util';
 import { mentionsUser } from './mentions.util';
 import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-receipts.util';
@@ -1996,21 +1996,9 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         this.api.markRead(convId, seq).subscribe({ error: () => { /* best-effort */ } });
     }
 
-    /**
-     * Avatar for a conversation row / thread header -- the FIRST other
-     * participant (1:1 DMs have exactly one; a future group thread shows the
-     * first, which is good enough for the roster glyph). Colored-initials
-     * fallback from `displayName` -- no backend avatar URL needed.
-     */
+    /** Avatar for a conversation row / thread header ({@link conversationAvatar}). */
     rowAvatar(c: ChatConversationDto | null): ChatAvatarUser {
-        const me = this.meId;
-        // Self-notes: show MY own avatar -- there is no "other" participant.
-        if (c?.kind === 'self_notes') {
-            const mine = (c.participants ?? []).find(p => p.userId === me);
-            return avatarUserFor(mine?.displayName ?? null, mine?.userId ?? c.id ?? null, mine?.avatarUrl);
-        }
-        const other = (c?.participants ?? []).find(p => p.userId && p.userId !== me);
-        return avatarUserFor(other?.displayName ?? null, other?.userId ?? c?.id ?? null, other?.avatarUrl);
+        return conversationAvatar(c, this.meId);
     }
 
     /** Avatar for a message bubble -- resolved from the sender participant. */
