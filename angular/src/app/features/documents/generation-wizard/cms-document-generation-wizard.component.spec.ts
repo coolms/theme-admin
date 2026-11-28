@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { ToastService } from '@coolms/ui-angular';
 import { CmsDocumentGenerationWizardComponent } from './cms-document-generation-wizard.component';
 import { DocumentsApiService } from '../documents-api.service';
+import { DocumentRecipientAccess } from '../document-recipient-access.service';
 import { FilterAudienceEntity } from './filter-audience-entity';
 import { WizardDraftService, type WizardDraft } from './wizard-draft.service';
 import type { CreateDocumentGenerationPayload } from '../documents.types';
@@ -50,6 +51,8 @@ describe('CmsDocumentGenerationWizardComponent -- what a generation sends', () =
             providers: [
                 { provide: DIALOG_DATA, useValue: { template } },
                 { provide: DialogRef, useValue: { close: () => undefined } },
+                // This person may choose recipients: the wizard offers the filter.
+                { provide: DocumentRecipientAccess, useValue: { choice: () => 'others', load: (): void => undefined } },
                 {
                     provide: DocumentsApiService,
                     useValue: {
@@ -90,6 +93,8 @@ describe('CmsDocumentGenerationWizardComponent -- the template it names', () => 
                 { provide: DIALOG_DATA, useValue: { template: { id: 't1', name, slug, contextSchema: { variables: [] } } as unknown as DocumentTemplate } },
                 { provide: DialogRef, useValue: { close: () => undefined } },
                 // The wizard asks once whether this person may choose recipients: here, yes.
+                // This person may choose recipients: the wizard offers the filter.
+                { provide: DocumentRecipientAccess, useValue: { choice: () => 'others', load: (): void => undefined } },
                 { provide: DocumentsApiService, useValue: { createDocumentGeneration: () => of({ id: 'g1' }), searchDocumentRecipients: () => of([]) } },
                 { provide: ToastService, useValue: { success: () => undefined, error: () => undefined } },
                 { provide: WizardDraftService, useValue: { maybeRestore: () => undefined, save: () => undefined, clear: () => undefined } },

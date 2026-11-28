@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Store } from '@ngxs/store';
-import { AuthState, EntitySearchService } from '@coolms/core-angular';
+import { signal } from '@angular/core';
+import { AuthState, ElevationService, EntitySearchService } from '@coolms/core-angular';
 import { CmsEntityPickerComponent } from '@coolms/ui-angular';
 
 import { DocumentPersonFieldComponent } from './document-person-field.component';
@@ -17,12 +18,16 @@ const ME = { id: 'u-me', fullName: 'Ada Lovelace', roles: [], email: '' };
 /** Only what a person can do is shown: someone who may not choose others generates for themselves. */
 describe('DocumentPersonFieldComponent', () => {
     let http: HttpTestingController;
+    /** The session's elevation, as the elevation service reports it. */
+    let elevated = signal(false);
 
     beforeEach(() => {
+        elevated = signal(false);
         TestBed.configureTestingModule({
             providers: [
                 provideHttpClient(),
                 provideHttpClientTesting(),
+                { provide: ElevationService, useValue: { elevated: () => elevated() } },
                 {
                     provide: Store,
                     useValue: {
@@ -93,6 +98,32 @@ describe('DocumentPersonFieldComponent', () => {
         access.load();
         answer(500);
         http.verify();
+        expect(access.choice()).toBe('others');
+    });
+
+    it('asks again when the session is elevated: "for you" before, the picker after, with no reload', () => {
+        const { fixture } = render();
+        answer(403);
+        fixture.detectChanges();
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('This document is for you.');
+
+        elevated.set(true);
+        TestBed.tick();
+        answer(200);
+        fixture.detectChanges();
+        expect(fixture.debugElement.query(By.directive(CmsEntityPickerComponent))).withContext('the picker once elevated').not.toBeNull();
+        expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('This document is for you.');
+    });
+
+    it('drops an answer to an earlier question', () => {
+        const access = TestBed.inject(DocumentRecipientAccess);
+        access.load();
+        const first = http.expectOne((r) => r.url === '/api/v1/document/recipients');
+        elevated.set(true);
+        TestBed.tick();
+        first.flush('refused', { status: 403, statusText: 'Refused' });
+        expect(access.choice()).withContext('the plain session\'s refusal is not the elevated one\'s answer').toBe('unknown');
+        http.expectOne((r) => r.url === '/api/v1/document/recipients').flush([]);
         expect(access.choice()).toBe('others');
     });
 });

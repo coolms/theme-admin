@@ -87,7 +87,7 @@ export interface CmsDocumentGenerationWizardResult {
                 <ng-container *cmsWizardStep="'mode'">
                     <cms-wizard-mode-step
                         [variables]="schemaVariables()"
-                        [canChooseOthers]="recipientAccess.choice() !== 'self'"
+                        [canChooseOthers]="recipientAccess.choice() === 'others'"
                         [(mode)]="mode" />
                 </ng-container>
 

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, untracked } from '@angular/core';
 import { Store } from '@ngxs/store';
-import { AuthState, EntitySearchService } from '@coolms/core-angular';
+import { AuthState, CmsLoaderComponent, EntitySearchService } from '@coolms/core-angular';
 import { CmsEntityPickerComponent } from '@coolms/ui-angular';
 import { DocumentRecipientAccess } from './document-recipient-access.service';
 import { DocumentRecipientSearchService } from './document-recipient-search.service';
@@ -15,7 +15,7 @@ import { FilterAudienceEntity } from './generation-wizard/filter-audience-entity
     selector: 'cms-document-person-field',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsEntityPickerComponent],
+    imports: [CmsEntityPickerComponent, CmsLoaderComponent],
     providers: [{ provide: EntitySearchService, useClass: DocumentRecipientSearchService }],
     template: `
         @if (forSelf()) {
@@ -23,7 +23,9 @@ import { FilterAudienceEntity } from './generation-wizard/filter-audience-entity
                 <span>This document is for you.</span>
                 <span class="cms-person-field__name">{{ myName() }}</span>
             </div>
-        } @else if (!waiting()) {
+        } @else if (waiting()) {
+            <cms-loader label="Loading" />
+        } @else {
             <cms-entity-picker
                 [entityType]="entityType()"
                 [collection]="collection()"
