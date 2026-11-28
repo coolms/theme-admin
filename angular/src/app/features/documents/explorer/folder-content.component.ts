@@ -72,7 +72,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
                     <i class="bi bi-file-earmark-text"></i>
                     <p>No templates in this folder.</p>
                     <p class="cms-folder-content__empty-hint">
-                        Click <strong>Upload Template</strong> in the toolbar to add one here.
+                        Click <strong>Upload</strong> or <strong>New Template</strong> to add one here.
                     </p>
                 </div>
             } @else if (viewMode() === 'details') {

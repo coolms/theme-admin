@@ -170,16 +170,13 @@ describe('MessagesPageComponent -- the header and the list\'s filter', () => {
         expect(part('.msg__list-head').querySelectorAll('button:not(.cms-filter-menu)').length).toBe(0);
     });
 
-    it('the tree\'s other header nodes are under More: Browse channels opens the channels list', () => {
+    it('the tree\'s other header nodes are buttons while they fit: Browse channels opens the channels list', () => {
         tree = [...TREE, CHANNELS];
         render();
         const channels = spyOn(fixture.componentInstance, 'toggleChannels');
-        const more = part('cms-page-header [data-action="more"]');
-        more.click();
-        const menu = TestBed.inject(ContextMenuService) as unknown as { openFrom: jasmine.Spy };
-        const items = menu.openFrom.calls.mostRecent().args[1] as { id: string; label: string }[];
-        expect(items.map(i => i.label)).toEqual(['Browse channels']);
-        fixture.componentInstance.onHeaderAction(items[0].id);
+        const browse = part('cms-page-header [data-action="other"]');
+        expect(browse.textContent!.trim()).toBe('Browse channels');
+        browse.click();
         expect(channels).toHaveBeenCalledTimes(1);
     });
 
