@@ -9,14 +9,13 @@ import { FilterAudienceEntity } from '../filter-audience-entity';
 export type WizardMode = 'single' | 'filter';
 
 /**
- * X-2.6b step 1 -- pick how recipients are selected.
+ * X-2.6b step 1: pick how recipients are selected.
  *
- * Three radio options:
+ * Two radio options:
  *   - Single recipient: always enabled, default.
  *   - Filter entities: enabled only when the template's context schema
  *     references the canonical recipient entity (User). Without a User
  *     variable there is no recipient axis to filter on.
- *   - Upload CSV: disabled (X-3 placeholder).
  *
  * Stateless: receives the schema variables + current mode, emits new
  * mode via the `mode` model signal.
@@ -59,22 +58,9 @@ export type WizardMode = 'single' | 'filter';
                         @if (filterAvailable()) {
                             Generate one document per user matching the filter you build next.
                         } @else {
-                            This template has no user references -- only Single mode is available.
+                            Available when the template uses a person's details.
                         }
                     </span>
-                </span>
-            </label>
-
-            <label class="cms-mode-step__option cms-mode-step__option--disabled"
-                   title="Coming soon">
-                <input type="radio"
-                       class="form-check-input"
-                       name="cms-wizard-mode"
-                       value="csv"
-                       disabled />
-                <span class="cms-mode-step__option-body">
-                    <span class="cms-mode-step__option-title">Upload CSV</span>
-                    <span class="cms-mode-step__option-help">Coming soon.</span>
                 </span>
             </label>
         </fieldset>

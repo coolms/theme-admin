@@ -67,7 +67,12 @@ export interface CmsDocumentGenerationWizardResult {
         <div class="cms-doc-wizard">
             <header class="cms-doc-wizard__head">
                 <h2 class="cms-doc-wizard__title">Generate document</h2>
-                <p class="cms-doc-wizard__sub">Template <code>{{ template.name }}</code></p>
+                <!-- The template's own name; a template never named shows its id, which is all that names it. -->
+                @if (template.name && template.name !== template.slug) {
+                    <p class="cms-doc-wizard__sub" data-test="template-name">{{ template.name }}</p>
+                } @else {
+                    <p class="cms-doc-wizard__sub" data-test="template-name">Template <code>{{ template.slug }}</code></p>
+                }
             </header>
 
             <cms-wizard
