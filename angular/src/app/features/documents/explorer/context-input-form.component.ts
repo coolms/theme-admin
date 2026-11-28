@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { CmsEntityPickerComponent } from '@coolms/ui-angular';
+import { DocumentPersonFieldComponent } from '../document-person-field.component';
 import { type ContextVariableGroup, type FormVariableInput } from '../shared/document-explorer.types';
 import {
     buildGroupTree,
@@ -52,7 +52,7 @@ import {
     selector: 'cms-context-input-form',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, NgTemplateOutlet, CmsEntityPickerComponent],
+    imports: [FormsModule, NgTemplateOutlet, DocumentPersonFieldComponent],
     template: `
         @if (groups().length === 0) {
             <p class="cms-context-form__empty">
@@ -104,7 +104,7 @@ import {
                     {{ variable.label ?? displayLabel(variable.path) }}
                 </label>
                 @if (variable.entityType) {
-                    <cms-entity-picker
+                    <cms-document-person-field
                         [entityType]="variable.entityType"
                         [collection]="variable.collection ?? false"
                         [inputId]="fieldId(variable.path)"

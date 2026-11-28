@@ -38,11 +38,16 @@ export type WizardMode = 'single' | 'filter';
                 <span class="cms-mode-step__option-body">
                     <span class="cms-mode-step__option-title">Single recipient</span>
                     <span class="cms-mode-step__option-help">
-                        Generate one document. Pick the recipient on the next step.
+                        @if (canChooseOthers()) {
+                            Generate one document. Pick the recipient on the next step.
+                        } @else {
+                            Generate one document, for you.
+                        }
                     </span>
                 </span>
             </label>
 
+            @if (canChooseOthers()) {
             <label class="cms-mode-step__option"
                    [class.cms-mode-step__option--disabled]="!filterAvailable()">
                 <input type="radio"
@@ -63,6 +68,7 @@ export type WizardMode = 'single' | 'filter';
                     </span>
                 </span>
             </label>
+            }
         </fieldset>
     `,
     styles: [`
@@ -127,6 +133,9 @@ export class CmsWizardModeStepComponent {
 
     /** Context-schema variables from the parent template. */
     readonly variables = input<readonly ContextSchemaVariable[]>([]);
+
+    /** Whether the person may choose who documents go to; one who may not generates for themselves, and no filter is offered. */
+    readonly canChooseOthers = input<boolean>(true);
 
     /**
      * Filter mode is offered only when the template schema declares a

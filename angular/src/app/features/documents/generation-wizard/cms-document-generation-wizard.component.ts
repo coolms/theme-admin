@@ -26,6 +26,7 @@ import { CmsWizardOutputStepComponent } from './steps/output-step.component';
 import { CmsWizardReviewStepComponent } from './steps/review-step.component';
 import { FilterAudienceEntity } from './filter-audience-entity';
 import { callerFillablePaths, onlyCallerFillable } from './caller-fillable.helpers';
+import { DocumentRecipientAccess } from '../document-recipient-access.service';
 
 /** Data the CDK dialog opener passes through `DIALOG_DATA`. */
 export interface CmsDocumentGenerationWizardData {
@@ -86,6 +87,7 @@ export interface CmsDocumentGenerationWizardResult {
                 <ng-container *cmsWizardStep="'mode'">
                     <cms-wizard-mode-step
                         [variables]="schemaVariables()"
+                        [canChooseOthers]="recipientAccess.choice() === 'others'"
                         [(mode)]="mode" />
                 </ng-container>
 
@@ -171,6 +173,8 @@ export interface CmsDocumentGenerationWizardResult {
 })
 export class CmsDocumentGenerationWizardComponent implements OnInit {
     private readonly recipientEntity = inject(FilterAudienceEntity);
+    /** Whether the person may choose who documents go to; one who may not generates for themselves. */
+    protected readonly recipientAccess = inject(DocumentRecipientAccess);
     private readonly draft = inject(WizardDraftService);
     private readonly documentsApi = inject(DocumentsApiService);
     private readonly toast = inject(ToastService);
@@ -267,6 +271,11 @@ export class CmsDocumentGenerationWizardComponent implements OnInit {
     });
 
     constructor() {
+        this.recipientAccess.load();
+        // One who may not choose others generates for themselves: a restored draft in filter mode goes back to one document.
+        effect(() => {
+            if (this.recipientAccess.choice() === 'self' && this.mode() === 'filter') this.mode.set('single');
+        });
         // Persist a draft on any state mutation. Reading every signal
         // inside the effect lets Angular track them all.
         effect(() => {

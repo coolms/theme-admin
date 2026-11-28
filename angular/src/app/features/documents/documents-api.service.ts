@@ -12,6 +12,7 @@ import {
     type CreateDocumentGenerationPayload,
     type DocumentGenerationDto,
     type DocumentInstanceDto,
+    type DocumentRecipientDto,
     type ListDocumentInstancesOptions,
 } from './documents.types';
 
@@ -52,6 +53,14 @@ export class DocumentsApiService {
         return this.http.get<AudiencePreviewDto>(
             `${this.manifest.apiBase}/document/generations/preview-audience`,
             { params: new HttpParams().set('entityType', entityType).set('rql', rqlBody) },
+        );
+    }
+
+    /** The people a document may go to, by name or address; at most `limit` (the server caps it at 50). */
+    searchDocumentRecipients(query: string, limit = 20): Observable<DocumentRecipientDto[]> {
+        return this.http.get<DocumentRecipientDto[]>(
+            `${this.manifest.apiBase}/document/recipients`,
+            { params: new HttpParams().set('q', query).set('limit', String(Math.min(limit, 50))), headers: { Accept: 'application/json' } },
         );
     }
 

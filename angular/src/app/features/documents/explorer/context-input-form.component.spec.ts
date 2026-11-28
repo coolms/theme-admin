@@ -1,6 +1,7 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Store } from '@ngxs/store';
 
 import { ContextInputFormComponent } from './context-input-form.component';
 import type { ContextFormValue } from './context-form.helpers';
@@ -38,7 +39,12 @@ describe('ContextInputFormComponent -- entity-reference value emission', () => {
  // The component injects EntitySearchService, which injects
  // HttpClient. Nothing here issues a request, but the injector
  // still has to be able to construct the chain.
-            providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+            // The form's picker searches people through the Documents API, which reads the API base from the store.
+            providers: [
+                provideHttpClient(withXhr()),
+                provideHttpClientTesting(),
+                { provide: Store, useValue: { selectSnapshot: () => ({ apiBase: '/api/v1' }) } },
+            ],
         });
         const fixture = TestBed.createComponent(ContextInputFormComponent);
         component = fixture.componentInstance;

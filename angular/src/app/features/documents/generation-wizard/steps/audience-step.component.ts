@@ -2,7 +2,7 @@ import {
     ChangeDetectionStrategy, Component, inject, computed, input, model,
 } from '@angular/core';
 
-import { CmsEntityPickerComponent } from '@coolms/ui-angular';
+import { DocumentPersonFieldComponent } from '../../document-person-field.component';
 import { type ContextSchemaVariable, type FormVariableInput } from '../../shared/document-explorer.types';
 import { ContextInputFormComponent } from '../../explorer/context-input-form.component';
 import type { ContextFormValue } from '../../explorer/context-form.helpers';
@@ -30,7 +30,7 @@ import { callerFillablePaths } from '../caller-fillable.helpers';
     selector: 'cms-wizard-audience-step',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CmsEntityPickerComponent, ContextInputFormComponent],
+    imports: [DocumentPersonFieldComponent, ContextInputFormComponent],
     template: `
         <div class="cms-audience-step">
             @if (entityRefs().length > 0) {
@@ -47,7 +47,7 @@ import { callerFillablePaths } from '../caller-fillable.helpers';
                                    [attr.for]="fieldId(ref.path)">
                                 {{ displayLabel(ref.path) }}
                             </label>
-                            <cms-entity-picker
+                            <cms-document-person-field
                                 [entityType]="ref.entityType!"
                                 [collection]="ref.collection ?? false"
                                 [inputId]="fieldId(ref.path)"
