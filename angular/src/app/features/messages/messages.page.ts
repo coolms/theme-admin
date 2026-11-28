@@ -41,7 +41,7 @@ import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
 import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
-import { personLabel } from '../identity/person-label';
+import { personInSentence, personLabel } from '../identity/person-label';
 
 /** The header node id that opens the public channels list (the Chat tree's /browse-channels). */
 const BROWSE_CHANNELS = 'browse-channels';
@@ -1841,7 +1841,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
             return;
         }
         const p = (this.selected()?.participants ?? []).find(x => x.participantId === participantId);
-        this.typingName.set(personLabel(p?.displayName));
+        this.typingName.set(personInSentence(p?.displayName));
         if (this.typingTimer) {
             clearTimeout(this.typingTimer);
         }

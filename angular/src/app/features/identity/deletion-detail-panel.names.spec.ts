@@ -3,7 +3,7 @@ import { UserCalendarPreferencesService } from '@coolms/ui-angular';
 import { DeletionDetailPanelComponent } from './deletion-detail-panel.component';
 import { AccountDeletionDto } from './identity.types';
 
-/** A deletion names the people in it by the name they gave; a person with none reads "No name". */
+/** A deletion names the people in it by the name they gave; a person with none reads "No name" in a field, "Someone" in a sentence. */
 describe('DeletionDetailPanelComponent names', () => {
     const deletion = (over: Partial<AccountDeletionDto> = {}): AccountDeletionDto => ({
         id: 'd1', userId: 'u1', accountLabel: null, requestedByKind: 'administrator', requestedBy: 'u9',
@@ -33,12 +33,12 @@ describe('DeletionDetailPanelComponent names', () => {
             .map(e => (e.textContent ?? '').replace(/\s+/g, ' ').trim()).join(' ');
     };
 
-    it('reads "No name" for the account, the requester and the hold\'s people when they gave no name', () => {
+    it('reads "No name" in the account and requester fields, "Someone" in the hold\'s sentences, when they gave no name', () => {
         const text = render(deletion());
         expect(text).toContain('Account No name');
         expect(text).toContain('Requested by No name');
-        expect(text).toContain('Placed by No name on');
-        expect(text).toContain('Released by No name on');
+        expect(text).toContain('Placed by Someone on');
+        expect(text).toContain('Released by Someone on');
         expect(text).not.toContain('a deleted user');
     });
 
@@ -51,5 +51,6 @@ describe('DeletionDetailPanelComponent names', () => {
         expect(text).toContain('Requested by Grace Hopper');
         expect(text).toContain('Placed by Ada Lovelace on');
         expect(text).not.toContain('No name');
+        expect(text).not.toContain('Someone');
     });
 });

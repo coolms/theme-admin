@@ -29,7 +29,7 @@ import { AccountDeletionDto } from './identity.types';
 import { DeletionDetailPanelComponent } from './deletion-detail-panel.component';
 import { HoldsRegisterComponent } from './holds-register.component';
 import { LegalHoldDialogComponent, LegalHoldDialogData } from './legal-hold-dialog.component';
-import { personLabel } from './person-label';
+import { personInSentence, personLabel } from './person-label';
 
 const LIMIT = 50;
 
@@ -212,7 +212,7 @@ export class DeletionsListComponent implements OnInit {
 
     private cancel(d: AccountDeletionDto): void {
         this.confirmSvc.open({
-            title:        `Cancel the deletion of ${personLabel(d.accountLabel)}?`,
+            title:        `Cancel the deletion of ${personInSentence(d.accountLabel)}?`,
             message:      'Access is restored at once and the person is told who cancelled.',
             confirmLabel: 'Cancel the deletion',
             cancelLabel:  'Keep it',
@@ -237,7 +237,7 @@ export class DeletionsListComponent implements OnInit {
         const hold = d.hold;
         if (!hold || !hold.active) return;
         this.confirmSvc.open({
-            title:        `Release the hold on ${personLabel(d.accountLabel)}?`,
+            title:        `Release the hold on ${personInSentence(d.accountLabel)}?`,
             message:      'The deletion is re-armed: due now, or at its own date if that is later.',
             confirmLabel: 'Release',
             danger:       true,
