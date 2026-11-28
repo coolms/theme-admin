@@ -3,12 +3,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Store } from '@ngxs/store';
-import { EntitySearchService, type EntitySearchResult } from '@coolms/core-angular';
-import { CmsEntityPickerComponent } from '@coolms/ui-angular';
+import { type EntitySearchResult } from '@coolms/core-angular';
 
 import { DocumentRecipientSearchService } from './document-recipient-search.service';
 import { ContextInputFormComponent } from './explorer/context-input-form.component';
 import { CmsWizardAudienceStepComponent } from './generation-wizard/steps/audience-step.component';
+import { DocumentPersonFieldComponent } from './document-person-field.component';
 
 /** The person entity as the server's boot data names it (a made-up name: the theme never spells the real one). */
 const PERSON_ENTITY_TYPE = 'Acme\\Entity\\Person';
@@ -57,7 +57,7 @@ describe('DocumentRecipientSearchService', () => {
     });
 });
 
-describe('the document pickers use the recipient search', () => {
+describe('the document forms take a person through the person field', () => {
     const person = { path: '@recipient', label: null, entityType: PERSON_ENTITY_TYPE, collection: false, fields: null };
 
     beforeEach(() => {
@@ -74,13 +74,14 @@ describe('the document pickers use the recipient search', () => {
         const fixture = TestBed.createComponent(ContextInputFormComponent);
         fixture.componentRef.setInput('variables', [person]);
         fixture.detectChanges();
-        const picker = fixture.debugElement.query(By.directive(CmsEntityPickerComponent));
-        expect(picker).withContext('the form renders a picker for a person').not.toBeNull();
-        expect(picker.injector.get(EntitySearchService)).toBeInstanceOf(DocumentRecipientSearchService);
+        expect(fixture.debugElement.query(By.directive(DocumentPersonFieldComponent))).withContext('the form takes a person through it').not.toBeNull();
     });
 
     it('in the wizard', () => {
-        const injector = TestBed.createComponent(CmsWizardAudienceStepComponent).debugElement.injector;
-        expect(injector.get(EntitySearchService)).toBeInstanceOf(DocumentRecipientSearchService);
+        const fixture = TestBed.createComponent(CmsWizardAudienceStepComponent);
+        fixture.componentRef.setInput('variables', [{ path: '@recipient.name', filters: [], loopAlias: null, entityType: PERSON_ENTITY_TYPE }]);
+        fixture.componentRef.setInput('mode', 'single');
+        fixture.detectChanges();
+        expect(fixture.debugElement.query(By.directive(DocumentPersonFieldComponent))).withContext('the Audience step takes a person through it').not.toBeNull();
     });
 });

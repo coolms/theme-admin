@@ -53,6 +53,8 @@ describe('CmsDocumentGenerationWizardComponent -- what a generation sends', () =
                 {
                     provide: DocumentsApiService,
                     useValue: {
+                        // The wizard asks once whether this person may choose recipients: here, yes.
+                        searchDocumentRecipients: () => of([]),
                         createDocumentGeneration: (payload: CreateDocumentGenerationPayload) => {
                             sent.push(payload);
                             return of({ id: 'g1' });
@@ -87,7 +89,8 @@ describe('CmsDocumentGenerationWizardComponent -- the template it names', () => 
             providers: [
                 { provide: DIALOG_DATA, useValue: { template: { id: 't1', name, slug, contextSchema: { variables: [] } } as unknown as DocumentTemplate } },
                 { provide: DialogRef, useValue: { close: () => undefined } },
-                { provide: DocumentsApiService, useValue: { createDocumentGeneration: () => of({ id: 'g1' }) } },
+                // The wizard asks once whether this person may choose recipients: here, yes.
+                { provide: DocumentsApiService, useValue: { createDocumentGeneration: () => of({ id: 'g1' }), searchDocumentRecipients: () => of([]) } },
                 { provide: ToastService, useValue: { success: () => undefined, error: () => undefined } },
                 { provide: WizardDraftService, useValue: { maybeRestore: () => undefined, save: () => undefined, clear: () => undefined } },
                 { provide: FilterAudienceEntity, useValue: { matches: () => false, value: () => '' } },

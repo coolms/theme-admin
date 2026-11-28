@@ -8,12 +8,13 @@ import { CmsWizardModeStepComponent } from './mode-step.component';
  * No option for something that does not exist yet, and its words use no dash as a separator.
  */
 describe('CmsWizardModeStepComponent -- the options it offers', () => {
-    function render(usesPerson: boolean): HTMLElement {
+    function render(usesPerson: boolean, canChooseOthers = true): HTMLElement {
         TestBed.configureTestingModule({
             providers: [{ provide: FilterAudienceEntity, useValue: { matches: (t: unknown) => usesPerson && t === 'User', value: () => 'User' } }],
         });
         const fixture = TestBed.createComponent(CmsWizardModeStepComponent);
         fixture.componentRef.setInput('variables', [{ path: 'recipient.name', filters: [], loopAlias: null, entityType: 'User' }]);
+        fixture.componentRef.setInput('canChooseOthers', canChooseOthers);
         fixture.detectChanges();
         return fixture.nativeElement as HTMLElement;
     }
@@ -40,5 +41,13 @@ describe('CmsWizardModeStepComponent -- the options it offers', () => {
 
     it('uses no dash as a separator in its words, Filter not available', () => {
         expect(words(render(false))).not.toMatch(/--|—| - /);
+    });
+
+    it('offers someone who may not choose others one document for themselves, and no filter at all', () => {
+        const el = render(true, false);
+        expect(values(el)).toEqual(['single']);
+        expect(words(el)).toContain('Generate one document, for you.');
+        expect(words(el)).not.toContain('Filter entities');
+        expect(words(el)).not.toMatch(/--|—| - /);
     });
 });
