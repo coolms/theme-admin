@@ -2,6 +2,7 @@ import { type DateTimeFormatService } from '@coolms/ui-angular';
 
 import { avatarUserFor, ChatAvatarUser } from './chat-avatar.util';
 import { ChatConversationDto, ConversationParticipantDto } from './messages.types';
+import { personLabel } from '../identity/person-label';
 
 /**
  * How a conversation ROW is projected for display -- its label, its
@@ -39,7 +40,7 @@ export function conversationLabel(conversation: ChatConversationDto | null, meId
 
     const labels = (conversation.participants ?? [])
         .filter(p => p.userId !== null && p.userId !== meId)
-        .map(p => p.displayName ?? p.userId ?? '—');
+        .map(p => personLabel(p.displayName));
 
     return labels.length > 0 ? labels.join(', ') : 'Conversation';
 }

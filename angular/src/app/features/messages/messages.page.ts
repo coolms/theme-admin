@@ -42,6 +42,7 @@ import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
 import { RtcCallService } from '../rtc/rtc-call.service';
 import { RtcMediaKind } from '../rtc/rtc.types';
+import { personInSentence, personLabel } from '../identity/person-label';
 
 /** The header node id that opens the public channels list (the Chat tree's /browse-channels). */
 const BROWSE_CHANNELS = 'browse-channels';
@@ -1320,7 +1321,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
                 continue;
             }
             seen.add(p.userId);
-            out.push({ userId: p.userId, displayName: p.displayName ?? 'Unknown', avatarUrl: p.avatarUrl ?? null, inConversation: true });
+            out.push({ userId: p.userId, displayName: personLabel(p.displayName), avatarUrl: p.avatarUrl ?? null, inConversation: true });
         }
         const memberIds = new Set(this.members().map(p => p.userId).filter(Boolean));
         for (const u of this.mentionDirectory()) {
@@ -1854,7 +1855,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
             return;
         }
         const p = (this.selected()?.participants ?? []).find(x => x.participantId === participantId);
-        this.typingName.set(p?.displayName ?? 'Someone');
+        this.typingName.set(personInSentence(p?.displayName));
         if (this.typingTimer) {
             clearTimeout(this.typingTimer);
         }
@@ -2061,7 +2062,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     senderName(m: ChatMessageDto): string {
         const p = (this.selected()?.participants ?? [])
             .find(x => x.participantId === m.senderParticipantId);
-        return p?.displayName ?? 'Someone';
+        return personLabel(p?.displayName);
     }
 
     /**

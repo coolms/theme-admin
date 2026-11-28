@@ -19,6 +19,7 @@ import {
     FileRevisionView,
 } from './file-history.types';
 import { ConfirmDialogService, ToastService } from '@coolms/ui-angular';
+import { personLabel } from '../identity/person-label';
 
 type HistoryTab = 'revisions' | 'diff' | 'blame';
 
@@ -81,7 +82,7 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
                                         <div class="fh__rev-main">
                                             <code class="fh__hash">{{ r.shortHash }}</code>
                                             @if (r.isCurrent) { <span class="cms-badge cms-badge--success">current</span> }
-                                            <span class="fh__author">{{ r.authorName || 'system' }}</span>
+                                            <span class="fh__author">{{ authorOf(r) }}</span>
                                             <span class="fh__date">{{ r.createdAt | date:'short' }}</span>
                                         </div>
                                         @if (r.message) { <div class="fh__rev-note">{{ r.message }}</div> }
@@ -174,8 +175,8 @@ type HistoryTab = 'revisions' | 'diff' | 'blame';
                                         @for (l of b.lines; track $index) {
                                             <div class="fh__bline">
                                                 <code class="fh__hash"
-                                                      [title]="(l.authorName || 'system') + ' · ' + (l.createdAt | date:'medium')">{{ l.shortHash }}</code>
-                                                <span class="fh__bauthor">{{ l.authorName || 'system' }}</span>
+                                                      [title]="authorOf(l) + ' · ' + (l.createdAt | date:'medium')">{{ l.shortHash }}</code>
+                                                <span class="fh__bauthor">{{ authorOf(l) }}</span>
                                                 <span class="fh__lno">{{ l.lineNumber }}</span>
                                                 <span class="fh__dtext">{{ l.content }}</span>
                                             </div>
@@ -396,11 +397,16 @@ export class FileHistoryPanelComponent {
 
     // -- Restore --------------------------------------------------------------
 
+    /** Who wrote a revision or line: `system` when no person did, the neutral label when the person gave no name. */
+    protected authorOf(r: { readonly authorUid?: string | null; readonly authorName?: string | null }): string {
+        return r.authorUid ? personLabel(r.authorName) : (r.authorName || 'system');
+    }
+
     restore(r: FileRevisionView): void {
         if (this.restoring()) return;
         this.confirmSvc.open({
             title:        'Restore this version?',
-            message:      `The content of revision ${r.shortHash} (${r.authorName || 'system'}) will be written as a new current version. `
+            message:      `The content of revision ${r.shortHash} (${this.authorOf(r)}) will be written as a new current version. `
                 + `Nothing is lost — the current version stays in history and this is recorded as a new revision.`,
             confirmLabel: 'Restore',
             danger:       true,

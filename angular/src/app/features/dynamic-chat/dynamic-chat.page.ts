@@ -30,6 +30,7 @@ import { ErrorHandlerService } from '@coolms/core-angular';
 import { DynamicChatLiveEventsService } from './dynamic-chat-live-events.service';
 import { DynamicChatService } from './dynamic-chat.service';
 import { AgentConversationDto, ChatAttachmentDto, ChatMessageDto, QueueAgentDto, RoomNudge } from './dynamic-chat.types';
+import { personLabel } from '../identity/person-label';
 
 /** Queue auto-refresh cadence -- there is no queue-level realtime channel, so
  *  the queue is polled (per-conversation nudges keep the OPEN thread live). */
@@ -1117,7 +1118,7 @@ export class DynamicChatPageComponent implements OnInit {
 
     /** Tooltip listing the agents handling a conversation, e.g. "Handled by Sarah, Mike". */
     agentsTitle(conv: AgentConversationDto): string {
-        const names = (conv.agents ?? []).map(a => a.displayName ?? 'Agent');
+        const names = (conv.agents ?? []).map(a => personLabel(a.displayName));
         return names.length ? `Handled by ${names.join(', ')}` : '';
     }
 

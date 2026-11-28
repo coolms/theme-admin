@@ -54,8 +54,9 @@ describe('conversation row', () => {
             }), me)).toBe('Ada, Grace');
         });
 
- it('falls back to the user id when a participant has no display name', () => {
-            expect(conversationLabel(conv({ participants: [participant('u2', null)] }), me)).toBe('u2');
+ it('names a participant with no name "No name", never by the user id', () => {
+            expect(conversationLabel(conv({ participants: [participant('u2', null)] }), me)).toBe('No name');
+            expect(conversationLabel(conv({ participants: [participant('u2', 'Ada'), participant('u3', '')] }), me)).toBe('Ada, No name');
         });
 
  it('says "Conversation" when there is nobody else to name', () => {

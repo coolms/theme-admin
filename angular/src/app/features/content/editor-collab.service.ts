@@ -9,12 +9,13 @@ import type {
 } from 'centrifuge';
 import { AuthState } from '@coolms/core-angular';
 import { CentrifugoClientService } from '@coolms/ui-angular';
+import { personLabel } from '../identity/person-label';
 
 /** A distinct *other* user currently present in the document. */
 export interface EditorPeer {
     /** The peer's user UUID (Centrifugo presence `user` = JWT `sub`). */
     readonly userId: string;
-    /** Display label -- the connection token's `info.displayName`, falling back to `info.username`. */
+    /** Display label -- the connection token's `info.displayName`, or the neutral label when the person gave no name. */
     readonly name: string;
 }
 
@@ -211,15 +212,8 @@ export class EditorCollabService implements OnDestroy {
     }
 
     private nameOf(info: ClientInfo): string {
-        const conn = info.connInfo as { displayName?: unknown; username?: unknown } | undefined;
-        // Prefer the connection token's friendly `info.displayName`; fall
-        // back to `info.username` for tokens issued before that claim
-        // existed (or users whose username already is the friendly label).
-        if (typeof conn?.displayName === 'string' && conn.displayName.length > 0) {
-            return conn.displayName;
-        }
-        return typeof conn?.username === 'string' && conn.username.length > 0
-            ? conn.username
-            : 'Someone';
+        const conn = info.connInfo as { displayName?: unknown } | undefined;
+        // The token's `info.displayName` is the name the person gave; a login is never shown in its place.
+        return personLabel(typeof conn?.displayName === 'string' ? conn.displayName : null);
     }
 }

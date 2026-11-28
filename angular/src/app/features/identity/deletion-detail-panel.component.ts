@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DateTimeFormatService } from '@coolms/ui-angular';
 import { AccountDeletionDto, AccountDeletionState } from './identity.types';
+import { personInSentence, personLabel } from './person-label';
 
 /** What the state badge is called and coloured, shared by the drawer and the user panel. */
 export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { label: string; variant: string }>> = {
@@ -25,9 +26,9 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
         @let d = deletion();
         <div class="ddp">
             <dl class="ddp-facts">
-                <dt>Account</dt><dd>{{ d.accountLabel }}</dd>
+                <dt>Account</dt><dd>{{ personLabel(d.accountLabel) }}</dd>
                 <dt>State</dt><dd><span class="badge text-bg-{{ state().variant }}">{{ state().label }}</span></dd>
-                <dt>Requested by</dt><dd>{{ d.requestedByLabel }}</dd>
+                <dt>Requested by</dt><dd>{{ personLabel(d.requestedByLabel) }}</dd>
                 <dt>Requested</dt><dd>{{ dtf.dateTime(d.requestedAt) }}</dd>
                 <dt>Due</dt>
                 <dd>
@@ -51,11 +52,11 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
                 <h6 class="ddp-heading"><i class="bi bi-shield-lock me-1"></i>Legal hold</h6>
                 <p class="ddp-reason">{{ hold.reason }}</p>
                 <p class="text-muted small mb-1">
-                    Placed by {{ hold.placedByLabel }} on {{ dtf.dateTime(hold.placedAt) }}.
+                    Placed by {{ personInSentence(hold.placedByLabel) }} on {{ dtf.dateTime(hold.placedAt) }}.
                     @if (hold.active) {
                         <strong>Standing.</strong>
                     } @else {
-                        Released by {{ hold.releasedByLabel ?? 'a deleted user' }} on {{ dtf.dateTime(hold.releasedAt) }}.
+                        Released by {{ personInSentence(hold.releasedByLabel) }} on {{ dtf.dateTime(hold.releasedAt) }}.
                     }
                 </p>
             }
@@ -117,6 +118,8 @@ export const DELETION_STATE_LABELS: Readonly<Record<AccountDeletionState, { labe
     `],
 })
 export class DeletionDetailPanelComponent {
+    protected readonly personLabel = personLabel;
+    protected readonly personInSentence = personInSentence;
     readonly deletion = input.required<AccountDeletionDto>();
     readonly dtf = inject(DateTimeFormatService);
 
