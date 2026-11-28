@@ -98,15 +98,19 @@ describe('EmailMailboxPageComponent -- the folder column keeps its mailbox card'
     }
 
     it('scrolls the folders on their own, to their end, and the mailbox card stays at the column\'s top', async () => {
+        // Twice: a late render above the column (a toolbar, a banner) must be in before the first measure.
+        await settle();
         await settle();
         expect(folders().scrollHeight).withContext('the folders overflow the column').toBeGreaterThan(folders().clientHeight);
-        const top = card().getBoundingClientRect().top;
+        // The card against its own column, not the window: the suite's other specs may leave the page scrolled.
+        const cardInColumn = (): number => card().getBoundingClientRect().top - column().getBoundingClientRect().top;
+        const top = cardInColumn();
         folders().scrollTop = folders().scrollHeight;
         column().scrollTop = column().scrollHeight;
         await settle();
         expect(folders().scrollTop).withContext('the folders scrolled').toBeGreaterThan(0);
         expect(column().scrollTop).withContext('the column itself does not scroll').toBe(0);
-        expect(card().getBoundingClientRect().top).withContext('the card has not moved').toBe(top);
+        expect(cardInColumn()).withContext('the card has not moved in its column').toBe(top);
         expect(getComputedStyle(folders()).overflowY).toBe('auto');
         expect(['auto', 'scroll']).withContext('the column is never a scroll region itself').not.toContain(getComputedStyle(column()).overflowY);
     });
