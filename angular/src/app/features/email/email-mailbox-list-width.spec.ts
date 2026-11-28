@@ -125,7 +125,7 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         await settle();
     }
 
-    it('the page header spans the page: the envelope, Mail, Compose filled and More with the tree\'s other actions', async () => {
+    it('the page header spans the page: the envelope, Mail, the tree\'s other actions as buttons, Compose filled', async () => {
         await render(1440);
         const page = fixture.componentInstance;
         const opened = spyOn(page, 'openCompose');
@@ -155,13 +155,13 @@ describe('EmailMailboxPageComponent -- the list\'s rows fit the list', () => {
         compose.click();
         expect(opened).toHaveBeenCalledTimes(1);
 
-        const menu = Object.assign(TestBed.inject(ContextMenuService), {
-            openFrom: jasmine.createSpy('openFrom'), menu: () => null, close: (): void => {},
-        }) as unknown as { openFrom: jasmine.Spy };
-        header.querySelector<HTMLElement>('[data-action="more"]')!.click();
-        const items = menu.openFrom.calls.mostRecent().args[1] as { id: string; label: string; disabled: boolean; refusal?: string }[];
-        expect(items.map(i => i.label)).withContext('More holds the others, in the tree\'s order').toEqual(['Add mailbox', 'Mail settings', 'Import']);
-        expect(items[2]).toEqual(jasmine.objectContaining({ disabled: true, refusal: 'An import is running.' }));
+        // The others are buttons while they fit, in the tree's order, before Compose; no More while they fit.
+        const others = [...header.querySelectorAll<HTMLElement>('[data-action="other"]')];
+        expect(others.map(b => b.textContent!.trim())).withContext('the others as buttons, in the tree\'s order').toEqual(['Add mailbox', 'Mail settings', 'Import']);
+        expect(others[2].getAttribute('aria-disabled')).toBe('true');
+        expect(others[2].title).toBe('An import is running.');
+        const more = header.querySelector<HTMLElement>('[data-action="more"]');
+        expect(more === null || more.getClientRects().length === 0).withContext('no More while they fit').toBeTrue();
 
         // A tree that offers no Compose draws none.
         page.headerActions.set([{ id: 'add-mailbox', icon: 'plus-lg', label: 'Add mailbox' }]);
