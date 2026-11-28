@@ -36,6 +36,7 @@ import { advancePeerCursor, peerReadCursors, readByEveryoneSeq } from './read-re
 import { channelTriggerAt, linkifyChannelRefs, matchChannels } from './channel-refs.util';
 import { linkedMessageHtml, messageRuns } from './message-links.util';
 import { chatCommands, CONVERSATION_PARAM } from './chat-address';
+import { ChatLastOpenedService } from './chat-last-opened.service';
 import { MentionDirectoryUser, MessagesService } from './messages.service';
 import { ChatRoomNudge, MessagesLiveEventsService } from './messages-live-events.service';
 import { ChatAttachmentDto, ChatChannelDto, ChatConversationDto, ChatMessageDto, ConversationParticipantDto, MentionCandidate, MentionRef, ReactionRef } from './messages.types';
@@ -272,7 +273,8 @@ const BROWSE_CHANNELS = 'browse-channels';
                             <li>
                                 <button type="button"
                                         class="msg__row"
-                                        [class.msg__row--active]="c.id === selectedId()"
+                                        [class.msg__row--active]="c.id === selectedId() || c.id === lastOpenedId()"
+                                        [attr.aria-current]="c.id === lastOpenedId() ? 'true' : null"
                                         [class.msg__row--readonly]="c.viewerState === 'excluded'"
                                         [class.msg__row--muted]="c.viewerMuted"
                                         [class.msg__row--unread]="!c.viewerMuted && unreadCount(c) > 0"
@@ -1123,6 +1125,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     private readonly host      = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     private readonly router    = inject(Router);
     private readonly location  = inject(Location);
+    private readonly lastOpened = inject(ChatLastOpenedService);
 
     /** A phone's width: the page shows one pane at a time, and the list's filter is said in the page's title. */
     private readonly phoneWidth = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -1139,6 +1142,10 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     private addressId: string | null = null;
     /** This page added the address's entry to the history, so its Back can return through the history. */
     private addedEntry = false;
+    /** The page was first drawn at an address naming a conversation, or at the older `?c=<id>` link. */
+    private arrivedWithId = false;
+    /** On a phone, the last conversation the person opened: its row marked in the list, not opened. */
+    readonly lastOpenedId = signal<string | null>(null);
 
     private readonly threadScroll = viewChild<ElementRef<HTMLElement>>('threadScroll');
     private readonly composerEl   = viewChild<ElementRef<HTMLElement>>('composer');
@@ -1672,6 +1679,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(cid => {
+                this.arrivedWithId = true;
                 void this.router.navigate(chatCommands(cid), { replaceUrl: true });
             });
         // The address leads: `/chat/<id>` opens that conversation once the list (or its own row) is read; `/chat`
@@ -1683,6 +1691,12 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
                 takeUntilDestroyed(this.destroyRef),
             )
             .subscribe(id => this.followAddress(id));
+        // Arrived at the list alone: the last conversation the person opened.
+        if (!this.arrivedWithId) {
+            this.lastOpened.read()
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe(id => this.arrivedAtList(id));
+        }
 
         // Realtime: (re)subscribe to the selected conversation's
         // `chat.room.{id}` channel whenever the selection changes -- switchMap
@@ -2744,6 +2758,9 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
      */
     private followAddress(id: string | null): void {
         this.addressId = id;
+        if (id !== null) {
+            this.arrivedWithId = true;
+        }
         if (id === null) {
             this.addedEntry = false;
             this.pendingPreselect = null;
@@ -2754,6 +2771,22 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         }
         this.pendingPreselect = id;
         this.applyPreselect();
+    }
+
+    /**
+     * The page arrived at the list alone and the person last opened this conversation (or none): on a desktop it opens,
+     * the address naming it in place; on a phone its row is marked in the list. Anything opened or named since
+     * leaves it. A conversation no longer read opens nothing and says nothing (see {@link applyPreselect}).
+     */
+    private arrivedAtList(id: string | null): void {
+        if (id === null || this.addressId !== null || this.selectedId() !== null) {
+            return;
+        }
+        if (this.phone()) {
+            this.lastOpenedId.set(id);
+            return;
+        }
+        void this.router.navigate(chatCommands(id), { replaceUrl: true });
     }
 
     /**
@@ -2883,6 +2916,8 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         // Seed the read-receipt cursors from the peers' persisted values so a
         // re-opened thread shows "Read" without waiting for a fresh nudge.
         this.peerReadSeqs.set(peerReadCursors(opened?.participants, this.meId));
+        this.lastOpenedId.set(null);
+        this.lastOpened.remember(id);
         this.writeAddress(id);
     }
 
